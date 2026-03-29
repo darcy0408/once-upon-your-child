@@ -58,6 +58,19 @@ const List<String> kWarmUpPhrases = [
   "Pick a place for your story! You can choose Rainbow World, Cave Full of Crystals, Friendly Dragons, or Make One Up!",
   "Pick your travel buddies! Tap a companion to bring them along. You can pick a tiny dragon, a wise owl, a shadow cat, a star dog, a magic unicorn, or a clever fox.",
   "Here is your story recipe! Check everything looks right, then tap Make Magic to start!",
+
+  // Sprout UX — pre-warm phrases used across all Sprout screens
+  "Ready to go? Tap GO!",
+  "Tap me!",
+  "What's your name?",
+  "Happy",
+  "Sad",
+  "Mad",
+  "Scared",
+  "Stomp with the Dinosaurs!",
+  "The Magical Forest",
+  "The Fluffy Cloud Castle",
+  "Under the Sea!",
 ];
 
 class AppTtsService {

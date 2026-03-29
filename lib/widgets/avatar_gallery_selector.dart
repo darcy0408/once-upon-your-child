@@ -2,9 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/generated_avatar.dart';
 import '../services/avatar_service.dart';
+import '../theme/age_band_theme.dart';
 import '../ui/widgets/magical_avatar.dart';
+import '../utils/motion_utils.dart';
 import '../screens/byok_setup_wizard.dart';
 import 'avatar_tweak_panel.dart';
+import 'breathing_avatar.dart';
 
 const int _kBatchSize = 12;
 
@@ -235,16 +238,33 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
             itemBuilder: (context, index) {
               final assetPath = _batch[index];
               final isSelected = _selectedAvatarPath == assetPath;
+              final isSprout =
+                  Theme.of(context).extension<AgeBandThemeData>()?.band ==
+                      AgeBand.sprout;
+              final avatar = MagicalAvatar(
+                assetPath: assetPath,
+                size: 150,
+                borderWidth: isSelected ? 4 : 0,
+                glowColor:
+                    isSelected ? const Color(0xFFFFC44D) : Colors.transparent,
+                enableParticles: isSelected,
+              );
+              // For Sprout band, unselected thumbnails breathe with staggered
+              // phase offsets so they feel alive, not static.
+              final child = isSprout &&
+                      !isSelected &&
+                      !MotionPrefs.reduceMotion(context)
+                  ? BreathingAvatar(
+                      period: Duration(milliseconds: 2800 + (index % 6) * 400),
+                      minScale: 0.97,
+                      maxScale: 1.03,
+                      glowColor: Colors.amber.withAlpha(38),
+                      child: avatar,
+                    )
+                  : avatar;
               return GestureDetector(
                 onTap: () => _selectAvatar(assetPath),
-                child: MagicalAvatar(
-                  assetPath: assetPath,
-                  size: 150,
-                  borderWidth: isSelected ? 4 : 0,
-                  glowColor:
-                      isSelected ? const Color(0xFFFFC44D) : Colors.transparent,
-                  enableParticles: isSelected,
-                ),
+                child: child,
               );
             },
           );

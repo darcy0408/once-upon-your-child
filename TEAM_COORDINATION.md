@@ -1,5 +1,34 @@
 # Team Coordination
 
+## 2026-03-29 — Sprout (Ages 2-5) UX Enjoyment Overhaul (Claude Sonnet 4.6)
+
+**Goal:** Make every Sprout-band touchpoint feel alive, voice-driven, and age-appropriate for pre-readers. Animated cards, voice-first flows, mascot feedback, tap-to-hear patterns, and a simplified "GO!" launch screen.
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/widgets/sprout_animations.dart` | NEW — WiggleWidget, BounceOnTapWidget, FeelingPulseWidget |
+| `lib/screens/welcome_screen.dart` | Wiggling star + 5s timer; voice-first name input with mascot |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Illustration-heavy archetype cards with bounce; mascot name echo via TTS |
+| `lib/widgets/avatar_gallery_selector.dart` | Staggered breathing on unselected thumbnails |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Tap-to-hear/tap-to-select with scenario SFX |
+| `lib/screens/big_feelings_flow_screen.dart` | 4 core feelings, animated faces, TTS labels, animated coping tools |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Full-screen "GO!" celebration replacing review summary |
+| `lib/services/app_tts_service.dart` | Sprout warm-up phrases added |
+
+### Status
+- [x] Phase 1A — `sprout_animations.dart` (WiggleWidget, BounceOnTapWidget, FeelingPulseWidget, DragonBreathAnimation, CountToFiveAnimation)
+- [x] Phase 2 — Welcome: wiggling star, 5s timer, voice-first name + mascot + speech bubble
+- [x] Phase 3 — Hero creator: illustration-heavy archetype cards with BounceOnTapWidget + WiggleWidget; mascot + debounced TTS name echo
+- [x] Phase 4 — Avatar gallery: staggered breathing thumbnails for Sprout
+- [x] Phase 5 — Scenario selection: tap-to-hear + scenario SFX (reuses existing ambient sounds)
+- [x] Phase 6 — Big feelings: 4 feelings, FeelingPulseWidget animated faces, TTS tap-to-reveal labels, animated coping tool cards
+- [x] Phase 7 — Magic review: full-screen "GO!" celebration with BreathingAvatar + MagicalFloat
+- [x] Phase 8 — Polish: TTS warm-up phrases added, dispose guards verified, flutter analyze clean
+
+---
+
 ## 2026-03-29 — Wire Mature Feelings into Story Prompts (Claude Sonnet 4.6)
 
 **Goal:** The 10 new Adolescent/Adult feelings (Grief, Resentful, Envious, Restless, Hopeful, Melancholy, Contentment, Indignation, Dread, Anticipation) are now in the UI but story generation still uses child-facing prompt rules ("keep the problem child-sized", "end with safety and reconnection"). This produces wrong output for mature bands.

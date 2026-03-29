@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:story_weaver_app/services/feelings_ambient_service.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/achievement_service.dart';
+import 'package:story_weaver_app/services/app_tts_service.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
@@ -16,12 +17,13 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/widgets/breathing_avatar.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
+import 'package:story_weaver_app/widgets/magical_float.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
-import 'package:story_weaver_app/widgets/magical_float.dart';
 import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
@@ -575,6 +577,171 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     }
   }
 
+  // ── Sprout Launch Screen ─────────────────────────────────────────────────
+
+  /// For Sprout (ages 2-5): replaces the full review with a single celebration
+  /// screen. Character bounces, companion floats alongside, one giant GO! button.
+  Widget _buildSproutLaunchScreen(
+      BuildContext context, AgeBandThemeData band) {
+    final wd = widget.wizardData;
+    final heroName =
+        wd.characterName.isEmpty ? 'your hero' : wd.characterName;
+    final companionImg = _companionImage;
+
+    // Speak the prompt once when this screen first appears.
+    // (build may re-run; TTS is idempotent if the same text is already playing)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_isGenerating) {
+        AppTtsService.instance.speak(
+          'Ready to go, $heroName? Tap GO!',
+          rateScale: 0.8,
+        );
+      }
+    });
+
+    // Show loading/error states via the same conditional as the full review.
+    if (_generationError != null) {
+      return Center(
+        child: _GenerationErrorWidget(
+          isSprout: true,
+          onRetry: () {
+            setState(() => _generationError = null);
+            _launchStoryCreation();
+          },
+        ),
+      );
+    }
+    if (_isGenerating) {
+      return MagicalLoadingView(
+        status: _loadingStatus,
+        onCancel: () => setState(() => _isGenerating = false),
+        isSproutBand: true,
+        companionImagePath: companionImg,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(gradient: band.backgroundGradient),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // ── "Ready to go?" prompt ──
+              MagicalFloat(
+                distance: 6,
+                child: Text(
+                  'Ready to go?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: band.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── Character + optional companion ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Hero avatar
+                  BreathingAvatar(
+                    minScale: 0.95,
+                    maxScale: 1.08,
+                    period: const Duration(milliseconds: 2600),
+                    glowColor: band.accent,
+                    child: SizedBox(
+                      width: 160,
+                      height: 160,
+                      child: ClipOval(
+                        child: _HeroAvatar(
+                          generatedAvatar: wd.generatedAvatar,
+                          characterName: wd.characterName,
+                          role: wd.selectedArchetypeId,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Companion (if selected)
+                  if (companionImg != null) ...[
+                    const SizedBox(width: 16),
+                    BreathingAvatar(
+                      minScale: 0.96,
+                      maxScale: 1.04,
+                      period: const Duration(milliseconds: 3200),
+                      glowColor: band.primaryLight,
+                      child: Image.asset(
+                        companionImg,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // ── GO! button ──
+              _PulsingCastSpellFrame(
+                isReady: !_isGenerating && wd.isComplete,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 120,
+                  child: ElevatedButton(
+                    onPressed:
+                        (!_isGenerating && wd.isComplete) ? _launchStoryCreation : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                    ),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [band.primary, band.primaryLight],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: band.primary.withValues(alpha: 0.55),
+                            blurRadius: 24,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'GO!',
+                          style: GoogleFonts.nunito(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _buildReviewSpokenText(AgeBandThemeData band) {
     final wd = widget.wizardData;
     final heroTerm = band.heroLabel.toLowerCase(); // 'your hero' or 'character'
@@ -597,6 +764,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final screenWidth = MediaQuery.of(context).size.width;
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+
+    // Sprout band (ages 2-5) skips the full review — show a single celebration
+    // screen with a GO! button. Children this age don't need to re-confirm choices.
+    if (band.band == AgeBand.sprout) {
+      return _buildSproutLaunchScreen(context, band);
+    }
     final orbSize =
         (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();
     final heroFallback = band.heroLabel;

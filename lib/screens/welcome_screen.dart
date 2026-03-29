@@ -11,6 +11,8 @@ import '../providers/age_band_provider.dart';
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/breathing_avatar.dart';
+import '../widgets/sprout_animations.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
 
@@ -28,7 +30,8 @@ class WelcomeScreen extends ConsumerStatefulWidget {
   ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   int? _selectedAge;
   bool _submitting = false;
@@ -41,6 +44,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   int _step = 0;
 
   Timer? _titleTimer;
+
+  /// Drives the pulsing "Tap me!" hint on the title splash.
+  late final AnimationController _tapHintCtrl;
+  late final Animation<double> _tapHintOpacity;
 
   static const _goldColor = Color(0xFFFFD700);
 
@@ -64,11 +71,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Pulsing "Tap me!" hint on the title screen.
+    _tapHintCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _tapHintOpacity = Tween<double>(begin: 0.25, end: 1.0).animate(
+      CurvedAnimation(parent: _tapHintCtrl, curve: Curves.easeInOut),
+    );
+
     // Speak welcome immediately — don't block behind mic permission dialog.
     unawaited(_speak('Tap the star to start your adventure!'));
     _initVoice();
-    // Auto-advance from title to name after 2.5 s (tap also advances).
-    _titleTimer = Timer(const Duration(milliseconds: 2500), () {
+    // Auto-advance from title to name after 5 s (tap also advances).
+    // Extended from 2.5 s so distracted toddlers have more time.
+    _titleTimer = Timer(const Duration(milliseconds: 5000), () {
       if (mounted && _step == 0) {
         _enterNameStep();
       }
@@ -116,6 +133,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   @override
   void dispose() {
+    _tapHintCtrl.dispose();
     _nameController.dispose();
     _titleTimer?.cancel();
     AppTtsService.instance.stop();
@@ -138,11 +156,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   void _advanceFromName() {
-    if (_nameController.text.trim().isNotEmpty && _step == 1) {
+    final name = _nameController.text.trim();
+    if (name.isNotEmpty && _step == 1) {
       AppTtsService.instance.stop();
       _speech.stop();
+      // Speak the name back for a moment of delight, then prompt for age.
+      unawaited(_speak('Hi $name! How old are you? Tap your age!'));
       setState(() => _step = 2);
-      unawaited(_speak('How old are you? Tap your age!'));
     }
   }
 
@@ -222,7 +242,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 60),
-          const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
+          // Wiggling star signals "tap me!" to young children.
+          WiggleWidget(
+            repeat: true,
+            angle: 0.12,
+            duration: const Duration(milliseconds: 700),
+            child: const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
+          ),
           const SizedBox(height: AppSpacing.md),
           Semantics(
             header: true,
@@ -254,10 +280,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const Text(
-            'Tap to begin your adventure\u2026',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 14),
+          // Pulsing "Tap me!" replaces static hint — much clearer for toddlers.
+          AnimatedBuilder(
+            animation: _tapHintOpacity,
+            builder: (context, _) => Opacity(
+              opacity: _tapHintOpacity.value,
+              child: Text(
+                'Tap me!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.fredoka(
+                  color: _goldColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 60),
         ],
@@ -268,22 +305,118 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   // ── Step 1: Name input ────────────────────────────────────────────────────
 
   Widget _buildNameStep() {
+    final typedName = _nameController.text.trim();
     return Column(
       key: const ValueKey('name'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // App branding
-        const Icon(Icons.auto_awesome, color: _goldColor, size: 40),
-        const SizedBox(height: 6),
-        Text(
-          'Story Weaver',
-          style: GoogleFonts.cinzelDecorative(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: _goldColor,
-          ),
+        // ── Mascot + speech bubble ──────────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            BreathingAvatar(
+              period: const Duration(milliseconds: 2800),
+              glowColor: _goldColor,
+              child: Image.asset(
+                'assets/images/ui/sprout/girl_character.png',
+                height: 100,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.face_rounded,
+                  size: 80,
+                  color: _goldColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Speech bubble showing the name as it's typed/spoken
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  key: ValueKey(typedName.isEmpty ? '__prompt__' : typedName),
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD54F),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(4),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(40),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    typedName.isEmpty ? "What's your name?" : typedName,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      fontSize: typedName.isEmpty ? 15 : 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF3E2723),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.lg),
+
+        // ── Voice button — primary CTA for young children ─────────────────
+        if (_speechEnabled) ...[
+          Semantics(
+            button: true,
+            label: _isListening ? 'Listening' : 'Say your name',
+            child: GestureDetector(
+              onTap: _listen,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isListening
+                      ? const Color(0xFF9E6CFF)
+                      : const Color(0xFF7B2FBE),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isListening
+                              ? const Color(0xFF9E6CFF)
+                              : const Color(0xFF7B2FBE))
+                          .withAlpha(140),
+                      blurRadius: _isListening ? 24 : 14,
+                      spreadRadius: _isListening ? 4 : 0,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                  color: Colors.white,
+                  size: 44,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _isListening ? 'Listening…' : 'Tap to say your name',
+            style: GoogleFonts.fredoka(
+              color: Colors.white70,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // ── Text field — fallback for older users or web ──────────────────
         Semantics(
           label: "Enter your name",
           textField: true,
@@ -296,14 +429,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               fontSize: 26,
               fontWeight: FontWeight.w500,
             ),
-            autofocus: true,
+            autofocus: !_speechEnabled,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _advanceFromName(),
+            onChanged: (_) => setState(() {}), // rebuild speech bubble
             decoration: InputDecoration(
-              hintText: "What's your name?",
+              hintText: _speechEnabled ? "Or type it here…" : "What's your name?",
               hintStyle: GoogleFonts.fredoka(
-                color: _goldColor.withAlpha(180),
-                fontSize: 26,
+                color: _goldColor.withAlpha(130),
+                fontSize: 20,
                 fontWeight: FontWeight.w500,
               ),
               filled: true,
@@ -321,32 +455,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 borderRadius: BorderRadius.circular(20),
                 borderSide: const BorderSide(color: _goldColor, width: 2),
               ),
-              // Mic icon lives inside the field — no separate button needed
-              suffixIcon: _speechEnabled
-                  ? AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: _isListening
-                            ? const Color(0xFF9E6CFF).withAlpha(200)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          _isListening
-                              ? Icons.mic_rounded
-                              : Icons.mic_none_rounded,
-                          color: _isListening
-                              ? Colors.white
-                              : Colors.white54,
-                          size: 28,
-                        ),
-                        tooltip: _isListening ? 'Listening…' : 'Say your name',
-                        onPressed: _listen,
-                      ),
-                    )
-                  : null,
             ),
           ),
         ),
@@ -389,50 +497,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             ),
           ),
         ),
-        if (_speechEnabled) ...[
-          const SizedBox(height: 12),
-          _PressableButton(
-            onPressed: _listen,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                color: _isListening
-                    ? const Color(0xFF9E6CFF).withAlpha(220)
-                    : Colors.white.withAlpha(20),
-                border: Border.all(
-                  color: _isListening
-                      ? const Color(0xFF9E6CFF)
-                      : Colors.white38,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isListening
-                        ? Icons.mic_rounded
-                        : Icons.mic_none_rounded,
-                    color:
-                        _isListening ? Colors.white : Colors.white70,
-                    size: 30,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isListening ? 'Listening…' : 'Tap to say your name',
-                    style: GoogleFonts.fredoka(
-                      color:
-                          _isListening ? Colors.white : Colors.white70,
-                      fontSize: 17,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

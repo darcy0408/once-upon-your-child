@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../models.dart';
+import '../../services/app_tts_service.dart';
+import '../../services/audio_ambience_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/age_band_theme.dart';
 import '../../widgets/image_continue_button.dart';
@@ -33,6 +37,14 @@ class FeelingSelectionStep extends StatefulWidget {
   State<FeelingSelectionStep> createState() => _FeelingSelectionStepState();
 }
 
+// Map scenario IDs to existing ambient sound assets for Sprout previews.
+const _sproutScenarioSfx = <String, String>{
+  'volcano_dragons':  'sounds/adventure_wind.mp3',
+  'neon_jungle':      'sounds/forest_crickets.mp3',
+  'storm_chaser_sky': 'sounds/adventure_wind.mp3',
+  'crystal_cavern':   'sounds/ocean_waves.mp3',
+};
+
 class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   String? _selectedScenario;
   bool _showParentalInput = false;
@@ -40,6 +52,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   final TextEditingController _safeSpaceController = TextEditingController();
   final TextEditingController _mathController = TextEditingController();
   final TextEditingController _avoidController = TextEditingController();
+
+  // Sprout tap-to-hear state: first tap previews (TTS + SFX), second tap selects.
+  String? _previewedScenarioId;
+  Timer? _previewTimer;
 
   // Voice input for Imagine It field (young children only)
 
@@ -254,11 +270,29 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   @override
   void dispose() {
+    _previewTimer?.cancel();
     _parentalNoteController.dispose();
     _safeSpaceController.dispose();
     _mathController.dispose();
     _avoidController.dispose();
     super.dispose();
+  }
+
+  // ── Sprout tap-to-hear / tap-to-select ────────────────────────────────────
+
+  void _previewScenario(ScenarioCard scenario, int age) {
+    _previewTimer?.cancel();
+    setState(() => _previewedScenarioId = scenario.id);
+    // Speak the title and play an ambient sound preview.
+    AppTtsService.instance.speak(scenario.titleForAge(age), rateScale: 0.8);
+    final sfx = _sproutScenarioSfx[scenario.id];
+    if (sfx != null) {
+      AudioAmbienceService().playSfx(sfx);
+    }
+    // Auto-clear after 4 s so a second tap elsewhere still works.
+    _previewTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _previewedScenarioId = null);
+    });
   }
 
   @override
@@ -939,6 +973,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   /// Full-screen 2×2 grid for sprout band — no scroll, no category headers,
   /// no "Imagine It" card. Everything visible at once.
+  ///
+  /// Tap-to-hear pattern: first tap speaks the title + plays a sound preview;
+  /// second tap (or a tap on an already-previewing card) confirms selection.
   List<Widget> _buildSproutGrid(int age) {
     final sproutScenarios = _scenarios
         .where((s) => _sproutScenarioIds.contains(s.id))
@@ -956,11 +993,23 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         childAspectRatio: 0.88,
         children: sproutScenarios.map((scenario) {
           final isSelected = _selectedScenario == scenario.id;
+          final isPreviewing = _previewedScenarioId == scenario.id;
           return _ScenarioCardWidget(
             scenario: scenario,
             isSelected: isSelected,
+            isPreviewing: isPreviewing,
             childAge: age,
-            onTap: () => _selectScenario(scenario.id),
+            onTap: () {
+              if (isPreviewing || isSelected) {
+                // Second tap — confirm selection.
+                _previewTimer?.cancel();
+                setState(() => _previewedScenarioId = null);
+                _selectScenario(scenario.id);
+              } else {
+                // First tap — speak title and play SFX preview.
+                _previewScenario(scenario, age);
+              }
+            },
           );
         }).toList(),
       ),
@@ -1064,6 +1113,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 class _ScenarioCardWidget extends StatelessWidget {
   final ScenarioCard scenario;
   final bool isSelected;
+  final bool isPreviewing;
   final int childAge;
   final VoidCallback onTap;
   final bool isFeatured;
@@ -1073,6 +1123,7 @@ class _ScenarioCardWidget extends StatelessWidget {
     required this.isSelected,
     required this.childAge,
     required this.onTap,
+    this.isPreviewing = false,
     this.isFeatured = false,
   });
 
@@ -1130,17 +1181,28 @@ class _ScenarioCardWidget extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
-                : const LinearGradient(
-                    colors: [AppColors.gradientStart, AppColors.gradientMid],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                : isPreviewing
+                    ? LinearGradient(
+                        colors: [
+                          AppColors.gold.withValues(alpha: 0.25),
+                          AppColors.gradientMid,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : const LinearGradient(
+                        colors: [AppColors.gradientStart, AppColors.gradientMid],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: isSelected
                   ? AppColors.gold
-                  : AppColors.primary.withValues(alpha: 0.3),
-              width: isSelected ? 3 : 2,
+                  : isPreviewing
+                      ? AppColors.gold.withValues(alpha: 0.8)
+                      : AppColors.primary.withValues(alpha: 0.3),
+              width: isSelected || isPreviewing ? 3 : 2,
             ),
             boxShadow: isSelected
                 ? [
@@ -1162,36 +1224,58 @@ class _ScenarioCardWidget extends StatelessWidget {
           ),
           child: isSprout
               // ── Sprout tile: big image fills the card, bold title below ──
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
+              ? Stack(
                   children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: imageWidget(double.infinity, null),
-                      ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: imageWidget(double.infinity, null),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: isSelected
+                                      ? AppColors.textDark
+                                      : Colors.white,
+                                ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        title,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: isSelected
-                                  ? AppColors.textDark
-                                  : Colors.white,
-                            ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    // Speaker icon overlay during preview (tap-to-hear state).
+                    if (isPreviewing && !isSelected)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.volume_up_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
                       ),
-                    ),
                   ],
                 )
               // ── Standard tile: image + emoji + title + description ──

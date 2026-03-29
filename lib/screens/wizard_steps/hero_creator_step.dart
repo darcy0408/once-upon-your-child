@@ -27,7 +27,9 @@ import '../../widgets/image_mode_orb.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/feelings_quest_modal.dart';
+import '../../widgets/breathing_avatar.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../../widgets/sprout_animations.dart';
 
 // ---------------------------------------------------------------------------
 class _PetAvatarGenerationResult {
@@ -89,6 +91,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final SpeechToText _speech = SpeechToText();
   bool _speechAvailable = false;
   String _listeningFor = '';
+  /// Debounce timer for TTS name echo (Sprout band only).
+  Timer? _nameEchoTimer;
   late TextEditingController _superpowerController;
   late TextEditingController _questController;
   late TextEditingController _wishController;
@@ -192,6 +196,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   @override
   void dispose() {
+    _nameEchoTimer?.cancel();
     _nameController.dispose();
     _nameFocusNode.dispose();
     _superpowerController.dispose();
@@ -2436,8 +2441,68 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     if (isSproutFour) {
       final isListening = _listeningFor == 'name';
+      final typedName = widget.wizardData.characterName;
       return Column(
         children: [
+          // ── Mascot + speech bubble (echo's the name) ───────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              BreathingAvatar(
+                period: const Duration(milliseconds: 2800),
+                glowColor: const Color(0xFFFFD54F),
+                child: Image.asset(
+                  'assets/images/ui/sprout/girl_character.png',
+                  height: 90,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.face_rounded,
+                    size: 70,
+                    color: Color(0xFFFFD700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    key: ValueKey(
+                        typedName.isEmpty ? '__prompt__' : typedName),
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD54F),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        topRight: Radius.circular(14),
+                        bottomRight: Radius.circular(14),
+                        bottomLeft: Radius.circular(4),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(38),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      typedName.isEmpty ? "What's your name?" : typedName,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: typedName.isEmpty ? 13 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3E2723),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           // Big mic button — primary input for sprouts
           GestureDetector(
             onTap: () => _toggleListening('name'),
@@ -2510,8 +2575,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                onChanged: (v) => setState(
-                    () => widget.wizardData.characterName = v.trim()),
+                onChanged: (v) {
+                  setState(() => widget.wizardData.characterName = v.trim());
+                  // Debounced TTS echo: speak the name 600 ms after last keystroke.
+                  _nameEchoTimer?.cancel();
+                  if (v.trim().isNotEmpty) {
+                    _nameEchoTimer = Timer(
+                      const Duration(milliseconds: 600),
+                      () {
+                        if (mounted) {
+                          AppTtsService.instance
+                              .speak(v.trim(), rateScale: 0.8);
+                        }
+                      },
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -2580,99 +2659,120 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         itemBuilder: (context, index) {
           final a = archetypes[index];
           final isSelected = _selectedArchetypeId == a.name;
-          return Semantics(
+          final isSprout = ageBand == AgeBand.sprout;
+
+          Widget card = Semantics(
             button: true,
             selected: isSelected,
             label: 'Role: ${a.name}',
             hint: isSelected
                 ? 'Currently selected. Double tap to keep this role.'
                 : 'Double tap to select this role for your hero.',
-            child: GestureDetector(
-              onTap: () => _selectArchetype(a),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color:
-                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                    width: isSelected ? 3 : 2,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                              color: const Color(0xFFFFD700).withAlpha(100),
-                              blurRadius: 12)
-                        ]
-                      : [],
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color:
+                      isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                  width: isSelected ? 3 : 2,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Container(color: const Color(0xFF1A0A2E)),
-                            if (a.imagePathForBand(ageBand) != null)
-                              Image.asset(
-                                a.imagePathForBand(ageBand)!,
-                                fit: BoxFit.contain,
-                                alignment: Alignment.center,
-                              )
-                            else
-                              Container(
-                                color: Colors.white10,
-                                child: Center(
-                                  child: Text(
-                                    a.icon ?? '✨',
-                                    style: const TextStyle(fontSize: 72),
-                                  ),
-                                ),
-                              ),
-                            if (isSelected)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFFFD700),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(3),
-                                  child: const Icon(Icons.check,
-                                      size: 16, color: Colors.black),
-                                ),
-                              ),
-                          ],
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(100),
+                            blurRadius: 12)
+                      ]
+                    : [],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background + illustration fills the whole card.
+                    Container(color: const Color(0xFF1A0A2E)),
+                    if (a.imagePathForBand(ageBand) != null)
+                      Image.asset(
+                        a.imagePathForBand(ageBand)!,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                      )
+                    else
+                      Center(
+                        child: Text(
+                          a.icon ?? '✨',
+                          style: const TextStyle(fontSize: 72),
                         ),
                       ),
-                      Container(
-                        width: double.infinity,
-                        color: Colors.black.withAlpha(120),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 6,
+                    // Selection checkmark.
+                    if (isSelected)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFD700),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          child: const Icon(Icons.check,
+                              size: 16, color: Colors.black),
                         ),
-                        child: Text(
-                          a.nameForAge(widget.wizardData.characterAge),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.fredoka(
-                            color: Colors.white,
-                            fontSize: ageBand == AgeBand.sprout ? 18 : 14,
-                            fontWeight: FontWeight.bold,
+                      ),
+                    // Small pill label at bottom — overlay, not separate bar.
+                    Positioned(
+                      bottom: 4,
+                      left: 6,
+                      right: 6,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(140),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            a.nameForAge(widget.wizardData.characterAge),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: isSprout ? 13 : 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           );
+
+          // Sprout: wrap in BounceOnTapWidget for satisfying tap feedback,
+          // and add a staggered WiggleWidget on unselected cards to feel alive.
+          if (isSprout) {
+            card = BounceOnTapWidget(
+              onTap: () => _selectArchetype(a),
+              child: isSelected
+                  ? card
+                  : WiggleWidget(
+                      repeat: true,
+                      angle: 0.04,
+                      duration: const Duration(milliseconds: 700),
+                      delayMs: index * 300,
+                      child: card,
+                    ),
+            );
+          } else {
+            card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
+          }
+
+          return card;
         },
       );
     }

@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../services/app_tts_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import '../widgets/sprout_animations.dart';
 
 class BigFeelingsFlowResult {
   const BigFeelingsFlowResult({
@@ -44,7 +48,16 @@ class BigFeelingsFlowScreen extends StatefulWidget {
 }
 
 class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
-  // Core 8 — shown to every band
+  // Sprout only (ages ≤5): 4 core feelings in a 2×2 grid with giant faces.
+  // Simplified from the core 8 to avoid overwhelm for pre-readers.
+  static const _feelingsSprout = [
+    _ChoiceOption(value: 'Happy',  label: 'Happy',  emoji: '😊', subtitle: 'Big smile feeling'),
+    _ChoiceOption(value: 'Sad',    label: 'Sad',    emoji: '😢', subtitle: 'Heavy, teary feeling'),
+    _ChoiceOption(value: 'Mad',    label: 'Mad',    emoji: '😠', subtitle: 'Big fire feeling'),
+    _ChoiceOption(value: 'Scared', label: 'Scared', emoji: '😨', subtitle: 'Uh-oh feeling'),
+  ];
+
+  // Core 8 — shown to Explorer band and above
   static const _feelingsCore = [
     _ChoiceOption(value: 'Happy',     label: 'Happy',     emoji: '😊', subtitle: 'Big smile feeling'),
     _ChoiceOption(value: 'Sad',       label: 'Sad',       emoji: '😢', subtitle: 'Heavy, teary feeling'),
@@ -99,7 +112,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   ];
 
   /// Returns the age-appropriate feelings list for the given band.
-  /// Sprout: 8 | Explorer: 13 | Adventurer: 18 | Creator: 20 | Adolescent: 25 | Adult: 30
+  /// Sprout: 4 | Explorer: 13 | Adventurer: 18 | Creator: 20 | Adolescent: 25 | Adult: 30
   static List<_ChoiceOption> _feelingsForBand(AgeBand band) {
     const explorer    = [..._feelingsCore, ..._feelingsExplorer];
     const adventurer  = [...explorer, ..._feelingsAdventurer];
@@ -107,7 +120,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     const adolescent  = [...creator, ..._feelingsAdolescent];
     const adult       = [...adolescent, ..._feelingsAdult];
     return switch (band) {
-      AgeBand.sprout      => _feelingsCore,
+      AgeBand.sprout      => _feelingsSprout,
       AgeBand.explorer    => explorer,
       AgeBand.adventurer  => adventurer,
       AgeBand.creator     => creator,
@@ -721,6 +734,23 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                     ),
                     itemBuilder: (context, index) {
                       final option = options[index];
+                      // Sprout step 0: animated feeling faces with TTS labels.
+                      if (_isSproutBand && _step == 0) {
+                        return _SproutFeelingCard(
+                          option: option,
+                          bandFolder: _bandFolder(),
+                          ageBand: band.band,
+                          onConfirm: () => _selectFeeling(option.value),
+                        );
+                      }
+                      // Sprout step 3 (coping tools): animated technique cards.
+                      if (_isSproutBand && _step == 3) {
+                        return _SproutCopingCard(
+                          option: option,
+                          fontFamily: band.uiFontFamily,
+                          onTap: () => _selectCopingTool(option.value),
+                        );
+                      }
                       return _BigFeelingsChoiceCard(
                         option: option,
                         isFirstStep: _step == 0,
@@ -898,12 +928,15 @@ class _TieredFeelingImage extends StatelessWidget {
     required this.genderedPath,
     required this.flatPath,
     required this.emoji,
+    this.fillHeight = false,
   });
 
   final String? bandPath;
   final String genderedPath;
   final String flatPath;
   final String emoji;
+  /// When true the image expands to fill the parent (used by _SproutFeelingCard).
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -915,6 +948,7 @@ class _TieredFeelingImage extends StatelessWidget {
     return _AssetImageWithFallback(
       paths: paths,
       emoji: emoji,
+      fillHeight: fillHeight,
     );
   }
 }
@@ -922,9 +956,14 @@ class _TieredFeelingImage extends StatelessWidget {
 /// Iterates through [paths] in order; shows the first that loads.
 /// Falls back to [emoji] Text if none load.
 class _AssetImageWithFallback extends StatefulWidget {
-  const _AssetImageWithFallback({required this.paths, required this.emoji});
+  const _AssetImageWithFallback({
+    required this.paths,
+    required this.emoji,
+    this.fillHeight = false,
+  });
   final List<String> paths;
   final String emoji;
+  final bool fillHeight;
 
   @override
   State<_AssetImageWithFallback> createState() => _AssetImageWithFallbackState();
@@ -936,7 +975,20 @@ class _AssetImageWithFallbackState extends State<_AssetImageWithFallback> {
   @override
   Widget build(BuildContext context) {
     if (_index >= widget.paths.length) {
-      return Text(widget.emoji, style: const TextStyle(fontSize: 40));
+      return Text(widget.emoji,
+          style: TextStyle(fontSize: widget.fillHeight ? 64 : 40));
+    }
+    if (widget.fillHeight) {
+      return Image.asset(
+        widget.paths[_index],
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _index++);
+          });
+          return const SizedBox.expand();
+        },
+      );
     }
     return Image.asset(
       widget.paths[_index],
@@ -948,6 +1000,212 @@ class _AssetImageWithFallbackState extends State<_AssetImageWithFallback> {
         });
         return const SizedBox(width: 48, height: 48);
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SproutFeelingCard
+// Sprout-only: animated feeling face that fills the card. Label is hidden by
+// default and spoken aloud on first tap; selection fires after the label fades.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SproutFeelingCard extends StatefulWidget {
+  const _SproutFeelingCard({
+    required this.option,
+    required this.onConfirm,
+    required this.bandFolder,
+    required this.ageBand,
+  });
+
+  final _ChoiceOption option;
+  final VoidCallback onConfirm;
+  final String bandFolder;
+  final AgeBand ageBand;
+
+  @override
+  State<_SproutFeelingCard> createState() => _SproutFeelingCardState();
+}
+
+class _SproutFeelingCardState extends State<_SproutFeelingCard> {
+  bool _showLabel = false;
+  bool _tapped = false;
+  Timer? _hideTimer;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    if (_tapped) return; // prevent double-fire
+    // First tap: speak the name and briefly show the label.
+    AppTtsService.instance.speak(widget.option.label, rateScale: 0.8);
+    setState(() => _showLabel = true);
+    _hideTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (!mounted) return;
+      setState(() {
+        _showLabel = false;
+        _tapped = true;
+      });
+      // Confirm selection after label fades.
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) widget.onConfirm();
+      });
+    });
+  }
+
+  Widget _feelingImage() {
+    final lId = widget.option.value.toLowerCase();
+    return _TieredFeelingImage(
+      bandPath: AgeBandAssetResolver.feelingPath(widget.ageBand, lId),
+      genderedPath:
+          'assets/images/feelings/${widget.bandFolder}/$lId.png',
+      flatPath: 'assets/feelings_faces/$lId.png',
+      emoji: widget.option.emoji,
+      fillHeight: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: widget.option.label,
+      child: BounceOnTapWidget(
+        onTap: _handleTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: Colors.white24, width: 2),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Animated feeling face fills the card.
+                FeelingPulseWidget(
+                  feelingId: widget.option.value,
+                  child: _feelingImage(),
+                ),
+                // Label overlay — hidden until spoken aloud.
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: AnimatedOpacity(
+                    opacity: _showLabel ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 6, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(AppRadius.xl),
+                          bottomRight: Radius.circular(AppRadius.xl),
+                        ),
+                      ),
+                      child: Text(
+                        widget.option.label,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SproutCopingCard
+// Sprout-only: coping tool card with a technique-specific mini animation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SproutCopingCard extends StatelessWidget {
+  const _SproutCopingCard({
+    required this.option,
+    required this.onTap,
+    required this.fontFamily,
+  });
+
+  final _ChoiceOption option;
+  final VoidCallback onTap;
+  final String fontFamily;
+
+  Widget _animationForCoping() {
+    final v = option.value.toLowerCase();
+    if (v.contains('breath') || v.contains('dragon') || v.contains('breathe')) {
+      return const DragonBreathAnimation(size: 52);
+    }
+    if (v.contains('shake') || v.contains('wiggle') || v.contains('jump')) {
+      return WiggleWidget(
+        repeat: true,
+        angle: 0.12,
+        child: Text(option.emoji, style: const TextStyle(fontSize: 44)),
+      );
+    }
+    if (v.contains('count')) {
+      return const CountToFiveAnimation(size: 48);
+    }
+    // Default: gentle pulse on emoji.
+    return FeelingPulseWidget(
+      feelingId: 'happy',
+      child: Text(option.emoji, style: const TextStyle(fontSize: 44)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: option.label,
+      child: BounceOnTapWidget(
+        onTap: () {
+          AppTtsService.instance.speak(option.label, rateScale: 0.8);
+          onTap();
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: Colors.white24, width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _animationForCoping(),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.getFont(
+                    fontFamily,
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
