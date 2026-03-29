@@ -64,6 +64,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Speak welcome immediately — don't block behind mic permission dialog.
+    unawaited(_speak('Tap the star to start your adventure!'));
     _initVoice();
     // Auto-advance from title to name after 2.5 s (tap also advances).
     _titleTimer = Timer(const Duration(milliseconds: 2500), () {
@@ -75,10 +77,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   Future<void> _initVoice() async {
     _speechEnabled = await _speech.initialize();
-    if (mounted) {
-      setState(() {});
-      if (_step == 0) unawaited(_speak('Tap the star to start your adventure!'));
-    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _speak(String text, {bool awaitCompletion = false}) async {

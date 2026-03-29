@@ -30,6 +30,9 @@ class ScenarioCard {
   // than the adult mature framing, less whimsical than the young framing.
   // When null, falls back to matureTitle.
   final String? creatorTitle;
+  // Age-appropriate alternative for adult band (ages 18+) — existential/philosophical framing.
+  // When null, falls back to matureTitle.
+  final String? adultTitle;
   final bool featured; // Pinned at the top of scenario selection
   // Sprout-band (ages 2-5) specific tile image, displayed instead of the
   // general illustration when the child is in the sprout band.
@@ -64,6 +67,7 @@ class ScenarioCard {
     this.matureConflictHook,
     this.matureWorldBible,
     this.creatorTitle,
+    this.adultTitle,
     this.sproutIllustration,
     this.youngBandSceneId,
     this.olderBandSceneId,
@@ -77,6 +81,8 @@ class ScenarioCard {
     if (age <= 8 && youngTitle != null) return youngTitle!;
     // Creator band (ages 12-14) gets an identity-focused framing when available.
     if (age >= 12 && age <= 14 && creatorTitle != null) return creatorTitle!;
+    // Adult band (ages 18+) gets existential framing when available.
+    if (age >= 18 && adultTitle != null) return adultTitle!;
     // Ages 12+ get the mature title if defined; Adventurer (9-11) uses standard title.
     if (age >= 12 && matureTitle != null) return matureTitle!;
     return title;
@@ -118,8 +124,9 @@ class ScenarioCard {
         // Creator band (12-14) gets identity-focused framing; falls back to matureTitle.
         return creatorTitle ?? matureTitle ?? title;
       case AgeBand.adolescent:
-      case AgeBand.adult:
         return matureTitle ?? title;
+      case AgeBand.adult:
+        return adultTitle ?? matureTitle ?? title;
     }
   }
 
@@ -171,8 +178,8 @@ class ScenarioData {
           'The timeline is fracturing—if you don\'t stabilize it, both worlds collapse into eternal winter.',
       matureWorldBible:
           'An ancient nexus chamber with four temporal gates, each a stable wormhole to a pocket dimension locked in perpetual season. The Chronokeeper, an ageless entity bound to a celestial orrery, regulates the energy exchange between realms. Each dimension has evolved its own civilisation adapted to eternal climate — the Winterhold with its ice-forged architecture, the Summerlands with solar-powered cities. Temporal physics: objects carried between gates retain their native time-signature, creating paradox-fields that must be resolved or they cascade into reality tears.',
-      // Mystery/adventure scenario — the standard title works for 12-14; no distinct framing needed.
-      creatorTitle: null,
+      creatorTitle: "The Door You're Afraid to Open",
+      adultTitle: "Doors We Can't Reopen",
       sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
       youngBandSceneId: 'star_village',
       olderBandSceneId: 'ruined_citadel',
@@ -207,8 +214,8 @@ class ScenarioData {
           'The alpha dragon demands tribute or annihilation. You have one chance to negotiate.',
       matureWorldBible:
           'A volcanic caldera housing the last dragon colony — a complex society with castes, customs, and a code of honour older than human civilisation. The dragons range from hatchling-sized to leviathan elders who remember the world before humans. Their lair is an architectural marvel: obsidian halls, magma forges, memory-crystal archives containing millennia of draconic history. Dragon politics are ruthless but fair — disputes are settled through riddle-contests or aerial trials. The volcano itself is alive, a symbiotic entity the dragons tend like a garden. Outsiders must prove worth through a Trial of Three: wit, courage, and compassion.',
-      // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
-      creatorTitle: null,
+      creatorTitle: 'What Wakes the Fire Inside',
+      adultTitle: 'The Weight of Old Fire',
       sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'tidal_shrine',
@@ -243,8 +250,7 @@ class ScenarioData {
           'A parasitic darkness is consuming the light. Track it to its source before it spreads.',
       matureWorldBible:
           'A closed-canopy megaforest where bioluminescence has replaced photosynthesis as the primary energy cycle. The ecosystem runs on light-exchange — organisms trade luminous energy through root networks and airborne spores. The Nexus Tree, a kilometres-wide neural hub, processes the forest\'s collective consciousness. Apex predators are shadow-stalkers — creatures that absorb light rather than emit it, creating zones of absolute darkness. The jungle\'s whisper-network carries data like a biological internet. Human-equivalent intelligence exists in the Elder Groves — collectives of ancient trees that debate, remember, and scheme.',
-      // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
-      creatorTitle: null,
+      creatorTitle: 'The Part of You That Glows',
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
@@ -279,8 +285,8 @@ class ScenarioData {
           'Someone\'s nightmare is echoing through the caves, manifesting as something real.',
       matureWorldBible:
           'A vast subterranean crystal network where sound frequencies interact with crystalline structures to manipulate matter. The caverns operate on resonance physics — specific tonal frequencies unlock passages, reshape walls, or summon stored memories from crystal archives. The Echo Sovereign is an ancient AI-like consciousness distributed across the crystal lattice, cataloguing every sound ever uttered underground. The deeper you go, the more the crystals respond to thought rather than voice, eventually manifesting emotions as tangible constructs. This is both powerful and dangerous — uncontrolled fear creates shadow-creatures, while focused calm can reshape the caverns themselves.',
-      // The matureTitle angle (emotions manifesting as real things) resonates well with 12-14.
       creatorTitle: 'The Echo Inside',
+      adultTitle: 'What Echoes Back',
       sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.png',
       youngBandSceneId: 'ocean_depths',
       olderBandSceneId: 'deep_archive',
@@ -351,8 +357,8 @@ class ScenarioData {
           'The Void is sentient, and it wants to consume everything. You\'re the last line of defense.',
       matureWorldBible:
           'A dimension where perception literally shapes reality — colour, sound, and texture are manifestations of collective consciousness. The Entropy (called "the Eraser" by younger inhabitants) is a natural force of creative decay, accelerated by despair and apathy. As regions lose colour, they don\'t just go grey — they lose dimensional complexity, flattening into 2D, then 1D, then nothing. Resistance comes through authentic creative expression, not just art but genuine emotional honesty. The Chromatists are a resistance movement who\'ve learned to weaponise creativity, but they\'re fractured by debate: fight the Entropy or accept it as a natural cycle? The hero must navigate both the external threat and the philosophical divide. THE JELLO ROAD: The primary artery of this realm is the Chromatic Causeway — a road paved in solid pigment-gelatin that shifts state with the weather. Dry: firm and springy, each footfall sending up a small chromatic ripple. Rain: instantly frictionless, a mirror-smooth slide that moves people whether they want to move or not. Post-rain: a brief adhesive window where the surface grips everything touching it — creatures, objects, secrets — before releasing as it sets. The Causeway is both infrastructure and metaphor: the Chromatists say the road reflects the realm\'s emotional state. A sticky road means something is holding on. A sliding road means something is out of control. A bouncy road means the world is still alive.',
-      // Identity resonance: the idea that apathy erases your world maps well to 12-14 self-expression themes.
       creatorTitle: 'When Everything Fades',
+      adultTitle: 'When Meaning Dissolves',
       sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.png',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'ruined_citadel',
@@ -385,8 +391,8 @@ class ScenarioData {
           'The group seems tight-knit and you\'re the outsider. How do you find your way in?',
       matureWorldBible:
           'A realistic school or community setting — hallways, lunch tables, after-school hangouts. Social groups are already established with their own codes, jokes, and history. The hero is new or newly alone, reading the room and looking for an in. No magic here — just the real, raw mechanics of social navigation: finding common ground, risking rejection, learning that vulnerability is strength. The "quest" is internal: overcoming the voice that says "they don\'t want you here" and finding the courage to show up authentically. Success isn\'t instant popularity — it\'s one real conversation, one genuine laugh, one person who says "sit with us."',
-      // 12-14: The fear of rejection is acutely personal at this age — more specific than "brave."
       creatorTitle: 'Showing Up',
+      adultTitle: 'The Cost of Showing Up',
     ),
     ScenarioCard(
       id: 'standing_tall',
@@ -415,8 +421,8 @@ class ScenarioData {
           'They\'re testing you in front of everyone. Walk away or face them down?',
       matureWorldBible:
           'A realistic school setting where social aggression takes many forms — public humiliation, exclusion, rumour-spreading, or direct confrontation. The story explores the internal battle: the urge to retaliate vs. the strength of composure, the fear of being seen as weak vs. the courage of walking away, the temptation to become what you hate. No magical solutions — the hero navigates with real strategies: documenting incidents, building alliances, setting firm boundaries, knowing when to involve adults. The "victory" is nuanced: the bully may not transform, but the hero reclaims their power and self-respect.',
-      // 12-14: Not just conflict, but identity under pressure — who you are when tested.
       creatorTitle: 'Who You Are Under Pressure',
+      adultTitle: 'Holding the Line',
     ),
     ScenarioCard(
       id: 'big_feelings_quest',
@@ -446,8 +452,8 @@ class ScenarioData {
           'The pressure is building and you\'re about to snap. How do you keep it together?',
       matureWorldBible:
           'A psychological landscape rendered as a realistic internal world — the hero navigates their own emotional architecture. Anxiety manifests as a labyrinth with walls that close in; anger as a pressure cooker reaching critical; sadness as gravity that makes every step exhausting. No cute metaphors — the feelings are raw and recognisable. The hero learns evidence-based coping techniques woven naturally into the narrative: cognitive reframing, grounding (5-4-3-2-1 senses), emotional regulation through physical movement, and the power of naming what you feel. The "calm centre" isn\'t happiness — it\'s equanimity, the ability to hold difficult emotions without being controlled by them. The story validates that struggling is normal and seeking help is strength.',
-      // 12-14: Feelings are intense and confusing at this age — framing is personal, not clinical.
       creatorTitle: 'The Feeling That Won\'t Let Go',
+      adultTitle: 'Sitting With It',
     ),
     ScenarioCard(
       id: 'change_is_coming',
@@ -477,8 +483,8 @@ class ScenarioData {
           'New school, new rules, new people. Do you reinvent yourself or stay true to who you were?',
       matureWorldBible:
           'A grounded, realistic story about displacement — new city, new school, zero social capital. The hero grapples with identity: the freedom and terror of being unknown. Do you perform a new version of yourself or risk showing the real one? The old life exists through phone screens and fading group chats that slowly go quiet. The new environment has its own culture, slang, and social hierarchies to decode. No instant fixes — the story follows the slow, authentic process of planting roots: the first awkward lunch alone, the first genuine conversation, the first time the new place feels less foreign. The message: home isn\'t a place, it\'s a feeling you rebuild.',
-      // 12-14: Change hits identity at its core at this age — the old self vs. who you're becoming.
       creatorTitle: 'Leaving the Person You Were',
+      adultTitle: 'Starting Over',
     ),
     ScenarioCard(
       id: 'safe_space',
@@ -535,8 +541,7 @@ class ScenarioData {
           'The evidence points to someone you trust. Do you follow the facts wherever they lead?',
       matureWorldBible:
           'A morally complex mystery where the solution is uncomfortable. The case involves real stakes — reputation, relationships, someone\'s future. The hero must weigh justice against loyalty, truth against kindness. Evidence contradicts itself; witnesses lie for understandable reasons. The investigation requires reading people as much as reading clues. The "villain" is sympathetic — driven by fear, love, or desperation rather than malice. Resolution is ambiguous: the hero discovers the full truth and must decide what to do with it, with no easy answer provided.',
-      // Mystery scenario — matureTitle works for 12-14; no distinct framing needed.
-      creatorTitle: null,
+      creatorTitle: "The Truth You Don't Want to Find",
     ),
     ScenarioCard(
       id: 'survival_island',

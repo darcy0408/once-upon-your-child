@@ -4,6 +4,8 @@
 // Common short prompts are pre-fetched into an in-memory cache at startup so
 // they play instantly with no API latency.
 
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -11,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/elevenlabs_voice.dart';
 import '../theme/age_band_theme.dart';
+import 'api_service_manager.dart';
 import 'tts_api_service.dart';
 import 'web_audio_player_stub.dart'
     if (dart.library.html) 'web_audio_player.dart';
@@ -19,7 +22,7 @@ import 'web_audio_player_stub.dart'
 const List<String> kWarmUpPhrases = [
   "Tap the star to start your adventure!",
   "Hi, what's your name?",
-  "How old are you? Tap your number!",
+  "How old are you? Tap your age!",
   "What is your hero's name? Tap the microphone to say it!",
   "Pick your hero look! Tap the picture you like.",
   "Tap your buddies to bring them along!",
@@ -66,15 +69,24 @@ class AppTtsService {
   final Map<String, Uint8List> _cache = {};
   bool _ready = false;
 
+  /// Resolves once the anonymous auth token has been obtained (or failed).
+  /// speak() awaits this before hitting /tts/synthesize so it never sends
+  /// a request without an Authorization header.
+  Future<void>? _authReady;
+
   /// Call once at app startup. Initialises the fallback TTS engine and
   /// kicks off background pre-fetching of [warmUpPhrases].
   Future<void> init({List<String> warmUpPhrases = kWarmUpPhrases}) async {
+    // Kick off auth token fetch synchronously (before any awaits) so that
+    // speak() can await _authReady regardless of when it is called.
+    _authReady = ApiServiceManager.authHeaders().then((_) {});
+
     await _fallback.setLanguage('en-US');
     await _fallback.setSpeechRate(0.42);
     await _fallback.setPitch(1.05);
     _ready = true;
-    // Fire-and-forget — don't block app startup
-    _prewarm(warmUpPhrases);
+    // Start prewarm only after auth is ready — all phrases need a valid token.
+    unawaited(_authReady!.then((_) => _prewarm(warmUpPhrases)));
   }
 
   Future<void> _prewarm(List<String> phrases) async {
@@ -107,6 +119,8 @@ class AppTtsService {
   }) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
+    // Wait for auth token before hitting the backend — avoids 401 → robotic fallback.
+    if (_authReady != null) await _authReady;
     try {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {

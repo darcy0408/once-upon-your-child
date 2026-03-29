@@ -58,39 +58,61 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
 
   // Explorer+ (7+) adds concrete body/social feelings
   static const _feelingsExplorer = [
-    _ChoiceOption(value: 'Bothered',    label: 'Bothered',   emoji: '😒', subtitle: 'Itty-bitty mad'),
-    _ChoiceOption(value: 'Bouncy',      label: 'Bouncy',     emoji: '🤸', subtitle: 'High energy fun'),
-    _ChoiceOption(value: 'Grossed_Out', label: 'Grossed Out',emoji: '🤢', subtitle: 'Yucky feeling'),
-    _ChoiceOption(value: 'Hurt_Mad',    label: 'Hurt-Mad',   emoji: '🤕', subtitle: 'Ouchy and angry'),
-    _ChoiceOption(value: 'Hyper',       label: 'Hyper',      emoji: '🌪️', subtitle: 'Super-duper fast'),
+    _ChoiceOption(value: 'Bothered',    label: 'Bothered',   emoji: '😒', subtitle: 'Itty-bitty mad',    matureLabel: 'Irritated',  matureSubtitle: 'Low-grade frustration'),
+    _ChoiceOption(value: 'Bouncy',      label: 'Bouncy',     emoji: '🤸', subtitle: 'High energy fun',   matureLabel: 'Energized',  matureSubtitle: 'Elevated energy'),
+    _ChoiceOption(value: 'Grossed_Out', label: 'Grossed Out',emoji: '🤢', subtitle: 'Yucky feeling',     matureLabel: 'Repulsed',   matureSubtitle: 'Visceral aversion'),
+    _ChoiceOption(value: 'Hurt_Mad',    label: 'Hurt-Mad',   emoji: '🤕', subtitle: 'Ouchy and angry',   matureLabel: 'Betrayed',   matureSubtitle: 'Hurt and angry at once'),
+    _ChoiceOption(value: 'Hyper',       label: 'Hyper',      emoji: '🌪️', subtitle: 'Super-duper fast',  matureLabel: 'Restless',   matureSubtitle: 'Difficulty settling'),
   ];
 
   // Adventurer+ (10+) adds reflective/situational feelings
   static const _feelingsAdventurer = [
-    _ChoiceOption(value: 'Gloomy',    label: 'Gloomy',    emoji: '☁️', subtitle: 'Raincloud feeling'),
+    _ChoiceOption(value: 'Gloomy',    label: 'Gloomy',    emoji: '☁️', subtitle: 'Raincloud feeling', matureLabel: 'Despondent',    matureSubtitle: 'Weighed down and withdrawn'),
     _ChoiceOption(value: 'Impatient', label: 'Impatient', emoji: '⏳', subtitle: 'Hard to wait'),
-    _ChoiceOption(value: 'Let_Down',  label: 'Let Down',  emoji: '😔', subtitle: 'Expected more'),
-    _ChoiceOption(value: 'Red_Faced', label: 'Red Faced', emoji: '😳', subtitle: 'Oopsie feeling'),
-    _ChoiceOption(value: 'Stuck',     label: 'Stuck',     emoji: '🧱', subtitle: 'Don\'t know how'),
+    _ChoiceOption(value: 'Let_Down',  label: 'Let Down',  emoji: '😔', subtitle: 'Expected more',      matureLabel: 'Disappointed',  matureSubtitle: 'Unmet expectations'),
+    _ChoiceOption(value: 'Red_Faced', label: 'Red Faced', emoji: '😳', subtitle: 'Oopsie feeling',     matureLabel: 'Embarrassed',   matureSubtitle: 'Self-conscious exposure'),
+    _ChoiceOption(value: 'Stuck',     label: 'Stuck',     emoji: '🧱', subtitle: 'Don\'t know how',    matureLabel: 'Blocked',       matureSubtitle: 'Unable to move forward'),
   ];
 
   // Creator+ (13+) adds self-awareness feelings
   static const _feelingsCreator = [
-    _ChoiceOption(value: 'What_If_y',        label: 'What-if-y', emoji: '❓', subtitle: 'Thinking a lot'),
-    _ChoiceOption(value: 'Wish_I_Could_Hide', label: 'Shy',       emoji: '🫣', subtitle: 'Peeking feeling'),
+    _ChoiceOption(value: 'What_If_y',        label: 'What-if-y', emoji: '❓', subtitle: 'Thinking a lot',   matureLabel: 'Anxious', matureSubtitle: 'Persistent worry'),
+    _ChoiceOption(value: 'Wish_I_Could_Hide', label: 'Shy',       emoji: '🫣', subtitle: 'Peeking feeling',  matureLabel: 'Exposed', matureSubtitle: 'Uncomfortable visibility'),
+  ];
+
+  // Adolescent+ (15+) adds nuanced emotional vocabulary
+  static const _feelingsAdolescent = [
+    _ChoiceOption(value: 'Grief',     label: 'Grief',     emoji: '🖤', subtitle: 'Deep loss that lingers'),
+    _ChoiceOption(value: 'Resentful', label: 'Resentful', emoji: '😤', subtitle: "Anger that won't fade"),
+    _ChoiceOption(value: 'Envious',   label: 'Envious',   emoji: '💚', subtitle: 'Wanting what others have'),
+    _ChoiceOption(value: 'Restless',  label: 'Restless',  emoji: '🌀', subtitle: "Can't settle down"),
+    _ChoiceOption(value: 'Hopeful',   label: 'Hopeful',   emoji: '🌅', subtitle: 'Quiet belief it gets better'),
+  ];
+
+  // Adult (18+) adds existential / philosophical emotional vocabulary
+  static const _feelingsAdult = [
+    _ChoiceOption(value: 'Melancholy',  label: 'Melancholy',  emoji: '🌧️', subtitle: 'Bittersweet ache'),
+    _ChoiceOption(value: 'Contentment', label: 'Contentment', emoji: '☀️', subtitle: 'Quiet satisfaction'),
+    _ChoiceOption(value: 'Indignation', label: 'Indignation', emoji: '⚡', subtitle: 'Righteous anger'),
+    _ChoiceOption(value: 'Dread',       label: 'Dread',       emoji: '🕳️', subtitle: "Weight of what's coming"),
+    _ChoiceOption(value: 'Anticipation',label: 'Anticipation',emoji: '⏳', subtitle: 'Expectant tension'),
   ];
 
   /// Returns the age-appropriate feelings list for the given band.
-  /// Sprout: 8 | Explorer: 13 | Adventurer: 18 | Creator+: 20
+  /// Sprout: 8 | Explorer: 13 | Adventurer: 18 | Creator: 20 | Adolescent: 25 | Adult: 30
   static List<_ChoiceOption> _feelingsForBand(AgeBand band) {
-    const explorer   = [..._feelingsCore, ..._feelingsExplorer];
-    const adventurer = [...explorer, ..._feelingsAdventurer];
-    const creator    = [...adventurer, ..._feelingsCreator];
+    const explorer    = [..._feelingsCore, ..._feelingsExplorer];
+    const adventurer  = [...explorer, ..._feelingsAdventurer];
+    const creator     = [...adventurer, ..._feelingsCreator];
+    const adolescent  = [...creator, ..._feelingsAdolescent];
+    const adult       = [...adolescent, ..._feelingsAdult];
     return switch (band) {
-      AgeBand.sprout     => _feelingsCore,
-      AgeBand.explorer   => explorer,
-      AgeBand.adventurer => adventurer,
-      _                  => creator,
+      AgeBand.sprout      => _feelingsCore,
+      AgeBand.explorer    => explorer,
+      AgeBand.adventurer  => adventurer,
+      AgeBand.creator     => creator,
+      AgeBand.adolescent  => adolescent,
+      AgeBand.adult       => adult,
     };
   }
 
@@ -195,6 +217,56 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Big group', label: 'Big group', emoji: '👨‍👩‍👧‍👦'),
       _ChoiceOption(value: 'Center stage', label: 'Stage', emoji: '🎭'),
     ],
+    'Grief': [
+      _ChoiceOption(value: 'Someone left', label: 'Someone left', emoji: '🚪'),
+      _ChoiceOption(value: 'Something ended', label: 'Something ended', emoji: '🕯️'),
+      _ChoiceOption(value: 'Unexpected loss', label: 'Unexpected loss', emoji: '💔'),
+    ],
+    'Resentful': [
+      _ChoiceOption(value: 'Treated unfairly', label: 'Unfair treatment', emoji: '⚖️'),
+      _ChoiceOption(value: 'Old wound reopened', label: 'Old wound', emoji: '🔁'),
+      _ChoiceOption(value: 'Promises broken', label: 'Broken promise', emoji: '🤝'),
+    ],
+    'Envious': [
+      _ChoiceOption(value: "Someone has what I want", label: "They have it", emoji: '💚'),
+      _ChoiceOption(value: 'Comparing myself', label: 'Comparing', emoji: '⚖️'),
+      _ChoiceOption(value: 'Feeling behind', label: 'Feeling behind', emoji: '🐢'),
+    ],
+    'Restless': [
+      _ChoiceOption(value: 'Nothing feels right', label: 'Nothing fits', emoji: '🌀'),
+      _ChoiceOption(value: 'Too much stillness', label: 'Too still', emoji: '⏸️'),
+      _ChoiceOption(value: 'Big decision ahead', label: 'Big decision', emoji: '🔀'),
+    ],
+    'Hopeful': [
+      _ChoiceOption(value: 'Things may improve', label: 'Could improve', emoji: '🌱'),
+      _ChoiceOption(value: 'Someone showed up', label: 'Someone helped', emoji: '🤝'),
+      _ChoiceOption(value: 'Small sign of change', label: 'Small sign', emoji: '🌅'),
+    ],
+    'Melancholy': [
+      _ChoiceOption(value: 'Nostalgia', label: 'Nostalgia', emoji: '📷'),
+      _ChoiceOption(value: 'Time passing', label: 'Time passing', emoji: '⏳'),
+      _ChoiceOption(value: 'Beauty that hurts', label: 'Beautiful ache', emoji: '🌸'),
+    ],
+    'Contentment': [
+      _ChoiceOption(value: 'Nothing to fix', label: 'Nothing to fix', emoji: '☀️'),
+      _ChoiceOption(value: 'Present moment', label: 'Right now', emoji: '🍃'),
+      _ChoiceOption(value: 'Enough is enough', label: 'Enough', emoji: '🫶'),
+    ],
+    'Indignation': [
+      _ChoiceOption(value: 'Injustice witnessed', label: 'Injustice', emoji: '⚡'),
+      _ChoiceOption(value: 'Values were crossed', label: 'Values crossed', emoji: '🔥'),
+      _ChoiceOption(value: 'Truth was ignored', label: 'Ignored truth', emoji: '🙈'),
+    ],
+    'Dread': [
+      _ChoiceOption(value: 'Known outcome looming', label: 'Looming outcome', emoji: '🕳️'),
+      _ChoiceOption(value: 'Repeating pattern', label: 'Here again', emoji: '🔁'),
+      _ChoiceOption(value: 'No way to prepare', label: 'Can\'t prepare', emoji: '❓'),
+    ],
+    'Anticipation': [
+      _ChoiceOption(value: 'Something is coming', label: 'Coming soon', emoji: '⏳'),
+      _ChoiceOption(value: 'Uncertain outcome', label: 'Uncertain', emoji: '🎲'),
+      _ChoiceOption(value: 'Long wait ending', label: 'Wait ending', emoji: '🏁'),
+    ],
   };
 
   static const _bodyOptions = {
@@ -297,6 +369,56 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Hiding face', label: 'Hiding face', emoji: '🙈'),
       _ChoiceOption(value: 'Quiet voice', label: 'Quiet voice', emoji: '🤫'),
       _ChoiceOption(value: 'Small body', label: 'Small body', emoji: '🐭'),
+    ],
+    'Grief': [
+      _ChoiceOption(value: 'Hollow chest', label: 'Hollow chest', emoji: '🫀'),
+      _ChoiceOption(value: 'Slow breathing', label: 'Slow breathing', emoji: '🌬️'),
+      _ChoiceOption(value: 'Waves of tears', label: 'Waves of tears', emoji: '💧'),
+    ],
+    'Resentful': [
+      _ChoiceOption(value: 'Tight jaw', label: 'Tight jaw', emoji: '😤'),
+      _ChoiceOption(value: 'Heat in chest', label: 'Heat in chest', emoji: '🔥'),
+      _ChoiceOption(value: 'Withdrawn posture', label: 'Withdrawn', emoji: '🚪'),
+    ],
+    'Envious': [
+      _ChoiceOption(value: 'Sinking stomach', label: 'Sinking stomach', emoji: '🫃'),
+      _ChoiceOption(value: 'Looking away', label: 'Looking away', emoji: '👀'),
+      _ChoiceOption(value: 'Tight throat', label: 'Tight throat', emoji: '😶'),
+    ],
+    'Restless': [
+      _ChoiceOption(value: 'Can\'t sit still', label: "Can't sit still", emoji: '🪑'),
+      _ChoiceOption(value: 'Buzzing energy', label: 'Buzzing', emoji: '⚡'),
+      _ChoiceOption(value: 'Racing thoughts', label: 'Racing thoughts', emoji: '🧠'),
+    ],
+    'Hopeful': [
+      _ChoiceOption(value: 'Lighter chest', label: 'Lighter chest', emoji: '🌤️'),
+      _ChoiceOption(value: 'Slow exhale', label: 'Slow exhale', emoji: '🌬️'),
+      _ChoiceOption(value: 'Eyes looking up', label: 'Eyes up', emoji: '👆'),
+    ],
+    'Melancholy': [
+      _ChoiceOption(value: 'Slow heartbeat', label: 'Slow heart', emoji: '💓'),
+      _ChoiceOption(value: 'Distant gaze', label: 'Distant gaze', emoji: '🌫️'),
+      _ChoiceOption(value: 'Heavy limbs', label: 'Heavy limbs', emoji: '🧍'),
+    ],
+    'Contentment': [
+      _ChoiceOption(value: 'Steady breath', label: 'Steady breath', emoji: '🌬️'),
+      _ChoiceOption(value: 'Warm torso', label: 'Warm torso', emoji: '☀️'),
+      _ChoiceOption(value: 'Relaxed shoulders', label: 'Relaxed shoulders', emoji: '🧘'),
+    ],
+    'Indignation': [
+      _ChoiceOption(value: 'Upright posture', label: 'Standing tall', emoji: '🧍'),
+      _ChoiceOption(value: 'Firm voice', label: 'Firm voice', emoji: '🗣️'),
+      _ChoiceOption(value: 'Flushed face', label: 'Flushed face', emoji: '😠'),
+    ],
+    'Dread': [
+      _ChoiceOption(value: 'Weighted chest', label: 'Weighted chest', emoji: '🏋️'),
+      _ChoiceOption(value: 'Slow movements', label: 'Moving slowly', emoji: '🐌'),
+      _ChoiceOption(value: 'Shallow breath', label: 'Shallow breath', emoji: '😮‍💨'),
+    ],
+    'Anticipation': [
+      _ChoiceOption(value: 'Held breath', label: 'Held breath', emoji: '😮‍💨'),
+      _ChoiceOption(value: 'Heightened senses', label: 'Heightened senses', emoji: '👁️'),
+      _ChoiceOption(value: 'Restless hands', label: 'Restless hands', emoji: '🤲'),
     ],
   };
 
@@ -404,6 +526,56 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Hold a hand', label: 'Hold hand', emoji: '🤝'),
       _ChoiceOption(value: 'Take a breath', label: 'Take breath', emoji: '🌬️'),
       _ChoiceOption(value: 'Gentle wave', label: 'Gentle wave', emoji: '👋'),
+    ],
+    'Grief': [
+      _ChoiceOption(value: 'Let yourself feel it', label: 'Feel it fully', emoji: '🖤'),
+      _ChoiceOption(value: 'Talk to someone safe', label: 'Talk to someone', emoji: '🗣️'),
+      _ChoiceOption(value: 'Write or draw it out', label: 'Write it out', emoji: '✍️'),
+    ],
+    'Resentful': [
+      _ChoiceOption(value: 'Name what was unfair', label: 'Name the unfairness', emoji: '⚖️'),
+      _ChoiceOption(value: 'Write a letter you don\'t send', label: "Don't-send letter", emoji: '✉️'),
+      _ChoiceOption(value: 'Physical release', label: 'Physical release', emoji: '🏃'),
+    ],
+    'Envious': [
+      _ChoiceOption(value: 'Notice what you have', label: 'Notice your own', emoji: '🔍'),
+      _ChoiceOption(value: 'Let it be information', label: 'Use it as data', emoji: '📊'),
+      _ChoiceOption(value: 'Talk about it honestly', label: 'Honest talk', emoji: '🗣️'),
+    ],
+    'Restless': [
+      _ChoiceOption(value: 'Move your body', label: 'Move your body', emoji: '🏃'),
+      _ChoiceOption(value: 'Narrow your focus', label: 'Narrow focus', emoji: '🎯'),
+      _ChoiceOption(value: 'Write it down', label: 'Write it down', emoji: '📝'),
+    ],
+    'Hopeful': [
+      _ChoiceOption(value: 'Stay with it', label: 'Stay with it', emoji: '🌅'),
+      _ChoiceOption(value: 'Take one small step', label: 'One small step', emoji: '👣'),
+      _ChoiceOption(value: 'Share the feeling', label: 'Share it', emoji: '💬'),
+    ],
+    'Melancholy': [
+      _ChoiceOption(value: 'Sit with it a while', label: 'Sit with it', emoji: '🌧️'),
+      _ChoiceOption(value: 'Create something', label: 'Make something', emoji: '🎨'),
+      _ChoiceOption(value: 'Reach out gently', label: 'Reach out gently', emoji: '🤝'),
+    ],
+    'Contentment': [
+      _ChoiceOption(value: 'Savour the moment', label: 'Savour it', emoji: '☀️'),
+      _ChoiceOption(value: 'Express gratitude', label: 'Express gratitude', emoji: '🙏'),
+      _ChoiceOption(value: 'Share it with someone', label: 'Share it', emoji: '💛'),
+    ],
+    'Indignation': [
+      _ChoiceOption(value: 'Speak the truth clearly', label: 'Speak clearly', emoji: '🗣️'),
+      _ChoiceOption(value: 'Channel it into action', label: 'Act on it', emoji: '⚡'),
+      _ChoiceOption(value: 'Write your perspective', label: 'Write it down', emoji: '✍️'),
+    ],
+    'Dread': [
+      _ChoiceOption(value: 'Name the specific fear', label: 'Name the fear', emoji: '🔦'),
+      _ChoiceOption(value: 'Stay in the present', label: 'Stay present', emoji: '🍃'),
+      _ChoiceOption(value: 'Talk to someone trusted', label: 'Trusted person', emoji: '🤝'),
+    ],
+    'Anticipation': [
+      _ChoiceOption(value: 'Breathe and ground yourself', label: 'Ground yourself', emoji: '🌬️'),
+      _ChoiceOption(value: 'Prepare what you can', label: 'Prepare', emoji: '📋'),
+      _ChoiceOption(value: 'Lean into the uncertainty', label: 'Lean in', emoji: '🌊'),
     ],
   };
 
@@ -632,16 +804,40 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
   final String fontFamily;
   final AgeBand? ageBand;
 
-  static bool _useAgeBandAssets(AgeBand band) =>
-      band == AgeBand.sprout ||
-      band == AgeBand.explorer ||
-      band == AgeBand.adventurer;
+  /// True for Creator+ bands (age 13+), where mature labels are shown.
+  static bool _isMatureBand(AgeBand? band) =>
+      band != null &&
+      (band == AgeBand.creator ||
+       band == AgeBand.adolescent ||
+       band == AgeBand.adult);
+
+  /// Resolve feeling face image in order:
+  ///   1. age_band_assets/{band}/feelings/{id}.png  (per-band artwork)
+  ///   2. assets/images/feelings/{bandFolder}/{id}.png  (gendered folders)
+  ///   3. assets/feelings_faces/{id}.png  (flat library — 100+ faces)
+  ///   4. emoji fallback
+  Widget _feelingImage(String id) {
+    final lId = id.toLowerCase();
+    final bandFolder = this.bandFolder;
+    return _TieredFeelingImage(
+      bandPath: ageBand != null
+          ? AgeBandAssetResolver.feelingPath(ageBand!, lId)
+          : null,
+      genderedPath: 'assets/images/feelings/$bandFolder/$lId.png',
+      flatPath: 'assets/feelings_faces/$lId.png',
+      emoji: option.emoji,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final mature = _isMatureBand(ageBand);
+    final displayLabel = mature ? (option.matureLabel ?? option.label) : option.label;
+    final displaySubtitle = mature ? (option.matureSubtitle ?? option.subtitle) : option.subtitle;
+
     return Semantics(
       button: true,
-      label: option.label,
+      label: displayLabel,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -659,25 +855,12 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (isFirstStep)
-                    Image.asset(
-                      // Younger bands (sprout/explorer/adventurer) use the new
-                      // per-band artwork from age_band_assets/. Creator+ keeps
-                      // the gendered subfolders in assets/images/feelings/.
-                      ageBand != null && _useAgeBandAssets(ageBand!)
-                          ? AgeBandAssetResolver.feelingPath(
-                              ageBand!,
-                              option.value.toLowerCase(),
-                            )
-                          : 'assets/images/feelings/$bandFolder/${option.value.toLowerCase()}.png',
-                      width: 48,
-                      height: 48,
-                      errorBuilder: (_, __, ___) => Text(option.emoji, style: const TextStyle(fontSize: 40)),
-                    )
+                    _feelingImage(option.value)
                   else
                     Text(option.emoji, style: const TextStyle(fontSize: 40)),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    option.label,
+                    displayLabel,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.getFont(
                       fontFamily,
@@ -686,10 +869,10 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (option.subtitle != null) ...[
+                  if (displaySubtitle != null) ...[
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      option.subtitle!,
+                      displaySubtitle,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.getFont(
                         fontFamily,
@@ -708,16 +891,83 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
   }
 }
 
+/// Tries up to three asset paths in order, falling back to an emoji on all failures.
+class _TieredFeelingImage extends StatelessWidget {
+  const _TieredFeelingImage({
+    required this.bandPath,
+    required this.genderedPath,
+    required this.flatPath,
+    required this.emoji,
+  });
+
+  final String? bandPath;
+  final String genderedPath;
+  final String flatPath;
+  final String emoji;
+
+  @override
+  Widget build(BuildContext context) {
+    final paths = [
+      if (bandPath != null) bandPath!,
+      genderedPath,
+      flatPath,
+    ];
+    return _AssetImageWithFallback(
+      paths: paths,
+      emoji: emoji,
+    );
+  }
+}
+
+/// Iterates through [paths] in order; shows the first that loads.
+/// Falls back to [emoji] Text if none load.
+class _AssetImageWithFallback extends StatefulWidget {
+  const _AssetImageWithFallback({required this.paths, required this.emoji});
+  final List<String> paths;
+  final String emoji;
+
+  @override
+  State<_AssetImageWithFallback> createState() => _AssetImageWithFallbackState();
+}
+
+class _AssetImageWithFallbackState extends State<_AssetImageWithFallback> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_index >= widget.paths.length) {
+      return Text(widget.emoji, style: const TextStyle(fontSize: 40));
+    }
+    return Image.asset(
+      widget.paths[_index],
+      width: 48,
+      height: 48,
+      errorBuilder: (_, __, ___) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _index++);
+        });
+        return const SizedBox(width: 48, height: 48);
+      },
+    );
+  }
+}
+
 class _ChoiceOption {
   const _ChoiceOption({
     required this.value,
     required this.label,
     required this.emoji,
     this.subtitle,
+    this.matureLabel,
+    this.matureSubtitle,
   });
 
   final String value;
   final String label;
   final String emoji;
   final String? subtitle;
+  /// Shown instead of [label] for Creator+ bands (ages 13+).
+  final String? matureLabel;
+  /// Shown instead of [subtitle] for Creator+ bands (ages 13+).
+  final String? matureSubtitle;
 }

@@ -1816,6 +1816,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ImageModeOrb(
                   modeType: 'tales',
                   label: 'Story Quest',
+                  subtitle: 'A story with pictures',
                   isActive: selectedMode == 'tales',
                   onTap: () => setState(() => setStoryMode('tales')),
                   primaryColor: const Color(0xFFAA88FF),
@@ -1825,6 +1826,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ImageModeOrb(
                   modeType: 'reading',
                   label: 'Listen & Learn',
+                  subtitle: 'Easy words to read along',
                   isActive: selectedMode == 'reading',
                   onTap: () => setState(() => setStoryMode('reading')),
                   primaryColor: const Color(0xFFB88AFF),
@@ -1841,6 +1843,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ImageModeOrb(
                       modeType: 'tales',
                       label: isCreator ? 'Story' : 'Story Quest',
+                      subtitle: isCreator ? 'Illustrated narrative' : 'An illustrated adventure',
                       isActive: selectedMode == 'tales',
                       onTap: () => setState(() => setStoryMode('tales')),
                       primaryColor: const Color(0xFFAA88FF),
@@ -1850,6 +1853,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ImageModeOrb(
                       modeType: 'rhyme',
                       label: data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
+                      subtitle: isCreator ? 'Verse and rhythm' : 'A story in rhymes',
                       isActive: selectedMode == 'rhyme',
                       onTap: () => setState(() => setStoryMode('rhyme')),
                       primaryColor: const Color(0xFF00D4DD),
@@ -1864,6 +1868,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ImageModeOrb(
                       modeType: 'pickpath',
                       label: isCreator ? 'Choose Your Path' : 'Pick a Path',
+                      subtitle: isCreator ? 'Branch the narrative' : 'You choose what happens!',
                       isActive: selectedMode == 'pickpath',
                       onTap: () => setState(() => setStoryMode('pickpath')),
                       primaryColor: const Color(0xFF9E6CFF),
@@ -1874,6 +1879,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       ImageModeOrb(
                         modeType: 'reading',
                         label: _getReadingLabel(band.band),
+                        subtitle: 'Chapter-style reading',
                         isActive: selectedMode == 'reading',
                         onTap: () => setState(() => setStoryMode('reading')),
                         primaryColor: const Color(0xFFB88AFF),
@@ -3238,7 +3244,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   .toUpperCase()),
               selected: isSelected,
               onSelected: (_) => _selectArchetype(archetype),
-              backgroundColor: Colors.white.withAlpha(10),
+              backgroundColor: Colors.white.withAlpha(20),
               selectedColor: const Color(0xFFFFD700).withAlpha(40),
               labelStyle: GoogleFonts.sourceSans3(
                 color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
@@ -3250,7 +3256,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 side: BorderSide(
                     color: isSelected
                         ? const Color(0xFFFFD700)
-                        : Colors.white.withAlpha(10)),
+                        : Colors.white.withAlpha(60)),
               ),
               showCheckmark: false,
             );
@@ -3668,18 +3674,19 @@ class _CompanionData {
   final String name;
   final String tagline;
   final String personality; // Sent to AI prompt so quirks stay consistent
-  /// Override image file extension (default '.jpg'). Sprout PNGs use '.png'.
-  final String imageSuffix;
+  /// Explicit asset path — bypasses the `_normal.jpg` convention.
+  /// Required for companions whose assets don't follow the standard naming.
+  final String? imagePathOverride;
   const _CompanionData({
     required this.id,
     required this.name,
     required this.tagline,
     this.personality = '',
-    this.imageSuffix = '.jpg',
+    this.imagePathOverride,
   });
 
   String get imagePath =>
-      'assets/images/companions/${id}_normal$imageSuffix';
+      imagePathOverride ?? 'assets/images/companions/${id}_normal.jpg';
 }
 
 /// Data carrier for a showcase orb slot.
@@ -3810,25 +3817,25 @@ const _sproutCompanions = [
     id: 'sprout/fluffy_dragon',
     name: 'Fluffy Dragon',
     tagline: 'Brave hugs and sparkly sneezes.',
-    imageSuffix: '.png',
+    imagePathOverride: 'assets/images/companions/sprout/fluffy_dragon.png',
   ),
   _CompanionData(
     id: 'sprout/magic_bunny',
     name: 'Magic Bunny',
     tagline: 'Boing! Your silly, soft best friend.',
-    imageSuffix: '.png',
+    imagePathOverride: 'assets/images/companions/sprout/magic_bunny.png',
   ),
   _CompanionData(
     id: 'sprout/shining_puppy',
     name: 'Shining Puppy',
     tagline: 'Glowy tail. Always there for you.',
-    imageSuffix: '.png',
+    imagePathOverride: 'assets/images/companions/sprout/shining_puppy.png',
   ),
   _CompanionData(
     id: 'sprout/robin',
     name: 'Robin',
     tagline: 'Tiny bird, very loud love.',
-    imageSuffix: '.png',
+    imagePathOverride: 'assets/images/companions/sprout/robin.png',
   ),
 ];
 

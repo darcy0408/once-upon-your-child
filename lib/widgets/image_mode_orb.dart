@@ -5,6 +5,7 @@ import 'magical_float.dart';
 class ImageModeOrb extends StatefulWidget {
   final String modeType; // 'tales', 'rhyme', 'reading', 'pickpath'
   final String label;
+  final String? subtitle;
   final bool isActive;
   final VoidCallback onTap;
   final Color primaryColor;
@@ -16,6 +17,7 @@ class ImageModeOrb extends StatefulWidget {
     required this.label,
     required this.isActive,
     required this.onTap,
+    this.subtitle,
     this.primaryColor = const Color(0xFFAA88FF),
     this.secondaryColor = const Color(0xFFFF88CC),
   });
@@ -77,15 +79,19 @@ class _ImageModeOrbState extends State<ImageModeOrb>
   Widget build(BuildContext context) {
     final glowColor = widget.primaryColor;
 
-    return MagicalFloat(
-      distance: 4.0,
-      duration: const Duration(seconds: 4),
-      delay: (widget.modeType.length * 100).toDouble(), // Pseudo-random offset
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: SizedBox(
-          width: 104,
-          child: Column(
+    // GestureDetector is outside MagicalFloat so the hit area stays fixed
+    // while only the visual content floats. This prevents "element not stable"
+    // tap failures caused by the animation constantly moving the touch target.
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: 104,
+        child: MagicalFloat(
+          distance: 4.0,
+          duration: const Duration(seconds: 4),
+          delay: (widget.modeType.length * 100).toDouble(), // Pseudo-random offset
+          child: IgnorePointer(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
@@ -149,37 +155,61 @@ class _ImageModeOrbState extends State<ImageModeOrb>
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 34,
-                child: Center(
-                  child: Text(
-                    widget.label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight:
-                          widget.isActive ? FontWeight.w800 : FontWeight.w600,
-                      fontSize: 14,
-                      height: 1.2,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          blurRadius: 4,
-                        ),
-                        if (widget.isActive)
+                height: widget.subtitle != null ? 52 : 34,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight:
+                            widget.isActive ? FontWeight.w800 : FontWeight.w600,
+                        fontSize: 14,
+                        height: 1.2,
+                        shadows: [
                           Shadow(
-                            color: glowColor.withValues(alpha: 0.55),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: 0.7),
+                            blurRadius: 4,
                           ),
-                      ],
+                          if (widget.isActive)
+                            Shadow(
+                              color: glowColor.withValues(alpha: 0.55),
+                              blurRadius: 8,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
+                    if (widget.subtitle != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        widget.subtitle!,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 11,
+                          height: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 3,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ),
       ),
     );
   }
