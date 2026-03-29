@@ -12,6 +12,7 @@ import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/magic_ear_button.dart';
 import '../../widgets/imagine_it_input.dart';
+import '../../widgets/age_band_badge.dart';
 import '../big_feelings_flow_screen.dart';
 
 const double _settingCardWidth = 220;
@@ -1025,7 +1026,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     // Sprout (≤5) and Explorer (6-8) only see Magical Worlds — Real-Life Heroes
     // are too abstract/heavy for under-9s.
     // Adults skip the Big Feelings Quest — it's designed for children.
-    // All bands: filter out scenarios with a minBand above the current band.
+    // All bands: filter out scenarios with a minBand above the current band;
+    // for young bands (≤8) keep them as aspirational locked teasers.
+    final lockedScenarios = (age <= 8)
+        ? _scenarios.where((s) =>
+            s.minBand != null && s.minBand!.index > currentBand.index).toList()
+        : <ScenarioCard>[];
+
     final visibleScenarios = _scenarios.where((s) {
       // Featured scenarios (e.g. "Imagine It") are always visible regardless of category.
       if (age <= 8 && s.category == 'Real-Life Heroes' && !s.featured) return false;
@@ -1094,6 +1101,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                       scenario: scenario,
                       isSelected: isSelected,
                       childAge: age,
+                      showAdventurerBadge: scenario.minBand != null &&
+                          currentBand.index >= scenario.minBand!.index,
+                      showMissionHook: currentBand.index >=
+                          AgeBand.adventurer.index,
                       onTap: scenario.id == 'big_feelings_quest'
                           ? _openFeelingsQuest
                           : () => _selectScenario(scenario.id),
@@ -1106,6 +1117,47 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         ),
       );
     });
+
+    // Locked scenario teasers — aspirational pull for young bands (≤8).
+    if (lockedScenarios.isNotEmpty) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Coming Soon For You',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary.withValues(alpha: 0.5),
+                      letterSpacing: 1.2,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                height: 320,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  itemCount: lockedScenarios.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: AppSpacing.md),
+                  itemBuilder: (context, index) => _ScenarioCardWidget(
+                    scenario: lockedScenarios[index],
+                    isSelected: false,
+                    childAge: age,
+                    isLocked: true,
+                    onTap: () {}, // non-interactive
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return sections;
   }
 }
@@ -1117,6 +1169,12 @@ class _ScenarioCardWidget extends StatelessWidget {
   final int childAge;
   final VoidCallback onTap;
   final bool isFeatured;
+  /// Scenario is above the user's band — show as a greyed-out teaser.
+  final bool isLocked;
+  /// User is in the qualifying band — show the "Adventurer Exclusive" badge.
+  final bool showAdventurerBadge;
+  /// User is Adventurer+; show the one-line conflict hook below the description.
+  final bool showMissionHook;
 
   const _ScenarioCardWidget({
     required this.scenario,
@@ -1125,6 +1183,9 @@ class _ScenarioCardWidget extends StatelessWidget {
     required this.onTap,
     this.isPreviewing = false,
     this.isFeatured = false,
+    this.isLocked = false,
+    this.showAdventurerBadge = false,
+    this.showMissionHook = false,
   });
 
   @override
@@ -1160,10 +1221,14 @@ class _ScenarioCardWidget extends StatelessWidget {
           ),
         );
 
-    return Semantics(
-      button: true,
+    Widget card = Semantics(
+      button: !isLocked,
       selected: isSelected,
-      label: isSprout ? title : '$title, $description',
+      label: isLocked
+          ? '$title — unlocks at age 9'
+          : isSprout
+              ? title
+              : '$title, $description',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -1324,10 +1389,70 @@ class _ScenarioCardWidget extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (showMissionHook) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        scenario.conflictHookForAge(childAge),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: isSelected
+                                  ? AppColors.textDark.withValues(alpha: 0.6)
+                                  : Colors.white.withValues(alpha: 0.65),
+                              fontStyle: FontStyle.italic,
+                            ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
         ),
       ),
     );
+
+    // Adventurer Exclusive badge — overlay on top-right corner.
+    if (showAdventurerBadge && scenario.minBand != null) {
+      card = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          card,
+          Positioned(
+            top: 8,
+            right: 8,
+            child: AgeBandBadge(minBand: scenario.minBand!),
+          ),
+        ],
+      );
+    }
+
+    // Locked teaser — greyed out with lock icon overlay.
+    if (isLocked) {
+      card = Stack(
+        children: [
+          Opacity(opacity: 0.45, child: card),
+          Positioned.fill(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_rounded,
+                      size: 32, color: Colors.white70),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Unlock at age 9+',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return card;
   }
 }
