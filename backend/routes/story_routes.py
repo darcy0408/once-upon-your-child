@@ -204,31 +204,39 @@ def _build_feelings_prompt_text(
     if story_guidance:
         lines.append(f"- Parent-guided story scaffolding: {story_guidance}")
 
-    lines.extend(
-        [
-            "",
-            "STORY RULES:",
+    try:
+        numeric_age = int(age)
+    except (TypeError, ValueError):
+        numeric_age = 5
+
+    lines.append("")
+    lines.append("STORY RULES:")
+
+    if numeric_age >= 15:
+        # Adolescent / Adult — mature emotional register
+        lines.extend([
+            f"1. Open with the feeling already present in the character's body or thoughts — not announced like a lesson.",
+            "2. Keep the stakes life-sized — real relationships, real consequences, real ambiguity.",
+            "3. Honour the feeling without rushing to resolve it; complexity and contradiction are valid.",
+            "4. Show the body clue somatically and specifically — not as a diagram but as lived experience.",
+            "5. The coping gesture is a starting point, not a solution; it may land imperfectly or only partially help.",
+            "6. End with integration, not resolution — the feeling can still be present at the close; a character who has simply named and held something difficult is enough.",
+            "7. Never moralise or summarise the emotional lesson. The story IS the lesson.",
+        ])
+    else:
+        lines.extend([
             f"1. Open by naming the feeling in the first lines, like: \"{opening_example}\"",
             "2. Keep the problem child-sized and concrete.",
             "3. Validate the feeling without shaming it or trying to erase it.",
             "4. Show the body clue early and naturally.",
             "5. Let the helper action change what happens next.",
             "6. If the hero makes a messy choice, include a gentle repair and reconnect moment.",
-        ]
-    )
-
-    try:
-        numeric_age = int(age)
-    except (TypeError, ValueError):
-        numeric_age = 5
-
-    if numeric_age <= 5:
-        lines.extend(
-            [
+        ])
+        if numeric_age <= 5:
+            lines.extend([
                 "7. Use very simple feeling words: mad, sad, scared, frustrated.",
                 "8. Use short concrete sentences and warm reassuring imagery only.",
-            ]
-        )
+            ])
 
     return "\n".join(lines)
 

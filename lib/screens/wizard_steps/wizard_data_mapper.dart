@@ -343,43 +343,71 @@ class WizardDataMapper {
 
   static String _emojiForFeeling(String feeling) {
     switch (feeling.toLowerCase()) {
-      case 'angry':
-        return '😠';
-      case 'sad':
-        return '😢';
-      case 'worried':
-        return '😟';
-      case 'scared':
-        return '😨';
-      case 'frustrated':
-        return '😤';
-      case 'embarrassed':
-        return '😳';
-      case 'excited':
-        return '🤩';
-      default:
-        return '😊';
+      case 'angry':         return '😠';
+      case 'sad':           return '😢';
+      case 'worried':       return '😟';
+      case 'scared':        return '😨';
+      case 'frustrated':    return '😤';
+      case 'embarrassed':   return '😳';
+      case 'excited':       return '🤩';
+      // Mature feelings — adolescent
+      case 'grief':         return '🖤';
+      case 'resentful':     return '😤';
+      case 'envious':       return '💚';
+      case 'restless':      return '🌀';
+      case 'hopeful':       return '🌅';
+      // Mature feelings — adult
+      case 'melancholy':    return '🌧️';
+      case 'contentment':   return '☀️';
+      case 'indignation':   return '⚡';
+      case 'dread':         return '🕳️';
+      case 'anticipation':  return '⏳';
+      // Mature aliases from younger feelings
+      case 'betrayed':      return '🤕';
+      case 'repulsed':      return '🤢';
+      case 'energized':     return '🤸';
+      case 'irritated':     return '😒';
+      case 'despondent':    return '☁️';
+      case 'disappointed':  return '😔';
+      case 'blocked':       return '🧱';
+      case 'anxious':       return '❓';
+      case 'exposed':       return '🫣';
+      default:              return '😊';
     }
   }
 
   static String _descriptionForFeeling(String feeling) {
     switch (feeling.toLowerCase()) {
-      case 'angry':
-        return 'Feeling really upset and full of big energy';
-      case 'sad':
-        return 'Feeling hurt, heavy, or like crying';
-      case 'worried':
-        return 'Feeling jumpy, unsure, or full of what-if thoughts';
-      case 'scared':
-        return 'Feeling worried, shaky, or unsure';
-      case 'frustrated':
-        return 'Feeling stuck when something is hard or not working';
-      case 'embarrassed':
-        return 'Feeling red-faced, awkward, or like you want to hide';
-      case 'excited':
-        return 'Feeling buzzy, bouncy, or very ready for what comes next';
-      default:
-        return 'Feeling something important in the body';
+      case 'angry':         return 'Feeling really upset and full of big energy';
+      case 'sad':           return 'Feeling hurt, heavy, or like crying';
+      case 'worried':       return 'Feeling jumpy, unsure, or full of what-if thoughts';
+      case 'scared':        return 'Feeling worried, shaky, or unsure';
+      case 'frustrated':    return 'Feeling stuck when something is hard or not working';
+      case 'embarrassed':   return 'Feeling red-faced, awkward, or like you want to hide';
+      case 'excited':       return 'Feeling buzzy, bouncy, or very ready for what comes next';
+      // Mature feelings — adolescent
+      case 'grief':         return 'Deep loss that lingers, often in waves';
+      case 'resentful':     return 'Anger that has hardened over time, often from feeling wronged';
+      case 'envious':       return 'Wanting what someone else has; a signal about your own desires';
+      case 'restless':      return 'Unable to settle; an inner tension seeking release';
+      case 'hopeful':       return 'Quiet belief that things can get better, even without certainty';
+      // Mature feelings — adult
+      case 'melancholy':    return 'A bittersweet ache, often beautiful and heavy at once';
+      case 'contentment':   return 'Quiet satisfaction with what is; no urgency to change anything';
+      case 'indignation':   return 'Righteous anger at injustice; a call to stand for something';
+      case 'dread':         return 'The weight of what is coming; anticipating difficulty or loss';
+      case 'anticipation':  return 'Expectant tension before something unknown; could go either way';
+      // Mature aliases
+      case 'betrayed':      return 'Hurt and angry because someone you trusted let you down';
+      case 'repulsed':      return 'A visceral aversion — body and mind both recoil';
+      case 'energized':     return 'Elevated energy seeking an outlet; alive and awake';
+      case 'irritated':     return 'Low-grade frustration; something is grating without release';
+      case 'despondent':    return 'Weighed down and withdrawn; the world feels heavy';
+      case 'disappointed':  return 'What you hoped for did not materialise; an unmet expectation';
+      case 'blocked':       return 'Unable to move forward; effort meets an invisible wall';
+      case 'anxious':       return 'Persistent worry that loops; the mind hunting for dangers';
+      case 'exposed':       return 'Uncomfortably visible; seen in a way that feels unsafe';
+      default:              return 'Feeling something important in the body and mind';
     }
   }
 
@@ -390,27 +418,56 @@ class WizardDataMapper {
       case 'sad':
         return ['Get a hug', 'Talk to someone safe', 'Take a quiet breath'];
       case 'worried':
-        return [
-          'Spot three safe things',
-          'Take a slow breath',
-          'Ask what the first step is'
-        ];
+        return ['Spot three safe things', 'Take a slow breath', 'Ask what the first step is'];
       case 'scared':
         return ['Hold a grown-up hand', 'Take a slow breath', 'Ask for help'];
       case 'frustrated':
         return ['Try again', 'Ask for help', 'Take a break'];
       case 'embarrassed':
-        return [
-          'Take one steady breath',
-          'Ask for a do-over',
-          'Tell the truth simply'
-        ];
+        return ['Take one steady breath', 'Ask for a do-over', 'Tell the truth simply'];
       case 'excited':
-        return [
-          'Take one settling breath',
-          'Tell someone your idea',
-          'Slow down enough to choose'
-        ];
+        return ['Take one settling breath', 'Tell someone your idea', 'Slow down enough to choose'];
+      // Mature feelings — adolescent
+      case 'grief':
+        return ['Let yourself feel it', 'Talk to someone safe', 'Write or draw it out'];
+      case 'resentful':
+        return ['Name what was unfair', 'Physical release', "Write a letter you don't send"];
+      case 'envious':
+        return ['Notice what you have', 'Let it be information', 'Talk about it honestly'];
+      case 'restless':
+        return ['Move your body', 'Narrow your focus', 'Write it down'];
+      case 'hopeful':
+        return ['Stay with it', 'Take one small step', 'Share the feeling'];
+      // Mature feelings — adult
+      case 'melancholy':
+        return ['Sit with it a while', 'Create something', 'Reach out gently'];
+      case 'contentment':
+        return ['Savour the moment', 'Express gratitude', 'Share it with someone'];
+      case 'indignation':
+        return ['Speak the truth clearly', 'Channel it into action', 'Write your perspective'];
+      case 'dread':
+        return ['Name the specific fear', 'Stay in the present', 'Talk to someone trusted'];
+      case 'anticipation':
+        return ['Breathe and ground yourself', 'Prepare what you can', 'Lean into the uncertainty'];
+      // Mature aliases
+      case 'betrayed':
+        return ['Name what was broken', 'Give yourself space', 'Decide what you need'];
+      case 'repulsed':
+        return ['Step away', 'Take a breath', 'Wash hands or move'];
+      case 'energized':
+        return ['Direct it somewhere', 'Move your body', 'Channel it creatively'];
+      case 'irritated':
+        return ['Deep breath', 'Walk away', 'Ask for space'];
+      case 'despondent':
+        return ['Gentle hug', 'Soft music', 'Talk to someone'];
+      case 'disappointed':
+        return ['Talk about it', 'Find new perspective', 'Give yourself time'];
+      case 'blocked':
+        return ['Ask for help', 'Take a break', 'Try a different angle'];
+      case 'anxious':
+        return ['Ground yourself (5-4-3-2-1)', 'Name the actual fear', 'Take a slow breath'];
+      case 'exposed':
+        return ['Take a breath', 'Find one safe person', 'Remind yourself of your worth'];
       default:
         return ['Take a breath', 'Ask for help'];
     }

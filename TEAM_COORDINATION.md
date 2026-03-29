@@ -1,5 +1,33 @@
 # Team Coordination
 
+## 2026-03-29 — Wire Mature Feelings into Story Prompts (Claude Sonnet 4.6)
+
+**Goal:** The 10 new Adolescent/Adult feelings (Grief, Resentful, Envious, Restless, Hopeful, Melancholy, Contentment, Indignation, Dread, Anticipation) are now in the UI but story generation still uses child-facing prompt rules ("keep the problem child-sized", "end with safety and reconnection"). This produces wrong output for mature bands.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/wizard_data_mapper.dart` | Add emoji, description, and default coping for all 10 new feelings + mature aliases |
+| `backend/routes/story_routes.py` | `_build_feelings_prompt_text()` — add age 15+ branch with mature story rules |
+| `backend/services/story_service.py` | `_build_feelings_instruction()` — replace child-facing ending rule for ages 15+ |
+
+### Mature Story Rules (ages 15+)
+- Replace "child-sized and concrete" → "life-sized — real relationships, real stakes"
+- Replace "let the helper action change what happens next" → "the coping gesture is a starting point, not a solution; it may land imperfectly"
+- Replace "end with safety, reconnection, or relief" → "end with integration — the feeling can still be present at the close; resolution is not required"
+- Add: "allow the feeling to be layered, contradictory, or unresolved where authentic"
+- Keep: validate the feeling, show the body clue, avoid moralizing
+
+### Status
+- [x] wizard_data_mapper.dart — emoji/description/coping for new feelings
+- [x] story_routes.py — mature branch in `_build_feelings_prompt_text`
+- [x] story_service.py — mature ending rule in `_build_feelings_instruction`
+- [x] Tests pass (105 backend, Flutter analyze clean)
+- [x] Committed
+
+---
+
 ## 2026-03-28 — Deployment Plan (Claude Sonnet 4.6)
 
 Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Ordered by what must be done before launch.

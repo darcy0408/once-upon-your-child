@@ -210,9 +210,29 @@ def _build_feelings_instruction(feelings_prompt: str | None, age: int, theme: st
     if not feelings_prompt:
         return ""
 
-    preschool_rules = ""
+    theme_rule = ""
+    if "big feeling" in (theme or "").lower():
+        theme_rule = "\n- This is a feelings-first theme. The emotional journey is the main plot engine."
+
+    if age >= 15:
+        # Adolescent / Adult — mature emotional register
+        return f"""
+**FEELINGS-FIRST GUIDANCE**:
+{feelings_prompt}{theme_rule}
+- Let the feeling surface through embodied detail — sensation, thought, behaviour — not announcement.
+- Allow the feeling to be layered, contradictory, or slow-moving; do not rush toward resolution.
+- The coping tool is a possibility the character reaches for, not a guaranteed fix.
+- End with integration rather than resolution: the feeling can still be present; holding it consciously is enough.
+- Never deliver an emotional lesson or moral summary — the arc speaks for itself.
+"""
+
     if age <= 5:
-        preschool_rules = """
+        return f"""
+**FEELINGS-FIRST GUIDANCE**:
+{feelings_prompt}{theme_rule}
+- Open by naming the feeling and the body clue immediately.
+- Let the coping action change what happens next inside the plot.
+- End with safety, reconnection, or relief rather than a lecture.
 - PRESCHOOL BIG FEELINGS RULES:
   - Use feeling words a 4-5 year old knows: mad, sad, scared, frustrated.
   - Put the feeling in the first line.
@@ -221,17 +241,13 @@ def _build_feelings_instruction(feelings_prompt: str | None, age: int, theme: st
   - Never shame the feeling. The feeling is okay; the next choice matters.
 """
 
-    theme_rule = ""
-    if "big feeling" in (theme or "").lower():
-        theme_rule = "\n- This is a feelings-first theme. The emotional journey is the main plot engine."
-
+    # Default — Explorer / Adventurer / Creator (ages 6–14)
     return f"""
 **FEELINGS-FIRST GUIDANCE**:
 {feelings_prompt}{theme_rule}
 - Open by naming the feeling and the body clue immediately.
 - Let the coping action change what happens next inside the plot.
 - End with safety, reconnection, or relief rather than a lecture.
-{preschool_rules}
 """
 
 
