@@ -65,7 +65,12 @@ You can:
 - Opt out of analytics where supported
 - Withdraw consent at any time
 
-Contact: privacy@storyweaver.app
+To exercise these rights or to request deletion of your child's data, contact us at:
+
+Story Weaver
+2816 Orchard Ave
+Grand Junction, CO 81501
+Email: privacy@storyweaver.app
 ''',
             ),
             _buildSection(
@@ -79,7 +84,7 @@ Contact: privacy@storyweaver.app
             _buildSection(
               title: 'Updates to This Policy',
               content: '''
-Last updated: March 11, 2026
+Last updated: March 28, 2026
 We may update this policy. Changes will be posted here.
 ''',
             ),
