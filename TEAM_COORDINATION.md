@@ -1,5 +1,35 @@
 # Team Coordination
 
+## 2026-03-29 — Creator Band (Ages 12-14) UX Polish (Claude Sonnet 4.6)
+
+**Goal:** Make every Creator-band touchpoint feel like a creative tool, not a children's app with sparkles removed. Six areas: Welcome, Scenario Selection, Hero Creator, Big Feelings, Magic Review, and general polish. Emotional hooks, identity-focused prompts, journal reflection, and pitch-document aesthetic throughout.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/screens/welcome_screen.dart` | Reorder flow (age→splash→name); Creator-band splash "Your story begins here." in Bitter serif; profile-style name entry |
+| `lib/data/scenario_data.dart` | Add `creatorThematicQuestion` field to `ScenarioCard` with identity-hook questions |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Thematic questions on scenario cards; Imagine It spotlight first; reflection prompt in Creative Brief; "Design your character" avatar copy |
+| `lib/models/wizard_data.dart` | Add `characterDesire` optional field |
+| `lib/screens/wizard_steps/wizard_data_mapper.dart` | Include `characterDesire` in backend character details |
+| `lib/screens/big_feelings_flow_screen.dart` | Journal-entry step 4 for Creator band; mature label audit on step headers; `journalEntry` on `BigFeelingsFlowResult` |
+| `lib/screens/wizard_steps/magic_review_step.dart` | "Your Story Pitch" title; clean card layout (no orb glow); "Your story, your way" tagline + "Start Writing" CTA |
+| `lib/theme/age_band_theme.dart` | Update `launchStoryLabel` to "Start Writing"; verify no gold/sparkle leaks |
+
+### Status
+- [ ] Step 1 — `wizard_data.dart` + `wizard_data_mapper.dart`: add `characterDesire` field
+- [ ] Step 2 — `big_feelings_flow_screen.dart`: add `journalEntry` to `BigFeelingsFlowResult`
+- [ ] Step 3 — `scenario_data.dart`: add `creatorThematicQuestion` + populate for all scenarios
+- [ ] Step 4 — `welcome_screen.dart`: reorder flow + Creator-band splash/name styling
+- [ ] Step 5 — `hero_creator_step.dart`: thematic question overlay + Imagine It spotlight
+- [ ] Step 6 — `hero_creator_step.dart`: reflection prompt + "Design your character" avatar copy
+- [ ] Step 7 — `big_feelings_flow_screen.dart`: journal step (step 4) + mature header labels
+- [ ] Step 8 — `magic_review_step.dart`: pitch document restyle + "Start Writing" CTA
+- [ ] Step 9 — `age_band_theme.dart`: label polish + sparkle leak check; `flutter analyze`
+
+---
+
 ## 2026-03-29 — Explorer Band UX Polish: Delight, Discoverability & Engagement (Claude Sonnet 4.6)
 
 **Goal:** Add celebratory animations, swipe affordances, progressive disclosure, and voice guidance across 5 wizard screens for the Explorer (6-8) age band. All animations respect `MotionPrefs.reduceMotion()`, all theming via `AgeBandThemeData`.
