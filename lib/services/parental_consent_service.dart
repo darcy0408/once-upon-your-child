@@ -34,6 +34,27 @@ class ParentalConsentService {
     return prefs.getBool(_keyConsent) ?? false;
   }
 
+  /// Returns true if consent exists but was recorded before [cutoff].
+  /// Used to prompt parents to re-consent after a privacy policy update.
+  Future<bool> needsReConsent({required DateTime cutoff}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final granted = prefs.getBool(_keyConsent) ?? false;
+    if (!granted) return false; // no prior consent — normal onboarding handles it
+    final raw = prefs.getString(_keyRecordedAt);
+    if (raw == null) return true; // consent exists but no timestamp — re-prompt
+    final recorded = DateTime.tryParse(raw);
+    if (recorded == null) return true;
+    return recorded.isBefore(cutoff);
+  }
+
+  /// Clears the consent record so the user is prompted again.
+  Future<void> clearConsent() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyConsent);
+    await prefs.remove(_keyConsentMethod);
+    await prefs.remove(_keyRecordedAt);
+  }
+
   Future<int?> getRecordedAge() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_keyAge);

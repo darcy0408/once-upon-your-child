@@ -14,6 +14,7 @@ import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
 import 'screens/welcome_screen.dart';
 import 'screens/wizard_story_screen.dart';
+import 'screens/parental_consent_screen.dart';
 import 'services/parental_consent_service.dart';
 
 import 'achievements_screen.dart' deferred as achievements_screen;
@@ -104,7 +105,13 @@ class _AppEntryPoint extends ConsumerStatefulWidget {
 
 class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   bool? _onboardingDone; // null = still checking
+  bool _needsReConsent = false;
+  int _reConsentAge = 0;
   String _savedName = '';
+
+  // Privacy policy was updated 2026-03-21 — any consent before this date
+  // must be refreshed so parents see the updated data-transparency language.
+  static final _reConsentCutoff = DateTime(2026, 3, 21);
 
   @override
   void initState() {
@@ -113,14 +120,25 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   }
 
   Future<void> _checkOnboarding() async {
-    final age = await const ParentalConsentService().getRecordedAge();
+    const service = ParentalConsentService();
+    final age = await service.getRecordedAge();
     final prefs = await SharedPreferences.getInstance();
     final savedName = (prefs.getString('user_name') ?? '').trim();
+
+    // For children (under 13), check if their consent predates the last
+    // privacy policy update and needs to be refreshed.
+    bool reConsent = false;
+    if (age != null && age < 13) {
+      reConsent = await service.needsReConsent(cutoff: _reConsentCutoff);
+      if (reConsent) await service.clearConsent();
+    }
+
     if (!mounted) return;
     setState(() {
-      // Require both age and name so the name step never gets skipped accidentally.
-      _onboardingDone = age != null && savedName.isNotEmpty;
+      _onboardingDone = age != null && savedName.isNotEmpty && !reConsent;
       _savedName = savedName;
+      _needsReConsent = reConsent;
+      _reConsentAge = age ?? 0;
     });
   }
 
@@ -132,6 +150,19 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
         backgroundColor: Color(0xFF120226),
         body: Center(
           child: Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 48),
+        ),
+      );
+    }
+
+    // Privacy policy updated — returning child users need parent re-consent
+    if (_needsReConsent) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF120226),
+        body: SafeArea(
+          child: ParentalConsentScreen(
+            consentService: const ParentalConsentService(),
+            declaredAge: _reConsentAge,
+          ),
         ),
       );
     }
