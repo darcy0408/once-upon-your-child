@@ -1,5 +1,37 @@
 # Team Coordination
 
+## 2026-03-29 — Explorer Band UX Polish: Delight, Discoverability & Engagement (Claude Sonnet 4.6)
+
+**Goal:** Add celebratory animations, swipe affordances, progressive disclosure, and voice guidance across 5 wizard screens for the Explorer (6-8) age band. All animations respect `MotionPrefs.reduceMotion()`, all theming via `AgeBandThemeData`.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/widgets/star_burst_celebration.dart` | NEW — reusable star burst extracted from `image_make_magic_button.dart` |
+| `lib/widgets/staggered_card_dealer.dart` | NEW — staggered card-dealing entrance animation wrapper |
+| `lib/widgets/parallax_tilt_card.dart` | NEW — 3D parallax tilt on drag for carousel cards |
+| `lib/widgets/body_outline_widget.dart` | NEW — tappable body silhouette with zone hit-testing (3 complexity tiers) |
+| `lib/data/body_zone_mapping.dart` | NEW — maps zone IDs to `_bodyOptions` text |
+| `lib/screens/welcome_screen.dart` | Star burst on name entry; illustrated age circle scenes |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Swipe affordance + peek; parallax tilt cards; "New!" sparkle badge per scenario |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Staggered card-deal for archetypes; companion wave on select; TTS page narration |
+| `lib/screens/big_feelings_flow_screen.dart` | Progressive disclosure (8 core + "more…"); body outline replaces text list |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Sticker pop-in for review cards; 3-2-1 countdown before generation |
+| `lib/widgets/image_make_magic_button.dart` | Enhanced glow ring-pulse effect |
+| `lib/services/onboarding_service.dart` | New hint-tracking keys (swipe hint, per-scenario visits, countdown count) |
+| `lib/services/app_tts_service.dart` | New pre-warmed phrases for hero/companion TTS narration |
+
+### Status
+- [ ] Phase 1 — Shared infrastructure: `StarBurstCelebration`, `StaggeredCardDealer`, `ParallaxTiltCard`, `BodyOutlineWidget`, `body_zone_mapping.dart`, onboarding service extensions, TTS warm-up phrases
+- [ ] Phase 2 — Welcome Screen: star burst on name completion; illustrated age picker circles
+- [ ] Phase 3A — Scenario Carousel: swipe peek + first-time hint; parallax tilt cards; "New!" badges
+- [ ] Phase 3B — Hero Creator: staggered archetype card deal; companion waving on select; TTS narration
+- [ ] Phase 3C — Big Feelings: progressive disclosure (8 core → expand); body outline for body signal step
+- [ ] Phase 4 — Magic Review: sticker pop-in; enhanced Make Magic glow ring; 3-2-1 countdown
+
+---
+
 ## 2026-03-29 — Sprout (Ages 2-5) UX Enjoyment Overhaul (Claude Sonnet 4.6)
 
 **Goal:** Make every Sprout-band touchpoint feel alive, voice-driven, and age-appropriate for pre-readers. Animated cards, voice-first flows, mascot feedback, tap-to-hear patterns, and a simplified "GO!" launch screen.
