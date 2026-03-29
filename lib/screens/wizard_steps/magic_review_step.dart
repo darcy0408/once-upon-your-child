@@ -103,7 +103,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       }
       try {
         final magicComp = magicCompanions.firstWhere((c) => c.id == firstComp);
-        return 'assets/images/companions/${magicComp.id}.jpg';
+        return 'assets/images/companions/${magicComp.id}_normal.jpg';
       } catch (_) {
         // If it's a custom companion/photo (e.g. my_pet), fall through.
       }
@@ -579,7 +579,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final wd = widget.wizardData;
     final heroTerm = band.heroLabel.toLowerCase(); // 'your hero' or 'character'
     final hero = wd.characterName.isEmpty ? heroTerm : wd.characterName;
-    final scenario = wd.selectedScenario ?? 'a place';
+    final scenario = wd.selectedScenario != null
+        ? (ScenarioData.getById(wd.selectedScenario!)
+                ?.titleForAge(wd.characterAge) ??
+            wd.selectedScenario!)
+        : 'a magical place';
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
         : wd.companionNames.join(' and ');

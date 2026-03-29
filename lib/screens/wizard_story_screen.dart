@@ -323,7 +323,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                           'My Setting',
                                           band.launchStoryLabel
                                         ]
-                                      : band.band == AgeBand.creator
+                                      : band.band.isMature
                                           ? <String>[
                                               'Character',
                                               'Companions',
@@ -442,7 +442,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     if (!band.band.isMature)
                       Semantics(
                         button: true,
-                        label: 'Start bedtime story mode. Voice only, no screen needed.',
+                        label: 'Bedtime mode',
                         child: _LabeledNavButton(
                           icon: Icons.bedtime_outlined,
                           label: 'Bedtime',
@@ -452,7 +452,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     else
                       Semantics(
                         button: true,
-                        label: 'Start bedtime story mode. Voice only, no screen needed.',
+                        label: 'Bedtime mode',
                         child: IconButton(
                           icon: const Icon(Icons.bedtime_outlined, color: Colors.white),
                           onPressed: () => _showBedtimeSettingsDialog(context),

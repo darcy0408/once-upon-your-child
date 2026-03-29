@@ -25,9 +25,34 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _consentGiven = false;
   bool _allowPhotoAvatar = false; // COPPA: parent must explicitly opt in
   bool _submitting = false;
+  final _scrollController = ScrollController();
+  double _scrollProgress = 0.0;
 
   bool get _isUnder13 => widget.declaredAge < 13;
   bool get _emailValid => true; // Email is optional — not required for consent
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.maxScrollExtent > 0) {
+      setState(() {
+        _scrollProgress = (pos.pixels / pos.maxScrollExtent).clamp(0.0, 1.0);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const textWhite70 = TextStyle(color: Colors.white70);
@@ -42,6 +67,15 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
           style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: LinearProgressIndicator(
+            value: _scrollProgress,
+            backgroundColor: Colors.white.withAlpha(30),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+            minHeight: 4,
+          ),
+        ),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -53,6 +87,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,

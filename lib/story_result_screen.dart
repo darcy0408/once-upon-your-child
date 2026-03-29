@@ -1711,11 +1711,18 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
 
     final bool isRevealed = _revealedPages.contains(index);
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final pageBg = _highContrastMode
+        ? Colors.black
+        : (band.preferDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFFFF8E7));
+    final pageTextColor = _highContrastMode
+        ? Colors.white
+        : (band.preferDarkMode ? const Color(0xFFE0E0E0) : const Color(0xFF2C3E50));
 
     return StoryBookPage(
-      backgroundColor:
-          _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
-      showDecorations: !_highContrastMode,
+      backgroundColor: pageBg,
+      showDecorations: !_highContrastMode && !band.preferDarkMode,
       child: InkWell(
         onTap: () {
           if (!isRevealed) {
@@ -1741,22 +1748,18 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     });
                   },
                   style: GoogleFonts.merriweather(
-                    fontSize: 20 * _textScale,
+                    fontSize: band.body(20) * _textScale,
                     height: 1.8,
-                    color: _highContrastMode
-                        ? Colors.white
-                        : const Color(0xFF2C3E50),
+                    color: pageTextColor,
                   ),
                 )
               else
                 SelectableText.rich(
                   TextSpan(
                     style: GoogleFonts.merriweather(
-                      fontSize: 20 * _textScale,
+                      fontSize: band.body(20) * _textScale,
                       height: 1.8,
-                      color: _highContrastMode
-                          ? Colors.white
-                          : const Color(0xFF2C3E50),
+                      color: pageTextColor,
                     ),
                     children: _buildStorySpans(_storyPages[textIndex]),
                   ),
@@ -1783,8 +1786,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   Widget _buildReaderView() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final bgColor = _highContrastMode ? Colors.black : const Color(0xFFFFF8E7);
-    final textColor = _highContrastMode ? Colors.white : const Color(0xFF2C3E50);
+    final bgColor = _highContrastMode
+        ? Colors.black
+        : (band.preferDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFFFF8E7));
+    final textColor = _highContrastMode
+        ? Colors.white
+        : (band.preferDarkMode ? const Color(0xFFE0E0E0) : const Color(0xFF2C3E50));
 
     return Container(
       decoration: BoxDecoration(
@@ -1835,7 +1842,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             child: SelectableText.rich(
               TextSpan(
                 style: GoogleFonts.merriweather(
-                  fontSize: 20 * _textScale,
+                  fontSize: band.body(20) * _textScale,
                   height: 1.8,
                   color: textColor,
                 ),
@@ -2960,9 +2967,12 @@ class _PostStoryActionBar extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: onTellMeAnother,
-                icon: const Text('🪄', style: TextStyle(fontSize: 18)),
+                icon: Text(
+                  band.band.isMature ? '✍️' : '🪄',
+                  style: const TextStyle(fontSize: 18),
+                ),
                 label: Text(
-                  'Tell Me Another!',
+                  band.band.isMature ? 'New Story' : 'Tell Me Another!',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -2985,6 +2995,12 @@ class _PostStoryActionBar extends StatelessWidget {
               children: [
                 if (!isYoungUser) ...[
                   _ActionChip(
+                    icon: Icons.headphones_rounded,
+                    label: 'Re-read',
+                    onTap: onReread,
+                    color: Colors.white,
+                  ),
+                  _ActionChip(
                     icon: Icons.shuffle_rounded,
                     label: 'Remix',
                     onTap: onRemix,
@@ -3004,7 +3020,14 @@ class _PostStoryActionBar extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ],
-                if (isYoungUser)
+                if (isYoungUser) ...[
+                  _ActionChip(
+                    icon: Icons.headphones_rounded,
+                    label: 'Read to me',
+                    onTap: onReread,
+                    color: Colors.white,
+                    largeMode: true,
+                  ),
                   _ActionChip(
                     icon:
                         isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
@@ -3013,6 +3036,7 @@ class _PostStoryActionBar extends StatelessWidget {
                     color: isSaved ? AppColors.gold : Colors.white,
                     largeMode: true,
                   ),
+                ],
               ],
             ),
           ],

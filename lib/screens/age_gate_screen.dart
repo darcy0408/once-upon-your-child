@@ -41,7 +41,8 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
     (label: '10', value: 10),
     (label: '11', value: 11),
     (label: '12', value: 12),
-    (label: '13‑17', value: 14),
+    (label: '13‑14', value: 14),
+    (label: '15‑17', value: 16),
     (label: '18+', value: 21),
   ];
 

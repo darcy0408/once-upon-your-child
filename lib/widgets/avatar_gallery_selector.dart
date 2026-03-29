@@ -314,17 +314,20 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('✨', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 6),
-                  Text(
-                    'Create a custom avatar that looks like me!',
-                    style: TextStyle(
-                      color: Color(0xFF3B2363),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                  const Text('✨', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: const Text(
+                      'Create a custom avatar that looks like me!',
+                      style: TextStyle(
+                        color: Color(0xFF3B2363),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
