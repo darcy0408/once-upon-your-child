@@ -38,6 +38,8 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   late AnimationController _glowController;
   // Star burst on long-press
   late AnimationController _burstController;
+  // Ring-pulse: expanding/fading ring emitted every 2s
+  late AnimationController _ringController;
   // Press feedback
   bool _isPressed = false;
 
@@ -75,9 +77,16 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
       vsync: this,
     );
 
+    // Ring-pulse: 2s full cycle — ring expands (scale 1→1.3) and fades out
+    _ringController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
     if (widget.isEnabled) {
       _idleController.repeat(reverse: true);
       _glowController.repeat(reverse: true);
+      _ringController.repeat();
     }
   }
 
@@ -87,9 +96,11 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
     if (widget.isEnabled && !oldWidget.isEnabled) {
       _idleController.repeat(reverse: true);
       _glowController.repeat(reverse: true);
+      _ringController.repeat();
     } else if (!widget.isEnabled && oldWidget.isEnabled) {
       _idleController.stop();
       _glowController.stop();
+      _ringController.stop();
     }
   }
 
@@ -98,6 +109,7 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
     _idleController.dispose();
     _glowController.dispose();
     _burstController.dispose();
+    _ringController.dispose();
     super.dispose();
   }
 
@@ -146,7 +158,12 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
         onTapCancel: _onTapCancel,
         onLongPressStart: _onLongPressStart,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_idleController, _glowController, _burstController]),
+          animation: Listenable.merge([
+            _idleController,
+            _glowController,
+            _burstController,
+            _ringController,
+          ]),
           builder: (context, child) {
             // Hop: translate Y using a bounce curve
             final hopT = _idleController.value;
@@ -170,6 +187,13 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                 ? 0.5 + 0.4 * math.sin(glowT * math.pi)
                 : 0.0;
 
+            // Ring-pulse: scale 1.0→1.3, opacity 0.4→0.0 over 2s
+            final ringT = _ringController.value;
+            final ringScale = 1.0 + 0.3 * ringT;
+            final ringOpacity = (widget.isEnabled && showParticles && !_isPressed)
+                ? (0.4 * (1.0 - ringT)).clamp(0.0, 1.0)
+                : 0.0;
+
             final totalScale = pulseScale * pressScale;
             final totalY = hopY + pressY;
 
@@ -183,6 +207,23 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
+                      // Expanding ring-pulse layer
+                      if (ringOpacity > 0.0)
+                        Transform.scale(
+                          scale: ringScale,
+                          child: Container(
+                            width: buttonWidth + 10,
+                            height: buttonHeight + 6,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                              border: Border.all(
+                                color: Color.fromRGBO(188, 138, 255, ringOpacity),
+                                width: 2.5,
+                              ),
+                            ),
+                          ),
+                        ),
+
                       // Glow layer
                       if (widget.isEnabled)
                         Container(
@@ -194,7 +235,7 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                               BoxShadow(
                                 color: Color.fromRGBO(
                                     158, 108, 255, _isPressed ? 0.3 : glowIntensity * 0.7),
-                                blurRadius: _isPressed ? 14 : 28 + glowIntensity * 12,
+                                blurRadius: _isPressed ? 14 : 16 + glowIntensity * 16,
                                 spreadRadius: _isPressed ? 1 : 3 + glowIntensity * 4,
                               ),
                               BoxShadow(

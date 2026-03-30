@@ -30,6 +30,8 @@ import 'wizard_data_mapper.dart';
 import '../../widgets/magic_ear_button.dart';
 import '../../widgets/adventurer_character_sheet.dart';
 import '../../widgets/mission_ready_button.dart';
+import '../../utils/motion_utils.dart';
+import '../../services/onboarding_service.dart';
 import '../bedtime_wizard_screen.dart';
 
 /// Step 4: Magic Review & Launch
@@ -57,6 +59,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
 
+  // 3-2-1 countdown state
+  bool _showCountdown = false;
+  int _countdownNumber = 3;
+  Timer? _countdownTimer;
+
   Future<String?> _resolveInteractiveUserId() async {
     final api = ApiServiceManager();
     var userId = await api.getUserId();
@@ -82,6 +89,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -132,13 +140,53 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return scenario.titleForAge(widget.wizardData.characterAge);
   }
 
+  /// Shows a 3-2-1 countdown (first 3 launches) then delegates to [_doLaunchStoryCreation].
   void _launchStoryCreation() async {
+    if (_showCountdown || _isGenerating) return;
     if (!widget.wizardData.isComplete) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please complete all steps first!'),
           backgroundColor: AppColors.warning));
       return;
     }
+    // Skip countdown for reduced-motion or Sprout (Sprout has its own GO! screen).
+    final reduceMotion = MotionPrefs.reduceMotion(context);
+    final onboarding = OnboardingService();
+    final count = await onboarding.getCountdownCount();
+    if (!mounted) return;
+    if (!reduceMotion && count < 3) {
+      await onboarding.incrementCountdownCount();
+      // Speak phrase asynchronously — don't await so countdown runs concurrently.
+      AppTtsService.instance.speak('3... 2... 1... Let the magic begin!');
+      setState(() {
+        _showCountdown = true;
+        _countdownNumber = 3;
+      });
+      // Drive numbers 3 → 2 → 1 at 550ms intervals, then dismiss and launch.
+      int num = 3;
+      _countdownTimer = Timer.periodic(const Duration(milliseconds: 550), (t) {
+        num--;
+        if (num <= 0) {
+          t.cancel();
+          if (!mounted) return;
+          setState(() => _showCountdown = false);
+          _doLaunchStoryCreation();
+        } else {
+          if (!mounted) {
+            t.cancel();
+            return;
+          }
+          HapticFeedback.mediumImpact();
+          setState(() => _countdownNumber = num);
+        }
+      });
+      HapticFeedback.mediumImpact();
+      return;
+    }
+    _doLaunchStoryCreation();
+  }
+
+  void _doLaunchStoryCreation() async {
     if (_generationError != null) {
       setState(() => _generationError = null);
     }
@@ -1250,6 +1298,47 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     );
   }
 
+  Widget _buildCountdownOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: ColoredBox(
+          color: Colors.black.withValues(alpha: 0.75),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, anim) {
+                final curved = CurvedAnimation(
+                  parent: anim,
+                  curve: Curves.easeOutBack,
+                );
+                return ScaleTransition(
+                  scale: Tween<double>(begin: 2.0, end: 1.0).animate(curved),
+                  child: FadeTransition(opacity: anim, child: child),
+                );
+              },
+              child: Text(
+                '$_countdownNumber',
+                key: ValueKey(_countdownNumber),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 120,
+                  fontWeight: FontWeight.w900,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 32,
+                      color: Color(0xFFBE8FFF),
+                      offset: Offset(0, 0),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.wizardData;
@@ -1257,33 +1346,38 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
 
+    Widget wrapCountdown(Widget content) {
+      if (!_showCountdown) return content;
+      return Stack(children: [content, _buildCountdownOverlay(context)]);
+    }
+
     // Sprout band (ages 2-5) skips the full review — show a single celebration
     // screen with a GO! button. Children this age don't need to re-confirm choices.
     if (band.band == AgeBand.sprout) {
-      return _buildSproutLaunchScreen(context, band);
+      return wrapCountdown(_buildSproutLaunchScreen(context, band));
     }
 
     // Adventurer band (9-11) gets a mission briefing layout instead of the
     // standard orb-centric review.
     if (band.band == AgeBand.adventurer) {
-      return _buildAdventurerMissionBriefing(context, band, data);
+      return wrapCountdown(_buildAdventurerMissionBriefing(context, band, data));
     }
 
     // Creator band (12-14) gets a story pitch document layout — no orb, clean card.
     if (band.band == AgeBand.creator) {
-      return _buildCreatorPitchDocument(context, band, data);
+      return wrapCountdown(_buildCreatorPitchDocument(context, band, data));
     }
 
     // Adolescent/adult band: minimal dark card — protagonist, setting, CTA only.
     if (band.band == AgeBand.adolescent || band.band == AgeBand.adult) {
-      return _buildAdolescentMinimalReview(context, band, data);
+      return wrapCountdown(_buildAdolescentMinimalReview(context, band, data));
     }
 
     final orbSize =
         (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();
     final heroFallback = band.heroLabel;
     final sideCircleSize = band.touchTarget(88).clamp(72.0, 112.0).toDouble();
-    return SingleChildScrollView(
+    final scrollContent = SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(
             horizontal: band.space(AppSpacing.lg),
@@ -1331,7 +1425,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             ),
             SizedBox(height: band.space(24)),
             // ── Hero orb (avatar only, no overlapping circles) ───────────────
-            SizedBox(
+            _PopInReveal(
+              index: 0,
+              child: SizedBox(
               height: orbSize + 50,
               child: Stack(alignment: Alignment.center, children: [
                 Container(
@@ -1369,6 +1465,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ),
               ]),
             ),
+            ), // end _PopInReveal index 0
             SizedBox(height: band.space(8)),
             if (data.characterName.isNotEmpty) ...[
               Text(
@@ -1395,7 +1492,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               SizedBox(height: band.space(12)),
             ],
             // ── Setting + companion — below the orb so nothing overlaps ──────
-            Row(
+            _PopInReveal(
+              index: 1,
+              child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Setting
@@ -1475,7 +1574,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   ),
                 ],
               ],
-            ),
+              ), // end Row
+            ), // end _PopInReveal index 1
             SizedBox(height: band.space(24)),
             // ── Read-only story summary ──────────────────────────────────────
             _StaggeredReveal(
@@ -1622,6 +1722,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ),
       ),
     );
+    return wrapCountdown(scrollContent);
   }
 }
 
@@ -2120,6 +2221,53 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
     return FadeTransition(
         opacity: _opacity,
         child: SlideTransition(position: _slide, child: widget.child));
+  }
+}
+
+/// Scale+fade pop-in entrance, with elasticOut curve.
+/// Respects MotionPrefs — shows child immediately when reduce-motion is on.
+class _PopInReveal extends StatefulWidget {
+  final Widget child;
+  final int index;
+  const _PopInReveal({required this.child, required this.index});
+  @override
+  State<_PopInReveal> createState() => _PopInRevealState();
+}
+
+class _PopInRevealState extends State<_PopInReveal>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _anim;
+  late Animation<double> _scale;
+  late Animation<double> _opacity;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
+    _scale = Tween<double>(begin: 0.55, end: 1.0).animate(
+        CurvedAnimation(parent: _anim, curve: Curves.elasticOut));
+    _opacity = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+    _timer = Timer(Duration(milliseconds: 80 + widget.index * 200), () {
+      if (mounted) _anim.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (MotionPrefs.reduceMotion(context)) return widget.child;
+    return FadeTransition(
+      opacity: _opacity,
+      child: ScaleTransition(scale: _scale, child: widget.child),
+    );
   }
 }
 
