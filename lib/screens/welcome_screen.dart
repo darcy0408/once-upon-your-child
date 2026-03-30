@@ -165,6 +165,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   void _onAgeSelected(int age) {
     if (_submitting) return;
+    // First user gesture — unlock web audio.
+    AppTtsService.instance.markInteracted();
     AppTtsService.instance.stop();
     setState(() {
       _selectedAge = age;
@@ -186,6 +188,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   void _advanceFromTitle() {
+    AppTtsService.instance.markInteracted();
     _titleTimer?.cancel();
     if (mounted && _step == 1) {
       _enterNameStep();

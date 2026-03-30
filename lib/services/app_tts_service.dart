@@ -90,6 +90,15 @@ class AppTtsService {
   final Map<String, Uint8List> _cache = {};
   bool _ready = false;
 
+  /// On web, browsers block audio until the user has interacted with the page.
+  /// Call [markInteracted] from the first user gesture (e.g. a tap) so that
+  /// subsequent speak() calls are allowed. On non-web this flag is always true.
+  bool _webInteracted = !kIsWeb;
+
+  /// Call this from any user-gesture handler (tap, button press, etc.) before
+  /// the first speak() call. Safe to call multiple times.
+  void markInteracted() => _webInteracted = true;
+
   /// Resolves once the anonymous auth token has been obtained (or failed).
   /// speak() awaits this before hitting /tts/synthesize so it never sends
   /// a request without an Authorization header.
@@ -140,6 +149,9 @@ class AppTtsService {
   }) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
+    // Web browsers block audio until a user gesture has occurred. Skip silently
+    // rather than letting the browser throw NotAllowedError.
+    if (!_webInteracted) return;
     // Wait for auth token before hitting the backend — avoids 401 → robotic fallback.
     if (_authReady != null) await _authReady;
     try {
