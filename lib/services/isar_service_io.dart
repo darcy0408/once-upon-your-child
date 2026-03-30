@@ -7,8 +7,8 @@ import 'package:flutter/foundation.dart';
 import '../models/local/character_local_io.dart';
 import '../avatar_models.dart';
 import '../models/local/story_local_io.dart';
-import '../models/local/chronicle_local.dart';
-import '../models/local/chapter_memory_local.dart';
+import '../models/local/chronicle_local_io.dart';
+import '../models/local/chapter_memory_local_io.dart';
 import '../models.dart'; // Domain models
 
 class IsarService {

@@ -143,6 +143,7 @@
 - [x] Step 7 — `big_feelings_flow_screen.dart`: journal step (step 4) + Creator-band step titles
 - [x] Step 8 — `magic_review_step.dart`: "Your Story Pitch" + clean pitch card + "Start Writing" CTA
 - [x] Step 9 — `age_band_theme.dart`: `launchStoryLabel` → "Start Writing"; `dart analyze` clean (1 info)
+- [x] Hotfix — `isar_service_io.dart`: import `_io` versions of chronicle/chapter_memory directly (was importing conditional-export wrappers, analyzer resolved to stubs → `ChronicleLocalSchema`/`ChapterMemoryLocalSchema` undefined)
 
 ---
 
