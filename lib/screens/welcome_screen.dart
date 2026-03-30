@@ -169,7 +169,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (mounted && _step == 1) _enterNameStep();
     });
     final band = ageBandFromAge(age);
-    if (band == AgeBand.creator) {
+    if (band == AgeBand.adolescent || band == AgeBand.adult) {
+      unawaited(_speak('Welcome to Story Weaver.'));
+    } else if (band == AgeBand.creator) {
       unawaited(_speak('Your story begins here.'));
     } else {
       unawaited(_speak('Tap the star to start your adventure!'));
@@ -276,7 +278,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     return GestureDetector(
       key: const ValueKey('title'),
       onTap: _advanceFromTitle,
-      child: _isCreator ? _buildCreatorTitleStep() : _buildDefaultTitleStep(),
+      child: _isAdolescent
+          ? _buildAdolescentTitleStep()
+          : _isCreator
+              ? _buildCreatorTitleStep()
+              : _buildDefaultTitleStep(),
     );
   }
 
@@ -389,8 +395,62 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   // ── Step 2: Name input ────────────────────────────────────────────────────
 
+  Widget _buildAdolescentTitleStep() {
+    const adolescentAccent = Color(0xFF00BCD4);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 72),
+        const Icon(Icons.menu_book_rounded, color: adolescentAccent, size: 44),
+        const SizedBox(height: AppSpacing.lg),
+        Semantics(
+          header: true,
+          label: 'Story Weaver. Your stories, your way.',
+          child: Text(
+            'Story Weaver',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.sourceSans3(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Your stories, your way.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.sourceSans3(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: adolescentAccent.withAlpha(200),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AnimatedBuilder(
+          animation: _tapHintOpacity,
+          builder: (context, _) => Opacity(
+            opacity: _tapHintOpacity.value,
+            child: Text(
+              'Tap to continue',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.sourceSans3(
+                color: Colors.white38,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 72),
+      ],
+    );
+  }
+
   Widget _buildNameStep() {
-    return _isCreator ? _buildCreatorNameStep() : _buildDefaultNameStep();
+    return (_isAdolescent || ageBandFromAge(_selectedAge ?? 0).isMature)
+        ? _buildCreatorNameStep()
+        : _buildDefaultNameStep();
   }
 
   Widget _buildDefaultNameStep() {
@@ -683,10 +743,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         LayoutBuilder(
           builder: (context, constraints) {
             const spacing = 6.0;
+            // 4-column grid to fit ages 2-17 + 18+ (17 entries)
+            const columns = 4;
             final circleSize =
-                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(50.0, 72.0);
+                ((constraints.maxWidth - (spacing * (columns - 1))) / columns)
+                    .clamp(44.0, 66.0);
             return GridView.count(
-              crossAxisCount: 3,
+              crossAxisCount: columns,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: spacing,
@@ -796,7 +859,11 @@ const _ageCircleEmoji = {
   10: '🔭',
   11: '🗺️',
   12: '🎨',
-  14: '✨', // 13-17
+  13: '✨',
+  14: '🎭',
+  15: '🎸',
+  16: '🏄',
+  17: '🎯',
   21: '🌟', // 18+
 };
 
