@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models.dart';
 import '../../services/app_tts_service.dart';
 import '../../services/audio_ambience_service.dart';
@@ -13,6 +14,8 @@ import '../../character_traits_data.dart';
 import '../../widgets/magic_ear_button.dart';
 import '../../widgets/imagine_it_input.dart';
 import '../../widgets/age_band_badge.dart';
+import '../../widgets/parallax_tilt_card.dart';
+import '../../services/onboarding_service.dart';
 import '../big_feelings_flow_screen.dart';
 
 const double _settingCardWidth = 220;
@@ -58,6 +61,15 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   String? _previewedScenarioId;
   Timer? _previewTimer;
 
+  // Carousel swipe-hint state (first-use only, non-sprout bands)
+  final Map<String, ScrollController> _carouselControllers = {};
+  final Map<String, int> _carouselActiveDot = {};
+  bool _swipeHintShown = true; // default true = no hint until prefs loaded
+  Timer? _swipeHintTimer;
+
+  // "New!" badge — scenario IDs the user has already tapped
+  final Set<String> _visitedScenarioIds = {};
+
   // Voice input for Imagine It field (young children only)
 
   // Math gate state
@@ -78,6 +90,41 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     _avoidController.text = widget.wizardData.storyDnaAvoid ?? '';
     // Generate a fresh math challenge each time Guardian Mode opens
     _resetMathGate();
+    _loadSwipeHintPref();
+    _loadVisitedScenarios();
+  }
+
+  Future<void> _loadSwipeHintPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool('scenario_swipe_hint_shown') ?? false;
+    if (mounted) {
+      setState(() => _swipeHintShown = shown);
+      if (!shown) {
+        // Auto-dismiss hint after 3 s regardless of interaction
+        _swipeHintTimer = Timer(const Duration(seconds: 3), _dismissSwipeHint);
+      }
+    }
+  }
+
+  void _dismissSwipeHint() async {
+    _swipeHintTimer?.cancel();
+    if (!mounted) return;
+    setState(() => _swipeHintShown = true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('scenario_swipe_hint_shown', true);
+  }
+
+  Future<void> _loadVisitedScenarios() async {
+    const onboarding = OnboardingService();
+    final ids = <String>[];
+    for (final scenario in ScenarioData.all) {
+      if (await onboarding.hasVisitedScenario(scenario.id)) {
+        ids.add(scenario.id);
+      }
+    }
+    if (mounted && ids.isNotEmpty) {
+      setState(() => _visitedScenarioIds.addAll(ids));
+    }
   }
 
   void _resetMathGate() {
@@ -102,6 +149,11 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 
   void _selectScenario(String scenarioId) {
+    // Mark as visited for "New!" badge tracking
+    if (!_visitedScenarioIds.contains(scenarioId)) {
+      setState(() => _visitedScenarioIds.add(scenarioId));
+      const OnboardingService().markScenarioVisited(scenarioId);
+    }
     setState(() {
       _selectedScenario = scenarioId;
       widget.wizardData.selectedScenario = scenarioId;
@@ -263,8 +315,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                   : widget.wizardData.characterAge,
             ))
         .join(', ');
-    if (widget.wizardData.characterAge <= 5) {
+    final age = widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge;
+    final currentBand = ageBandFromAge(age);
+    if (age <= 5) {
       return 'Pick a place for your story. You can choose $scenarioNames. Swipe through the pictures and tap the one you want!';
+    }
+    if (currentBand == AgeBand.adolescent || currentBand == AgeBand.adult) {
+      return 'Choose a story premise. Options include: $scenarioNames.';
     }
     return 'Choose your adventure! Where shall we go today? You can pick $scenarioNames. Swipe through the cards and tap the one you like!';
   }
@@ -272,6 +329,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   @override
   void dispose() {
     _previewTimer?.cancel();
+    _swipeHintTimer?.cancel();
+    for (final c in _carouselControllers.values) {
+      c.dispose();
+    }
     _parentalNoteController.dispose();
     _safeSpaceController.dispose();
     _mathController.dispose();
@@ -316,7 +377,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    age <= 5 ? 'Pick a Place!' : 'Choose Your Adventure!',
+                    themeForAge(age).scenarioPageTitle,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.textDark,
                           fontWeight: FontWeight.bold,
@@ -350,9 +411,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Subtitle
             Text(
-              age <= 5
-                  ? 'Where should the story happen?'
-                  : 'Where shall we go today?',
+              themeForAge(age).scenarioPageSubtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppColors.textDark.withValues(alpha: 0.7),
                   ),
@@ -1017,6 +1076,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     ];
   }
 
+  /// Maps a raw scenario category string to the band-appropriate display label.
+  String _categoryLabel(String category, AgeBandThemeData bandTheme) {
+    if (category == 'Magical Worlds') return bandTheme.scenarioCategoryFantasyLabel;
+    if (category == 'Real-Life Heroes') return bandTheme.scenarioCategoryRealLabel;
+    return category;
+  }
+
   List<Widget> _buildScenarioSections(int age) {
     final currentBand = ageBandFromAge(age);
 
@@ -1043,7 +1109,18 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
     // Separate featured scenarios (pinned at top) from regular ones.
     final featured = visibleScenarios.where((s) => s.featured).toList();
-    final regular = visibleScenarios.where((s) => !s.featured).toList();
+    var regular = visibleScenarios.where((s) => !s.featured).toList();
+
+    // For adolescent/adult bands: sort so band-exclusive scenarios appear first
+    // within each category, surfacing the most mature/relevant content.
+    if (currentBand == AgeBand.adolescent || currentBand == AgeBand.adult) {
+      regular = [
+        ...regular.where((s) =>
+            s.minBand != null && s.minBand!.index >= AgeBand.creator.index),
+        ...regular.where((s) =>
+            s.minBand == null || s.minBand!.index < AgeBand.creator.index),
+      ];
+    }
 
     final Map<String, List<ScenarioCard>> grouped = {};
     for (var scenario in regular) {
@@ -1077,7 +1154,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                category,
+                _categoryLabel(category, themeForAge(age)),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -1085,32 +1162,27 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 320, // Increased height to prevent overflow
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  itemCount: scenarios.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: AppSpacing.md),
-                  itemBuilder: (context, index) {
-                    final scenario = scenarios[index];
-                    final isSelected = _selectedScenario == scenario.id;
-
-                    return _ScenarioCardWidget(
-                      scenario: scenario,
-                      isSelected: isSelected,
-                      childAge: age,
-                      showAdventurerBadge: scenario.minBand != null &&
-                          currentBand.index >= scenario.minBand!.index,
-                      showMissionHook: currentBand.index >=
-                          AgeBand.adventurer.index,
-                      onTap: scenario.id == 'big_feelings_quest'
-                          ? _openFeelingsQuest
-                          : () => _selectScenario(scenario.id),
-                    );
-                  },
-                ),
+              _buildCarouselWithHint(
+                key: category,
+                count: scenarios.length,
+                itemBuilder: (index) {
+                  final scenario = scenarios[index];
+                  final isSelected = _selectedScenario == scenario.id;
+                  return _ScenarioCardWidget(
+                    scenario: scenario,
+                    isSelected: isSelected,
+                    childAge: age,
+                    showAdventurerBadge: scenario.minBand != null &&
+                        currentBand.index >= scenario.minBand!.index,
+                    showMissionHook:
+                        currentBand.index >= AgeBand.adventurer.index,
+                    isNew: !_visitedScenarioIds.contains(scenario.id),
+                    useParallax: true,
+                    onTap: scenario.id == 'big_feelings_quest'
+                        ? _openFeelingsQuest
+                        : () => _selectScenario(scenario.id),
+                  );
+                },
               ),
             ],
           ),
@@ -1135,21 +1207,15 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 320,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  itemCount: lockedScenarios.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: AppSpacing.md),
-                  itemBuilder: (context, index) => _ScenarioCardWidget(
-                    scenario: lockedScenarios[index],
-                    isSelected: false,
-                    childAge: age,
-                    isLocked: true,
-                    onTap: () {}, // non-interactive
-                  ),
+              _buildCarouselWithHint(
+                key: '__locked__',
+                count: lockedScenarios.length,
+                itemBuilder: (index) => _ScenarioCardWidget(
+                  scenario: lockedScenarios[index],
+                  isSelected: false,
+                  childAge: age,
+                  isLocked: true,
+                  onTap: () {},
                 ),
               ),
             ],
@@ -1159,6 +1225,79 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     }
 
     return sections;
+  }
+
+  /// Wraps a horizontal carousel with right-edge peek and a first-use swipe hint.
+  /// Sprout band uses a grid, not a carousel, so this is never called for sprout.
+  Widget _buildCarouselWithHint({
+    required String key,
+    required int count,
+    required Widget Function(int index) itemBuilder,
+  }) {
+    final controller = _carouselControllers.putIfAbsent(
+      key,
+      () {
+        final c = ScrollController();
+        c.addListener(() {
+          if (!c.hasClients) return;
+          final cardStep = _settingCardWidth + AppSpacing.md;
+          final dot = (c.offset / cardStep).round().clamp(0, count - 1);
+          if (_carouselActiveDot[key] != dot) {
+            setState(() => _carouselActiveDot[key] = dot);
+          }
+          // First scroll interaction dismisses the hint permanently
+          if (!_swipeHintShown) _dismissSwipeHint();
+        });
+        return c;
+      },
+    );
+    final activeDot = _carouselActiveDot[key] ?? 0;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 320,
+          child: ListView.separated(
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+            // Right padding exposes ~40 px of the next card as a peek affordance
+            padding: const EdgeInsets.only(left: 4, right: 48, top: 10, bottom: 10),
+            itemCount: count,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (_, index) => itemBuilder(index),
+          ),
+        ),
+        if (count > 1) ...[
+          const SizedBox(height: 6),
+          AnimatedOpacity(
+            opacity: _swipeHintShown ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 400),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.chevron_left, size: 16, color: Colors.white38),
+                const SizedBox(width: 4),
+                for (int i = 0; i < count; i++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: activeDot == i ? 10 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: activeDot == i
+                          ? Colors.white70
+                          : Colors.white.withAlpha(60),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 16, color: Colors.white38),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -1175,6 +1314,10 @@ class _ScenarioCardWidget extends StatelessWidget {
   final bool showAdventurerBadge;
   /// User is Adventurer+; show the one-line conflict hook below the description.
   final bool showMissionHook;
+  /// Scenario has never been tapped — show a "New!" sparkle badge.
+  final bool isNew;
+  /// Wrap in ParallaxTiltCard for 3-D movie-poster effect (carousel only).
+  final bool useParallax;
 
   const _ScenarioCardWidget({
     required this.scenario,
@@ -1186,6 +1329,8 @@ class _ScenarioCardWidget extends StatelessWidget {
     this.isLocked = false,
     this.showAdventurerBadge = false,
     this.showMissionHook = false,
+    this.isNew = false,
+    this.useParallax = false,
   });
 
   @override
@@ -1451,6 +1596,46 @@ class _ScenarioCardWidget extends StatelessWidget {
           ),
         ],
       );
+    }
+
+    // "New!" badge — shown when the scenario has never been tapped, not locked.
+    if (isNew && !isLocked && !isFeatured) {
+      card = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          card,
+          Positioned(
+            top: -6,
+            left: -6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.55),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: const Text(
+                'New!',
+                style: TextStyle(
+                  color: Color(0xFF3E2723),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (useParallax) {
+      card = ParallaxTiltCard(maxTiltDegrees: 6, child: card);
     }
 
     return card;
