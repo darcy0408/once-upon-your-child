@@ -141,12 +141,10 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     // 4. Check for bookmark
     await _checkForResume();
 
-    // 5. Auto-play for young children or explicit flag
+    // 5. Auto-play only for young bands (sprout/explorer).
+    // Creator+ bands must tap play — unexpected audio is embarrassing for older users.
     if (!_autoPlayTriggered && !_isPlaying) {
-      final shouldAutoPlay = widget.autoPlay ||
-          band == AgeBand.sprout ||
-          band == AgeBand.explorer;
-      if (shouldAutoPlay) {
+      if (band.isYoung) {
         _autoPlayTriggered = true;
         _startReading();
       }

@@ -156,6 +156,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
+  bool _hasExplicitlyRated = false; // true once user taps a rating
 
   FlutterTts? _tts;
   AudioPlayer? _audioPlayer;
@@ -1976,64 +1977,96 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     : Colors.grey.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
-              Text(
-                '⭐ Rate this story',
-                style: GoogleFonts.quicksand(
-                  fontSize: 16 * _textScale,
-                  fontWeight: FontWeight.w600,
-                  color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+              // Young bands (sprout/explorer) get a quick 3-emoji rating;
+              // older bands get the full 5-star row.
+              if (band.band.isYoung) ...[
+                Text(
+                  'How was the story?',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 15 * _textScale,
+                    fontWeight: FontWeight.w600,
+                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (i) {
-                  return Semantics(
-                    label: 'Rate ${i + 1} stars',
-                    button: true,
-                    child: InkWell(
-                      onTap: () {
-                        setState(() => _storyRating = i + 1.0);
-                        _submitFeedback();
-                      },
-                      customBorder: const CircleBorder(),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(
-                          i < _storyRating
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
-                          color: AppColors.gold,
-                          size: 36,
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final entry in [
+                      (emoji: '😕', stars: 1.0, label: 'Not great'),
+                      (emoji: '😊', stars: 3.0, label: 'Good'),
+                      (emoji: '🤩', stars: 5.0, label: 'Amazing'),
+                    ])
+                      Semantics(
+                        label: entry.label,
+                        button: true,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _storyRating = entry.stars;
+                              _hasExplicitlyRated = true;
+                            });
+                            _submitFeedback();
+                          },
+                          customBorder: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            child: AnimatedScale(
+                              scale: _hasExplicitlyRated && _storyRating == entry.stars ? 1.3 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Text(
+                                entry.emoji,
+                                style: TextStyle(fontSize: 36 * _textScale),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }),
-              ),
-              if (widget.characterId != null) ...[
-                const SizedBox(height: 20),
-                _buildRepeatButton(
-                  label: 'My Chronicles',
-                  icon: Icons.menu_book_rounded,
-                  onTap: () {
-                    final stub = Character(
-                      id: widget.characterId!,
-                      name: widget.characterName ?? '',
-                      age: widget.characterAge ?? 8,
-                      role: 'Adventurer',
-                    );
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => ChroniclesListScreen(
-                        character: stub,
-                        userId: '',
+                  ],
+                ),
+              ] else ...[
+                Text(
+                  '⭐ Rate this story',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 16 * _textScale,
+                    fontWeight: FontWeight.w600,
+                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    return Semantics(
+                      label: 'Rate ${i + 1} stars',
+                      button: true,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _storyRating = i + 1.0;
+                            _hasExplicitlyRated = true;
+                          });
+                          _submitFeedback();
+                        },
+                        customBorder: const CircleBorder(),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Icon(
+                            i < _storyRating
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: AppColors.gold,
+                            size: 36,
+                          ),
+                        ),
                       ),
-                    ));
-                  },
+                    );
+                  }),
                 ),
               ],
-              if (widget.wizardData != null) ...[
-                const SizedBox(height: 28),
+              // Re-engagement buttons surfaced immediately below the rating
+              if (widget.wizardData != null || widget.characterId != null) ...[
+                const SizedBox(height: 20),
                 Divider(
                   indent: 40,
                   endIndent: 40,
@@ -2041,18 +2074,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       ? Colors.white24
                       : Colors.grey.withValues(alpha: 0.3),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Ready for another adventure?',
-                  style: GoogleFonts.quicksand(
-                    fontSize: 15 * _textScale,
-                    fontWeight: FontWeight.w600,
-                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
-                  ),
-                ),
                 const SizedBox(height: 12),
+              ],
+              if (widget.wizardData != null) ...[
                 _buildRepeatButton(
-                  label: 'Same Character, New Story',
+                  label: widget.characterName != null
+                      ? 'New Story with ${widget.characterName}'
+                      : 'Same Character, New Story',
                   icon: Icons.auto_stories_rounded,
                   onTap: () {
                     final clone = widget.wizardData!.clone();
@@ -2074,13 +2102,34 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 ),
                 const SizedBox(height: 10),
                 _buildRepeatButton(
-                  label: 'Same Settings, New Story',
+                  label: 'Start Fresh',
                   icon: Icons.replay_rounded,
                   onTap: () {
                     Navigator.of(context).pushReplacement(MaterialPageRoute(
                       builder: (_) => WizardStoryScreen(
                         initialStep: 1,
                         initialWizardData: widget.wizardData!.clone(),
+                      ),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
+              if (widget.characterId != null) ...[
+                _buildRepeatButton(
+                  label: 'My Chronicles',
+                  icon: Icons.menu_book_rounded,
+                  onTap: () {
+                    final stub = Character(
+                      id: widget.characterId!,
+                      name: widget.characterName ?? '',
+                      age: widget.characterAge ?? 8,
+                      role: 'Adventurer',
+                    );
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ChroniclesListScreen(
+                        character: stub,
+                        userId: '',
                       ),
                     ));
                   },
@@ -2801,6 +2850,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,
+                characterName: widget.characterName,
+                hasWizardData: widget.wizardData != null,
+                hasExplicitlyRated: _hasExplicitlyRated,
                 onUnlockIllustrations: () =>
                     _showIllustrationUnlockSheet(context),
                 onTellMeAnother: _createAnotherStory,
@@ -2818,6 +2870,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 onShare: _showShareOptions,
                 onColor: _generateColoringPages,
                 onRemix: _showRemixSheet,
+                onQuickRate: (stars) {
+                  setState(() {
+                    _storyRating = stars;
+                    _hasExplicitlyRated = true;
+                  });
+                  _submitFeedback();
+                },
               ),
       ),
     );
@@ -2829,13 +2888,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 // ---------------------------------------------------------------------------
 
 /// Sticky bottom bar shown after story generation completes.
-/// Primary CTA: "Tell Me Another" (magic wand, full width).
-/// Secondary row: Re-read · Save · Share · Color.
+/// Primary CTA: "New Story with [name]" / "Tell Me Another" (full width).
+/// Quick rating row (if not yet rated) + secondary actions row.
 class _PostStoryActionBar extends StatelessWidget {
   final bool isSaved;
   final bool isFreeTier;
   final bool hasIllustrations;
   final bool isYoungUser;
+  final String? characterName;
+  final bool hasWizardData;
+  final bool hasExplicitlyRated;
   final VoidCallback onUnlockIllustrations;
   final VoidCallback onTellMeAnother;
   final VoidCallback onReread;
@@ -2843,12 +2905,16 @@ class _PostStoryActionBar extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onColor;
   final VoidCallback onRemix;
+  final void Function(double stars) onQuickRate;
 
   const _PostStoryActionBar({
     required this.isSaved,
     required this.isFreeTier,
     required this.hasIllustrations,
     this.isYoungUser = false,
+    this.characterName,
+    required this.hasWizardData,
+    required this.hasExplicitlyRated,
     required this.onUnlockIllustrations,
     required this.onTellMeAnother,
     required this.onReread,
@@ -2856,6 +2922,7 @@ class _PostStoryActionBar extends StatelessWidget {
     required this.onShare,
     required this.onColor,
     required this.onRemix,
+    required this.onQuickRate,
   });
 
   @override
@@ -2962,7 +3029,37 @@ class _PostStoryActionBar extends StatelessWidget {
                   ),
                 ),
               ),
-            // Primary CTA
+            // Quick rating — only shown if user hasn't rated yet (e.g. scrolled past end page)
+            if (!hasExplicitlyRated) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Quick rating:',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontFamily: band.uiFontFamily,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  for (final entry in [
+                    (emoji: '😕', stars: 1.0),
+                    (emoji: '😊', stars: 3.0),
+                    (emoji: '🤩', stars: 5.0),
+                  ])
+                    GestureDetector(
+                      onTap: () => onQuickRate(entry.stars),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(entry.emoji, style: const TextStyle(fontSize: 24)),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            // Primary CTA — shows character name when available
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -2972,7 +3069,9 @@ class _PostStoryActionBar extends StatelessWidget {
                   style: const TextStyle(fontSize: 18),
                 ),
                 label: Text(
-                  band.band.isMature ? 'New Story' : 'Tell Me Another!',
+                  characterName != null && hasWizardData
+                      ? 'New Story with $characterName'
+                      : (band.band.isMature ? 'New Story' : 'Tell Me Another!'),
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -2988,6 +3087,19 @@ class _PostStoryActionBar extends StatelessWidget {
                 ),
               ),
             ),
+            // "Start Fresh" secondary link — only when character context is available
+            if (characterName != null && hasWizardData)
+              TextButton(
+                onPressed: onTellMeAnother,
+                child: Text(
+                  'Start Fresh',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 12,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             // Secondary action row — simplified for young users (5-7)
             Row(

@@ -109,10 +109,10 @@
 
 ### Implementation Order & Status
 
-- [ ] **Issue 2 — TTS**: `shouldAutoPlay = band.isYoung` — sprout/explorer auto-play, adventurer+ manual only
-- [ ] **Issue 3 — Guardian Mode**: Add labeled "Parent" button to age gate + welcome screens
-- [ ] **Issue 1 — Carousel Affordance**: Right-edge peek padding + animated swipe-hint dots (first use only, skip for sprout)
-- [ ] **Issue 4 — Post-Story Engagement**: Emoji rating for young bands; replay buttons above fold; split action bar CTA by character; quick 3-tap rating in action bar
+- [x] **Issue 2 — TTS**: `shouldAutoPlay = band.isYoung` — sprout/explorer auto-play, adventurer+ manual only
+- [x] **Issue 3 — Guardian Mode**: Add labeled "Parent" button to age gate + welcome screens
+- [x] **Issue 1 — Carousel Affordance**: Right-edge peek padding + animated swipe-hint dots (first use only, skip for sprout)
+- [x] **Issue 4 — Post-Story Engagement**: Emoji rating for young bands; replay buttons above fold; split action bar CTA by character; quick 3-tap rating in action bar
 
 ---
 

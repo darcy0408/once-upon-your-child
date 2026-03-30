@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/age_band_provider.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
+import 'parent_controls_screen.dart';
 import 'parental_consent_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
@@ -49,16 +50,17 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF120226), Color(0xFF2A0A4E)],
+      body: Stack(children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF120226), Color(0xFF2A0A4E)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
+          child: SafeArea(
+            child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
@@ -210,6 +212,24 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
           ),
         ),
       ),
+      // Labeled parent button — parents expect to find controls before age entry
+      Positioned(
+        top: 8,
+        right: 8,
+        child: SafeArea(
+          child: TextButton.icon(
+            icon: const Icon(Icons.shield_outlined, size: 18, color: Colors.white54),
+            label: const Text(
+              'Parent',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+            ),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
+            ),
+          ),
+        ),
+      ),
+      ]),
     );
   }
 
