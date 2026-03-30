@@ -329,8 +329,8 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 - ✅ Loading screen background: dark-purple gradient replaces cream/lavender
 - ✅ "Bring a Friend Along": mic button added; speaks name on finalResult
 - ✅ Skip "Choose Your Avatar" bottom sheet; "Choose Look" goes directly to gallery
-- ⏳ Companion error message: "Magical transformation is unavailable" → child-friendly copy (already done in earlier session per hero_creator_step.dart)
-- ⏳ Story style orbs → illustrated scene thumbnails; pre-select "Adventure Story"
+- ✅ Companion error message: "Magical transformation is unavailable" → child-friendly copy (done in hero_creator_step.dart)
+- ✅ Story style orbs → illustrated scene thumbnail cards (0caeb34); pre-select "Adventure Story" was already default (includeIllustrations = true)
 
 ### Phase 6 — Testing
 
