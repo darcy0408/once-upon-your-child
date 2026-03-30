@@ -28,6 +28,8 @@ import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../../widgets/adventurer_character_sheet.dart';
+import '../../widgets/mission_ready_button.dart';
 import '../bedtime_wizard_screen.dart';
 
 /// Step 4: Magic Review & Launch
@@ -742,6 +744,149 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     );
   }
 
+  Widget _buildAdventurerMissionBriefing(
+      BuildContext context, AgeBandThemeData band, WizardData data) {
+    if (_generationError != null) {
+      return Center(
+        child: _GenerationErrorWidget(
+          isSprout: false,
+          onRetry: () {
+            setState(() => _generationError = null);
+            _launchStoryCreation();
+          },
+        ),
+      );
+    }
+    if (_isGenerating) {
+      return MagicalLoadingView(
+        status: _loadingStatus,
+        onCancel: () => setState(() => _isGenerating = false),
+        isSproutBand: false,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: band.backgroundGradient,
+        border: Border.all(
+          color: const Color(0xFF80CBC4).withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            children: [
+              // ── Header ─────────────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  MagicEarButton(
+                    spokenText: _buildReviewSpokenText(band),
+                    size: 32,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Review Your Adventure',
+                    style: GoogleFonts.bitter(
+                      color: band.accent,
+                      fontSize: band.heading(20),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // ── RPG character sheet ─────────────────────────────────────
+              AdventurerCharacterSheet(
+                wizardData: data,
+                band: band,
+                heroAvatar: _HeroAvatar(
+                  generatedAvatar: data.generatedAvatar,
+                  characterName: data.characterName,
+                  role: data.selectedArchetypeId,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Story type / length / custom elements ───────────────────
+              _StaggeredReveal(
+                index: 0,
+                child: _SummaryRow(
+                  icon: Icons.auto_stories,
+                  label: _storyTypeLabel(data, band),
+                  band: band,
+                  onTap: () => widget.onGoToSubStep?.call(3),
+                  colorAccent: const Color(0xFF9C4DCC),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _StaggeredReveal(
+                index: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _LengthChip(
+                        label: _lengthLabelForBand('quick', band),
+                        isSelected: data.storyLength == 'quick',
+                        onTap: () =>
+                            setState(() => data.storyLength = 'quick'),
+                        band: band,
+                      ),
+                      const SizedBox(width: 8),
+                      _LengthChip(
+                        label: _lengthLabelForBand('standard', band),
+                        isSelected: data.storyLength == 'standard',
+                        onTap: () =>
+                            setState(() => data.storyLength = 'standard'),
+                        band: band,
+                      ),
+                      const SizedBox(width: 8),
+                      _LengthChip(
+                        label: _lengthLabelForBand('epic', band),
+                        isSelected: data.storyLength == 'epic',
+                        onTap: () =>
+                            setState(() => data.storyLength = 'epic'),
+                        band: band,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (data.customElements.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _StaggeredReveal(
+                  index: 2,
+                  child: _SummaryRow(
+                    icon: Icons.auto_awesome,
+                    band: band,
+                    label: '"${data.customElements}"',
+                    onTap: () => widget.onGoToSubStep?.call(2),
+                    colorAccent: const Color(0xFFFFD54F),
+                    isShimmering: true,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 28),
+
+              // ── MISSION READY button ────────────────────────────────────
+              MissionReadyButton(
+                onTap: _launchStoryCreation,
+                isEnabled: !_isGenerating && data.isComplete,
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _buildReviewSpokenText(AgeBandThemeData band) {
     final wd = widget.wizardData;
     final heroTerm = band.heroLabel.toLowerCase(); // 'your hero' or 'character'
@@ -769,6 +914,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // screen with a GO! button. Children this age don't need to re-confirm choices.
     if (band.band == AgeBand.sprout) {
       return _buildSproutLaunchScreen(context, band);
+    }
+
+    // Adventurer band (9-11) gets a mission briefing layout instead of the
+    // standard orb-centric review.
+    if (band.band == AgeBand.adventurer) {
+      return _buildAdventurerMissionBriefing(context, band, data);
     }
     final orbSize =
         (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();

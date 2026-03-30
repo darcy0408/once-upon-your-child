@@ -242,6 +242,7 @@ class CharacterArchetypes {
     specialAbility: 'Can command wind and weather to soar through storms',
     matureName: 'Storm Vanguard',
     matureDescription: 'Leads through chaos and thrives when the stakes are highest',
+    adventurerDescription: 'The scout who charges into danger first — if there\'s a wall, you find the gap in it.',
     sproutImageId: 'storm_rider',
     bandImageId: 'brave_hero',
     attributes: {
@@ -263,6 +264,7 @@ class CharacterArchetypes {
     specialAbility: 'Can solve any quiz, puzzle, or brain teaser with clever thinking',
     matureName: 'Logic Architect',
     matureDescription: 'Deconstructs complex problems and architects elegant solutions',
+    adventurerDescription: 'The strategist who cracks the impossible puzzle when everyone else is stuck.',
     sproutImageId: 'quiz_whiz',
     bandImageId: 'clever_inventor',
     attributes: {
@@ -284,6 +286,7 @@ class CharacterArchetypes {
     specialAbility: 'Has a magic paintbrush that brings drawings to life',
     matureName: 'Vision Architect',
     matureDescription: 'Creates art that bleeds into reality — illustrations gain a life of their own',
+    adventurerDescription: 'The wildcard who invents solutions nobody else thought of — creativity is your superpower.',
     sproutImageId: 'master_creator',
     bandImageId: 'gentle_dreamer',
     attributes: {
@@ -305,6 +308,7 @@ class CharacterArchetypes {
     specialAbility: 'Can sense emotions and heal broken spirits with kindness',
     matureName: 'Harmony Mediator',
     matureDescription: 'Reads emotional undercurrents and mediates conflicts with empathy',
+    adventurerDescription: 'The glue that keeps the team from falling apart — you sense what others feel before they say it.',
     sproutImageId: 'heart_healer',
     bandImageId: 'kind_healer',
     attributes: {
@@ -326,6 +330,7 @@ class CharacterArchetypes {
     specialAbility: 'Moves faster than sound and leaves trails of stardust',
     matureName: 'Kinetic Specialist',
     matureDescription: 'Channels raw physical energy into precision movement and split-second decisions',
+    adventurerDescription: 'The one the team counts on when seconds matter — no obstacle slows you down.',
     sproutImageId: 'lightning_runner',
     bandImageId: 'speedy_explorer',
     attributes: {
@@ -347,6 +352,7 @@ class CharacterArchetypes {
     specialAbility: 'Can talk to animals and move unseen like a shadow',
     matureName: 'Ecological Whisperer',
     matureDescription: 'Reads the language of ecosystems and hears what the living world doesn\'t say aloud',
+    adventurerDescription: 'The scout who moves unseen and hears what the world won\'t say out loud — nothing escapes your notice.',
     sproutImageId: 'animal_whisperer',
     bandImageId: 'animal_whisperer',
     attributes: {
@@ -390,6 +396,8 @@ class ArchetypeData {
   final String specialAbility; // New: physics-defying power for adventures
   final String? matureName;
   final String? matureDescription;
+  /// Adventurer band (ages 9-11): role in the adventure, not just appearance.
+  final String? adventurerDescription;
   final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
   final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
 
@@ -403,6 +411,7 @@ class ArchetypeData {
     required this.specialAbility,
     this.matureName,
     this.matureDescription,
+    this.adventurerDescription,
     this.sproutImageId,
     this.bandImageId,
   });
@@ -414,6 +423,7 @@ class ArchetypeData {
 
   String descriptionForAge(int age) {
     if (age >= 12 && matureDescription != null) return matureDescription!;
+    if (age >= 9 && age <= 11 && adventurerDescription != null) return adventurerDescription!;
     return description;
   }
 

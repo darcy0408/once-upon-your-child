@@ -91,6 +91,22 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
   final String launchStoryLabel;
   final String companionCTALabel;
 
+  // --- Scenario / Wizard Labels ---
+  /// Page title for scenario selection step.
+  final String scenarioPageTitle;
+
+  /// Page subtitle for scenario selection step.
+  final String scenarioPageSubtitle;
+
+  /// Category header for fantasy/magical scenarios.
+  final String scenarioCategoryFantasyLabel;
+
+  /// Category header for real-life/contemporary scenarios.
+  final String scenarioCategoryRealLabel;
+
+  /// Hint text shown at the bottom of the hero creator step.
+  final String wizardNextHint;
+
   const AgeBandThemeData({
     required this.band,
     required this.primary,
@@ -125,6 +141,11 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
     required this.feelingsPrompt,
     required this.launchStoryLabel,
     required this.companionCTALabel,
+    required this.scenarioPageTitle,
+    required this.scenarioPageSubtitle,
+    required this.scenarioCategoryFantasyLabel,
+    required this.scenarioCategoryRealLabel,
+    required this.wizardNextHint,
   });
 
   /// Background gradient built from the band's three gradient colors.
@@ -286,6 +307,11 @@ const sproutTheme = AgeBandThemeData(
   feelingsPrompt: 'Tap a face!',
   launchStoryLabel: 'Make Magic!',
   companionCTALabel: 'Pick My Friends!',
+  scenarioPageTitle: 'Pick a Place!',
+  scenarioPageSubtitle: 'Where should the story happen?',
+  scenarioCategoryFantasyLabel: 'Magical Worlds',
+  scenarioCategoryRealLabel: 'Real-Life Heroes',
+  wizardNextHint: 'Next: Review & Make Magic!',
 );
 
 /// Explorer (ages 6-8): Current magical purple — the baseline aesthetic.
@@ -329,6 +355,11 @@ const explorerTheme = AgeBandThemeData(
   feelingsPrompt: 'Tap to explore feelings',
   launchStoryLabel: 'Make Magic!',
   companionCTALabel: 'Gather Party!',
+  scenarioPageTitle: 'Choose Your Adventure!',
+  scenarioPageSubtitle: 'Where shall we go today?',
+  scenarioCategoryFantasyLabel: 'Magical Worlds',
+  scenarioCategoryRealLabel: 'Real-Life Heroes',
+  wizardNextHint: 'Next: Review & Make Magic!',
 );
 
 /// Adventurer (ages 9-12): Deeper cosmic palette, book-like typography,
@@ -370,8 +401,13 @@ const adventurerTheme = AgeBandThemeData(
   companionLabel: 'Choose Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'Set the mood for your story',
-  launchStoryLabel: 'Start Adventure!',
+  launchStoryLabel: 'MISSION READY',
   companionCTALabel: 'Assemble Party',
+  scenarioPageTitle: 'Choose Your Adventure!',
+  scenarioPageSubtitle: 'Where shall we go today?',
+  scenarioCategoryFantasyLabel: 'Magical Worlds',
+  scenarioCategoryRealLabel: 'Real-Life Heroes',
+  wizardNextHint: 'Next: Review & Make Magic!',
 );
 
 /// Creator (ages 13+): Clean, editorial, dark mode default.
@@ -415,6 +451,11 @@ const creatorTheme = AgeBandThemeData(
   feelingsPrompt: 'What mood fits your story?',
   launchStoryLabel: 'Create Story',
   companionCTALabel: 'Set the Cast',
+  scenarioPageTitle: 'Choose Your Adventure!',
+  scenarioPageSubtitle: 'Where shall we go today?',
+  scenarioCategoryFantasyLabel: 'Magical Worlds',
+  scenarioCategoryRealLabel: 'Real-Life Heroes',
+  wizardNextHint: 'Next: Review',
 );
 
 /// Adolescent (ages 15-17): Cinematic charcoal-black, electric teal accent,
@@ -454,6 +495,11 @@ const adolescentTheme = AgeBandThemeData(
   feelingsPrompt: "What's going on under the surface?",
   launchStoryLabel: 'Start Writing',
   companionCTALabel: 'Continue',
+  scenarioPageTitle: 'Choose a Premise',
+  scenarioPageSubtitle: 'What narrative interests you?',
+  scenarioCategoryFantasyLabel: 'Speculative Fiction',
+  scenarioCategoryRealLabel: 'Contemporary Themes',
+  wizardNextHint: 'Next: Review',
 );
 
 /// Adult (ages 18+): Refined minimal dark, warm amber-gold accent,
@@ -493,6 +539,11 @@ const adultTheme = AgeBandThemeData(
   feelingsPrompt: 'Explore the emotional landscape',
   launchStoryLabel: 'Begin',
   companionCTALabel: 'Continue',
+  scenarioPageTitle: 'Choose a Premise',
+  scenarioPageSubtitle: 'What narrative interests you?',
+  scenarioCategoryFantasyLabel: 'Speculative Fiction',
+  scenarioCategoryRealLabel: 'Contemporary Themes',
+  wizardNextHint: 'Next: Review',
 );
 
 /// Look up the theme data for a given band.
