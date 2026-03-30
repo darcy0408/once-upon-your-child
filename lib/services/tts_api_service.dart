@@ -54,13 +54,26 @@ class TtsApiService {
         if (characterVoiceId != null) 'character_voice_id': characterVoiceId,
       };
 
-      final response = await http
+      var response = await http
           .post(
             uri,
             headers: headers,
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 300));
+
+      // On 401 (expired token), force re-auth and retry once.
+      if (response.statusCode == 401) {
+        await ApiServiceManager.resetAndReauthenticate();
+        final retryHeaders = await ApiServiceManager.authHeaders();
+        response = await http
+            .post(
+              uri,
+              headers: retryHeaders,
+              body: jsonEncode(body),
+            )
+            .timeout(const Duration(seconds: 300));
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;

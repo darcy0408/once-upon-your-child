@@ -105,19 +105,39 @@ class ApiServiceManager {
     }
   }
 
+  /// Returns true if [token] is a JWT whose `exp` claim is in the past.
+  static bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      ) as Map<String, dynamic>;
+      final exp = payload['exp'] as int?;
+      if (exp == null) return false;
+      return DateTime.now().millisecondsSinceEpoch ~/ 1000 >= exp;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Future<void> _doEnsureAuthenticated() async {
-    if (_authToken != null) return;
+    if (_authToken != null && !_isTokenExpired(_authToken!)) return;
+    _authToken = null; // clear any expired in-memory token
 
     // Try to load from storage
     final prefs = await SharedPreferences.getInstance();
-    _authToken = prefs.getString(_tokenKey);
+    final stored = prefs.getString(_tokenKey);
     _refreshToken = prefs.getString(_refreshTokenKey);
     _userId = prefs.getString(_userIdKey);
 
-    if (_authToken != null) {
+    if (stored != null && !_isTokenExpired(stored)) {
+      _authToken = stored;
       debugPrint('✅ Loaded auth token from storage');
       return;
     }
+    // Stored token absent or expired — remove it and get a fresh one.
+    await prefs.remove(_tokenKey);
 
     // Get new anonymous token
     debugPrint('🔐 Getting anonymous auth token...');

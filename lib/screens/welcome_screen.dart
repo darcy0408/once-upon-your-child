@@ -873,26 +873,6 @@ class _PressableButtonState extends State<_PressableButton> {
   }
 }
 
-/// Emoji scenes shown inside each age circle. Values map to [_ageEntries] values.
-const _ageCircleEmoji = {
-  2:  '🐣',
-  3:  '🐻',
-  4:  '🌈',
-  5:  '🦕',
-  6:  '🐉',
-  7:  '🧙',
-  8:  '🚀',
-  9:  '⚔️',
-  10: '🔭',
-  11: '🗺️',
-  12: '🎨',
-  13: '✨',
-  14: '🎭',
-  15: '🎸',
-  16: '🏄',
-  17: '🎯',
-  21: '🌟', // 18+
-};
 
 /// Tappable age circle with press + selection animations.
 class _AgeCircle extends StatefulWidget {
@@ -962,35 +942,16 @@ class _AgeCircleState extends State<_AgeCircle> {
                   : [],
             ),
             alignment: Alignment.center,
-            child: _ageCircleEmoji.containsKey(widget.value)
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _ageCircleEmoji[widget.value]!,
-                        style: TextStyle(fontSize: widget.size * 0.33),
-                      ),
-                      Text(
-                        widget.label,
-                        style: TextStyle(
-                          color: widget.selected ? _gold : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.label.length > 2
-                              ? widget.size * 0.13
-                              : widget.size * 0.19,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  )
-                : Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: widget.selected ? _gold : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: widget.label.length > 2 ? 10 : 14,
-                    ),
-                  ),
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: widget.label.length > 2
+                    ? widget.size * 0.19
+                    : widget.size * 0.28,
+              ),
+            ),
           ),
         ),
       ),
