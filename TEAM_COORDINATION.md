@@ -22,19 +22,19 @@
 | `lib/widgets/moon_phase_progress.dart` | Neutral default step 3 label |
 
 ### Status
-- [ ] Phase 1 — Theme fields (`age_band_theme.dart` — all 6 band constants + constructor + copyWith + lerp)
-- [ ] Phase 2A — Welcome: split "13-17" into individual ages 13-17, 4-column grid
-- [ ] Phase 2B — Welcome: neutral title splash ("Your stories, your way.")
-- [ ] Phase 2C — Welcome: mature band transition screen after age selection
-- [ ] Phase 2D — TTS: remove "Make Magic" from pre-cached phrases
-- [ ] Phase 3A — Scenario selection: band-aware title/subtitle, category labels, ordering, conflict hooks
-- [ ] Phase 3B — Hero creator: hint text + free-text character field; `wizard_data.dart` field
-- [ ] Phase 3C — Companion selector: pet photo button text for mature bands
-- [ ] Phase 3D — Feelings quest modal: font for adolescent
-- [ ] Phase 3E/F — Magic review: minimal layout + `_MatureStartButton`
-- [ ] Phase 4 — "Magic" language mop-up: `quick_story_screen`, `main_story`, `moon_phase_progress`
-- [ ] flutter analyze clean
-- [ ] Committed
+- [x] Phase 1 — Theme fields (`age_band_theme.dart` — all 6 band constants + constructor + copyWith + lerp)
+- [x] Phase 2A — Welcome: split "13-17" into individual ages 13-17, 4-column grid
+- [x] Phase 2B — Welcome: neutral title splash ("Your stories, your way.")
+- [x] Phase 2C — Welcome: mature band transition screen after age selection
+- [x] Phase 2D — TTS: remove "Make Magic" from pre-cached phrases
+- [x] Phase 3A — Scenario selection: band-aware title/subtitle, category labels, ordering, conflict hooks
+- [x] Phase 3B — Hero creator: hint text + free-text character field; `wizard_data.dart` field
+- [x] Phase 3C — Companion selector: pet photo button text for mature bands
+- [x] Phase 3D — Feelings quest modal: SourceSansPro font for mature bands
+- [x] Phase 3E/F — Magic review: minimal dark card + _buildAdolescentMinimalReview
+- [x] Phase 4 — "Magic" language mop-up: `quick_story_screen`, `main_story`, `moon_phase_progress`
+- [x] flutter analyze clean (warnings only, pre-existing)
+- [x] Committed (62ae649)
 
 ---
 
@@ -175,7 +175,7 @@
 - [x] Phase 3A — Scenario Carousel: swipe peek + first-time hint; parallax tilt cards; "New!" badges
 - [x] Phase 3B — Hero Creator: staggered archetype card deal; companion waving on select; TTS narration
 - [x] Phase 3C — Big Feelings: progressive disclosure (8 core → expand); body outline for body signal step
-- [ ] Phase 4 — Magic Review: sticker pop-in; enhanced Make Magic glow ring; 3-2-1 countdown
+- [x] Phase 4 — Magic Review: sticker pop-in; enhanced Make Magic glow ring; 3-2-1 countdown
 
 ---
 
