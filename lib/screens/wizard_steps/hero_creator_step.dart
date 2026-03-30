@@ -3714,15 +3714,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Future<void> _speakPagePrompt(int page) async {
-    final prompt = switch (page) {
-      1 => "What is your hero's name? Tap the microphone to say it!",
-      2 => "Who is your hero? Tap the one you like!",
-      3 => "Tap your buddies to bring them along!",
-      4 => "Where should we go? Tap the picture you want.",
-      5 => "You are all set! Tap Make Magic!",
-      _ => null,
-    };
-    if (prompt != null) await _speakForSprout(prompt);
+    final age = widget.wizardData.characterAge;
+    if (age <= 5) {
+      // Sprout — full guided TTS on every page
+      final prompt = switch (page) {
+        1 => "What is your hero's name? Tap the microphone to say it!",
+        2 => "Who is your hero? Tap the one you like!",
+        3 => "Tap your buddies to bring them along!",
+        4 => "Where should we go? Tap the picture you want.",
+        5 => "You are all set! Tap Make Magic!",
+        _ => null,
+      };
+      if (prompt != null) await _speakForSprout(prompt);
+    } else {
+      // Older bands — warm narrator voice on archetype + companion pages only
+      final prompt = switch (page) {
+        2 => "Choose your hero's path!",
+        3 => "Who will join you on your quest?",
+        _ => null,
+      };
+      if (prompt != null) {
+        await AppTtsService.instance.stop();
+        if (mounted) {
+          unawaited(AppTtsService.instance.speak(prompt));
+        }
+      }
+    }
   }
 
   String? _sceneLabel(String id) => switch (id) {
