@@ -7,7 +7,9 @@ import '../services/app_tts_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import '../widgets/body_outline_widget.dart';
 import '../widgets/sprout_animations.dart';
+import '../data/body_zone_mapping.dart' as body_map;
 
 class BigFeelingsFlowResult {
   const BigFeelingsFlowResult({
@@ -604,6 +606,8 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   String? _trigger;
   String? _bodySignal;
   String? _copingTool; // held temporarily while journal step is shown
+  bool _showAllFeelings = false;
+  String? _outlineSelectedZone; // tracks tapped zone in body-outline step
 
   late final TextEditingController _journalController;
 
@@ -674,7 +678,11 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       return;
     }
     // Sprout: only 2 steps — feeling → coping tool, so back always goes to step 0
-    setState(() => _step = _isSproutBand ? 0 : _step - 1);
+    setState(() {
+      _step = _isSproutBand ? 0 : _step - 1;
+      if (_step == 0) _showAllFeelings = false;
+      if (_step == 2) _outlineSelectedZone = null;
+    });
   }
 
   void _selectFeeling(String feeling) {
@@ -830,10 +838,56 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                       onNo: () => setState(() => _step = 1),
                     ),
                   ),
-                ] else
+                ] else if (_step == 2 && !_isSproutBand)
+                  // Body outline replaces the text-list grid for body signal step
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: BodyOutlineWidget(
+                            ageBand: band.band,
+                            highlightColor: band.accent,
+                            selectedZone: _outlineSelectedZone,
+                            onZoneSelected: (zoneId) {
+                              final opts = _bodyOptions[_feeling] ?? [];
+                              final signal = body_map.bodyZoneToSignal(
+                                  zoneId,
+                                  opts
+                                      .map((o) => o.value)
+                                      .toList());
+                              setState(() => _outlineSelectedZone = zoneId);
+                              _selectBodySignal(signal);
+                            },
+                          ),
+                        ),
+                        if (_outlineSelectedZone != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _outlineSelectedZone!
+                                .replaceAll('_', ' ')
+                                .split(' ')
+                                .map((w) => w.isEmpty
+                                    ? ''
+                                    : w[0].toUpperCase() + w.substring(1))
+                                .join(' '),
+                            style: GoogleFonts.getFont(
+                              band.uiFontFamily,
+                              color: band.accent,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    ),
+                  )
+                else
                 Expanded(
                   child: GridView.builder(
-                    itemCount: options.length,
+                    itemCount: (_step == 0 && !_isSproutBand && !_showAllFeelings && options.length > 8)
+                        ? 9 // 8 core + 1 expand button
+                        : options.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: AppSpacing.md,
@@ -841,6 +895,48 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                       childAspectRatio: 1,
                     ),
                     itemBuilder: (context, index) {
+                      // Progressive disclosure: show "More feelings…" at slot 8
+                      final showExpand = _step == 0 &&
+                          !_isSproutBand &&
+                          !_showAllFeelings &&
+                          options.length > 8 &&
+                          index == 8;
+                      if (showExpand) {
+                        return GestureDetector(
+                          onTap: () => setState(() => _showAllFeelings = true),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: band.accent.withValues(alpha: 0.6),
+                                width: 2,
+                                strokeAlign: BorderSide.strokeAlignInside,
+                              ),
+                              color: Colors.white.withValues(alpha: 0.06),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_circle_outline,
+                                    color: band.accent, size: 28),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'More\nfeelings…',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.getFont(
+                                    band.uiFontFamily,
+                                    color: band.accent,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
                       final option = options[index];
                       // Sprout step 0: animated feeling faces with TTS labels.
                       if (_isSproutBand && _step == 0) {

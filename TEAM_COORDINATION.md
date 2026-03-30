@@ -174,7 +174,7 @@
 - [x] Phase 2 — Welcome Screen: star burst on name completion; illustrated age picker circles
 - [x] Phase 3A — Scenario Carousel: swipe peek + first-time hint; parallax tilt cards; "New!" badges
 - [x] Phase 3B — Hero Creator: staggered archetype card deal; companion waving on select; TTS narration
-- [ ] Phase 3C — Big Feelings: progressive disclosure (8 core → expand); body outline for body signal step
+- [x] Phase 3C — Big Feelings: progressive disclosure (8 core → expand); body outline for body signal step
 - [ ] Phase 4 — Magic Review: sticker pop-in; enhanced Make Magic glow ring; 3-2-1 countdown
 
 ---
