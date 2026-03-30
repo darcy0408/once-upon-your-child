@@ -411,10 +411,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     age=age,
                     character_details=char_details,
                     companion_pets=companion_pets,
-                    companion_characters=companion_characters,
+                    companion_characters=companion_character_details,
                     extra_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
+                    world_bible=kwargs.get("world_bible", ""),
+                    conflict_hook=kwargs.get("conflict_hook", ""),
+                    sensory_palette=kwargs.get("sensory_palette", ""),
                 )
                 logger.info(f"Full prompt for rhyme time mode: {prompt}")
             else:

@@ -1,5 +1,36 @@
 # Team Coordination
 
+## 2026-03-29 — Rhyme Time Mode: Full Age Band Audit & Fix (Claude Sonnet 4.6)
+
+**Goal:** Rhyme time stories were generating in a context vacuum — no scene/world bible, no character strengths, no companion powers, "coping moment" phrasing leaking into older-band poetry. Fix all 7 identified issues across both backend files.
+
+### Issues Found & Fixed
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | `_build_rhyme_time_prompt` had no `world_bible` param — scene context completely absent | Added `world_bible` param; injected as `Setting:` into prompt |
+| 2 | `conflict_hook` from scenario_data never forwarded to rhyme time | Added `conflict_hook` param; injected as `Conflict:` |
+| 3 | `sensory_palette` never forwarded | Added `sensory_palette` param; injected as `Sensory Palette:` |
+| 4 | `character_details` accepted but silently ignored (no strengths/gender/pronouns in prompt) | Extracted and injected `strengths`, `gender`, `pronouns`, `specialAbility` |
+| 5 | Companion powers/behaviors absent — rhyme time got flat name list only | Updated companion loop to extract `signaturePower`, `powerConstraint`, `behaviorPattern` |
+| 6 | `"coping moment"` in requirements — in `_META_LEAK_TERMS` blacklist, wrong tone for 11+ | Replaced with age-scaled requirements lines (wonder/strength for ≤10, turning-point for 11-12, earned emotional weight for 13+) |
+| 7 | Adults (18+) fell into the `age >= 13` branch (teen poetry rules) | Added `age >= 18` branch above `age >= 13` with literary/villanelle framing |
+| 8 | Call site used `companion_characters` (raw strings) not `companion_character_details` (enriched DB dicts) | Fixed `story_tasks.py` call to use `companion_character_details` |
+| 9 | `config['notes']` age calibration (sentence length, vocab, POV) not applied to rhyme time | Added `Writing style: {config['notes']}` to prompt |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `backend/services/story_service.py` | `_build_rhyme_time_prompt` — new params, character context, companion powers, age-scaled requirements, adult branch, writing style notes |
+| `backend/tasks/story_tasks.py` | Rhyme time call block — use `companion_character_details`, forward `world_bible`/`conflict_hook`/`sensory_palette` from kwargs |
+
+### Status
+- [x] `story_service.py` — all 7 prompt-side fixes
+- [x] `story_tasks.py` — call site fixes (world_bible, conflict_hook, sensory_palette, companion_character_details)
+
+---
+
 ## 2026-03-29 — Adolescent (Ages 15-17) UX Redesign (Claude Sonnet 4.6)
 
 **Goal:** Make the Adolescent band feel genuinely mature and self-directed — not "dark children's app." Audit all "magic" language, redesign the welcome screen age picker, surface literary scenario descriptions, add free-text character option, and replace the elaborate review screen with a minimal dark card.

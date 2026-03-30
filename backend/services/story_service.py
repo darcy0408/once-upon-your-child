@@ -952,7 +952,7 @@ No extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}"""
 
 
-def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
+def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements="", world_bible="", conflict_hook="", sensory_palette=""):
     """Build prompt for Rhyme Time mode stories."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
@@ -965,9 +965,27 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
         length_key = 'medium'
     word_range = config['rhyme'][length_key]
 
+    # Extract character context
+    char_details = character_details or {}
+    strengths = ", ".join(char_details.get('strengths', []))
+    gender = char_details.get('gender', '')
+    pronouns = char_details.get('pronouns', '')
+    special_ability = char_details.get('specialAbility') or ''
+    gender_text = ""
+    if gender:
+        gender_text = f" ({gender}{', pronouns: ' + pronouns if pronouns else ''})"
+
     # Age-appropriate instructions
     age_instruction = ""
     rhyme_scheme_instruction = "Consistent AABB rhyme scheme."
+    # Age-scaled requirements line — "magical surprise" fits all ages; "coping moment"
+    # is appropriate for children but feels childish/clinical for older bands.
+    if age <= 10:
+        requirements_line = f"Requirements: Include a moment of genuine wonder and a beat where {character_name} discovers their own strength. {character_name} is the hero."
+    elif age <= 12:
+        requirements_line = f"Requirements: Include vivid imagery, a turning-point moment, and a resonant final image. {character_name} is the hero."
+    else:
+        requirements_line = f"Requirements: Let the poem carry genuine emotional weight. The resolution should feel earned, not announced. {character_name} is the subject."
 
     if age <= 5:
         age_instruction = (
@@ -996,6 +1014,17 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
             "Use ABCB ballad scheme or rhyming couplets (AABB). "
             "Each stanza 4 lines. Build toward a satisfying climax."
         )
+    elif age >= 18:
+        age_instruction = (
+            "Write a literary poem — free verse, sonnet, or villanelle. "
+            "Explore complex emotion, memory, or meaning with precise, evocative language. "
+            "Prioritise craft: rhythm, imagery, and resonance over rigid rhyme. "
+            "Write as literary poetry, not a children's verse."
+        )
+        rhyme_scheme_instruction = (
+            "Free verse, sonnet (14 lines, ABAB CDCD EFEF GG), or villanelle. "
+            "Slant rhyme and internal rhyme preferred over forced end-rhyme. No limericks."
+        )
     elif age >= 13:
         age_instruction = (
             "Write a sophisticated poem — free verse or sonnet form. "
@@ -1018,7 +1047,6 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
             "Build dramatic tension and resolve it in the final stanza."
         )
 
-
     companion_sections = []
     all_companion_names = []
     if companion_pets:
@@ -1037,15 +1065,31 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
                 all_companion_names.append(str(p))
 
     if companion_characters:
+        behavior_instructions = []
         for c in companion_characters:
             if isinstance(c, dict):
                 name = c.get('name')
+                power = c.get('signaturePower', '')
+                constraint = c.get('powerConstraint', '')
+                behavior = c.get('behaviorPattern', '')
                 if name:
-                    companion_sections.append(name)
+                    entry = name
+                    if power:
+                        entry += f" | Power: {power}"
+                    if constraint:
+                        entry += f" | Constraint: {constraint}"
+                    companion_sections.append(entry)
                     all_companion_names.append(name)
+                    if behavior:
+                        behavior_instructions.append(f"  [{name}]: {behavior}")
             elif c:
                 companion_sections.append(str(c))
                 all_companion_names.append(str(c))
+        if behavior_instructions:
+            companion_sections.append(
+                "CHARACTER BEHAVIOR (weave these throughout the poem, not just the climax):\n"
+                + "\n".join(behavior_instructions)
+            )
 
     if extra_characters:
         for c in extra_characters:
@@ -1058,17 +1102,24 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
                 companion_sections.append(str(c))
                 all_companion_names.append(str(c))
 
-    comp_str = ", ".join(companion_sections) if companion_sections else "None"
+    comp_str = "\n".join(companion_sections) if companion_sections else "None"
     mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
     return f"""
-Create a RHYME TIME story for {character_name} (age {age}).
+Create a RHYME TIME story for {character_name}{gender_text} (age {age}).
 Theme: {theme}
+{('Conflict: ' + conflict_hook) if conflict_hook else ''}
+{('Setting: ' + world_bible) if world_bible else ''}
+{('Sensory Palette: ' + sensory_palette) if sensory_palette else ''}
+Hero: {character_name} (Strengths: {strengths or 'brave and kind'}{(', Special ability: ' + special_ability) if special_ability else ''})
 Tone: {age_instruction or 'Uplifting and fun'}
+Writing style: {config['notes']}
 Word Count: {word_range[0]}-{word_range[1]} words.
 Scheme: {rhyme_scheme_instruction}
-Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
-Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
+{requirements_line}
+Companions:
+{comp_str}
+(MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST appear in the poem.)
 Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided) (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
