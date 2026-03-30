@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
 
-/// Image-backed mode orb using cleaned transparent assets.
+/// Illustrated rectangular scene-thumbnail card for story mode selection.
+/// Each card shows the mode illustration over a per-mode gradient, with the
+/// mode label (and optional subtitle) overlaid at the bottom.
 class ImageModeOrb extends StatefulWidget {
   final String modeType; // 'tales', 'rhyme', 'reading', 'pickpath'
   final String label;
@@ -60,156 +62,197 @@ class _ImageModeOrbState extends State<ImageModeOrb>
   }
 
   String _getAssetPath() {
-    final suffix = widget.isActive ? '_pressed' : '';
+    // Always use the same asset regardless of active state — the active
+    // state is communicated via border/glow rather than a different image.
     switch (widget.modeType) {
       case 'tales':
-        return 'assets/images/ui/clean/tales_orb$suffix.png';
+        return 'assets/images/ui/clean/tales_orb.png';
       case 'rhyme':
-        return 'assets/images/ui/clean/rhyme_time_orb$suffix.png';
+        return 'assets/images/ui/clean/rhyme_time_orb.png';
       case 'reading':
-        return 'assets/images/ui/clean/easy_read_orb$suffix.png';
+        return 'assets/images/ui/clean/easy_read_orb.png';
       case 'pickpath':
-        return 'assets/images/ui/clean/pick_path_orb$suffix.png';
+        return 'assets/images/ui/clean/pick_path_orb.png';
       default:
-        return 'assets/images/ui/clean/tales_orb$suffix.png';
+        return 'assets/images/ui/clean/tales_orb.png';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final glowColor = widget.primaryColor;
+    final primaryColor = widget.primaryColor;
+    final secondaryColor = widget.secondaryColor;
 
-    // GestureDetector is outside MagicalFloat so the hit area stays fixed
-    // while only the visual content floats. This prevents "element not stable"
-    // tap failures caused by the animation constantly moving the touch target.
     return GestureDetector(
       onTap: widget.onTap,
-      child: SizedBox(
-        width: 104,
-        child: MagicalFloat(
-          distance: 4.0,
-          duration: const Duration(seconds: 4),
-          delay: (widget.modeType.length * 100).toDouble(), // Pseudo-random offset
-          child: IgnorePointer(
-            child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 88,
-                height: 88,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (widget.isActive)
-                      AnimatedBuilder(
-                        animation: _pulseController,
-                        builder: (context, child) {
-                          final t = _pulseController.value;
-                          return Container(
-                            width: 96 + (12 * t),
-                            height: 96 + (12 * t),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  glowColor.withValues(
-                                      alpha: 0.45 * (1 - t * 0.3)),
-                                  glowColor.withValues(
-                                      alpha: 0.16 * (1 - t * 0.3)),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+      child: MagicalFloat(
+        distance: 3.0,
+        duration: const Duration(seconds: 4),
+        delay: (widget.modeType.length * 100).toDouble(),
+        child: IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final t = _pulseController.value;
+              final borderWidth = widget.isActive ? 2.5 + t * 1.0 : 0.0;
+              final borderAlpha = widget.isActive ? 0.85 + t * 0.15 : 0.0;
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 136,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: primaryColor.withValues(alpha: borderAlpha),
+                    width: borderWidth,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withValues(
+                        alpha: widget.isActive ? 0.55 + t * 0.15 : 0.25,
                       ),
-                    AnimatedScale(
-                      duration: const Duration(milliseconds: 180),
-                      scale: widget.isActive ? 1.03 : 1.0,
-                      child: Container(
+                      blurRadius: widget.isActive ? 18 + t * 8 : 10,
+                      spreadRadius: widget.isActive ? 3 + t * 2 : 1,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    widget.isActive ? 16.5 : 18,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Gradient background
+                      Container(
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: glowColor.withValues(
-                                alpha: widget.isActive ? 0.75 : 0.45,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              secondaryColor.withValues(
+                                alpha: widget.isActive ? 0.55 : 0.35,
                               ),
-                              blurRadius: widget.isActive ? 20 : 14,
-                              spreadRadius: widget.isActive ? 5 : 2,
-                            ),
-                          ],
+                              primaryColor.withValues(
+                                alpha: widget.isActive ? 0.75 : 0.5,
+                              ),
+                            ],
+                          ),
                         ),
-                        child: ClipOval(
+                      ),
+                      // Illustration — centred in the upper 75% of the card
+                      Positioned(
+                        top: 8,
+                        left: 0,
+                        right: 0,
+                        height: 82,
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 200),
+                          scale: widget.isActive ? 1.05 : 1.0,
                           child: Image.asset(
                             _getAssetPath(),
-                            width: 84,
-                            height: 84,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                             filterQuality: FilterQuality.high,
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: widget.subtitle != null ? 52 : 34,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.label,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight:
-                            widget.isActive ? FontWeight.w800 : FontWeight.w600,
-                        fontSize: 14,
-                        height: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.7),
-                            blurRadius: 4,
+                      // Bottom label strip with scrim
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.0),
+                                Colors.black.withValues(alpha: 0.72),
+                              ],
+                            ),
                           ),
-                          if (widget.isActive)
-                            Shadow(
-                              color: glowColor.withValues(alpha: 0.55),
-                              blurRadius: 8,
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (widget.subtitle != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        widget.subtitle!,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 11,
-                          height: 1.2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              blurRadius: 3,
-                            ),
-                          ],
+                          padding: const EdgeInsets.fromLTRB(8, 10, 8, 7),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                widget.label,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: widget.isActive
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  fontSize: 13,
+                                  height: 1.2,
+                                  shadows: [
+                                    Shadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.8),
+                                      blurRadius: 4,
+                                    ),
+                                    if (widget.isActive)
+                                      Shadow(
+                                        color: primaryColor.withValues(
+                                            alpha: 0.6),
+                                        blurRadius: 8,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (widget.subtitle != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.subtitle!,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 10,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
+                      // Selected checkmark badge
+                      if (widget.isActive)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: primaryColor.withValues(alpha: 0.9),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withValues(alpha: 0.5),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
-      ),
       ),
     );
   }

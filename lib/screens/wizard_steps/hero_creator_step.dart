@@ -1851,28 +1851,31 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           SizedBox(height: band.space(16)),
           if (band.band == AgeBand.sprout)
-            // Sprouts: just 2 choices — illustrated story or read-along
+            // Sprouts: 2 full-width illustrated scene thumbnails side by side
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ImageModeOrb(
-                  modeType: 'tales',
-                  label: 'Story Quest',
-                  subtitle: 'A story with pictures',
-                  isActive: selectedMode == 'tales',
-                  onTap: () => setState(() => setStoryMode('tales')),
-                  primaryColor: const Color(0xFFAA88FF),
-                  secondaryColor: const Color(0xFFE28EFF),
+                Expanded(
+                  child: ImageModeOrb(
+                    modeType: 'tales',
+                    label: 'Story Quest',
+                    subtitle: 'A story with pictures',
+                    isActive: selectedMode == 'tales',
+                    onTap: () => setState(() => setStoryMode('tales')),
+                    primaryColor: const Color(0xFFAA88FF),
+                    secondaryColor: const Color(0xFFE28EFF),
+                  ),
                 ),
-                const SizedBox(width: 24),
-                ImageModeOrb(
-                  modeType: 'reading',
-                  label: 'Listen & Learn',
-                  subtitle: 'Easy words to read along',
-                  isActive: selectedMode == 'reading',
-                  onTap: () => setState(() => setStoryMode('reading')),
-                  primaryColor: const Color(0xFFB88AFF),
-                  secondaryColor: const Color(0xFFFF9ECC),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ImageModeOrb(
+                    modeType: 'reading',
+                    label: 'Listen & Learn',
+                    subtitle: 'Easy words to read along',
+                    isActive: selectedMode == 'reading',
+                    onTap: () => setState(() => setStoryMode('reading')),
+                    primaryColor: const Color(0xFFB88AFF),
+                    secondaryColor: const Color(0xFFFF9ECC),
+                  ),
                 ),
               ],
             )
@@ -1880,54 +1883,68 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ImageModeOrb(
-                      modeType: 'tales',
-                      label: isCreator ? 'Story' : 'Story Quest',
-                      subtitle: isCreator ? 'Illustrated narrative' : 'An illustrated adventure',
-                      isActive: selectedMode == 'tales',
-                      onTap: () => setState(() => setStoryMode('tales')),
-                      primaryColor: const Color(0xFFAA88FF),
-                      secondaryColor: const Color(0xFFE28EFF),
+                    Expanded(
+                      child: ImageModeOrb(
+                        modeType: 'tales',
+                        label: isCreator ? 'Story' : 'Story Quest',
+                        subtitle: isCreator
+                            ? 'Illustrated narrative'
+                            : 'An illustrated adventure',
+                        isActive: selectedMode == 'tales',
+                        onTap: () => setState(() => setStoryMode('tales')),
+                        primaryColor: const Color(0xFFAA88FF),
+                        secondaryColor: const Color(0xFFE28EFF),
+                      ),
                     ),
-                    const SizedBox(width: 24),
-                    ImageModeOrb(
-                      modeType: 'rhyme',
-                      label: data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
-                      subtitle: isCreator ? 'Verse and rhythm' : 'A story in rhymes',
-                      isActive: selectedMode == 'rhyme',
-                      onTap: () => setState(() => setStoryMode('rhyme')),
-                      primaryColor: const Color(0xFF00D4DD),
-                      secondaryColor: const Color(0xFF7FDDFF),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ImageModeOrb(
+                        modeType: 'rhyme',
+                        label: data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
+                        subtitle: isCreator
+                            ? 'Verse and rhythm'
+                            : 'A story in rhymes',
+                        isActive: selectedMode == 'rhyme',
+                        onTap: () => setState(() => setStoryMode('rhyme')),
+                        primaryColor: const Color(0xFF00D4DD),
+                        secondaryColor: const Color(0xFF7FDDFF),
+                      ),
                     ),
                   ],
                 ),
-                SizedBox(height: band.space(20)),
+                SizedBox(height: band.space(12)),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ImageModeOrb(
-                      modeType: 'pickpath',
-                      label: isCreator ? 'Choose Your Path' : 'Pick a Path',
-                      subtitle: isCreator ? 'Branch the narrative' : 'You choose what happens!',
-                      isActive: selectedMode == 'pickpath',
-                      onTap: () => setState(() => setStoryMode('pickpath')),
-                      primaryColor: const Color(0xFF9E6CFF),
-                      secondaryColor: const Color(0xFFFFB3E6),
-                    ),
-                    if (data.characterAge < 9) const SizedBox(width: 24),
-                    if (data.characterAge < 9) ...[
-                      ImageModeOrb(
-                        modeType: 'reading',
-                        label: _getReadingLabel(band.band),
-                        subtitle: 'Chapter-style reading',
-                        isActive: selectedMode == 'reading',
-                        onTap: () => setState(() => setStoryMode('reading')),
-                        primaryColor: const Color(0xFFB88AFF),
-                        secondaryColor: const Color(0xFFFF9ECC),
+                    Expanded(
+                      child: ImageModeOrb(
+                        modeType: 'pickpath',
+                        label: isCreator ? 'Choose Your Path' : 'Pick a Path',
+                        subtitle: isCreator
+                            ? 'Branch the narrative'
+                            : 'You choose what happens!',
+                        isActive: selectedMode == 'pickpath',
+                        onTap: () => setState(() => setStoryMode('pickpath')),
+                        primaryColor: const Color(0xFF9E6CFF),
+                        secondaryColor: const Color(0xFFFFB3E6),
                       ),
-                    ]
+                    ),
+                    const SizedBox(width: 12),
+                    if (data.characterAge < 9)
+                      Expanded(
+                        child: ImageModeOrb(
+                          modeType: 'reading',
+                          label: _getReadingLabel(band.band),
+                          subtitle: 'Chapter-style reading',
+                          isActive: selectedMode == 'reading',
+                          onTap: () => setState(() => setStoryMode('reading')),
+                          primaryColor: const Color(0xFFB88AFF),
+                          secondaryColor: const Color(0xFFFF9ECC),
+                        ),
+                      )
+                    else
+                      // Spacer so the single card in row 2 only takes half the width
+                      const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
               ],
