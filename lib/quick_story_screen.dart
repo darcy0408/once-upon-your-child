@@ -8,6 +8,7 @@ import 'offline_story_cache.dart';
 import 'premium_upgrade_screen.dart';
 import 'services/api_service_manager.dart';
 import 'subscription_service.dart';
+import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'utils/paywall_gate.dart';
 import 'widgets/storybook_page.dart';
@@ -546,10 +547,10 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
                   shadowColor: AppColors.primary.withValues(alpha: 0.5),
                 ),
                 label: _isGenerating
-                    ? const Row(
+                    ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(
+                          const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
@@ -557,13 +558,13 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           ),
-                          SizedBox(width: 12),
-                          Text('Making magic...'),
+                          const SizedBox(width: 12),
+                          Text((Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false) ? 'Creating story...' : 'Making magic...'),
                         ],
                       )
-                    : const Text(
-                        'Make Magic',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    : Text(
+                        (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false) ? 'Start Story' : 'Make Magic',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
               ),
             ),

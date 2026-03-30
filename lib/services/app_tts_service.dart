@@ -30,7 +30,7 @@ const List<String> kWarmUpPhrases = [
   "Where should we go? Tap the picture you want.",
   "Tell me where your adventure takes place.",
   "What kind of story do you want?",
-  "You are all set! Tap Make Magic!",
+  "You are all set! Tap to begin!",
   "Your adventure is ready! Let's go!",
   "Microphone is unavailable. Please type your idea.",
   "Microphone is unavailable right now.",
@@ -57,7 +57,7 @@ const List<String> kWarmUpPhrases = [
   "Pick your hero's look! Swipe through the pictures and tap the one you like.",
   "Pick a place for your story! You can choose Rainbow World, Cave Full of Crystals, Friendly Dragons, or Make One Up!",
   "Pick your travel buddies! Tap a companion to bring them along. You can pick a tiny dragon, a wise owl, a shadow cat, a star dog, a magic unicorn, or a clever fox.",
-  "Here is your story recipe! Check everything looks right, then tap Make Magic to start!",
+  "Here is your story summary! Check everything looks right, then tap to start!",
 
   // Sprout UX — pre-warm phrases used across all Sprout screens
   "Ready to go? Tap GO!",

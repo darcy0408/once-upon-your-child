@@ -20,7 +20,7 @@ class MoonPhaseProgress extends StatelessWidget {
     this.stepLabels = const [
       'Step 1: Create your hero',
       'Step 2: Pick a companion',
-      'Step 3: Make magic',
+      'Step 3: Begin',
     ],
     this.showLabels = true,
     this.onStepTap,

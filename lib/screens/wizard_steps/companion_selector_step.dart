@@ -602,7 +602,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                     photo: photo,
                   );
                 },
-                child: Text(pickedPhoto != null ? '✨ Make Magic!' : 'Add to Story'),
+                child: Text(pickedPhoto != null && !(Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false) ? '✨ Make Magic!' : 'Add to Story'),
               ),
             ],
           );

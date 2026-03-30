@@ -887,6 +887,141 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     );
   }
 
+  /// Adolescent/adult minimal review: dark card, protagonist + setting + CTA only.
+  /// Skips orb, companion circles, and elaborate decoration — direct and fast.
+  Widget _buildAdolescentMinimalReview(
+      BuildContext context, AgeBandThemeData band, WizardData data) {
+    if (_isGenerating) {
+      return MagicalLoadingView(
+        status: _loadingStatus,
+        onCancel: () => setState(() => _isGenerating = false),
+        isSproutBand: false,
+      );
+    }
+
+    final heroName =
+        data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
+    final scenarioLabel = data.selectedScenario != null
+        ? (ScenarioData.getById(data.selectedScenario!)
+                ?.titleForAge(data.characterAge) ??
+            data.selectedScenario!)
+        : '—';
+    final companionLine = data.companionNames.isEmpty
+        ? 'Solo'
+        : data.companionNames.join(', ');
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Minimal header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MagicEarButton(
+                spokenText: _buildReviewSpokenText(band),
+                size: 26,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Ready to begin?',
+                style: GoogleFonts.sourceSans3(
+                  color: band.textOnDark,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Dark summary card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: band.surface,
+              borderRadius: BorderRadius.circular(band.cardRadiusBase),
+              border: Border.all(
+                  color: band.accent.withValues(alpha: 0.25), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Protagonist name
+                Text(
+                  heroName,
+                  style: GoogleFonts.sourceSans3(
+                    color: band.accent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Setting
+                Text(
+                  scenarioLabel,
+                  style: GoogleFonts.sourceSans3(
+                    color: band.textOnDark.withValues(alpha: 0.8),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (data.companionNames.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    companionLine,
+                    style: GoogleFonts.sourceSans3(
+                      color: band.textOnDark.withValues(alpha: 0.55),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // CTA button — clean text button, no sparkles
+          if (_generationError != null)
+            _GenerationErrorWidget(
+              isSprout: false,
+              onRetry: () {
+                setState(() => _generationError = null);
+                _launchStoryCreation();
+              },
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (!_isGenerating && data.isComplete)
+                    ? _launchStoryCreation
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: band.accent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: band.accent.withValues(alpha: 0.35),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(band.buttonRadiusBase)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  band.launchStoryLabel,
+                  style: GoogleFonts.sourceSans3(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
   String _buildReviewSpokenText(AgeBandThemeData band) {
     final wd = widget.wizardData;
     final heroTerm = band.heroLabel.toLowerCase(); // 'your hero' or 'character'
@@ -895,7 +1030,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ? (ScenarioData.getById(wd.selectedScenario!)
                 ?.titleForAge(wd.characterAge) ??
             wd.selectedScenario!)
-        : (band.band == AgeBand.creator ? 'a setting' : 'a magical place');
+        : (band.band.isMature ? 'a setting' : 'a magical place');
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
         : wd.companionNames.join(' and ');
@@ -1138,6 +1273,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (band.band == AgeBand.creator) {
       return _buildCreatorPitchDocument(context, band, data);
     }
+
+    // Adolescent/adult band: minimal dark card — protagonist, setting, CTA only.
+    if (band.band == AgeBand.adolescent || band.band == AgeBand.adult) {
+      return _buildAdolescentMinimalReview(context, band, data);
+    }
+
     final orbSize =
         (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();
     final heroFallback = band.heroLabel;

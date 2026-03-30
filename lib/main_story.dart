@@ -1184,7 +1184,7 @@ class _StoryScreenState extends State<StoryScreen> {
                         ),
                         label: Text(_interactiveMode
                             ? 'Start Interactive Story'
-                            : 'Make Magic'),
+                            : (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false) ? 'Start Story' : 'Make Magic'),
                       ),
                     ),
                   ],

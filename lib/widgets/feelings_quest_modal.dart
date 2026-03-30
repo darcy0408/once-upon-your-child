@@ -94,11 +94,17 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                           ? 'How are you feeling?'
                           : _titles[_level.clamp(0, 2)],
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false)
+                          ? GoogleFonts.sourceSans3(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 48),
