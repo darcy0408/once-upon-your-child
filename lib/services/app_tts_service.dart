@@ -71,6 +71,14 @@ const List<String> kWarmUpPhrases = [
   "The Magical Forest",
   "The Fluffy Cloud Castle",
   "Under the Sea!",
+
+  // Hero Creator & Companion step narration
+  "Choose your hero's path!",
+  "Who will join you on your quest?",
+
+  // Magic Review countdown
+  "3... 2... 1... Let the magic begin!",
+  "Your story is about to come alive!",
 ];
 
 class AppTtsService {

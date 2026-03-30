@@ -169,7 +169,7 @@
 | `lib/services/app_tts_service.dart` | New pre-warmed phrases for hero/companion TTS narration |
 
 ### Status
-- [ ] Phase 1 — Shared infrastructure: `StarBurstCelebration`, `StaggeredCardDealer`, `ParallaxTiltCard`, `BodyOutlineWidget`, `body_zone_mapping.dart`, onboarding service extensions, TTS warm-up phrases
+- [x] Phase 1 — Shared infrastructure: `StarBurstCelebration`, `StaggeredCardDealer`, `ParallaxTiltCard`, `BodyOutlineWidget`, `body_zone_mapping.dart`, onboarding service extensions, TTS warm-up phrases
 - [ ] Phase 2 — Welcome Screen: star burst on name completion; illustrated age picker circles
 - [ ] Phase 3A — Scenario Carousel: swipe peek + first-time hint; parallax tilt cards; "New!" badges
 - [ ] Phase 3B — Hero Creator: staggered archetype card deal; companion waving on select; TTS narration
