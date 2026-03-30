@@ -10,16 +10,18 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../providers/age_band_provider.dart';
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
+import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/breathing_avatar.dart';
 import '../widgets/sprout_animations.dart';
+import '../widgets/star_burst_celebration.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
 
 const _kUserNameKey = 'user_name';
 
 /// Shown on first launch to collect the child's name and age.
-/// Steps: 0 = title splash, 1 = name input, 2 = age picker + go button.
+/// Steps: 0 = age picker, 1 = title splash, 2 = name input.
 class WelcomeScreen extends ConsumerStatefulWidget {
   /// Called after onboarding is fully complete (consent granted if needed).
   final VoidCallback onComplete;
@@ -35,12 +37,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   final _nameController = TextEditingController();
   int? _selectedAge;
   bool _submitting = false;
+  bool _celebratingName = false;
+  final _burstController = StarBurstCelebrationController();
 
   final _speech = SpeechToText();
   bool _speechEnabled = false;
   bool _isListening = false;
 
-  /// Current step: 0 = title, 1 = name, 2 = age picker.
+  /// Current step: 0 = age picker, 1 = title splash, 2 = name input.
   int _step = 0;
 
   Timer? _titleTimer;
@@ -51,7 +55,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   static const _goldColor = Color(0xFFFFD700);
 
-  // Age options: individual ages 2–12, then grouped 13-17 and 18+.
+  /// True when the selected age maps to the Creator band (ages 12-14).
+  bool get _isCreator =>
+      _selectedAge != null && ageBandFromAge(_selectedAge!) == AgeBand.creator;
+
+  /// True when the selected age maps to the Adolescent band (ages 15-17).
+  bool get _isAdolescent =>
+      _selectedAge != null &&
+      ageBandFromAge(_selectedAge!) == AgeBand.adolescent;
+
+  // Age options: individual ages 2–17, then 18+.
+  // Previously '13-17' was a single entry mapping to age 14 (Creator band).
+  // Now split individually so ages 15-17 correctly map to Adolescent band.
   static const _ageEntries = <({String label, int value})>[
     (label: '2', value: 2),
     (label: '3', value: 3),
@@ -64,7 +79,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     (label: '10', value: 10),
     (label: '11', value: 11),
     (label: '12', value: 12),
-    (label: '13‑17', value: 14),
+    (label: '13', value: 13),
+    (label: '14', value: 14),
+    (label: '15', value: 15),
+    (label: '16', value: 16),
+    (label: '17', value: 17),
     (label: '18+', value: 21),
   ];
 
@@ -80,16 +99,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       CurvedAnimation(parent: _tapHintCtrl, curve: Curves.easeInOut),
     );
 
-    // Speak welcome immediately — don't block behind mic permission dialog.
-    unawaited(_speak('Tap the star to start your adventure!'));
+    // Speak age prompt on first load.
+    unawaited(_speak('How old are you? Tap your age!'));
     _initVoice();
-    // Auto-advance from title to name after 5 s (tap also advances).
-    // Extended from 2.5 s so distracted toddlers have more time.
-    _titleTimer = Timer(const Duration(milliseconds: 5000), () {
-      if (mounted && _step == 0) {
-        _enterNameStep();
-      }
-    });
   }
 
   Future<void> _initVoice() async {
@@ -102,7 +114,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _promptNameAndListen() async {
-    await _speak("Hi, what's your name?");
+    await _speak(_isCreator ? "What should we call you?" : "Hi, what's your name?");
     // Don't auto-open the mic on web — browser requires a user gesture first.
     if (kIsWeb) return;
     if (!_speechEnabled || _isListening || !mounted) return;
@@ -136,6 +148,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     _tapHintCtrl.dispose();
     _nameController.dispose();
     _titleTimer?.cancel();
+    _burstController.dispose();
     AppTtsService.instance.stop();
     _speech.stop();
     super.dispose();
@@ -143,34 +156,51 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   // ── Navigation helpers ────────────────────────────────────────────────────
 
+  void _onAgeSelected(int age) {
+    if (_submitting) return;
+    AppTtsService.instance.stop();
+    setState(() {
+      _selectedAge = age;
+      _step = 1; // advance to title splash
+    });
+    // Auto-advance from splash to name after 5 s (tap also advances).
+    _titleTimer?.cancel();
+    _titleTimer = Timer(const Duration(milliseconds: 5000), () {
+      if (mounted && _step == 1) _enterNameStep();
+    });
+    final band = ageBandFromAge(age);
+    if (band == AgeBand.creator) {
+      unawaited(_speak('Your story begins here.'));
+    } else {
+      unawaited(_speak('Tap the star to start your adventure!'));
+    }
+  }
+
   void _advanceFromTitle() {
     _titleTimer?.cancel();
-    if (mounted && _step == 0) {
+    if (mounted && _step == 1) {
       _enterNameStep();
     }
   }
 
   void _enterNameStep() {
-    setState(() => _step = 1);
+    setState(() => _step = 2);
     unawaited(_promptNameAndListen());
   }
 
   void _advanceFromName() {
     final name = _nameController.text.trim();
-    if (name.isNotEmpty && _step == 1) {
+    if (name.isNotEmpty && _step == 2 && !_celebratingName) {
       AppTtsService.instance.stop();
       _speech.stop();
-      // Speak the name back for a moment of delight, then prompt for age.
-      unawaited(_speak('Hi $name! How old are you? Tap your age!'));
-      setState(() => _step = 2);
+      setState(() => _celebratingName = true);
+      unawaited(_speak('Welcome, $name!'));
+      unawaited(_burstController.trigger());
+      // Brief celebration delay before proceeding
+      Future.delayed(const Duration(milliseconds: 650), () {
+        if (mounted) _handleContinue();
+      });
     }
-  }
-
-  void _onAgeSelected(int age) {
-    if (_submitting) return;
-    AppTtsService.instance.stop();
-    setState(() => _selectedAge = age);
-    _handleContinue();
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -179,18 +209,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF120226),
-      // Small gear icon for parents to reach controls without cluttering the UI
-      floatingActionButton: FloatingActionButton.small(
-        backgroundColor: Colors.white.withAlpha(30),
-        foregroundColor: Colors.white70,
-        tooltip: 'Parent Controls',
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
-        ),
-        child: const Icon(Icons.settings_outlined),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
-      body: Container(
+      body: Stack(children: [
+        Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -218,96 +238,186 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
       ),
+      // Labeled parent button — more visible than a bare gear icon
+      Positioned(
+        top: 8,
+        right: 8,
+        child: SafeArea(
+          child: TextButton.icon(
+            icon: const Icon(Icons.shield_outlined, size: 18, color: Colors.white54),
+            label: const Text(
+              'Parent',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+            ),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
+            ),
+          ),
+        ),
+      ),
+      ]),
     );
   }
 
   Widget _buildStep() {
     switch (_step) {
       case 1:
-        return _buildNameStep();
-      case 2:
-        return _buildAgeStep();
-      default:
         return _buildTitleStep();
+      case 2:
+        return _buildNameStep();
+      default:
+        return _buildAgeStep();
     }
   }
 
-  // ── Step 0: Title splash ──────────────────────────────────────────────────
+  // ── Step 1: Title splash ──────────────────────────────────────────────────
 
   Widget _buildTitleStep() {
     return GestureDetector(
       key: const ValueKey('title'),
       onTap: _advanceFromTitle,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 60),
-          // Wiggling star signals "tap me!" to young children.
-          WiggleWidget(
-            repeat: true,
-            angle: 0.12,
-            duration: const Duration(milliseconds: 700),
-            child: const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Semantics(
-            header: true,
-            label: 'Story Weaver. Welcome!',
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Once Upon\n',
-                    style: GoogleFonts.cinzelDecorative(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: _goldColor,
-                      height: 1.3,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'a Time',
-                    style: GoogleFonts.cinzelDecorative(
-                      fontSize: 38,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Pulsing "Tap me!" replaces static hint — much clearer for toddlers.
-          AnimatedBuilder(
-            animation: _tapHintOpacity,
-            builder: (context, _) => Opacity(
-              opacity: _tapHintOpacity.value,
-              child: Text(
-                'Tap me!',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.fredoka(
-                  color: _goldColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 60),
-        ],
-      ),
+      child: _isCreator ? _buildCreatorTitleStep() : _buildDefaultTitleStep(),
     );
   }
 
-  // ── Step 1: Name input ────────────────────────────────────────────────────
+  Widget _buildDefaultTitleStep() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 60),
+        // Wiggling star signals "tap me!" to young children.
+        WiggleWidget(
+          repeat: true,
+          angle: 0.12,
+          duration: const Duration(milliseconds: 700),
+          child: const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Semantics(
+          header: true,
+          label: 'Story Weaver. Welcome!',
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Once Upon\n',
+                  style: GoogleFonts.cinzelDecorative(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: _goldColor,
+                    height: 1.3,
+                  ),
+                ),
+                TextSpan(
+                  text: 'a Time',
+                  style: GoogleFonts.cinzelDecorative(
+                    fontSize: 38,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Pulsing "Tap me!" replaces static hint — much clearer for toddlers.
+        AnimatedBuilder(
+          animation: _tapHintOpacity,
+          builder: (context, _) => Opacity(
+            opacity: _tapHintOpacity.value,
+            child: Text(
+              'Tap me!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.fredoka(
+                color: _goldColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 60),
+      ],
+    );
+  }
+
+  Widget _buildCreatorTitleStep() {
+    // Minimal, editorial splash for Creator band (ages 12-14).
+    const creatorAccent = Color(0xFF7C4DFF);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 72),
+        const Icon(Icons.edit_note_rounded, color: creatorAccent, size: 48),
+        const SizedBox(height: AppSpacing.lg),
+        Semantics(
+          header: true,
+          label: 'Your story begins here.',
+          child: Text(
+            'Your story\nbegins here.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.bitter(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              height: 1.25,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AnimatedBuilder(
+          animation: _tapHintOpacity,
+          builder: (context, _) => Opacity(
+            opacity: _tapHintOpacity.value,
+            child: Text(
+              'Tap to continue',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.sourceSans3(
+                color: Colors.white38,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 72),
+      ],
+    );
+  }
+
+  // ── Step 2: Name input ────────────────────────────────────────────────────
 
   Widget _buildNameStep() {
+    return _isCreator ? _buildCreatorNameStep() : _buildDefaultNameStep();
+  }
+
+  Widget _buildDefaultNameStep() {
     final typedName = _nameController.text.trim();
-    return Column(
+    return Stack(
       key: const ValueKey('name'),
+      clipBehavior: Clip.none,
+      children: [
+        // Star burst celebration layer — sits behind content, IgnorePointer
+        Positioned.fill(
+          child: IgnorePointer(
+            child: StarBurstCelebration(
+              controller: _burstController,
+              starCount: 16,
+              radiusFactor: 0.65,
+              colors: const [
+                Color(0xFFFFD700),
+                Color(0xFFFF8CFF),
+                Color(0xFF7FFFCF),
+                Color(0xFFFFAA44),
+                Color(0xFFB388FF),
+                Color(0xFFFFFFFF),
+              ],
+            ),
+          ),
+        ),
+        Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // ── Mascot + speech bubble ──────────────────────────────────────────
@@ -369,7 +479,68 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
+        _buildNameFieldAndButton(
+          hintText: _speechEnabled ? "Or type it here…" : "What's your name?",
+          buttonLabel: "That's me!",
+          buttonLeadingIcon: Icons.auto_awesome,
+          buttonLeadingColor: _goldColor,
+        ),
+      ],
+        ), // Column
+      ],
+    ); // Stack
+  }
 
+  Widget _buildCreatorNameStep() {
+    // Profile-setup feel for Creator band (ages 12-14): no mascot, clean dark card.
+    const creatorAccent = Color(0xFF7C4DFF);
+    return Column(
+      key: const ValueKey('creator-name'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: AppSpacing.lg),
+        const Icon(Icons.account_circle_outlined, color: creatorAccent, size: 52),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Set up your profile',
+          style: GoogleFonts.sourceSans3(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _buildNameFieldAndButton(
+          hintText: "What should we call you?",
+          buttonLabel: "Continue",
+          buttonLeadingIcon: Icons.arrow_forward_rounded,
+          buttonLeadingColor: Colors.white,
+          accentColor: creatorAccent,
+          fieldFontFamily: 'sourceSans3',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNameFieldAndButton({
+    required String hintText,
+    required String buttonLabel,
+    required IconData buttonLeadingIcon,
+    required Color buttonLeadingColor,
+    Color? accentColor,
+    String fieldFontFamily = 'fredoka',
+  }) {
+    final accent = accentColor ?? const Color(0xFF7B2FBE);
+    final fieldStyle = fieldFontFamily == 'sourceSans3'
+        ? GoogleFonts.sourceSans3(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w500)
+        : GoogleFonts.fredoka(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w500);
+    final hintStyle = fieldFontFamily == 'sourceSans3'
+        ? GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 18)
+        : GoogleFonts.fredoka(color: _goldColor.withAlpha(130), fontSize: 20, fontWeight: FontWeight.w500);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         // ── Voice button — primary CTA for young children ─────────────────
         if (_speechEnabled) ...[
           Semantics(
@@ -383,15 +554,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isListening
-                      ? const Color(0xFF9E6CFF)
-                      : const Color(0xFF7B2FBE),
+                  color: _isListening ? const Color(0xFF9E6CFF) : accent,
                   boxShadow: [
                     BoxShadow(
-                      color: (_isListening
-                              ? const Color(0xFF9E6CFF)
-                              : const Color(0xFF7B2FBE))
-                          .withAlpha(140),
+                      color: (_isListening ? const Color(0xFF9E6CFF) : accent).withAlpha(140),
                       blurRadius: _isListening ? 24 : 14,
                       spreadRadius: _isListening ? 4 : 0,
                     ),
@@ -408,15 +574,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           const SizedBox(height: 8),
           Text(
             _isListening ? 'Listening…' : 'Tap to say your name',
-            style: GoogleFonts.fredoka(
-              color: Colors.white70,
-              fontSize: 15,
-            ),
+            style: GoogleFonts.sourceSans3(color: Colors.white70, fontSize: 15),
           ),
           const SizedBox(height: AppSpacing.lg),
         ],
-
-        // ── Text field — fallback for older users or web ──────────────────
+        // ── Text field ────────────────────────────────────────────────────
         Semantics(
           label: "Enter your name",
           textField: true,
@@ -424,36 +586,28 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
             textAlign: TextAlign.center,
-            style: GoogleFonts.fredoka(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w500,
-            ),
+            style: fieldStyle,
             autofocus: !_speechEnabled,
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _advanceFromName(),
-            onChanged: (_) => setState(() {}), // rebuild speech bubble
+            onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: _speechEnabled ? "Or type it here…" : "What's your name?",
-              hintStyle: GoogleFonts.fredoka(
-                color: _goldColor.withAlpha(130),
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
+              hintText: hintText,
+              hintStyle: hintStyle,
               filled: true,
               fillColor: Colors.white.withAlpha(15),
               contentPadding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.white24),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.white24),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: const BorderSide(color: _goldColor, width: 2),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: accent, width: 2),
               ),
             ),
           ),
@@ -468,12 +622,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7B2FBE), Color(0xFF4A148C)],
+                gradient: LinearGradient(
+                  colors: [accent, accent.withAlpha(200)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7B2FBE).withAlpha(100),
+                    color: accent.withAlpha(100),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -482,14 +636,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome, color: _goldColor, size: 22),
+                  Icon(buttonLeadingIcon, color: buttonLeadingColor, size: 22),
                   const SizedBox(width: 8),
                   Text(
-                    "That's me!",
-                    style: GoogleFonts.fredoka(
+                    buttonLabel,
+                    style: GoogleFonts.sourceSans3(
                       color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -540,6 +694,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               children: _ageEntries.map((entry) {
                 return _AgeCircle(
                   label: entry.label,
+                  value: entry.value,
                   size: circleSize,
                   selected: _selectedAge == entry.value,
                   onTap: _submitting
@@ -628,16 +783,35 @@ class _PressableButtonState extends State<_PressableButton> {
   }
 }
 
+/// Emoji scenes shown inside each age circle. Values map to [_ageEntries] values.
+const _ageCircleEmoji = {
+  2:  '🐣',
+  3:  '🐻',
+  4:  '🌈',
+  5:  '🦕',
+  6:  '🐉',
+  7:  '🧙',
+  8:  '🚀',
+  9:  '⚔️',
+  10: '🔭',
+  11: '🗺️',
+  12: '🎨',
+  14: '✨', // 13-17
+  21: '🌟', // 18+
+};
+
 /// Tappable age circle with press + selection animations.
 class _AgeCircle extends StatefulWidget {
   const _AgeCircle({
     required this.label,
+    required this.value,
     required this.size,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final int value;
   final double size;
   final bool selected;
   final VoidCallback? onTap;
@@ -694,14 +868,35 @@ class _AgeCircleState extends State<_AgeCircle> {
                   : [],
             ),
             alignment: Alignment.center,
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.selected ? _gold : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: widget.label.length > 2 ? 10 : 14,
-              ),
-            ),
+            child: _ageCircleEmoji.containsKey(widget.value)
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _ageCircleEmoji[widget.value]!,
+                        style: TextStyle(fontSize: widget.size * 0.33),
+                      ),
+                      Text(
+                        widget.label,
+                        style: TextStyle(
+                          color: widget.selected ? _gold : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: widget.label.length > 2
+                              ? widget.size * 0.13
+                              : widget.size * 0.19,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    widget.label,
+                    style: TextStyle(
+                      color: widget.selected ? _gold : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: widget.label.length > 2 ? 10 : 14,
+                    ),
+                  ),
           ),
         ),
       ),

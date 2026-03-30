@@ -170,7 +170,7 @@
 
 ### Status
 - [x] Phase 1 — Shared infrastructure: `StarBurstCelebration`, `StaggeredCardDealer`, `ParallaxTiltCard`, `BodyOutlineWidget`, `body_zone_mapping.dart`, onboarding service extensions, TTS warm-up phrases
-- [ ] Phase 2 — Welcome Screen: star burst on name completion; illustrated age picker circles
+- [x] Phase 2 — Welcome Screen: star burst on name completion; illustrated age picker circles
 - [ ] Phase 3A — Scenario Carousel: swipe peek + first-time hint; parallax tilt cards; "New!" badges
 - [ ] Phase 3B — Hero Creator: staggered archetype card deal; companion waving on select; TTS narration
 - [ ] Phase 3C — Big Feelings: progressive disclosure (8 core → expand); body outline for body signal step
