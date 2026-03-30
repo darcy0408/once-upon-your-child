@@ -15,12 +15,19 @@ class BigFeelingsFlowResult {
     required this.trigger,
     required this.bodySignal,
     required this.copingTool,
+    this.journalEntry,
+    this.bridgeToScenario = false,
   });
 
   final String feeling;
   final String trigger;
   final String bodySignal;
   final String copingTool;
+  /// Creator-band only: optional one-sentence journal reflection
+  final String? journalEntry;
+  /// Adventurer-band: user chose "Yes, go on a quest" — caller should
+  /// auto-select the big_feelings_quest scenario.
+  final bool bridgeToScenario;
 }
 
 class BigFeelingsFlowScreen extends StatefulWidget {
@@ -596,17 +603,74 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   String? _feeling;
   String? _trigger;
   String? _bodySignal;
+  String? _copingTool; // held temporarily while journal step is shown
+
+  late final TextEditingController _journalController;
+
+  bool get _isCreatorBand =>
+      ageBandFromAge(widget.childAge) == AgeBand.creator;
 
   @override
   void initState() {
     super.initState();
+    _journalController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _journalController.dispose();
+    super.dispose();
   }
 
   bool get _isSproutBand => ageBandFromAge(widget.childAge) == AgeBand.sprout;
+  bool get _isAdventurerBand =>
+      ageBandFromAge(widget.childAge) == AgeBand.adventurer;
+
+  // Physiological body signal hooks shown at step 2 for Adventurer+ bands.
+  static const _physiologicalHooks = <String, String>{
+    'Happy':
+        'Dopamine floods your brain\'s reward centre — your body wants to share the good feeling.',
+    'Sad':
+        'Your brain releases stress hormones that make everything feel heavier and slower.',
+    'Mad':
+        'Your amygdala triggers a fight response — adrenaline heats your muscles and sharpens your focus.',
+    'Scared':
+        'Your amygdala sends a danger signal — cortisol spikes so your body is ready to run or freeze.',
+    'Worried':
+        'Your nervous system stays on high alert, scanning for threats even when you\'re safe.',
+    'Excited':
+        'Adrenaline and dopamine fire together — your heart races and your mind speeds up.',
+    'Frustrated':
+        'Your brain registers a blocked goal, flooding your body with tension-building energy.',
+    'Embarrassed':
+        'Blood rushes to your face as your brain tries to repair its social connection.',
+    'Lonely':
+        'The same brain region that processes physical pain activates when you feel left out.',
+    'Overwhelmed':
+        'Too many signals at once overload your prefrontal cortex, making it hard to think clearly.',
+    'Nervous':
+        'Your body can\'t tell the difference between excitement and nerves — only you can decide which it is.',
+    'Confused':
+        'Your brain signals uncertainty by slowing decision-making until more information arrives.',
+  };
 
   void _goBack() {
     if (_step == 0) {
       Navigator.of(context).pop();
+      return;
+    }
+    if (_step == 4) {
+      // Back from journal step → back to coping tool step
+      setState(() {
+        _step = 3;
+        _copingTool = null;
+        _journalController.clear();
+      });
+      return;
+    }
+    if (_step == 5) {
+      // Back from quest bridge → back to feeling selection
+      setState(() => _step = 0);
       return;
     }
     // Sprout: only 2 steps — feeling → coping tool, so back always goes to step 0
@@ -618,8 +682,15 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _feeling = feeling;
       _trigger = null;
       _bodySignal = null;
-      // Sprout band skips trigger + body signal — go straight to coping tool
-      _step = _isSproutBand ? 3 : 1;
+      // Sprout band skips trigger + body signal — go straight to coping tool.
+      // Adventurer band gets the quest bridge interstitial (step 5).
+      if (_isSproutBand) {
+        _step = 3;
+      } else if (_isAdventurerBand) {
+        _step = 5;
+      } else {
+        _step = 1;
+      }
     });
   }
 
@@ -638,12 +709,25 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   }
 
   void _selectCopingTool(String copingTool) {
+    if (_isCreatorBand) {
+      // Advance to optional journal step for Creator band
+      setState(() {
+        _copingTool = copingTool;
+        _step = 4;
+      });
+    } else {
+      _finishFlow(copingTool, journalEntry: null);
+    }
+  }
+
+  void _finishFlow(String copingTool, {String? journalEntry}) {
     Navigator.of(context).pop(
       BigFeelingsFlowResult(
         feeling: _feeling!,
-        trigger: _trigger ?? '',   // sprout skips trigger step
-        bodySignal: _bodySignal ?? '', // sprout skips body signal step
+        trigger: _trigger ?? '',
+        bodySignal: _bodySignal ?? '',
         copingTool: copingTool,
+        journalEntry: journalEntry,
       ),
     );
   }
@@ -664,10 +748,15 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+
+    // Step 4: Creator band journal — completely different UI
+    if (_step == 4) return _buildJournalStep(band);
+
     final options = switch (_step) {
       0 => _feelingsForBand(ageBandFromAge(widget.childAge)),
       1 => _triggerOptions[_feeling] ?? const <_ChoiceOption>[],
       2 => _bodyOptions[_feeling] ?? const <_ChoiceOption>[],
+      5 => const <_ChoiceOption>[], // quest bridge — rendered separately
       _ => _helperOptions[_feeling] ?? const <_ChoiceOption>[],
     };
     return Scaffold(
@@ -723,6 +812,25 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                // Quest bridge — Adventurer band interstitial after feeling selection
+                if (_step == 5) ...[
+                  Expanded(
+                    child: _QuestBridgeView(
+                      feeling: _feeling ?? '',
+                      bandFontFamily: band.uiFontFamily,
+                      onYes: () {
+                        Navigator.of(context).pop(BigFeelingsFlowResult(
+                          feeling: _feeling!,
+                          trigger: '',
+                          bodySignal: '',
+                          copingTool: '',
+                          bridgeToScenario: true,
+                        ));
+                      },
+                      onNo: () => setState(() => _step = 1),
+                    ),
+                  ),
+                ] else
                 Expanded(
                   child: GridView.builder(
                     itemCount: options.length,
@@ -788,6 +896,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     if (_isSproutBand) {
       return _step == 0 ? 'How do you feel?' : 'What can help?';
     }
+    if (_isCreatorBand) {
+      switch (_step) {
+        case 0:
+          return "What's the mood?";
+        case 1:
+          return 'What triggered it?';
+        case 2:
+          return 'Where do you feel it?';
+        default:
+          return 'What might help?';
+      }
+    }
     switch (_step) {
       case 0:
         return 'A Big Feeling!';
@@ -795,6 +915,8 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
         return 'What happened?';
       case 2:
         return 'What does the body say?';
+      case 5:
+        return 'Ready for a Quest?';
       default:
         return 'Pick a helper';
     }
@@ -803,6 +925,25 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   String _subtitleForStep() {
     if (_isSproutBand) {
       return _step == 0 ? 'Tap the feeling.' : 'Tap something to try!';
+    }
+    if (_step == 5) return '';
+    if (_isCreatorBand) {
+      switch (_step) {
+        case 0:
+          return 'Choose what fits right now.';
+        case 1:
+          return 'What was going on when this started?';
+        case 2:
+          return 'What does your body tell you?';
+        default:
+          return 'Pick what could help right now.';
+      }
+    }
+    if (_step == 2 && _feeling != null) {
+      final hook = _physiologicalHooks[_feeling!];
+      if (hook != null && ageBandFromAge(widget.childAge).index >= AgeBand.adventurer.index) {
+        return hook;
+      }
     }
     switch (_step) {
       case 0:
@@ -814,6 +955,236 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       default:
         return 'Pick what could help right now.';
     }
+  }
+
+  /// Step 4 (Creator band only): optional one-sentence journal reflection.
+  Widget _buildJournalStep(AgeBandThemeData band) {
+    const creatorAccent = Color(0xFF7C4DFF);
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _goBack,
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  'One more thing...',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.bitter(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Write one sentence about what's behind this feeling.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.sourceSans3(
+                    color: Colors.white60,
+                    fontSize: 15,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                TextField(
+                  controller: _journalController,
+                  autofocus: true,
+                  style: GoogleFonts.sourceSans3(
+                      color: Colors.white, fontSize: 16),
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. "I feel this way when..."',
+                    hintStyle: GoogleFonts.sourceSans3(
+                        color: Colors.white30, fontSize: 14),
+                    filled: true,
+                    fillColor: Colors.white.withAlpha(12),
+                    contentPadding: const EdgeInsets.all(16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: creatorAccent, width: 2),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () =>
+                            _finishFlow(_copingTool!, journalEntry: null),
+                        child: Text(
+                          'Skip',
+                          style: GoogleFonts.sourceSans3(
+                              color: Colors.white54, fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final entry = _journalController.text.trim();
+                          _finishFlow(_copingTool!,
+                              journalEntry: entry.isEmpty ? null : entry);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: creatorAccent,
+                          foregroundColor: Colors.white,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: Text(
+                          'Done',
+                          style: GoogleFonts.sourceSans3(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Adventurer-band interstitial shown after feeling selection (step 5).
+/// Asks the child whether they want to go on a quest about that feeling.
+class _QuestBridgeView extends StatelessWidget {
+  final String feeling;
+  final String bandFontFamily;
+  final VoidCallback onYes;
+  final VoidCallback onNo;
+
+  const _QuestBridgeView({
+    required this.feeling,
+    required this.bandFontFamily,
+    required this.onYes,
+    required this.onNo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'You\'re feeling $feeling.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.bitter(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D2B).withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: const Color(0xFF80CBC4).withValues(alpha: 0.6), width: 1),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.explore_rounded,
+                  size: 40, color: Color(0xFF80CBC4)),
+              const SizedBox(height: 12),
+              Text(
+                'Want to go on a quest that\nexplores this feeling?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.bitter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your story will be shaped around what you\'re feeling right now.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.bitter(
+                  fontSize: 13,
+                  color: Colors.white70,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+        ElevatedButton(
+          onPressed: onYes,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF80CBC4),
+            foregroundColor: const Color(0xFF0D0D2B),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+          child: Text(
+            'Yes, take me there!',
+            style: GoogleFonts.bitter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: onNo,
+          child: Text(
+            'No, just tell me more',
+            style: GoogleFonts.bitter(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

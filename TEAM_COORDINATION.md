@@ -88,7 +88,7 @@
 ### Status
 - [x] Phase 2 — Scenario selection: teasers, badges, mission hooks
 - [x] Phase 3+5 — Character sheet + mission briefing review + MISSION READY button
-- [ ] Phase 4 — Big Feelings: quest bridge + physiological hooks
+- [x] Phase 4 — Big Feelings: quest bridge + physiological hooks
 - [ ] Phase 1 — Welcome: animated splash + unlock celebration
 
 ---
