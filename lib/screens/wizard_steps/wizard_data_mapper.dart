@@ -183,6 +183,12 @@ class WizardDataMapper {
       moodPhysics = _mapMoodToPhysics(data.selectedEmotionChips.first);
     }
 
+    // 6a. Add Creator-band character desire as narrative motivation
+    if (data.characterDesire != null && data.characterDesire!.trim().isNotEmpty) {
+      characterDetails['character_desire'] =
+          InputSanitizer.sanitizeText(data.characterDesire!, maxLength: 200);
+    }
+
     // 6. Merge hero superpower into character strengths (Feature 3)
     if (data.heroSuperpower != null) {
       final sanitizedPower = InputSanitizer.sanitizeSuperpower(data.heroSuperpower!);

@@ -895,12 +895,224 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ? (ScenarioData.getById(wd.selectedScenario!)
                 ?.titleForAge(wd.characterAge) ??
             wd.selectedScenario!)
-        : 'a magical place';
+        : (band.band == AgeBand.creator ? 'a setting' : 'a magical place');
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
         : wd.companionNames.join(' and ');
-    final launchLabel = band.launchStoryLabel; // 'Make Magic!', 'Create Story', 'Begin', etc.
+    final launchLabel = band.band == AgeBand.creator ? 'Start Writing' : band.launchStoryLabel;
+    if (band.band == AgeBand.creator) {
+      return 'Your story pitch. Character: $hero. Setting: $scenario. Cast: $companions. When you\'re ready, tap $launchLabel.';
+    }
     return 'Here is your story summary. $hero is heading into $scenario with $companions. Check everything looks right, then tap $launchLabel.';
+  }
+
+  /// Creator band (12-14): editorial pitch document layout — no orb, clean card.
+  Widget _buildCreatorPitchDocument(
+      BuildContext context, AgeBandThemeData band, WizardData data) {
+    const creatorAccent = Color(0xFF7C4DFF);
+    final heroName = data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
+    final scenarioLabel = data.selectedScenario != null
+        ? (ScenarioData.getById(data.selectedScenario!)
+                ?.titleForAge(data.characterAge) ??
+            data.selectedScenario!)
+        : '—';
+
+    if (_isGenerating) {
+      return MagicalLoadingView(
+        status: _loadingStatus,
+        onCancel: () => setState(() => _isGenerating = false),
+        isSproutBand: false,
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MagicEarButton(
+                spokenText: _buildReviewSpokenText(band),
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Your Story Pitch',
+                style: GoogleFonts.bitter(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // ── Story card ───────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E2E),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: creatorAccent.withValues(alpha: 0.35), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Character row (inline avatar + name)
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: _HeroAvatar(
+                          generatedAvatar: data.generatedAvatar,
+                          characterName: data.characterName,
+                          role: data.selectedArchetypeId,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            heroName,
+                            style: GoogleFonts.sourceSans3(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (data.selectedArchetypeId != null)
+                            Text(
+                              data.selectedArchetypeId!,
+                              style: GoogleFonts.sourceSans3(
+                                  color: creatorAccent, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: Colors.white12),
+                const SizedBox(height: 12),
+                // Setting
+                _PitchRow(icon: Icons.place_outlined, label: 'Setting', value: scenarioLabel),
+                const SizedBox(height: 10),
+                // Companions
+                _PitchRow(
+                  icon: Icons.people_outline,
+                  label: 'Cast',
+                  value: data.companionNames.isEmpty
+                      ? 'Solo'
+                      : data.companionNames.join(', '),
+                ),
+                const SizedBox(height: 10),
+                // Story type
+                _PitchRow(
+                  icon: Icons.auto_stories_outlined,
+                  label: 'Format',
+                  value: _storyTypeLabel(data, band),
+                ),
+                if (data.customElements.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _PitchRow(
+                    icon: Icons.edit_note_rounded,
+                    label: 'Premise',
+                    value: data.customElements,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Length selector ──────────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _LengthChip(
+                label: _lengthLabelForBand('quick', band),
+                isSelected: data.storyLength == 'quick',
+                onTap: () => setState(() => data.storyLength = 'quick'),
+                band: band,
+              ),
+              const SizedBox(width: 8),
+              _LengthChip(
+                label: _lengthLabelForBand('standard', band),
+                isSelected: data.storyLength == 'standard',
+                onTap: () => setState(() => data.storyLength = 'standard'),
+                band: band,
+              ),
+              const SizedBox(width: 8),
+              _LengthChip(
+                label: _lengthLabelForBand('epic', band),
+                isSelected: data.storyLength == 'epic',
+                onTap: () => setState(() => data.storyLength = 'epic'),
+                band: band,
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // ── CTA ──────────────────────────────────────────────────────────
+          if (_generationError != null)
+            _GenerationErrorWidget(
+              isSprout: false,
+              onRetry: () {
+                setState(() => _generationError = null);
+                _launchStoryCreation();
+              },
+            )
+          else ...[
+            Text(
+              'Your story, your way',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.bitter(
+                color: Colors.white38,
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (!_isGenerating && data.isComplete)
+                    ? _launchStoryCreation
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: creatorAccent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: creatorAccent.withValues(alpha: 0.4),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Start Writing',
+                  style: GoogleFonts.sourceSans3(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
   }
 
   @override
@@ -920,6 +1132,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // standard orb-centric review.
     if (band.band == AgeBand.adventurer) {
       return _buildAdventurerMissionBriefing(context, band, data);
+    }
+
+    // Creator band (12-14) gets a story pitch document layout — no orb, clean card.
+    if (band.band == AgeBand.creator) {
+      return _buildCreatorPitchDocument(context, band, data);
     }
     final orbSize =
         (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();
@@ -1263,6 +1480,42 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A labeled row used inside the Creator band pitch document card.
+class _PitchRow extends StatelessWidget {
+  const _PitchRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.white38, size: 16),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.sourceSans3(color: Colors.white70, fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ),
+      ],
     );
   }
 }

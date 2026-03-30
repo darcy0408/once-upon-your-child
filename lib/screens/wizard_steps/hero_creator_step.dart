@@ -96,6 +96,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _superpowerController;
   late TextEditingController _questController;
   late TextEditingController _wishController;
+  late TextEditingController _characterDesireController;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
   late TextEditingController _friendNameController;
@@ -154,6 +155,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       text: widget.wizardData.customElements,
     );
     _friendNameController = TextEditingController();
+    _characterDesireController = TextEditingController(
+      text: widget.wizardData.characterDesire ?? '',
+    );
     // ── Animation controllers ──────────────────────────────────────────────────
     _sparkleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
@@ -201,6 +205,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _nameFocusNode.dispose();
     _superpowerController.dispose();
     _questController.dispose();
+    _characterDesireController.dispose();
     _wishController.dispose();
     _imagineItController.dispose();
     _friendNameController.dispose();
@@ -1361,39 +1366,46 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final isImagineItSelected =
         widget.wizardData.selectedScenario == 'safe_space';
 
-    // The 5 featured scene buttons with their image assets
+    final isCreator = band.band == AgeBand.creator;
+
+    // The 4 featured scene buttons with their image assets.
+    // For Creator band, populate thematicQuestion from ScenarioData.
+    ScenarioCard? scenarioById(String id) {
+      try {
+        return ScenarioData.all.firstWhere((s) => s.id == id);
+      } catch (_) {
+        return null;
+      }
+    }
+
     final featuredButtons = [
       _SceneButtonData(
         id: 'vanishing_colors',
-        label: ScenarioData.all
-            .firstWhere((s) => s.id == 'vanishing_colors')
-            .titleForAge(age),
+        label: scenarioById('vanishing_colors')?.titleForAge(age) ?? 'Vanishing Colors',
         normalAsset: 'assets/images/scenarios/rainbow_land_btn.png',
         pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.png',
+        thematicQuestion: scenarioById('vanishing_colors')?.creatorThematicQuestion,
       ),
       _SceneButtonData(
         id: 'crystal_cavern',
-        label: ScenarioData.all
-            .firstWhere((s) => s.id == 'crystal_cavern')
-            .titleForAge(age),
+        label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
         normalAsset: 'assets/images/scenarios/crystal_cave_btn.png',
         pressedAsset: 'assets/images/scenarios/crystal_cave_btn_pressed.png',
+        thematicQuestion: scenarioById('crystal_cavern')?.creatorThematicQuestion,
       ),
       _SceneButtonData(
         id: 'volcano_dragons',
-        label: ScenarioData.all
-            .firstWhere((s) => s.id == 'volcano_dragons')
-            .titleForAge(age),
+        label: scenarioById('volcano_dragons')?.titleForAge(age) ?? 'Volcano Dragons',
         normalAsset: 'assets/images/scenarios/dragon_friends_btn.png',
         pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
+        thematicQuestion: scenarioById('volcano_dragons')?.creatorThematicQuestion,
       ),
       _SceneButtonData(
         id: 'big_feelings_quest',
-        label: ScenarioData.all
-            .firstWhere((s) => s.id == 'big_feelings_quest')
-            .titleForAge(age),
+        label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Big Feelings Quest',
         normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
         pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+        thematicQuestion: scenarioById('big_feelings_quest')?.creatorThematicQuestion,
       ),
     ];
 
@@ -1415,22 +1427,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             style: _bandTitleStyle(band, baseFontSize: 22),
           ),
           const SizedBox(height: 4),
-          Builder(builder: (context) {
-            final b = Theme.of(context).extension<AgeBandThemeData>() ??
-                explorerTheme;
-            return Text(
-              b.band == AgeBand.sprout
-                  ? 'Tap a picture to pick where the story goes!'
-                  : b.band == AgeBand.explorer
-                      ? 'Pick a world or make your own!'
-                      : 'Create your own world — or choose one below!',
-              style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            );
-          }),
-          const SizedBox(height: 16),
-
+          Text(
+            band.band == AgeBand.sprout
+                ? 'Tap a picture to pick where the story goes!'
+                : band.band == AgeBand.explorer
+                    ? 'Pick a world or make your own!'
+                    : band.band == AgeBand.creator
+                        ? 'Start from your imagination — or choose a world below'
+                        : 'Create your own world — or choose one below!',
+            style: GoogleFonts.sourceSans3(color: Colors.white60, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 14),
+
+          // ── Imagine It spotlight (Creator band: shown FIRST above preset grid) ──
+          if (isCreator) ...[
+            _ImagineItHeroCard(
+              isSelected: isImagineItSelected,
+              onTap: () {
+                setState(() {
+                  widget.wizardData.selectedScenario =
+                      isImagineItSelected ? null : 'safe_space';
+                  if (isImagineItSelected) widget.wizardData.customElements = '';
+                });
+              },
+            ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 280),
+              crossFadeState: isImagineItSelected
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: _buildImagineItInput(),
+              secondChild: const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 14),
+          ],
 
           // ── 2-column grid of preset scene buttons ──────────────────────────
           // When the count is even, use a simple 2-column GridView.
@@ -1449,6 +1480,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected: widget.wizardData.selectedScenario ==
                             displayButtons[i].id,
                         labelFontSize: labelFontSize,
+                        showThematicQuestion: isCreator,
                         onTap: () => _onSceneTap(displayButtons[i].id),
                       ),
                     ),
@@ -1462,6 +1494,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected: widget.wizardData.selectedScenario ==
                             displayButtons[i + 1].id,
                         labelFontSize: labelFontSize,
+                        showThematicQuestion: isCreator,
                         onTap: () => _onSceneTap(displayButtons[i + 1].id),
                       ),
                     ),
@@ -1478,6 +1511,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 isSelected: widget.wizardData.selectedScenario ==
                     displayButtons.last.id,
                 labelFontSize: labelFontSize,
+                showThematicQuestion: isCreator,
                 onTap: () => _onSceneTap(displayButtons.last.id),
               ),
             ),
@@ -1496,6 +1530,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected:
                             widget.wizardData.selectedScenario == btn.id,
                         labelFontSize: labelFontSize,
+                        showThematicQuestion: isCreator,
                         onTap: () => _onSceneTap(btn.id),
                       ))
                   .toList(),
@@ -1503,32 +1538,34 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
           const SizedBox(height: 20),
 
-          // ── Make One Up — shown below preset scenes so presets come first ──
-          _ImagineItHeroCard(
-            isSelected: isImagineItSelected,
-            onTap: () {
-              final b = Theme.of(context).extension<AgeBandThemeData>() ??
-                  explorerTheme;
-              setState(() {
-                widget.wizardData.selectedScenario =
-                    isImagineItSelected ? null : 'safe_space';
-                if (isImagineItSelected) widget.wizardData.customElements = '';
-              });
-              if (b.band == AgeBand.sprout && !isImagineItSelected) {
-                unawaited(_speakForSprout('Tap a picture to pick your world!'));
-              }
-            },
-          ),
-
-          // Inline input — expands when Make One Up is selected
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 280),
-            crossFadeState: isImagineItSelected
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: _buildImagineItInput(),
-            secondChild: const SizedBox.shrink(),
-          ),
+          // ── Make One Up — shown below preset scenes (non-Creator bands only;
+          //    Creator band shows it above the grid as a spotlight) ──
+          if (!isCreator) ...[
+            _ImagineItHeroCard(
+              isSelected: isImagineItSelected,
+              onTap: () {
+                final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                    explorerTheme;
+                setState(() {
+                  widget.wizardData.selectedScenario =
+                      isImagineItSelected ? null : 'safe_space';
+                  if (isImagineItSelected) widget.wizardData.customElements = '';
+                });
+                if (b.band == AgeBand.sprout && !isImagineItSelected) {
+                  unawaited(_speakForSprout('Tap a picture to pick your world!'));
+                }
+              },
+            ),
+            // Inline input — expands when Make One Up is selected
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 280),
+              crossFadeState: isImagineItSelected
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: _buildImagineItInput(),
+              secondChild: const SizedBox.shrink(),
+            ),
+          ],
 
           const SizedBox(height: 24),
           _buildNextArrowButton(
@@ -1979,7 +2016,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildNextArrowButton(
               enabled: true,
               onTap: widget.onNext,
-              hint: 'Next: Review & Make Magic!'),
+              hint: band.wizardNextHint),
           SizedBox(height: band.space(20)),
         ],
       ),
@@ -2139,6 +2176,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final imageData = _generatedAvatar?.imageBase64;
     final avatarProvider =
         imageData == null ? null : _getImageProviderFromString(imageData);
+    final isCreator =
+        ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -2154,8 +2193,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             backgroundColor: const Color(0xFF3A2363),
             backgroundImage: avatarProvider,
             child: avatarProvider == null
-                ? const Icon(Icons.face_retouching_natural,
-                    color: Color(0xFFFFD700), size: 30)
+                ? Icon(
+                    isCreator ? Icons.draw_outlined : Icons.face_retouching_natural,
+                    color: const Color(0xFFFFD700),
+                    size: 30,
+                  )
                 : null,
           ),
           const SizedBox(width: 12),
@@ -2164,9 +2206,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _hasAvatar
-                      ? 'Your hero look is ready'
-                      : 'Pick what your hero looks like',
+                  isCreator
+                      ? (_hasAvatar ? 'Character visual ready' : 'Design your character')
+                      : (_hasAvatar ? 'Your hero look is ready' : 'Pick what your hero looks like'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -2175,9 +2217,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _hasAvatar
-                      ? 'You can change it anytime.'
-                      : 'Choose a look before you continue.',
+                  isCreator
+                      ? (_hasAvatar ? 'You can redesign anytime.' : 'Create a visual for your character.')
+                      : (_hasAvatar ? 'You can change it anytime.' : 'Choose a look before you continue.'),
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -2190,7 +2232,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
-            child: Text(_hasAvatar ? 'Change Look' : 'Choose Look'),
+            child: Text(isCreator
+                ? (_hasAvatar ? 'Redesign' : 'Open Designer')
+                : (_hasAvatar ? 'Change Look' : 'Choose Look')),
           ),
         ],
       ),
@@ -3303,6 +3347,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildBriefIdentityInputs() {
+    final isCreator =
+        ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3322,6 +3368,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           onChanged: (v) => widget.wizardData.characterName = v,
         ),
+        // Creator band: identity reflection prompt
+        if (isCreator) ...[
+          const SizedBox(height: 20),
+          Text(
+            'What does your character want more than anything?',
+            style: GoogleFonts.bitter(
+              color: Colors.white54,
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _characterDesireController,
+            style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 16),
+            decoration: InputDecoration(
+              hintText: 'Optional — adds depth to your story',
+              hintStyle: TextStyle(color: Colors.white.withAlpha(35), fontSize: 14),
+              enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white.withAlpha(30))),
+              focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF7C4DFF))),
+            ),
+            onChanged: (v) => widget.wizardData.characterDesire = v.trim().isEmpty ? null : v,
+          ),
+        ],
         const SizedBox(height: 24),
         _buildBriefGenderSelector(),
         const SizedBox(height: 24),
@@ -5573,12 +5645,15 @@ class _SceneButtonData {
   final String label;
   final String normalAsset;
   final String pressedAsset;
+  /// Creator band: evocative psychological hook shown below the title.
+  final String? thematicQuestion;
 
   const _SceneButtonData({
     required this.id,
     required this.label,
     required this.normalAsset,
     required this.pressedAsset,
+    this.thematicQuestion,
   });
 }
 
@@ -5587,12 +5662,15 @@ class _SceneImageButton extends StatefulWidget {
   final bool isSelected;
   final double labelFontSize;
   final VoidCallback onTap;
+  /// When true, shows `data.thematicQuestion` (if present) in the label overlay.
+  final bool showThematicQuestion;
 
   const _SceneImageButton({
     required this.data,
     required this.isSelected,
     required this.onTap,
     this.labelFontSize = 13.0,
+    this.showThematicQuestion = false,
   });
 
   @override
@@ -5682,22 +5760,42 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
                           colors: [Colors.transparent, Color(0xCC1A0040)],
                         ),
                       ),
-                      child: Text(
-                        widget.data.label,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: widget.labelFontSize,
-                          fontWeight: FontWeight.bold,
-                          shadows: const [
-                            Shadow(
-                                color: Colors.black,
-                                blurRadius: 4,
-                                offset: Offset(0, 1))
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.data.label,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: widget.labelFontSize,
+                              fontWeight: FontWeight.bold,
+                              shadows: const [
+                                Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1))
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.showThematicQuestion &&
+                              widget.data.thematicQuestion != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.data.thematicQuestion!,
+                              style: GoogleFonts.bitter(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        ],
                       ),
                     ),
                   ),

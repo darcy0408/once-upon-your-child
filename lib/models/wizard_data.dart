@@ -78,6 +78,9 @@ class WizardData {
   String?
       heroQuest; // e.g. "Making new friends" — maps silently to lifeChallenge
 
+  // Creator band (12-14): optional reflection prompt from character creation
+  String? characterDesire; // e.g. "What does your character want more than anything?"
+
   /// Returns a deep copy of this WizardData.
   WizardData clone() {
     final c = WizardData();
@@ -127,6 +130,7 @@ class WizardData {
     c.storyDnaAvoid = storyDnaAvoid;
     c.heroSuperpower = heroSuperpower;
     c.heroQuest = heroQuest;
+    c.characterDesire = characterDesire;
     return c;
   }
 

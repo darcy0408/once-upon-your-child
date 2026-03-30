@@ -15,6 +15,8 @@ import '../theme/app_theme.dart';
 import '../widgets/breathing_avatar.dart';
 import '../widgets/sprout_animations.dart';
 import '../widgets/star_burst_celebration.dart';
+import '../widgets/adventurer_welcome_sequence.dart';
+import '../widgets/adventurer_unlock_celebration.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
 
@@ -58,6 +60,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   /// True when the selected age maps to the Creator band (ages 12-14).
   bool get _isCreator =>
       _selectedAge != null && ageBandFromAge(_selectedAge!) == AgeBand.creator;
+
+  /// True when the selected age maps to the Adventurer band (ages 9-11).
+  bool get _isAdventurer =>
+      _selectedAge != null &&
+      ageBandFromAge(_selectedAge!) == AgeBand.adventurer;
 
   /// True when the selected age maps to the Adolescent band (ages 15-17).
   bool get _isAdolescent =>
@@ -282,7 +289,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ? _buildAdolescentTitleStep()
           : _isCreator
               ? _buildCreatorTitleStep()
-              : _buildDefaultTitleStep(),
+              : _isAdventurer
+                  ? _buildAdventurerTitleStep()
+                  : _buildDefaultTitleStep(),
     );
   }
 
@@ -390,6 +399,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
         const SizedBox(height: 72),
       ],
+    );
+  }
+
+  Widget _buildAdventurerTitleStep() {
+    return AdventurerWelcomeSequence(
+      userName: _nameController.text.trim().isNotEmpty
+          ? _nameController.text.trim()
+          : null,
+      onComplete: _advanceFromTitle,
     );
   }
 
@@ -797,7 +815,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
       );
       if (mounted) setState(() => _submitting = false);
-      if (granted == true) widget.onComplete();
+      if (granted == true) {
+        // One-time "new adventures unlocked" celebration for Adventurer band.
+        if (mounted && ageBandFromAge(_selectedAge!) == AgeBand.adventurer) {
+          await AdventurerUnlockCelebration.show(context);
+        }
+        if (mounted) widget.onComplete();
+      }
       return;
     }
 

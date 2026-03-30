@@ -449,7 +449,7 @@ const creatorTheme = AgeBandThemeData(
   companionLabel: 'Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'What mood fits your story?',
-  launchStoryLabel: 'Create Story',
+  launchStoryLabel: 'Start Writing',
   companionCTALabel: 'Set the Cast',
   scenarioPageTitle: 'Choose Your Adventure!',
   scenarioPageSubtitle: 'Where shall we go today?',

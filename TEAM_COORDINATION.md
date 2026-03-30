@@ -134,15 +134,15 @@
 | `lib/theme/age_band_theme.dart` | Update `launchStoryLabel` to "Start Writing"; verify no gold/sparkle leaks |
 
 ### Status
-- [ ] Step 1 — `wizard_data.dart` + `wizard_data_mapper.dart`: add `characterDesire` field
-- [ ] Step 2 — `big_feelings_flow_screen.dart`: add `journalEntry` to `BigFeelingsFlowResult`
-- [ ] Step 3 — `scenario_data.dart`: add `creatorThematicQuestion` + populate for all scenarios
-- [ ] Step 4 — `welcome_screen.dart`: reorder flow + Creator-band splash/name styling
-- [ ] Step 5 — `hero_creator_step.dart`: thematic question overlay + Imagine It spotlight
-- [ ] Step 6 — `hero_creator_step.dart`: reflection prompt + "Design your character" avatar copy
-- [ ] Step 7 — `big_feelings_flow_screen.dart`: journal step (step 4) + mature header labels
-- [ ] Step 8 — `magic_review_step.dart`: pitch document restyle + "Start Writing" CTA
-- [ ] Step 9 — `age_band_theme.dart`: label polish + sparkle leak check; `flutter analyze`
+- [x] Step 1 — `wizard_data.dart` + `wizard_data_mapper.dart`: add `characterDesire` field
+- [x] Step 2 — `big_feelings_flow_screen.dart`: add `journalEntry` to `BigFeelingsFlowResult`
+- [x] Step 3 — `scenario_data.dart`: add `creatorThematicQuestion` + populate for all scenarios
+- [x] Step 4 — `welcome_screen.dart`: reorder flow (age→splash→name) + Creator-band splash/name styling
+- [x] Step 5 — `hero_creator_step.dart`: thematic question overlay on cards + Imagine It spotlight first
+- [x] Step 6 — `hero_creator_step.dart`: reflection prompt in Creative Brief + "Design your character" avatar copy
+- [x] Step 7 — `big_feelings_flow_screen.dart`: journal step (step 4) + Creator-band step titles
+- [x] Step 8 — `magic_review_step.dart`: "Your Story Pitch" + clean pitch card + "Start Writing" CTA
+- [x] Step 9 — `age_band_theme.dart`: `launchStoryLabel` → "Start Writing"; `dart analyze` clean (1 info)
 
 ---
 

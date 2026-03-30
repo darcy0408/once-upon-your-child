@@ -30,6 +30,10 @@ class ScenarioCard {
   // than the adult mature framing, less whimsical than the young framing.
   // When null, falls back to matureTitle.
   final String? creatorTitle;
+  // Thematic / psychological hook shown on scenario cards for Creator band.
+  // A single evocative question that draws 12-14 year-olds in emotionally.
+  // When null, no thematic question is shown.
+  final String? creatorThematicQuestion;
   // Age-appropriate alternative for adult band (ages 18+) — existential/philosophical framing.
   // When null, falls back to matureTitle.
   final String? adultTitle;
@@ -67,6 +71,7 @@ class ScenarioCard {
     this.matureConflictHook,
     this.matureWorldBible,
     this.creatorTitle,
+    this.creatorThematicQuestion,
     this.adultTitle,
     this.sproutIllustration,
     this.youngBandSceneId,
@@ -179,6 +184,7 @@ class ScenarioData {
       matureWorldBible:
           'An ancient nexus chamber with four temporal gates, each a stable wormhole to a pocket dimension locked in perpetual season. The Chronokeeper, an ageless entity bound to a celestial orrery, regulates the energy exchange between realms. Each dimension has evolved its own civilisation adapted to eternal climate — the Winterhold with its ice-forged architecture, the Summerlands with solar-powered cities. Temporal physics: objects carried between gates retain their native time-signature, creating paradox-fields that must be resolved or they cascade into reality tears.',
       creatorTitle: "The Door You're Afraid to Open",
+      creatorThematicQuestion: "What are you afraid to face?",
       adultTitle: "Doors We Can't Reopen",
       sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
       youngBandSceneId: 'star_village',
@@ -215,6 +221,7 @@ class ScenarioData {
       matureWorldBible:
           'A volcanic caldera housing the last dragon colony — a complex society with castes, customs, and a code of honour older than human civilisation. The dragons range from hatchling-sized to leviathan elders who remember the world before humans. Their lair is an architectural marvel: obsidian halls, magma forges, memory-crystal archives containing millennia of draconic history. Dragon politics are ruthless but fair — disputes are settled through riddle-contests or aerial trials. The volcano itself is alive, a symbiotic entity the dragons tend like a garden. Outsiders must prove worth through a Trial of Three: wit, courage, and compassion.',
       creatorTitle: 'What Wakes the Fire Inside',
+      creatorThematicQuestion: "What wakes the fire inside?",
       adultTitle: 'The Weight of Old Fire',
       sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
       youngBandSceneId: 'enchanted_forest',
@@ -251,6 +258,7 @@ class ScenarioData {
       matureWorldBible:
           'A closed-canopy megaforest where bioluminescence has replaced photosynthesis as the primary energy cycle. The ecosystem runs on light-exchange — organisms trade luminous energy through root networks and airborne spores. The Nexus Tree, a kilometres-wide neural hub, processes the forest\'s collective consciousness. Apex predators are shadow-stalkers — creatures that absorb light rather than emit it, creating zones of absolute darkness. The jungle\'s whisper-network carries data like a biological internet. Human-equivalent intelligence exists in the Elder Groves — collectives of ancient trees that debate, remember, and scheme.',
       creatorTitle: 'The Part of You That Glows',
+      creatorThematicQuestion: "What part of you is waiting to be seen?",
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
@@ -286,6 +294,7 @@ class ScenarioData {
       matureWorldBible:
           'A vast subterranean crystal network where sound frequencies interact with crystalline structures to manipulate matter. The caverns operate on resonance physics — specific tonal frequencies unlock passages, reshape walls, or summon stored memories from crystal archives. The Echo Sovereign is an ancient AI-like consciousness distributed across the crystal lattice, cataloguing every sound ever uttered underground. The deeper you go, the more the crystals respond to thought rather than voice, eventually manifesting emotions as tangible constructs. This is both powerful and dangerous — uncontrolled fear creates shadow-creatures, while focused calm can reshape the caverns themselves.',
       creatorTitle: 'The Echo Inside',
+      creatorThematicQuestion: "What have you been telling yourself?",
       adultTitle: 'What Echoes Back',
       sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.png',
       youngBandSceneId: 'ocean_depths',
@@ -323,6 +332,7 @@ class ScenarioData {
           'A militarised sky-citadel — part aircraft carrier, part floating city — navigating a perpetual superstorm belt that encircles the planet. The storm belt is both barrier and resource: its lightning powers the citadel\'s engines, but its winds can shred unshielded hulls. The crew operates under a strict chain of command with storm-runner scouts, tactical navigators, and combat weather-shapers who weaponise atmospheric conditions. Rival sky-nations compete for storm-corridor control. The citadel\'s greatest secret: its core contains a captured storm-entity, a sentient weather phenomenon that powers everything but yearns for freedom.',
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      creatorThematicQuestion: "What storm are you running from?",
       sproutIllustration: 'assets/images/ui/sprout/tiles/castle.png',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'orbital_station',
@@ -358,6 +368,7 @@ class ScenarioData {
       matureWorldBible:
           'A dimension where perception literally shapes reality — colour, sound, and texture are manifestations of collective consciousness. The Entropy (called "the Eraser" by younger inhabitants) is a natural force of creative decay, accelerated by despair and apathy. As regions lose colour, they don\'t just go grey — they lose dimensional complexity, flattening into 2D, then 1D, then nothing. Resistance comes through authentic creative expression, not just art but genuine emotional honesty. The Chromatists are a resistance movement who\'ve learned to weaponise creativity, but they\'re fractured by debate: fight the Entropy or accept it as a natural cycle? The hero must navigate both the external threat and the philosophical divide. THE JELLO ROAD: The primary artery of this realm is the Chromatic Causeway — a road paved in solid pigment-gelatin that shifts state with the weather. Dry: firm and springy, each footfall sending up a small chromatic ripple. Rain: instantly frictionless, a mirror-smooth slide that moves people whether they want to move or not. Post-rain: a brief adhesive window where the surface grips everything touching it — creatures, objects, secrets — before releasing as it sets. The Causeway is both infrastructure and metaphor: the Chromatists say the road reflects the realm\'s emotional state. A sticky road means something is holding on. A sliding road means something is out of control. A bouncy road means the world is still alive.',
       creatorTitle: 'When Everything Fades',
+      creatorThematicQuestion: "What would you save if everything faded?",
       adultTitle: 'When Meaning Dissolves',
       sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.png',
       youngBandSceneId: 'cloud_castle',
@@ -392,6 +403,7 @@ class ScenarioData {
       matureWorldBible:
           'A realistic school or community setting — hallways, lunch tables, after-school hangouts. Social groups are already established with their own codes, jokes, and history. The hero is new or newly alone, reading the room and looking for an in. No magic here — just the real, raw mechanics of social navigation: finding common ground, risking rejection, learning that vulnerability is strength. The "quest" is internal: overcoming the voice that says "they don\'t want you here" and finding the courage to show up authentically. Success isn\'t instant popularity — it\'s one real conversation, one genuine laugh, one person who says "sit with us."',
       creatorTitle: 'Showing Up',
+      creatorThematicQuestion: "What does it cost you to show up?",
       adultTitle: 'The Cost of Showing Up',
     ),
     ScenarioCard(
@@ -422,6 +434,7 @@ class ScenarioData {
       matureWorldBible:
           'A realistic school setting where social aggression takes many forms — public humiliation, exclusion, rumour-spreading, or direct confrontation. The story explores the internal battle: the urge to retaliate vs. the strength of composure, the fear of being seen as weak vs. the courage of walking away, the temptation to become what you hate. No magical solutions — the hero navigates with real strategies: documenting incidents, building alliances, setting firm boundaries, knowing when to involve adults. The "victory" is nuanced: the bully may not transform, but the hero reclaims their power and self-respect.',
       creatorTitle: 'Who You Are Under Pressure',
+      creatorThematicQuestion: "Who are you when no one's watching?",
       adultTitle: 'Holding the Line',
     ),
     ScenarioCard(
@@ -453,6 +466,7 @@ class ScenarioData {
       matureWorldBible:
           'A psychological landscape rendered as a realistic internal world — the hero navigates their own emotional architecture. Anxiety manifests as a labyrinth with walls that close in; anger as a pressure cooker reaching critical; sadness as gravity that makes every step exhausting. No cute metaphors — the feelings are raw and recognisable. The hero learns evidence-based coping techniques woven naturally into the narrative: cognitive reframing, grounding (5-4-3-2-1 senses), emotional regulation through physical movement, and the power of naming what you feel. The "calm centre" isn\'t happiness — it\'s equanimity, the ability to hold difficult emotions without being controlled by them. The story validates that struggling is normal and seeking help is strength.',
       creatorTitle: 'The Feeling That Won\'t Let Go',
+      creatorThematicQuestion: "What feeling runs your life right now?",
       adultTitle: 'Sitting With It',
     ),
     ScenarioCard(
@@ -484,6 +498,7 @@ class ScenarioData {
       matureWorldBible:
           'A grounded, realistic story about displacement — new city, new school, zero social capital. The hero grapples with identity: the freedom and terror of being unknown. Do you perform a new version of yourself or risk showing the real one? The old life exists through phone screens and fading group chats that slowly go quiet. The new environment has its own culture, slang, and social hierarchies to decode. No instant fixes — the story follows the slow, authentic process of planting roots: the first awkward lunch alone, the first genuine conversation, the first time the new place feels less foreign. The message: home isn\'t a place, it\'s a feeling you rebuild.',
       creatorTitle: 'Leaving the Person You Were',
+      creatorThematicQuestion: "What part of yourself are you leaving behind?",
       adultTitle: 'Starting Over',
     ),
     ScenarioCard(
@@ -542,6 +557,7 @@ class ScenarioData {
       matureWorldBible:
           'A morally complex mystery where the solution is uncomfortable. The case involves real stakes — reputation, relationships, someone\'s future. The hero must weigh justice against loyalty, truth against kindness. Evidence contradicts itself; witnesses lie for understandable reasons. The investigation requires reading people as much as reading clues. The "villain" is sympathetic — driven by fear, love, or desperation rather than malice. Resolution is ambiguous: the hero discovers the full truth and must decide what to do with it, with no easy answer provided.',
       creatorTitle: "The Truth You Don't Want to Find",
+      creatorThematicQuestion: "What truth are you afraid to follow?",
     ),
     ScenarioCard(
       id: 'survival_island',
@@ -567,6 +583,7 @@ class ScenarioData {
           'A grounded, psychologically real survival story. Physical challenges are secondary to mental ones: managing fear, making decisions under pressure, accepting when a plan has failed. The environment is genuinely dangerous — weather, injury, dehydration all have real consequences in the narrative. Moral dilemmas arise: ration the last of the food alone or share? Take a dangerous shortcut or wait for rescue? The story explores the hierarchy of needs — safety, water, food, warmth — and the psychology of survival: the importance of small goals, staying rational, not surrendering to despair. Resolution comes through persistence and ingenuity, not luck.',
       // Survival scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      creatorThematicQuestion: "What do you do when there's no one left to help you?",
     ),
   ];
 
