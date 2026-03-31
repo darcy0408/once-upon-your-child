@@ -1,5 +1,31 @@
 # Team Coordination
 
+## 2026-03-30 — Mature Feeling Images: Adolescent & Adult Bands (Claude Sonnet 4.6)
+
+**Goal:** Generate band-specific feeling images for the 10 mature feelings added in the Adolescent/Adult UX redesign (grief, resentful, envious, restless, hopeful, melancholy, contentment, indignation, dread, anticipation). 7 of these had no fallback image at all and were showing only emoji.
+
+### What Was Generated
+
+| Target | Count | Style |
+|--------|-------|-------|
+| `assets/feelings_faces/` global fallback | 7 new (grief/hopeful/resentful already existed) | 3D cartoon blob on dark purple |
+| `assets/images/feelings/adolescent/` | 10 feelings | Teal cinematic silhouette style |
+| `assets/images/feelings/adult/` | 10 feelings | Amber-gold refined figure style |
+
+### Files Changed
+| File | What |
+|------|------|
+| `assets/feelings_faces/{7 new}.png` | Global emoji fallbacks eliminated |
+| `assets/images/feelings/adolescent/{10}.png` | Band-specific art for all mature feelings |
+| `assets/images/feelings/adult/{10}.png` | Band-specific art for all mature feelings |
+| `scripts/generate_mature_feelings.py` | NEW — rerunnable generation script with per-band style descriptions |
+
+### Status
+- [x] 27 images generated (0 failures)
+- [x] Committed: 58be517
+
+---
+
 ## 2026-03-30 — Full Six-Band Live Usability Audit + Overflow Fixes (Claude Sonnet 4.6)
 
 **Goal:** Playwright browser automation against live dev build — walk all 6 age bands end-to-end, document findings, fix all discovered issues.
