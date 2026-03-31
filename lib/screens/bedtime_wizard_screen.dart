@@ -718,11 +718,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Close bedtime screen first
-                  // Then navigate to settings from the parent context
-                  Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
-                  );
+                  final nav = Navigator.of(context, rootNavigator: true);
+                  Navigator.of(context).pop();
+                  nav.push(MaterialPageRoute(
+                    builder: (_) => const ParentControlsScreen(),
+                  ));
                 },
                 icon: const Icon(Icons.settings),
                 label: const Text('Go to Settings'),

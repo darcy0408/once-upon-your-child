@@ -792,11 +792,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Include both general and Sprout-specific companions in the search.
     final allKnownCompanions = [..._companions, ..._sproutCompanions];
 
-    // Collect selected named companions in order
+    // Collect selected named companions in order — use ID as source of truth.
     final selectedNamed = allKnownCompanions
-        .where((c) =>
-            widget.wizardData.companionNames.contains(c.name) ||
-            widget.wizardData.selectedCompanions.contains(c.id))
+        .where((c) => widget.wizardData.selectedCompanions.contains(c.id))
         .toList();
 
     // Collect selected saved-character friends (not magic companions, not pets)
@@ -968,7 +966,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 .where((c) => c.name != widget.wizardData.characterName)
                 .map((c) {
               final isSelected =
-                  widget.wizardData.companionNames.contains(c.name);
+                  widget.wizardData.selectedCompanions.contains(c.id);
               return _FriendChipButton(
                 character: c,
                 isSelected: isSelected,
@@ -1787,7 +1785,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       case AgeBand.sprout:
         return 'Listen & Learn'; // Dr. Seuss style, auto-plays
       case AgeBand.explorer:
-        return 'Read Along';
+        return 'Easy Reader';
       case AgeBand.adventurer:
         return 'Chapter Reader';
       case AgeBand.creator:

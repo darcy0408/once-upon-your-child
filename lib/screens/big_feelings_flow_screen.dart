@@ -755,7 +755,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band = themeForAge(widget.childAge);
 
     // Step 4: Creator band journal — completely different UI
     if (_step == 4) return _buildJournalStep(band);
