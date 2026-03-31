@@ -1245,8 +1245,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           const SizedBox(height: 16),
 
           // ── Length selector ──────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _LengthChip(
                 label: _lengthLabelForBand('quick', band),
@@ -1254,14 +1256,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 onTap: () => setState(() => data.storyLength = 'quick'),
                 band: band,
               ),
-              const SizedBox(width: 8),
               _LengthChip(
                 label: _lengthLabelForBand('standard', band),
                 isSelected: data.storyLength == 'standard',
                 onTap: () => setState(() => data.storyLength = 'standard'),
                 band: band,
               ),
-              const SizedBox(width: 8),
               _LengthChip(
                 label: _lengthLabelForBand('epic', band),
                 isSelected: data.storyLength == 'epic',
@@ -1942,20 +1942,24 @@ class _HeroFallbackIdentity extends StatelessWidget {
   const _HeroFallbackIdentity({required this.name, required this.role});
   @override
   Widget build(BuildContext context) {
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(
-          role?.toLowerCase().contains('artist') == true
-              ? Icons.palette
-              : (role?.toLowerCase().contains('athlete') == true
-                  ? Icons.bolt
-                  : Icons.face),
-          color: Colors.white,
-          size: 42),
-      const SizedBox(height: 8),
-      Text(name.isNotEmpty ? name[0].toUpperCase() : 'H',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-    ]);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+            role?.toLowerCase().contains('artist') == true
+                ? Icons.palette
+                : (role?.toLowerCase().contains('athlete') == true
+                    ? Icons.bolt
+                    : Icons.face),
+            color: Colors.white,
+            size: 24),
+        const SizedBox(height: 2),
+        Text(name.isNotEmpty ? name[0].toUpperCase() : 'H',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
+    );
   }
 }
 
