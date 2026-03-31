@@ -1,5 +1,31 @@
 # Team Coordination
 
+## 2026-03-30 — Wire AgeBandAssetResolver to Real Asset Paths (Claude Sonnet 4.6)
+
+**Goal:** `AgeBandAssetResolver` existed but pointed to `age_band_assets/{pluralFolder}/` which was never created on disk. All band-specific images live at `assets/images/{category}/{band}/`. Fixed the resolver and migrated all consumers.
+
+### Root Cause
+The resolver was written against a planned `age_band_assets/` layout with plural folder names (`sprouts`, `early_readers`, etc.) and category-last structure. The actual images were generated with singular band names (`sprout`, `explorer`) and category-first structure. Every resolver call returned a broken path and widgets fell through to their icon/gradient fallbacks.
+
+### Files Changed
+| File | What |
+|------|------|
+| `lib/theme/age_band_asset_resolver.dart` | Replace `age_band_assets/{plural}/ ` with `assets/images/{category}/{band.name}/`; drop stale `_bandFolder` map |
+| `lib/screens/wizard_steps/companion_selector_step.dart` | Replace 20 hardcoded `imagePath:` strings with `AgeBandAssetResolver.companionPath(band, id)` |
+| `lib/widgets/feelings_badge_grid.dart` | Add `band` param (default `adventurer`); use `AgeBandAssetResolver.feelingPath()` per badge |
+
+### Impact
+- Progress orbs, continue buttons, make-magic buttons → correct per-band PNG now loaded
+- Archetypes, scenes, companions → resolver paths resolve to real files
+- `big_feelings_flow_screen.dart` tiered fallback now hits on first try (resolver path correct)
+
+### Status
+- [x] Resolver fixed (commit 343e3d9)
+- [x] Companion selector migrated to resolver
+- [x] Feelings badge grid band-parameterized
+
+---
+
 ## 2026-03-30 — Housekeeping: gitignore, typo fix, COPPA auth cap (Claude Sonnet 4.6)
 
 **Goal:** Clean up post-audit ephemeral files, fix discovered typo, commit pre-staged COPPA logic.
