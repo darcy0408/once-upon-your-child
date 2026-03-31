@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-03-18T15:37:50.587498+00:00",
+  "timestamp_utc": "2026-03-30T13:03:57.281677+00:00",
   "notes": {
     "target_endpoint": "/generate-story",
     "mode": "local flask test client with mocked task behaviors plus optional real-provider probes",
@@ -15,12 +15,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 183.42,
-        "p50": 186.46,
-        "p95": 230.47,
-        "p99": 232.29,
-        "max": 232.75,
-        "mean": 196.07
+        "min": 181.18,
+        "p50": 182.4,
+        "p95": 207.29,
+        "p99": 207.53,
+        "max": 207.58,
+        "mean": 188.12
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -39,12 +39,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 8.49,
-        "p50": 19.38,
-        "p95": 25.11,
-        "p99": 25.23,
-        "max": 25.26,
-        "mean": 19.54
+        "min": 2.95,
+        "p50": 4.16,
+        "p95": 6.99,
+        "p99": 8.1,
+        "max": 8.38,
+        "mean": 4.66
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -63,12 +63,12 @@
       },
       "error_count": 12,
       "latency_ms": {
-        "min": 67.31,
-        "p50": 135.12,
-        "p95": 218.33,
-        "p99": 221.54,
-        "max": 222.34,
-        "mean": 141.16
+        "min": 19.23,
+        "p50": 30.17,
+        "p95": 44.27,
+        "p99": 48.75,
+        "max": 49.87,
+        "mean": 31.69
       },
       "sample_errors": [
         {
@@ -113,12 +113,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.57,
-        "p50": 182.33,
-        "p95": 183.66,
-        "p99": 183.8,
-        "max": 183.84,
-        "mean": 182.42
+        "min": 181.22,
+        "p50": 181.66,
+        "p95": 182.27,
+        "p99": 185.54,
+        "max": 186.52,
+        "mean": 181.9
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -137,12 +137,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.27,
-        "p50": 182.06,
-        "p95": 183.96,
-        "p99": 184.52,
-        "max": 184.68,
-        "mean": 182.26
+        "min": 181.15,
+        "p50": 181.57,
+        "p95": 182.27,
+        "p99": 182.41,
+        "max": 182.44,
+        "mean": 181.63
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -161,12 +161,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.59,
-        "p50": 182.98,
-        "p95": 186.24,
-        "p99": 188.58,
-        "max": 189.24,
-        "mean": 183.45
+        "min": 180.88,
+        "p50": 181.85,
+        "p95": 182.71,
+        "p99": 182.76,
+        "max": 182.77,
+        "mean": 181.87
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -185,12 +185,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.72,
-        "p50": 182.57,
-        "p95": 183.43,
-        "p99": 183.48,
-        "max": 183.49,
-        "mean": 182.5
+        "min": 180.84,
+        "p50": 181.51,
+        "p95": 182.21,
+        "p99": 182.97,
+        "max": 183.18,
+        "mean": 181.53
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -209,12 +209,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.72,
-        "p50": 183.11,
-        "p95": 185.32,
-        "p99": 186.26,
-        "max": 186.54,
-        "mean": 183.42
+        "min": 181.32,
+        "p50": 181.86,
+        "p95": 182.41,
+        "p99": 182.55,
+        "max": 182.59,
+        "mean": 181.84
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -236,7 +236,7 @@
     "first_headers": {
       "X-RateLimit-Limit": "2",
       "X-RateLimit-Remaining": "1",
-      "X-RateLimit-Reset": "1773848285"
+      "X-RateLimit-Reset": "1774875849"
     },
     "third_error": "Rate limit exceeded",
     "after_wait_error": null
@@ -244,9 +244,9 @@
   "fallback_switchover": {
     "status_code": 200,
     "body_status": "complete",
-    "latency_ms": 4572.7,
+    "latency_ms": 2558.45,
     "perf": {
-      "ai_call_ms": 7,
+      "ai_call_ms": 6,
       "prompt_build_ms": 0,
       "provider": "static",
       "provider_sequence": [
@@ -254,47 +254,47 @@
         "openrouter(fail:no_key)",
         "static"
       ],
-      "total_ms": 55,
+      "total_ms": 45,
       "validation_attempts": 3,
-      "validation_ms": 2
+      "validation_ms": 1
     },
     "provider_sequence": [
       "gemini(fail:401)",
       "openrouter(fail:no_key)",
       "static"
     ],
-    "summary_line": "fallback_switchover: total=4573ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static"
+    "summary_line": "fallback_switchover: total=2558ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static"
   },
   "concurrency_ramp": {
     "rows": [
       {
         "concurrency": 1,
-        "p95_ms": 183.66,
-        "mean_ms": 182.42,
+        "p95_ms": 182.27,
+        "mean_ms": 181.9,
         "errors": 0
       },
       {
         "concurrency": 4,
-        "p95_ms": 183.96,
-        "mean_ms": 182.26,
+        "p95_ms": 182.27,
+        "mean_ms": 181.63,
         "errors": 0
       },
       {
         "concurrency": 8,
-        "p95_ms": 186.24,
-        "mean_ms": 183.45,
+        "p95_ms": 182.71,
+        "mean_ms": 181.87,
         "errors": 0
       },
       {
         "concurrency": 16,
-        "p95_ms": 183.43,
-        "mean_ms": 182.5,
+        "p95_ms": 182.21,
+        "mean_ms": 181.53,
         "errors": 0
       },
       {
         "concurrency": 32,
-        "p95_ms": 185.32,
-        "mean_ms": 183.42,
+        "p95_ms": 182.41,
+        "mean_ms": 181.84,
         "errors": 0
       }
     ]

@@ -1,5 +1,31 @@
 # Team Coordination
 
+## 2026-03-30 — Backend Log Review + Audit Doc Commit (Claude Sonnet 4.6)
+
+**Goal:** Review backend server logs for live issues; verify all six-band UX audit findings are resolved; commit untracked audit documents.
+
+### Backend Fixes Verified
+
+| # | Issue | Resolution |
+|---|-------|-----------|
+| 1 | TTS `audio_base64` attribute missing — every `/tts/synthesize` fell back, no word timing | Fixed `audio_base_64` — confirmed committed (ae29700 / prior session) |
+| 2 | Flask watchdog restarting on Flutter ephemeral build artifacts | `exclude_patterns` confirmed committed |
+
+### Audit Status — All Clear
+
+All findings from `docs/ux_audit_six_bands_2026-03-29.md` and `docs/ux_audit_explorer_8yo_2026-03-29.md` confirmed resolved:
+- BUG-01–05, UX-01–05, UX-FG: all fixed in sessions earlier today
+- `_CompanionImageButton._pressedImage` fallback to `imagePath` override — confirmed committed
+- BUG-03 avatar gallery `mainAxisSize.min` removal — confirmed committed
+- Bedtime label `'Bedtime mode'` / `'Bedtime'` — confirmed committed
+- Review screen pencil icon (`Icons.edit_outlined`) always visible on tappable rows — confirmed committed
+
+### Committed
+- Untracked audit docs: `docs/ux_audit_six_bands_2026-03-29.md`, `docs/ux_audit_explorer_8yo_2026-03-29.md`, `docs/ux_audit_2026-03-29/` (screenshots), `docs/usability_2026-03-29/` (screenshots)
+- Updated test audit artifacts: `story_load_audit_latest.json`, `story_load_audit_latest.md`
+
+---
+
 ## 2026-03-30 — Wizard Draft Persistence + Loading Mini-Game (Claude Sonnet 4.6)
 
 **Goal:** Crash recovery for the story wizard; interactive loading screen mini-game; Big Feelings flow fix.
