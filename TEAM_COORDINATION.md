@@ -1,5 +1,46 @@
 # Team Coordination
 
+## 2026-03-31 — Visual Asset Gap Audit + `mad` Feeling Generation (Claude Sonnet 4.6)
+
+**Goal:** Comprehensive visual asset gap audit across all 6 age bands; generate confirmed missing assets.
+
+### Audit Findings
+
+Full sweep of all asset categories:
+- **Feelings** (`assets/images/feelings/{band}/`): `mad.png` missing from all 5 non-Sprout bands. Sprout already had it; other bands fell back to `feelings_faces/mad.png` (wrong style).
+- **Backgrounds**: Complete for all 6 bands (splash_bg, story_page_bg; feelings_bg only needed for Sprout).
+- **Orbs**: Complete for all 6 bands.
+- **Archetypes**: Complete — all band-specific images present.
+- **Companions**: Complete — all band companions present.
+- **Scenes**: Complete — Adventurer scenes serve Creator/Adolescent/Adult via resolver (by design).
+- **UI characters**: Complete — all ethnic variants for all bands verified present.
+- **Sprout tiles**: All 6 scenario tiles present.
+- **Mode orbs** (`assets/images/ui/clean/`): All 4 present with pressed variants.
+- **`feelings_faces/`** global fallback: All IDs referenced by `ExpandingFeelingsWheel` and `TherapeuticFeelingsWheel` confirmed present.
+
+### What Was Generated
+
+| File | Style |
+|------|-------|
+| `assets/images/feelings/explorer/mad.png` | 3D squishy blob, deep purple bg |
+| `assets/images/feelings/adventurer/mad.png` | 3D angular blob, cosmic indigo bg |
+| `assets/images/feelings/creator/mad.png` | 2.5D geometric blob, dark charcoal bg |
+| `assets/images/feelings/adolescent/mad.png` | Teal cinematic silhouette |
+| `assets/images/feelings/adult/mad.png` | Amber-gold refined figure |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `assets/images/feelings/{5 bands}/mad.png` | Band-specific art — fills the last style-consistency gap in core feelings |
+| `scripts/generate_mad_feeling.py` | NEW — rerunnable generation script |
+
+### Status
+- [x] 5 images generated (0 failures)
+- [x] Committed: (pending)
+
+---
+
 ## 2026-03-31 — Creator (12yo) Audit + M3 Chip Fix + pubspec Cleanup (Claude Sonnet 4.6)
 
 **Goal:** Six Hats UX audit of Creator band (age 12) via Playwright; fix the persistent BUG-04 chip visibility using the correct M3 API; remove stale `age_band_assets/` asset declarations from pubspec.
