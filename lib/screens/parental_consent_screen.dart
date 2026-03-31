@@ -284,10 +284,31 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
+                // Show a scroll hint until the parent has read to the bottom.
+                if (_scrollProgress < 0.7)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.keyboard_arrow_down,
+                            color: Colors.white.withAlpha(140), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Scroll to read before giving permission',
+                          style: TextStyle(
+                              color: Colors.white.withAlpha(140), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: !_consentGiven || !_emailValid || _submitting ? null : _submitConsent,
+                    onPressed: !_consentGiven || !_emailValid || _submitting ||
+                            _scrollProgress < 0.95
+                        ? null
+                        : _submitConsent,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFFD700),
                       foregroundColor: Colors.black,

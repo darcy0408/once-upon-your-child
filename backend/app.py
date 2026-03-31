@@ -639,4 +639,11 @@ def create_app(config_name):
 # Trigger reload
 if __name__ == '__main__':
     app = create_app(os.getenv('FLASK_ENV') or 'production')
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+    app.run(
+        host='0.0.0.0',
+        port=int(os.getenv('PORT', 5000)),
+        exclude_patterns=[
+            '*/Flutter/ephemeral/*',
+            '*/flutter/ephemeral/*',
+        ],
+    )

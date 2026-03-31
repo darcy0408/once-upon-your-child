@@ -1,5 +1,40 @@
 # Team Coordination
 
+## 2026-03-30 — Adventurer (10yo) Audit + Follow-on Fixes (Claude Sonnet 4.6)
+
+**Goal:** Six Hats audit for Adventurer (10yo) band; second-pass fixes for Creator chip visibility and Explorer archetype labels; consent scroll gate; uncommitted backend patches.
+
+### Audit Document
+`docs/ux_audit_adventurer_10yo_2026-03-30.md` — Six Hats walkthrough as a 10-year-old.
+
+### Fixes
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | BUG-04 second pass: Creator/Adult chips still blank — `ChipThemeData.labelStyle` was overriding the explicit `Text(style:)` inside each chip even after the Theme wrapper was added | Removed `labelStyle` from `ChipThemeData`; background/shape overrides kept; label colors handled entirely by `Text` inside each `FilterChip.label` |
+| 2 | Explorer archetype page: "Step 1: Pick your hero look" + "Step 2: Pick your hero type" imply locked sequential flow even though both are freely tappable | Removed "Step 1" hint; replaced "Step 2" with 3-state message: neither → "tap either one first!", one done → "now pick the other one!", both done → "You're all set!" |
+| 3 | Consent button active before parent has read the form | Added `_scrollProgress < 0.95` to button null condition; added "Scroll to read ↓" hint row shown when `_scrollProgress < 0.7` |
+| 4 | ElevenLabs TTS API: `audio_base64` attribute typo | Fixed to `audio_base_64` in `elevenlabs_tts_service.py` |
+| 5 | Flask dev server watching Flutter ephemeral build artifacts | Added `exclude_patterns` to `app.run()` |
+
+### Files Changed
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Remove `ChipThemeData.labelStyle`; replace Step 1/2 labels with 3-state progress hint |
+| `lib/screens/parental_consent_screen.dart` | Scroll-to-95% gate on button + scroll hint row |
+| `backend/elevenlabs_tts_service.py` | `audio_base64` → `audio_base_64` |
+| `backend/app.py` | `exclude_patterns` in `app.run()` |
+
+### Status
+- [x] Adventurer (10yo) audit saved
+- [x] BUG-04 second pass: labelStyle removed
+- [x] Explorer archetype 3-state hint
+- [x] Consent scroll gate
+- [x] ElevenLabs TTS typo
+- [x] Flask exclude_patterns
+
+---
+
 ## 2026-03-30 — Six Hats UX Audit Bug Sprint (Claude Sonnet 4.6)
 
 **Goal:** Work through all findings from the six-band + Explorer 8yo UX audits (`docs/ux_audit_six_bands_2026-03-29.md`, `docs/ux_audit_explorer_8yo_2026-03-29.md`) in priority order.

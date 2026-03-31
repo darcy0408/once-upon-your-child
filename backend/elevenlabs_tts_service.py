@@ -533,7 +533,7 @@ class ElevenLabsTTSService:
                 voice_settings=voice_settings,
                 output_format="mp3_44100_128",
             )
-            audio_bytes = base64.b64decode(response.audio_base64)
+            audio_bytes = base64.b64decode(response.audio_base_64)
             alignment = response.alignment
             word_timestamps = self._chars_to_word_timestamps(
                 characters=alignment.characters,
