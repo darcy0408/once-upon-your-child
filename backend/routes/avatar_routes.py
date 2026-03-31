@@ -7,10 +7,10 @@ import logging
 
 try:
     from backend.utils.app_helpers import get_user_tier, get_user_identifier
-    from backend.middleware.auth import require_auth
+    from backend.middleware.auth import require_auth, require_parental_consent
 except ImportError:
     from utils.app_helpers import get_user_tier, get_user_identifier
-    from middleware.auth import require_auth
+    from middleware.auth import require_auth, require_parental_consent
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route('/generate-custom-avatar', methods=['POST'])
     @require_auth
+    @require_parental_consent
     @limiter.limit(_tier_limit(free=3, premium=20))
     def generate_custom_avatar():
         """
@@ -177,6 +178,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route('/generate-pet-avatar', methods=['POST'])
     @require_auth
+    @require_parental_consent
     @limiter.limit(_tier_limit(free=3, premium=20))
     def generate_pet_avatar():
         """

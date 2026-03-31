@@ -37,6 +37,10 @@ class ApiError implements Exception {
   /// Returns true if authentication is required.
   bool get isAuthError => errorCode == 'ERR_UNAUTHORIZED' || errorCode == 'ERR_AUTH_REQUIRED';
 
+  /// Returns true if the backend rejected the request because the under-13
+  /// user has not yet completed parental consent.
+  bool get isParentalConsentError => errorCode == 'PARENTAL_CONSENT_REQUIRED';
+
   /// User-friendly display message (includes hint if available).
   String get displayMessage {
     if (hint != null && hint!.isNotEmpty) {

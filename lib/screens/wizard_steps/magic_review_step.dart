@@ -14,6 +14,7 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/models/api_error.dart';
 import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
@@ -424,9 +425,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     } catch (e) {
       debugPrint('❌ Error generating story: $e');
       if (mounted) {
+        String errorMsg = 'Uh oh! Something went wiggly.';
+        if (e is ApiError && e.isParentalConsentError) {
+          errorMsg = 'A grown-up needs to give permission first. '
+              'Ask a parent to open Settings and complete the parental consent step.';
+        }
         setState(() {
           _isGenerating = false;
-          _generationError = 'Uh oh! Something went wiggly.';
+          _generationError = errorMsg;
         });
       }
     } finally {

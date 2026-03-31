@@ -6,7 +6,7 @@ import os
 import re
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from PIL import Image
 
 from ..celery_config import celery
@@ -15,7 +15,7 @@ from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
 from ..models import Character, ParentHiddenContext
 from ..database import db
-from ..middleware.auth import require_auth
+from ..middleware.auth import require_auth, require_parental_consent
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..services.story_service import transform_parent_context_to_story_guidance
 from ..utils.validators import (
@@ -25,6 +25,27 @@ from ..utils.validators import (
     validate_story_modes,
     sanitize_text,
 )
+
+def _resolve_age(raw_age, default: int = 5) -> int:
+    """
+    Convert a raw age value from a request payload into a validated integer.
+
+    Rules applied in order:
+    1. Parse to int; fall back to *default* on failure.
+    2. Clamp to the valid character-age range [2, 120].
+    3. If the authenticated user is an under-13 minor (g.minor_age_cap is set),
+       cap to their declared age so they cannot request adult-calibrated content
+       by submitting a higher age value in the request body.
+    """
+    try:
+        age = max(2, min(120, int(raw_age)))
+    except (TypeError, ValueError):
+        age = default
+    cap = getattr(g, 'minor_age_cap', None)
+    if cap is not None:
+        age = min(age, cap)
+    return age
+
 
 def _looks_like_base64_image(value: str) -> bool:
     if not isinstance(value, str):
@@ -204,11 +225,7 @@ def _build_feelings_prompt_text(
     if story_guidance:
         lines.append(f"- Parent-guided story scaffolding: {story_guidance}")
 
-    try:
-        numeric_age = int(age)
-        numeric_age = max(2, min(120, numeric_age))
-    except (TypeError, ValueError):
-        numeric_age = 5
+    numeric_age = _resolve_age(age)
 
     lines.append("")
     lines.append("STORY RULES:")
@@ -357,6 +374,7 @@ def create_story_blueprint(
 
     @story_bp.route("/generate-story", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     def generate_story_endpoint():
         from ..utils.sanitizer import sanitize_story_request
@@ -418,10 +436,7 @@ def create_story_blueprint(
             resolved_age = character_details.get("age")
         if resolved_age is None:
             resolved_age = 5
-        try:
-            resolved_age = max(2, min(120, int(resolved_age)))
-        except (TypeError, ValueError):
-            resolved_age = 5
+        resolved_age = _resolve_age(resolved_age)
 
         task_kwargs = {
             "character_id": payload.get("character_id"),
@@ -690,6 +705,7 @@ def create_story_blueprint(
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @require_auth
+    @require_parental_consent
     def generate_interactive_story_endpoint():
         """
         Create new interactive adventure story with first segment.
@@ -731,10 +747,7 @@ def create_story_blueprint(
         theme = payload.get("theme", "Adventure")
         tone = payload.get("tone", "whimsical")
         length = payload.get("length", "medium")
-        try:
-            age = max(2, min(120, int(payload.get("age") or 5)))
-        except (TypeError, ValueError):
-            age = 5
+        age = _resolve_age(payload.get("age"))
         interests = payload.get("interests")
         must_include = payload.get("must_include")
         avoid = payload.get("avoid")
@@ -812,6 +825,7 @@ def create_story_blueprint(
     @story_bp.route("/continue-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
     @require_auth
+    @require_parental_consent
     def continue_interactive_story_endpoint():
         """
         Continue interactive story based on choice selection.
@@ -990,6 +1004,7 @@ def create_story_blueprint(
 
     @story_bp.route("/generate-illustrations", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit(lambda: get_tier_limits("expensive") or "100/hour")  # BYOK users get high limit
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
@@ -1189,6 +1204,7 @@ def create_story_blueprint(
 
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit("10 per hour")
     def generate_coloring_pages_endpoint():
         """Generate coloring book pages for story scene(s)"""
