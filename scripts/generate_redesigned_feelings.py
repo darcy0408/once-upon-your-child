@@ -65,73 +65,69 @@ _NO_TEXT = (
     'anywhere in the image. '
 )
 
-_GLOBAL_NEG = (
-    'Not photorealistic. Not a photograph. Not clipart. Not a children\'s TV '
-    'character. Not a stock illustration. Not cool-palette dominant. '
-    'No silhouettes as the only element. No traced face outlines. '
-)
-
-_ADOLESCENT_NEG = (
-    'Not photorealistic. Not a photograph. Not a children\'s cartoon. '
-    'Not babyish proportions. Not cold-teal dominant. Not a silhouette without '
-    'facial features. Not corporate. Not a school worksheet. '
-    'No brand logos. No specific branded style. '
-)
-
-_ADULT_NEG = (
-    'Not photorealistic. Not a photograph. Not a stock photo. '
-    'Not a corporate wellness app aesthetic. Not an AI-generated human face. '
-    'Not cool-palette dominant. Not a children\'s illustration. '
-    'Not clinical or medical in feeling. '
+# Shared negative for ALL sets — critical requirements
+_SHARED_NEG = (
+    'No human skin tone. No realistic human face. No racial features. '
+    'No hair. No gender indicators. No clothing with cultural markers. '
+    'Not photorealistic. Not a photograph. Not a stock illustration. '
+    'No white background. No gradient background. Pure solid black background only. '
+    + _NO_TEXT
 )
 
 # ---------------------------------------------------------------------------
 # Style bases
+# All three sets use the same abstract blob/cartoon character approach.
+# The character has NO race, NO gender, NO skin — it is a pure abstract
+# cartoon shape that conveys emotion entirely through color, posture,
+# and simple dot-eyes + curved-mouth expression.
+# BLACK background (#000000) required for clean ImageMagick removal.
 # ---------------------------------------------------------------------------
 
+# Shared character description used in all three styles
+_BLOB_CHARACTER = (
+    'The character is a smooth rounded abstract cartoon blob figure — '
+    'a simple organic teardrop or egg shape with stubby rounded limbs. '
+    'No hair. No nose. No ears. No clothing details. No skin tone. '
+    'The entire character is a single bright solid color that conveys the emotion. '
+    'Face has only two small round dot eyes and a simple curved line for a mouth — '
+    'expressive but completely abstract, like a cartoon emoji given a body. '
+    'The character reads as entirely universal — no race, no gender, no age. '
+)
+
 GLOBAL_STYLE = (
-    'Soft geometric character illustration in the style of Headspace app '
-    '(2018-2021 era). Rounded simplified human figure with clear limb '
-    'differentiation, adult-adjacent head proportions, warm mocha skin tone '
-    '(#C49A6C), minimal but legible facial features (simple eyes and mouth). '
-    'Warm brown outline (#5C3D2E), approximately 2px weight. '
-    'Background: warm cream (#F5EFE6) with a subtle radial gradient slightly '
-    'cooler at edges. Square composition, character centered and clearly legible '
-    'at thumbnail size. Single warm-toned accent color as the dominant emotional '
-    'signal. Emotional expression carried 70% by body language and posture, '
-    '30% by facial expression. High quality illustration render. '
-    + _NO_TEXT + _GLOBAL_NEG
+    'A high-quality 3D-rendered soft cartoon blob character illustration. '
+    + _BLOB_CHARACTER +
+    'Solid pure black background (#000000). '
+    'The character is centered in frame, clearly legible at small thumbnail size. '
+    'Emotion is expressed through the character\'s body posture, limb position, '
+    'and the color and direction of accent lighting on the figure. '
+    '3D render with smooth surfaces, subtle ambient occlusion, slight depth-of-field. '
+    + _SHARED_NEG
 )
 
 ADOLESCENT_STYLE = (
-    'Webtoon-influenced digital illustration. Contemporary graphic novel / '
-    'webtoon aesthetic (Lore Olympus, Heartstopper register). '
-    'Adolescent character with medium warm skin tone, large expressive eyes '
-    'with clear iris and catch-light, clean digital linework at consistent '
-    '2px weight in warm dark plum (#2C1A3A). '
-    'Background: soft lavender-cream (#F0EBF8) with loose impressionistic '
-    'strokes suggesting a space. Character is the clear focal point. '
-    'Emotional expression: 50% eyes and brows, 50% body language. '
-    'Gender-neutral or softly ambiguous character presentation. '
-    'The character\'s emotion should feel authentic and non-performative. '
-    'High quality digital illustration. '
-    + _NO_TEXT + _ADOLESCENT_NEG
+    'A vibrant 3D-rendered cartoon blob character illustration with energetic style. '
+    + _BLOB_CHARACTER +
+    'Solid pure black background (#000000). '
+    'The character glows with vivid saturated color — the emotion\'s accent color '
+    'is bright and bold, with a subtle colored rim light halo effect. '
+    'Emotion expressed through dynamic body posture and expressive dot-eyes. '
+    'The overall feel is energetic, modern, and visually punchy. '
+    '3D render, smooth surfaces, dramatic accent lighting. '
+    + _SHARED_NEG
 )
 
 ADULT_STYLE = (
-    'Warm editorial character illustration. Style references: Marion Barraud '
-    'figure warmth, Olimpia Zagnoli palette restraint. Abstracted human form — '
-    'face may be simplified, seen from three-quarter view, or partially turned. '
-    'Warm muted skin tone (#B08060) with warm umber shadow (#7A5030). '
-    'Minimal linework — color shapes define the figure. Where lines appear, '
-    'they are deliberate and match the dominant scene color. '
-    'Background: warm greige (#EDE8E3) with a spare environmental element '
-    '(window, table, chair edge) to ground the figure. '
-    'Emotional expression: 80% body language and environmental relationship, '
-    '20% facial expression. The posture tells the story. '
-    'Sophisticated, intimate, and warm — never clinical, never corporate. '
-    'High quality editorial illustration. '
-    + _NO_TEXT + _ADULT_NEG
+    'A refined 3D-rendered cartoon blob character illustration with sophisticated style. '
+    + _BLOB_CHARACTER +
+    'Solid pure black background (#000000). '
+    'The character\'s color is rich and slightly more muted than the adolescent version — '
+    'sophisticated rather than fluorescent. Soft directional lighting with warm '
+    'and cool contrast to add depth. '
+    'Emotion expressed primarily through considered body posture — the figure\'s '
+    'relationship to space conveys the feeling\'s weight and texture. '
+    '3D render, smooth surfaces, subtle cinematic lighting quality. '
+    + _SHARED_NEG
 )
 
 # ---------------------------------------------------------------------------
@@ -142,226 +138,251 @@ ADULT_STYLE = (
 
 FEELINGS = {
     'anticipation': (
-        # global (in scope)
-        'The figure sits perched on the edge of a simple surface, weight '
-        'shifted forward onto the balls of the feet, hands clasped together '
-        'in the lap, eyes wide and bright. Warm amber light (#F5A623) falls '
-        'from the right edge of the frame as if from a source just off-screen. '
-        'Expression: quietly alert, slightly held breath. Body language carries '
-        'forward-leaning potential energy.',
+        # global — warm amber blob, perched forward on edge
+        'Character color: warm amber-yellow. '
+        'Posture: perched on the very edge of a surface, entire body weight '
+        'shifted forward, stubby arms slightly raised and ready, dot-eyes wide '
+        'and bright, mouth curved in a small eager smile. '
+        'Accent lighting: golden-amber glow from the right side. '
+        'Energy: coiled, ready, forward-leaning.',
 
-        # adolescent
-        'The adolescent character leans forward at the edge of their seat, '
-        'hands pressed together, eyes bright with slight dilation, looking '
-        'toward the right. Warm amber accent (#F5A623) in the light from that '
-        'direction. Background strokes suggest an opening, something beyond. '
-        'The body language has gathering, tension-before-motion energy.',
+        # adolescent — bolder, more vibrant amber
+        'Character color: vivid electric amber. '
+        'Posture: leaning sharply forward, arms reaching slightly toward '
+        'something off-screen right, dot-eyes large and bright with excitement, '
+        'mouth open in a surprised eager curve. '
+        'Rim light: bright warm amber halo. '
+        'Energy: dynamic, about to burst into motion.',
 
-        # adult
-        'An abstracted adult figure stands at a threshold — hand resting on '
-        'a door frame or window edge, leaning slightly forward, weight on the '
-        'front foot. Deep amber light (#C8860A) fills the space beyond. '
-        'The posture is deliberate and contained — an adult\'s anticipation, '
-        'considered not impulsive. Environmental context: a doorway or window '
-        'frame visible as a compositional element.',
+        # adult — richer, more contained amber
+        'Character color: deep burnished amber-gold. '
+        'Posture: standing at a threshold, weight on front foot, one stubby arm '
+        'resting on an implied door frame, leaning slightly forward. '
+        'Dot-eyes looking ahead with quiet alertness, mouth in a small composed '
+        'curve. Lighting: warm directional glow from ahead. '
+        'Energy: deliberate, considered, poised.',
     ),
 
     'contentment': (
-        # global
-        'The figure sits with legs loosely crossed, shoulders dropped, a faint '
-        'upward curve of the mouth, eyes half-closed in quiet pleasure. '
-        'Sage green accent (#A8C5A0) in the character\'s clothing. '
-        'A simple warm object — a cup edge or blanket corner — visible nearby. '
-        'Light is warm and even with no drama. The figure fully occupies the '
-        'space — nothing reaching, nothing guarded.',
+        # global — sage green, settled and soft
+        'Character color: soft sage green. '
+        'Posture: seated comfortably, legs loosely crossed or tucked, arms '
+        'resting in lap, shoulders dropped wide, dot-eyes half-closed in '
+        'quiet pleasure, mouth in a gentle upward curve. '
+        'Lighting: warm even ambient glow, no dramatic shadows. '
+        'Energy: fully settled, nothing reaching, nothing guarded.',
 
-        # adolescent
-        'The adolescent character in a casual seated position — headphones '
-        'loosely around the neck (not on ears), legs loosely crossed, a soft '
-        'genuine smile. Sage green accent (#A8C5A0) in the clothing or ambient '
-        'light. Background warm and soft. The character has fully inhabited '
-        'their space — no urgency in any limb.',
+        # adolescent — brighter green, casually settled
+        'Character color: bright cheerful green. '
+        'Posture: reclined or loosely seated, one arm draped over a knee, '
+        'body fully relaxed with no tension, dot-eyes soft and half-closed, '
+        'a wide easy smile. '
+        'Rim light: soft warm green-gold halo. '
+        'Energy: completely at ease, occupying the space fully.',
 
-        # adult
-        'An abstracted adult figure reclined — book or cup held loosely, '
-        'eyes closed or softly directed at the object. Afternoon window light '
-        'falls across them in one warm bar. Forest sage accent (#7D9E77) in '
-        'clothing or a plant near the frame edge. Domestic and dignified. '
-        'The rest is active and chosen, not collapsed.',
+        # adult — forest green, quietly satisfied
+        'Character color: deep forest green. '
+        'Posture: reclined with a subtle stillness — weight fully given to '
+        'the surface, arms loose at sides, dot-eyes gently closed, mouth in '
+        'a small private smile. '
+        'Lighting: soft warm side-light, long gentle shadow. '
+        'Energy: earned rest, active peace.',
     ),
 
     'dread': (
-        # global
-        'The figure stands or sits slightly smaller in the frame than usual, '
-        'shoulders raised slightly toward the ears, eyes directed toward the '
-        'lower-left as if tracking something unseen. Muted indigo light '
-        '(#7B7FA8) as a shadow source from that lower-left direction. '
-        'Background very slightly cooler at the left edge. '
-        'The figure is frozen — not retreating, just held still.',
+        # global — deep violet, frozen and inward
+        'Character color: deep violet-grey. '
+        'Posture: standing very still, shoulders raised toward the top of the '
+        'body, arms pulled close to the sides, dot-eyes wide and fixed on '
+        'something off-screen lower-left, mouth pressed into a flat line. '
+        'Accent lighting: cold blue-violet shadow from the lower-left. '
+        'Energy: frozen, not fleeing — the body knows but cannot move.',
 
-        # adolescent
-        'The adolescent character slightly smaller in frame than usual, '
-        'shoulders elevated, eyes tracking something off-screen at lower-left. '
-        'Background color shifts from lavender-cream to cooler muted indigo '
-        '(#7B7FA8) at that corner. The posture is frozen alert — '
-        'not fleeing, just held. Expressive webtoon eyes carry the weight.',
+        # adolescent — vivid indigo, tight and alert
+        'Character color: vivid indigo-purple. '
+        'Posture: body pulled in tight, shoulders hunched high, dot-eyes '
+        'wide and tracking something at lower-left, one arm wrapped around '
+        'own body. '
+        'Rim light: cold blue edge light, darker halo. '
+        'Energy: alert stillness, the worst kind of waiting.',
 
-        # adult
-        'An abstracted adult figure at a desk or table interior, shoulders '
-        'carried slightly forward, gaze level on an unseen point. '
-        'Background shifts from warm greige (#EDE8E3) to cooler muted indigo '
-        '(#6B6FA0) at the edge toward which the figure looks. '
-        'Tension held in the upper body — the body knows something. '
-        'The environmental detail (desk surface, nearby objects) adds weight.',
+        # adult — dark plum, still and weighted
+        'Character color: dark plum-charcoal. '
+        'Posture: very still, shoulders slightly elevated, weight settled '
+        'downward, dot-eyes level and haunted, mouth in a flat pressed line. '
+        'Lighting: cool directional shadow pressing in from one side, '
+        'darkness gathering at the edges of the frame. '
+        'Energy: heavy stillness, the body carrying foreknowledge.',
     ),
 
     'envious': (
-        # global
-        'The figure in three-quarter profile, gaze cut sharply sideways '
-        'toward the left edge of the frame, expression tight and controlled — '
-        'small closed mouth, slight narrowing of eyes. One hand near the chin. '
-        'Teal-green accent (#5FA888) in clothing or a reflected light element. '
-        'The object of attention is entirely off-screen.',
+        # global — teal-green, sideways attention
+        'Character color: teal-green. '
+        'Posture: body faces forward but head and dot-eyes cut hard to one '
+        'side, one stubby arm slightly extended toward the off-screen subject, '
+        'the other pulled back, mouth in a tight flat line. '
+        'Lighting: green-tinted side light from the direction of attention. '
+        'Energy: involuntary, magnetic pull toward something out of reach.',
 
-        # adolescent
-        'The adolescent character with a sideways glance and closed-mouth '
-        'expression, one arm pulled in slightly. In the background, a softly '
-        'out-of-focus window or screen element suggests the object of comparison. '
-        'Teal-green accent (#5FA888) in the background ambient light. '
-        'Controlled involuntary attention to the off-screen subject.',
+        # adolescent — bright green, sharp sideways look
+        'Character color: bright neon-green. '
+        'Posture: leaning subtly toward one side, dot-eyes cut sharply '
+        'sideways, one arm reaching slightly off-frame, expression caught '
+        'mid-wanting — mouth open slightly. '
+        'Rim light: vivid green edge glow. '
+        'Energy: caught in the act of wanting what someone else has.',
 
-        # adult
-        'An abstracted adult figure partially reflected in a window pane, '
-        'looking at something on the other side. The reflection in the glass '
-        'is slightly more vivid or luminous than the figure\'s environment. '
-        'Teal-green accent (#4E9078) in the reflected light. '
-        'The comparison is the subject — handled with restraint and sophistication.',
+        # adult — deep emerald, contained and aware
+        'Character color: deep emerald green. '
+        'Posture: still and composed, but dot-eyes distinctly averted to one '
+        'side, one arm slightly extended then pulled back — a suppressed reach. '
+        'Lighting: cool green reflected light from the direction of attention. '
+        'Energy: self-aware wanting, deliberately contained.',
     ),
 
     'grief': (
-        # global — not in 7-image fallback scope, skip
+        # global — not in 7-image fallback scope
         None,
 
-        # adolescent
-        'The adolescent character seated with knees drawn up or weight forward, '
-        'one hand pressed gently and deliberately to the chest. Eyes closed. '
-        'Soft, even light behind them — not dramatic. Soft periwinkle accent '
-        '(#8B9CC4). The posture is complete and still, not performative. '
-        'Background deepens slightly around the figure. '
-        'The stillness signals that this feeling has settled, not just arrived.',
+        # adolescent — soft blue, curled and still
+        'Character color: soft periwinkle blue. '
+        'Posture: curled in on itself — knees drawn up if seated, arms '
+        'wrapped around own body, head bowed slightly, one stubby hand '
+        'pressed gently to chest. Dot-eyes closed. Mouth soft and neutral. '
+        'Lighting: soft even light from behind, no harsh shadows. '
+        'Energy: complete held stillness — grief that has settled.',
 
-        # adult
-        'An abstracted adult figure alone in a spare room interior — seated '
-        'on the floor or a low chair. Complete held stillness. No dramatic '
-        'gesture. The empty space in the composition carries as much weight as '
-        'the figure. Soft periwinkle accent (#7A87B0) in the ambient light. '
-        'The room itself feels held, paused.',
+        # adult — deep blue, alone in space
+        'Character color: deep navy blue. '
+        'Posture: seated very low or on the floor, weight entirely given '
+        'downward, arms at sides or loosely held, dot-eyes closed, '
+        'no dramatic gesture. The figure is small relative to the frame — '
+        'the surrounding darkness is part of the composition. '
+        'Lighting: soft single ambient source from behind. '
+        'Energy: the stillness of grief that has no more movement left in it.',
     ),
 
     'hopeful': (
-        # global — not in 7-image fallback scope, skip
+        # global — not in 7-image fallback scope
         None,
 
-        # adolescent
-        'The adolescent character looking slightly upward and ahead, a small '
-        'genuine smile (not a wide grin, not forced), one open hand extended '
-        'or slightly lifted at the side. Warm yellow accent (#F5C842) from '
-        'above-ahead — an aspirational direction. Background gains warmth '
-        'toward that light source.',
+        # adolescent — warm yellow, face tilted up
+        'Character color: bright warm yellow. '
+        'Posture: chin lifted upward, one stubby arm extended open at the '
+        'side, body weight slightly on toes as if about to rise, dot-eyes '
+        'bright and looking up, mouth in a genuine open smile. '
+        'Rim light: warm golden glow from above-ahead. '
+        'Energy: open, rising, reaching toward something real.',
 
-        # adult
-        'An abstracted adult figure at a window or facing upward, posture open '
-        'and grounded, a small contemplative expression. Warm yellow accent '
-        '(#D4A82F) as the light source the figure is oriented toward. '
-        'The figure is directed toward something, not simply open to nothing. '
-        'Background shifts from warm greige to gold at the light source.',
+        # adult — golden amber, quietly upward
+        'Character color: warm golden amber. '
+        'Posture: standing with open chest, chin gently lifted, dot-eyes '
+        'directed upward with quiet intent, one arm loosely open at the side. '
+        'Lighting: warm directional light from above, illuminating the '
+        'upper part of the figure. '
+        'Energy: contemplative aspiration — hopeful, not naive.',
     ),
 
     'indignation': (
-        # global
-        'The figure standing or sitting upright with deliberately raised chin, '
-        'brow furrowed with clear intent, mouth set in a controlled line. '
-        'Arms at sides or crossed — not raised, not aggressive. Chest open and '
-        'elevated. Terracotta accent (#D4845A) in clothing. '
-        'The posture signals dignity under assault: being right, not out of control.',
+        # global — terracotta, upright and composed
+        'Character color: terracotta orange. '
+        'Posture: standing straight and tall, chin raised, dot-eyes direct '
+        'and sharp, mouth set in a controlled pressed line, arms at sides '
+        'or crossed — not raised. Chest open and elevated. '
+        'Lighting: warm terracotta-tinted light, even and direct. '
+        'Energy: dignified outrage — being right, not being out of control.',
 
-        # adolescent
-        'The adolescent character straight-backed with chin elevated, brow '
-        'furrowed, looking directly at the viewer or slightly above — offended '
-        'and composed, not explosive. Terracotta accent (#D4845A) in clothing. '
-        'Posture controlled and assertive. The emotion is held, not performed.',
+        # adolescent — vivid orange-red, assertive
+        'Character color: vivid burnt orange. '
+        'Posture: straight-backed, chin up, dot-eyes looking directly at '
+        'the viewer with clear offense, brow furrowed shape implied in the '
+        'dot-eyes, arms crossed or held deliberately. '
+        'Rim light: bright orange-red edge glow. '
+        'Energy: justified, assertive, contained — not explosive.',
 
-        # adult
-        'An abstracted adult figure in profile or three-quarter view, standing, '
-        'jaw set, gaze measured and direct. Hands deliberate at sides — not '
-        'raised. Terracotta accent (#B8634A) in clothing. Composed outrage: '
-        'this emotion has been fully examined before being worn. Spine straight.',
+        # adult — deep terracotta, measured
+        'Character color: deep terracotta-brown. '
+        'Posture: standing in profile or three-quarter view, spine straight, '
+        'dot-eyes level and direct, jaw set, arms deliberate at sides. '
+        'Lighting: warm directional side light, strong composed shadow. '
+        'Energy: fully considered outrage — the posture of someone who has '
+        'decided they are right and will not be moved.',
     ),
 
     'melancholy': (
-        # global
-        'The figure in three-quarter view, gaze directed toward a soft diffuse '
-        'light source at the upper right, expression neutral-to-wistful, slight '
-        'downward set of the mouth. Dusty blue accent (#8FAFC4) in the light '
-        'direction and in character shadow tones. '
-        'The figure is in a middle stillness — neither collapsed nor upright. '
-        'Wistful, not despairing.',
+        # global — dusty blue, wistful and still
+        'Character color: dusty blue-grey. '
+        'Posture: three-quarter view, body in a middle stillness — not '
+        'collapsed, not upright. Dot-eyes looking away toward a diffuse '
+        'light source, mouth in a soft downward neutral curve. '
+        'One arm loosely at side. '
+        'Lighting: soft diffuse blue-grey light from upper-right. '
+        'Energy: wistful, somewhere else — not despairing, just not here.',
 
-        # adolescent
-        'The adolescent character looking out of frame toward soft diffuse light, '
-        'an object — a pen, a phone — held in the hand but entirely unused. '
-        'Expression neutrally wistful, eyes soft. Dusty blue accent (#8FAFC4) '
-        'in the light source. The character has paused mid-task and is '
-        'somewhere else entirely. The outward gaze is key.',
+        # adolescent — blue-violet, paused mid-task
+        'Character color: blue-violet. '
+        'Posture: sitting with one arm extended as if holding something '
+        'forgotten, dot-eyes looking off to the side and slightly down, '
+        'mouth in a soft neutral line. Weight settled but not collapsed. '
+        'Rim light: cool blue edge glow. '
+        'Energy: the pause of someone whose mind has drifted far away.',
 
-        # adult
-        'An abstracted adult figure at a window in late afternoon light, '
-        'partial reflection visible in the glass pane, one hand resting gently '
-        'on the glass. Dusty blue accent (#6891A8) in the light. The palette '
-        'carries most of the emotional weight — warm greige ground with blue '
-        'window light creating a contemplative temperature difference.',
+        # adult — deep slate blue, window-light stillness
+        'Character color: deep slate blue. '
+        'Posture: still, one stubby arm raised and touching an implied '
+        'surface (window glass), dot-eyes directed to the side in '
+        'soft unfocused gaze, mouth neutral. Weight settled. '
+        'Lighting: cool window light from the side — the blue carries '
+        'the emotional temperature. '
+        'Energy: the quiet weight of something unresolved.',
     ),
 
     'resentful': (
-        # global — not in 7-image fallback scope, skip
+        # global — not in 7-image fallback scope
         None,
 
-        # adolescent
-        'The adolescent character with arms crossed or gripping one arm tightly, '
-        'jaw set, gaze averted to the side and slightly down. Muted '
-        'rose-terracotta accent (#C17C6B) in clothing. The body is holding '
-        'something in — tension stored in the upper body, especially shoulders '
-        'and jaw. A deliberate withholding.',
+        # adolescent — rose-red, closed and tight
+        'Character color: muted rose-red. '
+        'Posture: arms crossed tight across the body, dot-eyes averted to '
+        'the side and slightly down, mouth pressed flat, shoulders slightly '
+        'elevated with tension. '
+        'Rim light: cool rose edge glow. '
+        'Energy: something being held in — a deliberate withholding.',
 
-        # adult
-        'An abstracted adult figure in profile — jaw set, standing or seated. '
-        'The single tell: one hand grips a railing, cup, or table edge slightly '
-        'too firmly. The rest of the body is composed and still. Muted '
-        'rose-terracotta accent (#A86655) in clothing. Controlled whole-body '
-        'posture with only the grip revealing the inner state.',
+        # adult — deep rose-brown, single point of tension
+        'Character color: deep muted rose-brown. '
+        'Posture: standing or seated, body composed and still except for '
+        'one stubby hand gripping something slightly too tightly. '
+        'Dot-eyes averted to the side, mouth controlled and flat. '
+        'Lighting: warm side light with a cool cast on the averted side. '
+        'Energy: controlled surface with internal heat — the grip is the tell.',
     ),
 
     'restless': (
-        # global
-        'The figure mid-motion or with implied multiple positions — hand on '
-        'knee about to push up, weight shifted forward, one foot slightly '
-        'raised. Warm peach accent (#E8A87C) in clothing or a warm glow on '
-        'the moving limb. The figure has no settled weight — '
-        'kinetic and unresolved but warm.',
+        # global — warm peach-orange, kinetic
+        'Character color: warm peach-orange. '
+        'Posture: mid-motion — weight shifted off-center, one foot lifted '
+        'or one arm in motion, body at an angle as if about to move '
+        'but with no clear direction. Dot-eyes unfocused, mouth open '
+        'slightly. '
+        'Lighting: warm orange kinetic glow, slight motion impression. '
+        'Energy: contained motion without destination — full and unable to settle.',
 
-        # adolescent
-        'The adolescent character seated with one leg implying a bouncing '
-        'motion, weight on the front edge of their seat, one hand mid-motion. '
-        'Expression of pent, directionless energy — not anxious, just full '
-        'and unable to settle. Warm peach accent (#E8A87C) in clothing. '
-        'Motion-without-destination energy.',
+        # adolescent — bright orange, bouncing energy
+        'Character color: vivid bright orange. '
+        'Posture: seated but with one leg raised or in motion, arms slightly '
+        'spread as if unsure which way to go, dot-eyes darting, mouth open '
+        'in an unsettled expression. '
+        'Rim light: vivid warm orange rim light. '
+        'Energy: bouncing, directionless, pent — needs to move but has nowhere to go.',
 
-        # adult
-        'An abstracted adult figure in a lived-in interior — table with '
-        'scattered objects nearby, one hand mid-motion through hair or '
-        'reaching toward something, gaze unfocused. Warm peach accent '
-        '(#CC7F58) in the ambient light. Energy without object. '
-        'The environmental clutter externalizes the directionlessness.',
+        # adult — warm amber-brown, scattered and unfocused
+        'Character color: warm amber-brown. '
+        'Posture: standing or at a table, one arm in mid-reach toward nothing '
+        'particular, weight uneven, dot-eyes unfocused and looking nowhere. '
+        'Lighting: warm directional light with softened edges. '
+        'Energy: the adult version — quieter but no less unresolved, '
+        'a mind that cannot settle on anything.',
     ),
 }
 
