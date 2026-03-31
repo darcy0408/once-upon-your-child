@@ -10,10 +10,11 @@ import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'services/chronicle_service.dart';
 import 'subscription_service.dart';
-import 'theme/app_theme.dart';
+import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
+import 'widgets/magical_loading_view.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/voice_mic_button.dart';
 
@@ -34,6 +35,7 @@ class PickAPathAdventureScreen extends StatefulWidget {
     this.personalitySliders,
     this.chronicleId, // Living Story Chronicle ID (null = normal story)
     this.bigFeelingsContext,
+    this.companions,
   });
 
   final String userId;
@@ -49,6 +51,9 @@ class PickAPathAdventureScreen extends StatefulWidget {
   final Map<String, int>? personalitySliders;
   final String? chronicleId;
   final Map<String, dynamic>? bigFeelingsContext;
+  /// Companion list built from WizardData — passed directly to backend so
+  /// companions appear in the story even for wizard-created temp characters.
+  final List<Map<String, dynamic>>? companions;
 
   @override
   State<PickAPathAdventureScreen> createState() =>
@@ -208,6 +213,8 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           tone: widget.tone,
           length: widget.length,
           age: widget.character.age,
+          characterName: widget.character.name,
+          companions: widget.companions,
           interests: widget.interests,
           mustInclude: widget.mustInclude,
           avoid: widget.avoid,
@@ -382,8 +389,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
   Future<void> _handleCustomChoice() async {
     final text = _customChoiceController.text.trim();
-    if (text.isEmpty || _isContinuing || _isCompleted || _storyId == null)
+    if (text.isEmpty || _isContinuing || _isCompleted || _storyId == null) {
       return;
+    }
 
     HapticFeedback.selectionClick();
     setState(() {
@@ -601,11 +609,37 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     }
   }
 
+  AgeBandThemeData get _bandTheme => themeForAge(widget.character.age);
+
+  bool get _isSprout => widget.character.age <= 5;
+  bool get _isYoung => widget.character.age <= 8;
+  bool get _isMature => _bandTheme.band.isMature;
+
+  String get _continueLabel {
+    if (_isSprout) return 'Keep going! ➡️';
+    if (_isYoung) return 'What happens next? →';
+    if (_isMature) return 'Continue';
+    return 'Next →';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final band = _bandTheme;
     return Scaffold(
+      backgroundColor: band.gradientStart,
       appBar: AppBar(
-        title: Text(_storyTitle ?? 'Pick-A-Path Adventure'),
+        backgroundColor: band.gradientStart,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          _storyTitle ?? 'Pick-A-Path Adventure',
+          style: TextStyle(
+            fontFamily: band.uiFontFamily,
+            fontSize: _isSprout ? 20 : 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         actions: [
           if (!_isLoading && _currentSegment != null)
             Padding(
@@ -622,19 +656,23 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.magicalBackground,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
+          ),
         ),
         child: _isLoading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Weaving your adventure...'),
-                  ],
-                ),
+            ? MagicalLoadingView(
+                status: _isSprout
+                    ? 'Getting your story ready...'
+                    : _isYoung
+                        ? 'Weaving your adventure...'
+                        : _isMature
+                            ? 'Crafting your story...'
+                            : 'Building your adventure...',
+                isSproutBand: _isSprout,
               )
             : _errorMessage != null
                 ? Center(
@@ -664,14 +702,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           _buildSegmentCard(),
           const SizedBox(height: 16),
 
-          // Inventory section
-          if (_inventory.isNotEmpty) ...[
+          // Inventory section — hidden for Sprouts (too abstract)
+          if (_inventory.isNotEmpty && !_isSprout) ...[
             _buildInventorySection(),
             const SizedBox(height: 16),
           ],
 
-          // Story state section
-          if (_state != null) ...[
+          // Story state section — only for Adventurer+ who enjoy tracking
+          if (_state != null && !_isSprout && !_isYoung) ...[
             _buildStoryStateSection(),
             const SizedBox(height: 16),
           ],
@@ -693,6 +731,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   }
 
   Widget _buildSegmentCard() {
+    final band = _bandTheme;
+    final double fontSize = _isSprout
+        ? 19
+        : _isYoung
+            ? 17
+            : _isMature
+                ? 15
+                : 16;
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,8 +747,8 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
             Align(
               alignment: Alignment.topRight,
               child: IconButton(
-                icon: const Icon(Icons.volume_off_rounded,
-                    color: Colors.deepPurple),
+                icon: Icon(Icons.volume_off_rounded,
+                    color: band.primary),
                 tooltip: 'Stop reading',
                 onPressed: () => AppTtsService.instance.stop(),
               ),
@@ -717,10 +763,21 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                 height: 200,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  height: 200,
-                  color: Colors.grey[300],
-                  child: const Center(
-                    child: Icon(Icons.image_not_supported),
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      colors: [
+                        band.primary.withValues(alpha: 0.3),
+                        band.gradientMid.withValues(alpha: 0.5),
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _isSprout ? '✨' : _isYoung ? '🌟' : '📖',
+                      style: const TextStyle(fontSize: 48),
+                    ),
                   ),
                 ),
               ),
@@ -731,10 +788,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           // Story content
           Text(
             _currentSegment!.content,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 16,
-                  height: 1.6,
-                ),
+            style: TextStyle(
+              fontFamily: band.uiFontFamily,
+              fontSize: fontSize,
+              height: 1.7,
+              color: Colors.white.withValues(alpha: 0.92),
+            ),
           ),
         ],
       ),
@@ -751,10 +810,13 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                 setState(() => _inventoryExpanded = !_inventoryExpanded),
             child: Row(
               children: [
-                const Icon(Icons.backpack, size: 20),
+                Icon(_isMature ? Icons.list_alt_rounded : Icons.backpack,
+                    size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Inventory (${_inventory.length})',
+                  _isMature
+                      ? 'Story Items (${_inventory.length})'
+                      : 'My Backpack (${_inventory.length})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -800,10 +862,10 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
             onTap: () => setState(() => _stateExpanded = !_stateExpanded),
             child: Row(
               children: [
-                const Icon(Icons.map, size: 20),
+                Icon(_isMature ? Icons.timeline_rounded : Icons.map, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Adventure Status',
+                  _isMature ? 'Story Thread' : 'Adventure Map',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1058,6 +1120,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         ),
       );
     }
+    // Sprouts can't type — only show the "my own idea" button if voice
+    // captured something. For Explorer+, tapping opens the text field.
+    if (isSprout) {
+      return const SizedBox.shrink();
+    }
     return GestureDetector(
       onTap:
           _isContinuing ? null : () => setState(() => _showCustomInput = true),
@@ -1074,9 +1141,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           children: [
             const Icon(Icons.mic_rounded, color: Colors.deepPurple, size: 28),
             const SizedBox(width: 10),
-            Text(
-              isSprout ? 'My own idea! 💡' : 'Something else...',
-              style: const TextStyle(
+            const Text(
+              'Something else...',
+              style: TextStyle(
                 color: Colors.deepPurple,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1304,7 +1371,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppButton.primary(
-          label: 'Continue',
+          label: _continueLabel,
           onPressed: _isContinuing ? null : _handleContinue,
           icon: Icons.arrow_forward,
         ),

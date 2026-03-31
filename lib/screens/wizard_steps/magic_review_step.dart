@@ -241,33 +241,63 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         }
 
         if (mounted) {
+          final wd = widget.wizardData;
           final character = Character(
-              id: widget.wizardData.characterId ??
+              id: wd.characterId ??
                   'temp-${DateTime.now().millisecondsSinceEpoch}',
-              name: widget.wizardData.characterName,
-              age: widget.wizardData.characterAge,
-              role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
-              gender: widget.wizardData.characterGender,
-              personalitySliders: widget.wizardData.personalitySliders);
+              name: wd.characterName,
+              age: wd.characterAge,
+              role: wd.selectedArchetypeId ?? 'Adventurer',
+              gender: wd.characterGender,
+              personalitySliders: wd.personalitySliders);
+
+          // Build companions list from wizard selections so the backend can
+          // weave them into the story even for temp (non-DB) characters.
+          final companions = <Map<String, dynamic>>[];
+          // Magic/preset companions by name
+          for (final name in wd.companionNames) {
+            companions.add({'name': name, 'role': 'companion'});
+          }
+          // User pets
+          for (final pet in wd.pets) {
+            final name = (pet['name'] ?? '').trim();
+            if (name.isNotEmpty) {
+              companions.add({
+                'name': name,
+                'species': pet['species'] ?? 'pet',
+                'role': 'pet',
+              });
+            }
+          }
+
+          // Tone calibrated by age band
+          final band = ageBandFromAge(wd.characterAge);
+          final tone = switch (band) {
+            AgeBand.sprout => 'whimsical',
+            AgeBand.explorer => 'whimsical',
+            AgeBand.adventurer => 'fantasy',
+            AgeBand.creator => 'mystery',
+            AgeBand.adolescent => 'atmospheric',
+            AgeBand.adult => 'literary',
+          };
+
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => PickAPathAdventureScreen(
                       userId: userId,
                       character: character,
                       theme: requestData['theme'] ?? 'Adventure',
-                      tone: 'whimsical',
-                      length: _mapStoryLength(widget.wizardData.storyLength),
-                      interests:
-                          widget.wizardData.selectedEmotionChips.isNotEmpty
-                              ? widget.wizardData.selectedEmotionChips
-                              : null,
-                      mustInclude: widget.wizardData.customElements.isNotEmpty
-                          ? [widget.wizardData.customElements]
+                      tone: tone,
+                      length: _mapStoryLength(wd.storyLength),
+                      companions: companions.isEmpty ? null : companions,
+                      interests: wd.selectedEmotionChips.isNotEmpty
+                          ? wd.selectedEmotionChips
                           : null,
-                      avoid: widget.wizardData.fears.isNotEmpty
-                          ? widget.wizardData.fears
+                      mustInclude: wd.customElements.isNotEmpty
+                          ? [wd.customElements]
                           : null,
-                      lifeChallenge: widget.wizardData.lifeChallenge,
-                      personalitySliders: widget.wizardData.personalitySliders,
+                      avoid: wd.fears.isNotEmpty ? wd.fears : null,
+                      lifeChallenge: wd.lifeChallenge,
+                      personalitySliders: wd.personalitySliders,
                       bigFeelingsContext: {
                         if (requestData['childProfileId'] != null)
                           'child_profile_id': requestData['childProfileId'],
@@ -1994,11 +2024,11 @@ class _HeroFallbackIdentity extends StatelessWidget {
                     ? Icons.bolt
                     : Icons.face),
             color: Colors.white,
-            size: 24),
-        const SizedBox(height: 2),
+            size: 20),
+        const SizedBox(height: 1),
         Text(name.isNotEmpty ? name[0].toUpperCase() : 'H',
             style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
       ],
     );
   }
@@ -2052,6 +2082,7 @@ class _GradientSphereFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+        clipBehavior: Clip.hardEdge,
         decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(colors: [

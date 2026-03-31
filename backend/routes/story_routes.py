@@ -758,6 +758,8 @@ def create_story_blueprint(
         sensory_palette = payload.get("sensoryPalette", "")
         chronicle_context = payload.get("chronicle_context")
         big_feelings_context = payload.get("big_feelings_context")
+        companions_payload = payload.get("companions") or []
+        character_name = payload.get("character_name")
         if isinstance(big_feelings_context, dict):
             saved_parent_context = _resolve_parent_hidden_context(
                 user_id,
@@ -790,6 +792,8 @@ def create_story_blueprint(
                 sensory_palette=sensory_palette,
                 chronicle_context=chronicle_context,
                 big_feelings_context=big_feelings_context,
+                companions_payload=companions_payload or None,
+                character_name=character_name,
             )
 
             # Filter content

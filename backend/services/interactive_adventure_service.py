@@ -79,6 +79,8 @@ class InteractiveAdventureService:
         sensory_palette: str = "",
         chronicle_context: Optional[Dict] = None,
         big_feelings_context: Optional[Dict] = None,
+        companions_payload: Optional[List[Dict]] = None,
+        character_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -104,9 +106,9 @@ class InteractiveAdventureService:
 
         # Load character if provided
         character = None
-        child_name = "Hero"
+        child_name = character_name or "Hero"
         character_dict = None
-        companions = []
+        companions = list(companions_payload) if companions_payload else []
 
         if character_id:
             character = Character.query.filter_by(id=character_id).first()
@@ -123,27 +125,28 @@ class InteractiveAdventureService:
                     'comfort_item': character.comfort_item,
                     'likes': character.likes
                 }
-                
+
                 # Merge personality sliders if not provided explicitly
                 if not personality_sliders and character.personality_sliders:
                     personality_sliders = character.personality_sliders
 
-                # Get companions from character
-                if character.pets:
-                    for pet in character.pets:
-                        companions.append({
-                            'name': pet.get('name'),
-                            'species': pet.get('species'),
-                            'personality': pet.get('personality'),
-                            'color': pet.get('color')
-                        })
+                # Get companions from character — only if none provided via payload
+                if not companions_payload:
+                    if character.pets:
+                        for pet in character.pets:
+                            companions.append({
+                                'name': pet.get('name'),
+                                'species': pet.get('species'),
+                                'personality': pet.get('personality'),
+                                'color': pet.get('color')
+                            })
 
-                if character.friends:
-                    for friend in character.friends[:1]:  # Max 1 friend companion
-                        companions.append({
-                            'name': friend,
-                            'role': 'friend'
-                        })
+                    if character.friends:
+                        for friend in character.friends[:1]:  # Max 1 friend companion
+                            companions.append({
+                                'name': friend,
+                                'role': 'friend'
+                            })
             else:
                 character_age = age or 8
         else:

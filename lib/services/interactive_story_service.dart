@@ -98,6 +98,8 @@ class InteractiveStoryService {
     String tone = 'whimsical',
     String length = 'medium',
     int? age,
+    String? characterName,
+    List<Map<String, dynamic>>? companions,
     List<String>? interests,
     List<String>? mustInclude,
     List<String>? avoid,
@@ -119,6 +121,9 @@ class InteractiveStoryService {
             'tone': tone,
             'length': length,
             if (age != null) 'age': age,
+            if (characterName != null) 'character_name': characterName,
+            if (companions != null && companions.isNotEmpty)
+              'companions': companions,
             if (interests != null && interests.isNotEmpty)
               'interests': interests,
             if (mustInclude != null && mustInclude.isNotEmpty)
