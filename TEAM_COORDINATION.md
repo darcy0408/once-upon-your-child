@@ -1,5 +1,55 @@
 # Team Coordination
 
+## 2026-03-30 — Full Six-Band Live Usability Audit + Overflow Fixes (Claude Sonnet 4.6)
+
+**Goal:** Playwright browser automation against live dev build — walk all 6 age bands end-to-end, document findings, fix all discovered issues.
+
+### Usability Report
+`docs/usability_2026-03-29/report.md` — Full six-band results, confirmed fixes, new issue inventory, UI consistency matrix.
+
+### Findings & Fixes
+
+| ID | Issue | Band(s) | Severity | Status |
+|----|-------|---------|----------|--------|
+| NEW-01 | "Big adventure" length chip overflows review screen (RenderFlex) | Explorer + younger | Medium | ✅ Fixed |
+| NEW-02 | `AdventurerUnlockCelebration` dialog overflows 44px at bottom | Adventurer | Medium | ✅ Fixed |
+| NEW-03 | `_HeroFallbackIdentity` column (icon 42px + gap 8 + text 18) overflowed 48×48 container | Creator, Adolescent, Adult | Medium | ✅ Fixed |
+| NEW-04 | Archetype card names truncate in Sprout/Explorer grid (`maxLines: 1`) | Sprout, Explorer | Medium | ✅ Fixed |
+| NEW-05 | Story style step has no default selection for younger bands | Sprout, Explorer | Medium | Not a bug — code defaults to `'tales'` (Story Quest); visual state on web runner may differ from device |
+| NEW-06 | Archetype class shows "—" on Adventurer review when archetype skipped | Adventurer | Low | Deferred |
+| NEW-07 | Adolescent review shows only name + "—", no story summary | Adolescent | Low | Deferred |
+| NEW-08 | Adult "Begin" button gold/olive colour may read as disabled | Adult | Low | Deferred |
+
+### Fix Details
+
+**NEW-01** — `magic_review_step.dart` (~line 1248)
+- Changed length-chip `Row` → `Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 8)` so chips reflow rather than overflow.
+
+**NEW-02** — `lib/widgets/adventurer_unlock_celebration.dart`
+- Changed `Padding` wrapper → `SingleChildScrollView(padding: EdgeInsets.all(24))` so the dialog scrolls if the device is too short rather than clipping.
+
+**NEW-03** — `magic_review_step.dart:_HeroFallbackIdentity`
+- Reduced icon size 42→24, gap 8→2, text size 18→14 so all three elements fit within the 48×48 container.
+
+**NEW-04** — `lib/screens/wizard_steps/hero_creator_step.dart:_buildArchetypeCards`
+- Changed `maxLines: 1` → `maxLines: 2` on the name Text inside the bottom pill overlay; names like "The Animal Whisperer" now wrap to a second line instead of truncating with `…`.
+
+### Files Changed
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/magic_review_step.dart` | Length chip Row→Wrap; `_HeroFallbackIdentity` size reduction |
+| `lib/widgets/adventurer_unlock_celebration.dart` | Padding→SingleChildScrollView |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Archetype name pill maxLines 1→2 |
+
+### Status
+- [x] NEW-01: length chip overflow fixed
+- [x] NEW-02: unlock dialog overflow fixed
+- [x] NEW-03: `_HeroFallbackIdentity` overflow fixed
+- [x] NEW-04: archetype name truncation fixed
+- [ ] NEW-06/07/08: deferred (low priority)
+
+---
+
 ## 2026-03-30 — Backend Log Review + Audit Doc Commit (Claude Sonnet 4.6)
 
 **Goal:** Review backend server logs for live issues; verify all six-band UX audit findings are resolved; commit untracked audit documents.

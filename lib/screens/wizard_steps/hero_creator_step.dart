@@ -2795,7 +2795,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                           child: Text(
                             a.nameForAge(widget.wizardData.characterAge),
                             textAlign: TextAlign.center,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.fredoka(
                               color: Colors.white,
