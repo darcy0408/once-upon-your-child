@@ -1157,12 +1157,12 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 
 | ID | Issue | File(s) | Fix |
 |----|-------|---------|-----|
-| 1.1 | BigFeelingsFlowScreen ignores age-band theme | `big_feelings_flow_screen.dart` | Accept `childAge` param; use `AgeBandThemeData` gradient+font; add Happy/Excited feelings; use `assets/images/feelings/sprout/*.png` |
-| 1.2 | "Limerick Laughs" reading mode label | `hero_creator_step.dart:_getReadingLabel()` | Explorer: "Easy Reader"; Adventurer: "Chapter Reader"; keep Creator+ as "First Chapter" |
-| 1.3 | 12 missing feelings face assets | `assets/feelings_faces/` | Generate: bothered, bouncy, gloomy, grossed_out, hurt_mad, hyper, impatient, let_down, red_faced, stuck, what_if_y, wish_i_could_hide PNGs |
-| 1.4 | Bedtime "Go to Settings" doesn't navigate | `bedtime_wizard_screen.dart:605-617` | Replace `Navigator.pop()` with actual settings navigation |
-| 1.5 | Companion selection ID/name mismatch | `hero_creator_step.dart` (multiple) | Standardize all companion selection to use `c.id` consistently |
-| 1.6 | `emotion_recognition_game.dart` references missing `assets/emotions/` | `emotion_recognition_game.dart:243` | Refactor to use `assets/feelings_faces/` or remove dead file |
+| ✅ 1.1 | BigFeelingsFlowScreen ignores age-band theme | `big_feelings_flow_screen.dart` | `themeForAge(childAge)` replaces `Theme.of(context)` fallback (b809390) |
+| ✅ 1.2 | "Limerick Laughs" reading mode label | `hero_creator_step.dart:_getReadingLabel()` | Explorer: 'Read Along' → 'Easy Reader' (b809390) |
+| ⏳ 1.3 | 12 missing feelings face assets | `assets/feelings_faces/` | Generate: bothered, bouncy, gloomy, grossed_out, hurt_mad, hyper, impatient, let_down, red_faced, stuck, what_if_y, wish_i_could_hide PNGs — **needs image generation** |
+| ✅ 1.4 | Bedtime "Go to Settings" doesn't navigate | `bedtime_wizard_screen.dart` | Capture navigator before pop() to fix stale context (b809390) |
+| ✅ 1.5 | Companion selection ID/name mismatch | `hero_creator_step.dart` (multiple) | `selectedCompanions.contains(c.id)` as source of truth (b809390) |
+| ✅ 1.6 | `emotion_recognition_game.dart` references missing `assets/emotions/` | `character_evolution_screen.dart` | Removed dead import; file already uses `assets/images/feelings/sprout/` (b809390) |
 
 #### Phase 2: Age-Band Text & Tone Calibration (High Impact UX)
 
