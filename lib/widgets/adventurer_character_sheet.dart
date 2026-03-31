@@ -114,11 +114,13 @@ class AdventurerCharacterSheet extends StatelessWidget {
                         isHero: true,
                       ),
                       const SizedBox(height: 6),
-                      _StatLine(
-                        label: 'CLASS',
-                        value: archetype?.name ?? '—',
-                      ),
-                      const SizedBox(height: 6),
+                      if (archetype != null) ...[
+                        _StatLine(
+                          label: 'CLASS',
+                          value: archetype.name,
+                        ),
+                        const SizedBox(height: 6),
+                      ],
                       if (archetype?.adventurerDescription != null) ...[
                         _StatLine(
                           label: 'ROLE',

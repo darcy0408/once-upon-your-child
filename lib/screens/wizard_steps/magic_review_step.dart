@@ -984,7 +984,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ? (ScenarioData.getById(data.selectedScenario!)
                 ?.titleForAge(data.characterAge) ??
             data.selectedScenario!)
-        : '—';
+        : 'Your own adventure';
     final companionLine = data.companionNames.isEmpty
         ? 'Solo'
         : data.companionNames.join(', ');
@@ -1036,6 +1036,17 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (data.selectedArchetypeId != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    data.selectedArchetypeId!,
+                    style: GoogleFonts.sourceSans3(
+                      color: band.accent.withValues(alpha: 0.6),
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 // Setting
                 Text(
@@ -1056,6 +1067,17 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                Divider(color: band.accent.withValues(alpha: 0.18), height: 1),
+                const SizedBox(height: 10),
+                Text(
+                  '${_storyTypeLabel(data, band)} · ${_lengthLabelForBand(data.storyLength, band)}',
+                  style: GoogleFonts.sourceSans3(
+                    color: band.textOnDark.withValues(alpha: 0.45),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1079,12 +1101,25 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: band.accent,
-                  foregroundColor: Colors.white,
+                  // Amber gold (#BFA45A) has low contrast with white (~2.2:1);
+                  // use dark text for the Adult band to meet 4.5:1 minimum.
+                  foregroundColor: band.band == AgeBand.adult
+                      ? const Color(0xFF1A1A1A)
+                      : Colors.white,
                   disabledBackgroundColor: band.accent.withValues(alpha: 0.35),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(band.buttonRadiusBase)),
-                  elevation: 0,
+                    borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+                    // Warm rim on the Adult band so the amber button reads as
+                    // active rather than muted/disabled.
+                    side: band.band == AgeBand.adult
+                        ? const BorderSide(color: Color(0xFFD4B97A), width: 1.5)
+                        : BorderSide.none,
+                  ),
+                  elevation: band.band == AgeBand.adult ? 2 : 0,
+                  shadowColor: band.band == AgeBand.adult
+                      ? const Color(0xFFBFA45A).withValues(alpha: 0.4)
+                      : null,
                 ),
                 child: Text(
                   band.launchStoryLabel,
