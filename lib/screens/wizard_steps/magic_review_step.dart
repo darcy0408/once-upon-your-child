@@ -24,7 +24,6 @@ import 'package:story_weaver_app/widgets/magical_float.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
-import 'package:story_weaver_app/data/companion_data.dart';
 import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
