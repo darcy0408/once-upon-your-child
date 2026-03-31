@@ -541,10 +541,10 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 
 ### Phase 8 — Structural (Post-Launch Design Discussions)
 
-- Feelings screen placement: move after scene selection so it reads as story element, not admin step
-- Companion count for Sprouts: reduce from 3 slots to 1 buddy
-- Wizard state persistence: survive any failure without full restart
-- Loading screen as mini-game: replace static wait with tap-to-interact animation
+- ✅ Feelings screen placement: deferred BigFeelingsFlowScreen to Continue tap; scene selection → Continue → feelings flow → wizard next (a187364)
+- ✅ Companion count for Sprouts: `maxCompanions` param on `_CompanionImageGrid`; Sprout=1, others=3 (a187364)
+- ✅ Wizard state persistence: `WizardData.fromJson()` + `_saveWizardDraft()`/`_restoreWizardDraft()`/`clearWizardDraft()` via SharedPreferences (2a5f601, a187364)
+- ✅ Loading screen mini-game: `_TapTarget` floating orbs with spawn timer, fade-in/out, tap-to-catch; "Catch the sparkles! ✨" CTA (a187364)
 
 ### Launch Order
 
