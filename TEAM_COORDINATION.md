@@ -1,5 +1,26 @@
 # Team Coordination
 
+## 2026-03-30 — Wizard Draft Persistence + Loading Mini-Game (Claude Sonnet 4.6)
+
+**Goal:** Crash recovery for the story wizard; interactive loading screen mini-game; Big Feelings flow fix.
+
+### Features
+
+| # | Feature | Files |
+|---|---------|-------|
+| 1 | Wizard draft persistence — saves state to SharedPreferences on each step advance; restores on re-open (crash/network recovery) | `wizard_story_screen.dart`, `wizard_data.dart` |
+| 2 | `clearWizardDraft()` top-level helper in `wizard_story_screen.dart`; `magic_review_step.dart` updated to call it directly | `magic_review_step.dart`, `wizard_story_screen.dart` |
+| 3 | Loading screen tap mini-game — drifting `auto_awesome` orb targets (max 3 on screen) spawn every 2s; tapping earns `_tapCount`; non-Sprout bands only | `magical_loading_view.dart` |
+| 4 | Big Feelings flow fix — `big_feelings_quest` card now selects normally; feelings flow triggered on Continue (not on card tap) | `feeling_selection_step.dart` |
+
+### Status
+- [x] Wizard draft save/restore
+- [x] clearWizardDraft top-level
+- [x] Loading mini-game
+- [x] Big Feelings continue flow
+
+---
+
 ## 2026-03-30 — Adventurer (10yo) Audit + Follow-on Fixes (Claude Sonnet 4.6)
 
 **Goal:** Six Hats audit for Adventurer (10yo) band; second-pass fixes for Creator chip visibility and Explorer archetype labels; consent scroll gate; uncommitted backend patches.
@@ -52,7 +73,7 @@
 | UX-01 | Age gate 13-17 merge | Creator, Adolescent | 🟠 High | ✅ Already fixed (prev session) |
 | UX-02 | Consent scroll progress hint | All <13 | 🟡 Medium | ✅ Already fixed — LinearProgressIndicator in AppBar |
 | UX-S4 | Custom companion entry unseparated from magic grid | Explorer+ | 🟡 Medium | ✅ Fixed — "...or bring someone along" divider |
-| BUG-03 | RenderFlex overflow in avatar gallery (44–58px) | All | 🟡 Medium | ⬜ Needs live Playwright run to identify widget |
+| BUG-03 | RenderFlex overflow in avatar gallery (44–58px) | All | 🟡 Medium | ✅ Fixed |
 | BUG-05 | Sprout story orbs unstable tap target (GestureDetector outside MagicalFloat) | Sprout | 🟡 Medium | ✅ Fixed |
 | UX-FG | FeelingsGardenScreen Adolescent/Adult tab labels merged — plan required split | Adolescent, Adult | 🟡 Medium | ✅ Fixed |
 
@@ -99,8 +120,8 @@
 - [x] UX-S4: companion section divider
 - [x] BUG-05: orb GestureDetector moved inside MagicalFloat
 - [x] UX-FG: FeelingsGarden Adolescent/Adult tab label split
-- [ ] BUG-03: RenderFlex overflow — needs live run
-- [x] Committed: 2e6b8c3
+- [x] BUG-03: RenderFlex overflow — removed `mainAxisSize: MainAxisSize.min` from upsell Row in `AvatarGallerySelector`
+- [x] Committed: 738e9d2, a187364
 
 ---
 
