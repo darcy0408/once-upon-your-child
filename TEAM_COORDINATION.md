@@ -1,5 +1,74 @@
 # Team Coordination
 
+## 2026-03-30 — Six Hats UX Audit Bug Sprint (Claude Sonnet 4.6)
+
+**Goal:** Work through all findings from the six-band + Explorer 8yo UX audits (`docs/ux_audit_six_bands_2026-03-29.md`, `docs/ux_audit_explorer_8yo_2026-03-29.md`) in priority order.
+
+### Bug Inventory & Status
+
+| ID | Issue | Band | Severity | Status |
+|----|-------|------|----------|--------|
+| BUG-C1 | Companion images broken on review screen — band-specific IDs returned null | Explorer+ | 🔴 Critical | ✅ Fixed |
+| BUG-C2 | Archetype tap forced avatar creator redirect instead of selecting | Explorer+ | 🔴 Critical | ✅ Fixed |
+| BUG-04 | Creator/Adult CORE ARCHETYPE chips invisible (white text on light M3 chip) | Creator, Adult | 🔴 Critical | ✅ Fixed |
+| BUG-01 | Sprout companion picker 404s — code-reviewed, paths correct in current build | Sprout | 🔴 Critical | ✅ Verified OK |
+| UX-M2 | "Easy Reader" label self-stigma risk | Explorer | 🟢 Low | ✅ Fixed → "Read Along" |
+| UX-S2 | "HI MAX!" all-caps | Explorer | 🟡 Medium | ✅ Already fixed (prev session) |
+| UX-01 | Age gate 13-17 merge | Creator, Adolescent | 🟠 High | ✅ Already fixed (prev session) |
+| UX-02 | Consent scroll progress hint | All <13 | 🟡 Medium | ✅ Already fixed — LinearProgressIndicator in AppBar |
+| UX-S4 | Custom companion entry unseparated from magic grid | Explorer+ | 🟡 Medium | ✅ Fixed — "...or bring someone along" divider |
+| BUG-03 | RenderFlex overflow in avatar gallery (44–58px) | All | 🟡 Medium | ⬜ Needs live Playwright run to identify widget |
+| BUG-05 | Sprout story orbs unstable tap target (GestureDetector outside MagicalFloat) | Sprout | 🟡 Medium | ✅ Fixed |
+| UX-FG | FeelingsGardenScreen Adolescent/Adult tab labels merged — plan required split | Adolescent, Adult | 🟡 Medium | ✅ Fixed |
+
+### Fix Details
+
+**BUG-C1** — `magic_review_step.dart:_companionImage`
+- Added `'robin'` check in `legacyIds`, added `contains('/')` check for Sprout IDs (`sprout/fluffy_dragon` → `companions/sprout/fluffy_dragon.png`), and derived band from `ageBandFromAge(age)` for bare Explorer/Adventurer IDs (`ember_dragon` → `companions/explorer/ember_dragon.png`).
+
+**BUG-C2** — `hero_creator_step.dart:_selectArchetype`
+- Removed `_openAvatarCreationOptions()` forced trigger when archetype selected before avatar. Hint text: "Pick a hero type and choose your look — in any order!"
+
+**BUG-04** — `hero_creator_step.dart:_buildBriefIdentityInputs`
+- Root cause: `ThemeData.light()` base means Material 3 FilterChip uses light `surfaceContainerLow` chip background — white text invisible on light chip.
+- Fix: Wrapped `Wrap` in `Theme(data: copyWith(chipTheme: ChipThemeData(backgroundColor: Color(0xFF1A0A2E), ...)))`.
+
+**UX-M2** — `hero_creator_step.dart:_getReadingLabel`, `story_result_screen.dart:_readingLevelLabel`
+- "Easy Reader" → "Read Along" in both locations.
+
+**UX-S4** — `hero_creator_step.dart:_buildAdventureTeamPage`
+- Added "...or bring someone along" divider row between the magic companion grid and the custom friend text field.
+
+**BUG-05** — `lib/widgets/image_mode_orb.dart:build()`
+- Root cause: `GestureDetector` was outside `MagicalFloat`, which uses `Transform.translate`. Hit-test area stayed at original position while visual floated ±3px → Playwright "not stable" + slightly misaligned tap for real users.
+- Fix: moved `GestureDetector` inside `MagicalFloat` as direct child, removed now-redundant `IgnorePointer` wrapper.
+
+**UX-FG** — `lib/screens/feelings_garden_screen.dart:_tab1Label/_tab2Label/_tab3Label`
+- Root cause: age >= 15 branch covered both Adolescent (15-17) and Adult (18+) with same labels ("Landscape"/"Explore"/"Reflections"). Plan required Adolescent to get "Inner Map"/"Deep Dive"/"Reflections".
+- Fix: added `age >= 18` branch returning Adult labels above the `age >= 15` branch. Tab 3 ("Reflections") is intentionally shared between both bands per plan.
+
+### Files Changed
+| File | Changes |
+|------|---------|
+| `lib/screens/wizard_steps/magic_review_step.dart` | `_companionImage` getter: full band-aware rewrite |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Archetype gate removed; CORE ARCHETYPE chip theme fix; "Read Along" label; companion divider |
+| `lib/story_result_screen.dart` | "Read Along" label |
+| `lib/widgets/image_mode_orb.dart` | GestureDetector moved inside MagicalFloat; IgnorePointer removed |
+| `lib/screens/feelings_garden_screen.dart` | Added age >= 18 Adult branch; age 15-17 now "Inner Map"/"Deep Dive"/"Reflections" |
+
+### Status
+- [x] BUG-C1: companion image fix
+- [x] BUG-C2: archetype gate removed
+- [x] BUG-04: CORE ARCHETYPE chips visible
+- [x] UX-M2: Easy Reader → Read Along
+- [x] UX-S4: companion section divider
+- [x] BUG-05: orb GestureDetector moved inside MagicalFloat
+- [x] UX-FG: FeelingsGarden Adolescent/Adult tab label split
+- [ ] BUG-03: RenderFlex overflow — needs live run
+- [ ] Committed
+
+---
+
 ## 2026-03-30 — Sentry RenderFlex Overflow Fixes (Claude Sonnet 4.6)
 
 **Goal:** Diagnose and fix two live Sentry issues (STORY-WEAVER-R and STORY-WEAVER-K) — both `RenderFlex overflowed` errors in `magic_review_step.dart` on 390px-wide screens.

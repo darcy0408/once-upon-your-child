@@ -83,14 +83,13 @@ class _ImageModeOrbState extends State<ImageModeOrb>
     final primaryColor = widget.primaryColor;
     final secondaryColor = widget.secondaryColor;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: MagicalFloat(
-        distance: 3.0,
-        duration: const Duration(seconds: 4),
-        delay: (widget.modeType.length * 100).toDouble(),
-        child: IgnorePointer(
-          child: AnimatedBuilder(
+    return MagicalFloat(
+      distance: 3.0,
+      duration: const Duration(seconds: 4),
+      delay: (widget.modeType.length * 100).toDouble(),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
             animation: _pulseController,
             builder: (context, child) {
               final t = _pulseController.value;
@@ -253,7 +252,6 @@ class _ImageModeOrbState extends State<ImageModeOrb>
             },
           ),
         ),
-      ),
-    );
+      );
   }
 }

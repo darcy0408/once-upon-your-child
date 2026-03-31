@@ -215,14 +215,16 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
   }
 
   String _tab1Label() {
-    if (widget.childAge >= 15) return 'Landscape';
+    if (widget.childAge >= 18) return 'Landscape';
+    if (widget.childAge >= 15) return 'Inner Map';
     if (widget.childAge >= 12) return 'Mood';
     if (widget.childAge >= 9) return 'Mood Check';
     return 'How Big Is My Feeling';
   }
 
   String _tab2Label() {
-    if (widget.childAge >= 15) return 'Explore';
+    if (widget.childAge >= 18) return 'Explore';
+    if (widget.childAge >= 15) return 'Deep Dive';
     if (widget.childAge >= 12) return 'Explore';
     if (widget.childAge >= 9) return 'Mood Explorer';
     return 'Feelings Explorer';
