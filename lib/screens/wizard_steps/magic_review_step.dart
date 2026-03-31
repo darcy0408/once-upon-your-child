@@ -157,7 +157,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       return;
     }
     // Clear the wizard draft — the user has committed to launching a story.
-    unawaited(WizardStoryScreen.clearWizardDraft());
+    unawaited(clearWizardDraft());
     // Skip countdown for reduced-motion or Sprout (Sprout has its own GO! screen).
     final reduceMotion = MotionPrefs.reduceMotion(context);
     final onboarding = OnboardingService();

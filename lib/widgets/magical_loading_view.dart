@@ -48,6 +48,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   int _tapCount = 0;
   final List<Offset> _burstPositions = [];
 
+  // Mini-game: drifting tap-targets that earn points when caught.
+  final List<_TapTarget> _tapTargets = [];
+  Timer? _targetSpawnTimer;
+
   static const List<String> _phaseMessages = <String>[
     'Your hero is lacing up their boots...',
     'The adventure map is being drawn...',
@@ -109,6 +113,34 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       );
     }
 
+    // Mini-game: spawn drifting tap-targets every ~2s (max 3 on screen).
+    // Skip for Sprout band — they have the star constellation game instead.
+    if (!widget.isSproutBand) {
+      _targetSpawnTimer =
+          Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (!mounted) return;
+        setState(() {
+          // Expire old targets and spawn new ones at ~2s intervals
+          final now = DateTime.now();
+          _tapTargets.removeWhere((t) => t.isExpired);
+          final shouldSpawn = _tapTargets.isEmpty ||
+              (_tapTargets.length < 3 &&
+                  now
+                          .difference(_tapTargets.last.born)
+                          .inMilliseconds >=
+                      2000);
+          if (shouldSpawn) {
+            _tapTargets.add(_TapTarget(
+              x: 0.1 + _random.nextDouble() * 0.8,
+              y: 0.1 + _random.nextDouble() * 0.8,
+              born: now,
+              ttlMs: 2400 + _random.nextInt(1200),
+            ));
+          }
+        });
+      });
+    }
+
     // Rotate flavor messages independent of backend status updates.
     _messageTimer = Timer.periodic(const Duration(milliseconds: 4200), (_) {
       if (!mounted) return;
@@ -145,6 +177,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   void dispose() {
     _messageTimer?.cancel();
     _stepTimer?.cancel();
+    _targetSpawnTimer?.cancel();
     _constellationTimer?.cancel();
     _pulseController.dispose();
     _rotationController.dispose();
@@ -388,6 +421,78 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                           );
                         }),
 
+                      // Mini-game: drifting tap targets
+                      ..._tapTargets.where((t) => !t.isExpired).map((target) {
+                        final age = target.ageMs;
+                        final ttl = target.ttlMs;
+                        // Fade in over 300ms, fade out over last 400ms
+                        final opacity = age < 300
+                            ? (age / 300.0).clamp(0.0, 1.0)
+                            : age > ttl - 400
+                                ? ((ttl - age) / 400.0).clamp(0.0, 1.0)
+                                : 1.0;
+                        return Positioned(
+                          left: target.x * stageSize - 22,
+                          top: target.y * stageSize - 22,
+                          child: GestureDetector(
+                            onTap: () {
+                              if (!mounted) return;
+                              setState(() {
+                                _tapTargets.remove(target);
+                                _tapCount++;
+                                _burstPositions.add(Offset(
+                                  target.x * stageSize,
+                                  target.y * stageSize,
+                                ));
+                                if (_burstPositions.length > 6) {
+                                  _burstPositions.removeAt(0);
+                                }
+                              });
+                            },
+                            child: Opacity(
+                              opacity: opacity,
+                              child: TweenAnimationBuilder<double>(
+                                key: ValueKey(target.born),
+                                tween: Tween(begin: 0.8, end: 1.2),
+                                duration: const Duration(milliseconds: 700),
+                                curve: Curves.easeInOut,
+                                builder: (_, scale, __) => Transform.scale(
+                                  scale: scale,
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.gold
+                                          .withValues(alpha: 0.18),
+                                      border: Border.all(
+                                        color: AppColors.gold
+                                            .withValues(alpha: 0.75),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.gold
+                                              .withValues(alpha: 0.45),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.auto_awesome,
+                                        color: AppColors.gold,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+
                       // Tap burst overlays
                       ..._burstPositions.map((pos) => Positioned(
                             left: pos.dx - 20,
@@ -547,11 +652,11 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   ),
                 ),
               ),
-            if (_tapCount == 0)
+            if (_tapCount == 0 && !widget.isSproutBand)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Tap to make sparkles! ✨',
+                  'Catch the sparkles! ✨',
                   style: TextStyle(color: Colors.purple.shade300, fontSize: 12),
                 ),
               ),
@@ -939,4 +1044,23 @@ class _MagicLoomPainter extends CustomPainter {
         oldDelegate.glow != glow ||
         oldDelegate.accent != accent;
   }
+}
+
+/// A drifting sparkle target that the user can tap to earn points.
+/// Position is expressed as fractions of the stage area (0..1).
+class _TapTarget {
+  final double x;
+  final double y;
+  final DateTime born;
+  final int ttlMs; // How long before auto-expiry (ms)
+
+  _TapTarget({
+    required this.x,
+    required this.y,
+    required this.born,
+    required this.ttlMs,
+  });
+
+  int get ageMs => DateTime.now().difference(born).inMilliseconds;
+  bool get isExpired => ageMs >= ttlMs;
 }

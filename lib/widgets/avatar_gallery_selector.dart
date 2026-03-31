@@ -335,7 +335,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                 ],
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('✨', style: TextStyle(fontSize: 16)),
                   const SizedBox(width: 6),
