@@ -1,5 +1,22 @@
 # Team Coordination
 
+## 2026-03-30 — Housekeeping: gitignore, typo fix, COPPA auth cap (Claude Sonnet 4.6)
+
+**Goal:** Clean up post-audit ephemeral files, fix discovered typo, commit pre-staged COPPA logic.
+
+### Changes (commit 53a746d)
+| File | What |
+|------|------|
+| `.gitignore` | Exclude `.playwright-mcp/`, `scripts/ux_audit_runner.md`, timestamped `backend/tests/artifacts/*T*.{json,md}` snapshots |
+| `backend/routes/story_routes.py` | Fix "Geminin" typo in 429 quota-exceeded error message |
+| `backend/middleware/auth.py` | COPPA age cap: under-13 users cannot bypass content calibration via request body age; `g.minor_age_cap` set for story routes |
+
+### Story Load Audit Review
+`backend/tests/artifacts/story_load_audit_20260330T130408Z.json` — load test only (no content quality issues).
+All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat at ~182ms, async fallback 16/16, fallback chain gemini→openrouter→static working correctly.
+
+---
+
 ## 2026-03-30 — Mature Feeling Images: Adolescent & Adult Bands (Claude Sonnet 4.6)
 
 **Goal:** Generate band-specific feeling images for the 10 mature feelings added in the Adolescent/Adult UX redesign (grief, resentful, envious, restless, hopeful, melancholy, contentment, indignation, dread, anticipation). 7 of these had no fallback image at all and were showing only emoji.
