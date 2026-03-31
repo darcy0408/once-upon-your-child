@@ -223,7 +223,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   String _readingLevelLabel(AgeBandThemeData band) {
-    if (widget.isLearningToReadMode) return 'Reading Level: Easy Reader';
+    if (widget.isLearningToReadMode) return 'Reading Level: Read Along';
     switch (band.band) {
       case AgeBand.sprout:
         return 'Reading Level: Picture-Book';

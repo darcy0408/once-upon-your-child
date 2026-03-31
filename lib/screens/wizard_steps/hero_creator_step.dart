@@ -756,17 +756,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 12),
           _buildAvatarLookCard(),
-          const SizedBox(height: 12),
-          Builder(builder: (context) {
-            final b = Theme.of(context).extension<AgeBandThemeData>() ??
-                explorerTheme;
-            if (b.band == AgeBand.sprout) return const SizedBox.shrink();
-            return const Text(
-              'Step 1: Pick your hero look.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-              textAlign: TextAlign.center,
-            );
-          }),
           const SizedBox(height: 14),
           _buildArchetypeCards(),
           const SizedBox(height: 20),
@@ -774,12 +763,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             final b = Theme.of(context).extension<AgeBandThemeData>() ??
                 explorerTheme;
             if (b.band == AgeBand.sprout) return const SizedBox.shrink();
+            final bothDone = _hasAvatar && _selectedArchetypeId != null;
+            final eitherDone = _hasAvatar || _selectedArchetypeId != null;
             return Text(
-              _hasAvatar
-                  ? (_selectedArchetypeId != null
-                      ? 'Great! Tap an archetype to continue.'
-                      : 'Step 2: Pick your hero type to continue.')
-                  : 'Pick a hero type and choose your look — in any order!',
+              bothDone
+                  ? 'You\'re all set! Tap Next to continue.'
+                  : eitherDone
+                      ? 'Now pick the other one and you\'re ready!'
+                      : 'Choose a look and a style — tap either one first!',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
               textAlign: TextAlign.center,
             );
@@ -850,9 +841,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ));
       }
     }
-    // Always show at least 3 slots (empty slots fill the row)
-    const maxSlots = 3;
-    final emptyCount = maxSlots - slots.length;
+    // Sprouts travel with 1 buddy; all other bands get up to 3 companions.
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final maxSlots = band.band == AgeBand.sprout ? 1 : 3;
+    final emptyCount = (maxSlots - slots.length).clamp(0, maxSlots);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -884,7 +877,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         const SizedBox(height: 8),
         Text(
           slots.isEmpty
-              ? 'Tap a companion below to add them'
+              ? (maxSlots == 1
+                  ? 'Tap a buddy to bring along!'
+                  : 'Tap a companion below to add them')
               : slots.length == 1
                   ? '${slots[0].name} is ready!'
                   : 'Your team is set!',
@@ -998,18 +993,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           onCompanionTapped: widget.wizardData.characterAge <= 5
               ? (name) => _speakForSprout(name)
               : null,
+          maxCompanions: band.band == AgeBand.sprout ? 1 : 3,
         ),
         const SizedBox(height: 16),
         // ── Bring a friend by name (free) ─────────────────────────────────────
-        const Text(
-          'Bring a Friend Along:',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
+        // Divider separates magic companion grid from custom-name entry.
+        Row(
+          children: [
+            const Expanded(child: Divider(color: Colors.white24)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                '...or bring someone along',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+            ),
+            const Expanded(child: Divider(color: Colors.white24)),
+          ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         const Text(
           'Type a friend\'s name and they\'ll be part of your story.',
           style: TextStyle(color: Colors.white60, fontSize: 12),
@@ -3418,34 +3420,50 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: CharacterArchetypes.forBand(ageBandFromAge(widget.wizardData.characterAge)).map((archetype) {
-            final isSelected = _selectedArchetypeId == archetype.name;
-            return FilterChip(
-              label: Text(archetype
-                  .nameForAge(widget.wizardData.characterAge)
-                  .toUpperCase()),
-              selected: isSelected,
-              onSelected: (_) => _selectArchetype(archetype),
-              backgroundColor: Colors.white.withAlpha(20),
-              selectedColor: const Color(0xFFFFD700).withAlpha(40),
-              labelStyle: GoogleFonts.sourceSans3(
-                color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
+        // Wrap FilterChips in a Theme override so they render with dark
+        // backgrounds — the global ThemeData.light() base would otherwise
+        // produce light chip backgrounds with invisible white label text.
+        // labelStyle is intentionally omitted: setting it in ChipThemeData
+        // overrides the explicit Text(style:) inside each chip's label,
+        // producing white-on-white invisible text. Text styling is handled
+        // entirely by the Text widget inside each FilterChip.label.
+        Theme(
+          data: Theme.of(context).copyWith(
+            chipTheme: ChipThemeData(
+              backgroundColor: const Color(0xFF1A0A2E),
+              selectedColor: const Color(0xFFFFD700).withAlpha(50),
+              side: BorderSide(color: Colors.white.withAlpha(60)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                    color: isSelected
-                        ? const Color(0xFFFFD700)
-                        : Colors.white.withAlpha(60)),
-              ),
-              showCheckmark: false,
-            );
-          }).toList(),
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: CharacterArchetypes.forBand(ageBandFromAge(widget.wizardData.characterAge)).map((archetype) {
+              final isSelected = _selectedArchetypeId == archetype.name;
+              return FilterChip(
+                label: Text(
+                  archetype.nameForAge(widget.wizardData.characterAge).toUpperCase(),
+                  style: GoogleFonts.sourceSans3(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                selected: isSelected,
+                onSelected: (_) => _selectArchetype(archetype),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(
+                      color: isSelected
+                          ? const Color(0xFFFFD700)
+                          : Colors.white.withAlpha(60)),
+                ),
+                showCheckmark: false,
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
@@ -4097,11 +4115,14 @@ class _CompanionImageGrid extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onChanged;
   final void Function(String name)? onCompanionTapped;
+  /// Maximum companions selectable at once. Sprout = 1, others = 3.
+  final int maxCompanions;
 
   const _CompanionImageGrid({
     required this.wizardData,
     required this.onChanged,
     this.onCompanionTapped,
+    this.maxCompanions = 3,
   });
 
   @override
@@ -4145,7 +4166,7 @@ class _CompanionImageGrid extends StatelessWidget {
             if (isSelected) {
               wizardData.companionNames.remove(c.name);
               wizardData.selectedCompanions.remove(c.id);
-            } else {
+            } else if (wizardData.companionNames.length < maxCompanions) {
               wizardData.companionNames.add(c.name);
               wizardData.selectedCompanions.add(c.id);
               onCompanionTapped?.call(c.name);
@@ -4243,8 +4264,9 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 
   String get _normalImage =>
       widget.imagePath ?? 'assets/images/companions/${widget.id}_normal.jpg';
+  // Companions with an explicit imagePath override have no pressed variant — fall back to normal.
   String get _pressedImage =>
-      'assets/images/companions/${widget.id}_pressed.jpg';
+      widget.imagePath ?? 'assets/images/companions/${widget.id}_pressed.jpg';
 
   @override
   void didChangeDependencies() {

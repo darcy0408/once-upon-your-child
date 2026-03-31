@@ -14,6 +14,7 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
@@ -155,6 +156,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           backgroundColor: AppColors.warning));
       return;
     }
+    // Clear the wizard draft — the user has committed to launching a story.
+    unawaited(WizardStoryScreen.clearWizardDraft());
     // Skip countdown for reduced-motion or Sprout (Sprout has its own GO! screen).
     final reduceMotion = MotionPrefs.reduceMotion(context);
     final onboarding = OnboardingService();
