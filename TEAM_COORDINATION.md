@@ -340,10 +340,10 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 
 ### Phase 7 — P3 Polish (Post-Launch OK)
 
-- Sprouts progress bar: replace text labels with illustrated icons
-- Remove character counter from avatar selection modal
-- Fix loading screen rotating message truncation
-- Audio-only CTA: verify end-to-end on Railway for all 6 age bands (`789fa48`)
+- ✅ Sprouts progress bar: illustrated emoji icons (⭐🐉🌈✨) replace text labels (ad2490c)
+- ✅ Remove character counter from avatar selection modal (ad2490c)
+- ✅ Fix loading screen rotating message truncation — removed maxHeight:54 cap (ad2490c)
+- ⏳ Audio-only CTA: verify end-to-end on Railway for all 6 age bands (`789fa48`) — manual QA
 
 ### Phase 8 — Structural (Post-Launch Design Discussions)
 
