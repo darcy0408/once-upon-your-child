@@ -6,6 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/age_band_asset_resolver.dart';
+import '../theme/age_band_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -29,70 +31,70 @@ class _BadgeEmotion {
   });
 }
 
-const _badges = [
+List<_BadgeEmotion> _badgesForBand(AgeBand band) => [
   _BadgeEmotion(
     id: 'happy',
     label: 'Happy',
     emoji: '😄',
     icon: Icons.sentiment_very_satisfied_rounded,
-    color: Color(0xFFFFC107),
-    assetPath: 'assets/images/feelings/adventurer/happy.png',
+    color: const Color(0xFFFFC107),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'happy'),
   ),
   _BadgeEmotion(
     id: 'excited',
     label: 'Excited',
     emoji: '🤩',
     icon: Icons.star_rounded,
-    color: Color(0xFFAB47BC),
-    assetPath: 'assets/images/feelings/adventurer/excited.png',
+    color: const Color(0xFFAB47BC),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'excited'),
   ),
   _BadgeEmotion(
     id: 'calm',
     label: 'Calm',
     emoji: '😌',
     icon: Icons.spa_rounded,
-    color: Color(0xFF26A69A),
-    assetPath: 'assets/images/feelings/adventurer/calm.png',
+    color: const Color(0xFF26A69A),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'calm'),
   ),
   _BadgeEmotion(
     id: 'sad',
     label: 'Sad',
     emoji: '😢',
     icon: Icons.sentiment_dissatisfied_rounded,
-    color: Color(0xFF42A5F5),
-    assetPath: 'assets/images/feelings/adventurer/sad.png',
+    color: const Color(0xFF42A5F5),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'sad'),
   ),
   _BadgeEmotion(
     id: 'worried',
     label: 'Worried',
     emoji: '😟',
     icon: Icons.psychology_alt_rounded,
-    color: Color(0xFFFF7043),
-    assetPath: 'assets/images/feelings/adventurer/worried.png',
+    color: const Color(0xFFFF7043),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'worried'),
   ),
   _BadgeEmotion(
     id: 'frustrated',
     label: 'Frustrated',
     emoji: '😤',
     icon: Icons.bolt_rounded,
-    color: Color(0xFFEF5350),
-    assetPath: 'assets/images/feelings/adventurer/frustrated.png',
+    color: const Color(0xFFEF5350),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'frustrated'),
   ),
   _BadgeEmotion(
     id: 'angry',
     label: 'Angry',
     emoji: '😠',
     icon: Icons.mood_bad_rounded,
-    color: Color(0xFFD32F2F),
-    assetPath: 'assets/images/feelings/adventurer/angry.png',
+    color: const Color(0xFFD32F2F),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'angry'),
   ),
   _BadgeEmotion(
     id: 'embarrassed',
     label: 'Embarrassed',
     emoji: '😳',
     icon: Icons.face_retouching_natural_rounded,
-    color: Color(0xFFEC407A),
-    assetPath: 'assets/images/feelings/adventurer/embarrassed.png',
+    color: const Color(0xFFEC407A),
+    assetPath: AgeBandAssetResolver.feelingPath(band, 'embarrassed'),
   ),
 ];
 
@@ -104,8 +106,13 @@ const _badges = [
 /// Calls [onSelected] with a list containing the chosen emotion id.
 class FeelingsBadgeGrid extends StatefulWidget {
   final ValueChanged<List<String>> onSelected;
+  final AgeBand band;
 
-  const FeelingsBadgeGrid({super.key, required this.onSelected});
+  const FeelingsBadgeGrid({
+    super.key,
+    required this.onSelected,
+    this.band = AgeBand.adventurer,
+  });
 
   @override
   State<FeelingsBadgeGrid> createState() => _FeelingsBadgeGridState();
@@ -116,6 +123,7 @@ class _FeelingsBadgeGridState extends State<FeelingsBadgeGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final badges = _badgesForBand(widget.band);
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -124,9 +132,9 @@ class _FeelingsBadgeGridState extends State<FeelingsBadgeGrid> {
         mainAxisSpacing: 20,
         childAspectRatio: 1.05,
       ),
-      itemCount: _badges.length,
+      itemCount: badges.length,
       itemBuilder: (context, i) {
-        final badge = _badges[i];
+        final badge = badges[i];
         final isHovered = _hoveredId == badge.id;
         return _BadgeTile(
           badge: badge,

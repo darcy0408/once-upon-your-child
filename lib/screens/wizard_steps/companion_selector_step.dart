@@ -7,6 +7,7 @@ import '../../config/environment.dart';
 import '../../models.dart';
 import '../../services/api_service_manager.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/age_band_asset_resolver.dart';
 import '../../theme/age_band_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../../widgets/magic_ear_button.dart';
@@ -94,7 +95,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFF7043),
             greeting: 'Achoo! ...That was a hug-sneeze. It means I love you.',
             description: 'His roars come out as sparkly sneezes and his hugs wrap around you like a warm blanket with wings.',
-            imagePath: 'assets/images/companions/sprout/fluffy_dragon.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'fluffy_dragon'),
           ),
           Companion(
             id: 'magic_bunny',
@@ -103,7 +104,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFEC407A),
             greeting: 'Boing! Watch this!',
             description: 'Boing-hops through moonbeams that turn into rainbow puddles. She never, ever hops away from you.',
-            imagePath: 'assets/images/companions/sprout/magic_bunny.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'magic_bunny'),
           ),
           Companion(
             id: 'shining_puppy',
@@ -112,7 +113,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'WoofwoofWOOF! *tail spinning*',
             description: 'Her tail starts glowing the second she sees you. First into every dark place, last to leave.',
-            imagePath: 'assets/images/companions/sprout/shining_puppy.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'shining_puppy'),
           ),
           Companion(
             id: 'robin',
@@ -121,7 +122,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: 'CHIRP CHIRP! ...You\'re safe. I checked.',
             description: 'Very small, very loud, completely sure you need protecting. She brings tiny gifts and reports on everything.',
-            imagePath: 'assets/images/companions/sprout/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
@@ -134,7 +135,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFF7043),
             greeting: 'Your idea? Brilliant. Best one in a hundred years.',
             description: 'Breathes rainbow fire that paints shimmering paths — and uses it even when unnecessary. Treats every one of your ideas like brilliant.',
-            imagePath: 'assets/images/companions/explorer/ember_dragon.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'ember_dragon'),
           ),
           Companion(
             id: 'moon_owl',
@@ -143,7 +144,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF5C6BC0),
             greeting: 'The moon shows me something. What do you see in it?',
             description: 'Reads the future in moonlight reflections. Almost always answers with the question you actually needed.',
-            imagePath: 'assets/images/companions/explorer/moon_owl.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'moon_owl'),
           ),
           Companion(
             id: 'star_fox',
@@ -152,7 +153,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'Follow the trail. I know exactly where we\'re going.',
             description: 'Leaves stardust trails just long enough to follow home. Has opinions about which way is best and admits when he\'s wrong.',
-            imagePath: 'assets/images/companions/explorer/star_fox.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'star_fox'),
           ),
           Companion(
             id: 'robin',
@@ -161,7 +162,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: 'Three chirps: stop. One whistle: safe. Two clicks: run. Ready?',
             description: 'Has a very clear warning system and has launched herself at harmless pinecones. Checks you\'re okay before she\'d ever admit she was worried.',
-            imagePath: 'assets/images/companions/explorer/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
@@ -174,7 +175,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF5C6BC0),
             greeting: 'Pack moves together. I\'ve got your left side.',
             description: 'Runs ahead to scout, always circles back. Will howl the honest truth before letting you walk into something unprepared.',
-            imagePath: 'assets/images/companions/adventurer/thunder_wolf.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'thunder_wolf'),
           ),
           Companion(
             id: 'shadow_panther',
@@ -183,7 +184,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF7E57C2),
             greeting: 'I noticed something. Want to hear it?',
             description: 'Moves silently and sees everything. When she decides you\'re worth trusting, her eyes catch the light gold.',
-            imagePath: 'assets/images/companions/adventurer/shadow_panther.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'shadow_panther'),
           ),
           Companion(
             id: 'crystal_phoenix',
@@ -192,7 +193,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'I\'ve been here before. Different shape, same fire.',
             description: 'Falls apart and comes back, every time. Carries old scars like proof. Not afraid of the hard parts.',
-            imagePath: 'assets/images/companions/adventurer/crystal_phoenix.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'crystal_phoenix'),
           ),
           Companion(
             id: 'robin',
@@ -201,7 +202,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: '*three sharp chirps* — wait. One long note. Safe to come.',
             description: 'Very low threshold for danger. Loud, fearless, sometimes wrong, never slower for it. Brings gifts when the danger clears.',
-            imagePath: 'assets/images/companions/adventurer/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
@@ -214,7 +215,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF5C6BC0),
             greeting: 'I know what you\'re building. I want to help.',
             description: 'Thinks in systems and loyalty. Will push back on bad ideas, but never on you.',
-            imagePath: 'assets/images/companions/creator/thunder_wolf.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'thunder_wolf'),
           ),
           Companion(
             id: 'shadow_panther',
@@ -223,7 +224,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF7E57C2),
             greeting: 'Something feels off. Give me a minute.',
             description: 'Has begun walking beside you instead of always in the shadows. Catches the things you almost missed.',
-            imagePath: 'assets/images/companions/creator/shadow_panther.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'shadow_panther'),
           ),
           Companion(
             id: 'crystal_phoenix',
@@ -232,7 +233,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'That version didn\'t work. Good. Now we know.',
             description: 'Transforms failure into fuel without making it a lesson. The comeback is always more interesting than the fall.',
-            imagePath: 'assets/images/companions/creator/crystal_phoenix.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'crystal_phoenix'),
           ),
           Companion(
             id: 'robin',
@@ -241,7 +242,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: 'I have a new sound for this. You\'ll know it when you need it.',
             description: 'Louder than you remember and you\'ve stopped being surprised. Strong opinions, follows your lead anyway.',
-            imagePath: 'assets/images/companions/creator/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
@@ -254,7 +255,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF5C6BC0),
             greeting: 'I\'m already moving. Redirect me if I\'m wrong.',
             description: 'Three moves ahead, says difficult things directly. Chosen you as his person — not something he does lightly.',
-            imagePath: 'assets/images/companions/adolescent/thunder_wolf.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'thunder_wolf'),
           ),
           Companion(
             id: 'shadow_panther',
@@ -263,7 +264,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF7E57C2),
             greeting: 'That\'s not actually what you believe, is it?',
             description: 'Reads you as closely as she reads rooms. Her loyalty was built deliberately, and she knows exactly when.',
-            imagePath: 'assets/images/companions/adolescent/shadow_panther.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'shadow_panther'),
           ),
           Companion(
             id: 'crystal_phoenix',
@@ -272,7 +273,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'I\'ve burned down before. The next version was better.',
             description: 'Proof that reinvention is survivable. Doesn\'t romanticize the hard parts — just lived through them and kept going.',
-            imagePath: 'assets/images/companions/adolescent/crystal_phoenix.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'crystal_phoenix'),
           ),
           Companion(
             id: 'robin',
@@ -281,7 +282,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: 'I\'m watching you more than the path right now. You okay?',
             description: 'Not calmer, but more precise. Watches you more than she scouts the path these days.',
-            imagePath: 'assets/images/companions/adolescent/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
@@ -294,7 +295,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF5C6BC0),
             greeting: 'Wind\'s coming from the east. Here\'s what I see.',
             description: 'Not here to protect you — here to run the same storm. Chosen family, not assigned companion.',
-            imagePath: 'assets/images/companions/adult/thunder_wolf.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'thunder_wolf'),
           ),
           Companion(
             id: 'shadow_panther',
@@ -303,7 +304,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFF7E57C2),
             greeting: 'The thing no one\'s saying — it\'s this.',
             description: 'Names what everyone else avoids. Comfortable with discomfort. Honest about what she doesn\'t know.',
-            imagePath: 'assets/images/companions/adult/shadow_panther.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'shadow_panther'),
           ),
           Companion(
             id: 'crystal_phoenix',
@@ -312,7 +313,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFFFCA28),
             greeting: 'I stopped counting the times. It\'s not the point.',
             description: 'Has outlasted every certainty it once held. The fire isn\'t dramatic anymore — just steady. Still warm.',
-            imagePath: 'assets/images/companions/adult/crystal_phoenix.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'crystal_phoenix'),
           ),
           Companion(
             id: 'robin',
@@ -321,7 +322,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             color: const Color(0xFFE53935),
             greeting: 'I know. I know. I still had to check.',
             description: 'Still the same bird — loud, loyal, occasionally wrong. Her gifts are better now because she\'s learned what you need.',
-            imagePath: 'assets/images/companions/adult/robin.png',
+            imagePath: AgeBandAssetResolver.companionPath(band, 'robin'),
           ),
         ];
         break;
