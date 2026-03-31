@@ -160,6 +160,9 @@ class WizardData {
       },
       if (generatedAvatar != null)
         'generated_avatar': generatedAvatar!.toJson(),
+      if (customAvatarPath != null) 'customAvatarPath': customAvatarPath,
+      if (selectedCharacterAssetPath != null)
+        'selectedCharacterAssetPath': selectedCharacterAssetPath,
       'fears': fears,
       'strengths': strengths,
       'comfortItem': comfortItem,
@@ -178,6 +181,7 @@ class WizardData {
       'parentalNote': parentalNote,
       'companions': selectedCompanions,
       'companionNames': companionNames,
+      'companionCustomNames': companionCustomNames,
       'rhymeTimeMode': rhymeTimeMode,
       'learningToReadMode': learningToReadMode,
       'interactiveMode': interactiveMode,
@@ -185,7 +189,84 @@ class WizardData {
       'storyLength': storyLength,
       'customElements': customElements,
       'selectedGenre': selectedGenre,
+      'selectedSparkTool': selectedSparkTool,
       'lifeChallenge': lifeChallenge,
+      'storyDnaContext': storyDnaContext,
+      'storyDnaOutcome': storyDnaOutcome,
+      'storyDnaAvoid': storyDnaAvoid,
+      'heroSuperpower': heroSuperpower,
+      'heroQuest': heroQuest,
+      'characterDesire': characterDesire,
     };
+  }
+
+  /// Restores a [WizardData] instance from a [toJson] snapshot.
+  /// Unknown or missing keys are ignored — partial restores are safe.
+  static WizardData fromJson(Map<String, dynamic> json) {
+    final d = WizardData();
+    d.characterId = json['characterId'] as String?;
+    d.characterGender = (json['gender'] as String?) ?? 'Girl';
+    d.selectedArchetypeId = json['archetype'] as String?;
+    if (json['personality'] is Map) {
+      d.personalitySliders = Map<String, int>.from(
+        (json['personality'] as Map).map(
+          (k, v) => MapEntry(k as String, (v as num).toInt()),
+        ),
+      );
+    }
+    d.characterName = (json['name'] as String?) ?? '';
+    d.characterAge = (json['age'] as num?)?.toInt() ?? 8;
+    d.favoriteColor = (json['favoriteColor'] as String?) ?? 'Gold';
+    if (json['appearance'] is Map) {
+      final a = json['appearance'] as Map;
+      d.selectedHairStyle = (a['hair'] as String?) ?? '';
+      d.selectedSkinTone = (a['skin'] as String?) ?? '';
+      d.selectedOutfit = (a['outfit'] as String?) ?? '';
+    }
+    d.customAvatarPath = json['customAvatarPath'] as String?;
+    d.selectedCharacterAssetPath =
+        json['selectedCharacterAssetPath'] as String?;
+    d.fears = List<String>.from((json['fears'] as List?) ?? []);
+    d.strengths = List<String>.from((json['strengths'] as List?) ?? []);
+    d.comfortItem = json['comfortItem'] as String?;
+    d.pets = ((json['pets'] as List?) ?? [])
+        .map((p) => Map<String, String>.from(p as Map))
+        .toList();
+    d.additionalCharacters =
+        List<String>.from((json['additionalCharacters'] as List?) ?? []);
+    d.selectedScenario = json['scenario'] as String?;
+    d.selectedEmotionChips =
+        List<String>.from((json['emotions'] as List?) ?? []);
+    d.selectedFeeling = json['selectedFeeling'] as String?;
+    d.selectedTrigger = json['selectedTrigger'] as String?;
+    d.selectedBodySignal = json['selectedBodySignal'] as String?;
+    d.selectedCopingTool = json['selectedCopingTool'] as String?;
+    d.selectedRepairGoal = json['selectedRepairGoal'] as String?;
+    d.parentHiddenContext = json['parentHiddenContext'] as String?;
+    d.parentalNote = json['parentalNote'] as String?;
+    d.selectedCompanions =
+        List<String>.from((json['companions'] as List?) ?? []);
+    d.companionNames =
+        List<String>.from((json['companionNames'] as List?) ?? []);
+    if (json['companionCustomNames'] is Map) {
+      d.companionCustomNames = Map<String, String>.from(
+          json['companionCustomNames'] as Map);
+    }
+    d.rhymeTimeMode = (json['rhymeTimeMode'] as bool?) ?? false;
+    d.learningToReadMode = (json['learningToReadMode'] as bool?) ?? false;
+    d.interactiveMode = (json['interactiveMode'] as bool?) ?? false;
+    d.includeIllustrations = (json['includeIllustrations'] as bool?) ?? true;
+    d.storyLength = (json['storyLength'] as String?) ?? 'standard';
+    d.customElements = (json['customElements'] as String?) ?? '';
+    d.selectedGenre = json['selectedGenre'] as String?;
+    d.selectedSparkTool = json['selectedSparkTool'] as String?;
+    d.lifeChallenge = json['lifeChallenge'] as String?;
+    d.storyDnaContext = json['storyDnaContext'] as String?;
+    d.storyDnaOutcome = json['storyDnaOutcome'] as String?;
+    d.storyDnaAvoid = json['storyDnaAvoid'] as String?;
+    d.heroSuperpower = json['heroSuperpower'] as String?;
+    d.heroQuest = json['heroQuest'] as String?;
+    d.characterDesire = json['characterDesire'] as String?;
+    return d;
   }
 }

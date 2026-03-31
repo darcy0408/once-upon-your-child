@@ -183,6 +183,27 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   bool get _canContinue => _selectedScenario != null;
 
+  /// True when Big Feelings Quest is selected but no feeling data has been
+  /// gathered yet — triggers the flow on Continue rather than on card tap.
+  bool get _needsFeelingsFlow =>
+      _selectedScenario == 'big_feelings_quest' &&
+      (widget.wizardData.selectedFeeling == null &&
+          widget.wizardData.selectedEmotionChips.isEmpty);
+
+  /// Continue handler — runs the feelings flow first if needed, then advances.
+  Future<void> _handleContinue() async {
+    if (_needsFeelingsFlow) {
+      await _openFeelingsQuest();
+      if (!mounted) return;
+      // Only advance if the user completed the feelings flow (not cancelled).
+      final completed = widget.wizardData.selectedFeeling != null ||
+          widget.wizardData.selectedEmotionChips.isNotEmpty;
+      if (!completed) return;
+    }
+    widget.wizardData.interactiveMode = true;
+    widget.onNext();
+  }
+
   /// Opens the Feelings Quest cloud picker, then auto-selects the scenario.
   Future<void> _openFeelingsQuest() async {
     final age = widget.wizardData.characterAge <= 0
@@ -442,10 +463,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               Center(
                 key: const Key('wizard_continue_scenario'),
                 child: ImageContinueButton(
-                  onTap: () {
-                    widget.wizardData.interactiveMode = true;
-                    widget.onNext();
-                  },
+                  onTap: _handleContinue,
                   ageBand: ageBandFromAge(widget.wizardData.characterAge),
                 ),
               ),
@@ -1178,9 +1196,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                         currentBand.index >= AgeBand.adventurer.index,
                     isNew: !_visitedScenarioIds.contains(scenario.id),
                     useParallax: true,
-                    onTap: scenario.id == 'big_feelings_quest'
-                        ? _openFeelingsQuest
-                        : () => _selectScenario(scenario.id),
+                    onTap: () => _selectScenario(scenario.id),
                   );
                 },
               ),

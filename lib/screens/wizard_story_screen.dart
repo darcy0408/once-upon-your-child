@@ -10,10 +10,26 @@ import 'character_library_screen.dart';
 import 'feelings_garden_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/magic_review_step.dart';
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
 import 'bedtime_wizard_screen.dart';
 import 'chronicles_list_screen.dart';
+
+// ── Wizard draft persistence helpers (top-level so magic_review_step can call them) ──
+
+const _wizardDraftKey = 'wizard_draft';
+
+/// Clears the persisted wizard draft. Call when story generation starts so a
+/// successful launch doesn't restore stale state on the next session.
+Future<void> clearWizardDraft() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_wizardDraftKey);
+  } catch (_) {}
+}
 
 /// WizardStoryScreen - Main 4-step wizard for creating magical stories
 ///
@@ -72,7 +88,92 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     _pageController = PageController(initialPage: _currentStep);
 
     _loadSavedCharacters();
+    // Attempt to restore any in-progress wizard draft (crash/network recovery).
+    // Only restore when the caller hasn't pre-populated wizard data.
+    if (widget.initialWizardData == null && widget.initialCharacter == null) {
+      _restoreWizardDraft();
+    }
   }
+
+  // ── Wizard draft persistence ───────────────────────────────────────────────
+
+  /// Saves the current wizard state to SharedPreferences so it can be
+  /// recovered after a crash or unexpected app close.
+  Future<void> _saveWizardDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          _wizardDraftKey, jsonEncode(_wizardData.toJson()));
+    } catch (_) {
+      // Non-fatal — draft persistence is best-effort.
+    }
+  }
+
+  /// Restores a previously saved wizard draft into [_wizardData].
+  /// Silently ignores missing or corrupt drafts.
+  Future<void> _restoreWizardDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_wizardDraftKey);
+      if (raw == null || raw.isEmpty) return;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      // Only restore if there's a meaningful character name (non-empty draft).
+      if ((json['name'] as String? ?? '').isEmpty) return;
+      final restored = WizardData.fromJson(json);
+      if (mounted) {
+        setState(() {
+          _wizardData.characterId = restored.characterId;
+          _wizardData.characterGender = restored.characterGender;
+          _wizardData.selectedArchetypeId = restored.selectedArchetypeId;
+          _wizardData.personalitySliders = restored.personalitySliders;
+          _wizardData.characterName = restored.characterName;
+          _wizardData.characterAge = restored.characterAge;
+          _wizardData.favoriteColor = restored.favoriteColor;
+          _wizardData.selectedHairStyle = restored.selectedHairStyle;
+          _wizardData.selectedSkinTone = restored.selectedSkinTone;
+          _wizardData.selectedOutfit = restored.selectedOutfit;
+          _wizardData.customAvatarPath = restored.customAvatarPath;
+          _wizardData.selectedCharacterAssetPath =
+              restored.selectedCharacterAssetPath;
+          _wizardData.fears = restored.fears;
+          _wizardData.strengths = restored.strengths;
+          _wizardData.comfortItem = restored.comfortItem;
+          _wizardData.pets = restored.pets;
+          _wizardData.additionalCharacters = restored.additionalCharacters;
+          _wizardData.selectedScenario = restored.selectedScenario;
+          _wizardData.selectedEmotionChips = restored.selectedEmotionChips;
+          _wizardData.selectedFeeling = restored.selectedFeeling;
+          _wizardData.selectedTrigger = restored.selectedTrigger;
+          _wizardData.selectedBodySignal = restored.selectedBodySignal;
+          _wizardData.selectedCopingTool = restored.selectedCopingTool;
+          _wizardData.selectedRepairGoal = restored.selectedRepairGoal;
+          _wizardData.parentHiddenContext = restored.parentHiddenContext;
+          _wizardData.parentalNote = restored.parentalNote;
+          _wizardData.selectedCompanions = restored.selectedCompanions;
+          _wizardData.companionNames = restored.companionNames;
+          _wizardData.companionCustomNames = restored.companionCustomNames;
+          _wizardData.rhymeTimeMode = restored.rhymeTimeMode;
+          _wizardData.learningToReadMode = restored.learningToReadMode;
+          _wizardData.interactiveMode = restored.interactiveMode;
+          _wizardData.includeIllustrations = restored.includeIllustrations;
+          _wizardData.storyLength = restored.storyLength;
+          _wizardData.customElements = restored.customElements;
+          _wizardData.selectedGenre = restored.selectedGenre;
+          _wizardData.selectedSparkTool = restored.selectedSparkTool;
+          _wizardData.lifeChallenge = restored.lifeChallenge;
+          _wizardData.storyDnaContext = restored.storyDnaContext;
+          _wizardData.storyDnaOutcome = restored.storyDnaOutcome;
+          _wizardData.storyDnaAvoid = restored.storyDnaAvoid;
+          _wizardData.heroSuperpower = restored.heroSuperpower;
+          _wizardData.heroQuest = restored.heroQuest;
+          _wizardData.characterDesire = restored.characterDesire;
+        });
+      }
+    } catch (_) {
+      // Corrupt draft — ignore and start fresh.
+    }
+  }
+
 
   Future<void> _loadOnboardingName() async {
     final prefs = await SharedPreferences.getInstance();
@@ -155,6 +256,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
+      unawaited(_saveWizardDraft());
     }
   }
 
