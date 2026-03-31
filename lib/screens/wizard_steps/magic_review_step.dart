@@ -109,15 +109,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   String? get _companionImage {
     if (widget.wizardData.selectedCompanions.isNotEmpty) {
       final firstComp = widget.wizardData.selectedCompanions.first;
-      // Sprouts companions have IDs like 'sprout/fluffy_dragon' with PNG assets.
-      if (firstComp.startsWith('sprout/')) {
-        return 'assets/images/companions/$firstComp.png';
+      // Legacy global companion IDs that use the _normal.jpg naming scheme.
+      const legacyIds = {'dragon', 'owl', 'cat', 'dog', 'unicorn', 'fox', 'robin'};
+      if (legacyIds.contains(firstComp)) {
+        return 'assets/images/companions/${firstComp}_normal.jpg';
       }
-      try {
-        final magicComp = magicCompanions.firstWhere((c) => c.id == firstComp);
-        return 'assets/images/companions/${magicComp.id}_normal.jpg';
-      } catch (_) {
-        // If it's a custom companion/photo (e.g. my_pet), fall through.
+      // Band-specific companions (sprout, explorer, adventurer, creator, etc.)
+      // IDs like 'ember_dragon', 'fluffy_dragon', 'robin', etc. live under
+      // assets/images/companions/<band>/<id>.png.
+      if (!firstComp.startsWith('character_') &&
+          !widget.wizardData.petPhotos.containsKey(firstComp)) {
+        final band = ageBandFromAge(widget.wizardData.characterAge);
+        return 'assets/images/companions/${band.name}/$firstComp.png';
       }
     }
     if (widget.wizardData.companionNames.isNotEmpty &&
@@ -574,6 +577,25 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       : (wizardLength == 'epic' ? 'long' : 'medium');
 
   String _storyTypeLabel(WizardData data, AgeBandThemeData band) {
+    String base = _baseStoryTypeLabel(data, band);
+    // Append genre twist if selected — lets the child confirm it before launching.
+    const genreEmoji = {
+      'mystery': '🔍',
+      'comedy': '😂',
+      'sci-fi': '🚀',
+      'action': '⚔️',
+      'spooky': '👻',
+    };
+    final genre = data.selectedGenre;
+    if (genre != null && genre.isNotEmpty) {
+      final emoji = genreEmoji[genre] ?? '';
+      final label = genre[0].toUpperCase() + genre.substring(1);
+      return '$base · $emoji $label';
+    }
+    return base;
+  }
+
+  String _baseStoryTypeLabel(WizardData data, AgeBandThemeData band) {
     if (data.interactiveMode) {
       return band.band == AgeBand.sprout
           ? 'Pick a Path'
@@ -599,9 +621,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       }
     }
     if (data.includeIllustrations) {
-      return band.band.isMature
-          ? 'Illustrated story'
-          : 'Picture tale';
+      return band.band.isMature ? 'Illustrated story' : 'Picture tale';
     }
     return band.band.isMature ? 'Story draft' : 'Magical story';
   }
@@ -1508,8 +1528,15 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         size: sideCircleSize,
                         auraColor: const Color(0xFFFFD9A6),
                         child: ClipOval(
-                            child:
-                                Image.asset(_scenarioImage, fit: BoxFit.cover)),
+                            child: Image.asset(
+                          _scenarioImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFF3B1F6A),
+                            child: const Icon(Icons.landscape,
+                                color: Colors.white54, size: 40),
+                          ),
+                        )),
                       ),
                     ),
                     SizedBox(height: band.space(6)),
@@ -1525,10 +1552,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       ),
                       child: Text(_scenarioLabel,
                           overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                               color: Colors.white,
-                              fontSize: band.body(12),
+                              fontSize: band.body(11),
                               fontWeight: FontWeight.bold)),
                     ),
                   ]),
@@ -1938,7 +1966,13 @@ class _CompanionAvatar extends StatelessWidget {
     if (companionImage!.startsWith('assets/')) {
       return ClipOval(
         clipBehavior: Clip.antiAlias,
-        child: Image.asset(companionImage!, fit: BoxFit.cover),
+        child: Image.asset(
+          companionImage!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+            child: Icon(Icons.pets, color: Colors.white, size: 48),
+          ),
+        ),
       );
     }
     if (companionImage!.startsWith('http')) {

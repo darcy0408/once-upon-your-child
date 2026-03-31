@@ -485,12 +485,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (_heroPage != 2) return;
     if (_hasAvatar) {
       _heroNextPage();
-      return;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _heroPage != 2 || _hasAvatar) return;
-      await _openAvatarCreationOptions();
-    });
+    // No forced redirect — let kids pick archetype first, then choose their look.
   }
 
   void _maybeAdvanceFromStylePage() {
@@ -783,7 +779,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ? (_selectedArchetypeId != null
                       ? 'Great! Tap an archetype to continue.'
                       : 'Step 2: Pick your hero type to continue.')
-                  : 'Pick your hero look first, then choose archetype.',
+                  : 'Pick a hero type and choose your look — in any order!',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
               textAlign: TextAlign.center,
             );
@@ -1789,7 +1785,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       case AgeBand.sprout:
         return 'Listen & Learn'; // Dr. Seuss style, auto-plays
       case AgeBand.explorer:
-        return 'Easy Reader';
+        return 'Read Along';
       case AgeBand.adventurer:
         return 'Chapter Reader';
       case AgeBand.creator:
@@ -2664,8 +2660,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       children: [
         Text(
           widget.wizardData.characterName.isNotEmpty
-              ? "HI ${widget.wizardData.characterName.toUpperCase()}!"
-              : "HERO'S NAME",
+              ? "Hi ${widget.wizardData.characterName}!"
+              : "Your Hero",
           style: (band.band == AgeBand.creator)
               ? GoogleFonts.sourceSans3(
                   color: const Color(0xFFFFE082).withAlpha(200),

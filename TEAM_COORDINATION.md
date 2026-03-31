@@ -1,5 +1,47 @@
 # Team Coordination
 
+## 2026-03-30 — Explorer (8yo) & Adventurer (10yo) UX Audit + Bug Fixes (Claude Sonnet 4.6)
+
+**Goal:** Conduct Six Hats UX audits for the Explorer (age 8) and Adventurer (age 10) bands using live screenshots, then fix all identified bugs. Audit documents saved to `docs/`.
+
+### Audit Documents
+
+| File | Band | Method |
+|------|------|--------|
+| `docs/ux_audit_explorer_8yo_2026-03-29.md` | Explorer (8yo) | Screenshots + code review, Six Hats |
+| `docs/ux_audit_adventurer_10yo_2026-03-30.md` | Adventurer (10yo) | Screenshots + code review, Six Hats |
+
+### Bugs Fixed
+
+| # | Bug | Root Cause | Fix |
+|---|-----|-----------|-----|
+| 1 | Robin companion shows broken × image on review screen | `legacyIds` set in `_companionImage` getter was missing `'robin'` — fell through to band-specific path that doesn't exist | Added `'robin'` to `legacyIds` in `magic_review_step.dart` |
+| 2 | Any failed companion asset shows × instead of fallback | `Image.asset()` in `_CompanionAvatar` had no `errorBuilder` | Added `errorBuilder` → `_GradientSphereFallback` with pets icon |
+| 3 | Failed scenario/world image shows × instead of fallback | `Image.asset(_scenarioImage)` in review layout had no `errorBuilder` | Added `errorBuilder` → dark purple container with landscape icon |
+| 4 | Long Adventurer world names truncated ("Whispers of Dazzling Ste...") | Scenario label was `maxLines: 1` | Changed to `maxLines: 2`, font 12→11 so long names fit |
+| 5 | Greeting reads "HI SAM!" (all-caps, Bitter font = shouting) | `characterName.toUpperCase()` applied even for non-decorative fonts; Adventurer uses Bitter where it has visible effect | Changed to `"Hi $name!"` — CinzelDecorative (Sprout/Explorer) renders the same since it's naturally small-caps |
+| 6 | Genre twist selection not confirmed on review screen | `_storyTypeLabel()` returned only story type, ignoring `selectedGenre` | Refactored into `_baseStoryTypeLabel()` + genre append: "Story Quest · 👻 Spooky" |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/magic_review_step.dart` | Add `'robin'` to `legacyIds`; `errorBuilder` on companion + scenario `Image.asset`; `maxLines: 2` on scenario label; refactor `_storyTypeLabel()` → genre badge |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Greeting `"HI ${name.toUpperCase()}!"` → `"Hi $name!"` |
+
+### Status
+- [x] Six Hats audit — Explorer (8yo) — `docs/ux_audit_explorer_8yo_2026-03-29.md`
+- [x] Six Hats audit — Adventurer (10yo) — `docs/ux_audit_adventurer_10yo_2026-03-30.md`
+- [x] BUG-1: Robin missing from legacyIds
+- [x] BUG-2: errorBuilder on companion Image.asset
+- [x] BUG-3: errorBuilder on scenario Image.asset
+- [x] BUG-4: World name maxLines 1→2
+- [x] BUG-5: Greeting casing (toUpperCase removed)
+- [x] BUG-6: Genre shown on review summary row
+- [x] flutter analyze clean (pre-existing warnings only)
+
+---
+
 ## 2026-03-29 — Rhyme Time Mode: Full Age Band Audit & Fix (Claude Sonnet 4.6)
 
 **Goal:** Rhyme time stories were generating in a context vacuum — no scene/world bible, no character strengths, no companion powers, "coping moment" phrasing leaking into older-band poetry. Fix all 7 identified issues across both backend files.
