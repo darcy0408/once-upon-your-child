@@ -536,7 +536,7 @@ def create_story_blueprint(
 
             if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
-                return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Geminin API quota exceeded. Please try again later.", "details": str(exc)}), 429
+                return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(exc)}), 429
 
             logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             if _celery_runs_eagerly():

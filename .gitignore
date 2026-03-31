@@ -105,6 +105,15 @@ instance/*.db
 
 # Development test scripts
 
+# Playwright MCP working directory (test runner ephemeral)
+.playwright-mcp/
+
+# UX audit runner script (session-specific, not source)
+scripts/ux_audit_runner.md
+
+# Timestamped audit artifact snapshots (latest/* are canonical; snapshots accumulate)
+backend/tests/artifacts/*T*.json
+backend/tests/artifacts/*T*.md
 
 # Test reports and lint outputs
 reports/

@@ -3,7 +3,8 @@ Authentication middleware for Story Weaver API.
 Provides JWT-based authentication and authorization decorators.
 
 Security features:
-- require_auth: Validates JWT token and attaches user to request
+- require_auth: Validates JWT token and attaches user to request; sets g.minor_age_cap
+- require_parental_consent: COPPA gate — blocks under-13 users without a ConsentRecord
 - require_admin: Validates user has admin role
 - require_owner: Validates user owns the requested resource (IDOR protection)
 - get_current_user_id: Safely extracts user ID from JWT without requiring auth
@@ -12,6 +13,7 @@ from functools import wraps
 from flask import request, jsonify, g, current_app
 from backend.database import db
 from backend.models.user import User
+from backend.models.consent_record import ConsentRecord
 import jwt
 import os
 import logging
@@ -78,6 +80,15 @@ def require_auth(f):
             request.current_user = current_user
             g.current_user_id = current_user.id
 
+            # COPPA age cap: if the authenticated user is under 13, store their
+            # declared age so story routes can cap content calibration accordingly.
+            # An under-13 user cannot request adult-calibrated content by sending
+            # a higher age value in the request body.
+            if current_user.is_under_13 and current_user.declared_age:
+                g.minor_age_cap = current_user.declared_age
+            else:
+                g.minor_age_cap = None
+
         except jwt.ExpiredSignatureError:
             logger.warning("Auth failed: Token expired")
             return jsonify({'error': 'Token expired'}), 401
@@ -87,6 +98,54 @@ def require_auth(f):
         except ValueError as e:
             logger.error(f"JWT configuration error: {e}")
             return jsonify({'error': 'Authentication service unavailable'}), 503
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def require_parental_consent(f):
+    """
+    Decorator that enforces COPPA parental consent for under-13 users.
+    Must be used after @require_auth.
+
+    Checks that a non-withdrawn ConsentRecord exists for the user before
+    allowing access to content-generation endpoints. Users aged 13+ pass
+    through unconditionally.
+
+    Usage:
+        @story_bp.route("/generate-story", methods=["POST"])
+        @require_auth
+        @require_parental_consent
+        def generate_story():
+            ...
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not hasattr(request, 'current_user') or not request.current_user:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        user = request.current_user
+        if not user.is_under_13:
+            # User is 13 or older — no consent check needed.
+            return f(*args, **kwargs)
+
+        # Under-13: require a valid, non-withdrawn consent record.
+        consent = (
+            ConsentRecord.query
+            .filter_by(user_id=user.id, withdrawn=False)
+            .order_by(ConsentRecord.consent_given_at.desc())
+            .first()
+        )
+        if not consent:
+            logger.warning(
+                "COPPA: under-13 user %s attempted content generation without parental consent",
+                user.id,
+            )
+            return jsonify({
+                'error': 'Parental consent required',
+                'code': 'PARENTAL_CONSENT_REQUIRED',
+            }), 403
 
         return f(*args, **kwargs)
 
