@@ -3425,43 +3425,39 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         // overrides the explicit Text(style:) inside each chip's label,
         // producing white-on-white invisible text. Text styling is handled
         // entirely by the Text widget inside each FilterChip.label.
-        Theme(
-          data: Theme.of(context).copyWith(
-            chipTheme: ChipThemeData(
-              backgroundColor: const Color(0xFF1A0A2E),
-              selectedColor: const Color(0xFFFFD700).withAlpha(50),
-              side: BorderSide(color: Colors.white.withAlpha(60)),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: CharacterArchetypes.forBand(ageBandFromAge(widget.wizardData.characterAge)).map((archetype) {
+            final isSelected = _selectedArchetypeId == archetype.name;
+            return FilterChip(
+              label: Text(
+                archetype.nameForAge(widget.wizardData.characterAge).toUpperCase(),
+                style: GoogleFonts.sourceSans3(
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              selected: isSelected,
+              onSelected: (_) => _selectArchetype(archetype),
+              // M3 ignores backgroundColor in ChipThemeData; set color directly.
+              color: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFFFFD700).withAlpha(50);
+                }
+                return const Color(0xFF1A0A2E);
+              }),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: CharacterArchetypes.forBand(ageBandFromAge(widget.wizardData.characterAge)).map((archetype) {
-              final isSelected = _selectedArchetypeId == archetype.name;
-              return FilterChip(
-                label: Text(
-                  archetype.nameForAge(widget.wizardData.characterAge).toUpperCase(),
-                  style: GoogleFonts.sourceSans3(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
-                    fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                selected: isSelected,
-                onSelected: (_) => _selectArchetype(archetype),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(
-                      color: isSelected
-                          ? const Color(0xFFFFD700)
-                          : Colors.white.withAlpha(60)),
-                ),
-                showCheckmark: false,
-              );
-            }).toList(),
-          ),
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withAlpha(60)),
+              ),
+              showCheckmark: false,
+            );
+          }).toList(),
         ),
       ],
     );
@@ -3585,31 +3581,50 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 selected: isSelected,
                 onSelected: (v) => setState(
                     () => widget.wizardData.selectedScenario = v ? s.id : null),
-                backgroundColor: Colors.white.withAlpha(10),
-                selectedColor: const Color(0xFFFFD700).withAlpha(40),
+                // M3 ignores backgroundColor; use color with WidgetStateProperty.
+                color: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return const Color(0xFFFFD700).withAlpha(40);
+                  }
+                  return const Color(0xFF1A0A2E);
+                }),
                 labelStyle: GoogleFonts.sourceSans3(
                   color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
                   fontSize: 10,
                 ),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: BorderSide.none),
+                    side: BorderSide(
+                        color: isSelected
+                            ? const Color(0xFFFFD700)
+                            : Colors.white.withAlpha(40))),
               );
             }),
             ChoiceChip(
-              label: const Text('CUSTOM PREMISE'),
+              label: Text('CUSTOM PREMISE',
+                  style: GoogleFonts.sourceSans3(
+                    color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
+                    fontSize: 10,
+                  )),
               selected: isCustom,
               onSelected: (v) => setState(() =>
                   widget.wizardData.selectedScenario = v ? 'safe_space' : null),
-              backgroundColor: Colors.white.withAlpha(10),
-              selectedColor: const Color(0xFFFFD700).withAlpha(40),
+              color: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFFFFD700).withAlpha(40);
+                }
+                return const Color(0xFF1A0A2E);
+              }),
               labelStyle: GoogleFonts.sourceSans3(
                 color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
                 fontSize: 10,
               ),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide.none),
+                  side: BorderSide(
+                      color: isCustom
+                          ? const Color(0xFFFFD700)
+                          : Colors.white.withAlpha(40))),
             ),
           ],
         ),

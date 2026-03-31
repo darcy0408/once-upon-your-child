@@ -1,5 +1,49 @@
 # Team Coordination
 
+## 2026-03-31 — Creator (12yo) Audit + M3 Chip Fix + pubspec Cleanup (Claude Sonnet 4.6)
+
+**Goal:** Six Hats UX audit of Creator band (age 12) via Playwright; fix the persistent BUG-04 chip visibility using the correct M3 API; remove stale `age_band_assets/` asset declarations from pubspec.
+
+### Audit Document
+`docs/ux_audit_creator_12yo_2026-03-31.md` — Six Hats walkthrough as a 12-year-old ("Alex").
+
+### Key Findings From Audit
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| BUG-04c | CORE ARCHETYPE chips: only the *selected* chip shows text — unselected chips still blank white | 🔴 Critical |
+| BUG-W1 | World setting chips: same blank-white problem as archetype chips | 🔴 Critical |
+| UX-C1 | "2 Companions" step nav tab changes bold indicator but no companions UI exists in the accordion | 🟠 High |
+| UX-C2 | Review screen `RenderFlex overflowed` on avatar row | 🟡 Medium |
+| UX-C3 | Review shows a *different* setting than the one selected (stale state) | 🟡 Medium |
+
+### Root Cause — BUG-04 (all three passes)
+
+Material 3 `FilterChip` and `ChoiceChip` ignore `backgroundColor` in `ChipThemeData` — they use `WidgetStateProperty<Color>` resolved from the component's own `color:` parameter. Previous fixes (Theme wrapper with `ChipThemeData.backgroundColor`, then removing `labelStyle`) addressed wrong layers. The real fix is setting `color: WidgetStateProperty.resolveWith(...)` directly on each chip.
+
+### Fixes Applied
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | BUG-04c + BUG-W1: archetype + world chips render blank in M3 | Replaced `Theme(ChipThemeData(backgroundColor:...))` wrapper with `color: WidgetStateProperty.resolveWith(states => selected ? gold.alpha50 : Color(0xFF1A0A2E))` on each `FilterChip`/`ChoiceChip` directly |
+| 2 | Stale `age_band_assets/` declarations in pubspec.yaml | Removed 30+ `age_band_assets/` entries from `flutter.assets` — these paths never existed on disk and caused asset-bundle warnings |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Archetype FilterChips + world ChoiceChips: `color: WidgetStateProperty.resolveWith(...)` replaces `ChipThemeData.backgroundColor`; CUSTOM PREMISE chip gets explicit `Text` label style |
+| `pubspec.yaml` | Remove all `age_band_assets/` asset declarations (resolver now uses `assets/images/` paths) |
+
+### Status
+- [x] Creator (12yo) audit doc saved
+- [x] BUG-04c / BUG-W1: M3 `WidgetStateProperty` chip fix
+- [x] pubspec.yaml stale asset paths removed
+- [ ] UX-C1: Companions tab in Creator accordion — deferred
+- [ ] UX-C2/C3: Review screen stale state + overflow — deferred
+
+---
+
 ## 2026-03-30 — Wire AgeBandAssetResolver to Real Asset Paths (Claude Sonnet 4.6)
 
 **Goal:** `AgeBandAssetResolver` existed but pointed to `age_band_assets/{pluralFolder}/` which was never created on disk. All band-specific images live at `assets/images/{category}/{band}/`. Fixed the resolver and migrated all consumers.
