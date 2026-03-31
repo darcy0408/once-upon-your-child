@@ -19,6 +19,7 @@ class Environment {
       FlavorConfig.instance.geminiApiKey.isEmpty
           ? null
           : FlavorConfig.instance.geminiApiKey;
+  static String get sentryDsn => FlavorConfig.instance.sentryDsn;
 
   // Legacy helpers for explicit endpoints.
   static String get generateStoryUrl => '$backendUrl/generate-story';

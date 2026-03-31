@@ -1,5 +1,32 @@
 # Team Coordination
 
+## 2026-03-30 — Sentry RenderFlex Overflow Fixes (Claude Sonnet 4.6)
+
+**Goal:** Diagnose and fix two live Sentry issues (STORY-WEAVER-R and STORY-WEAVER-K) — both `RenderFlex overflowed` errors in `magic_review_step.dart` on 390px-wide screens.
+
+### Root Causes Found
+
+| Issue | Overflow | Widget | Root Cause |
+|-------|----------|--------|------------|
+| STORY-WEAVER-R | 11px | `_LengthChip` row (first review layout) | 3 chips in a `Row` with no `Flexible` — natural chip width exceeds available space on narrow screens with scaled spacing |
+| STORY-WEAVER-K | 58px | `_SummaryRow` Row + second chip row | (1) `band.touchTarget(32)` = 88px for Sprout band — the avatar SizedBox alone consumed too much fixed width in the Row. (2) Second chip Row (line ~1626) had same unconstrained-chip issue as STORY-WEAVER-R |
+
+### Fixes Applied
+
+| File | Change |
+|------|--------|
+| `lib/screens/wizard_steps/magic_review_step.dart` | First chip row (~line 897): `Row` → `Wrap(spacing: 8, runSpacing: 8)` — removes SizedBox spacers |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Second chip row (~line 1626): `Row` → `Wrap(spacing: band.space(8), runSpacing: band.space(8))` |
+| `lib/screens/wizard_steps/magic_review_step.dart` | `_SummaryRow.leadingAvatar` SizedBox: `band.touchTarget(32)` → `36` fixed — entire row is the tap target via InkWell, so visual size doesn't need to meet touch target minimums independently |
+
+### Status
+- [x] Fix 1 — First chip Row → Wrap (Fixes STORY-WEAVER-R)
+- [x] Fix 2 — Second chip Row → Wrap (Fixes STORY-WEAVER-K partially)
+- [x] Fix 3 — `_SummaryRow` avatar cap at 36px (Fixes STORY-WEAVER-K fully)
+- [x] Committed
+
+---
+
 ## 2026-03-30 — Explorer (8yo) & Adventurer (10yo) UX Audit + Bug Fixes (Claude Sonnet 4.6)
 
 **Goal:** Conduct Six Hats UX audits for the Explorer (age 8) and Adventurer (age 10) bands using live screenshots, then fix all identified bugs. Audit documents saved to `docs/`.

@@ -114,9 +114,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       if (legacyIds.contains(firstComp)) {
         return 'assets/images/companions/${firstComp}_normal.jpg';
       }
-      // Band-specific companions (sprout, explorer, adventurer, creator, etc.)
-      // IDs like 'ember_dragon', 'fluffy_dragon', 'robin', etc. live under
-      // assets/images/companions/<band>/<id>.png.
+      // IDs like 'sprout/fluffy_dragon' already embed their band subfolder.
+      if (firstComp.contains('/')) {
+        return 'assets/images/companions/$firstComp.png';
+      }
+      // Band-specific bare IDs (e.g. 'ember_dragon', 'moon_owl') — derive band
+      // from the character's age.
       if (!firstComp.startsWith('character_') &&
           !widget.wizardData.petPhotos.containsKey(firstComp)) {
         final band = ageBandFromAge(widget.wizardData.characterAge);
@@ -895,8 +898,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 index: 1,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
                     children: [
                       _LengthChip(
                         label: _lengthLabelForBand('quick', band),
@@ -905,7 +910,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                             setState(() => data.storyLength = 'quick'),
                         band: band,
                       ),
-                      const SizedBox(width: 8),
                       _LengthChip(
                         label: _lengthLabelForBand('standard', band),
                         isSelected: data.storyLength == 'standard',
@@ -913,7 +917,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                             setState(() => data.storyLength = 'standard'),
                         band: band,
                       ),
-                      const SizedBox(width: 8),
                       _LengthChip(
                         label: _lengthLabelForBand('epic', band),
                         isSelected: data.storyLength == 'epic',
@@ -1620,8 +1623,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 index: 1,
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: band.space(4)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Wrap(
+                    spacing: band.space(8),
+                    runSpacing: band.space(8),
+                    alignment: WrapAlignment.center,
                     children: [
                       _LengthChip(
                         label: _lengthLabelForBand('quick', band),
@@ -1629,14 +1634,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         onTap: () => setState(() => data.storyLength = 'quick'),
                         band: band,
                       ),
-                      SizedBox(width: band.space(8)),
                       _LengthChip(
                         label: _lengthLabelForBand('standard', band),
                         isSelected: data.storyLength == 'standard',
                         onTap: () => setState(() => data.storyLength = 'standard'),
                         band: band,
                       ),
-                      SizedBox(width: band.space(8)),
                       _LengthChip(
                         label: _lengthLabelForBand('epic', band),
                         isSelected: data.storyLength == 'epic',
@@ -2121,8 +2124,8 @@ class _SummaryRow extends StatelessWidget {
                   // Leading Avatar or Icon
                   if (leadingAvatar != null) ...[
                     SizedBox(
-                      width: band.touchTarget(32),
-                      height: band.touchTarget(32),
+                      width: 36,
+                      height: 36,
                       child: leadingAvatar!,
                     ),
                     SizedBox(width: band.space(12)),

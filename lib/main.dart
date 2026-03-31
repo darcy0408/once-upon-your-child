@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'config/environment.dart';
 import 'main_story.dart';
 import 'services/app_tts_service.dart';
 import 'services/isar_service.dart';
@@ -17,8 +18,7 @@ import 'screens/times_up_screen.dart';
 Future<void> main() async {
   await SentryFlutter.init(
     (options) {
-      options.dsn =
-          'https://56313041925cdc0d25e6f83dd9f5529b@o4510948068491264.ingest.us.sentry.io/4510948091559936';
+      options.dsn = Environment.sentryDsn;
       options.tracesSampleRate = 0.2;
       options.environment = kReleaseMode ? 'production' : 'development';
     },

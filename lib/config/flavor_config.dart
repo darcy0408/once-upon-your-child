@@ -16,6 +16,7 @@ class FlavorConfig {
   final String bannerLabel;
   final Color bannerColor;
   final String geminiApiKey;
+  final String sentryDsn;
 
   bool get showBanner => bannerLabel.isNotEmpty;
 
@@ -27,6 +28,7 @@ class FlavorConfig {
     required this.bannerLabel,
     required this.bannerColor,
     required this.geminiApiKey,
+    required this.sentryDsn,
   });
 
   static FlavorConfig? _instance;
@@ -61,6 +63,11 @@ class FlavorConfig {
             'PROD_GEMINI_API_KEY',
             defaultValue: '',
           ),
+          sentryDsn: const String.fromEnvironment(
+            'SENTRY_DSN',
+            defaultValue:
+                'https://56313041925cdc0d25e6f83dd9f5529b@o4510948068491264.ingest.us.sentry.io/4510948091559936',
+          ),
         );
       case 'staging':
         const stagingBackend =
@@ -78,6 +85,11 @@ class FlavorConfig {
           geminiApiKey: const String.fromEnvironment(
             'STAGING_GEMINI_API_KEY',
             defaultValue: '',
+          ),
+          sentryDsn: const String.fromEnvironment(
+            'SENTRY_DSN',
+            defaultValue:
+                'https://56313041925cdc0d25e6f83dd9f5529b@o4510948068491264.ingest.us.sentry.io/4510948091559936',
           ),
         );
       default:
@@ -99,6 +111,11 @@ class FlavorConfig {
           geminiApiKey: const String.fromEnvironment(
             'DEV_GEMINI_API_KEY',
             defaultValue: '',
+          ),
+          sentryDsn: const String.fromEnvironment(
+            'SENTRY_DSN',
+            defaultValue:
+                'https://56313041925cdc0d25e6f83dd9f5529b@o4510948068491264.ingest.us.sentry.io/4510948091559936',
           ),
         );
     }
