@@ -428,7 +428,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
             const SizedBox(height: AppSpacing.sm),
             Container(
               width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 54, maxHeight: 54),
+              constraints: const BoxConstraints(minHeight: 54),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.36),

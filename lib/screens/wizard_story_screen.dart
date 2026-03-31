@@ -309,6 +309,11 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           fit: BoxFit.scaleDown,
                           child: Builder(
                             builder: (context) {
+                              // Sprout: use emoji icons so pre-readers can
+                              // track their progress without reading text.
+                              final sproutIcons = band.band == AgeBand.sprout
+                                  ? const <String>['⭐', '🐉', '🌈', '✨']
+                                  : null;
                               final stepLabels = band.band == AgeBand.sprout
                                   ? <String>[
                                       'My Hero!',
@@ -342,6 +347,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                   currentStep: _progressStep,
                                   totalSteps: 4,
                                   stepLabels: stepLabels,
+                                  stepIcons: sproutIcons,
                                   onStepTap: (step) {
                                     if (_currentStep == 0) {
                                       setState(() {

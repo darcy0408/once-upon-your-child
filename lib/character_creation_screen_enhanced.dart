@@ -921,6 +921,7 @@ class _CharacterCreationScreenEnhancedState
             filled: true,
             fillColor: Colors.grey[50],
             prefixIcon: const Icon(Icons.badge),
+            counterText: '',
           ),
           maxLength: 50,
           validator: (v) =>

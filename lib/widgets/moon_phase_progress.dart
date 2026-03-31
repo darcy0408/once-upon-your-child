@@ -10,6 +10,10 @@ class MoonPhaseProgress extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
   final List<String> stepLabels;
+  /// Optional illustrated icons (emoji strings) shown instead of text labels.
+  /// When provided, each step shows a large emoji rather than the text label.
+  /// Intended for Sprout band where children cannot read the labels.
+  final List<String>? stepIcons;
   final bool showLabels;
   final ValueChanged<int>? onStepTap;
 
@@ -22,6 +26,7 @@ class MoonPhaseProgress extends StatelessWidget {
       'Step 2: Pick a companion',
       'Step 3: Begin',
     ],
+    this.stepIcons,
     this.showLabels = true,
     this.onStepTap,
   });
@@ -66,20 +71,37 @@ class MoonPhaseProgress extends StatelessWidget {
               ),
               if (showLabels) ...[
                 const SizedBox(height: 5),
-                SizedBox(
-                  width: 76,
-                  child: Text(
-                    shortLabels[index],
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: _stepLabelStyle(
-                      band,
-                      isActive: isActive,
-                      isCompleted: isCompleted,
+                if (stepIcons != null && index < stepIcons!.length)
+                  // Illustrated icon mode (Sprout band): big emoji, no text
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      stepIcons![index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: isActive ? 22 : 17,
+                        // Fade non-active icons for non-done steps
+                        color: isCompleted || isActive
+                            ? null
+                            : Colors.white.withValues(alpha: 0.35),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: 76,
+                    child: Text(
+                      shortLabels[index],
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _stepLabelStyle(
+                        band,
+                        isActive: isActive,
+                        isCompleted: isCompleted,
+                      ),
                     ),
                   ),
-                ),
               ],
             ],
           );
