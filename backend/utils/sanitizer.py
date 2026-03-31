@@ -29,6 +29,8 @@ _INJECTION_PATTERNS = [
     re.compile(r'^\s*\[INST\]', re.I),
     re.compile(r'^\s*<\|im_start\|>', re.I),
     re.compile(r'```\s*(system|instruction|prompt)', re.I),
+    re.compile(r'new\s+(instruction|rule|prompt|system)', re.I),
+    re.compile(r'respond\s+as\s+if\s+you', re.I),
 ]
 
 

@@ -32,7 +32,7 @@ def _get_jwt_secret():
     secret = os.getenv('JWT_SECRET_KEY')
     if not secret or secret == 'dev-secret-key':
         # In production, this should never happen
-        if os.getenv('FLASK_ENV') in ('prod', 'production'):
+        if os.getenv('FLASK_ENV', 'production') in ('prod', 'production'):
             logger.error("JWT_SECRET_KEY not properly configured in production!")
             raise ValueError("JWT_SECRET_KEY must be set in production")
         # In dev, allow but warn

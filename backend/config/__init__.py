@@ -128,8 +128,15 @@ class Config:
         """Get allowed CORS origins based on environment"""
         base_origins = [
             "https://story-weaver-app.netlify.app",
-            "https://*.netlify.app",  # Allow Netlify preview deploys
+            # SECURITY: Do NOT use "https://*.netlify.app" — it allows any
+            # Netlify project to make authenticated cross-origin requests.
+            # For preview deploys, set PREVIEW_DEPLOY_URL in the environment.
         ]
+
+        # Allow a specific preview-deploy URL (e.g. set by CI for each PR).
+        preview_url = os.environ.get('PREVIEW_DEPLOY_URL')
+        if preview_url and preview_url.startswith('https://') and 'netlify.app' in preview_url:
+            base_origins.append(preview_url)
 
         # Add Railway frontend URL if available
         railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')

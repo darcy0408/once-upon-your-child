@@ -206,6 +206,7 @@ def _build_feelings_prompt_text(
 
     try:
         numeric_age = int(age)
+        numeric_age = max(2, min(120, numeric_age))
     except (TypeError, ValueError):
         numeric_age = 5
 
@@ -417,7 +418,10 @@ def create_story_blueprint(
             resolved_age = character_details.get("age")
         if resolved_age is None:
             resolved_age = 5
-
+        try:
+            resolved_age = max(2, min(120, int(resolved_age)))
+        except (TypeError, ValueError):
+            resolved_age = 5
 
         task_kwargs = {
             "character_id": payload.get("character_id"),
@@ -727,7 +731,10 @@ def create_story_blueprint(
         theme = payload.get("theme", "Adventure")
         tone = payload.get("tone", "whimsical")
         length = payload.get("length", "medium")
-        age = payload.get("age")
+        try:
+            age = max(2, min(120, int(payload.get("age") or 5)))
+        except (TypeError, ValueError):
+            age = 5
         interests = payload.get("interests")
         must_include = payload.get("must_include")
         avoid = payload.get("avoid")

@@ -96,7 +96,14 @@ def create_avatar_blueprint(limiter):
                 }), 400
 
             photo_file = request.files['photo']
-            photo_bytes = photo_file.read()
+            _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+            photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
+            if len(photo_bytes) > _MAX_PHOTO_BYTES:
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'PHOTO_TOO_LARGE',
+                    'message': 'Photo must be under 10 MB',
+                }), 413
 
             # Extract other data from form
             character_name = request.form.get('character_name')
@@ -191,7 +198,14 @@ def create_avatar_blueprint(limiter):
                 }), 400
 
             photo_file = request.files['photo']
-            photo_bytes = photo_file.read()
+            _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+            photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
+            if len(photo_bytes) > _MAX_PHOTO_BYTES:
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'PHOTO_TOO_LARGE',
+                    'message': 'Photo must be under 10 MB',
+                }), 413
 
             # Extract other data from form
             pet_name = request.form.get('pet_name')
