@@ -3682,6 +3682,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final scenarios =
         ScenarioData.all.where((s) => s.id != 'safe_space').toList();
     final isCustom = widget.wizardData.selectedScenario == 'safe_space';
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3700,9 +3702,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: [
             ...scenarios.map((s) {
               final isSelected = widget.wizardData.selectedScenario == s.id;
-              final age = widget.wizardData.characterAge ?? 15;
               return ChoiceChip(
-                label: Text(s.titleForAge(age).toUpperCase()),
+                label: Text(s.titleForBand(band.band).toUpperCase()),
                 selected: isSelected,
                 onSelected: (v) => setState(
                     () => widget.wizardData.selectedScenario = v ? s.id : null),

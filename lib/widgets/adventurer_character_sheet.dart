@@ -33,7 +33,7 @@ class AdventurerCharacterSheet extends StatelessWidget {
     final scenarioCard = wizardData.selectedScenario != null
         ? ScenarioData.getById(wizardData.selectedScenario!)
         : null;
-    final scenarioTitle = scenarioCard?.titleForAge(wizardData.characterAge) ??
+    final scenarioTitle = scenarioCard?.titleForBand(band.band) ??
         wizardData.selectedScenario ??
         'Unknown Mission';
     final missionHook = scenarioCard?.conflictHookForAge(wizardData.characterAge);

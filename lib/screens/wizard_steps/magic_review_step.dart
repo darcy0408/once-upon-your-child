@@ -1025,7 +1025,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
     final scenarioLabel = data.selectedScenario != null
         ? (ScenarioData.getById(data.selectedScenario!)
-                ?.titleForAge(data.characterAge) ??
+                ?.titleForBand(band.band) ??
             data.selectedScenario!)
         : 'Your own adventure';
     final companionLine = data.companionNames.isEmpty
@@ -1205,7 +1205,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final heroName = data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
     final scenarioLabel = data.selectedScenario != null
         ? (ScenarioData.getById(data.selectedScenario!)
-                ?.titleForAge(data.characterAge) ??
+                ?.titleForBand(band.band) ??
             data.selectedScenario!)
         : '—';
 
@@ -2107,7 +2107,9 @@ class _GradientSphereFallback extends StatelessWidget {
               0.6,
               1.0
             ])),
-        child: Center(child: child));
+        child: Center(
+          child: FittedBox(fit: BoxFit.scaleDown, child: child),
+        ));
   }
 }
 
