@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../feelings_wheel_data.dart';
+import '../theme/age_band_asset_resolver.dart';
 import '../theme/age_band_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -649,8 +650,28 @@ class _FaceImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>()?.band;
+    final flatPath = 'assets/feelings_faces/$id.png';
+
+    // Try band-specific artwork first; fall back to global flat library; then emoji.
+    if (band != null) {
+      final bandPath = AgeBandAssetResolver.feelingPath(band, id);
+      return Image.asset(
+        bandPath,
+        height: height,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Image.asset(
+          flatPath,
+          height: height,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) =>
+              Text(emoji, style: TextStyle(fontSize: height * 0.65)),
+        ),
+      );
+    }
+
     return Image.asset(
-      'assets/feelings_faces/$id.png',
+      flatPath,
       height: height,
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) =>

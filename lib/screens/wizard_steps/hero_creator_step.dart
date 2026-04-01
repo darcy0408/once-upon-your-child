@@ -979,7 +979,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  /// Temporary adventure team placeholder — replaced when companion grid is built.
   Widget _buildAdventureTeamPage() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -1003,7 +1002,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 16),
           _buildCompanionShowcase(),
           const SizedBox(height: 20),
-          // Companion grid will go here (Task B)
           _buildCompanionGrid(),
           const SizedBox(height: 40),
           _buildNextArrowButton(
@@ -3808,10 +3806,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             Expanded(
               child: _buildBriefDropdown(
                 'TARGET DURATION',
-                widget.wizardData.storyLength.toUpperCase(),
-                ['SHORT', 'MEDIUM', 'LONG'],
+                _lengthToLabel(widget.wizardData.storyLength),
+                ['Short', 'Medium', 'Long'],
                 (v) => setState(
-                    () => widget.wizardData.storyLength = v!.toLowerCase()),
+                    () => widget.wizardData.storyLength = _labelToLength(v!)),
               ),
             ),
           ],
@@ -3819,6 +3817,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ],
     );
   }
+
+  /// Map WizardData storyLength ('quick'/'standard'/'epic') → display label.
+  static String _lengthToLabel(String length) => switch (length) {
+        'quick' => 'Short',
+        'epic' => 'Long',
+        _ => 'Medium',
+      };
+
+  /// Map display label back to WizardData storyLength value.
+  static String _labelToLength(String label) => switch (label) {
+        'Short' => 'quick',
+        'Long' => 'epic',
+        _ => 'standard',
+      };
 
   Widget _buildBriefDropdown(String label, String value, List<String> options,
       ValueChanged<String?> onChanged) {
