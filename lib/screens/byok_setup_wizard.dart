@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/illustration_preference_service.dart';
+import '../services/secure_storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
@@ -59,60 +62,107 @@ class _ByokSetupWizardScreenState extends State<ByokSetupWizardScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFF120226),
       appBar: AppBar(
-        title: const Text('Use Your Own API Key'),
+        backgroundColor: const Color(0xFF2C1B47),
+        foregroundColor: const Color(0xFFFFD54F),
+        elevation: 0,
+        title: const Text(
+          'Use Your Own API Key',
+          style: TextStyle(
+            color: Color(0xFFFFD54F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFFFFD54F)),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            AppStepIndicator(
-              totalSteps: steps.length,
-              currentStep: _step + 1,
-              labels: const ['Benefits', 'Get Key', 'Enter Key'],
-            ),
-            const SizedBox(height: 12),
-            Expanded(child: steps[_step]),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF2C1B47), Color(0xFF120226)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              AppStepIndicator(
+                totalSteps: steps.length,
+                currentStep: _step + 1,
+                labels: const ['Benefits', 'Get Key', 'Enter Key'],
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: steps[_step]),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _BenefitsStep extends StatelessWidget {
+class _BenefitsStep extends StatefulWidget {
   const _BenefitsStep({required this.onNext});
-
   final VoidCallback onNext;
+
+  @override
+  State<_BenefitsStep> createState() => _BenefitsStepState();
+}
+
+class _BenefitsStepState extends State<_BenefitsStep> {
+  static const _gold = Color(0xFFFFD54F);
+  static const _goldLight = Color(0xFFFFE082);
+  static const _white70 = Color(0xB3FFFFFF);
+
+  IllustrationPreference _preference = IllustrationPreference.full;
+
+  @override
+  void initState() {
+    super.initState();
+    IllustrationPreferenceService.load()
+        .then((p) { if (mounted) setState(() => _preference = p); });
+  }
+
+  Future<void> _setPreference(IllustrationPreference p) async {
+    setState(() => _preference = p);
+    await IllustrationPreferenceService.save(p);
+  }
 
   @override
   Widget build(BuildContext context) {
     const benefits = [
       (
         '🧒',
-        'A Pixar-style cartoon hero of YOUR child',
-        'Create a character that actually looks like your kid.'
+        'A cartoon portrait that\'s uniquely your child',
+        'Generate a Pixar-style character that actually looks like your child — stored only on your phone and never shared with anyone.'
       ),
       (
         '🖼️',
-        'More story illustrations',
-        'Scenes are generated using your child hero across the adventure.'
+        'Story illustrations starring your child',
+        'Every adventure comes to life with beautiful scenes showing YOUR child as the hero of the story.'
       ),
       (
         '🎨',
-        'Coloring pages from your own story scenes',
-        'Turn those illustrations into printable coloring pages.'
+        'Printable coloring pages from their own story',
+        'Turn your child\'s story scenes into coloring pages they can print and bring to life with crayons.'
       ),
-      ('📖', 'Unlimited stories', 'No daily caps, so kids can keep creating.'),
+      (
+        '📖',
+        'Unlimited stories, whenever inspiration strikes',
+        'No daily caps or waiting — your child can keep creating stories as often as they like.'
+      ),
       (
         '🎭',
-        'Interactive choices',
-        'Pick-a-path mode lets your child guide what happens next.'
+        'Choose-your-own-adventure mode',
+        'Your child decides what happens next, making every story a unique adventure they helped write.'
       ),
     ];
 
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -123,75 +173,156 @@ class _BenefitsStep extends StatelessWidget {
                 children: [
                   Text(
                     'Give your child the full experience',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'BYOK unlocks premium features with your own Google key.\nMost families spend about \$0.10–0.50/month.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _gold,
                         ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
+                  const Text(
+                    'Connect your free Google AI key to unlock everything below.\nMost families spend nothing at all — Google\'s free tier covers everyday use.',
+                    style: TextStyle(color: _white70, fontSize: 13, height: 1.5),
+                  ),
                   const SizedBox(height: AppSpacing.md),
-                  AppCard(
-                    color: AppColors.secondary.withValues(alpha: 0.1),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: _gold.withAlpha(60), width: 1),
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: benefits
-                          .map(
-                            (b) => Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: AppSpacing.sm, top: AppSpacing.xs),
-                              child: Row(
+                      children: benefits.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final b = entry.value;
+                        return Container(
+                          decoration: BoxDecoration(
+                            border: i < benefits.length - 1
+                                ? Border(
+                                    bottom: BorderSide(
+                                        color: Colors.white.withAlpha(20)))
+                                : null,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(b.$1,
+                                  style: const TextStyle(fontSize: 24)),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(b.$2,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: _goldLight)),
+                                    const SizedBox(height: 2),
+                                    Text(b.$3,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: _white70,
+                                            height: 1.4)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // ── Illustration preference picker ─────────────────────────
+                  Text(
+                    'Illustration settings',
+                    style: TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...IllustrationPreference.values.map((option) {
+                    final selected = _preference == option;
+                    return GestureDetector(
+                      onTap: () => _setPreference(option),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? _gold.withAlpha(30)
+                              : Colors.white.withAlpha(10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected
+                                ? _gold
+                                : Colors.white.withAlpha(40),
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(option.emoji,
+                                style: const TextStyle(fontSize: 20)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(b.$1,
-                                      style: const TextStyle(fontSize: 22)),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(b.$2,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14)),
-                                        Text(b.$3,
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600])),
-                                      ],
+                                  Text(
+                                    option.label,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: selected ? _gold : _goldLight,
                                     ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    option.description,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: _white70,
+                                        height: 1.3),
                                   ),
                                 ],
                               ),
                             ),
-                          )
-                          .toList(),
-                    ),
-                  ),
+                            if (selected)
+                              const Icon(Icons.check_circle,
+                                  color: _gold, size: 18),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.3)),
+                      color: Colors.green.withAlpha(30),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.green.withAlpha(80)),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const Icon(Icons.lock, color: Colors.green, size: 16),
-                        const SizedBox(width: 8),
+                        Icon(Icons.lock_outline, color: Colors.greenAccent, size: 16),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Your key stays on your device. We never see it.',
+                            'Your key stays on your device. We never see it or store it.',
                             style: TextStyle(
-                                fontSize: 12, color: Colors.green[800]),
+                                fontSize: 12,
+                                color: Colors.greenAccent,
+                                height: 1.4),
                           ),
                         ),
                       ],
@@ -204,7 +335,7 @@ class _BenefitsStep extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           AppButton.primary(
             label: 'Next: Get My Free Key',
-            onPressed: onNext,
+            onPressed: widget.onNext,
             icon: Icons.arrow_forward,
           ),
         ],
@@ -438,7 +569,14 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                       : () async {
                           await _validate();
                           if (_valid) {
-                            widget.onDone(_controller.text.trim());
+                            final key = _controller.text.trim();
+                            // Persist key here so it's saved regardless of
+                            // which caller launched the wizard.
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('use_own_api_key', true);
+                            await prefs.setBool('is_premium_byok', true);
+                            await SecureStorageService.saveApiKey('gemini', key);
+                            if (mounted) widget.onDone(key);
                           }
                         },
                   icon: Icons.check,
