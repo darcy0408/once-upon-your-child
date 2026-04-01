@@ -100,6 +100,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
   late TextEditingController _friendNameController;
+  // Sprout band: pet card is hidden until a grown-up reveals it
+  bool _showPetCardForSprout = false;
 
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
   void _logPageView(int pageIndex) {
@@ -272,11 +274,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // ─── Navigation Helpers ──────────────────────────────────────────────────────
   void _notifySubStep() {
     final int step;
-    if (_heroPage < 3) {
-      step = 0; // Create Hero
-    } else if (_heroPage == 3) {
-      step = 1; // Pick Team
+    if (_heroPage < 4) {
+      step = 0; // Create Hero (pages 0–3)
     } else if (_heroPage == 4) {
+      step = 1; // Pick Team
+    } else if (_heroPage == 5) {
       step = 2; // Pick Place
     } else {
       step = 3; // Make Magic
@@ -317,7 +319,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _heroNextPage() {
-    if (_heroPage < 5) {
+    if (_heroPage < 6) {
       _triggerPageCelebration();
       _heroPageController.nextPage(
         duration: const Duration(milliseconds: 400),
@@ -373,12 +375,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   void _jumpToSubStep(int subStep) {
     final targetPage = switch (subStep) {
       0 => 1, // Create Hero
-      1 => 3, // Pick Team
-      2 => 4, // Pick Place
-      _ => 5, // Make Magic
+      1 => 4, // Pick Team
+      2 => 5, // Pick Place
+      _ => 6, // Make Magic
     };
     if (!_heroPageController.hasClients) return;
-    final clampedTarget = targetPage.clamp(0, 5);
+    final clampedTarget = targetPage.clamp(0, 6);
     _heroPageController.animateToPage(
       clampedTarget,
       duration: const Duration(milliseconds: 280),
@@ -479,19 +481,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Read the archetype name aloud for young children.
     unawaited(_speakForSprout(archetype.nameForAge(widget.wizardData.characterAge)));
 
-    // Step flow on page 2:
-    // 1) Pick avatar and archetype in any order.
-    // 2) Auto-advance once both are selected.
-    if (_heroPage != 2) return;
-    if (_hasAvatar) {
-      _heroNextPage();
-    }
-    // No forced redirect — let kids pick archetype first, then choose their look.
+    // Page 3 is archetype-only — auto-advance once an archetype is chosen.
+    if (_heroPage != 3) return;
+    _heroNextPage();
   }
 
   void _maybeAdvanceFromStylePage() {
+    // Page 2 is avatar-only — auto-advance once the avatar is chosen.
     if (!mounted || _heroPage != 2) return;
-    if (_hasAvatar && _selectedArchetypeId != null) {
+    if (_hasAvatar) {
       _heroNextPage();
     }
   }
@@ -723,7 +721,64 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   // Page 2: "Pick your hero style!" — archetype selection
+  // Page 2: Choose your look (avatar only)
   Widget _buildPage2() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final band = Theme.of(context).extension<AgeBandThemeData>() ??
+                  explorerTheme;
+              final isCreator = band.band == AgeBand.creator;
+              final title = isCreator ? 'Design your character' : 'Pick your hero\'s look!';
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const MagicEarButton(
+                    spokenText:
+                        "Pick your hero's look! Tap the button to choose one.",
+                    size: 32,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(title,
+                      textAlign: TextAlign.center,
+                      style: _bandTitleStyle(band, baseFontSize: 22)),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          _buildAvatarLookCard(),
+          const SizedBox(height: 20),
+          Builder(builder: (context) {
+            final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                explorerTheme;
+            if (b.band == AgeBand.sprout) return const SizedBox.shrink();
+            return Text(
+              _hasAvatar
+                  ? 'Great! Tap Next to pick your hero style.'
+                  : 'Choose a look before you continue.',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              textAlign: TextAlign.center,
+            );
+          }),
+          const SizedBox(height: 16),
+          _buildNextArrowButton(
+            enabled: _hasAvatar,
+            onTap: _heroNextPage,
+            hint: 'Next: Pick Hero Style',
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // Page 3: Pick your hero style (archetype only)
+  Widget _buildPage3() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -743,7 +798,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 children: [
                   const MagicEarButton(
                     spokenText:
-                        "Pick your hero's look! Swipe through the pictures and tap the one you like.",
+                        "Pick your hero's style! Swipe through the pictures and tap the one you like.",
                     size: 32,
                   ),
                   const SizedBox(width: 8),
@@ -755,34 +810,34 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             },
           ),
           const SizedBox(height: 12),
-          _buildAvatarLookCard(),
-          const SizedBox(height: 14),
           _buildArchetypeCards(),
           const SizedBox(height: 20),
           Builder(builder: (context) {
             final b = Theme.of(context).extension<AgeBandThemeData>() ??
                 explorerTheme;
             if (b.band == AgeBand.sprout) return const SizedBox.shrink();
-            final bothDone = _hasAvatar && _selectedArchetypeId != null;
-            final eitherDone = _hasAvatar || _selectedArchetypeId != null;
             return Text(
-              bothDone
+              _selectedArchetypeId != null
                   ? 'You\'re all set! Tap Next to continue.'
-                  : eitherDone
-                      ? 'Now pick the other one and you\'re ready!'
-                      : 'Choose a look and a style — tap either one first!',
+                  : 'Tap a hero style to continue.',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
               textAlign: TextAlign.center,
             );
           }),
+          const SizedBox(height: 16),
+          _buildNextArrowButton(
+            enabled: _selectedArchetypeId != null,
+            onTap: _heroNextPage,
+            hint: 'Next: Pick Your Team',
+          ),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  // Page 3: "Who's coming with you?" (Adventure Team — companions + pets)
-  Widget _buildPage3() {
+  // Page 4: "Who's coming with you?" (Adventure Team — companions + pets)
+  Widget _buildPage4Companions() {
     return _buildAdventureTeamPage();
   }
 
@@ -994,110 +1049,146 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           maxCompanions: band.band == AgeBand.sprout ? 1 : 3,
         ),
         const SizedBox(height: 16),
-        // ── Bring a friend by name (free) ─────────────────────────────────────
-        // Divider separates magic companion grid from custom-name entry.
-        Row(
-          children: [
-            const Expanded(child: Divider(color: Colors.white24)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                '...or bring someone along',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-            ),
-            const Expanded(child: Divider(color: Colors.white24)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Type a friend\'s name and they\'ll be part of your story.',
-          style: TextStyle(color: Colors.white60, fontSize: 12),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _friendNameController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  hintText: 'Friend\'s name...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white12,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onSubmitted: (_) => _addFriendByName(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (_speechAvailable)
-              IconButton(
-                tooltip: 'Say a friend\'s name',
-                icon: Icon(
-                  _listeningFor == 'friend' ? Icons.mic : Icons.mic_none,
-                  color: _listeningFor == 'friend'
-                      ? Colors.yellow
-                      : Colors.white70,
-                ),
-                onPressed: () => _toggleListening('friend'),
-              ),
-            const SizedBox(width: 4),
-            ElevatedButton(
-              onPressed: _addFriendByName,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C4DFF),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+        // ── Bring a friend by name — hidden for Sprout band ────────────────────
+        if (band.band != AgeBand.sprout) ...[
+          Row(
+            children: [
+              const Expanded(child: Divider(color: Colors.white24)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  '...or bring someone along',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-        if (widget.wizardData.additionalCharacters.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: widget.wizardData.additionalCharacters.map((name) {
-              return Chip(
-                label: Text(
-                  name,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-                backgroundColor: const Color(0xFF7C4DFF).withValues(alpha: 0.6),
-                deleteIconColor: Colors.white70,
-                onDeleted: () => setState(() {
-                  widget.wizardData.additionalCharacters.remove(name);
-                }),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-              );
-            }).toList(),
+              const Expanded(child: Divider(color: Colors.white24)),
+            ],
           ),
+          const SizedBox(height: 10),
+          const Text(
+            'Type a friend\'s name and they\'ll be part of your story.',
+            style: TextStyle(color: Colors.white60, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _friendNameController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Friend\'s name...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white12,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => _addFriendByName(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (_speechAvailable)
+                IconButton(
+                  tooltip: 'Say a friend\'s name',
+                  icon: Icon(
+                    _listeningFor == 'friend' ? Icons.mic : Icons.mic_none,
+                    color: _listeningFor == 'friend'
+                        ? Colors.yellow
+                        : Colors.white70,
+                  ),
+                  onPressed: () => _toggleListening('friend'),
+                ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                onPressed: _addFriendByName,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C4DFF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+          if (widget.wizardData.additionalCharacters.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: widget.wizardData.additionalCharacters.map((name) {
+                return Chip(
+                  label: Text(
+                    name,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                  backgroundColor: const Color(0xFF7C4DFF).withValues(alpha: 0.6),
+                  deleteIconColor: Colors.white70,
+                  onDeleted: () => setState(() {
+                    widget.wizardData.additionalCharacters.remove(name);
+                  }),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                );
+              }).toList(),
+            ),
+          ],
+          const SizedBox(height: 16),
         ],
-        const SizedBox(height: 16),
         // ── Pet card (photo + name/species/color) ──────────────────────────────
-        _PetCard(
-          wizardData: widget.wizardData,
-          onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
-          onChanged: () => setState(() {}),
-        ),
+        if (band.band == AgeBand.sprout) ...[
+          // Sprout: show a simple grown-up prompt instead of the full pet card
+          if (!_showPetCardForSprout)
+            GestureDetector(
+              onTap: () => setState(() => _showPetCardForSprout = true),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('🐾', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Ask a grown-up to add your real pet!',
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            _PetCard(
+              wizardData: widget.wizardData,
+              onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
+              onChanged: () => setState(() {}),
+            ),
+        ] else
+          _PetCard(
+            wizardData: widget.wizardData,
+            onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
+            onChanged: () => setState(() {}),
+          ),
         const SizedBox(height: 8),
         if (_isPetAvatarGenerating)
           Row(
@@ -1346,9 +1437,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  // Page 4: "Where will your adventure happen?" (Scene selection)
+  // Page 5: "Where will your adventure happen?" (Scene selection)
 
-  Widget _buildPage4() {
+  Widget _buildPage5() {
     final age = widget.wizardData.characterAge;
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -1795,8 +1886,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
-  // Page 5: "What kind of story?"
-  Widget _buildPage5() {
+  // Page 6: "What kind of story?"
+  Widget _buildPage6() {
     final data = widget.wizardData;
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -2701,8 +2792,96 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Sprout/Explorer see 4 age-appropriate archetypes; older bands get all 6.
     final archetypes = CharacterArchetypes.forBand(ageBand);
 
-    // Sprout & Explorer: 2-column grid — image-dominant cards.
-    if (ageBand == AgeBand.sprout || ageBand == AgeBand.explorer) {
+    // Sprout: 3-card row — one choice per personality type, less overwhelming.
+    // Explorer: 2-column grid (has more archetypes).
+    if (ageBand == AgeBand.sprout) {
+      return Row(
+        children: List.generate(archetypes.length, (index) {
+          final a = archetypes[index];
+          final isSelected = _selectedArchetypeId == a.name;
+
+          Widget card = Semantics(
+            button: true,
+            selected: isSelected,
+            label: 'Role: ${a.name}',
+            hint: isSelected
+                ? 'Currently selected. Double tap to keep this role.'
+                : 'Double tap to select this role for your hero.',
+            child: AspectRatio(
+              aspectRatio: 0.85,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: isSelected ? 3 : 2,
+                  ),
+                  boxShadow: isSelected
+                      ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                      : [],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(color: const Color(0xFF1A0A2E)),
+                      if (a.imagePathForBand(ageBand) != null)
+                        Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.cover, alignment: Alignment.topCenter)
+                      else
+                        Icon(Icons.star, color: const Color(0xFFFFD700), size: 40),
+                      Positioned(
+                        bottom: 4, left: 4, right: 4,
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(150),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              a.nameForAge(widget.wizardData.characterAge),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.fredoka(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          card = BounceOnTapWidget(
+            onTap: () => _selectArchetype(a),
+            child: isSelected
+                ? card
+                : WiggleWidget(
+                    repeat: true,
+                    angle: 0.04,
+                    duration: const Duration(milliseconds: 700),
+                    delayMs: index * 300,
+                    child: card,
+                  ),
+          );
+
+          return index == 0
+              ? Expanded(child: card)
+              : Expanded(child: Padding(padding: const EdgeInsets.only(left: 10), child: card));
+        }),
+      );
+    }
+
+    if (ageBand == AgeBand.explorer) {
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -2716,7 +2895,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         itemBuilder: (context, index) {
           final a = archetypes[index];
           final isSelected = _selectedArchetypeId == a.name;
-          final isSprout = ageBand == AgeBand.sprout;
+          const isSprout = false;
 
           Widget card = Semantics(
             button: true,
@@ -2797,7 +2976,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.fredoka(
                               color: Colors.white,
-                              fontSize: isSprout ? 13 : 12,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -2810,24 +2989,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           );
 
-          // Sprout: wrap in BounceOnTapWidget for satisfying tap feedback,
-          // and add a staggered WiggleWidget on unselected cards to feel alive.
-          if (isSprout) {
-            card = BounceOnTapWidget(
-              onTap: () => _selectArchetype(a),
-              child: isSelected
-                  ? card
-                  : WiggleWidget(
-                      repeat: true,
-                      angle: 0.04,
-                      duration: const Duration(milliseconds: 700),
-                      delayMs: index * 300,
-                      child: card,
-                    ),
-            );
-          } else {
-            card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
-          }
+          card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
 
           return card;
         },
@@ -3115,8 +3277,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _buildPage1(),
                   _buildPage2(),
                   _buildPage3(),
-                  _buildPage4(),
+                  _buildPage4Companions(),
                   _buildPage5(),
+                  _buildPage6(),
                 ],
               ),
             if (!isTeen && _heroPage > 0)
@@ -3763,18 +3926,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       // Sprout — full guided TTS on every page
       final prompt = switch (page) {
         1 => "What is your hero's name? Tap the microphone to say it!",
-        2 => "Who is your hero? Tap the one you like!",
-        3 => "Tap your buddies to bring them along!",
-        4 => "Where should we go? Tap the picture you want.",
-        5 => "You are all set! Tap Make Magic!",
+        2 => "Pick your hero's look! Tap Choose Look to pick one.",
+        3 => "Who is your hero? Tap the one you like!",
+        4 => "Tap your buddies to bring them along!",
+        5 => "Where should we go? Tap the picture you want.",
+        6 => "You are all set! Tap Make Magic!",
         _ => null,
       };
       if (prompt != null) await _speakForSprout(prompt);
     } else {
       // Older bands — warm narrator voice on archetype + companion pages only
       final prompt = switch (page) {
-        2 => "Choose your hero's path!",
-        3 => "Who will join you on your quest?",
+        3 => "Choose your hero's path!",
+        4 => "Who will join you on your quest?",
         _ => null,
       };
       if (prompt != null) {
@@ -3910,12 +4074,15 @@ class _CompanionData {
   /// Explicit asset path — bypasses the `_normal.jpg` convention.
   /// Required for companions whose assets don't follow the standard naming.
   final String? imagePathOverride;
+  /// Background colour shown inside the circle behind the companion image.
+  final Color? backgroundColor;
   const _CompanionData({
     required this.id,
     required this.name,
     required this.tagline,
     this.personality = '',
     this.imagePathOverride,
+    this.backgroundColor,
   });
 
   String get imagePath =>
@@ -4051,24 +4218,28 @@ const _sproutCompanions = [
     name: 'Fluffy Dragon',
     tagline: 'Brave hugs and sparkly sneezes.',
     imagePathOverride: 'assets/images/companions/sprout/fluffy_dragon.png',
+    backgroundColor: Color(0xFF7E57C2), // soft purple
   ),
   _CompanionData(
     id: 'sprout/magic_bunny',
     name: 'Magic Bunny',
     tagline: 'Boing! Your silly, soft best friend.',
     imagePathOverride: 'assets/images/companions/sprout/magic_bunny.png',
+    backgroundColor: Color(0xFFEC407A), // soft pink
   ),
   _CompanionData(
     id: 'sprout/shining_puppy',
     name: 'Shining Puppy',
     tagline: 'Glowy tail. Always there for you.',
     imagePathOverride: 'assets/images/companions/sprout/shining_puppy.png',
+    backgroundColor: Color(0xFFF9A825), // warm gold
   ),
   _CompanionData(
     id: 'sprout/robin',
     name: 'Robin',
     tagline: 'Tiny bird, very loud love.',
     imagePathOverride: 'assets/images/companions/sprout/robin.png',
+    backgroundColor: Color(0xFF388E3C), // forest green
   ),
 ];
 
@@ -4175,14 +4346,22 @@ class _CompanionImageGrid extends StatelessWidget {
           isSelected: isSelected,
           size: itemSize,
           imagePath: c.imagePath,
+          backgroundColor: c.backgroundColor,
           onTap: () {
             if (isSelected) {
               wizardData.companionNames.remove(c.name);
               wizardData.selectedCompanions.remove(c.id);
-            } else if (wizardData.companionNames.length < maxCompanions) {
-              wizardData.companionNames.add(c.name);
-              wizardData.selectedCompanions.add(c.id);
-              onCompanionTapped?.call(c.name);
+            } else {
+              if (maxCompanions == 1) {
+                // Radio-button behaviour: replace the existing pick instantly
+                wizardData.companionNames.clear();
+                wizardData.selectedCompanions.clear();
+              }
+              if (wizardData.companionNames.length < maxCompanions) {
+                wizardData.companionNames.add(c.name);
+                wizardData.selectedCompanions.add(c.id);
+                onCompanionTapped?.call(c.name);
+              }
             }
             onChanged();
           },
@@ -4256,6 +4435,8 @@ class _CompanionImageButton extends StatefulWidget {
   final double? size; // Override theme-derived size
   /// Override the default image path (used for band-specific companion assets).
   final String? imagePath;
+  /// Background colour rendered inside the circle behind the companion image.
+  final Color? backgroundColor;
 
   const _CompanionImageButton({
     required this.id,
@@ -4266,20 +4447,45 @@ class _CompanionImageButton extends StatefulWidget {
     this.photoBase64,
     this.size,
     this.imagePath,
+    this.backgroundColor,
   });
 
   @override
   State<_CompanionImageButton> createState() => _CompanionImageButtonState();
 }
 
-class _CompanionImageButtonState extends State<_CompanionImageButton> {
+class _CompanionImageButtonState extends State<_CompanionImageButton>
+    with SingleTickerProviderStateMixin {
   bool _pressed = false;
+  late final AnimationController _floatCtrl;
+  late final Animation<double> _floatAnim;
 
   String get _normalImage =>
       widget.imagePath ?? 'assets/images/companions/${widget.id}_normal.jpg';
   // Companions with an explicit imagePath override have no pressed variant — fall back to normal.
   String get _pressedImage =>
       widget.imagePath ?? 'assets/images/companions/${widget.id}_pressed.jpg';
+
+  @override
+  void initState() {
+    super.initState();
+    _floatCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    // Stagger each companion's float phase using its id hash so they don't
+    // all bob in sync.
+    _floatCtrl.forward(from: (widget.id.hashCode.abs() % 100) / 100.0);
+    _floatAnim = Tween<double>(begin: 0, end: -6).animate(
+      CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _floatCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -4298,17 +4504,22 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 
     Widget imageWidget;
     if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
-      // Real pet photo
+      // Real pet photo — fill the circle
       final bytes = base64Decode(
           widget.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
       imageWidget =
           Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
     } else {
+      // Use BoxFit.contain when a backgroundColor is set (PNG companions with
+      // their own background) so the circle bg shows through transparent edges.
+      // Fall back to BoxFit.cover for legacy _normal.jpg companions designed to
+      // fill the circle.
+      final fit = widget.backgroundColor != null ? BoxFit.contain : BoxFit.cover;
       imageWidget = Image.asset(
         _pressed ? _pressedImage : _normalImage,
         width: size,
         height: size,
-        fit: BoxFit.cover,
+        fit: fit,
         frameBuilder: (ctx, child, frame, _) =>
             frame == null ? SizedBox(width: size, height: size) : child,
         errorBuilder: (_, __, ___) => Container(
@@ -4335,11 +4546,18 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedContainer(
+              AnimatedBuilder(
+                animation: _floatAnim,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(0, widget.isSelected ? 0 : _floatAnim.value),
+                  child: child,
+                ),
+                child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
+                  color: widget.backgroundColor ?? const Color(0xFF3A2363),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: widget.isSelected
@@ -4377,7 +4595,8 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
                       ),
                   ],
                 ),
-              ),
+              ), // AnimatedContainer
+              ), // AnimatedBuilder
               const SizedBox(height: 5),
               Text(
                 widget.name,
