@@ -30,20 +30,21 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
 
   static const _goldColor = Color(0xFFFFD700);
 
-  // Age options: individual ages 3–12, then grouped 13-17 and 18+.
-  static const _ageEntries = <({String label, int value})>[
+  // Ages 3-8: individual big buttons for young children.
+  static const _youngAgeEntries = <({String label, int value})>[
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),
     (label: '6', value: 6),
     (label: '7', value: 7),
     (label: '8', value: 8),
-    (label: '9', value: 9),
-    (label: '10', value: 10),
-    (label: '11', value: 11),
-    (label: '12', value: 12),
-    (label: '13‑14', value: 14),
-    (label: '15‑17', value: 16),
+  ];
+
+  // Older age bands: grouped pill buttons.
+  static const _olderAgeEntries = <({String label, int value})>[
+    (label: '9 – 11', value: 10),
+    (label: '12 – 14', value: 12),
+    (label: '15 – 17', value: 16),
     (label: '18+', value: 21),
   ];
 
@@ -91,33 +92,64 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
                             color: Colors.white70,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    // Big circles for young children (ages 3-8) — 3 columns
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        const spacing = 6.0;
+                        const spacing = 10.0;
+                        const columns = 3;
                         final circleSize =
-                            ((constraints.maxWidth - (spacing * 2)) / 3)
-                                .clamp(50.0, 56.0);
+                            ((constraints.maxWidth - (spacing * (columns - 1))) / columns)
+                                .clamp(72.0, 100.0);
                         return GridView.count(
-                          crossAxisCount: 3,
+                          crossAxisCount: columns,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: spacing,
                           crossAxisSpacing: spacing,
-                          children: _ageEntries.map((entry) {
-                            final selected = _selectedAge == entry.value;
+                          children: _youngAgeEntries.map((entry) {
                             return _AgeCircle(
                               label: entry.label,
                               size: circleSize,
-                              selected: selected,
+                              selected: _selectedAge == entry.value,
                               onTap: _submitting
                                   ? null
-                                  : () => setState(
-                                      () => _selectedAge = entry.value),
+                                  : () => setState(() => _selectedAge = entry.value),
                             );
                           }).toList(),
                         );
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      const Expanded(child: Divider(color: Colors.white24)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'Older?',
+                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: Colors.white24)),
+                    ]),
+                    const SizedBox(height: 10),
+                    // Wider pill buttons for older age bands — 2 per row
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 2.8,
+                      children: _olderAgeEntries.map((entry) {
+                        return _AgeBandButton(
+                          label: entry.label,
+                          selected: _selectedAge == entry.value,
+                          onTap: _submitting
+                              ? null
+                              : () => setState(() => _selectedAge = entry.value),
+                        );
+                      }).toList(),
                     ),
                     const SizedBox(height: 8),
                     // Continue arrow button
@@ -302,6 +334,71 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+}
+
+/// Wide pill button for grouped older age bands (e.g. "9 – 11").
+class _AgeBandButton extends StatefulWidget {
+  const _AgeBandButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  State<_AgeBandButton> createState() => _AgeBandButtonState();
+}
+
+class _AgeBandButtonState extends State<_AgeBandButton> {
+  bool _pressed = false;
+
+  static const _gold = Color(0xFFFFD700);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.93 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A148C), Color(0xFF7B2FBE)],
+            ),
+            border: widget.selected
+                ? Border.all(color: _gold, width: 2.5)
+                : Border.all(color: Colors.white24, width: 1.5),
+            boxShadow: widget.selected
+                ? [BoxShadow(color: _gold.withAlpha(90), blurRadius: 14, spreadRadius: 1)]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: widget.selected ? _gold : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
