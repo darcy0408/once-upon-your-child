@@ -54,28 +54,30 @@ Most items were already resolved from prior sessions:
 
 ---
 
-## 2026-03-31 — Creator Band Bug Fixes: Companions + World Title Mismatch (Claude Sonnet 4.6)
+## 2026-03-31 — Creator Band Bug Fixes: Companions + World Title + Avatar Overflow (Claude Sonnet 4.6)
 
-**Goal:** Fix the two remaining deferred Creator band bugs from the 12yo UX audit.
+**Goal:** Fix the three deferred Creator band bugs from the 12yo UX audit.
 
 ### Fixes Applied
 
 | # | Issue | Fix |
 |---|-------|-----|
 | UX-C1 | No Companions section in Creator accordion | Added `_buildBriefCompanionsInputs()` + `_buildBriefSection('Cast & Companions', ...)` between Personality and World & Setting in `_buildCreativeBrief()`. Reuses existing `_buildCompanionShowcase()` + `_buildCompanionGrid()`. |
-| UX-C3 | World setting chip shows `titleForAge(15)` but review reads `titleForAge(characterAge)` — different strings for same scenario | Fixed `_buildBriefWorldInputs` to use `widget.wizardData.characterAge ?? 15` instead of hardcoded `15` |
-| UX-C2 | RenderFlex overflow on avatar circle in Creator review | Already resolved — `_GradientSphereFallback` has `clipBehavior: Clip.hardEdge`, `_HeroFallbackIdentity` uses Icon(20)/Text(12) which fit in 48×48 |
+| UX-C2 | `_HeroFallbackIdentity` Column overflowed 29 px in 48×48 Creator review avatar cell — Flutter rendered visible "ERFLOWED P" stripe | Added `FittedBox(fit: BoxFit.scaleDown)` inside `_GradientSphereFallback` so icon+initial scale down to fit any container size. Previous claim ("already resolved by Clip.hardEdge") was incorrect — `hardEdge` clips the visual but Flutter still throws and renders the overflow indicator. (8865c23) |
+| UX-C3 | World setting chip and review showed different titles for the same scenario | Root cause: `_buildBriefWorldInputs` chips used `titleForAge(age)` where `age` depends on async SharedPrefs hydration; review also used `titleForAge` — race window meant different `creatorTitle` vs `matureTitle` variants could be returned. Fixed by switching ALL review screens and Creator brief chips to `titleForBand(band.band)`, which is deterministic from the current theme band. (8865c23) |
 
 ### Files Changed
 
 | File | What |
 |------|------|
-| `lib/screens/wizard_steps/hero_creator_step.dart` | Added Cast & Companions accordion section; fixed world title age |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Added Cast & Companions accordion section; `_buildBriefWorldInputs` chips → `titleForBand(band.band)` |
+| `lib/screens/wizard_steps/magic_review_step.dart` | `FittedBox` in `_GradientSphereFallback`; `titleForBand` in Creator + Adolescent review label |
+| `lib/widgets/adventurer_character_sheet.dart` | `titleForBand(band.band)` for scenario heading in Adventurer review |
 
 ### Status
 - [x] UX-C1: Companions section added to Creator accordion
-- [x] UX-C3: World title now matches between chip and review
-- [x] UX-C2: Confirmed already resolved
+- [x] UX-C2: Avatar overflow fixed with `FittedBox(fit: BoxFit.scaleDown)` — 8865c23
+- [x] UX-C3: Scenario title consistent across brief chips + all review screens — 8865c23
 
 ---
 
@@ -331,8 +333,9 @@ Material 3 `FilterChip` and `ChoiceChip` ignore `backgroundColor` in `ChipThemeD
 - [x] Creator (12yo) audit doc saved
 - [x] BUG-04c / BUG-W1: M3 `WidgetStateProperty` chip fix
 - [x] pubspec.yaml stale asset paths removed
-- [ ] UX-C1: Companions tab in Creator accordion — deferred
-- [ ] UX-C2/C3: Review screen stale state + overflow — deferred
+- [x] UX-C1: Companions tab in Creator accordion — fixed (cast section added)
+- [x] UX-C2: Review avatar overflow — `FittedBox` fix (8865c23)
+- [x] UX-C3: Review stale scenario title — `titleForBand` fix (8865c23)
 
 ---
 
