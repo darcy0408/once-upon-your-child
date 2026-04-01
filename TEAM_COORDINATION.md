@@ -1,5 +1,81 @@
 # Team Coordination
 
+## 2026-03-31 — Companion Screen UX + TTS Speed Fix + Robin Image Replacement (Claude Sonnet 4.6)
+
+**Goal:** Fix issues found during a 5-year-old walkthrough of the companion selection screen; fix ElevenLabs speed parameter not reaching the API; replace all 6 band robin images with new illustrated set.
+
+### Companion Screen Improvements (`hero_creator_step.dart`)
+
+| Issue | Fix |
+|-------|-----|
+| Tapping a new companion required unselecting first | `maxCompanions == 1` path now clears selection before adding the new one (radio behaviour) |
+| All companion circles used one dark purple background regardless of animal | Added `backgroundColor: Color?` to `_CompanionData`; dragon=`0xFF7E57C2`, bunny=`0xFFEC407A`, puppy=`0xFFF9A825`, robin=`0xFF388E3C`; passed through to `AnimatedContainer` circle |
+| Companion icons were static | Added `SingleTickerProviderStateMixin` + 2.4 s float animation to `_CompanionImageButtonState`; unselected icons drift up 6 px and back (easeInOut); offset staggered by `id.hashCode` so animals float out of phase |
+| "Bring someone along" friend-name input shown for all ages | Wrapped in `if (band.band != AgeBand.sprout)` — Sprout never sees free-text companion entry |
+| Pet card (BYOP) visible for Sprout unprompted | Replaced with "Ask a grown-up to add a special friend!" tap button that reveals the `_PetCard` on press (`_showPetCardForSprout` bool) |
+
+### TTS Speed Fix
+
+`rateScale` was correctly slowing the on-device FlutterTts fallback but was **not** reaching ElevenLabs — `TtsApiService.synthesize()` had no `speed` parameter, so every cloud-generated phrase played at 1.0×.
+
+Fixed by threading `speed` end-to-end:
+- `AppTtsService.speak()` → passes `speed: rateScale.clamp(0.7, 1.2)` to `TtsApiService.synthesize()`
+- `TtsApiService.synthesize()` → includes `"speed": speed` in JSON body when `speed != 1.0`
+- `backend/routes/tts_routes.py` → reads and clamps speed from request body
+- `backend/elevenlabs_tts_service.py` → passes speed to `VoiceSettings`; defensive try/except so older SDK versions fall back gracefully
+
+Pre-warm phrases updated to include all sprout archetype names and companion names so ElevenLabs is always used for these (never the robotic fallback).
+
+### Robin Image Replacement (All 6 Bands)
+
+New illustrated robin set provided by user — same character (orange-red European robin, teal hamsa beaded necklace) in age-appropriate settings:
+
+| Band | Image | Notes |
+|------|-------|-------|
+| sprout | mushroom/flowers setting | cute, friendly |
+| explorer | magic wand/standing | adventurous |
+| adventurer | forest branch, glitter wings | dynamic |
+| creator | Imagen 4 generated | 1024×1024 — AI regenerated (original source was 745×749); robin with painter's palette |
+| adolescent | forest branch, magical | expressive |
+| adult | dark comic style on fence post | refined |
+
+All images processed through `rembg` for transparent backgrounds. Script saved as `scripts/remove_companion_backgrounds.py`.
+
+Creator robin regenerated separately using **Imagen 4** (`imagen-4.0-generate-001`) to match style of the set. Script saved as `backend/generate_creator_robin.py`.
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Radio companion select; per-companion colors; float animation; sprout pet card button; Sprout archetype grid → 2×2; wiggle/bounce animations for sprout |
+| `lib/services/app_tts_service.dart` | Thread `rateScale` to ElevenLabs `speed`; expand prewarm list |
+| `lib/services/tts_api_service.dart` | Add `speed` param to `synthesize()` |
+| `backend/routes/tts_routes.py` | Read + clamp speed from request body |
+| `backend/elevenlabs_tts_service.py` | Defensive `VoiceSettings(speed=...)` with try/except |
+| `assets/images/companions/*/robin.png` (6 files) | New illustrated robins, transparent backgrounds |
+| `assets/images/companions/sprout/*.png` (3 files) | Background removed via rembg |
+| `scripts/remove_companion_backgrounds.py` | NEW — rembg batch script |
+| `lib/widgets/archetype_card.dart` | `forBand()` returns 4 archetypes for Sprout/Explorer (added `artist` back); 2×2 grid layout for both |
+| `backend/generate_creator_robin.py` | NEW — Imagen 4 creator robin generation script |
+
+### Sprout Archetype Grid Revision
+
+After committing the 3-card Row layout, revised again to a **2×2 GridView** matching Explorer band:
+- Sprout now shows 4 archetypes: Brave Explorer, Lightning Runner, **Art Maker** (restored), Animal Whisperer
+- Cards have `WiggleWidget` (repeat=true, angle=0.04, staggered by 300 ms × index) on unselected items so they animate subtly to catch attention
+- Selected cards wrap in `BounceOnTapWidget` for tactile feedback
+- Label font size bumped to 13 px for sprout readability (vs 12 for explorer)
+
+### Status
+- [x] Companion radio select + colors + animation — committed `95092fe`
+- [x] Sprout pet card button — committed `95092fe`
+- [x] TTS speed fix — committed `b2b8a9b`
+- [x] Robin images (all 6 bands) + rembg — committed `95092fe`
+- [x] Creator robin Imagen 4 regeneration — this commit
+- [x] Sprout archetype 2×2 grid + 4 cards + wiggle animations — this commit
+
+---
+
 ## 2026-03-30 — Age Picker Redesign + BYOK Key-Not-Saved Bug Fix (Claude Sonnet 4.6)
 
 **Goal:** Simplify the first-screen age picker for young children; fix a critical bug where completing the BYOK wizard from any entry point other than Settings never saved the API key.

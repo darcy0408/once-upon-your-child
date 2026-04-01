@@ -2792,96 +2792,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Sprout/Explorer see 4 age-appropriate archetypes; older bands get all 6.
     final archetypes = CharacterArchetypes.forBand(ageBand);
 
-    // Sprout: 3-card row — one choice per personality type, less overwhelming.
-    // Explorer: 2-column grid (has more archetypes).
-    if (ageBand == AgeBand.sprout) {
-      return Row(
-        children: List.generate(archetypes.length, (index) {
-          final a = archetypes[index];
-          final isSelected = _selectedArchetypeId == a.name;
-
-          Widget card = Semantics(
-            button: true,
-            selected: isSelected,
-            label: 'Role: ${a.name}',
-            hint: isSelected
-                ? 'Currently selected. Double tap to keep this role.'
-                : 'Double tap to select this role for your hero.',
-            child: AspectRatio(
-              aspectRatio: 0.85,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                    width: isSelected ? 3 : 2,
-                  ),
-                  boxShadow: isSelected
-                      ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
-                      : [],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Container(color: const Color(0xFF1A0A2E)),
-                      if (a.imagePathForBand(ageBand) != null)
-                        Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.cover, alignment: Alignment.topCenter)
-                      else
-                        Icon(Icons.star, color: const Color(0xFFFFD700), size: 40),
-                      Positioned(
-                        bottom: 4, left: 4, right: 4,
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(150),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              a.nameForAge(widget.wizardData.characterAge),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.fredoka(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          card = BounceOnTapWidget(
-            onTap: () => _selectArchetype(a),
-            child: isSelected
-                ? card
-                : WiggleWidget(
-                    repeat: true,
-                    angle: 0.04,
-                    duration: const Duration(milliseconds: 700),
-                    delayMs: index * 300,
-                    child: card,
-                  ),
-          );
-
-          return index == 0
-              ? Expanded(child: card)
-              : Expanded(child: Padding(padding: const EdgeInsets.only(left: 10), child: card));
-        }),
-      );
-    }
-
-    if (ageBand == AgeBand.explorer) {
+    // Sprout & Explorer: 2×2 grid — image-dominant cards.
+    if (ageBand == AgeBand.sprout || ageBand == AgeBand.explorer) {
+      final isSprout = ageBand == AgeBand.sprout;
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -2895,7 +2808,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         itemBuilder: (context, index) {
           final a = archetypes[index];
           final isSelected = _selectedArchetypeId == a.name;
-          const isSprout = false;
 
           Widget card = Semantics(
             button: true,
@@ -2909,16 +2821,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color:
-                      isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(100),
-                            blurRadius: 12)
-                      ]
+                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
                     : [],
               ),
               child: ClipRRect(
@@ -2926,45 +2833,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Background + illustration fills the whole card.
                     Container(color: const Color(0xFF1A0A2E)),
                     if (a.imagePathForBand(ageBand) != null)
-                      Image.asset(
-                        a.imagePathForBand(ageBand)!,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                      )
+                      Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.contain, alignment: Alignment.center)
                     else
-                      Center(
-                        child: Text(
-                          a.icon ?? '✨',
-                          style: const TextStyle(fontSize: 72),
-                        ),
-                      ),
-                    // Selection checkmark.
+                      Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
                     if (isSelected)
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        top: 8, right: 8,
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFD700),
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle),
                           padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check,
-                              size: 16, color: Colors.black),
+                          child: const Icon(Icons.check, size: 16, color: Colors.black),
                         ),
                       ),
-                    // Small pill label at bottom — overlay, not separate bar.
                     Positioned(
-                      bottom: 4,
-                      left: 6,
-                      right: 6,
+                      bottom: 4, left: 6, right: 6,
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: Colors.black.withAlpha(140),
                             borderRadius: BorderRadius.circular(10),
@@ -2976,7 +2863,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.fredoka(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: isSprout ? 13 : 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -2989,7 +2876,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           );
 
-          card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
+          if (isSprout) {
+            card = BounceOnTapWidget(
+              onTap: () => _selectArchetype(a),
+              child: isSelected
+                  ? card
+                  : WiggleWidget(
+                      repeat: true,
+                      angle: 0.04,
+                      duration: const Duration(milliseconds: 700),
+                      delayMs: index * 300,
+                      child: card,
+                    ),
+            );
+          } else {
+            card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
+          }
 
           return card;
         },

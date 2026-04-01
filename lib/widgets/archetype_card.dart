@@ -383,9 +383,9 @@ class CharacterArchetypes {
   /// Returns a filtered list for young bands (Sprout/Explorer get 4 archetypes).
   static List<ArchetypeData> forBand(AgeBand band) {
     if (band == AgeBand.sprout || band == AgeBand.explorer) {
-      // 3 archetypes for ages 3-5 (fewer choices = less overwhelming):
-      // Brave Explorer (brave), Lightning Runner (fast), Animal Whisperer (gentle)
-      return [adventurer, athlete, shyOne];
+      // 4 archetypes for ages 3-5:
+      // Brave Explorer (brave), Lightning Runner (fast), Art Maker (creative), Animal Whisperer (gentle)
+      return [adventurer, athlete, artist, shyOne];
     }
     return all;
   }
