@@ -243,7 +243,8 @@ class CharacterArchetypes {
     matureName: 'Storm Vanguard',
     matureDescription: 'Leads through chaos and thrives when the stakes are highest',
     adventurerDescription: 'The scout who charges into danger first — if there\'s a wall, you find the gap in it.',
-    sproutImageId: 'storm_rider',
+    youngChildName: 'Super Brave!',
+    sproutImageId: 'brave_explorer',
     bandImageId: 'brave_hero',
     attributes: {
       'energy': 80,
@@ -265,6 +266,7 @@ class CharacterArchetypes {
     matureName: 'Logic Architect',
     matureDescription: 'Deconstructs complex problems and architects elegant solutions',
     adventurerDescription: 'The strategist who cracks the impossible puzzle when everyone else is stuck.',
+    youngChildName: 'Super Smart!',
     sproutImageId: 'quiz_whiz',
     bandImageId: 'clever_inventor',
     attributes: {
@@ -287,6 +289,7 @@ class CharacterArchetypes {
     matureName: 'Vision Architect',
     matureDescription: 'Creates art that bleeds into reality — illustrations gain a life of their own',
     adventurerDescription: 'The wildcard who invents solutions nobody else thought of — creativity is your superpower.',
+    youngChildName: 'Art Maker!',
     sproutImageId: 'master_creator',
     bandImageId: 'gentle_dreamer',
     attributes: {
@@ -309,6 +312,7 @@ class CharacterArchetypes {
     matureName: 'Harmony Mediator',
     matureDescription: 'Reads emotional undercurrents and mediates conflicts with empathy',
     adventurerDescription: 'The glue that keeps the team from falling apart — you sense what others feel before they say it.',
+    youngChildName: 'Kind Helper!',
     sproutImageId: 'heart_healer',
     bandImageId: 'kind_healer',
     attributes: {
@@ -331,6 +335,7 @@ class CharacterArchetypes {
     matureName: 'Kinetic Specialist',
     matureDescription: 'Channels raw physical energy into precision movement and split-second decisions',
     adventurerDescription: 'The one the team counts on when seconds matter — no obstacle slows you down.',
+    youngChildName: 'Super Fast!',
     sproutImageId: 'lightning_runner',
     bandImageId: 'speedy_explorer',
     attributes: {
@@ -353,6 +358,7 @@ class CharacterArchetypes {
     matureName: 'Ecological Whisperer',
     matureDescription: 'Reads the language of ecosystems and hears what the living world doesn\'t say aloud',
     adventurerDescription: 'The scout who moves unseen and hears what the world won\'t say out loud — nothing escapes your notice.',
+    youngChildName: 'Animal Friend!',
     sproutImageId: 'animal_whisperer',
     bandImageId: 'animal_whisperer',
     attributes: {
@@ -377,10 +383,9 @@ class CharacterArchetypes {
   /// Returns a filtered list for young bands (Sprout/Explorer get 4 archetypes).
   static List<ArchetypeData> forBand(AgeBand band) {
     if (band == AgeBand.sprout || band == AgeBand.explorer) {
-      // 4 most appropriate for ages 3-7:
-      // Storm Rider (brave), Master Creator (creative),
-      // Heart Healer (caring), Animal Whisperer (required)
-      return [adventurer, artist, helper, shyOne];
+      // 3 archetypes for ages 3-5 (fewer choices = less overwhelming):
+      // Brave Explorer (brave), Lightning Runner (fast), Animal Whisperer (gentle)
+      return [adventurer, athlete, shyOne];
     }
     return all;
   }
@@ -398,6 +403,8 @@ class ArchetypeData {
   final String? matureDescription;
   /// Adventurer band (ages 9-11): role in the adventure, not just appearance.
   final String? adventurerDescription;
+  /// Young child name (ages ≤ 5) — short, concrete, instantly understood.
+  final String? youngChildName;
   final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
   final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
 
@@ -412,11 +419,13 @@ class ArchetypeData {
     this.matureName,
     this.matureDescription,
     this.adventurerDescription,
+    this.youngChildName,
     this.sproutImageId,
     this.bandImageId,
   });
 
   String nameForAge(int age) {
+    if (age <= 5 && youngChildName != null) return youngChildName!;
     if (age >= 12 && matureName != null) return matureName!;
     return name;
   }
