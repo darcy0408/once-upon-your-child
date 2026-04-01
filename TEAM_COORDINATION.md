@@ -1,5 +1,32 @@
 # Team Coordination
 
+## 2026-03-31 — Phase 2 UX Tone Calibration (Claude Sonnet 4.6)
+
+**Goal:** Fix remaining Phase 2 tone/text mismatches across age bands.
+
+### Audit of Phase 2 items
+
+Most items were already resolved from prior sessions:
+- 2.1 CTAs: already configured per-band (Sprout/Explorer: Make Magic!, Creator: Start Writing, Adolescent/Adult: Begin)
+- 2.2 Clinical labels: already removed (no PSYCHOLOGICAL VITALITY etc. in current code)
+- 2.3 Mature archetype names: already set (Vision Architect, Storm Vanguard, etc.)
+- 2.4 Welcome screen "YOUR Child": already removed
+- 2.5 Bedtime mode: already band-aware for most prompts; fixed duration question
+
+### Changes Made
+
+| Item | Change |
+|------|--------|
+| 2.1 Adventurer CTA | `MISSION READY` → `Start Adventure!`; wizardNextHint updated |
+| 2.7 Coping strategies | Added `matureCoping` for Really Sad, Down, Excited, Calm, Surprised, Proud (6 entries) |
+| 2.7 Guilty bug | Fixed wrong matureCoping (had Lonely's strategies copy-pasted) |
+| 2.5 Bedtime duration | "bedtime story" → "story" for mature bands |
+
+### Status
+- [x] Committed: 5147709
+
+---
+
 ## 2026-03-31 — Auth Token Expiry Fix + TTS 401 Retry + Age Circle Cleanup (Claude Sonnet 4.6)
 
 **Goal:** Stop the flood of `Auth failed: Token expired` 401s; clean up age-circle emojis.
