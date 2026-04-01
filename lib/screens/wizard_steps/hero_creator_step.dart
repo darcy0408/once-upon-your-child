@@ -100,6 +100,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
   late TextEditingController _friendNameController;
+
+  // ─── Creative Brief scroll anchors (mature bands) ────────────────────────────
+  final ScrollController _briefScrollController = ScrollController();
+  final _briefCharacterKey = GlobalKey();
+  final _briefCompanionsKey = GlobalKey();
+  final _briefWorldKey = GlobalKey();
+  final _briefConfigKey = GlobalKey();
   // Sprout band: pet card is hidden until a grown-up reveals it
   bool _showPetCardForSprout = false;
 
@@ -217,6 +224,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     AppTtsService.instance.stop();
     _heroPageController.dispose();
     _sproutCarouselController.dispose();
+    _briefScrollController.dispose();
     AvatarGenerationState().removeListener(_onAvatarStateChanged);
     super.dispose();
   }
@@ -373,6 +381,31 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _jumpToSubStep(int subStep) {
+    final bandData =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    if (bandData.band.isMature) {
+      // Creative Brief (accordion) — scroll to the relevant section.
+      final key = switch (subStep) {
+        0 => _briefCharacterKey,
+        1 => _briefCompanionsKey,
+        2 => _briefWorldKey,
+        _ => _briefConfigKey,
+      };
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = key.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+            alignment: 0.0,
+          );
+        }
+      });
+      return;
+    }
+
     final targetPage = switch (subStep) {
       0 => 1, // Create Hero
       1 => 4, // Pick Team
@@ -3211,6 +3244,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return SingleChildScrollView(
+      controller: _briefScrollController,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
@@ -3222,14 +3256,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 16),
           _buildBriefSection(
               'Character & Role', _buildBriefIdentityInputs(),
-              initiallyExpanded: true),
+              initiallyExpanded: true, sectionKey: _briefCharacterKey),
           _buildBriefSection(
               'Personality', _buildBriefPersonalitySliders()),
           _buildBriefSection(
-              'Cast & Companions', _buildBriefCompanionsInputs()),
+              'Cast & Companions', _buildBriefCompanionsInputs(),
+              sectionKey: _briefCompanionsKey),
           _buildBriefSection(
-              'World & Setting', _buildBriefWorldInputs()),
-          _buildBriefSection('Story Options', _buildBriefConfigInputs()),
+              'World & Setting', _buildBriefWorldInputs(),
+              sectionKey: _briefWorldKey),
+          _buildBriefSection('Story Options', _buildBriefConfigInputs(),
+              sectionKey: _briefConfigKey),
           const SizedBox(height: 48),
           Center(
             child: SizedBox(
@@ -3290,8 +3327,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildBriefSection(String title, Widget content,
-      {bool initiallyExpanded = false}) {
+      {bool initiallyExpanded = false, Key? sectionKey}) {
     return Theme(
+      key: sectionKey,
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         initiallyExpanded: initiallyExpanded,
