@@ -259,6 +259,7 @@ class ScenarioData {
           'A closed-canopy megaforest where bioluminescence has replaced photosynthesis as the primary energy cycle. The ecosystem runs on light-exchange — organisms trade luminous energy through root networks and airborne spores. The Nexus Tree, a kilometres-wide neural hub, processes the forest\'s collective consciousness. Apex predators are shadow-stalkers — creatures that absorb light rather than emit it, creating zones of absolute darkness. The jungle\'s whisper-network carries data like a biological internet. Human-equivalent intelligence exists in the Elder Groves — collectives of ancient trees that debate, remember, and scheme.',
       creatorTitle: 'The Part of You That Glows',
       creatorThematicQuestion: "What part of you is waiting to be seen?",
+      adultTitle: 'The Light That Waits',
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
@@ -333,6 +334,7 @@ class ScenarioData {
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
       creatorThematicQuestion: "What storm are you running from?",
+      adultTitle: 'The Storm You\'ve Been Feeding',
       sproutIllustration: 'assets/images/ui/sprout/tiles/castle.png',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'orbital_station',
@@ -558,6 +560,7 @@ class ScenarioData {
           'A morally complex mystery where the solution is uncomfortable. The case involves real stakes — reputation, relationships, someone\'s future. The hero must weigh justice against loyalty, truth against kindness. Evidence contradicts itself; witnesses lie for understandable reasons. The investigation requires reading people as much as reading clues. The "villain" is sympathetic — driven by fear, love, or desperation rather than malice. Resolution is ambiguous: the hero discovers the full truth and must decide what to do with it, with no easy answer provided.',
       creatorTitle: "The Truth You Don't Want to Find",
       creatorThematicQuestion: "What truth are you afraid to follow?",
+      adultTitle: 'Every Answer Costs Something',
     ),
     ScenarioCard(
       id: 'survival_island',
@@ -584,6 +587,7 @@ class ScenarioData {
       // Survival scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
       creatorThematicQuestion: "What do you do when there's no one left to help you?",
+      adultTitle: 'Only What You Carry',
     ),
   ];
 

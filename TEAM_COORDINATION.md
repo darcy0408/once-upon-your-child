@@ -1,5 +1,58 @@
 # Team Coordination
 
+## 2026-03-31 — Adult Band UX Audit + Scenario Title Completion (Claude Sonnet 4.6)
+
+**Goal:** Six Hats UX audit of the adult (18+) band; fix scenario title gaps found during audit.
+
+### Audit Document
+`docs/ux_audit_adult_2026-03-31.md` — Six Hats walkthrough as Alex, 32.
+
+### Key Findings
+
+| Category | Finding | Severity |
+|----------|---------|----------|
+| Gap | No emotional regulation path — Big Feelings hidden, meditation not built | 🔴 High |
+| Gap | 4 scenarios missing adult-specific titles (fell back to mature/creator level) | 🟠 Medium |
+| Gap | All scenario world bibles use mature-band prose (13-17 register) | 🟡 Medium |
+| Gap | Archetypes have no adult name layer ("The Storm Rider" etc. skew young) | 🟡 Medium |
+| Works | Companion personas are genuinely peer-framed and adult-quality | ✅ |
+| Works | Feelings vocabulary (Melancholy, Dread, Contentment, Anticipation) is right | ✅ |
+| Works | Bedtime wizard focus options (Burnout & Rest, Creative Block, etc.) are excellent | ✅ |
+| Works | All ~68 adult asset files present — no missing images | ✅ |
+
+### Fixes Applied
+
+4 scenarios were missing `adultTitle` and fell back to `matureTitle` / `creatorTitle`:
+
+| Scenario | Was showing | Now shows |
+|----------|-------------|-----------|
+| `neon_jungle` | "The Bioluminescent Depths" | "The Light That Waits" |
+| `storm_chaser_sky` | "The Stormrunner Citadel" | "The Storm You've Been Feeding" |
+| `midnight_mystery` | "The Truth You Don't Want to Find" | "Every Answer Costs Something" |
+| `survival_island` | "Into the Wild" | "Only What You Carry" |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/data/scenario_data.dart` | Added `adultTitle` to 4 scenarios |
+| `docs/ux_audit_adult_2026-03-31.md` | NEW — full Six Hats audit |
+
+### Deferred
+
+| ID | Gap | Priority |
+|----|-----|----------|
+| D1 | `adultWorldBible` for top 3 scenarios | Medium |
+| D2 | `adultThematicQuestion` field + launch UI | Low |
+| D3 | Adult archetype `adultName` layer | Medium |
+| D4 | Guided meditation feature | **High — next major feature** |
+
+### Status
+- [x] Audit doc saved
+- [x] 4 scenario adult titles added
+
+---
+
 ## 2026-03-31 — Phase 3 Visual Consistency (Claude Sonnet 4.6)
 
 **Goal:** Wire per-band visual assets, fix storyLength inconsistency, confirm Phase 3 audit items.
