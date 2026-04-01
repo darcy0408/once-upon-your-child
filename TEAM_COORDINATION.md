@@ -1,5 +1,30 @@
 # Team Coordination
 
+## 2026-03-31 — Creator Band Bug Fixes: Companions + World Title Mismatch (Claude Sonnet 4.6)
+
+**Goal:** Fix the two remaining deferred Creator band bugs from the 12yo UX audit.
+
+### Fixes Applied
+
+| # | Issue | Fix |
+|---|-------|-----|
+| UX-C1 | No Companions section in Creator accordion | Added `_buildBriefCompanionsInputs()` + `_buildBriefSection('Cast & Companions', ...)` between Personality and World & Setting in `_buildCreativeBrief()`. Reuses existing `_buildCompanionShowcase()` + `_buildCompanionGrid()`. |
+| UX-C3 | World setting chip shows `titleForAge(15)` but review reads `titleForAge(characterAge)` — different strings for same scenario | Fixed `_buildBriefWorldInputs` to use `widget.wizardData.characterAge ?? 15` instead of hardcoded `15` |
+| UX-C2 | RenderFlex overflow on avatar circle in Creator review | Already resolved — `_GradientSphereFallback` has `clipBehavior: Clip.hardEdge`, `_HeroFallbackIdentity` uses Icon(20)/Text(12) which fit in 48×48 |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Added Cast & Companions accordion section; fixed world title age |
+
+### Status
+- [x] UX-C1: Companions section added to Creator accordion
+- [x] UX-C3: World title now matches between chip and review
+- [x] UX-C2: Confirmed already resolved
+
+---
+
 ## 2026-03-31 — Companion Screen UX + TTS Speed Fix + Robin Image Replacement (Claude Sonnet 4.6)
 
 **Goal:** Fix issues found during a 5-year-old walkthrough of the companion selection screen; fix ElevenLabs speed parameter not reaching the API; replace all 6 band robin images with new illustrated set.

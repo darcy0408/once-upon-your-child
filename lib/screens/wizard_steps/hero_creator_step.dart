@@ -3226,6 +3226,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildBriefSection(
               'Personality', _buildBriefPersonalitySliders()),
           _buildBriefSection(
+              'Cast & Companions', _buildBriefCompanionsInputs()),
+          _buildBriefSection(
               'World & Setting', _buildBriefWorldInputs()),
           _buildBriefSection('Story Options', _buildBriefConfigInputs()),
           const SizedBox(height: 48),
@@ -3619,6 +3621,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  Widget _buildBriefCompanionsInputs() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ADVENTURE TEAM',
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white.withAlpha(100),
+              fontSize: 10,
+              fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        _buildCompanionShowcase(),
+        const SizedBox(height: 16),
+        _buildCompanionGrid(),
+      ],
+    );
+  }
+
   Widget _buildBriefWorldInputs() {
     final scenarios =
         ScenarioData.all.where((s) => s.id != 'safe_space').toList();
@@ -3641,8 +3662,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: [
             ...scenarios.map((s) {
               final isSelected = widget.wizardData.selectedScenario == s.id;
+              final age = widget.wizardData.characterAge ?? 15;
               return ChoiceChip(
-                label: Text(s.titleForAge(15).toUpperCase()),
+                label: Text(s.titleForAge(age).toUpperCase()),
                 selected: isSelected,
                 onSelected: (v) => setState(
                     () => widget.wizardData.selectedScenario = v ? s.id : null),
