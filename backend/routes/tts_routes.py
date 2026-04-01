@@ -111,6 +111,11 @@ def create_tts_blueprint(limiter, require_auth):
         _, default_voice_id = _get_voice_list()
         voice_id = (data.get("voice_id") or "").strip() or default_voice_id
         character_voice_id = (data.get("character_voice_id") or "").strip() or None
+        try:
+            speed = float(data.get("speed") or 1.0)
+            speed = max(0.7, min(1.2, speed))  # clamp to safe range
+        except (ValueError, TypeError):
+            speed = 1.0
 
         word_timestamps = []
         try:
@@ -134,7 +139,7 @@ def create_tts_blueprint(limiter, require_auth):
             else:
                 # Short story — use with-timestamps endpoint for accurate word highlighting.
                 audio_bytes, word_timestamps = service.generate_speech_with_timestamps(
-                    text=text, voice_id=voice_id
+                    text=text, voice_id=voice_id, speed=speed
                 )
         except Exception as e:
             logger.error("ElevenLabs TTS synthesis error: %s", e)

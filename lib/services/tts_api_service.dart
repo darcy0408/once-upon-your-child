@@ -40,6 +40,9 @@ class TtsApiService {
     String text, {
     String? voiceId,
     String? characterVoiceId,
+    /// Speaking rate passed to ElevenLabs (0.7–1.2). Defaults to 1.0 (normal
+    /// speed). Pass ~0.85 for Sprout/young-child narration.
+    double speed = 1.0,
   }) async {
     if (text.trim().isEmpty) return null;
 
@@ -52,6 +55,7 @@ class TtsApiService {
         'text': text,
         'voice_id': voiceId ?? ElevenLabsVoice.defaultVoiceId,
         if (characterVoiceId != null) 'character_voice_id': characterVoiceId,
+        if (speed != 1.0) 'speed': speed,
       };
 
       var response = await http

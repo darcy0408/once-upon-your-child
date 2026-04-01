@@ -79,6 +79,19 @@ const List<String> kWarmUpPhrases = [
   // Magic Review countdown
   "3... 2... 1... Let the magic begin!",
   "Your story is about to come alive!",
+
+  // Sprout archetype youngChildNames — pre-warm so ElevenLabs is used, not
+  // the robotic on-device fallback, when a young child taps an archetype card.
+  "Brave Explorer!",
+  "Kind Helper!",
+  "Art Maker!",
+  "Nature Friend!",
+  "Clever Inventor!",
+  "Star Dreamer!",
+  "Fluffy Dragon",
+  "Magic Bunny",
+  "Shining Puppy",
+  "Robin",
 ];
 
 class AppTtsService {
@@ -158,7 +171,13 @@ class AppTtsService {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
         final id = voiceId ?? (await _savedVoiceId());
-        final ttsResult = await TtsApiService.synthesize(cleanText, voiceId: id);
+        // Pass rateScale to ElevenLabs so the actual audio is slower for young
+        // children — the fallback device TTS already uses rateScale below.
+        final ttsResult = await TtsApiService.synthesize(
+          cleanText,
+          voiceId: id,
+          speed: rateScale.clamp(0.7, 1.2),
+        );
         mp3 = ttsResult?.audioBytes;
         if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }

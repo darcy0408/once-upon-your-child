@@ -291,6 +291,7 @@ class ElevenLabsTTSService:
         similarity_boost: float = 0.80,
         style: float = 0.50,
         model_id: str = DEFAULT_MODEL,
+        speed: float = 1.0,
     ) -> bytes:
         """
         Generate MP3 audio from text using ElevenLabs.
@@ -314,12 +315,19 @@ class ElevenLabsTTSService:
         """
         text = clean_text_for_tts(text)
 
-        voice_settings = VoiceSettings(
+        vs_kwargs = dict(
             stability=stability,
             similarity_boost=similarity_boost,
             style=style,
             use_speaker_boost=True,
         )
+        if speed != 1.0:
+            vs_kwargs["speed"] = speed
+        try:
+            voice_settings = VoiceSettings(**vs_kwargs)
+        except TypeError:
+            vs_kwargs.pop("speed", None)
+            voice_settings = VoiceSettings(**vs_kwargs)
 
         audio_generator = self.client.text_to_speech.convert(
             voice_id=voice_id,
@@ -505,6 +513,7 @@ class ElevenLabsTTSService:
         similarity_boost: float = 0.80,
         style: float = 0.50,
         model_id: str = DEFAULT_MODEL,
+        speed: float = 1.0,
     ) -> Tuple[bytes, List[dict]]:
         """
         Generate MP3 audio with word-level timestamps for synchronized highlighting.
@@ -512,18 +521,30 @@ class ElevenLabsTTSService:
         Uses the ElevenLabs with-timestamps endpoint to obtain character-level
         alignment, then converts it to per-word start/end times in milliseconds.
 
+        Args:
+            speed: Speaking rate multiplier (0.7–1.2). Values below 1.0 slow the
+                   voice down — use ~0.85 for Sprout/young-child narration.
+
         Returns:
             (audio_bytes, word_timestamps) where word_timestamps is a list of
             {start_ms: int, end_ms: int} dicts, one per word, in order.
             Falls back to (generate_speech(...), []) if timestamps unavailable.
         """
         cleaned = clean_text_for_tts(text)
-        voice_settings = VoiceSettings(
+        # Build VoiceSettings; speed is a newer field so pass it defensively.
+        vs_kwargs = dict(
             stability=stability,
             similarity_boost=similarity_boost,
             style=style,
             use_speaker_boost=True,
         )
+        if speed != 1.0:
+            vs_kwargs["speed"] = speed
+        try:
+            voice_settings = VoiceSettings(**vs_kwargs)
+        except TypeError:
+            vs_kwargs.pop("speed", None)
+            voice_settings = VoiceSettings(**vs_kwargs)
 
         try:
             response = self.client.text_to_speech.convert_with_timestamps(
@@ -550,7 +571,7 @@ class ElevenLabsTTSService:
             audio_bytes = self.generate_speech(
                 text=text, voice_id=voice_id,
                 stability=stability, similarity_boost=similarity_boost,
-                style=style, model_id=model_id,
+                style=style, model_id=model_id, speed=speed,
             )
             return audio_bytes, []
 
