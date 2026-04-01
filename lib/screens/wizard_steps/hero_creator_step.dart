@@ -2546,7 +2546,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         girlAsset = 'assets/images/ui/adventurer/hero_white.png';
         break;
       case AgeBand.explorer:
-      default:
+        boyAsset = 'assets/images/ui/explorer/boy_character_white.png';
+        girlAsset = 'assets/images/ui/explorer/girl_character_white.png';
+        break;
+      // Mature bands use _buildBriefGenderSelector instead.
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
         boyAsset = 'assets/images/ui/explorer/boy_character_white.png';
         girlAsset = 'assets/images/ui/explorer/girl_character_white.png';
     }
@@ -3416,7 +3422,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         boyAsset = 'assets/images/ui/adult/man_character_white.png';
         girlAsset = 'assets/images/ui/adult/woman_character_white.png';
         break;
-      default:
+      case AgeBand.creator:
+        boyAsset = 'assets/images/ui/creator/creator_white.png';
+        girlAsset = 'assets/images/ui/creator/creator_white.png';
+        break;
+      // Young bands use _buildGenderPicker instead.
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
         boyAsset = 'assets/images/ui/creator/creator_white.png';
         girlAsset = 'assets/images/ui/creator/creator_white.png';
     }

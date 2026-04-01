@@ -1,5 +1,53 @@
 # Team Coordination
 
+## 2026-03-31 — 6-Band Exhaustive Switch Audit (Claude Opus 4.6)
+
+**Goal:** Audit all wizard-flow files for incomplete AgeBand switch statements; make all switches exhaustive so the Dart compiler catches future enum additions.
+
+### Methodology
+
+Searched all Dart files under `lib/` for `switch` statements on `AgeBand` or `band.band` that use `default:` instead of listing all 6 cases explicitly. Also checked conditional logic that references specific bands.
+
+### Findings
+
+| File | Location | Issue | Risk |
+|------|----------|-------|------|
+| `hero_creator_step.dart` | `_buildGenderPicker()` L2539 | Only sprout/adventurer/explorer explicit; creator/adolescent/adult fell to default | Low — mature bands never call this method |
+| `hero_creator_step.dart` | `_buildBriefGenderSelector()` L3410 | Only adolescent/adult explicit; others fell to default | Low — young bands never call this method |
+| `age_band_badge.dart` | `_labelFor()` L42 | sprout/explorer fell to default '9+' | Low — correct value, just implicit |
+| `body_outline_widget.dart` | `_tier` L52 | creator/adolescent/adult fell to default creator tier | Low — correct tier, just implicit |
+
+### Already Complete (no changes needed)
+
+| File | Notes |
+|------|-------|
+| `companion_selector_step.dart` | Full 6-way switch |
+| `feeling_selection_step.dart` | All 6 switches exhaustive |
+| `magic_review_step.dart` | All switches + `isMature` splits exhaustive |
+| `scenario_data.dart` | Full coverage |
+| `age_band_theme.dart` | All 6 theme presets defined |
+| `bedtime_wizard_screen.dart` | Complete |
+| `story_reader_screen.dart` | Complete |
+| `story_result_screen.dart` | Complete |
+
+### Fixes Applied
+
+All 4 switches converted from `default:` to explicit cases — no behavioral change, but the Dart compiler will now flag missing cases if a 7th band is ever added.
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | 2 switches made exhaustive |
+| `lib/widgets/age_band_badge.dart` | 1 switch made exhaustive |
+| `lib/widgets/body_outline_widget.dart` | 1 switch made exhaustive |
+
+### Status
+- [x] Audit complete
+- [x] All 4 switches fixed
+
+---
+
 ## 2026-03-31 — Adolescent (16yo) Six Hats UX Audit (Claude Sonnet 4.6)
 
 **Goal:** Six Hats UX audit of the Adolescent band (ages 15–17) via code review + 3 prior screenshots.

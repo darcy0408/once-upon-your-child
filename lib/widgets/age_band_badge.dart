@@ -41,6 +41,9 @@ class AgeBandBadge extends StatelessWidget {
 
   static String _labelFor(AgeBand band) {
     switch (band) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return '9+';
       case AgeBand.adventurer:
         return 'ADVENTURER EXCLUSIVE';
       case AgeBand.creator:
@@ -49,8 +52,6 @@ class AgeBandBadge extends StatelessWidget {
         return 'TEEN+';
       case AgeBand.adult:
         return '18+';
-      default:
-        return '9+';
     }
   }
 }

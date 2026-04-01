@@ -55,7 +55,9 @@ class _BodyOutlineWidgetState extends State<BodyOutlineWidget>
       case AgeBand.explorer:
       case AgeBand.adventurer:
         return _BodyTier.explorer;
-      default:
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
         return _BodyTier.creator;
     }
   }
