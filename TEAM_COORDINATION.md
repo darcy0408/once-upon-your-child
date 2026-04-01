@@ -1,5 +1,43 @@
 # Team Coordination
 
+## 2026-03-30 — Age Picker Redesign + BYOK Key-Not-Saved Bug Fix (Claude Sonnet 4.6)
+
+**Goal:** Simplify the first-screen age picker for young children; fix a critical bug where completing the BYOK wizard from any entry point other than Settings never saved the API key.
+
+### Age Picker Redesign
+
+The original picker had 17 small circles (ages 2–18+) in a cramped 4-column grid — too many small targets for young children. Replaced with:
+- **Ages 2–8**: 7 large circles in a 3-column grid (72–100 px, up from 44–66 px) — one tap per single age, big enough for toddlers
+- **"Older?" divider** separating young from older entries
+- **Ages 9–11, 12–14, 15–17, 18+**: 4 wider pill buttons in a 2×2 grid — grouped by age band, sized for older users
+
+Band values preserved: 10 → Adventurer, 12 → Creator, 16 → Adolescent, 21 → Adult. All consent and band-specific splash logic unchanged.
+
+### BYOK Key-Not-Saved Bug
+
+**Root cause:** The BYOK wizard correctly pops with the validated key string, but 4 of 5 call sites threw away the return value — the key was never written to `SecureStorageService` or `SharedPreferences`.
+
+**Fix — two layers:**
+1. `byok_setup_wizard.dart` (`_EnterKeyStepState` Finish button): wizard now saves `use_own_api_key`, `is_premium_byok`, and the key to storage before popping. Key is persisted regardless of which screen launched the wizard.
+2. All 4 broken call sites now capture the result and call `settingsProvider.notifier.reload()` to refresh in-memory Riverpod state for the current session. Container reference captured before any `Navigator.pop` to avoid using deactivated context.
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/welcome_screen.dart` | Age picker: `_ageEntries` → `_youngAgeEntries` (2–8) + `_olderAgeEntries` (bands); new `_AgeBandButton` pill widget; 3-col big-circle grid + 2×2 pill grid |
+| `lib/screens/byok_setup_wizard.dart` | Finish button now persists key to storage before calling `onDone` |
+| `lib/dialogs/upgrade_prompt_dialog.dart` | Capture wizard result; reload settingsProvider |
+| `lib/screens/parent_controls_screen.dart` | Await push result; reload settingsProvider on success |
+| `lib/story_result_screen.dart` | Capture wizard result; reload settingsProvider |
+| `lib/widgets/avatar_gallery_selector.dart` | Capture wizard result; reload settingsProvider |
+
+### Status
+- [x] Age picker redesign — committed `a730f44`
+- [x] BYOK key-save fix — committed `2f28e48`
+
+---
+
 ## 2026-03-31 — Sprout Archetype UX Overhaul + Hero Wizard Screen Split (Claude Sonnet 4.6)
 
 **Goal:** Fix two UX issues identified during a 5-year-old walkthrough: (1) the "Pick your hero" page combined look-picking and archetype selection on one screen — too confusing; (2) archetype names like "The Storm Rider" and "The Heart Healer" are meaningless to a 3-5 year old.
