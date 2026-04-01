@@ -71,10 +71,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       _selectedAge != null &&
       ageBandFromAge(_selectedAge!) == AgeBand.adolescent;
 
-  // Age options: individual ages 2–17, then 18+.
-  // Previously '13-17' was a single entry mapping to age 14 (Creator band).
-  // Now split individually so ages 15-17 correctly map to Adolescent band.
-  static const _ageEntries = <({String label, int value})>[
+  // Ages 2-8: individual big buttons (sprout + explorer bands).
+  static const _youngAgeEntries = <({String label, int value})>[
     (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
@@ -82,15 +80,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     (label: '6', value: 6),
     (label: '7', value: 7),
     (label: '8', value: 8),
-    (label: '9', value: 9),
-    (label: '10', value: 10),
-    (label: '11', value: 11),
-    (label: '12', value: 12),
-    (label: '13', value: 13),
-    (label: '14', value: 14),
-    (label: '15', value: 15),
-    (label: '16', value: 16),
-    (label: '17', value: 17),
+  ];
+
+  // Older age bands: grouped pill buttons shown below the big circles.
+  static const _olderAgeEntries = <({String label, int value})>[
+    (label: '9 – 11', value: 10),
+    (label: '12 – 14', value: 12),
+    (label: '15 – 17', value: 16),
     (label: '18+', value: 21),
   ];
 
@@ -120,6 +116,23 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await AppTtsService.instance.speak(text, awaitCompletion: awaitCompletion);
   }
 
+  /// Strips common introductory phrases so "my name is Jessica" → "Jessica".
+  String _extractName(String raw) {
+    final cleaned = raw.trim();
+    // Patterns a child might say when asked their name
+    final patterns = [
+      RegExp(r"^(?:my name is|i'm|i am|they call me|call me)\s+", caseSensitive: false),
+    ];
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(cleaned);
+      if (match != null) {
+        final remainder = cleaned.substring(match.end).trim();
+        if (remainder.isNotEmpty) return remainder;
+      }
+    }
+    return cleaned;
+  }
+
   Future<void> _promptNameAndListen() async {
     await _speak(_isCreator ? "What should we call you?" : "Hi, what's your name?");
     // Don't auto-open the mic on web — browser requires a user gesture first.
@@ -141,7 +154,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await _speech.listen(
       onResult: (result) {
         setState(() {
-          _nameController.text = result.recognizedWords;
+          _nameController.text = _extractName(result.recognizedWords);
           if (result.finalResult) {
             _isListening = false;
           }
@@ -760,22 +773,22 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        // Big circles for young children (ages 2-8) — 3 columns
         LayoutBuilder(
           builder: (context, constraints) {
-            const spacing = 6.0;
-            // 4-column grid to fit ages 2-17 + 18+ (17 entries)
-            const columns = 4;
+            const spacing = 10.0;
+            const columns = 3;
             final circleSize =
                 ((constraints.maxWidth - (spacing * (columns - 1))) / columns)
-                    .clamp(44.0, 66.0);
+                    .clamp(72.0, 100.0);
             return GridView.count(
               crossAxisCount: columns,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: spacing,
               crossAxisSpacing: spacing,
-              children: _ageEntries.map((entry) {
+              children: _youngAgeEntries.map((entry) {
                 return _AgeCircle(
                   label: entry.label,
                   value: entry.value,
@@ -788,6 +801,37 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               }).toList(),
             );
           },
+        ),
+        const SizedBox(height: 16),
+        // Divider + label for older bands
+        Row(children: [
+          const Expanded(child: Divider(color: Colors.white24)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Older?',
+              style: TextStyle(color: Colors.white38, fontSize: 13),
+            ),
+          ),
+          const Expanded(child: Divider(color: Colors.white24)),
+        ]),
+        const SizedBox(height: 10),
+        // Wider pill buttons for older age bands — 2 per row
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.8,
+          children: _olderAgeEntries.map((entry) {
+            final selected = _selectedAge == entry.value;
+            return _AgeBandButton(
+              label: entry.label,
+              selected: selected,
+              onTap: _submitting ? null : () => _onAgeSelected(entry.value),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -873,6 +917,71 @@ class _PressableButtonState extends State<_PressableButton> {
   }
 }
 
+
+/// Wide pill button for grouped older age bands (e.g. "9 – 11").
+class _AgeBandButton extends StatefulWidget {
+  const _AgeBandButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  State<_AgeBandButton> createState() => _AgeBandButtonState();
+}
+
+class _AgeBandButtonState extends State<_AgeBandButton> {
+  bool _pressed = false;
+
+  static const _gold = Color(0xFFFFD700);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.93 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(50),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A148C), Color(0xFF7B2FBE)],
+            ),
+            border: widget.selected
+                ? Border.all(color: _gold, width: 2.5)
+                : Border.all(color: Colors.white24, width: 1.5),
+            boxShadow: widget.selected
+                ? [BoxShadow(color: _gold.withAlpha(90), blurRadius: 14, spreadRadius: 1)]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: widget.selected ? _gold : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Tappable age circle with press + selection animations.
 class _AgeCircle extends StatefulWidget {
