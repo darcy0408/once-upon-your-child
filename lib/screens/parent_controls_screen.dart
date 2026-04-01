@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service_manager.dart';
@@ -6,6 +7,7 @@ import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
 import '../services/screen_time_service.dart';
 import '../services/therapist_auth_service.dart';
+import '../settings_screen.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
 import 'therapist_portal_screen.dart';
@@ -372,11 +374,18 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     title: 'Set up your own API key',
                     subtitle:
                         'Unlock premium AI illustrations & avatar generation',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ByokSetupWizardScreen(),
-                      ),
-                    ),
+                    onTap: () async {
+                      final result = await Navigator.of(context).push<String>(
+                        MaterialPageRoute(
+                          builder: (_) => const ByokSetupWizardScreen(),
+                        ),
+                      );
+                      if (result != null && result.isNotEmpty && context.mounted) {
+                        await ProviderScope.containerOf(context)
+                            .read(settingsProvider.notifier)
+                            .reload();
+                      }
+                    },
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Screen Time'),

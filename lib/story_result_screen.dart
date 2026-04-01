@@ -48,9 +48,11 @@ import 'widgets/breathing_avatar.dart';
 import 'services/feature_tour_service.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
+import 'settings_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -1392,13 +1394,17 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
+                  final container = ProviderScope.containerOf(ctx);
                   Navigator.pop(ctx);
-                  await Navigator.of(ctx).push<String>(
+                  final result = await Navigator.of(ctx).push<String>(
                     MaterialPageRoute(
                       builder: (_) => const ByokSetupWizardScreen(),
                       fullscreenDialog: true,
                     ),
                   );
+                  if (result != null && result.isNotEmpty) {
+                    await container.read(settingsProvider.notifier).reload();
+                  }
                 },
                 icon: const Icon(Icons.key, size: 18),
                 label: const Text(

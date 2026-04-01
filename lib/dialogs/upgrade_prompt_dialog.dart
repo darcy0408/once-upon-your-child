@@ -2,8 +2,10 @@
 // Upgrade prompt with tier comparison table
 
 import 'package:flutter/material.dart';
-import '../services/grace_period_analytics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/byok_setup_wizard.dart';
+import '../services/grace_period_analytics.dart';
+import '../settings_screen.dart';
 
 class UpgradePromptDialog extends StatelessWidget {
   final bool isSoftPrompt; // true = soft prompt, false = hard limit
@@ -118,13 +120,17 @@ class UpgradePromptDialog extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
+                        final container = ProviderScope.containerOf(context);
                         Navigator.pop(context, false);
-                        await Navigator.of(context).push<String>(
+                        final result = await Navigator.of(context).push<String>(
                           MaterialPageRoute(
                             builder: (_) => const ByokSetupWizardScreen(),
                             fullscreenDialog: true,
                           ),
                         );
+                        if (result != null && result.isNotEmpty) {
+                          await container.read(settingsProvider.notifier).reload();
+                        }
                       },
                       icon: const Icon(Icons.key, size: 16),
                       label: const Text(
