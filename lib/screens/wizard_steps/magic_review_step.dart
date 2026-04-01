@@ -17,6 +17,7 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/models/api_error.dart';
 import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
+import 'package:story_weaver_app/services/illustration_preference_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/breathing_avatar.dart';
@@ -59,6 +60,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
+  IllustrationPreference _illustrationPreference = IllustrationPreference.full;
 
   // 3-2-1 countdown state
   bool _showCountdown = false;
@@ -86,6 +88,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     } else {
       _loadingStatus = 'Making your story! 🌟';
     }
+    IllustrationPreferenceService.load().then((pref) {
+      if (mounted) setState(() => _illustrationPreference = pref);
+    });
   }
 
   @override
@@ -390,6 +395,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         // Only try to generate inline illustrations if user is premium/BYOK
         if (widget.wizardData.includeIllustrations &&
             canGetIllustrations &&
+            _illustrationPreference != IllustrationPreference.none &&
             inlineIllustrations.isEmpty) {
           if (mounted) {
             setState(
@@ -533,12 +539,19 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   }
 
   int _illustrationCountForSubscription(UserSubscription subscription) {
-    // Learning-to-read mode always gets 1 illustration
+    // User opted out of illustrations entirely
+    if (_illustrationPreference == IllustrationPreference.none) return 0;
+
+    // Learning-to-read mode always gets at least 1 illustration
     if (widget.wizardData.learningToReadMode) return 1;
 
+    // Cover-only preference caps at 1 regardless of subscription
+    if (_illustrationPreference == IllustrationPreference.coverOnly) return 1;
+
+    // Full preference — honour subscription tier
     switch (subscription.tier) {
       case SubscriptionTier.family:
-        return 2;
+        return 3;
       case SubscriptionTier.free:
       case SubscriptionTier.premium:
         return 1;
