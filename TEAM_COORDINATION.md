@@ -1,5 +1,25 @@
 # Team Coordination
 
+## 2026-03-31 — Phase 3 Visual Consistency (Claude Sonnet 4.6)
+
+**Goal:** Wire per-band visual assets, fix storyLength inconsistency, confirm Phase 3 audit items.
+
+### Audit of Phase 3 items
+
+| ID | Status | Notes |
+|----|--------|-------|
+| 3.1 Per-band archetype images | Already done | `shyOne.bandImageId` = `'animal_whisperer'`; `imagePathForBand()` handles it |
+| 3.2 Per-band feelings images | **Fixed** | `_FaceImage` resolves band path first → `feelings_faces/` → emoji |
+| 3.3 Feelings picker dark mode | Already done | `CloudEmotionCard` already has `isMature` flat-rect variant |
+| 3.4 Story length picker bug | **Fixed** | `hero_creator_step` wrote `'short/medium/long'` but model uses `'quick/standard/epic'`; fixed with helpers |
+| 3.5 CinzelDecorative/Sprout | Already done | Not present in current code |
+| 3.6 Mature band nav buttons | Already done | `wizard_story_screen` already gates on `isMature` |
+
+### Status
+- [x] Committed: 4c5da5d
+
+---
+
 ## 2026-03-31 — Phase 2 UX Tone Calibration (Claude Sonnet 4.6)
 
 **Goal:** Fix remaining Phase 2 tone/text mismatches across age bands.
