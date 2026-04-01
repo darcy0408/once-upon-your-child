@@ -199,7 +199,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
       case BedtimeStep.duration:
         final answer = await _askQuestion(
-          "How long should the bedtime story be? Ten, fifteen, or twenty minutes?",
+          _isMature
+              ? "How long should the story be? Ten, fifteen, or twenty minutes?"
+              : "How long should the bedtime story be? Ten, fifteen, or twenty minutes?",
         );
         _storyDurationMinutes = _matchDurationMinutes(answer);
         _advance(BedtimeStep.confirm);

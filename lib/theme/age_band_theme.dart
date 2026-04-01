@@ -401,13 +401,13 @@ const adventurerTheme = AgeBandThemeData(
   companionLabel: 'Choose Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'Set the mood for your story',
-  launchStoryLabel: 'MISSION READY',
+  launchStoryLabel: 'Start Adventure!',
   companionCTALabel: 'Assemble Party',
   scenarioPageTitle: 'Choose Your Adventure!',
   scenarioPageSubtitle: 'Where shall we go today?',
   scenarioCategoryFantasyLabel: 'Magical Worlds',
   scenarioCategoryRealLabel: 'Real-Life Heroes',
-  wizardNextHint: 'Next: Review & Make Magic!',
+  wizardNextHint: 'Next: Review & Launch!',
 );
 
 /// Creator (ages 13+): Clean, editorial, dark mode default.

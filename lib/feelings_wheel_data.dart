@@ -244,6 +244,11 @@ class FeelingDetails {
         'Name one small thing you can do next.',
         'Take three slow breaths and notice your feet on the ground.',
       ],
+      matureCoping: [
+        'Let yourself feel it without judgment — deep sadness is valid.',
+        'Reach out to one person, even just to say you\'re struggling.',
+        'If it persists, consider talking to a counsellor or therapist.',
+      ],
       emoji: '😞',
     ),
     'Guilty': const FeelingDetail(
@@ -254,9 +259,9 @@ class FeelingDetails {
         'Remind yourself mistakes help us learn.',
       ],
       matureCoping: [
-        'Reach out to one person, even with a simple message.',
-        'Spend time in a shared space, even quietly.',
-        'Remember that loneliness is temporary and common.',
+        'Acknowledge what happened without over-punishing yourself.',
+        'Make amends where possible — a genuine apology or a changed action.',
+        'Reflect on what you\'d do differently; guilt that leads nowhere is not useful.',
       ],
       emoji: '😔',
     ),
@@ -266,6 +271,11 @@ class FeelingDetails {
         'Move your body gently, like a short walk or stretch.',
         'Talk to someone supportive about how long this has felt this way.',
         'Do one tiny kind thing for yourself, like a sip of water.',
+      ],
+      matureCoping: [
+        'Notice if this is situational or has been building — duration matters.',
+        'Small physical acts help: daylight, movement, eating something.',
+        'Don\'t isolate; low-key connection (a text, a walk with someone) can shift momentum.',
       ],
       emoji: '☁️',
     ),
@@ -290,6 +300,11 @@ class FeelingDetails {
         'Tell someone your good news.',
         'Take a breath to enjoy the moment.',
       ],
+      matureCoping: [
+        'Channel the energy productively — use it, don\'t fight it.',
+        'Share it with someone who\'ll appreciate it.',
+        'Savour the feeling; positive states deserve attention too.',
+      ],
       emoji: '🤩',
     ),
     'Calm': const FeelingDetail(
@@ -298,6 +313,11 @@ class FeelingDetails {
         'Listen to soft music or nature sounds.',
         'Take a slow stretch.',
         'Notice three things that feel good right now.',
+      ],
+      matureCoping: [
+        'Use this window — calm is a good time to reflect or plan.',
+        'Deepen it: slow your exhale to twice the length of your inhale.',
+        'Notice what brought this on; you can recreate the conditions.',
       ],
       emoji: '😌',
     ),
@@ -336,6 +356,11 @@ class FeelingDetails {
         'Share the surprise with someone.',
         'Stretch your arms wide and relax.',
       ],
+      matureCoping: [
+        'Pause before reacting — the surprise itself isn\'t the full picture yet.',
+        'Breathe and let your nervous system catch up with events.',
+        'Decide how you want to respond once the initial jolt settles.',
+      ],
       emoji: '😲',
     ),
     'Proud': const FeelingDetail(
@@ -344,6 +369,11 @@ class FeelingDetails {
         'Tell someone what you accomplished.',
         'Write or draw your win.',
         'Help a friend using your new skill.',
+      ],
+      matureCoping: [
+        'Let yourself feel it fully — you earned this.',
+        'Reflect on what made it possible: effort, growth, support.',
+        'Use it as a reference point for the next hard thing.',
       ],
       emoji: '😊',
     ),
