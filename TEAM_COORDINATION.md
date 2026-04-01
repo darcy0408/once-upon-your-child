@@ -1,5 +1,63 @@
 # Team Coordination
 
+## 2026-03-31 — Sprout Archetype UX Overhaul + Hero Wizard Screen Split (Claude Sonnet 4.6)
+
+**Goal:** Fix two UX issues identified during a 5-year-old walkthrough: (1) the "Pick your hero" page combined look-picking and archetype selection on one screen — too confusing; (2) archetype names like "The Storm Rider" and "The Heart Healer" are meaningless to a 3-5 year old.
+
+### Changes
+
+#### 1. Wizard page split — avatar and archetype now on separate screens
+`lib/screens/wizard_steps/hero_creator_step.dart`
+
+Old page 2 had both `_buildAvatarLookCard()` and `_buildArchetypeCards()` together. Split into:
+- **Page 2** — "Pick your hero's look!" (avatar only, Next enabled after avatar chosen)
+- **Page 3** — "Pick your hero style!" (archetypes only, Next enabled after archetype tapped)
+
+All downstream page numbers shifted (companions → 4, scene → 5, story type → 6). Navigation helpers (`_notifySubStep`, `_jumpToSubStep`, `_heroNextPage`, `_speakPagePrompt`) updated accordingly. Auto-advance logic simplified: avatar page advances on avatar chosen; archetype page advances immediately on archetype tap.
+
+#### 2. Young child archetype names (`youngChildName` field)
+`lib/widgets/archetype_card.dart`
+
+Added `youngChildName` to `ArchetypeData`; `nameForAge(age)` now returns it for ages ≤ 5:
+
+| Archetype | Age ≤ 5 name |
+|-----------|-------------|
+| The Storm Rider | Super Brave! |
+| The Quiz Whiz | Super Smart! |
+| The Master Creator | Art Maker! |
+| The Heart Healer | Kind Helper! |
+| The Lightning Runner | Super Fast! |
+| The Animal Whisperer | Animal Friend! |
+
+#### 3. Sprout archetype lineup — 3 cards, new AI-generated image
+Reduced from 4 cards to 3 (fewer choices less overwhelming for 3-5 year olds):
+
+| Card | Image | Label |
+|------|-------|-------|
+| Brave Explorer | `brave_explorer.jpg` ← NEW | Super Brave! |
+| Lightning Runner | `lightning_runner.jpg` | Super Fast! |
+| Animal Whisperer | `animal_whisperer.jpg` | Animal Friend! |
+
+`brave_explorer.jpg` generated with `gemini-2.5-flash-image`: androgynous child with warm dark-brown skin, natural curly hair, gender-neutral rust-orange/cream adventurer outfit, arms spread wide on a mossy ledge — Pixar 3D style matching existing sprout cards. Previous Storm Rider / Heart Healer / Master Creator dropped from the sprout list.
+
+Sprout archetype grid replaced with a single `Row` of 3 equal `Expanded` cards (was a 2-column `GridView`). Explorer band keeps the 2-column `GridView`.
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Page split (avatar/archetype); 3-card Row layout for Sprout; page numbering throughout |
+| `lib/widgets/archetype_card.dart` | `youngChildName` field + `nameForAge` check; `sproutImageId: 'brave_explorer'` on adventurer; sprout list → `[adventurer, athlete, shyOne]` |
+| `assets/images/archetypes/sprout/brave_explorer.jpg` | NEW — AI-generated brave explorer image |
+| `backend/generate_brave_hero.py` | Generation script (keepable for reruns) |
+
+### Status
+- [x] Screen split committed (0b593ff)
+- [x] youngChildName + brave_explorer image committed (33cbbd7)
+- [x] Sprout 3-card row layout committed (95092fe)
+
+---
+
 ## 2026-03-31 — Visual Asset Gap Audit + `mad` Feeling Generation (Claude Sonnet 4.6)
 
 **Goal:** Comprehensive visual asset gap audit across all 6 age bands; generate confirmed missing assets.
