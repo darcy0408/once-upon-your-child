@@ -412,6 +412,47 @@ Material 3 `FilterChip` and `ChoiceChip` ignore `backgroundColor` in `ChipThemeD
 
 ---
 
+## 2026-03-31 — Comprehensive Security Audit + COPPA Enforcement (Claude Sonnet 4.6)
+
+**Goal:** Full static security audit of Flask backend and Flutter frontend; fix all findings.
+
+### Findings & Fixes
+
+| # | Severity | Finding | Fix | Commit |
+|---|----------|---------|-----|--------|
+| 1 | 🟢 Info | `.env` file status — confirmed NOT tracked in git (false positive from `git ls-files`) | No action needed | — |
+| 2 | 🔴 High | CORS wildcard `*.netlify.app` — any Netlify project could make authenticated cross-origin requests | Removed wildcard; added `PREVIEW_DEPLOY_URL` env var for explicit PR preview URLs | 109a305 |
+| 3 | 🔴 High | JWT dev fallback: `os.getenv('FLASK_ENV')` defaults to `None`, not `'production'` — missing env var on server silently used `'dev-secret-key'` | Changed to `os.getenv('FLASK_ENV', 'production')` | 109a305 |
+| 4 | 🟠 Medium | Avatar photo upload: no size cap — large files could exhaust backend memory | 10 MB cap at both upload sites in `avatar_routes.py`; 413 returned if exceeded | 109a305 |
+| 5 | 🟠 Medium | Story routes extracted `age` from request body with no bounds checking | `_resolve_age()` helper: clamps to [2, 120] then caps to `g.minor_age_cap` for under-13 users | 109a305 |
+| 6 | 🟡 Low | `sanitizer.py` missed two common jailbreak patterns | Added `new instruction/rule/prompt/system` and `respond as if you` regexes | 109a305 |
+| 7 | 🔴 High | Under-13 users had no server-side consent gate — parental consent stored but never checked at generation time | `require_parental_consent` decorator: queries `ConsentRecord`; returns 403 `PARENTAL_CONSENT_REQUIRED` if no valid record | a1903ad |
+| 8 | 🔴 High | Under-13 users could bypass age calibration by passing `age: 18` in request body | `_resolve_age()` caps to `g.minor_age_cap` (= `user.declared_age`) set by `require_auth` for under-13 users | a1903ad |
+
+### Flutter Client Updates
+
+| File | Change |
+|------|--------|
+| `lib/models/api_error.dart` | Added `isParentalConsentError` getter |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Shows "ask a parent to complete parental consent" message on `PARENTAL_CONSENT_REQUIRED` |
+
+### Backend Files Changed
+
+| File | Change |
+|------|--------|
+| `backend/config/__init__.py` | Remove `*.netlify.app` wildcard; add `PREVIEW_DEPLOY_URL` env var support |
+| `backend/middleware/auth.py` | JWT env default → `'production'`; `g.minor_age_cap` set in `require_auth`; `require_parental_consent` decorator added |
+| `backend/routes/avatar_routes.py` | 10 MB photo cap; `@require_parental_consent` on custom/pet avatar endpoints |
+| `backend/routes/story_routes.py` | `_resolve_age()` helper; `@require_parental_consent` on all 5 generation endpoints |
+| `backend/utils/sanitizer.py` | 2 new prompt-injection patterns |
+
+### Status
+- [x] Items 2–6 committed: 109a305
+- [x] Items 7–8 committed: a1903ad
+- [x] Old API keys confirmed rotated (out of scope — keys rotated this month)
+
+---
+
 ## 2026-03-30 — Wire AgeBandAssetResolver to Real Asset Paths (Claude Sonnet 4.6)
 
 **Goal:** `AgeBandAssetResolver` existed but pointed to `age_band_assets/{pluralFolder}/` which was never created on disk. All band-specific images live at `assets/images/{category}/{band}/`. Fixed the resolver and migrated all consumers.
