@@ -1,11 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/generated_avatar.dart';
+import '../screens/byok_setup_wizard.dart';
 import '../services/avatar_service.dart';
+import '../settings_screen.dart';
 import '../theme/age_band_theme.dart';
 import '../ui/widgets/magical_avatar.dart';
 import '../utils/motion_utils.dart';
-import '../screens/byok_setup_wizard.dart';
 import 'avatar_tweak_panel.dart';
 import 'breathing_avatar.dart';
 
@@ -227,11 +229,11 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                   ? 3
                   : 2;
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: cols,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
               childAspectRatio: 1.0,
             ),
             itemCount: _batch.length,
@@ -241,31 +243,34 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               final isSprout =
                   Theme.of(context).extension<AgeBandThemeData>()?.band ==
                       AgeBand.sprout;
-              final avatar = MagicalAvatar(
-                assetPath: assetPath,
-                size: 150,
-                borderWidth: isSelected ? 4 : 0,
-                glowColor:
-                    isSelected ? const Color(0xFFFFC44D) : Colors.transparent,
-                enableParticles: isSelected,
-              );
-              // For Sprout band, unselected thumbnails breathe with staggered
-              // phase offsets so they feel alive, not static.
-              final child = isSprout &&
-                      !isSelected &&
-                      !MotionPrefs.reduceMotion(context)
-                  ? BreathingAvatar(
-                      period: Duration(milliseconds: 2800 + (index % 6) * 400),
-                      minScale: 0.97,
-                      maxScale: 1.03,
-                      glowColor: Colors.amber.withAlpha(38),
-                      child: avatar,
-                    )
-                  : avatar;
-              return GestureDetector(
-                onTap: () => _selectAvatar(assetPath),
-                child: child,
-              );
+              return LayoutBuilder(builder: (context, cellConstraints) {
+                final avatarSize = cellConstraints.maxWidth;
+                final avatar = MagicalAvatar(
+                  assetPath: assetPath,
+                  size: avatarSize,
+                  borderWidth: isSelected ? 4 : 0,
+                  glowColor:
+                      isSelected ? const Color(0xFFFFC44D) : Colors.transparent,
+                  enableParticles: isSelected,
+                );
+                // For Sprout band, unselected thumbnails breathe with staggered
+                // phase offsets so they feel alive, not static.
+                final child = isSprout &&
+                        !isSelected &&
+                        !MotionPrefs.reduceMotion(context)
+                    ? BreathingAvatar(
+                        period: Duration(milliseconds: 2800 + (index % 6) * 400),
+                        minScale: 0.97,
+                        maxScale: 1.03,
+                        glowColor: Colors.amber.withAlpha(38),
+                        child: avatar,
+                      )
+                    : avatar;
+                return GestureDetector(
+                  onTap: () => _selectAvatar(assetPath),
+                  child: child,
+                );
+              });
             },
           );
         }),
@@ -418,14 +423,17 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           ),
           ElevatedButton.icon(
             onPressed: () async {
+              final container = ProviderScope.containerOf(context);
               Navigator.pop(ctx);
-              await Navigator.of(context).push<String>(
+              final result = await Navigator.of(context).push<String>(
                 MaterialPageRoute(
                   builder: (_) => const ByokSetupWizardScreen(),
-
                   fullscreenDialog: true,
                 ),
               );
+              if (result != null && result.isNotEmpty) {
+                await container.read(settingsProvider.notifier).reload();
+              }
             },
             icon: const Icon(Icons.key, size: 16),
             label: const Text('Set Up Free Premium →'),
