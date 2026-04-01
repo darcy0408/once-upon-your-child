@@ -1,5 +1,32 @@
 # Team Coordination
 
+## 2026-03-31 — Auth Token Expiry Fix + TTS 401 Retry + Age Circle Cleanup (Claude Sonnet 4.6)
+
+**Goal:** Stop the flood of `Auth failed: Token expired` 401s; clean up age-circle emojis.
+
+### Fixes Applied
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | `_doEnsureAuthenticated` accepted expired JWTs from storage — `_authToken != null` short-circuited before expiry was checked | Added `_isTokenExpired()` (base64-decodes the `exp` claim, no lib needed); both the in-memory and storage checks now reject expired tokens and clear them before re-auth |
+| 2 | `TtsApiService` called `ApiServiceManager.authHeaders()` directly — bypassed all 401-retry logic, so an expired token was reused on every TTS call forever | On 401 response, call `resetAndReauthenticate()` then retry once |
+| 3 | Age selection circles showed emoji + number; emojis added visual noise with no clear meaning for parents | Removed `_ageCircleEmoji` map and emoji `Column` branch from `_AgeCircle`; circles now show number label only with band-appropriate font sizing |
+
+### Files Changed
+
+| File | What |
+|------|------|
+| `lib/services/api_service_manager.dart` | `_isTokenExpired()` helper; expiry checks in `_doEnsureAuthenticated` |
+| `lib/services/tts_api_service.dart` | 401 → `resetAndReauthenticate()` + retry |
+| `lib/screens/welcome_screen.dart` | Remove `_ageCircleEmoji` map; simplify `_AgeCircle` to label-only |
+
+### Status
+- [x] JWT expiry check — committed `ae29700`
+- [x] TTS 401 retry — committed `ae29700`
+- [x] Age circle emoji removal — committed `ae29700`
+
+---
+
 ## 2026-03-31 — Creator Band Bug Fixes: Companions + World Title Mismatch (Claude Sonnet 4.6)
 
 **Goal:** Fix the two remaining deferred Creator band bugs from the 12yo UX audit.
