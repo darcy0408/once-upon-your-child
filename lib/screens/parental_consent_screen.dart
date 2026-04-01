@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
@@ -98,6 +100,44 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Child-facing intro — shown before the parent legal content
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withAlpha(30),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withAlpha(180),
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('🌟', style: TextStyle(fontSize: 36)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Hey! We need a grown-up\'s OK',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.fredoka(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Before you can start creating stories, a parent or guardian needs to give permission. Hand the device to them and they\'ll get you set up!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Text(
                   'Notice to Parents & Guardians 👋',
                   style: GoogleFonts.fredoka(
@@ -320,6 +360,92 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       _submitting ? 'Saving...' : 'Give Permission ✓',
                       style: GoogleFonts.fredoka(
                           fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                // ── ElevenLabs kudos ─────────────────────────────────────────
+                GestureDetector(
+                  onTap: () => launchUrl(
+                    Uri.parse('https://elevenlabs.io/impact-program'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(8),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: Colors.white.withAlpha(30), width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            SvgPicture.network(
+                              'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg',
+                              height: 22,
+                              semanticsLabel: 'ElevenLabs',
+                              placeholderBuilder: (_) => Text(
+                                'ElevenLabs',
+                                style: GoogleFonts.fredoka(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700).withAlpha(40),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: const Color(0xFFFFD700).withAlpha(120)),
+                              ),
+                              child: Text(
+                                'Proud Partner',
+                                style: GoogleFonts.fredoka(
+                                  color: const Color(0xFFFFD700),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'Story Weaver uses ElevenLabs to bring stories to life with natural, expressive voices. '
+                          'Beyond storytelling, ElevenLabs is doing incredible work through their Impact Program — '
+                          'providing free access to their voice technology for people who have lost the ability to '
+                          'speak, and tools that help people with visual impairments experience the world through sound. '
+                          'We\'re proud to partner with a company whose technology genuinely changes lives.',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Row(
+                          children: [
+                            const Icon(Icons.open_in_new,
+                                color: Color(0xFFFFD700), size: 13),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Learn about their Impact Program',
+                              style: GoogleFonts.fredoka(
+                                color: const Color(0xFFFFD700),
+                                fontSize: 12,
+                                decoration: TextDecoration.underline,
+                                decorationColor: const Color(0xFFFFD700),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
