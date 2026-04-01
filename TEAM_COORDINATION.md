@@ -1,5 +1,39 @@
 # Team Coordination
 
+## 2026-03-31 — Adolescent (16yo) Six Hats UX Audit (Claude Sonnet 4.6)
+
+**Goal:** Six Hats UX audit of the Adolescent band (ages 15–17) via code review + 3 prior screenshots.
+
+### Audit Document
+`docs/ux_audit_adolescent_16yo_2026-03-31.md` — Six Hats walkthrough as a 16-year-old ("Sam").
+
+### Key Findings
+
+| ID | Finding | Severity |
+|----|---------|----------|
+| BUG-A1 | CORE ARCHETYPE is required for `isComplete` but completely unmarked — silent block at "Create Story" | 🔴 Critical |
+| BUG-A2 | Review shows "—" for missing archetype/scenario — "did the app register my choices?" | 🟡 Medium |
+| UX-A1 | Wizard background is hardcoded purple (0xFF120226) — ignores adolescent near-black teal theme | 🟠 High |
+| UX-A2 | "ADVENTURE TEAM" label in Cast section — age-regressive for 16-year-old | 🟠 High |
+| UX-A3 | Adolescent accordion is identical to Creator (12yo) with no meaningful differentiation | 🟠 High |
+| UX-A4 | No genre/tone control — Adventurer (10yo) has genre chips; Adolescent has none | 🟡 Medium |
+| UX-A5 | Character-desire prompt is Creator-only but belongs on Adolescent (15–17 are more capable of answering) | 🟠 High |
+
+### Top 3 Fixes
+1. **BUG-A1** — Required archetype gate: section indicator + snackbar on blocked tap
+2. **UX-A2** — "ADVENTURE TEAM" → "Cast" (one string)
+3. **UX-A5** — Character-desire prompt: remove `isCreator` guard, apply to adolescent too
+
+### Status
+- [x] Audit doc written
+- [ ] BUG-A1: Required-field feedback — deferred
+- [ ] UX-A1: Wizard background colour — deferred
+- [ ] UX-A2: "ADVENTURE TEAM" → "Cast" — deferred
+- [ ] UX-A4: Tone chip row — deferred
+- [ ] UX-A5: Character-desire prompt on adolescent — deferred
+
+---
+
 ## 2026-03-31 — Adult Band UX Audit + Scenario Title Completion (Claude Sonnet 4.6)
 
 **Goal:** Six Hats UX audit of the adult (18+) band; fix scenario title gaps found during audit.
