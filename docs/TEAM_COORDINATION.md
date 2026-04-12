@@ -2,6 +2,330 @@
 
 ---
 
+## Session Update — 2026-04-12 (Docs Refresh + Adolescent UX Deferred Items)
+
+### What was completed this session
+
+#### 1. PROJECT_STATUS.md Refresh
+- Complete rewrite of `docs/PROJECT_STATUS.md` — previous version was from Nov 2025 and deeply outdated.
+- Now reflects all 3 completed phases, 6 age bands, current architecture (Flutter/Flask/Gemini/Isar/Stripe/Sentry), and real v1.1 roadmap.
+
+#### 2. Adolescent UX Deferred Items (`44a96ad`)
+- Resolved 5 deferred items from the Adolescent (15-17) Six Hats UX audit:
+  - **BUG-A1:** Fixed issue with adolescent band wizard flow
+  - **UX-A1 through UX-A5:** Polish items for adolescent-specific UI elements
+
+#### 3. TEAM_COORDINATION.md Catch-Up
+- Added session entries covering all work from 2026-03-28 through 2026-04-12 (previously undocumented).
+
+### Commits this session
+```
+44a96ad fix(wizard): resolve 5 deferred adolescent UX items (BUG-A1, UX-A1–A5)
+```
+(Plus docs commits for PROJECT_STATUS and TEAM_COORDINATION.)
+
+---
+
+## Session Update — 2026-04-01 (Exhaustive AgeBand Switches)
+
+### What was completed
+- `b2e7f7a` — Made all `AgeBand` switch statements exhaustive across the entire codebase, eliminating fallthrough defaults that could silently break when new bands are added. This is a safety-net refactor: every switch on `AgeBand` now handles all 6 cases explicitly.
+
+---
+
+## Session Update — 2026-03-31 (Security Audit + Visual Consistency + Tone Calibration + BYOK Restyle)
+
+### What was completed this session
+
+#### 1. Security Hardening (`109a305`, `a1903ad`)
+- CORS wildcard removed, JWT fallback path hardened, file upload size cap added, age bounds validation, prompt injection pattern filtering.
+- `require_parental_consent` + `_resolve_age` applied to all generation endpoints.
+
+#### 2. Housekeeping (`53a746d`, `6790df7`)
+- `.gitignore` updated for ephemeral artifacts, typo fix in 429 message, COPPA age cap in auth.
+
+#### 3. AgeBandAssetResolver Path Fix (`343e3d9`)
+- Wired resolver to actual `assets/images/` paths — prior resolver pointed to non-existent directories.
+
+#### 4. Phase 1-3 UX Audit Fixes
+- **Phase 1** (`b809390`): Reading label, companion ID, feelings theme, bedtime nav.
+- **Phase 2 Tone Calibration** (`5147709`): CTA copy, coping strategies, bedtime prompt wording.
+- **Phase 3 Visual Consistency** (`4c5da5d`): Band-specific feeling images wired, `storyLength` enum values fixed.
+- **UX-C1/C2/C3** (`ae31049`, `8865c23`): Step nav taps scroll accordion for mature bands; avatar overflow fix; stale scenario title fix.
+
+#### 5. Age Picker & Welcome Screen (`a730f44`, `46615a1`)
+- Two-section layout: big circles for ages 2-8, pill buttons for 9+.
+- Smart voice name extraction on welcome screen.
+
+#### 6. BYOK Wizard Restyle (`c0893c2`, `2f28e48`, `98b8c92`)
+- Dark-theme restyle, illustration preference setting (none/cover/full), settings provider reload after wizard completion, preference wired into story launch.
+
+#### 7. TTS Speed Parameter (`b2b8a9b`)
+- Added `speed` parameter to ElevenLabs TTS API for age-appropriate pacing.
+
+#### 8. Consent & Compliance (`551727d`)
+- Child-facing intro banner added before parent legal content on consent screen.
+
+#### 9. Sprout Archetype Overhaul (`fd88d22`, `0b593ff`, `33cbbd7`, `95092fe`)
+- 2x2 archetype grid with wiggle animations for Sprout band.
+- `youngChildName` labels added to all archetypes.
+- Companion backgrounds removed; avatar gallery grid tightened.
+- M3 `WidgetStateProperty` fix for Creator chip colors.
+
+#### 10. Adult & Adolescent Content
+- `d358aa3` — Complete scenario adult titles + UX audit.
+- `98093c3` — Six Hats UX audit document for Adolescent band (age 16).
+- `3c84174` — Redesigned adolescent & adult therapeutic illustration system.
+- `0dd531b` — Companions, tone, and age-band UX for pick-a-path stories.
+
+#### 11. Asset Cleanup & Generation
+- `079e157` — Removed unused and backup asset files.
+- `4dd3f47` — Generated `mad.png` for all 5 non-Sprout bands.
+- `ff22610` — Regenerated feelings with abstract blob characters + black backgrounds.
+
+### Commits this session (31 commits)
+```
+109a305  fix(security): CORS wildcard, JWT fallback, upload cap, age bounds, injection patterns
+53a746d  fix(misc): gitignore ephemeral artifacts, typo in 429 message, COPPA age cap
+a1903ad  fix(security): apply require_parental_consent + _resolve_age to all generation endpoints
+343e3d9  fix(assets): wire age_band_assets resolver to actual assets/images/ paths
+25f8ef7  fix(review): story type/length subtitle + Adult band button contrast
+b809390  fix(ux): Phase 1 audit fixes
+0dd531b  feat(interactive): companions, tone, and age-band UX for pick-a-path
+3c84174  feat(feelings): redesign adolescent & adult therapeutic illustration system
+be8c4b6  fix(chips): M3 WidgetStateProperty fix for Creator archetype/world chips
+ff22610  fix(feelings): regenerate with abstract blob chars + black backgrounds
+079e157  chore(assets): remove unused and backup asset files
+4dd3f47  feat(assets): generate mad.png for all 5 non-Sprout bands
+b2b8a9b  feat(tts): add speed parameter to ElevenLabs TTS
+a730f44  feat(welcome): grouped age picker + smart voice name extraction
+551727d  feat(consent): add child-facing intro banner
+c0893c2  feat(byok): dark-theme restyle + illustration preference
+2f28e48  fix(settings): reload settingsProvider after BYOK wizard completes
+98b8c92  feat(review): wire illustration preference into story launch
+0b593ff  fix(wizard): M3 WidgetStateProperty chip colors
+33cbbd7  feat(archetypes): add youngChildName labels
+95092fe  chore(assets): remove companion backgrounds; tighten avatar gallery
+fd88d22  feat(sprout): 2x2 archetype grid with wiggle animations
+dc4b03a  fix(creator): add Companions section to accordion
+5147709  fix(ux): Phase 2 tone calibration
+ae31049  fix(ux): UX-C1 — step nav taps scroll accordion
+8865c23  fix(review): UX-C2 avatar overflow + UX-C3 stale scenario title
+46615a1  fix(age-gate): match new two-section age picker layout
+4c5da5d  fix(phase3): wire band-specific feeling images + fix storyLength
+d358aa3  feat(adult): complete scenario adult titles + UX audit
+98093c3  docs(audit): Six Hats UX audit — Adolescent band (age 16)
+```
+(Plus docs(coordination) commits.)
+
+---
+
+## Session Update — 2026-03-30 (Layout Fixes + Wizard Persistence + Mature Feeling Images)
+
+### What was completed this session
+
+#### 1. Phase 7 Polish (`ad2490c`)
+- Loading screen text truncation fix, avatar counter fix, Sprout-specific icons.
+
+#### 2. Review Screen Hardening (`a320dfd`)
+- Companion/scenario image fallbacks, world name text wrapping, genre badge on summary card.
+
+#### 3. Sentry Overflow Fixes (`9aa6f88`)
+- Resolved `STORY-WEAVER-R` and `STORY-WEAVER-K` RenderFlex overflow errors reported by Sentry.
+
+#### 4. Explorer Band Audit (`738e9d2`, `f7d9d0a`)
+- Companion images, archetype gate, "Read Along" label for Explorer.
+- Creator chip visibility, Explorer archetype labels, consent scroll gate.
+
+#### 5. Wizard Draft Persistence (`2a5f601`, `a187364`)
+- Wizard state now persisted to `SharedPreferences` for crash recovery.
+- Gallery overflow fix (BUG-03), loading mini-game tap targets, `clearWizardDraft` reference fix.
+
+#### 6. Layout Polish (`b8c9fc0`, `03c584a`)
+- Third chip Row → Wrap, fallback avatar resize, unlock modal scroll.
+- Archetype card names wrap to 2 lines in Sprout/Explorer grid.
+
+#### 7. Mature Feeling Images (`58be517`)
+- Generated 27 feeling images for adolescent/adult bands.
+
+#### 8. Feelings Tab & Orb Gesture (`2e6b8c3`)
+- Feelings tab split + orb gesture alignment fix.
+
+### Commits this session
+```
+ad2490c  fix(phase7): 3 polish items
+a320dfd  fix(review): companion/scenario image fallbacks, world name wrapping
+9aa6f88  fix(layout): resolve Sentry RenderFlex overflows
+2e6b8c3  fix(audit): feelings tab split + orb gesture alignment
+738e9d2  fix(ux): Explorer band audit
+f7d9d0a  fix(ux): Creator chip visibility, Explorer archetype labels
+2a5f601  feat(wizard): persist wizard draft to SharedPreferences
+a187364  fix(ux): BUG-03 gallery overflow, loading mini-game tap targets
+b8c9fc0  fix(layout): third chip Row → Wrap, fallback avatar resize
+03c584a  fix(ui): archetype card names wrap to 2 lines
+58be517  feat(assets): generate 27 mature feeling images
+ff5ba8b  docs(audit): six-band + usability UX audit docs
+b4943fd  fix(lint): remove unused companion_data import
+```
+
+---
+
+## Session Update — 2026-03-29 (Six-Band UX Overhaul Sprint + Test Suites)
+
+### What was completed this session
+
+This was a major sprint implementing per-band UX overhauls for all 6 age bands, driven by Six Hats UX audits.
+
+#### 1. Six-Band UX Audit Fixes (`c4e9843`, `0783c03`)
+- Mature labels, new feelings, scenario titles across all bands.
+- Dark mode story pages, age-gate two-section split, story result improvements.
+
+#### 2. Backend Rate Limiting Fix (`09705fc`)
+- Replaced `flask-limiter` decorator with manual per-user hourly rate limit on avatar endpoint.
+
+#### 3. Test Suites (`d4205c3`, `93cfa18`)
+- **Frontend:** 79 six-band integration tests.
+- **Backend:** 105 six-band integration tests.
+
+#### 4. Explorer Band Overhaul (Phases 1-4)
+- Phase 3C (`63174f7`): Big Feelings progressive disclosure + body outline widget.
+- Phase 4 (`cc2306d`): Magic Review sticker pop-in, glow ring, 3-2-1 countdown.
+
+#### 5. Adventurer Band Overhaul (Phases 1-5)
+- Phase 1 (`732995d`): Animated welcome splash + first-launch unlock celebration.
+- Phase 2 (`705d221`): Scenario selection badges, teasers, mission hooks.
+- Phase 3+5 (`4a700b6`): RPG character sheet, mission briefing layout, "MISSION READY" button.
+- Phase 4 (`281c25e`): Big Feelings quest bridge + physiological body signal hooks.
+
+#### 6. Creator Band Polish (`fc3838c`)
+- Editorial tool aesthetic for 12-14 band.
+
+#### 7. Adolescent Band Redesign (`62ae649`)
+- Complete 15-17 UX redesign: magic language, minimal review, scenario labels.
+
+#### 8. Cross-Cutting UX Polish (Phases 1-3B)
+- Phase 1 (`97d65a2`): Shared animation & body-outline infrastructure.
+- Phase 2 (`723ad0e`): Welcome screen delight improvements.
+- Phase 3A (`d1afcae`): Scenario carousel parallax, New! badges, visited tracking.
+- Phase 3B (`869e80d`): Hero Creator delight improvements.
+- Cross-cutting fixes (`efc4ecb`): TTS, guardian mode, carousel, post-story.
+- Age circle emoji map extended for ages 13-17 (`24c03e3`).
+
+#### 9. Sprout Enjoyment Overhaul (`dbb7593`)
+- Full Sprout (2-5) UX enjoyment pass.
+
+#### 10. Mature Feelings in Prompts (`310dc80`)
+- Wired mature feelings into story prompts for adolescent/adult bands.
+
+#### 11. Story Mode Thumbnails (`0caeb34`)
+- Story mode orbs replaced with illustrated scene thumbnail cards.
+
+#### 12. Rhyme Time Audit (`4086c79`)
+- Full age-band audit of Rhyme Time mode: scene context, companions, character details, adult poetry.
+
+#### 13. Auth + TTS Fixes (`ae29700`)
+- JWT expiry check, TTS 401 retry, age circle cleanup.
+
+#### 14. Isar Import Fix (`046369a`)
+- Import IO model files directly in `isar_service_io` to resolve analyzer errors.
+
+#### 15. TTS Web Fix (`06124da`)
+- Silence `NotAllowedError` before first user gesture on web.
+
+### Commits this session (28 commits)
+```
+c4e9843  feat(ux): six-band UX audit fixes
+0783c03  feat(bands): six-band UI polish
+09705fc  fix(avatar): manual per-user hourly rate limit
+d4205c3  test(bands): 79 frontend six-band tests
+93cfa18  test(bands): 105 backend six-band tests
+310dc80  feat(feelings): wire mature feelings into prompts
+dbb7593  feat(sprout): Sprout enjoyment overhaul
+705d221  feat(adventurer): Phase 2 scenario badges
+97d65a2  feat(ux-polish): Phase 1 shared animation infra
+723ad0e  feat(ux-polish): Phase 2 welcome screen delight
+4a700b6  feat(adventurer): Phase 3+5 RPG sheet + mission briefing
+d1afcae  feat(ux-polish): Phase 3A scenario carousel parallax
+281c25e  feat(adventurer): Phase 4 Big Feelings quest bridge
+fc3838c  feat(creator): Creator band editorial polish
+732995d  feat(adventurer): Phase 1 animated welcome splash
+efc4ecb  fix(ux): four cross-cutting UX fixes
+869e80d  feat(ux-polish): Phase 3B Hero Creator delight
+62ae649  feat(adolescent): complete 15-17 UX redesign
+046369a  fix(isar): import IO model files directly
+63174f7  feat(ux): Explorer phase 3C Big Feelings
+cc2306d  feat(ux): Explorer phase 4 Magic Review
+06124da  fix(tts): silence web NotAllowedError
+4086c79  fix(rhyme-time): full age band audit
+ae29700  fix(auth+tts): JWT expiry, TTS 401 retry
+0caeb34  feat(ux): story mode scene thumbnails
+24c03e3  fix(ux-polish): age circle emoji map for 13-17
+```
+
+---
+
+## Session Update — 2026-03-28 (P0/P1/P2 Bug Fix Sprint + COPPA Compliance)
+
+### What was completed this session
+
+Major bug-fix sprint addressing priority-ranked issues found during testing, plus compliance hardening.
+
+#### 1. P0 Fixes (Critical)
+- `0714d0e` — Edit pencil routing + archetype audio stacking bug.
+- `fa01096` — Child-friendly error state on story generation failure.
+- `8938db8` — "Take Photo" falls back to gallery on web + camera permission error handling.
+- `6aade94` — Loading screen: Sprout animation fix + sparkle tap + message text wrapping.
+
+#### 2. P1 Fixes (High)
+- `c106f0e` — Companion filter, archetype narration, saved message, error copy.
+- `a9125f9` — Sprout UX: companion images, scene labels, TTS pacing, review nav.
+- `c49c2e2` — Move "Make One Up" to bottom; Sprout world-choice tiles.
+- `708b446` — Sprout feelings: 5 age-appropriate emotions, removed "Yucky"/"Wow".
+- `1e665a4` — Treat 403 as free tier in subscription status fetch.
+
+#### 3. P2 Fixes (Medium)
+- `d99397e` — Sprout story mode + loading background polish.
+- `8b4abb4` — Friend name mic input + skip avatar bottom sheet.
+- `2576d07` — Sad cloud tears animation + feelings speak-on-tap for Sprouts.
+
+#### 4. Compliance
+- `046353e` — Photo consent toggle defaults to OFF per COPPA.
+- `7b25c02` — Re-consent prompt for pre-2026-03-21 consent records.
+- `86cdfff` — Operator address added to privacy policy per COPPA.
+- `341b788` — Contact email updated to onceuponyourchild@gmail.com.
+
+#### 5. Config
+- `fa5b64e` + `3956a1f` — Production backend URL corrected (briefly changed, then reverted to correct Railway URL).
+
+#### 6. Pre-session work
+- `7a6f8cf` — Avatar hair colors, TTS stop guards, consent copy improvements.
+- `4e32275`, `bc80bc1` — Image generation and asset audit utility scripts; gitignore audit outputs.
+
+### Commits this session (19 commits)
+```
+7a6f8cf  fix: avatar hair colors, TTS stop guards, consent copy
+0714d0e  fix(p0): edit pencil routing + archetype audio stacking
+fa01096  fix(p0): child-friendly error state on story generation failure
+8938db8  fix(p0): Take Photo gallery fallback on web
+6aade94  fix(p0): loading screen Sprout animation + sparkle tap
+c106f0e  fix(p1/p2): companion filter, archetype narration, error copy
+a9125f9  fix(p1): Sprout companion images, scene labels, TTS pacing
+c49c2e2  fix(p1): Move Make One Up to bottom; Sprout world tiles
+708b446  fix(p1): Sprout feelings — 5 age-appropriate emotions
+1e665a4  fix(p1): treat 403 as free tier in subscription status
+046353e  fix(compliance): photo consent toggle defaults OFF
+d99397e  fix(p2): Sprout story mode + loading background polish
+8b4abb4  fix(p2): friend name mic input + skip avatar bottom sheet
+2576d07  fix(p2): sad cloud tears + feelings speak-on-tap
+fa5b64e  fix(config): correct production backend URL
+3956a1f  revert(config): restore correct production URL
+7b25c02  fix(compliance): re-consent prompt for old records
+86cdfff  fix(compliance): add operator address to privacy policy
+341b788  fix(compliance): update contact email
+```
+
+---
+
 ## Session Update — 2026-03-27 (Full Session Summary — Age Band Assets + Sprout UX + Audio)
 
 ### What was completed this session
@@ -74,9 +398,8 @@ Verified 2026-03-27: all 5 issues from the plan (`~/.claude/plans/inherited-ques
 | 5 | **Character voice differentiation** — `split_narration_dialogue()` + `generate_speech_with_dialogue()` in backend; `characterVoiceForNarrator()` in `elevenlabs_voice.dart`; `characterVoiceId` param in `TtsApiService.synthesize()`; wired in `_startReading()` | ✅ Done |
 
 ### Open items
+- **CORS blocking production web** — backend CORS config prevents frontend from reaching API in production web deployment; mobile/desktop unaffected
 - **Pick-Your-Path audio-only mode** — full per-age-band review of what's working/broken in audio-only (PYP) mode was requested but not yet done
-- **Utility scripts cleanup** — `generate_all_requested_images.py`, `extract_prompts.py`, `audit_assets.py` etc. are untracked in the repo root; add to `.gitignore` or delete if no longer needed
-- **Deploy** — branch is ahead of `origin/main` by several commits; push and deploy to Railway when ready
 
 ---
 
