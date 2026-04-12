@@ -74,11 +74,11 @@ All 4 switches converted from `default:` to explicit cases — no behavioral cha
 
 ### Status
 - [x] Audit doc written
-- [ ] BUG-A1: Required-field feedback — deferred
-- [ ] UX-A1: Wizard background colour — deferred
-- [ ] UX-A2: "ADVENTURE TEAM" → "Cast" — deferred
-- [ ] UX-A4: Tone chip row — deferred
-- [ ] UX-A5: Character-desire prompt on adolescent — deferred
+- [x] BUG-A1: Required-field feedback — resolved (red asterisk on CORE ARCHETYPE label + snackbar + scroll-to-section on blocked tap)
+- [x] UX-A1: Wizard background colour — resolved (gradient already uses band-specific theme colors)
+- [x] UX-A2: "ADVENTURE TEAM" → "CAST" — resolved (changed to "CAST" in `_buildBriefCompanionsInputs`)
+- [x] UX-A4: Tone chip row — resolved (genre chips added to Creative Brief `_buildBriefConfigInputs` for all mature bands; adolescent/adult get horror, dystopia, literary + shared genres)
+- [x] UX-A5: Character-desire prompt on adolescent — resolved (guard changed to `band.isMature`)
 
 ---
 

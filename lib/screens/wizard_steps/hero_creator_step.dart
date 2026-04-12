@@ -572,6 +572,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Future<void> _handleContinue() async {
+    // Gate: archetype is required for new characters
+    if (_isCreatingNew && _selectedArchetypeId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please select a core archetype to continue'),
+          backgroundColor: Color(0xFFFF6B6B),
+          behavior: SnackBarBehavior.floating,
+        ));
+        // Scroll to the Character & Role section so the user can see the
+        // archetype chips.
+        final keyContext = _briefCharacterKey.currentContext;
+        if (keyContext != null) {
+          Scrollable.ensureVisible(keyContext,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut);
+        }
+      }
+      return;
+    }
     final ok = await _saveCharacterDraft();
     if (ok) {
       FirebaseAnalyticsService.logEvent('hero_creator_complete', {
@@ -3195,12 +3214,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         bandData.band == AgeBand.sprout || bandData.band == AgeBand.explorer;
 
     Widget content = Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF120226), Color(0xFF3D1166), Color(0xFF120226)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      decoration: BoxDecoration(
+        gradient: bandData.backgroundGradient,
       ),
       child: SafeArea(
         child: Stack(
@@ -3476,8 +3491,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildBriefIdentityInputs() {
-    final isCreator =
-        ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
+    final band = ageBandFromAge(widget.wizardData.characterAge);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3497,8 +3511,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           onChanged: (v) => widget.wizardData.characterName = v,
         ),
-        // Creator band: identity reflection prompt
-        if (isCreator) ...[
+        // Mature bands (creator, adolescent, adult): identity reflection prompt
+        if (band.isMature) ...[
           const SizedBox(height: 20),
           Text(
             'What does your character want more than anything?',
@@ -3526,12 +3540,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         const SizedBox(height: 24),
         _buildBriefGenderSelector(),
         const SizedBox(height: 24),
-        Text(
-          'CORE ARCHETYPE',
-          style: GoogleFonts.sourceSans3(
-              color: Colors.white.withAlpha(100),
-              fontSize: 10,
-              fontWeight: FontWeight.bold),
+        Text.rich(
+          TextSpan(
+            text: 'CORE ARCHETYPE',
+            style: GoogleFonts.sourceSans3(
+                color: Colors.white.withAlpha(100),
+                fontSize: 10,
+                fontWeight: FontWeight.bold),
+            children: const [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Color(0xFFFF6B6B), fontSize: 10),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         // Wrap FilterChips in a Theme override so they render with dark
@@ -3675,7 +3697,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'ADVENTURE TEAM',
+          'CAST',
           style: GoogleFonts.sourceSans3(
               color: Colors.white.withAlpha(100),
               fontSize: 10,
@@ -3793,9 +3815,103 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildBriefConfigInputs() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final showGenreChips = band.band.isMature;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Genre / tone chips — adolescent & adult get mature genre options;
+        // creator band already has them in the PageView flow.
+        if (showGenreChips) ...[
+          Text(
+            'GENRE',
+            style: GoogleFonts.sourceSans3(
+                color: Colors.white.withAlpha(100),
+                fontSize: 10,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _GenreChip(
+                  label: '🔍 Mystery',
+                  value: 'mystery',
+                  selected: widget.wizardData.selectedGenre == 'mystery',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'mystery'
+                              ? null
+                              : 'mystery')),
+              _GenreChip(
+                  label: '👻 Horror',
+                  value: 'horror',
+                  selected: widget.wizardData.selectedGenre == 'horror',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'horror'
+                              ? null
+                              : 'horror')),
+              _GenreChip(
+                  label: '💕 Romance',
+                  value: 'romance',
+                  selected: widget.wizardData.selectedGenre == 'romance',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'romance'
+                              ? null
+                              : 'romance')),
+              _GenreChip(
+                  label: '🚀 Sci-Fi',
+                  value: 'sci-fi',
+                  selected: widget.wizardData.selectedGenre == 'sci-fi',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'sci-fi'
+                              ? null
+                              : 'sci-fi')),
+              _GenreChip(
+                  label: '🏚️ Dystopia',
+                  value: 'dystopia',
+                  selected: widget.wizardData.selectedGenre == 'dystopia',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'dystopia'
+                              ? null
+                              : 'dystopia')),
+              _GenreChip(
+                  label: '📖 Literary',
+                  value: 'literary',
+                  selected: widget.wizardData.selectedGenre == 'literary',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'literary'
+                              ? null
+                              : 'literary')),
+              _GenreChip(
+                  label: '😂 Comedy',
+                  value: 'comedy',
+                  selected: widget.wizardData.selectedGenre == 'comedy',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'comedy'
+                              ? null
+                              : 'comedy')),
+              _GenreChip(
+                  label: '⚔️ Action',
+                  value: 'action',
+                  selected: widget.wizardData.selectedGenre == 'action',
+                  onTap: () => setState(() =>
+                      widget.wizardData.selectedGenre =
+                          widget.wizardData.selectedGenre == 'action'
+                              ? null
+                              : 'action')),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
         Row(
           children: [
             Expanded(
