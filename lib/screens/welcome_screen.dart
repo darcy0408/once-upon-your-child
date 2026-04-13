@@ -72,19 +72,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       ageBandFromAge(_selectedAge!) == AgeBand.adolescent;
 
   // Ages 2-8: individual big buttons (sprout + explorer bands).
+  // Ages 3-11: individual big buttons for young children (3×3 grid).
   static const _youngAgeEntries = <({String label, int value})>[
-    (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),
     (label: '6', value: 6),
     (label: '7', value: 7),
     (label: '8', value: 8),
+    (label: '9', value: 9),
+    (label: '10', value: 10),
+    (label: '11', value: 11),
   ];
 
-  // Older age bands: grouped pill buttons shown below the big circles.
+  // Older age bands: grouped pill buttons (3 items in a single symmetrical row).
   static const _olderAgeEntries = <({String label, int value})>[
-    (label: '9 – 11', value: 10),
     (label: '12 – 14', value: 12),
     (label: '15 – 17', value: 16),
     (label: '18+', value: 21),
@@ -774,14 +776,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 12),
-        // Big circles for young children (ages 2-8) — 3 columns
+        // Big circles for young children (ages 3-11) — 3×3 grid
         LayoutBuilder(
           builder: (context, constraints) {
-            const spacing = 10.0;
+            const spacing = 12.0;
             const columns = 3;
             final circleSize =
                 ((constraints.maxWidth - (spacing * (columns - 1))) / columns)
-                    .clamp(72.0, 100.0);
+                    .clamp(88.0, 120.0);
             return GridView.count(
               crossAxisCount: columns,
               shrinkWrap: true,
@@ -816,14 +818,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           const Expanded(child: Divider(color: Colors.white24)),
         ]),
         const SizedBox(height: 10),
-        // Wider pill buttons for older age bands — 2 per row
+        // Pill buttons for older age bands — 3 in a single symmetrical row
         GridView.count(
-          crossAxisCount: 2,
+          crossAxisCount: 3,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
-          childAspectRatio: 2.8,
+          childAspectRatio: 2.2,
           children: _olderAgeEntries.map((entry) {
             final selected = _selectedAge == entry.value;
             return _AgeBandButton(
@@ -845,13 +847,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
     setState(() => _submitting = true);
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kUserNameKey, name);
-
     await const ParentalConsentService().saveDeclaredAge(_selectedAge!);
     await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
 
     if (_selectedAge! < 13) {
+      // For under-13 users, obtain parental consent BEFORE persisting the
+      // child's name — collecting personal info prior to consent is a COPPA
+      // violation (M-1).
       if (!mounted) return;
       final granted = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
@@ -863,6 +865,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       );
       if (mounted) setState(() => _submitting = false);
       if (granted == true) {
+        // Consent obtained — now safe to persist the child's name.
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_kUserNameKey, name);
         // One-time "new adventures unlocked" celebration for Adventurer band.
         if (mounted && ageBandFromAge(_selectedAge!) == AgeBand.adventurer) {
           await AdventurerUnlockCelebration.show(context);
@@ -872,6 +877,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       return;
     }
 
+    // Age 13+ — no parental consent required; persist name immediately.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kUserNameKey, name);
     await const ParentalConsentService().recordConsent(
       age: _selectedAge!,
       method: 'self_attested',
@@ -969,12 +977,15 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
                 : [],
           ),
           alignment: Alignment.center,
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              color: widget.selected ? _gold : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
         ),
