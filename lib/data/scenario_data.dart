@@ -37,6 +37,13 @@ class ScenarioCard {
   // Age-appropriate alternative for adult band (ages 18+) — existential/philosophical framing.
   // When null, falls back to matureTitle.
   final String? adultTitle;
+  // Adult-band world bible — richer, psychologically grounded setting lore for 18+.
+  // When null, worldBibleForAge falls back to matureWorldBible then worldBible.
+  final String? adultWorldBible;
+  // Evocative introspective question shown on scenario cards for the adult band (18+).
+  // Mirrors creatorThematicQuestion but pitched at adult emotional complexity.
+  // When null, no thematic question overlay is shown.
+  final String? adultThematicQuestion;
   final bool featured; // Pinned at the top of scenario selection
   // Sprout-band (ages 2-5) specific tile image, displayed instead of the
   // general illustration when the child is in the sprout band.
@@ -73,6 +80,8 @@ class ScenarioCard {
     this.creatorTitle,
     this.creatorThematicQuestion,
     this.adultTitle,
+    this.adultWorldBible,
+    this.adultThematicQuestion,
     this.sproutIllustration,
     this.youngBandSceneId,
     this.olderBandSceneId,
@@ -112,6 +121,7 @@ class ScenarioCard {
   /// Get the world bible appropriate for the given age.
   String worldBibleForAge(int age) {
     if (age <= 8 && youngWorldBible != null) return youngWorldBible!;
+    if (age >= 18 && adultWorldBible != null) return adultWorldBible!;
     if (age >= 12 && matureWorldBible != null) return matureWorldBible!;
     return worldBible;
   }
@@ -186,6 +196,9 @@ class ScenarioData {
       creatorTitle: "The Door You're Afraid to Open",
       creatorThematicQuestion: "What are you afraid to face?",
       adultTitle: "Doors We Can't Reopen",
+      adultWorldBible:
+          'The Nexus exists between what was and what might have been — a liminal hall of doors that no longer open. Each is sealed: a summer that ended too soon, a winter you never got to finish, a season you left before you understood what it was teaching you. The Chronokeeper no longer maintains these doors — it mourns them, cataloguing what each closed door cost the traveller who walked through it. The seasons themselves are not weather here; they are states of a relationship, a career, a version of yourself you outgrew before you were ready. Some doors are warm to the touch. Some have grown cold. Physics: you can press your ear to any door and hear an echo of what was — but opening them is not the work. The work is learning why you are still standing in the hall.',
+      adultThematicQuestion: "Which door do you keep coming back to?",
       sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
       youngBandSceneId: 'star_village',
       olderBandSceneId: 'ruined_citadel',
@@ -223,6 +236,9 @@ class ScenarioData {
       creatorTitle: 'What Wakes the Fire Inside',
       creatorThematicQuestion: "What wakes the fire inside?",
       adultTitle: 'The Weight of Old Fire',
+      adultWorldBible:
+          'The last dragon colony carries wounds older than living memory — debts of fire, broken oaths, extinctions caused by pride. The elders sleep not from peace but from exhaustion: there is nothing left to prove and no one left to prove it to. The volcanic caldera is a graveyard of decisions that felt necessary at the time. Young dragons are born already knowing the names of ancestors who failed honourably. The Trial of Three still stands, but the elders know: the real trial is what you do with fire after you have used it wrong. The volcano does not threaten — it waits, patient as grief, for someone to stop trying to control it and start listening to what it is saying.',
+      adultThematicQuestion: "What are you still carrying that was never yours to carry?",
       sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'tidal_shrine',
@@ -470,6 +486,9 @@ class ScenarioData {
       creatorTitle: 'The Feeling That Won\'t Let Go',
       creatorThematicQuestion: "What feeling runs your life right now?",
       adultTitle: 'Sitting With It',
+      adultWorldBible:
+          'The inner landscape is not a storm to be conquered — it never was. The terrain is built from every feeling that was swallowed, every rage that had nowhere to go, every grief that got called overreacting. The Feeling Keepers here are not therapists or guides; they are the feelings themselves, grown large from years of being ignored. Anxiety has built an elaborate city. Grief has become a body of water with no clear shore. The work is not to drain the lake or demolish the city — it is to sit on the bank without needing it to be different. Each evidence-based coping technique has a physical form here, a place you can return to. But the portal home opens only when you stop trying to find it.',
+      adultThematicQuestion: "What are you trying not to feel right now?",
     ),
     ScenarioCard(
       id: 'change_is_coming',

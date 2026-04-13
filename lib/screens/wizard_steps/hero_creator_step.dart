@@ -1504,9 +1504,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.selectedScenario == 'safe_space';
 
     final isCreator = band.band == AgeBand.creator;
+    final isAdult = band.band == AgeBand.adult;
 
     // The 4 featured scene buttons with their image assets.
     // For Creator band, populate thematicQuestion from ScenarioData.
+    // For Adult band, use adultThematicQuestion instead.
     ScenarioCard? scenarioById(String id) {
       try {
         return ScenarioData.all.firstWhere((s) => s.id == id);
@@ -1515,34 +1517,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       }
     }
 
+    String? thematicQuestionFor(String id) {
+      final s = scenarioById(id);
+      if (isAdult) return s?.adultThematicQuestion;
+      if (isCreator) return s?.creatorThematicQuestion;
+      return null;
+    }
+
     final featuredButtons = [
       _SceneButtonData(
         id: 'vanishing_colors',
         label: scenarioById('vanishing_colors')?.titleForAge(age) ?? 'Vanishing Colors',
         normalAsset: 'assets/images/scenarios/rainbow_land_btn.png',
         pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.png',
-        thematicQuestion: scenarioById('vanishing_colors')?.creatorThematicQuestion,
+        thematicQuestion: thematicQuestionFor('vanishing_colors'),
       ),
       _SceneButtonData(
         id: 'crystal_cavern',
         label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
         normalAsset: 'assets/images/scenarios/crystal_cave_btn.png',
         pressedAsset: 'assets/images/scenarios/crystal_cave_btn_pressed.png',
-        thematicQuestion: scenarioById('crystal_cavern')?.creatorThematicQuestion,
+        thematicQuestion: thematicQuestionFor('crystal_cavern'),
       ),
       _SceneButtonData(
         id: 'volcano_dragons',
         label: scenarioById('volcano_dragons')?.titleForAge(age) ?? 'Volcano Dragons',
         normalAsset: 'assets/images/scenarios/dragon_friends_btn.png',
         pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
-        thematicQuestion: scenarioById('volcano_dragons')?.creatorThematicQuestion,
+        thematicQuestion: thematicQuestionFor('volcano_dragons'),
       ),
       _SceneButtonData(
         id: 'big_feelings_quest',
         label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Big Feelings Quest',
         normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
         pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
-        thematicQuestion: scenarioById('big_feelings_quest')?.creatorThematicQuestion,
+        thematicQuestion: thematicQuestionFor('big_feelings_quest'),
       ),
     ];
 
@@ -2380,7 +2389,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
           ElevatedButton(
-            onPressed: _openAvatarGallery,
+            onPressed: _openAvatarCreationOptions,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7E57C2),
               foregroundColor: Colors.white,

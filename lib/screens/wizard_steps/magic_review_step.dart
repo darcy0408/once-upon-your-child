@@ -1027,7 +1027,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final scenarioLabel = data.selectedScenario != null
         ? (ScenarioData.getById(data.selectedScenario!)
                 ?.titleForBand(band.band) ??
-            data.selectedScenario!)
+            'Your Story')
         : 'Your own adventure';
     final companionLine = data.companionNames.isEmpty
         ? 'Solo'
@@ -1187,7 +1187,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final scenario = wd.selectedScenario != null
         ? (ScenarioData.getById(wd.selectedScenario!)
                 ?.titleForAge(wd.characterAge) ??
-            wd.selectedScenario!)
+            'a magical place')
         : (band.band.isMature ? 'a setting' : 'a magical place');
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
@@ -1207,7 +1207,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final scenarioLabel = data.selectedScenario != null
         ? (ScenarioData.getById(data.selectedScenario!)
                 ?.titleForBand(band.band) ??
-            data.selectedScenario!)
+            'Your Story')
         : '—';
 
     if (_isGenerating) {
