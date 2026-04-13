@@ -2,6 +2,61 @@
 
 ---
 
+## Session Update — 2026-04-13 (Tracker Audit + Repo Cleanup + M-1 COPPA Fix)
+
+### What was completed this session
+
+#### 1. Story_Weaver_Tracker.xlsx Audit
+Reviewed all 27 items in the tracker. Verified against recent commits and code:
+
+**Already fixed (marked Fixed):**
+| ID | Fix |
+|----|-----|
+| BUG-A1, UX-A1–A5 | `44a96ad` |
+| C-1 (white-on-white chips) | `0b593ff` + `be8c4b6` |
+| C-2 (avatar overflow) | `8865c23` |
+| S-1 (Companions missing in Creator) | `dc4b03a` |
+| S-2 (step nav tabs) | `ae31049` |
+| B2 (companion wrong folder) | Assets properly organized; resolver uses `band.name` |
+| H1 (scenario images 404) | All scenario images exist and declared in pubspec |
+| H3 (Gemini health probe) | Health endpoint does live `_client.models.get()` probe |
+
+**Needs verification (likely already fixed):**
+- H2 (TypeError in wizard): All `.toString()` calls are null-safe; likely fixed in March bug sprint
+- S-3 (off-by-one on review): Scenario selection uses string IDs end-to-end, no index
+- CI-1 (CI/CD broken): All test paths verified to exist
+
+**Still open:**
+- H4: Re-run smoke tests after CORS is fixed (manual task)
+
+#### 2. Repo Cleanup (`ee23625`)
+- Deleted: 3 zero-byte `.db` files, 2 empty Windows `New folder/` artifacts, stale commit msgs, 1.6MB test avatar PNG, placeholder JPEG, empty `conflict_resolution_data.dart`
+- Moved: 80 Python scripts → `scripts/{generation,testing,debug,util}/`; 10 `.bat/.sh` → `scripts/maintenance/`; 2 `.md` → `docs/`; 8 screenshots → `docs/screenshots/`
+- `wsgi.py` remains at root (Railway/Gunicorn entry point)
+
+#### 3. M-1 COPPA Fix — Name Persistence After Consent (`0005b01`)
+- **File:** `lib/screens/welcome_screen.dart`, `_handleContinue()`
+- **Issue:** For users under 13, name was saved to `SharedPreferences` before the `ParentalConsentScreen` was presented — collecting personal info prior to parental consent is a COPPA violation.
+- **Fix:** Moved `prefs.setString(_kUserNameKey, name)` inside the `granted == true` branch. Ages 13+ unaffected.
+
+#### 4. PROJECT_STATUS.md Refresh (carried from 2026-04-12)
+- Full rewrite of `docs/PROJECT_STATUS.md` (was Nov 2025, deeply outdated).
+
+### Commits this session
+```
+26d038d  docs: refresh PROJECT_STATUS + backfill TEAM_COORDINATION through April 2026
+ee23625  chore(cleanup): repo cleanup — delete stale files, organize scripts
+0005b01  fix(compliance): M-1 — defer name persistence until after parental consent
+5284390  docs(tracker): mark resolved items Fixed in Story_Weaver_Tracker.xlsx
+```
+
+### Open items (updated)
+- **CORS blocking production web** — backend CORS config prevents web frontend from reaching API
+- **H4** — re-run production smoke tests after CORS is resolved
+- **H2, S-3, CI-1** — marked "Needs Verification"; code inspection suggests likely already fixed
+
+---
+
 ## Session Update — 2026-04-12 (Docs Refresh + Adolescent UX Deferred Items)
 
 ### What was completed this session
