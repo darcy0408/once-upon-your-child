@@ -221,10 +221,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       AppTtsService.instance.stop();
       _speech.stop();
       setState(() => _celebratingName = true);
-      unawaited(_speak('Welcome, $name!'));
       unawaited(_burstController.trigger());
-      // Brief celebration delay before proceeding
-      Future.delayed(const Duration(milliseconds: 650), () {
+      // Say "Hi <name>!" and wait for it to finish before advancing.
+      _speak('Hi $name!', awaitCompletion: true).then((_) {
         if (mounted) _handleContinue();
       });
     }
@@ -868,6 +867,51 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         // Consent obtained — now safe to persist the child's name.
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_kUserNameKey, name);
+        // Offer parent controls setup before the child starts playing.
+        if (mounted) {
+          final setupNow = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1A0533),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: Text(
+                'One more thing!',
+                style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
+              ),
+              content: Text(
+                'You can tell us what your child is working on — '
+                'big feelings, tricky moments, things they\'re '
+                'practising — and we\'ll weave it into their stories.\n\n'
+                'You can always find this later under the Parent button.',
+                style: const TextStyle(color: Colors.white70, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Maybe later',
+                      style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _goldColor,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Set up now'),
+                ),
+              ],
+            ),
+          );
+          if (mounted && setupNow == true) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => const ParentControlsScreen()),
+            );
+          }
+        }
         // One-time "new adventures unlocked" celebration for Adventurer band.
         if (mounted && ageBandFromAge(_selectedAge!) == AgeBand.adventurer) {
           await AdventurerUnlockCelebration.show(context);

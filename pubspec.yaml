@@ -155,7 +155,6 @@ flutter:
     - assets/feelings_faces/
     - assets/mood_lanterns/
     - assets/sounds/
-    - thePlaceholderImageBeforeCharacterGeneration.jpeg
     - assets/config/
     - assets/avatars/midjourney/
     - assets/avatars/midjourney/metadata.json

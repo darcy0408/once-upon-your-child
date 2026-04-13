@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
 import 'privacy_policy_screen.dart';
@@ -37,6 +38,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Let the child know they need a grown-up.
+    AppTtsService.instance.speak('Now let\'s get a grown-up to say it\'s okay!');
   }
 
   @override

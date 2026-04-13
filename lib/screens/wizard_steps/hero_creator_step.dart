@@ -2561,8 +2561,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         girlAsset = 'assets/images/ui/sprout/girl_character.png';
         break;
       case AgeBand.adventurer:
-        boyAsset = 'assets/images/ui/adventurer/hero_white.png';
-        girlAsset = 'assets/images/ui/adventurer/hero_white.png';
+        boyAsset = 'assets/images/ui/adventurer/boy_character.png';
+        girlAsset = 'assets/images/ui/adventurer/girl_character.png';
         break;
       case AgeBand.explorer:
         boyAsset = 'assets/images/ui/explorer/boy_character_white.png';

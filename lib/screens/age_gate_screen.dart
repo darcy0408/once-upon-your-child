@@ -30,7 +30,7 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
 
   static const _goldColor = Color(0xFFFFD700);
 
-  // Ages 3-8: individual big buttons for young children.
+  // Ages 3-11: individual big buttons for young children (3×3 grid).
   static const _youngAgeEntries = <({String label, int value})>[
     (label: '3', value: 3),
     (label: '4', value: 4),
@@ -38,11 +38,13 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
     (label: '6', value: 6),
     (label: '7', value: 7),
     (label: '8', value: 8),
+    (label: '9', value: 9),
+    (label: '10', value: 10),
+    (label: '11', value: 11),
   ];
 
-  // Older age bands: grouped pill buttons.
+  // Older age bands: grouped pill buttons (3 items in a single symmetrical row).
   static const _olderAgeEntries = <({String label, int value})>[
-    (label: '9 – 11', value: 10),
     (label: '12 – 14', value: 12),
     (label: '15 – 17', value: 16),
     (label: '18+', value: 21),
@@ -93,14 +95,14 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
                           ),
                     ),
                     const SizedBox(height: 12),
-                    // Big circles for young children (ages 3-8) — 3 columns
+                    // Big circles for young children (ages 3-11) — 3×3 grid
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        const spacing = 10.0;
+                        const spacing = 12.0;
                         const columns = 3;
                         final circleSize =
                             ((constraints.maxWidth - (spacing * (columns - 1))) / columns)
-                                .clamp(72.0, 100.0);
+                                .clamp(88.0, 120.0);
                         return GridView.count(
                           crossAxisCount: columns,
                           shrinkWrap: true,
@@ -133,14 +135,14 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
                       const Expanded(child: Divider(color: Colors.white24)),
                     ]),
                     const SizedBox(height: 10),
-                    // Wider pill buttons for older age bands — 2 per row
+                    // Pill buttons for older age bands — 3 in a single symmetrical row
                     GridView.count(
-                      crossAxisCount: 2,
+                      crossAxisCount: 3,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 8,
                       crossAxisSpacing: 8,
-                      childAspectRatio: 2.8,
+                      childAspectRatio: 2.2,
                       children: _olderAgeEntries.map((entry) {
                         return _AgeBandButton(
                           label: entry.label,
@@ -389,12 +391,15 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
                 : [],
           ),
           alignment: Alignment.center,
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              color: widget.selected ? _gold : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
         ),
@@ -456,7 +461,7 @@ class _AgeCircle extends StatelessWidget {
             style: TextStyle(
               color: selected ? _gold : Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: label.length > 2 ? 12 : 17,
+              fontSize: label.length > 1 ? 20 : 26,
             ),
           ),
         ),
