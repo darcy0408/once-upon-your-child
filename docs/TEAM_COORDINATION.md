@@ -2,6 +2,59 @@
 
 ---
 
+## Session Update — 2026-04-13b (ADULT-1/2 + BUG-A2 + MR Polish + CORS Fix)
+
+### What was completed this session
+
+#### 1. CORS Fix — Production Frontend Origin (`504266d`)
+- **File:** `backend/config/__init__.py`
+- Added `https://grand-light-production-68d9.up.railway.app` to `base_origins`
+- Extended `PREVIEW_DEPLOY_URL` env-var guard to accept `up.railway.app` URLs (not just Netlify)
+- `RAILWAY_FRONTEND_URL` env-var support already present as an override path
+
+#### 2. Magic Review Polish — MR-1, MR-2, MR-4 (`504266d`)
+- **MR-1:** `_SummaryRow` border now uses `colorAccent` from band theme (falls back to purple)
+- **MR-2:** `isShimmering: true` added to story-type row in Adventurer and Explorer review builds
+- **MR-4:** `_PitchRow` accepts optional `leadingWidget`; Creator Cast row shows 24×24 companion thumbnail
+
+#### 3. BUG-A2 — Raw Scenario ID Fallback (`0ffb23d`)
+- **File:** `lib/screens/wizard_steps/magic_review_step.dart`
+- 3 locations showed raw internal ID (e.g. `volcano_dragons`) when `ScenarioData.getById()` returned null
+- Fixed: Adolescent `scenarioLabel` → `'Your Story'`; spoken text `scenario` → `'a magical place'`; Creator `scenarioLabel` → `'Your Story'`
+
+#### 4. ADULT-1 — Adult World Bibles (`0ffb23d`)
+- **File:** `lib/data/scenario_data.dart`
+- Added `adultWorldBible` field to `ScenarioCard`; `worldBibleForAge()` checks it first for age >= 18
+- Populated for `doorway_seasons` ("Doors We Can't Reopen"), `volcano_dragons` ("The Weight of Old Fire"), `big_feelings_quest` ("Sitting With It")
+- Themes: regret/liminal grief, inherited burden/legacy, sitting with unfixed feelings
+
+#### 5. ADULT-2 — Adult Thematic Questions (`0ffb23d`)
+- Added `adultThematicQuestion` field to `ScenarioCard`
+- Populated for all 3 adult target scenarios
+- Wired into `_buildPage5()` in `hero_creator_step.dart` via `thematicQuestionFor()` helper that switches on band (adult → `adultThematicQuestion`, creator → `creatorThematicQuestion`)
+
+#### 6. Avatar Tweak Panel — Premium Gating (`4277557`)
+- Non-premium users see a collapsed teaser row (expandable to preview pickers, Generate disabled)
+- Premium users get full flow unchanged
+- Refactored attribute pickers into `_buildAttributePickers()` to avoid duplication
+
+#### 7. ADULT-3 — Deferred
+- Adult meditation screen deferred by user; saved to Claude memory (`project_adult3_deferred.md`)
+
+### Commits this session
+```
+504266d  fix(cors): add Railway frontend origin + env-var escape hatch; polish Magic Review
+0ffb23d  feat(adult): ADULT-1/2 — adult world bibles + thematic questions for top 3 scenarios
+4277557  feat(avatar): gate attribute pickers behind premium with collapsible teaser
+```
+
+### Open items (updated)
+- **H4** — re-run production smoke tests after CORS deploy
+- **H2, S-3, CI-1** — marked "Needs Verification"
+- **ADULT-3** — adult meditation screen (deferred until debugging phase complete)
+
+---
+
 ## Session Update — 2026-04-13 (Tracker Audit + Repo Cleanup + M-1 COPPA Fix)
 
 ### What was completed this session
