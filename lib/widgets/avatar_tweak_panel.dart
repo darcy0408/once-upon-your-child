@@ -43,6 +43,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
   String? _selectedHair;
   String? _selectedEye;
   bool _isGenerating = false;
+  bool _premiumExpanded = false;
   String? _tweakedImageData; // base64 data URI when generation succeeds
 
   bool get _hasChanges => _selectedHair != null || _selectedEye != null;
@@ -348,59 +349,106 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
         ),
         const SizedBox(height: 14),
 
-        // Attribute pickers — dark glass card
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A0835).withAlpha(200),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFFFD54F).withAlpha(45),
-              width: 1.0,
+        // For non-premium users, collapse into a compact teaser
+        if (!widget.isPremium) ...[
+          GestureDetector(
+            onTap: () => setState(() => _premiumExpanded = !_premiumExpanded),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A0835).withAlpha(200),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFFFD54F).withAlpha(45),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text('🔒', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Change hair, eyes & more with Premium',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _premiumExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.white38,
+                    size: 20,
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Column(
-            children: [
-              _chipRow(
-                label: 'Hair length',
-                options: _hairOptions,
-                selected: _selectedHair,
-                onSelect: (v) => _selectedHair = v.isEmpty ? null : v,
-              ),
-              const SizedBox(height: 18),
-              Divider(color: const Color(0xFFFFD54F).withAlpha(30), height: 1),
-              const SizedBox(height: 18),
-              _chipRow(
-                label: 'Eye colour',
-                options: _eyeOptions,
-                selected: _selectedEye,
-                onSelect: (v) => _selectedEye = v.isEmpty ? null : v,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Generate button
-        _isGenerating
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(color: Color(0xFFFFC44D)),
-                      SizedBox(height: 10),
-                      Text(
-                        'Creating your custom look…',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ],
+          if (_premiumExpanded) ...[
+            const SizedBox(height: 12),
+            _buildAttributePickers(),
+            const SizedBox(height: 12),
+            _buildGenerateButton(disabled: true),
+          ],
+        ] else ...[
+          // Premium users get the full expanded pickers
+          _buildAttributePickers(),
+          const SizedBox(height: 20),
+          _isGenerating
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(color: Color(0xFFFFC44D)),
+                        SizedBox(height: 10),
+                        Text(
+                          'Creating your custom look…',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            : _buildGenerateButton(disabled: !(widget.isPremium && _hasChanges)),
+                )
+              : _buildGenerateButton(disabled: !_hasChanges),
+        ],
       ],
+    );
+  }
+
+  Widget _buildAttributePickers() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A0835).withAlpha(200),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD54F).withAlpha(45),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        children: [
+          _chipRow(
+            label: 'Hair length',
+            options: _hairOptions,
+            selected: _selectedHair,
+            onSelect: (v) => _selectedHair = v.isEmpty ? null : v,
+          ),
+          const SizedBox(height: 18),
+          Divider(color: const Color(0xFFFFD54F).withAlpha(30), height: 1),
+          const SizedBox(height: 18),
+          _chipRow(
+            label: 'Eye colour',
+            options: _eyeOptions,
+            selected: _selectedEye,
+            onSelect: (v) => _selectedEye = v.isEmpty ? null : v,
+          ),
+        ],
+      ),
     );
   }
 
