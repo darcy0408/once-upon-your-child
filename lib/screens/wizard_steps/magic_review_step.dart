@@ -942,6 +942,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   band: band,
                   onTap: () => widget.onGoToSubStep?.call(3),
                   colorAccent: const Color(0xFF9C4DCC),
+                  isShimmering: true, // MR-2
                 ),
               ),
               const SizedBox(height: 8),
@@ -1300,13 +1301,24 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 // Setting
                 _PitchRow(icon: Icons.place_outlined, label: 'Setting', value: scenarioLabel),
                 const SizedBox(height: 10),
-                // Companions
+                // Companions — MR-4: show first companion thumbnail inline
                 _PitchRow(
                   icon: Icons.people_outline,
                   label: 'Cast',
                   value: data.companionNames.isEmpty
                       ? 'Solo'
                       : data.companionNames.join(', '),
+                  leadingWidget: data.companionNames.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child:
+                                _CompanionAvatar(companionImage: _companionImage),
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 10),
                 // Story type
@@ -1702,7 +1714,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     label: _storyTypeLabel(data, band),
                     band: band,
                     onTap: () => widget.onGoToSubStep?.call(3),
-                    colorAccent: const Color(0xFF9C4DCC))),
+                    colorAccent: const Color(0xFF9C4DCC),
+                    isShimmering: true)), // MR-2: shimmer on primary row
             SizedBox(height: band.space(8)),
             if (band.band != AgeBand.sprout)
               _StaggeredReveal(
@@ -1849,15 +1862,17 @@ class _PitchRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.leadingWidget, // MR-4: optional avatar thumbnail before the value
   });
   final IconData icon;
   final String label;
   final String value;
+  final Widget? leadingWidget;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, color: Colors.white38, size: 16),
         const SizedBox(width: 8),
@@ -1866,6 +1881,10 @@ class _PitchRow extends StatelessWidget {
           style: GoogleFonts.sourceSans3(
               color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w600),
         ),
+        if (leadingWidget != null) ...[
+          leadingWidget!,
+          const SizedBox(width: 6),
+        ],
         Expanded(
           child: Text(
             value,
@@ -2197,8 +2216,13 @@ class _SummaryRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(35),
                 borderRadius: BorderRadius.circular(band.radiusMd),
-                border:
-                    Border.all(color: const Color(0xFFD4A0FF).withAlpha(80)),
+                // MR-1: border color tracks the row's accent so each card is
+                // visually distinct (blue/gold/purple/pink per content type).
+                border: Border.all(
+                  color: colorAccent != null
+                      ? colorAccent!.withAlpha(90)
+                      : const Color(0xFFD4A0FF).withAlpha(80),
+                ),
               ),
               child: Row(
                 children: [

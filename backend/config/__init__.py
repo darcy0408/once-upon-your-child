@@ -127,18 +127,29 @@ class Config:
     def get_allowed_origins():
         """Get allowed CORS origins based on environment"""
         base_origins = [
+            # Netlify production deploy
             "https://story-weaver-app.netlify.app",
             # SECURITY: Do NOT use "https://*.netlify.app" — it allows any
             # Netlify project to make authenticated cross-origin requests.
             # For preview deploys, set PREVIEW_DEPLOY_URL in the environment.
+
+            # Railway web-frontend service (production)
+            # Set RAILWAY_FRONTEND_URL env var in Railway to override without a code change.
+            "https://grand-light-production-68d9.up.railway.app",
         ]
 
-        # Allow a specific preview-deploy URL (e.g. set by CI for each PR).
+        # Allow a specific preview or alternate deploy URL via env var.
+        # Accepts both Netlify (https://*.netlify.app) and Railway
+        # (https://*.up.railway.app) origins so future re-deploys only need
+        # an env-var update rather than a code change.
         preview_url = os.environ.get('PREVIEW_DEPLOY_URL')
-        if preview_url and preview_url.startswith('https://') and 'netlify.app' in preview_url:
+        if preview_url and preview_url.startswith('https://') and (
+            'netlify.app' in preview_url or 'up.railway.app' in preview_url
+        ):
             base_origins.append(preview_url)
 
-        # Add Railway frontend URL if available
+        # Add Railway frontend URL if available (takes precedence / replaces hardcoded URL
+        # when the Railway service URL changes without requiring a new deploy).
         railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')
         if railway_frontend:
             base_origins.append(railway_frontend)
