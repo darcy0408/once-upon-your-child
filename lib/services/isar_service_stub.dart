@@ -8,15 +8,18 @@ import '../models.dart';
 import '../models/local/character_local.dart';
 import '../models/local/chronicle_local.dart';
 import '../models/local/chapter_memory_local.dart';
+import '../data/isar/avatar_cache_entry.dart';
 
 // Create a stub Isar type that matches the API surface we need
 class Isar {
   CharacterLocalsStub get characterLocals => CharacterLocalsStub();
   ChronicleLocalsStub get chronicleLocals => ChronicleLocalsStub();
   ChapterMemoryLocalsStub get chapterMemoryLocals => ChapterMemoryLocalsStub();
+  AvatarCacheEntrysStub get avatarCacheEntrys => AvatarCacheEntrysStub();
 
-  Future<void> writeTxn(Future<void> Function() callback) async {
-    await callback();
+  /// Generic write transaction — runs callback immediately (no DB transaction on web).
+  Future<T> writeTxn<T>(Future<T> Function() callback) async {
+    return await callback();
   }
 
   void close() {}
@@ -356,4 +359,150 @@ class ChapterMemoryFilterStub {
     list.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
     return list;
   }
+}
+
+// ---------------------------------------------------------------------------
+// AvatarCacheEntry stubs — SharedPreferences-backed avatar cache for web
+// ---------------------------------------------------------------------------
+
+class AvatarCacheEntrysStub {
+  static const String _key = 'isar_avatar_cache';
+
+  AvatarCacheWhereStub where() => AvatarCacheWhereStub();
+  AvatarCacheFilterStub filter() => AvatarCacheFilterStub();
+
+  Future<int> put(AvatarCacheEntry entry) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = _decode(prefs.getString(_key));
+    if (entry.id == 0 || entry.id == -9223372036854775808) {
+      entry.id = DateTime.now().microsecondsSinceEpoch;
+    }
+    final idx = list.indexWhere((e) => e['id'] == entry.id);
+    final data = _toMap(entry);
+    if (idx >= 0) {
+      list[idx] = data;
+    } else {
+      list.add(data);
+    }
+    await prefs.setString(_key, json.encode(list));
+    return entry.id;
+  }
+
+  Future<int> count() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _decode(prefs.getString(_key)).length;
+  }
+
+  Future<int> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    final n = _decode(prefs.getString(_key)).length;
+    await prefs.remove(_key);
+    return n;
+  }
+
+  Future<int> deleteAll(List<int> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = _decode(prefs.getString(_key));
+    final before = list.length;
+    list.removeWhere((e) => ids.contains(e['id'] as int?));
+    await prefs.setString(_key, json.encode(list));
+    return before - list.length;
+  }
+
+  static List<dynamic> _decode(String? raw) =>
+      raw != null ? json.decode(raw) as List<dynamic> : [];
+
+  static Map<String, dynamic> _toMap(AvatarCacheEntry e) => {
+        'id': e.id,
+        'cacheKey': e.cacheKey,
+        'svgString': e.svgString,
+        'createdAt': e.createdAt.toIso8601String(),
+        'schemaVersion': e.schemaVersion,
+        'style': e.style,
+        'seed': e.seed,
+        'optionsJson': e.optionsJson,
+        'ageTier': e.ageTier,
+        'characterAge': e.characterAge,
+        'lastAccessedAt': e.lastAccessedAt?.toIso8601String(),
+      };
+
+  static AvatarCacheEntry _fromMap(Map<String, dynamic> d) {
+    final e = AvatarCacheEntry()
+      ..id = d['id'] as int? ?? 0
+      ..cacheKey = d['cacheKey'] as String? ?? ''
+      ..svgString = d['svgString'] as String? ?? ''
+      ..createdAt = DateTime.tryParse(d['createdAt'] as String? ?? '') ?? DateTime.now()
+      ..schemaVersion = d['schemaVersion'] as String? ?? ''
+      ..style = d['style'] as String? ?? ''
+      ..seed = d['seed'] as String? ?? ''
+      ..optionsJson = d['optionsJson'] as String?
+      ..ageTier = d['ageTier'] as String?
+      ..characterAge = d['characterAge'] as int?
+      ..lastAccessedAt = d['lastAccessedAt'] != null
+          ? DateTime.tryParse(d['lastAccessedAt'] as String)
+          : null;
+    return e;
+  }
+
+  static Future<List<AvatarCacheEntry>> _loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    return _decode(prefs.getString(_key))
+        .map((e) => _fromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+}
+
+class AvatarCacheWhereStub {
+  String? _cacheKey;
+
+  AvatarCacheWhereStub cacheKeyEqualTo(String key) {
+    _cacheKey = key;
+    return this;
+  }
+
+  Future<AvatarCacheEntry?> findFirst() async {
+    final list = await AvatarCacheEntrysStub._loadAll();
+    try {
+      return list.firstWhere((e) => e.cacheKey == _cacheKey);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class AvatarCacheFilterStub {
+  DateTime? _createdBefore;
+  String? _schemaVersion;
+  bool _negate = false;
+
+  AvatarCacheFilterStub createdAtLessThan(DateTime date) {
+    _createdBefore = date;
+    return this;
+  }
+
+  AvatarCacheFilterStub not() {
+    _negate = true;
+    return this;
+  }
+
+  AvatarCacheFilterStub schemaVersionEqualTo(String version) {
+    _schemaVersion = version;
+    return this;
+  }
+
+  Future<List<AvatarCacheEntry>> findAll() async {
+    var list = await AvatarCacheEntrysStub._loadAll();
+    if (_createdBefore != null) {
+      list = list.where((e) => e.createdAt.isBefore(_createdBefore!)).toList();
+    }
+    if (_schemaVersion != null) {
+      bool matches(AvatarCacheEntry e) => e.schemaVersion == _schemaVersion;
+      list = _negate
+          ? list.where((e) => !matches(e)).toList()
+          : list.where(matches).toList();
+    }
+    return list;
+  }
+
+  Future<int> count() async => (await findAll()).length;
 }

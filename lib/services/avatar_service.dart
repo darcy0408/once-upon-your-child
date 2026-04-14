@@ -19,6 +19,7 @@ import '../data/isar/avatar_cache_entry.dart';
 /// - Proper comma-separated array formatting for DiceBear URLs
 /// - Schema version tracking for cache invalidation
 class AvatarService {
+  /// Optional explicit Isar instance. When null, falls back to IsarService.instance.
   final Isar? isar;
   final Random _random = Random();
 
@@ -37,6 +38,18 @@ class AvatarService {
   bool _initialized = false;
 
   AvatarService({this.isar});
+
+  /// Lazily resolves the Isar instance: uses the explicit one if provided,
+  /// otherwise falls back to IsarService.instance (available on both native
+  /// and web via the web stub). Returns null only if neither is available.
+  Isar? get _effectiveIsar {
+    if (isar != null) return isar;
+    try {
+      return IsarService.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Initialize service by loading configuration and allowlists from assets
   Future<void> initialize() async {
@@ -185,8 +198,8 @@ class AvatarService {
     }
   }
 
-  /// Check if caching is available (Isar is not null)
-  bool get _cachingAvailable => isar != null;
+  /// Check if caching is available (Isar resolved, including web stub)
+  bool get _cachingAvailable => _effectiveIsar != null;
 
   /// Determine age tier from character age
   String _getAgeTier(int age) {
@@ -385,23 +398,20 @@ class AvatarService {
 
   /// Get cached avatar by key
   Future<AvatarCacheEntry?> _getCachedAvatar(String cacheKey) async {
-    if (!_cachingAvailable) return null; // No caching on web
-    // TODO: Re-enable when Isar web support is fixed
-    // return await isar.avatarCacheEntrys
-    //     .where()
-    //     .cacheKeyEqualTo(cacheKey)
-    //     .findFirst();
-    return null;
+    if (!_cachingAvailable) return null;
+    return await _effectiveIsar!.avatarCacheEntrys
+        .where()
+        .cacheKeyEqualTo(cacheKey)
+        .findFirst();
   }
 
   /// Update cache access time
   Future<void> _updateCacheAccessTime(AvatarCacheEntry entry) async {
-    if (!_cachingAvailable) return; // No caching on web
-    // TODO: Re-enable when Isar web support is fixed
-    // await isar.writeTxn(() async {
-    //   entry.markAccessed();
-    //   await isar.avatarCacheEntrys.put(entry);
-    // });
+    if (!_cachingAvailable) return;
+    await _effectiveIsar!.writeTxn(() async {
+      entry.markAccessed();
+      await _effectiveIsar!.avatarCacheEntrys.put(entry);
+    });
   }
 
   /// Save avatar to cache
@@ -412,9 +422,8 @@ class AvatarService {
     required Map<String, String> options,
     required int age,
   }) async {
-    if (!_cachingAvailable) return; // No caching on web
+    if (!_cachingAvailable) return;
 
-    /*
     final tier = _getAgeTier(age);
 
     // Sort options for consistent JSON
@@ -432,63 +441,55 @@ class AvatarService {
       ageTier: tier,
       characterAge: age,
     );
-    */
 
-    // TODO: Re-enable when Isar web support is fixed
-    // await isar.writeTxn(() async {
-    //   await isar.avatarCacheEntrys.put(entry);
-    // });
+    await _effectiveIsar!.writeTxn(() async {
+      await _effectiveIsar!.avatarCacheEntrys.put(entry);
+    });
   }
 
   /// Clear all cached avatars
   Future<int> clearCache() async {
-    if (!_cachingAvailable) return 0; // No caching on web
-    // TODO: Re-enable when Isar web support is fixed
-    // return await isar.writeTxn(() async {
-    //   final count = await isar.avatarCacheEntrys.count();
-    //   await isar.avatarCacheEntrys.clear();
-    //   return count;
-    // });
-    return 0;
+    if (!_cachingAvailable) return 0;
+    return await _effectiveIsar!.writeTxn(() async {
+      final count = await _effectiveIsar!.avatarCacheEntrys.count();
+      await _effectiveIsar!.avatarCacheEntrys.clear();
+      return count;
+    });
   }
 
   /// Clear stale cache entries
   Future<int> clearStaleCache() async {
-    if (!_cachingAvailable) return 0; // No caching on web
-    // TODO: Re-enable when Isar web support is fixed
-    // final staleEntries = await isar.avatarCacheEntrys
-    //     .filter()
-    //     .createdAtLessThan(
-    //       DateTime.now().subtract(Duration(days: _cacheMaxAgeDays)),
-    //     )
-    //     .findAll();
+    if (!_cachingAvailable) return 0;
+    final staleEntries = await _effectiveIsar!.avatarCacheEntrys
+        .filter()
+        .createdAtLessThan(
+          DateTime.now().subtract(Duration(days: _cacheMaxAgeDays)),
+        )
+        .findAll();
 
-    // if (staleEntries.isEmpty) return 0;
+    if (staleEntries.isEmpty) return 0;
 
-    // return await isar.writeTxn(() async {
-    //   final ids = staleEntries.map((e) => e.id).toList();
-    //   return await isar.avatarCacheEntrys.deleteAll(ids);
-    // });
-    return 0;
+    return await _effectiveIsar!.writeTxn(() async {
+      final ids = staleEntries.map((e) => e.id).toList();
+      return await _effectiveIsar!.avatarCacheEntrys.deleteAll(ids);
+    });
   }
 
   /// Clear cache entries with old schema version
   Future<int> clearInvalidSchemaCache() async {
-    if (!_cachingAvailable) return 0; // No caching on web
-    // TODO: Re-enable when Isar web support is fixed
-    // final invalidEntries = await isar.avatarCacheEntrys
-    //     .filter()
-    //     .not()
-    //     .schemaVersionEqualTo(_schemaVersion)
-    //     .findAll();
+    if (!_cachingAvailable) return 0;
+    final invalidEntries = await _effectiveIsar!.avatarCacheEntrys
+        .filter()
+        .not()
+        .schemaVersionEqualTo(_schemaVersion)
+        .findAll();
 
-    // if (invalidEntries.isEmpty) return 0;
+    if (invalidEntries.isEmpty) return 0;
 
-    // return await isar.writeTxn(() async {
-    //   final ids = invalidEntries.map((e) => e.id).toList();
-    //   return await isar.avatarCacheEntrys.deleteAll(ids);
-    // });
-    return 0;
+    return await _effectiveIsar!.writeTxn(() async {
+      final ids = invalidEntries.map((e) => e.id).toList();
+      return await _effectiveIsar!.avatarCacheEntrys.deleteAll(ids);
+    });
   }
 
   /// Get cache statistics
@@ -503,23 +504,19 @@ class AvatarService {
       };
     }
 
-    // TODO: Re-enable when Isar web support is fixed
-    // final total = await isar.avatarCacheEntrys.count();
-    // final validSchema = await isar.avatarCacheEntrys
-    //     .filter()
-    //     .schemaVersionEqualTo(_schemaVersion)
-    //     .count();
+    final db = _effectiveIsar!;
+    final total = await db.avatarCacheEntrys.count();
+    final validSchema = await db.avatarCacheEntrys
+        .filter()
+        .schemaVersionEqualTo(_schemaVersion)
+        .count();
 
-    // final stale = await isar.avatarCacheEntrys
-    //     .filter()
-    //     .createdAtLessThan(
-    //       DateTime.now().subtract(Duration(days: _cacheMaxAgeDays)),
-    //     )
-    //     .count();
-
-    final total = 0;
-    final validSchema = 0;
-    final stale = 0;
+    final stale = await db.avatarCacheEntrys
+        .filter()
+        .createdAtLessThan(
+          DateTime.now().subtract(Duration(days: _cacheMaxAgeDays)),
+        )
+        .count();
 
     return {
       'total': total,
