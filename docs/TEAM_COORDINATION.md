@@ -59,10 +59,40 @@ b6ddd35  feat(onboard): age gate 3-11 grid, adventurer gender art, parent contro
 4277557  feat(avatar): gate attribute pickers behind premium with collapsible teaser
 ```
 
+## Session Update — 2026-04-14 (CI-1 + H2 — Full Test Suite Green)
+
+### What was completed this session
+
+#### 1. Test suite: 15 failures → 691 passing (`631ef1f`)
+Root causes and fixes:
+
+| Test file | Root cause | Fix |
+|-----------|-----------|-----|
+| `test_pet_avatar_api.py` | Fixture imported removed `_rate_limit_hits` module var | Updated to clear `app._avatar_generate_counts` |
+| `test_story_routes_async.py` | `_resolve_task_owner` not mocked → PENDING/PROCESSING returned 404; `character` sent as dict broke sanitizer | Added `_resolve_task_owner` stub; sanitizer now handles dict `{name:…}` |
+| `test_pet_avatar.py` | Asserted `"v1"` in prompt version string after upgrade to v2 | Loosened to `"Magical Pet Avatar Creator"` |
+| `test_cinematic_features.py` | Companion format changed from inline to pipe-delimited | Updated format assertion |
+| `test_story_age_appropriateness_suite.py` | Mocked `_generate_story_text` (removed); big feelings choice count wrong (2 not 3) | Mock `_generate_story_text_with_metadata`; fix choice count assertions |
+| `test_story_constraints.py` | Same big feelings choice count stale assertions | Same fix |
+| `test_six_band_integration.py` | Age gate: invalid ages clamped to valid range → 200 instead of 400 | Added explicit 400 for age < 2 or > 120 in `generate_story_endpoint` |
+
+#### 2. Production code changes
+- **`backend/utils/sanitizer.py`**: `sanitize_story_request` handles `character` as dict `{name:…}` (H2 root cause)
+- **`backend/routes/story_routes.py`**: Rejects age < 2 or > 120 with 400 before clamping
+
+### Commits this session
+```
+631ef1f  fix(ci): resolve 15 failing tests — CI-1, H2, age gate, stale assertions
+```
+
+*(Note: `e3bcdf6` committed concurrently by another session — avatar portrait badges, scenario overlay, Gemini model updates, partial sanitizer fix)*
+
 ### Open items (updated)
-- **H4** — re-run production smoke tests after CORS deploy
-- **H2, S-3, CI-1** — marked "Needs Verification"
+- **H4** — re-run production smoke tests after CORS deploy (manual)
+- **S-3** — setting selection off-by-one; no dedicated test; needs a live UI verification pass
 - **ADULT-3** — adult meditation screen (deferred until debugging phase complete)
+
+---
 
 ---
 
