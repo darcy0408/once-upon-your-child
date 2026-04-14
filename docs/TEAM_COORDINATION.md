@@ -33,17 +33,28 @@
 - Populated for all 3 adult target scenarios
 - Wired into `_buildPage5()` in `hero_creator_step.dart` via `thematicQuestionFor()` helper that switches on band (adult → `adultThematicQuestion`, creator → `creatorThematicQuestion`)
 
-#### 6. Avatar Tweak Panel — Premium Gating (`4277557`)
+#### 6. Onboarding — Age Gate + Adventurer Gender Art + Parent Controls Prompt (`b6ddd35`)
+- **Files:** `lib/screens/age_gate_screen.dart`, `welcome_screen.dart`, `parental_consent_screen.dart`, `hero_creator_step.dart`
+- Age picker redesigned: ages 3-11 as 3×3 grid with larger circles (88-120px); 12-14/15-17/18+ as symmetrical 3-column pills beneath
+- "Hi `<name>`!" replaces "Welcome, `<name>`!"; TTS completes before advancing to parental consent
+- After consent, dialog prompts parents to set up Parent Controls ("Set up now" / "Maybe later")
+- `parental_consent_screen`: TTS says "Now let's get a grown-up to say it's okay!" on load
+- Adventurer band now has distinct boy/girl silhouette art (`adventurer/boy_character.png`, `girl_character.png`) instead of the same image for both
+- Removed stale `thePlaceholder` asset reference from `pubspec.yaml`
+
+#### 7. Avatar Tweak Panel — Premium Gating (`4277557`)
 - Non-premium users see a collapsed teaser row (expandable to preview pickers, Generate disabled)
 - Premium users get full flow unchanged
 - Refactored attribute pickers into `_buildAttributePickers()` to avoid duplication
 
-#### 7. ADULT-3 — Deferred
+#### 9. ADULT-3 — Deferred
 - Adult meditation screen deferred by user; saved to Claude memory (`project_adult3_deferred.md`)
 
 ### Commits this session
 ```
+b6ddd35  feat(onboard): age gate 3-11 grid, adventurer gender art, parent controls prompt
 504266d  fix(cors): add Railway frontend origin + env-var escape hatch; polish Magic Review
+10b3c39  docs(tracker): mark MR-1 through MR-4 Fixed; CORS open item noted
 0ffb23d  feat(adult): ADULT-1/2 — adult world bibles + thematic questions for top 3 scenarios
 4277557  feat(avatar): gate attribute pickers behind premium with collapsible teaser
 ```
