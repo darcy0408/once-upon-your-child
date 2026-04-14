@@ -473,7 +473,7 @@ Maintain the character's facial features while converting them into the target a
             )
 
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=[
                     analysis_prompt,
                     types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg"),

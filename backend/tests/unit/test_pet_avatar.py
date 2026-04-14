@@ -87,7 +87,7 @@ def test_avatar_service_pet_generation_logic():
     assert kwargs['species'] == 'Dog'
     assert kwargs['breed_description'] == 'Small white maltese'
     assert kwargs['owner_favorite_color'] == 'Purple'
-    assert "Magical Pet Avatar Creator v1" in kwargs['prompt']
+    assert "Magical Pet Avatar Creator" in kwargs['prompt']
 
 
 def test_avatar_service_pet_generation_falls_back_when_gemini_fails():

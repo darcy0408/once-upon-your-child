@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -326,6 +327,16 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
       'expressiveness': '⚡',
     };
     return map[traitKey.toLowerCase()] ?? '😊';
+  }
+
+  /// Returns the user's avatar image data (base64 data URI or asset path) for
+  /// overlaying on scenario cards, or null if no avatar is set.
+  String? get _avatarImageData {
+    final avatar = widget.wizardData.generatedAvatar;
+    if (avatar != null && avatar.imageBase64.isNotEmpty) {
+      return avatar.imageBase64;
+    }
+    return widget.wizardData.selectedCharacterAssetPath;
   }
 
   String _buildScenarioSpokenText() {
@@ -1077,6 +1088,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             isSelected: isSelected,
             isPreviewing: isPreviewing,
             childAge: age,
+            avatarImageData: _avatarImageData,
             onTap: () {
               if (isPreviewing || isSelected) {
                 // Second tap — confirm selection.
@@ -1158,6 +1170,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             isSelected: isSelected,
             childAge: age,
             isFeatured: true,
+            avatarImageData: _avatarImageData,
             onTap: () => _selectScenario(scenario.id),
           ),
         ),
@@ -1190,6 +1203,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     scenario: scenario,
                     isSelected: isSelected,
                     childAge: age,
+                    avatarImageData: _avatarImageData,
                     showAdventurerBadge: scenario.minBand != null &&
                         currentBand.index >= scenario.minBand!.index,
                     showMissionHook:
@@ -1334,6 +1348,8 @@ class _ScenarioCardWidget extends StatelessWidget {
   final bool isNew;
   /// Wrap in ParallaxTiltCard for 3-D movie-poster effect (carousel only).
   final bool useParallax;
+  /// User's character avatar image data (base64 or asset path) to overlay on scene.
+  final String? avatarImageData;
 
   const _ScenarioCardWidget({
     required this.scenario,
@@ -1347,6 +1363,7 @@ class _ScenarioCardWidget extends StatelessWidget {
     this.showMissionHook = false,
     this.isNew = false,
     this.useParallax = false,
+    this.avatarImageData,
   });
 
   @override
@@ -1359,28 +1376,80 @@ class _ScenarioCardWidget extends StatelessWidget {
         ? illustrationPath
         : 'assets/$illustrationPath';
 
-    Widget imageWidget(double? width, double? height) => Image.asset(
-          resolvedPath,
+    Widget imageWidget(double? width, double? height) {
+      final sceneImage = Image.asset(
+        resolvedPath,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
           width: width,
           height: height,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Colors.white.withValues(alpha: 0.5)
-                  : AppColors.secondaryLight.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                scenario.emoji,
-                style: TextStyle(fontSize: isSprout ? 52 : 48),
-              ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.5)
+                : AppColors.secondaryLight.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              scenario.emoji,
+              style: TextStyle(fontSize: isSprout ? 52 : 48),
             ),
           ),
-        );
+        ),
+      );
+
+      if (avatarImageData == null) return sceneImage;
+
+      // Overlay the user's character on the scene
+      final avatarHeight = (height ?? 140) * 0.6;
+      ImageProvider avatarProvider;
+      if (avatarImageData!.startsWith('data:') || avatarImageData!.contains('base64')) {
+        final b64 = avatarImageData!.contains(',')
+            ? avatarImageData!.split(',').last
+            : avatarImageData!;
+        avatarProvider = MemoryImage(base64Decode(b64));
+      } else if (avatarImageData!.startsWith('assets/')) {
+        avatarProvider = AssetImage(avatarImageData!);
+      } else {
+        return sceneImage;
+      }
+
+      return SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            sceneImage,
+            // Character silhouette with subtle glow
+            Positioned(
+              bottom: 4,
+              right: isSprout ? null : 8,
+              left: isSprout ? 0 : null,
+              child: Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(60),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Image(
+                  image: avatarProvider,
+                  height: avatarHeight,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     Widget card = Semantics(
       button: !isLocked,

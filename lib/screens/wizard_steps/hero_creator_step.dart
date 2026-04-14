@@ -580,14 +580,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           backgroundColor: Color(0xFFFF6B6B),
           behavior: SnackBarBehavior.floating,
         ));
-        // Scroll to the Character & Role section so the user can see the
-        // archetype chips.
         final keyContext = _briefCharacterKey.currentContext;
         if (keyContext != null) {
           Scrollable.ensureVisible(keyContext,
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOut);
         }
+      }
+      return;
+    }
+    // Gate: character look must be chosen for new characters
+    if (_isCreatingNew && !_hasAvatar) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please choose a look for your character first'),
+          backgroundColor: Color(0xFFFF6B6B),
+          behavior: SnackBarBehavior.floating,
+        ));
       }
       return;
     }
@@ -772,52 +781,70 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  // Page 2: "Pick your hero style!" — archetype selection
-  // Page 2: Choose your look (avatar only)
+  // Page 2: Choose how to build your avatar
   Widget _buildPage2() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
+    return Builder(builder: (context) {
+      final band =
+          Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+      final isCreator = band.band == AgeBand.creator;
+      final title = isCreator
+          ? 'How do you want to design your character?'
+          : 'How do you want to build your hero?';
+      return Column(
         children: [
-          const SizedBox(height: 10),
-          Builder(
-            builder: (context) {
-              final band = Theme.of(context).extension<AgeBandThemeData>() ??
-                  explorerTheme;
-              final isCreator = band.band == AgeBand.creator;
-              final title = isCreator ? 'Design your character' : 'Pick your hero\'s look!';
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const MagicEarButton(
-                    spokenText:
-                        "Pick your hero's look! Tap the button to choose one.",
-                    size: 32,
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MagicEarButton(spokenText: title, size: 32),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: _bandTitleStyle(band, baseFontSize: 20),
                   ),
-                  const SizedBox(width: 8),
-                  Text(title,
-                      textAlign: TextAlign.center,
-                      style: _bandTitleStyle(band, baseFontSize: 22)),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          _buildAvatarLookCard(),
-          const SizedBox(height: 20),
-          Builder(builder: (context) {
-            final b = Theme.of(context).extension<AgeBandThemeData>() ??
-                explorerTheme;
-            if (b.band == AgeBand.sprout) return const SizedBox.shrink();
-            return Text(
-              _hasAvatar
-                  ? 'Great! Tap Next to pick your hero style.'
-                  : 'Choose a look before you continue.',
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: _AvatarChoiceCard(
+                    icon: Icons.auto_awesome,
+                    title: 'Gallery Avatar',
+                    subtitle: 'Pick from magical presets',
+                    onTap: _openAvatarGallery,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _AvatarChoiceCard(
+                    icon: Icons.camera_alt_rounded,
+                    title: 'AI Avatar',
+                    subtitle: 'Create from a photo',
+                    onTap: _openCustomAvatarScreen,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          if (_hasAvatar) ...[
+            Text(
+              'Great! Tap Next to pick your hero style.',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
               textAlign: TextAlign.center,
-            );
-          }),
-          const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 12),
+          ],
           _buildNextArrowButton(
             enabled: _hasAvatar,
             onTap: _heroNextPage,
@@ -825,8 +852,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 24),
         ],
-      ),
-    );
+      );
+    });
   }
 
   // Page 3: Pick your hero style (archetype only)
@@ -2335,148 +2362,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return _PressableArrowButton(enabled: enabled, onTap: onTap, hint: hint);
   }
 
-  Widget _buildAvatarLookCard() {
-    final imageData = _generatedAvatar?.imageBase64;
-    final avatarProvider =
-        imageData == null ? null : _getImageProviderFromString(imageData);
-    final isCreator =
-        ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(14),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD700).withAlpha(90)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: const Color(0xFF3A2363),
-            backgroundImage: avatarProvider,
-            child: avatarProvider == null
-                ? Icon(
-                    isCreator ? Icons.draw_outlined : Icons.face_retouching_natural,
-                    color: const Color(0xFFFFD700),
-                    size: 30,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isCreator
-                      ? (_hasAvatar ? 'Character visual ready' : 'Design your character')
-                      : (_hasAvatar ? 'Your hero look is ready' : 'Pick what your hero looks like'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isCreator
-                      ? (_hasAvatar ? 'You can redesign anytime.' : 'Create a visual for your character.')
-                      : (_hasAvatar ? 'You can change it anytime.' : 'Choose a look before you continue.'),
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _openAvatarCreationOptions,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7E57C2),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
-            child: Text(isCreator
-                ? (_hasAvatar ? 'Redesign' : 'Open Designer')
-                : (_hasAvatar ? 'Change Look' : 'Choose Look')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openAvatarCreationOptions() async {
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF2C1B47),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white30,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Choose Your Avatar',
-                style: TextStyle(
-                  color: Color(0xFFFFD700),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Pick a pre-made look or create a magical AI avatar from a photo.',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                leading:
-                    const Icon(Icons.auto_awesome, color: Color(0xFFFFD700)),
-                title: const Text('Gallery Avatar',
-                    style: TextStyle(color: Colors.white)),
-                subtitle: const Text('Quick pick from magical presets',
-                    style: TextStyle(color: Colors.white70)),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _openAvatarGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_rounded,
-                    color: Color(0xFFFFD700)),
-                title: const Text('Take/Upload Photo → AI Avatar',
-                    style: TextStyle(color: Colors.white)),
-                subtitle: const Text(
-                    'Creates a Pixar-style hero from your child photo',
-                    style: TextStyle(color: Colors.white70)),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _openCustomAvatarScreen();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _openAvatarGallery() async {
     if (!mounted) return;
     await showDialog<void>(
@@ -2505,6 +2390,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         builder: (_) => CustomAvatarScreen(
           initialName: widget.wizardData.characterName,
           initialAge: widget.wizardData.characterAge,
+          initialGender: widget.wizardData.characterGender,
           // Sprout welcome screen: "Pick a ready hero" routes here instead
           onOpenGallery: _openAvatarGallery,
         ),
@@ -2545,16 +2431,56 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool get _hasAvatar =>
       _generatedAvatar != null || _customAvatarFilePath != null;
 
-  ImageProvider<Object> _getImageProviderFromString(String imageData) {
-    if (imageData.startsWith('assets/')) {
-      return AssetImage(imageData);
+  String? get _avatarImageData {
+    if (_generatedAvatar != null && _generatedAvatar!.imageBase64.isNotEmpty) {
+      return _generatedAvatar!.imageBase64;
     }
-    if (imageData.startsWith('http')) {
-      return NetworkImage(imageData);
+    // Fall back to selected character asset path (pre-made silhouette)
+    return widget.wizardData.selectedCharacterAssetPath;
+  }
+
+  Widget _buildAvatarBadge({double size = 36}) {
+    final data = _avatarImageData;
+    if (data == null) return const SizedBox.shrink();
+
+    Widget imageWidget;
+    if (data.startsWith('data:image')) {
+      // Base64 generated avatar
+      try {
+        final base64Str = data.split(',').last;
+        imageWidget = Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.face_rounded, color: Colors.white),
+        );
+      } catch (_) {
+        return const SizedBox.shrink();
+      }
+    } else {
+      // Asset path (pre-made silhouette)
+      imageWidget = Image.asset(
+        data,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.face_rounded, color: Colors.white),
+      );
     }
-    final normalized =
-        imageData.contains(',') ? imageData.split(',').last : imageData;
-    return MemoryImage(base64Decode(normalized));
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(100),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(child: imageWidget),
+    );
   }
 
   Widget _buildGenderPicker() {
@@ -2900,9 +2826,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   children: [
                     Container(color: const Color(0xFF1A0A2E)),
                     if (a.imagePathForBand(ageBand) != null)
-                      Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.contain, alignment: Alignment.center)
+                      Opacity(
+                        opacity: _hasAvatar ? 0.78 : 1.0,
+                        child: Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.contain, alignment: Alignment.center),
+                      )
                     else
                       Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
+                    if (_hasAvatar)
+                      Positioned(
+                        top: 6, left: 6,
+                        child: _buildAvatarBadge(size: 36),
+                      ),
                     if (isSelected)
                       Positioned(
                         top: 8, right: 8,
@@ -3016,14 +2950,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     children: [
                       Container(color: const Color(0xFF1A0A2E)),
                       if (a.imagePathForBand(ageBand) != null)
-                        Image.asset(a.imagePathForBand(ageBand)!,
-                            fit: BoxFit.contain, alignment: Alignment.center)
+                        Opacity(
+                          opacity: _hasAvatar ? 0.78 : 1.0,
+                          child: Image.asset(a.imagePathForBand(ageBand)!,
+                              fit: BoxFit.contain, alignment: Alignment.center),
+                        )
                       else
                         Container(
                           color: Colors.white10,
                           child: Center(
                               child: Text(a.icon ?? '✨',
                                   style: const TextStyle(fontSize: 64))),
+                        ),
+                      if (_hasAvatar)
+                        Positioned(
+                          top: 8, left: 8,
+                          child: _buildAvatarBadge(size: 44),
                         ),
                       Positioned(
                         left: 0,
@@ -4074,6 +4016,57 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 }
 
 // ─── Support Widgets ──────────────────────────────────────────────────────────
+
+class _AvatarChoiceCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AvatarChoiceCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C1B47),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFD700).withAlpha(120), width: 1.5),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: const Color(0xFFFFD700), size: 48),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _CharacterChoiceCard extends StatelessWidget {
   final Character character;

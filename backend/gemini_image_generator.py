@@ -34,7 +34,7 @@ class GeminiImageGenerator:
         """Initialize with Gemini API key"""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self._client = None
-        self._model_name = "gemini-2.0-flash-preview-image-generation"
+        self._model_name = "gemini-2.5-flash-image"
         self._request_timeout_seconds = int(os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120"))
         if self.api_key:
             from google import genai

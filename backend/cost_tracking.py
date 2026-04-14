@@ -42,7 +42,7 @@ COST_RATES = {
 }
 
 # Default model if not specified
-DEFAULT_MODEL = 'gemini-2.0-flash'
+DEFAULT_MODEL = 'gemini-2.5-flash'
 
 # Budget limits
 DAILY_BUDGET_LIMIT = 10.0    # $10 per day

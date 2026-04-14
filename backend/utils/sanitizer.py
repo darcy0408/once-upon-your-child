@@ -71,11 +71,16 @@ def sanitize_story_request(body: dict) -> dict:
     """
     sanitized = dict(body)
 
-    # Character name
+    # Character name — may be a plain string or a dict {name: ..., ...}
     if 'character' in sanitized:
-        sanitized['character'] = sanitize_for_prompt(
-            sanitized['character'], MAX_CHARACTER_NAME
-        )
+        char = sanitized['character']
+        if isinstance(char, dict):
+            if 'name' in char:
+                char = dict(char)
+                char['name'] = sanitize_for_prompt(char['name'], MAX_CHARACTER_NAME)
+                sanitized['character'] = char
+        else:
+            sanitized['character'] = sanitize_for_prompt(char, MAX_CHARACTER_NAME)
 
     # Custom elements (the "Imagine It" field)
     if 'custom_elements' in sanitized:

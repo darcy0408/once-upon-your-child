@@ -22,6 +22,7 @@ enum _AvatarStep { sproutWelcome, gender, hairColor, eyeColor, favoriteColor, ph
 class CustomAvatarScreen extends StatefulWidget {
   final String? initialName;
   final int? initialAge;
+  final String? initialGender;
 
   /// Sprout-only: called when the child taps "Pick a ready hero" on the
   /// welcome step so the parent screen can open the avatar gallery instead.
@@ -32,6 +33,7 @@ class CustomAvatarScreen extends StatefulWidget {
     super.key,
     this.initialName,
     this.initialAge,
+    this.initialGender,
     this.onOpenGallery,
   });
 
@@ -84,10 +86,22 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     'Black',
     'Dark Brown',
     'Brown',
+    'Chestnut',
     'Light Brown',
+    'Dark Blonde',
     'Blonde',
+    'Platinum',
     'Auburn',
     'Red',
+    'Ginger',
+    'Strawberry',
+    'Grey',
+    'White',
+    'Pink',
+    'Blue',
+    'Purple',
+    'Teal',
+    'Green',
   ];
 
   static const Map<String, Color> _eyeSwatches = {
@@ -98,13 +112,27 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     'Grey': Color(0xFF90A4AE),
   };
   static const Map<String, Color> _hairSwatches = {
-    'Black': Color(0xFF1B1B1F),
-    'Dark Brown': Color(0xFF4E342E),
-    'Brown': Color(0xFF6D4C41),
-    'Light Brown': Color(0xFFA1887F),
-    'Blonde': Color(0xFFFFE082),
-    'Auburn': Color(0xFF8D4E2F),
-    'Red': Color(0xFFE57373),
+    // Natural shades
+    'Black': Color(0xFF0A0A0A),
+    'Dark Brown': Color(0xFF2C1A0E),
+    'Brown': Color(0xFF5C3A1E),
+    'Chestnut': Color(0xFF80461B),
+    'Light Brown': Color(0xFF8B6914),
+    'Dark Blonde': Color(0xFFB8860B),
+    'Blonde': Color(0xFFD4A940),
+    'Platinum': Color(0xFFE8DCC8),
+    'Auburn': Color(0xFF922B05),
+    'Red': Color(0xFFC62828),
+    'Ginger': Color(0xFFD84315),
+    'Strawberry': Color(0xFFE08060),
+    'Grey': Color(0xFF9E9E9E),
+    'White': Color(0xFFEEEEEE),
+    // Fun / dyed colors
+    'Pink': Color(0xFFE91E90),
+    'Blue': Color(0xFF2196F3),
+    'Purple': Color(0xFF7B1FA2),
+    'Teal': Color(0xFF009688),
+    'Green': Color(0xFF4CAF50),
   };
   static const Map<String, Color> _favoriteSwatches = {
     'Red': Color(0xFFE53935),
@@ -123,21 +151,28 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   void initState() {
     super.initState();
 
-    // Sprout gets a welcome/choice screen first; everyone else starts at gender
+    // Pre-set gender if caller already knows it.
+    if (widget.initialGender != null) {
+      _gender = widget.initialGender!.toLowerCase();
+    }
+
+    // Build step order — skip gender step if already provided.
+    final skipGender = widget.initialGender != null;
+    // For non-sprout photo avatars, the AI can detect hair color and skin
+    // tone from the photo itself. Only ask eye color (hard to tell from
+    // photos) then go straight to the camera.
     _stepOrder = _isSprout
         ? [
             _AvatarStep.sproutWelcome,
-            _AvatarStep.gender,
+            if (!skipGender) _AvatarStep.gender,
             _AvatarStep.hairColor,
             _AvatarStep.eyeColor,
             _AvatarStep.favoriteColor,
             _AvatarStep.photo,
           ]
         : [
-            _AvatarStep.gender,
-            _AvatarStep.hairColor,
+            if (!skipGender) _AvatarStep.gender,
             _AvatarStep.eyeColor,
-            _AvatarStep.favoriteColor,
             _AvatarStep.photo,
           ];
     _step = _stepOrder.first;
@@ -168,6 +203,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── TTS ─────────────────────────────────────────────────────────────────────
   Future<void> _speakPrompt() async {
+    AppTtsService.instance.markInteracted();
     await AppTtsService.instance.stop();
     unawaited(AppTtsService.instance.speak(_question(_step)));
   }
@@ -889,15 +925,20 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     required Map<String, Color> swatches,
     required String selected,
     required ValueChanged<String> onSelect,
+    bool? hideLabels,
   }) {
+    // Smaller swatches when there are many colors
+    final manyColors = colors.length > 10;
     final swatchSize = _isSprout
         ? 88.0
         : _isExplorer
             ? 72.0
-            : _isCreator
-                ? 52.0
-                : 62.0;
-    final showLabel = !_isSprout;
+            : manyColors
+                ? 44.0
+                : _isCreator
+                    ? 52.0
+                    : 62.0;
+    final showLabel = !(hideLabels ?? false) && !_isSprout && !manyColors;
 
     return Center(
       child: Wrap(

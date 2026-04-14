@@ -100,6 +100,8 @@ def test_task_status_maps_celery_states(client, auth_headers, monkeypatch, state
 
     result = _FakeAsyncResult(state, info)
     monkeypatch.setattr(story_routes, "celery", _FakeCelery(result))
+    # Stub owner resolution so PENDING/PROCESSING states aren't rejected as unknown tasks
+    monkeypatch.setattr(story_routes, "_resolve_task_owner", lambda cache, task_id, task: "test_user_123")
 
     response = client.get("/task-status/demo-task", headers=auth_headers)
     assert response.status_code == 200

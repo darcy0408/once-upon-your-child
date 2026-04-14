@@ -162,7 +162,7 @@ def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
 
         # Make a minimal API call to verify the key works
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents="Respond with just the word 'OK' if you can read this.",
             config=types.GenerateContentConfig(
                 max_output_tokens=10,

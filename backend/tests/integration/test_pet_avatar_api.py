@@ -3,11 +3,11 @@ from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 @pytest.fixture(autouse=True)
-def clear_rate_limits():
-    """Clear rate limit hits before each test."""
-    from backend.routes.avatar_routes import _rate_limit_hits, _rate_limit_lock
-    with _rate_limit_lock:
-        _rate_limit_hits.clear()
+def clear_rate_limits(app):
+    """Clear per-user avatar rate limit counters before each test."""
+    with app.app_context():
+        if hasattr(app, '_avatar_generate_counts'):
+            app._avatar_generate_counts.clear()
 
 def test_pet_avatar_api_e2e(client, auth_headers):
     """

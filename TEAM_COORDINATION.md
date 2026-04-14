@@ -1,5 +1,73 @@
 # Team Coordination
 
+## 2026-04-14 — Welcome Screen Age Gate Fix + Avatar Overlays + Backend Model Updates (Claude Sonnet 4.6)
+
+**Goal:** Fix age picker showing wrong ages; add avatar portrait badge on archetype cards (mirroring scenario card treatment); fix adventurer boy/girl silhouettes; clean up avatar creation flow; update deprecated Gemini model names.
+
+### Scope Completed
+
+#### Welcome Screen Age Gate
+- Fixed `welcome_screen.dart` (NOT `age_gate_screen.dart` — the actual user-facing screen) to show ages 3–11 in a 3×3 grid with `_youngAgeEntries`
+- Removed ages 9–11 from `_olderAgeEntries` to avoid duplication
+- Increased circle size, spacing, and font via `_AgeBandButton` + `FittedBox`
+- Age 11 now correctly routes to Adventurer band
+
+#### TTS Improvements
+- Added `"Hi $name!"` ElevenLabs TTS on name step (age picker screen, before advancing)
+- Parental consent screen: added `"Now let's get a grown-up to say it's okay!"` in `initState()`
+- `markInteracted()` added to `custom_avatar_screen.dart` `_speakPrompt()` so read-aloud button works on web (browser audio policy gate)
+
+#### Adventurer Boy/Girl Silhouettes
+- Copied `age_band_assets/11Boy.png` → `assets/images/ui/adventurer/boy_character.png`
+- Copied `age_band_assets/11girl.png` → `assets/images/ui/adventurer/girl_character.png`
+- Previously both archetypes showed the same image
+
+#### Avatar Creation Flow
+- `_openAvatarCreationOptions()` wired up — was calling `_openAvatarGallery` directly, skipping the "Create from photo / Pick from gallery" sheet
+- Photo flow: removed redundant gender question (already picked); now asks only eye color + reference photo (AI infers hair/skin from photo)
+- Hair colors expanded from ~8 to 19 with better distribution (added pink, blue, grey, platinum, strawberry blonde, auburn, etc.)
+- Color labels hidden when palette has >10 options (too cluttered)
+
+#### Premium Section Collapse
+- `avatar_tweak_panel.dart`: premium section defaults collapsed for free users (`_premiumExpanded = false`)
+- Tap to expand reveals premium options without dominating the screen
+
+#### Avatar Overlay on Scenario Cards
+- `feeling_selection_step.dart`: added `_avatarImageData` getter + Stack+Positioned overlay on each scenario card
+- Generated avatar (base64) or selected silhouette shown at 80px, bottom-right, with gold ring border
+
+#### Avatar Portrait Badge on Archetype Cards
+- `hero_creator_step.dart`: added `_avatarImageData` getter + `_buildAvatarBadge({size})` method
+- Sprout/Explorer grid cards: 36px badge top-left + image dimmed to 78% opacity when avatar exists
+- Adventurer/Creator carousel cards: 44px badge top-left, same opacity treatment
+- No badge rendered when no avatar selected (falls back to existing appearance)
+- Symmetrical with selection checkmark at top-right
+
+#### Backend Gemini Model Updates
+- `gemini_image_generator.py`: `self._model_name` → `"gemini-2.5-flash-image"` (was `gemini-2.0-flash-preview-image-generation`, now 404)
+- `avatar_generation_service.py`, `encryption_utils.py`, `cost_tracking.py`: model → `"gemini-2.5-flash"` (was `gemini-2.0-flash`)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | Ages 3–11 grid, circle size, TTS name greeting |
+| `lib/screens/parental_consent_screen.dart` | TTS on init |
+| `lib/custom_avatar_screen.dart` | `markInteracted()` for TTS, skip gender, expanded hair colors, streamlined photo flow |
+| `lib/widgets/avatar_tweak_panel.dart` | Premium section collapsed by default for free users |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Avatar overlay on scenario cards |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Portrait badge on archetype cards; adventurer silhouette assets; avatar creation options wired |
+| `assets/images/ui/adventurer/boy_character.png` | New 11-year-old boy silhouette |
+| `assets/images/ui/adventurer/girl_character.png` | New 11-year-old girl silhouette |
+| `backend/gemini_image_generator.py` | Model → `gemini-2.5-flash-image` |
+| `backend/services/avatar_generation_service.py` | Model → `gemini-2.5-flash` |
+| `backend/encryption_utils.py` | Model → `gemini-2.5-flash` |
+| `backend/cost_tracking.py` | Default model → `gemini-2.5-flash` |
+
+### Known Remaining
+- ElevenLabs TTS still robotic in local dev — backend needs restart with `.env` loaded (ELEVENLABS_API_KEY). Hot reload doesn't pick up env changes.
+
+---
+
 ## 2026-03-31 — 6-Band Exhaustive Switch Audit (Claude Opus 4.6)
 
 **Goal:** Audit all wizard-flow files for incomplete AgeBand switch statements; make all switches exhaustive so the Dart compiler catches future enum additions.
