@@ -436,6 +436,16 @@ def create_story_blueprint(
             resolved_age = character_details.get("age")
         if resolved_age is None:
             resolved_age = 5
+
+        # Reject ages that are clearly out of range before any clamping.
+        # Valid range: 2–120. Anything outside is a bad request, not a silent clamp.
+        try:
+            raw_age_int = int(resolved_age)
+            if not (2 <= raw_age_int <= 120):
+                return jsonify({"error": "age must be between 2 and 120"}), 400
+        except (TypeError, ValueError):
+            return jsonify({"error": "age must be a valid integer"}), 400
+
         resolved_age = _resolve_age(resolved_age)
 
         task_kwargs = {

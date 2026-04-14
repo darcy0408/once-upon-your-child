@@ -160,8 +160,9 @@ class TestStoryConstraints:
         assert 'If repair is needed, keep it brief, brave, and believable.' in prompt
         assert 'Shake out the stuck sparks' in prompt
         assert 'Groan and shove the problem away' in prompt
-        assert 'Say what is not working yet' in prompt
-        assert '"id": "choice_3"' in prompt
+        # Ages 6-8 generate exactly 2 choices; choice_3 is absent by design
+        assert '"id": "choice_2"' in prompt
+        assert '"id": "choice_3"' not in prompt
         assert 'PRESCHOOL PICK-A-PATH RULES' not in prompt
 
     def test_big_feelings_age10_prompt_uses_older_kid_socially_real_guidance(self):
@@ -192,8 +193,9 @@ class TestStoryConstraints:
         assert 'Repair should feel brave and credible, not neat or instant.' in prompt
         assert 'Adults can steady the scene, but the child still makes the key choice.' in prompt
         assert 'Pretend it does not matter and shut down' in prompt
-        assert 'Ask one steady person what is actually going on' in prompt
-        assert '"id": "choice_3"' in prompt
+        # Ages 9-12 generate exactly 2 choices; choice_3 is absent by design
+        assert '"id": "choice_2"' in prompt
+        assert '"id": "choice_3"' not in prompt
         assert 'AGES 13-15 BIG FEELINGS RULES' not in prompt
 
     def test_big_feelings_age14_prompt_uses_teen_nuance_without_moralizing(self):

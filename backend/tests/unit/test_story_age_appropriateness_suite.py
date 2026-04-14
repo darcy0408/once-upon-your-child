@@ -259,8 +259,11 @@ class TestStoryGenerationRoutingAndValidation:
         )
 
         story_generator = mocker.patch(
-            "backend.tasks.story_tasks._generate_story_text",
-            side_effect=[invalid_story, valid_story],
+            "backend.tasks.story_tasks._generate_story_text_with_metadata",
+            side_effect=[
+                (invalid_story, "mock-provider", ["mock-provider"]),
+                (valid_story, "mock-provider", ["mock-provider"]),
+            ],
         )
 
         result = generate_story_task.apply(
@@ -306,8 +309,11 @@ class TestStoryGenerationRoutingAndValidation:
         )
 
         story_generator = mocker.patch(
-            "backend.tasks.story_tasks._generate_story_text",
-            side_effect=[non_rhyming_story, rhyming_story],
+            "backend.tasks.story_tasks._generate_story_text_with_metadata",
+            side_effect=[
+                (non_rhyming_story, "mock-provider", ["mock-provider"]),
+                (rhyming_story, "mock-provider", ["mock-provider"]),
+            ],
         )
 
         result = generate_story_task.apply(
@@ -341,14 +347,14 @@ class TestBigFeelingsPromptAgeCalibration:
             ),
             pytest.param(
                 7,
-                ["AGES 6-8 BIG FEELINGS RULES", "supportive and warm", '"id": "choice_3"'],
-                ["PRESCHOOL PICK-A-PATH RULES"],
+                ["AGES 6-8 BIG FEELINGS RULES", "supportive and warm", '"id": "choice_2"'],
+                ["PRESCHOOL PICK-A-PATH RULES", '"id": "choice_3"'],
                 id="age7_big_feelings_uses_6_to_8_branch",
             ),
             pytest.param(
                 10,
-                ["AGES 9-12 BIG FEELINGS RULES", "regaining choice", '"id": "choice_3"'],
-                ["AGES 13-15 BIG FEELINGS RULES", "PRESCHOOL PICK-A-PATH RULES"],
+                ["AGES 9-12 BIG FEELINGS RULES", "regaining choice", '"id": "choice_2"'],
+                ["AGES 13-15 BIG FEELINGS RULES", "PRESCHOOL PICK-A-PATH RULES", '"id": "choice_3"'],
                 id="age10_big_feelings_uses_9_to_12_branch",
             ),
             pytest.param(

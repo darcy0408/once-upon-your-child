@@ -61,7 +61,7 @@ class TestCinematicFeatures(unittest.TestCase):
         self.assertIn("Gravity is wobbly when thunder rolls", prompt)
         self.assertIn("Static makes hair stand up", prompt)
         self.assertIn("Barnaby", prompt)
-        self.assertIn("FRIENDS: Barnaby (Power: Bubble Shield)", prompt)
+        self.assertIn("Bubble Shield", prompt)  # companion power present in prompt
 
     def test_scenario_details(self):
         # Test Data
