@@ -88,8 +88,42 @@ Root causes and fixes:
 *(Note: `e3bcdf6` committed concurrently by another session — avatar portrait badges, scenario overlay, Gemini model updates, partial sanitizer fix)*
 
 ### Open items (updated)
-- **H4** — re-run production smoke tests after CORS deploy (manual)
-- **S-3** — setting selection off-by-one; no dedicated test; needs a live UI verification pass
+- **ADULT-3** — adult meditation screen (deferred until debugging phase complete)
+
+---
+
+## Session Update — 2026-04-14b (S-3 verified, H4 smoke tests, ISAR web caching)
+
+### What was completed this session
+
+#### 1. S-3 — Verified fixed (code review)
+Scenario selection is ID-based end-to-end (`WizardData.selectedScenario` = string ID; `ScenarioData.getById()` uses `firstWhere`). No array indexing anywhere in the selection/display chain. Off-by-one cannot occur.
+
+#### 2. H4 — Production smoke tests passed
+Ran against `https://story-weaver-app-production.up.railway.app`:
+- Health, database, Gemini live, Stripe configured ✅
+- CORS preflight from Railway frontend (`grand-light-production-68d9`) ✅
+- CORS preflight from Netlify ✅
+- Anonymous auth + story generation (5 pages returned) ✅
+- Age gate fix (reject age < 2 or > 120) is **local-only** — needs Railway deploy
+
+#### 3. ISAR — Avatar cache enabled on web (`2d28e1b`)
+**Root cause:** `AvatarCacheEntrysStub` missing from web stub; `AvatarService` always received `null` Isar, so caching was disabled on all platforms.
+
+**Fix:**
+- `isar_service_stub.dart`: Added `AvatarCacheEntrysStub` (SharedPreferences-backed) with `where().cacheKeyEqualTo().findFirst()`, filter chaining, `put()`, `count()`, `clear()`, `deleteAll()`. Made `writeTxn<T>` generic (was `Future<void>-only`)
+- `avatar_service.dart`: Added `_effectiveIsar` getter falling back to `IsarService.instance`; updated `_cachingAvailable`; un-commented all 7 TODO cache blocks
+
+Avatar caching now works on web (SharedPreferences) and native (Isar DB) with no call-site changes.
+
+### Commits this session
+```
+033312f  docs(tracker): H4 Fixed — production smoke tests pass after CORS deploy
+631ef1f  fix(ci): resolve 15 failing tests — CI-1, H2, age gate, stale assertions
+2d28e1b  feat(isar): ISAR — avatar cache enabled on web via SharedPreferences stub
+```
+
+### Open items (updated)
 - **ADULT-3** — adult meditation screen (deferred until debugging phase complete)
 
 ---
