@@ -128,6 +128,50 @@ Avatar caching now works on web (SharedPreferences) and native (Isar DB) with no
 
 ---
 
+## Session Update — 2026-04-13c (ADULT-3 — Adult Reflect screen)
+
+### What was completed this session
+
+#### 1. ADULT-3 — Adult Reflect screen (`lib/screens/adult_meditation_screen.dart`)
+
+Created a full `AdultMeditationScreen` with three tabs:
+
+- **BREATHE** — Guided breathing with animated orb. Three selectable patterns:
+  - *4-7-8 Calm* (calms nervous system)
+  - *Box Breath* (4-4-4-4, builds focus)
+  - *Physiological Sigh* (double-inhale + long exhale, fast reset)
+  - Cycle counter; STOP button. Animation synced to inhale/exhale phases.
+
+- **REFLECT** — Rotating reflective prompts drawn from adult world bible themes. Text journal with SharedPreferences persistence. Up to 50 entries kept, shown newest-first. "Different prompt" link cycles without saving.
+
+- **GROUND** — 5-4-3-2-1 grounding exercise. Step-by-step with animated progress dots and large number display. Resets on completion.
+
+Visual style: dark `#08080E` background, amber-gold `#BFA45A` accents, SourceSansPro font — matches existing adult band theme. No particles.
+
+#### 2. Adult nav — Reflect tab added (`lib/widgets/app_bottom_navigation.dart`)
+
+Adult band now has 4 tabs matching all other bands:
+```
+0=Stories  1=Reflect  2=Library  3=Settings
+```
+(Previously: 0=Stories, 1=Library, 2=Settings)
+
+Icon: `Icons.self_improvement`
+
+#### 3. Tab routing updated (`lib/main_story.dart`)
+
+`_onTabTapped` updated: adult band now routes index 1 → `AdultMeditationScreen()` (push/pop pattern, same as `FeelingsGardenScreen` for other bands). All index arithmetic is now symmetric — `feelingsIdx=1`, `libraryIdx=2`, `settingsIdx=3` for all bands.
+
+### Commits this session
+```
+(pending)
+```
+
+### Open items (updated)
+- **Railway deploy** — age gate fix (reject age < 2 or > 120) still needs production deploy
+
+---
+
 ---
 
 ## Session Update — 2026-04-13 (Tracker Audit + Repo Cleanup + M-1 COPPA Fix)

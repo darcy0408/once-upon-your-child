@@ -158,7 +158,7 @@ class AppTtsService {
     bool awaitCompletion = false,
     /// Rate multiplier relative to the default (0.42). 1.0 = default.
     /// Use ~0.8 for Sprouts band to slow narration for 3–5 year olds.
-    double rateScale = 1.0,
+    double rateScale = 0.85,
   }) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
