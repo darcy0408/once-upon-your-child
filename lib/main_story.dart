@@ -56,6 +56,7 @@ import 'services/child_profile_service.dart';
 import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/feelings_garden_screen.dart';
+import 'screens/adult_meditation_screen.dart';
 // welcome_screen and wizard_story_screen imported at top of file
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -251,27 +252,35 @@ class _StoryScreenState extends State<StoryScreen> {
       _selectedTabIndex = index;
     });
 
-    // Adults have no feelings tab, so their indices shift:
-    //   Adult:  0=Stories, 1=Library, 2=Settings
-    //   Others: 0=Stories, 1=Feelings, 2=Library, 3=Settings
+    // Tab layout is now symmetric across all bands:
+    //   Adult:  0=Stories, 1=Reflect,   2=Library, 3=Settings
+    //   Others: 0=Stories, 1=Feelings,  2=Library, 3=Settings
     final age = _selectedCharacter?.age ?? 8;
     final isAdult = ageBandFromAge(age) == AgeBand.adult;
 
-    final int feelingsIdx = isAdult ? -1 : 1;
-    final int libraryIdx  = isAdult ? 1 : 2;
-    final int settingsIdx = isAdult ? 2 : 3;
+    const int feelingsIdx = 1; // Reflect for adults, Feelings for others
+    const int libraryIdx  = 2;
+    const int settingsIdx = 3;
 
     // Handle navigation to different screens
     if (index == 0) {
       // Stories - already on this screen
     } else if (index == feelingsIdx) {
-      Navigator.of(context)
-          .push(MaterialPageRoute(
-            builder: (_) => FeelingsGardenScreen(
-              childAge: age,
-            ),
-          ))
-          .then((_) => setState(() => _selectedTabIndex = 0));
+      if (isAdult) {
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+              builder: (_) => const AdultMeditationScreen(),
+            ))
+            .then((_) => setState(() => _selectedTabIndex = 0));
+      } else {
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+              builder: (_) => FeelingsGardenScreen(
+                childAge: age,
+              ),
+            ))
+            .then((_) => setState(() => _selectedTabIndex = 0));
+      }
     } else if (index == libraryIdx) {
       Navigator.of(context)
           .push(
