@@ -6,11 +6,9 @@ import '../services/api_service_manager.dart';
 import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
 import '../services/screen_time_service.dart';
-import '../services/therapist_auth_service.dart';
 import '../settings_screen.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
-import 'therapist_portal_screen.dart';
 
 class ParentControlsScreen extends StatefulWidget {
   const ParentControlsScreen({super.key});
@@ -357,23 +355,24 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     },
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _SectionHeader(title: '🔑  Bring Your Own API Key (BYOK)'),
+                  _SectionHeader(title: '🔑  Unlock Premium Features — Free'),
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Text(
-                      'By default, Story Weaver uses our shared AI service. '
-                      'If you have a Google Gemini API key, you can use it instead — '
-                      'this unlocks premium-quality illustrations and personalised '
-                      'avatars at no extra cost to us.',
+                      'Connect a free Google Gemini API key to unlock '
+                      'premium AI illustrations and personalised avatars. '
+                      'Google offers a generous free tier — most families '
+                      'never pay a cent, though very heavy use could incur '
+                      'small charges on your Google account.',
                       style: GoogleFonts.fredoka(
                           color: Colors.white70, fontSize: 14),
                     ),
                   ),
                   _ActionTile(
                     icon: Icons.vpn_key_rounded,
-                    title: 'Set up your own API key',
+                    title: 'Connect your free API key',
                     subtitle:
-                        'Unlock premium AI illustrations & avatar generation',
+                        'Takes 2 minutes — unlock premium illustrations & avatars',
                     onTap: () async {
                       final result = await Navigator.of(context).push<String>(
                         MaterialPageRoute(
@@ -770,132 +769,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  const _SectionHeader(title: '🔒  Professional Access'),
-                  const SizedBox(height: AppSpacing.sm),
-                  _ActionTile(
-                    icon: Icons.psychology,
-                    title: 'Therapist Portal',
-                    subtitle: 'Gated access for licensed therapists & counselors',
-                    onTap: _openTherapistPortal,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
-      ),
-    );
-  }
-
-  Future<void> _openTherapistPortal() async {
-    final authService = TherapistAuthService();
-    final pinSet = await authService.isPinSet();
-
-    if (!mounted) return;
-
-    if (!pinSet) {
-      // First time: set a PIN
-      final newPin = await _showSetPinDialog();
-      if (newPin == null || !mounted) return;
-      await authService.setPin(newPin);
-      if (!mounted) return;
-    }
-
-    // Verify PIN
-    final entered = await _showEnterPinDialog();
-    if (entered == null || !mounted) return;
-
-    final ok = await authService.verifyPin(entered);
-    if (!mounted) return;
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Incorrect PIN'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const TherapistPortalScreen()),
-    );
-  }
-
-  Future<String?> _showSetPinDialog() {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Set Therapist PIN'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Create a 4-digit PIN to protect therapist access. '
-              'You\'ll need this PIN each time you open the portal.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '4-digit PIN',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final pin = controller.text.trim();
-              if (pin.length == 4 && int.tryParse(pin) != null) {
-                Navigator.of(ctx).pop(pin);
-              }
-            },
-            child: const Text('Set PIN'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<String?> _showEnterPinDialog() {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Therapist Portal'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          maxLength: 4,
-          obscureText: true,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Enter PIN',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (v) {
-            if (v.length == 4) Navigator.of(ctx).pop(v);
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final pin = controller.text.trim();
-              if (pin.length == 4) Navigator.of(ctx).pop(pin);
-            },
-            child: const Text('Enter'),
-          ),
-        ],
       ),
     );
   }
