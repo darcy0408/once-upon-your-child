@@ -99,6 +99,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _characterDesireController;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
+  String _petAvatarGeneratingSpecies = 'Dog'; // tracks species being generated for display text
   late TextEditingController _friendNameController;
 
   // ─── Creative Brief scroll anchors (mature bands) ────────────────────────────
@@ -1143,7 +1144,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 10),
           const Text(
-            'Type a friend\'s name and they\'ll be part of your story.',
+            'Type a friend\'s name and they\'ll join your story.',
             style: TextStyle(color: Colors.white60, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -1259,12 +1260,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               wizardData: widget.wizardData,
               onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
               onChanged: () => setState(() {}),
+              onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
+                  _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
             ),
         ] else
           _PetCard(
             wizardData: widget.wizardData,
             onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
             onChanged: () => setState(() {}),
+            onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
+                _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
           ),
         const SizedBox(height: 8),
         if (_isPetAvatarGenerating)
@@ -1279,10 +1284,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Transforming your pet into magical Pixar style...',
-                  style: TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+                  _petAvatarGeneratingSpecies == 'Human'
+                      ? 'Bringing them into the story as a character...'
+                      : 'Transforming your pet into magical Pixar style...',
+                  style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
                   softWrap: true,
                 ),
               ),
@@ -1364,39 +1371,56 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       }
     });
 
-    final targetIndex =
-        (petIndex ?? 0).clamp(0, widget.wizardData.pets.length - 1);
-    final pet = widget.wizardData.pets[targetIndex];
+    // Photo stored — generation deferred until the user fills in name/species/description and taps Save.
+    if (mounted) setState(() => _petAvatarStatusMessage = null);
+  }
+
+  /// Called when the user taps "Save Companion" in the pet card.
+  /// Fires avatar generation only at this point, after name/species/description are known.
+  Future<void> _onSaveCompanion({
+    required int petIndex,
+    required String name,
+    required String species,
+    required String description,
+  }) async {
+    // Only generate if there's a photo to transform.
+    final photo = widget.wizardData.petPhotos[name];
+    if (photo == null || photo.isEmpty) return;
+
+    // Decode the stored base64 photo back to bytes.
+    final b64Data = photo.replaceFirst(RegExp(r'data:[^,]+,'), '');
+    final List<int> photoBytes = base64Decode(b64Data);
 
     if (mounted) {
       setState(() {
         _isPetAvatarGenerating = true;
+        _petAvatarGeneratingSpecies = species;
         _petAvatarStatusMessage = null;
       });
     }
 
-    final petAvatarResult = await _generateMagicalPetAvatar(
-      petName: pet['name'] ?? _defaultPetNameForIndex(targetIndex),
-      species: pet['species'] ?? 'Dog',
-      looksDescription: pet['color'] ?? 'cute and friendly',
-      photoBytes: bytes,
-      filename: file.name.isNotEmpty ? file.name : 'pet_photo.jpg',
+    final result = await _generateMagicalPetAvatar(
+      petName: name,
+      species: species,
+      looksDescription: description.isEmpty ? (species == 'Human' ? name : species) : description,
+      photoBytes: photoBytes,
+      filename: 'companion_photo.jpg',
     );
 
     if (!mounted) return;
-    final success = !petAvatarResult.isError;
+    final success = !result.isError;
+    final message = result.message ??
+        (success
+            ? (species == 'Human' ? '✨ ${name} is ready for the adventure!' : '✨ Magical pet avatar ready!')
+            : "Oops! Magic isn't working on that picture. Want to pick a buddy instead?");
     setState(() {
       _isPetAvatarGenerating = false;
-      _petAvatarStatusMessage = petAvatarResult.message ??
-          (success
-              ? '✨ Magical pet avatar ready!'
-              : "Oops! Magic isn't working on that picture. Want to pick a buddy instead?");
+      _petAvatarStatusMessage = message;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_petAvatarStatusMessage!),
-        backgroundColor:
-            success ? const Color(0xFF4CAF50) : const Color(0xFF6D4C41),
+        content: Text(message),
+        backgroundColor: success ? const Color(0xFF4CAF50) : const Color(0xFF6D4C41),
       ),
     );
   }
@@ -1425,6 +1449,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           widget.wizardData.favoriteColor.toLowerCase();
       request.fields['owner_age'] =
           widget.wizardData.characterAge.toString();
+      if (species == 'Human') {
+        request.fields['companion_type'] = 'human';
+      }
 
       final headers = await ApiServiceManager.authHeaders();
       headers.forEach((key, value) {
@@ -4746,11 +4773,13 @@ class _PetCard extends StatefulWidget {
   final WizardData wizardData;
   final Future<void> Function({int? petIndex}) onPickPhoto;
   final VoidCallback onChanged;
+  final Future<void> Function({required int petIndex, required String name, required String species, required String description})? onSaveCompanion;
 
   const _PetCard({
     required this.wizardData,
     required this.onPickPhoto,
     required this.onChanged,
+    this.onSaveCompanion,
   });
 
   @override
@@ -5120,7 +5149,7 @@ class _PetCardState extends State<_PetCard> {
                           photo.replaceFirst(RegExp(r'data:[^,]+,'), '')))
                       : null,
                   child: photo == null || photo.isEmpty
-                      ? const Icon(Icons.pets, color: Colors.white70)
+                      ? Icon(_species == 'Human' ? Icons.person : Icons.pets, color: Colors.white70)
                       : null,
                 ),
                 const SizedBox(width: 10),
@@ -5144,7 +5173,7 @@ class _PetCardState extends State<_PetCard> {
                 OutlinedButton.icon(
                   onPressed: _addAnotherPet,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add another pet'),
+                  label: const Text('Add another companion'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () =>
@@ -5205,8 +5234,10 @@ class _PetCardState extends State<_PetCard> {
                                     RegExp(r'data:[^,]+,'), '')),
                                 fit: BoxFit.cover,
                               )
-                            : const Icon(Icons.pets,
-                                color: Colors.white70, size: 36),
+                            : Icon(
+                                _species == 'Human' ? Icons.person : Icons.pets,
+                                color: Colors.white70, size: 36,
+                              ),
                       ),
                     ),
                     Positioned(
@@ -5281,7 +5312,19 @@ class _PetCardState extends State<_PetCard> {
             child: FilledButton.icon(
               onPressed: () {
                 _updatePet();
+                final savedIndex = _selectedPetIndex;
+                final savedName = _nameCtrl.text.trim().isEmpty
+                    ? 'My Pet${savedIndex > 0 ? ' ${savedIndex + 1}' : ''}'
+                    : _nameCtrl.text.trim();
+                final savedSpecies = _species;
+                final savedDescription = _colorCtrl.text.trim();
                 setState(() => _isEditing = false);
+                widget.onSaveCompanion?.call(
+                  petIndex: savedIndex,
+                  name: savedName,
+                  species: savedSpecies,
+                  description: savedDescription,
+                );
               },
               icon: const Icon(Icons.check_rounded, size: 18),
               label: const Text('Save Companion'),
@@ -5590,12 +5633,14 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
                         fontWeight: widget.isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        shadows: widget.isSelected
-                            ? [
-                                const Shadow(
-                                    color: Color(0xFFFFD700), blurRadius: 10)
-                              ]
-                            : null,
+                        shadows: [
+                          Shadow(
+                            color: widget.isSelected
+                                ? const Color(0xFFFFD700)
+                                : const Color(0x00FFD700),
+                            blurRadius: widget.isSelected ? 10.0 : 0.0,
+                          ),
+                        ],
                       )
                     : GoogleFonts.sourceSans3(
                         color: widget.isSelected

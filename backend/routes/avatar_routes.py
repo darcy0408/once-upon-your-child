@@ -215,6 +215,7 @@ def create_avatar_blueprint(limiter):
             breed_description = request.form.get('breed_description')
             owner_favorite_color = request.form.get('owner_favorite_color')
             owner_age = request.form.get('owner_age', '0')
+            companion_type = request.form.get('companion_type', 'pet')  # 'human' or 'pet'
 
             # Basic validation
             if not all([pet_name, species, breed_description, owner_favorite_color]):
@@ -229,21 +230,30 @@ def create_avatar_blueprint(limiter):
             except (ValueError, TypeError):
                 owner_age = 0
 
-            logger.info(f"Pet avatar request: name={pet_name}, species={species}, owner_age={owner_age}")
+            logger.info(f"Companion avatar request: name={pet_name}, species={species}, type={companion_type}, owner_age={owner_age}")
 
             service = get_avatar_service()
 
             try:
-                avatar_data = service.generate_pet_avatar(
-                    pet_name=pet_name,
-                    species=species,
-                    breed_description=breed_description,
-                    owner_favorite_color=owner_favorite_color,
-                    photo_bytes=photo_bytes,
-                    owner_age=owner_age,
-                )
+                if companion_type == 'human':
+                    avatar_data = service.generate_human_companion_avatar(
+                        name=pet_name,
+                        appearance_description=breed_description,
+                        owner_favorite_color=owner_favorite_color,
+                        photo_bytes=photo_bytes,
+                        owner_age=owner_age,
+                    )
+                else:
+                    avatar_data = service.generate_pet_avatar(
+                        pet_name=pet_name,
+                        species=species,
+                        breed_description=breed_description,
+                        owner_favorite_color=owner_favorite_color,
+                        photo_bytes=photo_bytes,
+                        owner_age=owner_age,
+                    )
 
-                logger.info(f"Pet avatar generated successfully: {avatar_data['id']}")
+                logger.info(f"Companion avatar generated successfully: {avatar_data['id']} (type={companion_type})")
 
                 provider_used = avatar_data.get('provider_used')
                 transformation_applied = avatar_data.get('transformation_applied', True)

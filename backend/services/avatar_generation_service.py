@@ -863,6 +863,156 @@ If reference photo is unclear, use Species/Breed description to generate a repre
             transformation_applied=False,
         )
 
+    def generate_human_companion_avatar(
+        self,
+        name: str,
+        appearance_description: str,
+        owner_favorite_color: str,
+        photo_bytes: bytes,
+        owner_age: int = 0,
+    ) -> Dict:
+        """
+        Generate a Pixar-style human character avatar for a friend companion.
+
+        Uses the reference photo to render a recognisable human character
+        rather than an animal, preserving facial likeness.
+
+        Args:
+            name: Companion's name
+            appearance_description: Free-text description of how they look
+            owner_favorite_color: Story owner's favourite colour (for accessories)
+            photo_bytes: Bytes of the uploaded photo
+            owner_age: Age of the story owner (drives art style)
+
+        Returns:
+            Dict with avatar data in the same shape as generate_pet_avatar
+        """
+        start_time = datetime.now()
+
+        band_style = self._pet_style_for_age(owner_age)
+
+        prompt = f"""
+**Human Companion Avatar Creator -- {band_style['style_name']}**
+
+Transform the reference photo into a fully illustrated human companion character for Story Weaver.
+
+**Core Requirements**
+* Likeness Preservation: MANDATORY — maintain recognisable facial features (face shape, eye colour, hair colour, hair style) so the person is clearly identifiable.
+* Human Rendering: render as a person, not an animal. Do NOT turn the subject into any kind of creature.
+* Magical Enhancement: add subtle magical elements that fit the story-book style below.
+
+**Technical Configuration**
+* Reference the uploaded photo for face shape, skin tone, hair, and overall build.
+* Character Name: {name}
+* Appearance: {appearance_description if appearance_description else 'as shown in the reference photo'}
+* Style Anchor: {band_style['art_style']}
+
+**Operational Guidelines**
+1. Facial Likeness: use reference photo as the primary source for all facial features.
+2. Bond-Matched Accessory: {band_style['accessory'].format(owner_favorite_color=owner_favorite_color)}
+   — Ensure any accessory uses a jewel-tone of the owner's Favourite Colour: {owner_favorite_color}
+3. Environment: {band_style['environment']}
+4. Final Render: chest-up or full-body portrait, warm and expressive, 1024x1024 square.
+
+**Output Specifications**
+* Format: single high-resolution square image.
+* Style: {band_style['art_style']}
+
+**Fallback**
+If reference photo is unclear, generate a friendly human character matching the appearance description above.
+"""
+
+        logger.info(f"Generating human companion avatar for {name}, owner_age={owner_age}, style={band_style['style_name']}")
+        primary_error = None
+
+        if self.image_generator is None:
+            primary_error = Exception("Gemini image generation is unavailable")
+        elif not hasattr(self.image_generator, "generate_pet_avatar"):
+            primary_error = Exception("Configured image provider does not support photo-based avatars")
+        else:
+            try:
+                results = self.image_generator.generate_pet_avatar(
+                    photo_bytes=photo_bytes,
+                    species='Human',
+                    breed_description=appearance_description,
+                    owner_favorite_color=owner_favorite_color,
+                    pet_name=name,
+                    num_images=1,
+                    prompt=prompt,
+                )
+                image_base64 = self._extract_base64_from_results(results)
+                if image_base64:
+                    return self._build_pet_avatar_response(
+                        image_base64=f"data:image/png;base64,{image_base64}",
+                        pet_name=name,
+                        species='Human',
+                        breed_description=appearance_description,
+                        owner_favorite_color=owner_favorite_color,
+                        style='pixar-human-companion',
+                        start_time=start_time,
+                        provider_used='gemini',
+                        transformation_applied=True,
+                    )
+                raise Exception("No image generated for human companion avatar")
+            except Exception as e:
+                primary_error = e
+                logger.error(f"Human companion avatar generation failed with primary generator: {e}")
+
+        if self.fallback_generator is not None:
+            try:
+                logger.info("Retrying human companion avatar with text-to-image fallback generator")
+                fallback_prompt = (
+                    f"Pixar-style portrait of a human character named {name}. "
+                    f"Appearance: {appearance_description}. "
+                    f"Warm, expressive, story-book illustration, 1024x1024."
+                )
+                results = self.fallback_generator.generate_character_avatar(
+                    prompt=fallback_prompt,
+                    character_name=name,
+                    age=owner_age if owner_age > 0 else 10,
+                    style='pixar',
+                    num_images=1,
+                )
+                image_base64 = self._extract_base64_from_results(results)
+                if image_base64:
+                    provider_used = re.sub(
+                        r"ImageGenerator$", "",
+                        getattr(self.fallback_generator, "__class__", type("x", (), {})).__name__,
+                    ).lower() or "fallback"
+                    return self._build_pet_avatar_response(
+                        image_base64=f"data:image/png;base64,{image_base64}",
+                        pet_name=name,
+                        species='Human',
+                        breed_description=appearance_description,
+                        owner_favorite_color=owner_favorite_color,
+                        style='pixar-human-fallback',
+                        start_time=start_time,
+                        provider_used=provider_used,
+                        transformation_applied=True,
+                    )
+                raise Exception("No image generated by fallback provider")
+            except Exception as fallback_err:
+                logger.error(f"Human companion avatar fallback also failed: {fallback_err}")
+
+        # Last resort: return the original photo unchanged
+        original_photo_base64 = base64.b64encode(photo_bytes).decode("utf-8")
+        original_photo_mime = self._detect_image_mime_type(photo_bytes)
+        if primary_error is not None:
+            logger.warning("Returning original photo because human companion avatar transformation failed: %s", primary_error)
+        else:
+            logger.warning("Returning original photo because no avatar provider is available")
+        return self._build_pet_avatar_response(
+            image_base64=f"data:{original_photo_mime};base64,{original_photo_base64}",
+            pet_name=name,
+            species='Human',
+            breed_description=appearance_description,
+            owner_favorite_color=owner_favorite_color,
+            style='human-photo-original',
+            start_time=start_time,
+            provider_used='original-photo',
+            transformation_applied=False,
+        )
+
     def generate_avatar(
         self,
         character_name: str,
