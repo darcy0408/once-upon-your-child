@@ -340,7 +340,7 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
   }
 }
 
-/// Wide pill button for grouped older age bands (e.g. "9 – 11").
+/// Wide pill button for grouped older age bands (e.g. "12 – 14").
 class _AgeBandButton extends StatefulWidget {
   const _AgeBandButton({
     required this.label,
@@ -393,12 +393,15 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
           alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.selected ? _gold : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                widget.label,
+                style: TextStyle(
+                  color: widget.selected ? _gold : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
