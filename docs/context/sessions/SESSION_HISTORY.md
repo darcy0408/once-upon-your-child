@@ -4,6 +4,69 @@ This file tracks all work sessions on the Story Weaver App project. Each entry r
 
 ---
 
+## 2026-04-15 - ADULT-3 Reflect Screen, Human Companion Avatar, Parent Controls Cleanup & TTS Rate Fix
+
+**Summary:** Delivered ADULT-3 (the Adult band's Reflect tab), added human-companion avatar generation, removed the unready therapist portal from Parent Controls, refreshed BYOK copy, and globally softened TTS narration pace.
+
+**Key Changes:**
+- `lib/screens/adult_meditation_screen.dart` *(new)* — 3-tab `AdultMeditationScreen`:
+  - **Breathe** — animated breathing orb with three patterns (4-7-8, Box, Physiological Sigh)
+  - **Reflect** — rotating reflective prompts with SharedPreferences journal
+  - **Ground** — 5-4-3-2-1 grounding exercise
+- `lib/main_story.dart` — adult band tab routing updated; now 4 tabs (Stories / Reflect / Library / Settings) matching all other bands
+- `lib/widgets/app_bottom_navigation.dart` — `self_improvement` icon added for Reflect tab
+- `backend/routes/avatar_routes.py` — adds `companion_type` field (`'human'`|`'pet'`) from form data; dispatches to new human method for human companions
+- `backend/services/avatar_generation_service.py` — new `generate_human_companion_avatar()`: photo-to-Pixar prompt optimised for face-likeness; primary Gemini path, fallback text-to-image, final fallback returns original photo
+- `lib/screens/wizard_steps/hero_creator_step.dart` — avatar generation deferred to "Save Companion" tap (all fields known); new `_onSaveCompanion` callback; status text switches on species; person icon in card when `species == 'Human'`
+- `lib/screens/parent_controls_screen.dart` — therapist portal section and PIN auth removed (not release-ready); BYOK heading/description rewritten to lead with "free" and mention Google free tier
+- `lib/services/app_tts_service.dart` — default `rateScale` 1.0 → 0.85 globally
+
+**Decisions Made:**
+- Therapist portal deferred entirely — removed rather than hidden behind a flag to keep the codebase clean
+- Human avatar prompt separate from pet prompt to preserve face-likeness (pet transformation prompt produces cartoon animals, not human likenesses)
+- TTS rate lowered globally at the default level rather than per call-site — all bands benefit
+
+**Issues Encountered:**
+- None significant — all items shipped cleanly in one session
+
+**Remaining Tasks:**
+- None from this session
+
+**Impact:**
+- Adult band now has full 4-tab symmetry with all other bands
+- Human companions get appropriate avatar treatment (face-preserving vs. pet cartoon)
+- Parent Controls is cleaner and BYOK onboarding copy should reduce signup friction
+
+---
+
+## 2026-04-14 - ISAR Avatar Cache Enabled on Web (SharedPreferences Stub)
+
+**Summary:** Avatar caching was previously disabled on web because Isar DB doesn't run in the browser. Implemented a full `SharedPreferences`-backed stub for the Isar avatar cache API so caching now works on web and native without any call-site changes.
+
+**Key Changes:**
+- `lib/services/isar_service_stub.dart` — new `AvatarCacheEntryStub` backed by `SharedPreferences`, implementing:
+  - `where().cacheKeyEqualTo().findFirst()`
+  - `filter()` with `createdAtLessThan` / `schemaVersionEqualTo` / `not()` chaining
+  - `put()`, `count()`, `clear()`, `deleteAll()`
+  - `writeTxn<T>` made generic (was `Future<void>`-only, blocked non-void callbacks)
+- `lib/services/avatar_service.dart` — new `_effectiveIsar` getter falls back to `IsarService.instance` when no explicit Isar provided; `_cachingAvailable` updated to use it; all 7 previously TODO-blocked cache blocks uncommented (`_getCachedAvatar`, `_updateCacheAccessTime`, `_saveToCacheAsync`, `clearCache`, `clearStaleCache`, `clearInvalidSchemaCache`, `getCacheStats`)
+
+**Decisions Made:**
+- Stub mirrors the Isar query-builder interface exactly so `avatar_service.dart` requires zero conditional logic — one code path works on both platforms
+- `writeTxn<T>` generified at the stub level only; native Isar path unchanged
+
+**Issues Encountered:**
+- `writeTxn` was typed `Future<void>` in the stub, causing type errors when non-void callbacks were passed — fixed by making it generic
+
+**Remaining Tasks:**
+- None from this session
+
+**Impact:**
+- Avatar caching now works on web (previously all cache reads/writes silently skipped)
+- Reduces redundant Gemini calls for returning web users
+
+---
+
 ## 2026-03-06 - Make Magic Screen UX Audit & Improvements
 
 **Summary:** Full UX/design audit of the "Make Magic" Step 4 wizard screen (final review before story generation), followed by implementation of all P0/P1/P2 improvements. Identified and fixed a RenderFlex overflow bug, significantly improved summary card visibility and interactivity, enlarged companion/setting circles, added character name display, and wired tap-to-edit navigation.
