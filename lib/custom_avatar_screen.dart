@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_to_text.dart';
 import 'avatar_models.dart';
 import 'config/environment.dart';
 import 'services/api_service_manager.dart';
@@ -58,6 +59,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   bool _isGenerating = false;
   String? _generatedImageBase64;
 
+  // One-time refinement (Adventurer+ / BYOK only)
+  bool _hasUsedRefinement = false;
+  bool _showRefinementInput = false;
+  final TextEditingController _refinementController = TextEditingController();
+  final SpeechToText _refinementSpeech = SpeechToText();
+  bool _refinementSpeechEnabled = false;
+  bool _isListeningForRefinement = false;
+
   // Step transition animation
   late final AnimationController _animCtrl;
   late final Animation<double> _fadeAnim;
@@ -72,6 +81,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   bool get _isSprout => _ageBand == AgeBand.sprout;
   bool get _isExplorer => _ageBand == AgeBand.explorer;
   bool get _isCreator => _ageBand == AgeBand.creator;
+  // Adventurer (9-11) and up can read well enough to use the refinement flow.
+  bool get _canRefine => !_isSprout && !_isExplorer;
 
   // ── Color data ──────────────────────────────────────────────────────────────
   // Sprout: skip Gold/Teal — not intuitive crayon colors for 3-5 year-olds
@@ -192,11 +203,20 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     if (_isSprout) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _speakPrompt());
     }
+
+    // Initialise STT for the refinement mic (non-blocking)
+    if (_canRefine) {
+      _refinementSpeech.initialize().then((ok) {
+        if (mounted) setState(() => _refinementSpeechEnabled = ok);
+      });
+    }
   }
 
   @override
   void dispose() {
     unawaited(AppTtsService.instance.stop());
+    _refinementController.dispose();
+    _refinementSpeech.stop();
     _animCtrl.dispose();
     super.dispose();
   }
@@ -369,7 +389,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   // ── Avatar generation (API call unchanged) ──────────────────────────────────
-  Future<void> _generateAvatar() async {
+  Future<void> _generateAvatar({String? refinementNote}) async {
     if (_imageBytes == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -410,6 +430,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         request.fields['eye_color'] = _eyeColor;
         request.fields['hair_color'] = _hairColor;
         request.fields['favorite_color'] = _favoriteColor;
+        if (refinementNote != null && refinementNote.isNotEmpty) {
+          request.fields['refinement_note'] = refinementNote;
+        }
         debugPrint('📡 Sending custom avatar request to $url');
         final streamed =
             await request.send().timeout(const Duration(minutes: 3));
@@ -1021,44 +1044,47 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Preview circle / placeholder
-        Container(
-          width: previewSize,
-          height: previewSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: _bt.accent.withAlpha(200), width: 3),
-            boxShadow: [
-              BoxShadow(color: _bt.accent.withAlpha(55), blurRadius: 22)
-            ],
+        // Preview circle / placeholder — tappable to open picker directly
+        GestureDetector(
+          onTap: _imageBytes == null ? _takePhoto : null,
+          child: Container(
+            width: previewSize,
+            height: previewSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _bt.accent.withAlpha(200), width: 3),
+              boxShadow: [
+                BoxShadow(color: _bt.accent.withAlpha(55), blurRadius: 22)
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _imageBytes != null
+                ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _isSprout
+                            ? Icons.camera_alt_rounded
+                            : Icons.add_photo_alternate_rounded,
+                        size: _isSprout ? 60 : 48,
+                        color: Colors.white.withAlpha(200),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _isSprout ? 'Your photo' : 'Add photo',
+                        style: _isSprout
+                            ? GoogleFonts.nunito(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white.withAlpha(220))
+                            : GoogleFonts.quicksand(
+                                fontSize: 14,
+                                color: Colors.white.withAlpha(180)),
+                      ),
+                    ],
+                  ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: _imageBytes != null
-              ? Image.memory(_imageBytes!, fit: BoxFit.cover)
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _isSprout
-                          ? Icons.camera_alt_rounded
-                          : Icons.add_photo_alternate_rounded,
-                      size: _isSprout ? 60 : 48,
-                      color: Colors.white.withAlpha(200),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _isSprout ? 'Your photo' : 'Add photo',
-                      style: _isSprout
-                          ? GoogleFonts.nunito(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white.withAlpha(220))
-                          : GoogleFonts.quicksand(
-                              fontSize: 14,
-                              color: Colors.white.withAlpha(180)),
-                    ),
-                  ],
-                ),
         ),
         SizedBox(height: _isSprout ? 16 : 20),
         // Sprout: "ask a grown-up" note
@@ -1297,6 +1323,160 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   // ── Result view ─────────────────────────────────────────────────────────────
+  // ── Refinement helpers ──────────────────────────────────────────────────────
+
+  Future<void> _listenForRefinement() async {
+    if (!_refinementSpeechEnabled) return;
+    if (_isListeningForRefinement) {
+      await _refinementSpeech.stop();
+      setState(() => _isListeningForRefinement = false);
+      return;
+    }
+    setState(() => _isListeningForRefinement = true);
+    await _refinementSpeech.listen(
+      onResult: (result) {
+        setState(() {
+          if (result.recognizedWords.isNotEmpty) {
+            _refinementController.text = result.recognizedWords;
+          }
+          if (result.finalResult) _isListeningForRefinement = false;
+        });
+      },
+    );
+  }
+
+  Future<void> _submitRefinement() async {
+    final note = _refinementController.text.trim();
+    if (note.isEmpty) return;
+    setState(() {
+      _hasUsedRefinement = true;
+      _showRefinementInput = false;
+      _generatedImageBase64 = null;
+    });
+    _refinementController.clear();
+    await _generateAvatar(refinementNote: note);
+  }
+
+  Widget _buildRefinementInput() {
+    const accentColor = Color(0xFF80CBC4);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withAlpha(90)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'What would you like to change?',
+            style: GoogleFonts.quicksand(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _refinementController,
+                  style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. lighter hair, more curly',
+                    hintStyle: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withAlpha(12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: accentColor, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              if (_refinementSpeechEnabled) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _listenForRefinement,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isListeningForRefinement
+                          ? const Color(0xFF9E6CFF)
+                          : const Color(0xFF5F4BDB),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_isListeningForRefinement
+                                  ? const Color(0xFF9E6CFF)
+                                  : const Color(0xFF5F4BDB))
+                              .withAlpha(100),
+                          blurRadius: _isListeningForRefinement ? 14 : 6,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isListeningForRefinement
+                          ? Icons.mic_rounded
+                          : Icons.mic_none_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _refinementController.text.trim().isEmpty
+                      ? null
+                      : _submitRefinement,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.black87,
+                    disabledBackgroundColor: Colors.white24,
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(
+                    'Regenerate',
+                    style: GoogleFonts.quicksand(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => setState(() {
+                  _showRefinementInput = false;
+                  _refinementController.clear();
+                }),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.quicksand(color: Colors.white38),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildResultView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -1367,10 +1547,33 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             ),
           ),
           const SizedBox(height: 12),
+          // "Make a Change" — Adventurer+ (9+) and BYOK only, one use per session
+          if (_canRefine && !_hasUsedRefinement) ...[
+            const SizedBox(height: 4),
+            if (_showRefinementInput)
+              _buildRefinementInput()
+            else
+              TextButton.icon(
+                onPressed: () => setState(() => _showRefinementInput = true),
+                icon: const Icon(Icons.edit_rounded,
+                    size: 15, color: Color(0xFF80CBC4)),
+                label: Text(
+                  'Make a Change',
+                  style: GoogleFonts.quicksand(
+                    color: const Color(0xFF80CBC4),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+          ],
           TextButton(
             onPressed: () => setState(() {
               _generatedImageBase64 = null;
               _step = _stepOrder.first;
+              _hasUsedRefinement = false;
+              _showRefinementInput = false;
+              _refinementController.clear();
             }),
             child: Text(
               _isSprout ? 'Make a new one' : 'Start over',

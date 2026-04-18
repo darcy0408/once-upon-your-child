@@ -446,7 +446,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   _ControlTile(
                     title: 'Bedtime lockout',
                     subtitle: _bedtimeEnabled
-                        ? 'App locks at ${_bedtimeHour.toString().padLeft(2, '0')}:${_bedtimeMinute.toString().padLeft(2, '0')}. Tap the time to change it.'
+                        ? 'App locks at ${_formatBedtime(_bedtimeHour, _bedtimeMinute)}. Tap the time to change it.'
                         : 'When enabled, the app will lock after a set bedtime.',
                     value: _bedtimeEnabled,
                     onChanged: (v) async {
@@ -504,7 +504,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               Text(
-                                'Bedtime: ${_bedtimeHour.toString().padLeft(2, '0')}:${_bedtimeMinute.toString().padLeft(2, '0')}',
+                                'Bedtime: ${_formatBedtime(_bedtimeHour, _bedtimeMinute)}',
                                 style: GoogleFonts.fredoka(
                                   color: Colors.white70,
                                   fontSize: 14,
@@ -631,6 +631,14 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     }
   }
 
+  /// Formats a 24-hour hour/minute pair as 12-hour AM/PM, e.g. "8:30 PM".
+  String _formatBedtime(int hour, int minute) {
+    final period = hour < 12 ? 'AM' : 'PM';
+    final h = hour % 12 == 0 ? 12 : hour % 12;
+    final m = minute.toString().padLeft(2, '0');
+    return '$h:$m $period';
+  }
+
   // ── Big Feelings section ───────────────────────────────────────────────────
 
   Widget _buildBigFeelingsSection() {
@@ -741,25 +749,30 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Create a character first, then come back here to quietly shape their stories.',
+            'Start a story to create a character, then return here via the Parent button to shape their stories.',
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.arrow_back_rounded,
-                  color: Color(0xFFFFD700), size: 18),
-              const SizedBox(width: 6),
-              Text(
-                'Go back and start a story to create a character',
-                style: GoogleFonts.fredoka(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 13,
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.arrow_back_rounded,
+                    color: Color(0xFFFFD700), size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  'Go back and start a story',
+                  style: GoogleFonts.fredoka(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 13,
+                    decoration: TextDecoration.underline,
+                    decorationColor: const Color(0xFFFFD700),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

@@ -1,3 +1,7 @@
+---
+description: "Project briefing and session kickoff for Story Weaver development. Use this skill whenever the user says 'start session', 'what did I work on last', 'where did I leave off', 'catch me up', 'session briefing', 'what's the status', or anything suggesting they're sitting down to work and need context on the current state of the project. Also trigger when the user opens a new conversation and mentions Story Weaver development work."
+---
+
 Read the following files and give me a concise session briefing:
 
 1. `docs/context/sessions/SESSION_HISTORY.md` — first entry only (most recent session)

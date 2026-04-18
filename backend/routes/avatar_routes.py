@@ -112,6 +112,19 @@ def create_avatar_blueprint(limiter):
             gender = request.form.get('gender')
             eye_color = request.form.get('eye_color')
             favorite_color = request.form.get('favorite_color')
+            refinement_note = (request.form.get('refinement_note') or '').strip() or None
+
+            # Refinement is BYOK-only: one free API call is expensive; BYOK users
+            # supply their own key so the cost falls on them.
+            if refinement_note:
+                tier = (get_user_tier() or 'free').lower()
+                if tier != 'byok':
+                    return jsonify({
+                        'status': 'error',
+                        'error_code': 'BYOK_REQUIRED',
+                        'message': 'Avatar refinement is available for BYOK subscribers. '
+                                   'Set up your own API key in Parent Controls to unlock this.'
+                    }), 403
 
             # Basic validation
             if not all([character_name, age, gender, eye_color, favorite_color]):
@@ -141,7 +154,8 @@ def create_avatar_blueprint(limiter):
                     gender=gender,
                     eye_color=eye_color,
                     favorite_color=favorite_color,
-                    photo_bytes=photo_bytes
+                    photo_bytes=photo_bytes,
+                    refinement_note=refinement_note,
                 )
 
                 logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")

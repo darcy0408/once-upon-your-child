@@ -99,6 +99,7 @@ class AvatarGenerationService:
         eye_color: str,
         favorite_color: str,
         photo_bytes: bytes,
+        refinement_note: Optional[str] = None,
     ) -> Dict:
         """
         Generate a custom magical avatar based on a child's photo and preferences.
@@ -196,6 +197,15 @@ Maintain the character's facial features while converting them into the target a
             lighting_style=band_style['lighting'],
             photo_context=f"\n* {photo_context}" if photo_context else "",
         )
+
+        # Append user-requested modifications without changing the base style.
+        if refinement_note:
+            prompt += (
+                f"\n\n**User-Requested Modifications**\n"
+                f"Apply the following changes to the character's appearance: {refinement_note}\n"
+                f"Keep all other character attributes, art style, and environment unchanged."
+            )
+            logger.info(f"Refinement note appended: {refinement_note!r}")
 
         logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
 

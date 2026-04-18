@@ -110,6 +110,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final _briefConfigKey = GlobalKey();
   // Sprout band: pet card is hidden until a grown-up reveals it
   bool _showPetCardForSprout = false;
+  // Pending companion species — set by "Add a Friend" / "Add My Pet" buttons,
+  // consumed by the _PetCard to create the entry and open the editor.
+  String? _pendingCompanionSpecies;
+  int _pendingCompanionToken = 0; // increments to distinguish repeated adds of same species
 
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
   void _logPageView(int pageIndex) {
@@ -857,7 +861,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
-  // Page 3: Pick your hero style (archetype only)
+  // Page 3: Pick your archetype
   Widget _buildPage3() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -871,14 +875,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               final title = band.band == AgeBand.creator
                   ? 'Character archetype'
                   : band.band == AgeBand.adventurer
-                      ? 'Choose your hero type'
-                      : 'Pick your hero style!';
+                      ? 'Choose your archetype'
+                      : 'Pick your archetype!';
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const MagicEarButton(
                     spokenText:
-                        "Pick your hero's style! Swipe through the pictures and tap the one you like.",
+                        "Pick your archetype! Swipe through the pictures and tap the one you like.",
                     size: 32,
                   ),
                   const SizedBox(width: 8),
@@ -1127,7 +1131,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           maxCompanions: band.band == AgeBand.sprout ? 1 : 3,
         ),
         const SizedBox(height: 16),
-        // ── Bring a friend by name — hidden for Sprout band ────────────────────
+        // ── Add a friend or pet — hidden for Sprout band ────────────────────
         if (band.band != AgeBand.sprout) ...[
           Row(
             children: [
@@ -1142,88 +1146,48 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               const Expanded(child: Divider(color: Colors.white24)),
             ],
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'Type a friend\'s name and they\'ll join your story.',
-            style: TextStyle(color: Colors.white60, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _friendNameController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: 'Friend\'s name...',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    filled: true,
-                    fillColor: Colors.white12,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() {
+                    _pendingCompanionSpecies = 'Human';
+                    _pendingCompanionToken++;
+                  }),
+                  icon: const Icon(Icons.person_add_rounded, size: 18),
+                  label: const Text('Add a Friend'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFF7C4DFF)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onSubmitted: (_) => _addFriendByName(),
                 ),
               ),
-              const SizedBox(width: 8),
-              if (_speechAvailable)
-                IconButton(
-                  tooltip: 'Say a friend\'s name',
-                  icon: Icon(
-                    _listeningFor == 'friend' ? Icons.mic : Icons.mic_none,
-                    color: _listeningFor == 'friend'
-                        ? Colors.yellow
-                        : Colors.white70,
-                  ),
-                  onPressed: () => _toggleListening('friend'),
-                ),
-              const SizedBox(width: 4),
-              ElevatedButton(
-                onPressed: _addFriendByName,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C4DFF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() {
+                    _pendingCompanionSpecies = 'Dog';
+                    _pendingCompanionToken++;
+                  }),
+                  icon: const Icon(Icons.pets_rounded, size: 18),
+                  label: const Text('Add My Pet'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFFFD700)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-                child: const Text('Add'),
               ),
             ],
           ),
-          if (widget.wizardData.additionalCharacters.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: widget.wizardData.additionalCharacters.map((name) {
-                return Chip(
-                  label: Text(
-                    name,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                  backgroundColor: const Color(0xFF7C4DFF).withValues(alpha: 0.6),
-                  deleteIconColor: Colors.white70,
-                  onDeleted: () => setState(() {
-                    widget.wizardData.additionalCharacters.remove(name);
-                  }),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                );
-              }).toList(),
-            ),
-          ],
           const SizedBox(height: 16),
         ],
         // ── Pet card (photo + name/species/color) ──────────────────────────────
@@ -1270,6 +1234,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             onChanged: () => setState(() {}),
             onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
                 _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+            pendingNewSpecies: _pendingCompanionSpecies != null
+                ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
+                : null,
+            onPendingConsumed: () => setState(() => _pendingCompanionSpecies = null),
           ),
         const SizedBox(height: 8),
         if (_isPetAvatarGenerating)
@@ -1412,7 +1380,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final message = result.message ??
         (success
             ? (species == 'Human' ? '✨ ${name} is ready for the adventure!' : '✨ Magical pet avatar ready!')
-            : "Oops! Magic isn't working on that picture. Want to pick a buddy instead?");
+            : "Oops! Magic isn't working on that picture. Want to pick a companion instead?");
     setState(() {
       _isPetAvatarGenerating = false;
       _petAvatarStatusMessage = message;
@@ -1471,7 +1439,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           }
         } catch (_) {}
         return const _PetAvatarGenerationResult.error(
-          "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
+          "Oops! Magic isn't working on that picture. Want to pick a companion instead?",
         );
       }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1481,7 +1449,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           return _PetAvatarGenerationResult.error(message);
         }
         return const _PetAvatarGenerationResult.error(
-          "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
+          "Oops! Magic isn't working on that picture. Want to pick a companion instead?",
         );
       }
       final avatarJson = body['avatar'] as Map<String, dynamic>?;
@@ -1498,7 +1466,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       });
       if (response.statusCode == 206) {
         return const _PetAvatarGenerationResult.success(
-          "Oops! Magic isn't working on that picture right now. Your buddy's photo is saved!",
+          "Oops! Magic isn't working on that picture right now. Your companion's photo is saved!",
         );
       }
       return const _PetAvatarGenerationResult.success();
@@ -1509,7 +1477,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         return _PetAvatarGenerationResult.error(message);
       }
       return const _PetAvatarGenerationResult.error(
-        "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
+        "Oops! Magic isn't working on that picture. Want to pick a companion instead?",
       );
     }
   }
@@ -4026,7 +3994,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       if (prompt != null) {
         await AppTtsService.instance.stop();
         if (mounted) {
-          unawaited(AppTtsService.instance.speak(prompt));
+          unawaited(AppTtsService.instance.speak(prompt, rateScale: 0.75));
         }
       }
     }
@@ -4774,12 +4742,18 @@ class _PetCard extends StatefulWidget {
   final Future<void> Function({int? petIndex}) onPickPhoto;
   final VoidCallback onChanged;
   final Future<void> Function({required int petIndex, required String name, required String species, required String description})? onSaveCompanion;
+  /// When non-null, creates a new companion with this species and opens the
+  /// editor. The parent should reset this to null after the card processes it.
+  final String? pendingNewSpecies;
+  final VoidCallback? onPendingConsumed;
 
   const _PetCard({
     required this.wizardData,
     required this.onPickPhoto,
     required this.onChanged,
     this.onSaveCompanion,
+    this.pendingNewSpecies,
+    this.onPendingConsumed,
   });
 
   @override
@@ -4845,6 +4819,13 @@ class _PetCardState extends State<_PetCard> {
           ? -1
           : widget.wizardData.pets.length - 1;
       _loadFromSelectedPet();
+    }
+    // Parent requested a new companion with a specific type
+    if (widget.pendingNewSpecies != null &&
+        widget.pendingNewSpecies != oldWidget.pendingNewSpecies) {
+      final species = widget.pendingNewSpecies!.split(':').first;
+      _addCompanionWithType(species);
+      widget.onPendingConsumed?.call();
     }
   }
 
@@ -5009,18 +4990,17 @@ class _PetCardState extends State<_PetCard> {
     });
   }
 
-  void _addAnotherPet() {
+  void _addAnotherPet() => _addCompanionWithType('Dog');
+
+  void _addCompanionWithType(String species) {
     final nextIndex = widget.wizardData.pets.length;
-    final name = nextIndex == 0 ? 'My Pet' : 'My Pet ${nextIndex + 1}';
+    final placeholder = species == 'Human' ? '' : '';
     widget.wizardData.pets.add({
-      'name': name,
-      'species': 'Dog',
+      'name': placeholder,
+      'species': species,
       'color': '',
       'personality': '',
     });
-    if (!widget.wizardData.companionNames.contains(name)) {
-      widget.wizardData.companionNames.add(name);
-    }
     final petId = 'my_pet_$nextIndex';
     if (!widget.wizardData.selectedCompanions.contains(petId)) {
       widget.wizardData.selectedCompanions.add(petId);
@@ -5154,11 +5134,19 @@ class _PetCardState extends State<_PetCard> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    'Your buddy is ready! 🌟',
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
+                  child: Builder(builder: (context) {
+                    final band = Theme.of(context).extension<AgeBandThemeData>();
+                    final useCompanion = band != null &&
+                        band.band != AgeBand.sprout &&
+                        band.band != AgeBand.explorer;
+                    return Text(
+                      useCompanion
+                          ? 'Your companion is ready! 🌟'
+                          : 'Your buddy is ready! 🌟',
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w600),
+                    );
+                  }),
                 ),
                 TextButton(
                   onPressed: () => setState(() => _isEditing = true),
@@ -5211,6 +5199,52 @@ class _PetCardState extends State<_PetCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Cancel button row
+          Align(
+            alignment: Alignment.topRight,
+            child: GestureDetector(
+              onTap: () {
+                // If this is a brand-new unsaved pet with no name, remove it
+                final pet = _pet;
+                final name = (pet?['name'] ?? '').trim();
+                final isDefault = name.isEmpty ||
+                    name == 'My Pet' ||
+                    RegExp(r'^My Pet \d+$').hasMatch(name);
+                final hasPhoto = _photo != null && _photo!.isNotEmpty;
+                if (isDefault && !hasPhoto) {
+                  // Remove the empty pet entry
+                  if (_selectedPetIndex >= 0 &&
+                      _selectedPetIndex < widget.wizardData.pets.length) {
+                    final removedName =
+                        widget.wizardData.pets[_selectedPetIndex]['name'] ?? '';
+                    widget.wizardData.pets.removeAt(_selectedPetIndex);
+                    widget.wizardData.companionNames.remove(removedName);
+                    widget.wizardData.selectedCompanions
+                        .remove('my_pet_$_selectedPetIndex');
+                    widget.onChanged();
+                  }
+                  setState(() {
+                    _selectedPetIndex = widget.wizardData.pets.isEmpty
+                        ? -1
+                        : widget.wizardData.pets.length - 1;
+                    _isEditing = false;
+                    _loadFromSelectedPet();
+                  });
+                } else {
+                  // Has data — just close the editor without saving changes
+                  setState(() {
+                    _isEditing = false;
+                    _loadFromSelectedPet();
+                  });
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Icon(Icons.close_rounded,
+                    color: Colors.white54, size: 22),
+              ),
+            ),
+          ),
           Row(
             children: [
               // Photo circle (tap to change)
@@ -5263,18 +5297,25 @@ class _PetCardState extends State<_PetCard> {
                     // Name field
                     _buildVoiceField(
                       controller: _nameCtrl,
-                      hint: 'Companion name (e.g. Alex)',
+                      hint: _species == 'Human'
+                          ? 'Friend\'s name (e.g. Alex)'
+                          : 'Pet\'s name (e.g. Biscuit)',
                       fieldKey: 'pet_name',
-                      speakPrompt:
-                          'Say your companion name. For example, Whiskers.',
+                      speakPrompt: _species == 'Human'
+                          ? 'Say your friend\'s name.'
+                          : 'Say your pet\'s name. For example, Whiskers.',
                     ),
                     const SizedBox(height: 8),
                     // Looks field (stored in legacy `color` key for compatibility)
                     _buildVoiceField(
                       controller: _colorCtrl,
-                      hint: 'Looks (e.g. blond hair, glasses, golden fur)',
+                      hint: _species == 'Human'
+                          ? 'Looks (e.g. brown hair, glasses, blue eyes)'
+                          : 'Looks (e.g. golden fur, floppy ears)',
                       fieldKey: 'pet_looks',
-                      speakPrompt: 'Describe what your companion looks like.',
+                      speakPrompt: _species == 'Human'
+                          ? 'Describe what your friend looks like.'
+                          : 'Describe what your pet looks like.',
                     ),
                   ],
                 ),
