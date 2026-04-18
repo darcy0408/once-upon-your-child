@@ -12,6 +12,7 @@ import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
+import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/parental_consent_screen.dart';
@@ -105,6 +106,7 @@ class _AppEntryPoint extends ConsumerStatefulWidget {
 }
 
 class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
+  bool _splashDone = false;
   bool? _onboardingDone; // null = still checking
   bool _needsReConsent = false;
   int _reConsentAge = 0;
@@ -145,7 +147,14 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
 
   @override
   Widget build(BuildContext context) {
-    // Still reading prefs — minimal cosmic splash
+    // Show branded splash logo on first launch
+    if (!_splashDone) {
+      return SplashScreen(
+        onComplete: () => setState(() => _splashDone = true),
+      );
+    }
+
+    // Still reading prefs — minimal loading indicator
     if (_onboardingDone == null) {
       return const Scaffold(
         backgroundColor: Color(0xFF120226),

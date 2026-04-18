@@ -106,7 +106,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
 
     // Speak age prompt on first load.
-    unawaited(_speak('How old are you? Tap your age!'));
+    unawaited(_speak('How old are you? Tap your age!', rateScale: 0.72));
     _initVoice();
   }
 
@@ -115,8 +115,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (mounted) setState(() {});
   }
 
-  Future<void> _speak(String text, {bool awaitCompletion = false}) async {
-    await AppTtsService.instance.speak(text, awaitCompletion: awaitCompletion);
+  Future<void> _speak(String text, {bool awaitCompletion = false, double rateScale = 0.85}) async {
+    await AppTtsService.instance.speak(text, awaitCompletion: awaitCompletion, rateScale: rateScale);
   }
 
   /// Strips common introductory phrases so "my name is Jessica" → "Jessica".

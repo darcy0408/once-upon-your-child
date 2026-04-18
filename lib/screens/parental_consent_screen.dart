@@ -39,7 +39,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     // Let the child know they need a grown-up.
-    AppTtsService.instance.speak('Now let\'s get a grown-up to say it\'s okay!');
+    AppTtsService.instance.speak('Almost there! Ask a grown-up to unlock your magical adventure!');
   }
 
   @override
@@ -121,7 +121,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       const Text('🌟', style: TextStyle(fontSize: 36)),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Hey! We need a grown-up\'s OK',
+                        'Your magical story is almost ready!',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.fredoka(
                           color: const Color(0xFFFFD700),
@@ -131,7 +131,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Before you can start creating stories, a parent or guardian needs to give permission. Hand the device to them and they\'ll get you set up!',
+                        'Hand this to a parent or guardian — they just need to say yes, and your adventure begins!',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.fredoka(
                           color: Colors.white,
