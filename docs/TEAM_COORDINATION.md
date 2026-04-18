@@ -2,6 +2,76 @@
 
 ---
 
+## Session Update — 2026-04-18 (Welcome UX + Big Feelings Redesign + Child Safety Hardening)
+
+### What was completed this session
+
+#### 1. Welcome Screen UX Refinements
+- **Combined greeting**: Title screen + name prompt merged into a single message: "Hi! Welcome to Story Weaver, What's your name?" for child band (replaces two sequential prompts)
+- **Age-appropriate avatar**: Name entry screen now shows the correct age-band character (e.g. Adventurer for 9-11) instead of hardcoded Sprout girl
+- **Excited name response**: "Hi, \<name\>! What a great name!" with rateScale 1.05 for warmer delivery
+- **Files:** `lib/screens/welcome_screen.dart`, `lib/services/app_tts_service.dart`
+
+#### 2. Big Feelings Guidance — Full Redesign
+The parent-facing Big Feelings section was a flat form with 5 categories and 23 chips. Redesigned to be conversational, parent-focused, and less overwhelming.
+
+**UI changes:**
+- **Header**: "My child could use some help with..." replaces "Big Feelings Guidance" / "Shape the story quietly"
+- **Trigger cards** (multi-select): 6 tappable cards replace 5 flat chip categories. Each card shows its description; on tap expands to show pre-selected coping tools and repair goals
+- **Defaults per trigger**: Each trigger has sensible default coping/repair tools pre-selected (parent can customize)
+- **"Something else" card**: Replaces the invisible white-on-white text field with a dark-themed inline input
+- **Auto-save**: Saves 900ms after last interaction; no more Save button
+- **Math gate**: Multiplication problem (e.g. "7 x 4 = ?") prevents children from seeing their therapeutic config
+- **No-profile state**: Shows clear message + navigation hint instead of an empty unusable form
+- **Onboarding integration**: Post-consent dialog updated with warmer copy; launches Parent Controls with Big Feelings open and math gate bypassed (parent just completed consent)
+
+**Removed from parent UI:**
+- Feelings category (inferred from trigger by story engine)
+- Body signals category (auto-selected by story engine)
+- Save button (auto-save replaces it)
+
+**Files:** `lib/screens/parent_controls_screen.dart`, `lib/screens/welcome_screen.dart`
+
+#### 3. Child Safety Hardening — Defense in Depth
+Closed gaps where arbitrary text could reach the AI story prompt through the parent hidden context API.
+
+| Layer | What it does |
+|-------|-------------|
+| **Allowlist validation** | trigger, coping_tool, repair_goal, feeling, body_signal fields now ONLY accept values from predefined lists. Arbitrary text rejected with 400 error. |
+| **Harmful content blocklist** | Free-text note rejected if it contains shame/degradation, fear/trauma induction, abuse normalisation, self-harm, sexual content, or substance references directed at minors. Returns a gentle message suggesting softer language. |
+| **Prompt injection filtering** | All parent context fields now go through `sanitize_for_prompt` (14 injection patterns) instead of basic `sanitize_text`. |
+| **USER_INPUT delimiters** | Parent context values wrapped in `[USER_INPUT]` tags in the story prompt so the AI treats them as story element descriptions, not instructions. |
+
+- Harmful patterns tested against 23 legitimate parent concerns (0 false positives) and 5 harmful inputs (0 false negatives)
+- Pattern design principle: blocks **directive language aimed at harming** ("nobody loves them"), allows **descriptions of child struggles** ("afraid of being abandoned at school")
+
+**Files:** `backend/routes/character_routes.py`, `backend/models/parent_hidden_context.py`, `backend/services/story_service.py`
+
+#### 4. Backend Model Changes
+- `parent_hidden_context` model: `feeling` and `body_signal` columns now nullable; `trigger`, `coping_tool`, `repair_goal` column widths expanded to 320 chars for comma-separated multi-select
+- Validation updated: `feeling` and `body_signal` moved from required to optional fields
+
+#### 5. Tests Updated
+- `test_character_routes.py`: Added tests for allowlist rejection, harmful content rejection, and multi-trigger acceptance
+- `parent_controls_screen_test.dart`: Rewritten for new UI (trigger cards, math gate, no-profile state)
+
+### Breaking changes
+- **API contract**: `PUT /child-profiles/:id/parent-hidden-context` now rejects non-allowlisted values for structured fields. Existing saved data with valid values is unaffected. `feeling` and `body_signal` are no longer required.
+
+### Files changed
+```
+backend/models/parent_hidden_context.py         — nullable columns, expanded widths
+backend/routes/character_routes.py              — allowlist, harmful content blocklist, sanitize_for_prompt
+backend/services/story_service.py               — wrap_user_input delimiters on parent context
+backend/tests/api/test_character_routes.py      — 3 new safety tests
+lib/screens/parent_controls_screen.dart         — full Big Feelings redesign
+lib/screens/welcome_screen.dart                 — combined greeting, age-band avatar, onboarding dialog
+lib/services/app_tts_service.dart               — updated warmup phrase
+test/widgets/parent_controls_screen_test.dart   — rewritten for new UI
+```
+
+---
+
 ## Session Update — 2026-04-13b (ADULT-1/2 + BUG-A2 + MR Polish + CORS Fix)
 
 ### What was completed this session

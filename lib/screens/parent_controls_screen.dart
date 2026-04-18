@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +14,18 @@ import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
 
 class ParentControlsScreen extends StatefulWidget {
-  const ParentControlsScreen({super.key});
+  /// Set [openBigFeelings] to open the Big Feelings section immediately
+  /// (e.g. when launched from the onboarding flow right after consent).
+  /// Set [skipMathGate] when the caller has already verified the parent
+  /// (e.g. immediately after the COPPA consent screen).
+  const ParentControlsScreen({
+    super.key,
+    this.openBigFeelings = false,
+    this.skipMathGate = false,
+  });
+
+  final bool openBigFeelings;
+  final bool skipMathGate;
 
   @override
   State<ParentControlsScreen> createState() => _ParentControlsScreenState();
@@ -20,166 +34,87 @@ class ParentControlsScreen extends StatefulWidget {
 class _ParentControlsScreenState extends State<ParentControlsScreen> {
   final _consentService = const ParentalConsentService();
   final _api = ApiServiceManager();
-  final _hiddenNoteController = TextEditingController();
+  final _customConcernController = TextEditingController();
+  final _mathController = TextEditingController();
 
-  static const _feelingOptions = [
-    (
-      value: 'frustrated',
-      label: 'Frustrated',
-      emoji: '😤',
-      description: 'Help stories name frustration without shame.',
-    ),
-    (
-      value: 'worried',
-      label: 'Worried',
-      emoji: '😟',
-      description: 'Shape stories around worry, safety, and calm support.',
-    ),
-    (
-      value: 'sad',
-      label: 'Sad',
-      emoji: '😢',
-      description: 'Guide stories toward comfort, connection, and repair.',
-    ),
-    (
-      value: 'angry',
-      label: 'Angry',
-      emoji: '😠',
-      description:
-          'Support pause, choice, and warm repair after a tough moment.',
-    ),
-    (
-      value: 'embarrassed',
-      label: 'Embarrassed',
-      emoji: '🫣',
-      description: 'Keep the story gentle around mistakes and recovery.',
-    ),
-  ];
-  static const _triggerOptions = [
+  // ── Trigger-centric data model ────────────────────────────────────────────
+
+  static const _copingMeta = <String, ({String label, String emoji})>{
+    'dragon breaths': (label: 'Dragon breaths', emoji: '🐉'),
+    'a quiet pause': (label: 'Quiet pause', emoji: '🌬️'),
+    'asking for help': (label: 'Ask for help', emoji: '🙋'),
+    'gentle try-again words': (label: 'Try-again words', emoji: '💬'),
+  };
+
+  static const _repairMeta = <String, ({String label, String emoji})>{
+    'say sorry simply': (label: 'Say sorry', emoji: '🫶'),
+    'help fix what happened': (label: 'Help fix', emoji: '🛠️'),
+    'use gentle words': (label: 'Gentle words', emoji: '💬'),
+    'try again with warmth': (label: 'Try again', emoji: '🔁'),
+  };
+
+  static const _triggerData = <
+      ({
+        String value,
+        String label,
+        String emoji,
+        String description,
+        List<String> defaultCoping,
+        List<String> defaultRepair,
+      })>[
     (
       value: 'a limit is set',
       label: 'Hearing no',
       emoji: '🚫',
       description:
-          'Use stories to practice hearing no, calming down, and recovering without a blowup.',
+          'Practice hearing no, calming down, and recovering without a blowup.',
+      defaultCoping: ['dragon breaths', 'a quiet pause'],
+      defaultRepair: ['try again with warmth'],
     ),
     (
       value: 'a sibling conflict starts',
       label: 'Sibling conflict',
       emoji: '🧒',
-      description:
-          'Focus stories on sibling friction, shared space, and calmer re-entry.',
+      description: 'Sibling friction, sharing space, and calmer re-entry.',
+      defaultCoping: ['a quiet pause', 'gentle try-again words'],
+      defaultRepair: ['say sorry simply', 'use gentle words'],
     ),
     (
       value: 'a friendship bump happens',
       label: 'Friendship hurt',
       emoji: '💔',
-      description:
-          'Steer stories toward hurt feelings, repair, and reconnecting with another child.',
+      description: 'Navigate hurt feelings, repair, and reconnecting.',
+      defaultCoping: ['asking for help', 'a quiet pause'],
+      defaultRepair: ['use gentle words'],
     ),
     (
       value: 'nighttime feels uncertain',
       label: 'Bedtime worry',
       emoji: '🌙',
-      description:
-          'Shape stories around nighttime fear, comfort, and small brave bedtime steps.',
+      description: 'Comfort around nighttime fear and small brave steps.',
+      defaultCoping: ['dragon breaths', 'a quiet pause'],
+      defaultRepair: ['try again with warmth'],
     ),
     (
       value: 'a transition happens',
       label: 'Hard transitions',
       emoji: '🔄',
-      description:
-          'Support transitions between activities with less resistance, panic, or overwhelm.',
+      description: 'Smoother switches between activities with less overwhelm.',
+      defaultCoping: ['dragon breaths', 'gentle try-again words'],
+      defaultRepair: ['try again with warmth'],
     ),
     (
       value: 'meltdown when stuck',
       label: 'Meltdown when stuck',
       emoji: '🧩',
-      description:
-          'Use stories to model frustration tolerance, help-seeking, and trying again after getting stuck.',
+      description: 'Frustration tolerance, help-seeking, and trying again.',
+      defaultCoping: ['dragon breaths', 'asking for help'],
+      defaultRepair: ['help fix what happened', 'try again with warmth'],
     ),
   ];
-  static const _bodySignalOptions = [
-    (
-      value: 'a hot face',
-      label: 'Hot face',
-      emoji: '🥵',
-      description: 'Useful when feelings rise fast and show in the face.',
-    ),
-    (
-      value: 'a tight tummy',
-      label: 'Tight tummy',
-      emoji: '🫶',
-      description: 'Helps the story notice body clues before reaction.',
-    ),
-    (
-      value: 'fast feet and hands',
-      label: 'Fast body',
-      emoji: '🏃',
-      description: 'Good for impulsive movement when the feeling surges.',
-    ),
-    (
-      value: 'a quick heartbeat',
-      label: 'Fast heart',
-      emoji: '💓',
-      description: 'Useful for worry, fear, and social stress moments.',
-    ),
-  ];
-  static const _copingToolOptions = [
-    (
-      value: 'dragon breaths',
-      label: 'Dragon breaths',
-      emoji: '🐉',
-      description: 'Use slow breathing as an early reset tool.',
-    ),
-    (
-      value: 'a quiet pause',
-      label: 'Quiet pause',
-      emoji: '🌬️',
-      description: 'Create a little space before the next choice.',
-    ),
-    (
-      value: 'asking for help',
-      label: 'Ask for help',
-      emoji: '🙋',
-      description: 'Model support-seeking as a strength, not a failure.',
-    ),
-    (
-      value: 'gentle try-again words',
-      label: 'Try-again words',
-      emoji: '💬',
-      description: 'Help the story move from rupture toward repair.',
-    ),
-  ];
-  static const _repairGoalOptions = [
-    (
-      value: 'say sorry simply',
-      label: 'Say sorry',
-      emoji: '🫶',
-      description:
-          'Guides stories toward naming the bump and apologizing simply.',
-    ),
-    (
-      value: 'help fix what happened',
-      label: 'Help fix',
-      emoji: '🛠️',
-      description:
-          'Pushes the story toward rebuilding, cleaning up, or making things right.',
-    ),
-    (
-      value: 'use gentle words',
-      label: 'Gentle words',
-      emoji: '💬',
-      description: 'Encourages softer re-entry after yelling or grabbing.',
-    ),
-    (
-      value: 'try again with warmth',
-      label: 'Try again',
-      emoji: '🔁',
-      description:
-          'Keeps the repair beat focused on a fresh start without shame.',
-    ),
-  ];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+
   bool _allowPhotoAvatar = true;
   bool _loading = true;
   bool _deletingData = false;
@@ -190,24 +125,41 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   int _todayUsage = 0;
   String? _activeProfileId;
   String? _activeProfileName;
+
+  // Big Feelings
   bool _bigFeelingsExpanded = false;
-  bool _bigFeelingsSaving = false;
-  String? _hiddenFeeling;
-  String? _hiddenTrigger;
-  String? _hiddenBodySignal;
-  String? _hiddenCopingTool;
-  String? _hiddenRepairGoal;
+  bool _mathGateUnlocked = false;
+  int _mathA = 0;
+  int _mathB = 0;
+  bool _mathWrong = false;
+  Set<String> _selectedTriggers = {};
+  Map<String, Set<String>> _copingSelections = {};
+  Map<String, Set<String>> _repairSelections = {};
+  String? _expandedTrigger;
+  Timer? _autoSaveTimer;
+  bool _autoSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _generateMathProblem();
+    if (widget.openBigFeelings) _bigFeelingsExpanded = true;
+    if (widget.skipMathGate) _mathGateUnlocked = true;
     _loadSettings();
   }
 
   @override
   void dispose() {
-    _hiddenNoteController.dispose();
+    _autoSaveTimer?.cancel();
+    _customConcernController.dispose();
+    _mathController.dispose();
     super.dispose();
+  }
+
+  void _generateMathProblem() {
+    final rng = Random();
+    _mathA = rng.nextInt(6) + 4; // 4–9
+    _mathB = rng.nextInt(6) + 4; // 4–9
   }
 
   Future<void> _loadSettings() async {
@@ -230,9 +182,29 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       }
       hiddenContext = await _loadHiddenContext(activeProfileId);
     }
-    if (!mounted) {
-      return;
+    if (!mounted) return;
+
+    // Parse saved trigger/coping/repair from comma-separated strings.
+    final savedTriggers = _splitSaved(hiddenContext?['trigger']);
+    final savedCoping = _splitSaved(hiddenContext?['coping_tool']);
+    final savedRepair = _splitSaved(hiddenContext?['repair_goal']);
+
+    // Build per-trigger selections from the saved flat sets.
+    final copingSelections = <String, Set<String>>{};
+    final repairSelections = <String, Set<String>>{};
+    for (final t in _triggerData) {
+      if (savedTriggers.contains(t.value)) {
+        // Use saved coping/repair if any overlap with this trigger's defaults;
+        // fall back to defaults if the saved set is empty.
+        final coping = savedCoping.intersection(Set.from(t.defaultCoping));
+        copingSelections[t.value] =
+            coping.isNotEmpty ? coping : Set.from(t.defaultCoping);
+        final repair = savedRepair.intersection(Set.from(t.defaultRepair));
+        repairSelections[t.value] =
+            repair.isNotEmpty ? repair : Set.from(t.defaultRepair);
+      }
     }
+
     setState(() {
       _allowPhotoAvatar = allowPhoto;
       _dailyLimitMinutes = limit;
@@ -242,15 +214,18 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _todayUsage = usage;
       _activeProfileId = activeProfileId;
       _activeProfileName = activeProfileName;
-      _hiddenFeeling = hiddenContext?['feeling']?.toString();
-      _hiddenTrigger = hiddenContext?['trigger']?.toString();
-      _hiddenBodySignal = hiddenContext?['body_signal']?.toString();
-      _hiddenCopingTool = hiddenContext?['coping_tool']?.toString();
-      _hiddenRepairGoal = hiddenContext?['repair_goal']?.toString();
-      _hiddenNoteController.text =
+      _selectedTriggers = savedTriggers;
+      _copingSelections = copingSelections;
+      _repairSelections = repairSelections;
+      _customConcernController.text =
           hiddenContext?['parent_hidden_context']?.toString() ?? '';
       _loading = false;
     });
+  }
+
+  Set<String> _splitSaved(dynamic raw) {
+    if (raw == null || raw.toString().trim().isEmpty) return {};
+    return raw.toString().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet();
   }
 
   Future<Map<String, dynamic>?> _loadHiddenContext(String profileId) async {
@@ -258,61 +233,45 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       final response =
           await _api.get('/child-profiles/$profileId/parent-hidden-context');
       final data = response['parent_hidden_context'];
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
+      if (data is Map<String, dynamic>) return data;
     } catch (_) {}
     return null;
   }
 
-  bool get _canSaveBigFeelings =>
-      _activeProfileId != null &&
-      _hiddenFeeling != null &&
-      _hiddenTrigger != null &&
-      _hiddenBodySignal != null &&
-      _hiddenCopingTool != null &&
-      _hiddenRepairGoal != null;
-
-  Future<void> _saveBigFeelingsGuidance() async {
-    final profileId = _activeProfileId;
-    if (!_canSaveBigFeelings || profileId == null) {
-      return;
-    }
-    setState(() => _bigFeelingsSaving = true);
-    try {
-      await _api.put('/child-profiles/$profileId/parent-hidden-context', {
-        'feeling': _hiddenFeeling,
-        'trigger': _hiddenTrigger,
-        'body_signal': _hiddenBodySignal,
-        'coping_tool': _hiddenCopingTool,
-        'repair_goal': _hiddenRepairGoal,
-        'parent_hidden_context': _hiddenNoteController.text.trim(),
-      });
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Big Feelings guidance saved.')),
-      );
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save guidance: $error')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _bigFeelingsSaving = false);
-      }
-    }
+  /// Called after any selection change — debounces and auto-saves.
+  void _debouncedSave() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(milliseconds: 900), _saveToApi);
   }
 
-  String _profileLabel() {
-    if (_activeProfileName == null || _activeProfileName!.isEmpty) {
-      return 'No active child profile selected.';
+  Future<void> _saveToApi() async {
+    final profileId = _activeProfileId;
+    if (profileId == null || _selectedTriggers.isEmpty) return;
+
+    // Collect all selected coping/repair tools across triggers (union).
+    final allCoping = <String>{};
+    final allRepair = <String>{};
+    for (final trigger in _selectedTriggers) {
+      allCoping.addAll(_copingSelections[trigger] ?? {});
+      allRepair.addAll(_repairSelections[trigger] ?? {});
     }
-    return 'Saved privately for $_activeProfileName only. Your child will never see these notes directly.';
+
+    if (!mounted) return;
+    setState(() => _autoSaving = true);
+    try {
+      await _api.put('/child-profiles/$profileId/parent-hidden-context', {
+        'trigger': _selectedTriggers.join(', '),
+        'coping_tool': allCoping.join(', '),
+        'repair_goal': allRepair.join(', '),
+        'parent_hidden_context': _customConcernController.text.trim(),
+      });
+    } catch (_) {}
+    if (mounted) setState(() => _autoSaving = false);
+  }
+
+  String _privacyNote() {
+    if (_activeProfileName == null || _activeProfileName!.isEmpty) return '';
+    return 'Saved privately for $_activeProfileName only. Your child will never see these choices.';
   }
 
   @override
@@ -557,154 +516,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                       ),
                     ),
                   const SizedBox(height: AppSpacing.lg),
-                  const _SectionHeader(title: 'Big Feelings Guidance'),
-                  GestureDetector(
-                    onTap: () => setState(
-                      () => _bigFeelingsExpanded = !_bigFeelingsExpanded,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.shield_moon_rounded,
-                                color: Color(0xFFFFD700),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  'Shape the story quietly',
-                                  style: GoogleFonts.fredoka(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                _bigFeelingsExpanded
-                                    ? Icons.expand_less
-                                    : Icons.expand_more,
-                                color: Colors.white70,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            _profileLabel(),
-                            style: GoogleFonts.fredoka(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          if (_bigFeelingsExpanded) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            _buildChoiceGroup(
-                              title: 'Feeling',
-                              options: _feelingOptions,
-                              selectedValue: _hiddenFeeling,
-                              onSelected: (value) =>
-                                  setState(() => _hiddenFeeling = value),
-                            ),
-                            _buildChoiceGroup(
-                              title: 'Trigger',
-                              options: _triggerOptions,
-                              selectedValue: _hiddenTrigger,
-                              onSelected: (value) =>
-                                  setState(() => _hiddenTrigger = value),
-                            ),
-                            _buildChoiceGroup(
-                              title: 'Body signal',
-                              options: _bodySignalOptions,
-                              selectedValue: _hiddenBodySignal,
-                              onSelected: (value) =>
-                                  setState(() => _hiddenBodySignal = value),
-                            ),
-                            _buildChoiceGroup(
-                              title: 'Coping tool',
-                              options: _copingToolOptions,
-                              selectedValue: _hiddenCopingTool,
-                              onSelected: (value) =>
-                                  setState(() => _hiddenCopingTool = value),
-                            ),
-                            _buildChoiceGroup(
-                              title: 'Repair goal',
-                              options: _repairGoalOptions,
-                              selectedValue: _hiddenRepairGoal,
-                              onSelected: (value) =>
-                                  setState(() => _hiddenRepairGoal = value),
-                            ),
-                            TextField(
-                              controller: _hiddenNoteController,
-                              maxLength: 280,
-                              style: GoogleFonts.fredoka(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: 'Optional private note',
-                                labelStyle:
-                                    GoogleFonts.fredoka(color: Colors.white70),
-                                hintText:
-                                    'Keep this general and free of names or other identifying details.',
-                                hintStyle:
-                                    GoogleFonts.fredoka(color: Colors.white38),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      const BorderSide(color: Colors.white24),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFFFD700),
-                                  ),
-                                ),
-                              ),
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed:
-                                    _bigFeelingsSaving || !_canSaveBigFeelings
-                                        ? null
-                                        : _saveBigFeelingsGuidance,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFFD76A),
-                                  foregroundColor: const Color(0xFF1A0E3A),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.md,
-                                  ),
-                                ),
-                                child: _bigFeelingsSaving
-                                    ? const SizedBox(
-                                        height: 18,
-                                        width: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Color(0xFF1A0E3A),
-                                        ),
-                                      )
-                                    : Text(
-                                        'Save Big Feelings Guidance',
-                                        style: GoogleFonts.fredoka(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                  _buildBigFeelingsSection(),
                   const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Data & Privacy'),
                   Container(
@@ -819,75 +631,543 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     }
   }
 
-  Widget _buildChoiceGroup({
-    required String title,
-    required List<
-            ({String value, String label, String emoji, String description})>
-        options,
-    required String? selectedValue,
-    required ValueChanged<String> onSelected,
-  }) {
-    ({
-      String value,
-      String label,
-      String emoji,
-      String description
-    })? selectedOption;
-    for (final option in options) {
-      if (option.value == selectedValue) {
-        selectedOption = option;
-        break;
-      }
-    }
+  // ── Big Feelings section ───────────────────────────────────────────────────
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+  Widget _buildBigFeelingsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header row (always visible, collapses/expands the section)
+        GestureDetector(
+          onTap: () => setState(
+            () => _bigFeelingsExpanded = !_bigFeelingsExpanded,
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.shield_moon_rounded,
+                    color: Color(0xFFFFD700)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'My child could use some help with...',
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (_activeProfileId == null)
+                        Text(
+                          'Create a character first to enable this.',
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white54, fontSize: 13),
+                        )
+                      else if (_selectedTriggers.isNotEmpty)
+                        Text(
+                          '${_selectedTriggers.length} area${_selectedTriggers.length == 1 ? '' : 's'} selected'
+                          '${_autoSaving ? ' \u2022 saving...' : ''}',
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white54, fontSize: 13),
+                        )
+                      else
+                        Text(
+                          'Stories will gently work on what you pick.',
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white54, fontSize: 13),
+                        ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _bigFeelingsExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  color: Colors.white70,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        if (_bigFeelingsExpanded) ...[
+          const SizedBox(height: AppSpacing.sm),
+
+          // Gate: no profile
+          if (_activeProfileId == null)
+            _buildNoProfileState()
+
+          // Gate: math verification
+          else if (!_mathGateUnlocked)
+            _buildMathGate()
+
+          // Trigger cards
+          else
+            _buildTriggerCards(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNoProfileState() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Icon(Icons.person_add_alt_1_rounded,
+              color: Color(0xFFFFD700), size: 36),
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            title,
+            'No child profile active',
             style: GoogleFonts.fredoka(
-              color: const Color(0xFFFFD700),
-              fontSize: 15,
+              color: Colors.white,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
+          Text(
+            'Create a character first, then come back here to quietly shape their stories.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              for (final option in options)
-                ChoiceChip(
-                  key: ValueKey('${title}_${option.value}'),
-                  avatar: Text(option.emoji),
-                  label: Text(option.label),
-                  selected: selectedValue == option.value,
-                  selectedColor: const Color(0xFFFFD76A),
-                  backgroundColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: selectedValue == option.value
-                        ? const Color(0xFF1A0E3A)
-                        : const Color(0xFF2E2158),
-                    fontWeight: selectedValue == option.value
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                  onSelected: (_) => onSelected(option.value),
+              const Icon(Icons.arrow_back_rounded,
+                  color: Color(0xFFFFD700), size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'Go back and start a story to create a character',
+                style: GoogleFonts.fredoka(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 13,
                 ),
+              ),
             ],
           ),
-          if (selectedOption != null) ...[
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMathGate() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  color: Color(0xFFFFD700), size: 20),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Parent verification',
+                style: GoogleFonts.fredoka(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Solve this to continue (keeps little eyes out).',
+            style: GoogleFonts.fredoka(color: Colors.white54, fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Text(
+                '$_mathA \u00d7 $_mathB = ',
+                style: GoogleFonts.fredoka(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(
+                width: 80,
+                child: TextField(
+                  controller: _mathController,
+                  keyboardType: TextInputType.number,
+                  style: GoogleFonts.fredoka(
+                      color: Colors.white, fontSize: 18),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: _mathWrong
+                            ? Colors.redAccent
+                            : Colors.white38,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFFFD700)),
+                    ),
+                  ),
+                  onSubmitted: (_) => _checkMath(),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              ElevatedButton(
+                onPressed: _checkMath,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD76A),
+                  foregroundColor: const Color(0xFF1A0E3A),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: 10),
+                ),
+                child: Text('Unlock',
+                    style: GoogleFonts.fredoka(
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          if (_mathWrong) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
-              selectedOption.description,
+              'Not quite -- try again.',
               style: GoogleFonts.fredoka(
-                color: Colors.white70,
-                fontSize: 12,
+                  color: Colors.redAccent, fontSize: 13),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _checkMath() {
+    final answer = int.tryParse(_mathController.text.trim());
+    if (answer == _mathA * _mathB) {
+      setState(() {
+        _mathGateUnlocked = true;
+        _mathWrong = false;
+      });
+    } else {
+      setState(() => _mathWrong = true);
+    }
+  }
+
+  Widget _buildTriggerCards() {
+    final privacyNote = _privacyNote();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (privacyNote.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Text(
+              privacyNote,
+              style:
+                  GoogleFonts.fredoka(color: Colors.white54, fontSize: 12),
+            ),
+          ),
+
+        // Trigger cards (multi-select)
+        for (final trigger in _triggerData) ...[
+          _buildTriggerCard(trigger),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+
+        // "Something else" card
+        _buildSomethingElseCard(),
+      ],
+    );
+  }
+
+  Widget _buildTriggerCard(
+      ({
+        String value,
+        String label,
+        String emoji,
+        String description,
+        List<String> defaultCoping,
+        List<String> defaultRepair,
+      }) trigger) {
+    final isSelected = _selectedTriggers.contains(trigger.value);
+    final isExpanded = _expandedTrigger == trigger.value;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? const Color(0xFFFFD76A).withAlpha(28)
+            : Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFFFD76A).withAlpha(120)
+              : Colors.white24,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Card header — tap to select/deselect
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedTriggers.remove(trigger.value);
+                  _copingSelections.remove(trigger.value);
+                  _repairSelections.remove(trigger.value);
+                  if (_expandedTrigger == trigger.value) {
+                    _expandedTrigger = null;
+                  }
+                } else {
+                  _selectedTriggers.add(trigger.value);
+                  _copingSelections[trigger.value] =
+                      Set.from(trigger.defaultCoping);
+                  _repairSelections[trigger.value] =
+                      Set.from(trigger.defaultRepair);
+                  _expandedTrigger = trigger.value;
+                }
+              });
+              _debouncedSave();
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Text(trigger.emoji, style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          trigger.label,
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          trigger.description,
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white60, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isSelected)
+                    GestureDetector(
+                      onTap: () => setState(
+                        () => _expandedTrigger =
+                            isExpanded ? null : trigger.value,
+                      ),
+                      child: Icon(
+                        isExpanded
+                            ? Icons.expand_less
+                            : Icons.tune_rounded,
+                        color: const Color(0xFFFFD700),
+                        size: 20,
+                      ),
+                    )
+                  else
+                    const Icon(Icons.add_circle_outline_rounded,
+                        color: Colors.white38, size: 20),
+                ],
+              ),
+            ),
+          ),
+
+          // Expanded coping/repair customisation
+          if (isSelected && isExpanded) ...[
+            const Divider(color: Colors.white12, height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Stories will practice:',
+                    style: GoogleFonts.fredoka(
+                        color: const Color(0xFFFFD700), fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _buildToolChips(
+                    allTools: _copingMeta,
+                    selected: _copingSelections[trigger.value] ?? {},
+                    onToggle: (tool, on) {
+                      setState(() {
+                        final set = _copingSelections.putIfAbsent(
+                            trigger.value, () => {});
+                        on ? set.add(tool) : set.remove(tool);
+                      });
+                      _debouncedSave();
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Working toward:',
+                    style: GoogleFonts.fredoka(
+                        color: const Color(0xFFFFD700), fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _buildToolChips(
+                    allTools: _repairMeta,
+                    selected: _repairSelections[trigger.value] ?? {},
+                    onToggle: (tool, on) {
+                      setState(() {
+                        final set = _repairSelections.putIfAbsent(
+                            trigger.value, () => {});
+                        on ? set.add(tool) : set.remove(tool);
+                      });
+                      _debouncedSave();
+                    },
+                  ),
+                ],
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolChips({
+    required Map<String, ({String label, String emoji})> allTools,
+    required Set<String> selected,
+    required void Function(String tool, bool on) onToggle,
+  }) {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final entry in allTools.entries)
+          FilterChip(
+            label: Text('${entry.value.emoji}  ${entry.value.label}'),
+            selected: selected.contains(entry.key),
+            onSelected: (on) => onToggle(entry.key, on),
+            selectedColor: const Color(0xFFFFD76A).withAlpha(200),
+            backgroundColor: Colors.white.withAlpha(18),
+            checkmarkColor: const Color(0xFF1A0E3A),
+            labelStyle: GoogleFonts.fredoka(
+              color: selected.contains(entry.key)
+                  ? const Color(0xFF1A0E3A)
+                  : Colors.white70,
+              fontSize: 13,
+            ),
+            side: BorderSide(
+              color: selected.contains(entry.key)
+                  ? const Color(0xFFFFD76A)
+                  : Colors.white24,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSomethingElseCard() {
+    final hasText = _customConcernController.text.trim().isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        color: hasText
+            ? const Color(0xFFFFD76A).withAlpha(28)
+            : Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasText
+              ? const Color(0xFFFFD76A).withAlpha(120)
+              : Colors.white24,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                const Text('\u270f\ufe0f', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Something else',
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Describe what\'s been hard lately.',
+                        style: GoogleFonts.fredoka(
+                            color: Colors.white60, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+            child: TextField(
+              controller: _customConcernController,
+              maxLength: 280,
+              maxLines: 3,
+              style: GoogleFonts.fredoka(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                counterStyle:
+                    GoogleFonts.fredoka(color: Colors.white38, fontSize: 11),
+                hintText:
+                    'Anything else you\'d like stories to gently address?',
+                hintStyle:
+                    GoogleFonts.fredoka(color: Colors.white38, fontSize: 13),
+                filled: true,
+                fillColor: Colors.white.withAlpha(12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFFFD700)),
+                ),
+              ),
+              onChanged: (_) {
+                setState(() {}); // refresh hasText border
+                _debouncedSave();
+              },
+            ),
+          ),
         ],
       ),
     );

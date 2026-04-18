@@ -10,6 +10,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../providers/age_band_provider.dart';
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
+import '../theme/age_band_asset_resolver.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/breathing_avatar.dart';
@@ -136,7 +137,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _promptNameAndListen() async {
-    await _speak(_isCreator ? "What should we call you?" : "Hi, what's your name?");
+    if (_isCreator) await _speak("What should we call you?");
     // Don't auto-open the mic on web — browser requires a user gesture first.
     if (kIsWeb) return;
     if (!_speechEnabled || _isListening || !mounted) return;
@@ -198,7 +199,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     } else if (band == AgeBand.creator) {
       unawaited(_speak('Your story begins here.'));
     } else {
-      unawaited(_speak('Tap the star to start your adventure!'));
+      unawaited(_speak('Hi! Welcome to Story Weaver, What\'s your name?'));
     }
   }
 
@@ -223,7 +224,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       setState(() => _celebratingName = true);
       unawaited(_burstController.trigger());
       // Say "Hi <name>!" and wait for it to finish before advancing.
-      _speak('Hi $name!', awaitCompletion: true).then((_) {
+      AppTtsService.instance
+          .speak(
+            'Hi, $name! What a great name!',
+            awaitCompletion: true,
+            rateScale: 1.05,
+          )
+          .then((_) {
         if (mounted) _handleContinue();
       });
     }
@@ -524,12 +531,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               period: const Duration(milliseconds: 2800),
               glowColor: _goldColor,
               child: Image.asset(
-                'assets/images/ui/sprout/girl_character.png',
+                AgeBandAssetResolver.uiPath(
+                  ageBandFromAge(_selectedAge ?? 5),
+                  'girl_character.png',
+                ),
                 height: 100,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.face_rounded,
-                  size: 80,
-                  color: _goldColor,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/ui/sprout/girl_character.png',
+                  height: 100,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.face_rounded,
+                    size: 80,
+                    color: _goldColor,
+                  ),
                 ),
               ),
             ),
@@ -876,14 +890,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               title: Text(
-                'One more thing!',
+                'Shape the stories',
                 style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
               ),
               content: Text(
-                'You can tell us what your child is working on — '
-                'big feelings, tricky moments, things they\'re '
-                'practising — and we\'ll weave it into their stories.\n\n'
-                'You can always find this later under the Parent button.',
+                'Is there something your child could use a little help with '
+                'right now? Hearing no, bedtime worry, sibling moments?\n\n'
+                'Pick what\'s been tough and stories will quietly work on it. '
+                'Your child will never see these choices.',
                 style: const TextStyle(color: Colors.white70, height: 1.5),
               ),
               actions: [
@@ -908,7 +922,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           if (mounted && setupNow == true) {
             await Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (_) => const ParentControlsScreen()),
+                builder: (_) => const ParentControlsScreen(
+                  openBigFeelings: true,
+                  skipMathGate: true, // parent just completed consent
+                ),
+              ),
             );
           }
         }

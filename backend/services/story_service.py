@@ -5,6 +5,7 @@ import json
 import time
 from typing import Any
 from .avatar_to_prompt_helper import AvatarToPromptHelper
+from ..utils.sanitizer import wrap_user_input
 from ..utils.validators import validate_age, validate_story_length
 
 logger = logging.getLogger(__name__)
@@ -306,40 +307,42 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
         parent_context.get("parent_hidden_context")
     )
 
+    # Wrap every parent-supplied value in USER_INPUT delimiters so the AI
+    # treats them as story element descriptions, never as instructions.
     feeling_guidance = (
-        f"Help the character notice and name feeling {feeling.lower()} in a gentle, child-safe way."
+        f"Help the character notice and name feeling {wrap_user_input(feeling.lower(), 'feeling')} in a gentle, child-safe way."
         if feeling
         else None
     )
 
     trigger_phrase = _abstract_parent_phrase(trigger)
     trigger_guidance = (
-        f"The challenge should come from a familiar moment where the character {trigger_phrase}."
+        f"The challenge should come from a familiar moment where the character {wrap_user_input(trigger_phrase, 'trigger')}."
         if trigger_phrase
         else None
     )
 
     body_guidance = (
-        f"Mirror this body cue early in the story: {body_signal.lower()}."
+        f"Mirror this body cue early in the story: {wrap_user_input(body_signal.lower(), 'body_signal')}."
         if body_signal
         else None
     )
 
     coping_guidance = (
-        f"Model this calming tool as a natural source of support: {coping_tool.lower()}."
+        f"Model this calming tool as a natural source of support: {wrap_user_input(coping_tool.lower(), 'coping_tool')}."
         if coping_tool
         else None
     )
 
     repair_guidance = (
-        f"Guide the ending toward repair that feels warm and realistic: {repair_goal.lower()}."
+        f"Guide the ending toward repair that feels warm and realistic: {wrap_user_input(repair_goal.lower(), 'repair_goal')}."
         if repair_goal
         else None
     )
 
     note_phrase = _abstract_parent_phrase(private_note)
     note_guidance = (
-        f"Use a metaphor-first setup and keep the story private and indirect around moments where the character {note_phrase}."
+        f"Use a metaphor-first setup and keep the story private and indirect around moments where the character {wrap_user_input(note_phrase, 'parent_note')}."
         if note_phrase
         else None
     )

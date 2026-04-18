@@ -20,8 +20,7 @@ import 'web_audio_player_stub.dart'
 
 /// Common wizard/onboarding phrases pre-warmed at startup.
 const List<String> kWarmUpPhrases = [
-  "Tap the star to start your adventure!",
-  "Hi, what's your name?",
+  "Hi! Welcome to Story Weaver, What's your name?",
   "How old are you? Tap your age!",
   "What is your hero's name? Tap the microphone to say it!",
   "Pick your hero look! Tap the picture you like.",

@@ -9,11 +9,11 @@ class ParentHiddenContext(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(36), db.ForeignKey("user.id"), nullable=False, index=True)
     child_profile_id = db.Column(db.String(64), nullable=False, index=True)
-    feeling = db.Column(db.String(120), nullable=False)
-    trigger = db.Column(db.String(160), nullable=False)
-    body_signal = db.Column(db.String(160), nullable=False)
-    coping_tool = db.Column(db.String(160), nullable=False)
-    repair_goal = db.Column(db.String(160), nullable=False)
+    feeling = db.Column(db.String(120), nullable=True)   # inferred by story engine
+    trigger = db.Column(db.String(320), nullable=False)   # comma-separated, expanded for multi-select
+    body_signal = db.Column(db.String(160), nullable=True)  # auto-selected by story engine
+    coping_tool = db.Column(db.String(320), nullable=False)  # comma-separated union across triggers
+    repair_goal = db.Column(db.String(320), nullable=False)  # comma-separated union across triggers
     parent_hidden_context = db.Column(db.String(280), nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
     updated_at = db.Column(

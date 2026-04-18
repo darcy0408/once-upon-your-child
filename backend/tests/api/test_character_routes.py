@@ -335,3 +335,51 @@ def test_parent_hidden_context_rejects_pii_in_note(client, auth_headers, test_us
 
     assert response.status_code == 400
     assert "disallowed personal information" in response.get_json()["error"]
+
+
+def test_parent_hidden_context_rejects_non_allowlisted_trigger(client, auth_headers, test_user):
+    response = client.put(
+        "/child-profiles/profile-1/parent-hidden-context",
+        json={
+            "trigger": "the child is terrible",
+            "coping_tool": "dragon breaths",
+            "repair_goal": "help fix what happened",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    assert "unrecognised values" in response.get_json()["error"]
+
+
+def test_parent_hidden_context_rejects_harmful_note(client, auth_headers, test_user):
+    response = client.put(
+        "/child-profiles/profile-1/parent-hidden-context",
+        json={
+            "trigger": "a limit is set",
+            "coping_tool": "dragon breaths",
+            "repair_goal": "help fix what happened",
+            "parent_hidden_context": "the child is worthless and nobody loves them",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    assert "harmful" in response.get_json()["error"].lower()
+
+
+def test_parent_hidden_context_accepts_multi_trigger(client, auth_headers, test_user):
+    response = client.put(
+        "/child-profiles/profile-1/parent-hidden-context",
+        json={
+            "trigger": "a limit is set, a sibling conflict starts",
+            "coping_tool": "dragon breaths, a quiet pause",
+            "repair_goal": "say sorry simply, try again with warmth",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    saved = response.get_json()["parent_hidden_context"]
+    assert "a limit is set" in saved["trigger"]
+    assert "a sibling conflict starts" in saved["trigger"]
