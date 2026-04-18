@@ -2,6 +2,51 @@
 
 ---
 
+## Session Update — 2026-04-17 (Maintenance: Deps + Avatar Refinement + TTS Polish)
+
+### What was completed this session
+
+#### 1. Dependency Updates — Dependabot batch
+All Dependabot-flagged updates applied manually from the 19 open PR branches.
+
+**Backend (`backend/requirements.txt`):**
+- gunicorn 25.1.0 → 25.3.0
+- python-dotenv 1.1.1 → 1.2.2
+- google-genai 1.68.0 → 1.69.0, google-api-core 2.30.0 → 2.30.1, google-auth 2.48.0 → 2.49.1
+- Werkzeug 3.1.6 → 3.1.7, marshmallow 4.2.2 → 4.2.3
+- redis 7.3.0 → 7.4.0, celery 5.6.2 → 5.6.3
+- pytest-cov 4.1.0 → 7.1.0
+
+**Flutter (`pubspec.yaml`):**
+- cupertino_icons ^1.0.8 → ^1.0.9, shared_preferences ^2.5.4 → ^2.5.5, share_plus ^12.0.1 → ^12.0.2
+- firebase_core ^4.4.0 → ^4.6.0, firebase_analytics ^12.1.2 → ^12.2.0
+- sentry_flutter ^9.14.0 → ^9.16.0, package_info_plus ^9.0.0 → ^9.0.1
+
+#### 2. Avatar Refinement Note — BYOK-only feature
+- `avatar_routes.py`: accepts optional `refinement_note` field; returns 403 + `BYOK_REQUIRED` if tier ≠ byok
+- `avatar_generation_service.py`: threads refinement_note into generation call
+- `lib/custom_avatar_screen.dart`, `lib/screens/wizard_steps/hero_creator_step.dart`: UI for refinement flow
+
+#### 3. TTS Warm-up Fix
+- `app_tts_service.dart`: age-prompt excluded from warm-up cache so live `speak()` call uses the correct slower rateScale (0.72) rather than a default-speed cached version
+
+### Commits
+- `feb84b0` feat(avatar): avatar refinement note (BYOK-only); TTS warm-up fix; parent controls polish
+- `d2d8d0c` chore(deps): bump backend and Flutter dependencies (Dependabot)
+
+### Files changed
+```
+backend/requirements.txt                          — dependency versions
+backend/routes/avatar_routes.py                   — refinement_note, BYOK gate
+backend/services/avatar_generation_service.py     — refinement_note wired through
+lib/custom_avatar_screen.dart                     — refinement UI
+lib/screens/wizard_steps/hero_creator_step.dart   — avatar flow polish
+lib/services/app_tts_service.dart                 — warm-up exclusion
+pubspec.yaml                                      — Flutter dependency versions
+```
+
+---
+
 ## Session Update — 2026-04-18 (Welcome UX + Big Feelings Redesign + Child Safety Hardening)
 
 ### What was completed this session
