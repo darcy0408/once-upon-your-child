@@ -2434,85 +2434,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return widget.wizardData.selectedCharacterAssetPath;
   }
 
-  /// Builds the archetype scene card image with the child's avatar face
-  /// composited onto the blank face oval in the scene card.
-  ///
-  /// Face oval constants are relative to the 1024×1400 source images:
-  ///   - top edge at ~15 % of image height
-  ///   - oval 200×260 px → 19.5 % wide, 18.6 % tall
-  ///   - horizontally centred
-  ///
-  /// TODO: fine-tune _ovalTopFrac once the real generated images are reviewed
-  /// at runtime — the prompt targets 15-20 % so 0.15 is the safe starting point.
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
-    const double ovalTopFrac    = 0.15;
-    const double ovalHeightFrac = 260 / 1400; // ≈ 0.186
-    const double ovalWidthFrac  = 200 / 1024; // ≈ 0.195
-    const double ovalLeftFrac   = (1.0 - ovalWidthFrac) / 2; // ≈ 0.402
-
-    final imagePath = archetype.imagePathForBand(
-      ageBand,
-      gender: widget.wizardData.characterGender,
-    );
-    final avatarData = _avatarImageData;
-
-    return LayoutBuilder(builder: (context, constraints) {
-      final w = constraints.maxWidth;
-      final h = constraints.maxHeight;
-
-      // Build avatar face widget from base64 or asset path.
-      Widget? faceOverlay;
-      if (avatarData != null) {
-        Widget avatarImg;
-        if (avatarData.startsWith('data:image')) {
-          try {
-            avatarImg = Image.memory(
-              base64Decode(avatarData.split(',').last),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            );
-          } catch (_) {
-            avatarImg = const SizedBox.shrink();
-          }
-        } else {
-          avatarImg = Image.asset(
-            avatarData,
+    final imagePath = archetype.imagePathForBand(ageBand);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(color: const Color(0xFF1A0A2E)),
+        if (imagePath != null)
+          Image.asset(
+            imagePath,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          );
-        }
-
-        faceOverlay = Positioned(
-          left:   w * ovalLeftFrac,
-          top:    h * ovalTopFrac,
-          width:  w * ovalWidthFrac,
-          height: h * ovalHeightFrac,
-          child: ClipOval(child: avatarImg),
-        );
-      }
-
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Container(color: const Color(0xFF1A0A2E)),
-          if (imagePath != null)
-            Image.asset(
-              imagePath,
-              // cover + topCenter keeps the face area visible even if the card
-              // is shorter than the image's natural aspect ratio.
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-              errorBuilder: (_, __, ___) =>
-                  Center(child: Text(archetype.icon ?? '✨',
-                      style: const TextStyle(fontSize: 64))),
-            )
-          else
-            Center(child: Text(archetype.icon ?? '✨',
-                style: const TextStyle(fontSize: 72))),
-          if (faceOverlay != null) faceOverlay,
-        ],
-      );
-    });
+            alignment: Alignment.topCenter,
+            errorBuilder: (_, __, ___) =>
+                Center(child: Text(archetype.icon ?? '✨',
+                    style: const TextStyle(fontSize: 64))),
+          )
+        else
+          Center(child: Text(archetype.icon ?? '✨',
+              style: const TextStyle(fontSize: 72))),
+      ],
+    );
   }
 
   Widget _buildGenderPicker() {

@@ -383,28 +383,11 @@ class ArchetypeData {
   }
 
   /// Returns the image path for this archetype in the given age band.
-  ///
-  /// [gender] is 'Boy' or 'Girl' — only applied for the Adventurer band,
-  /// where we generate separate male/female scene card variants. All other
-  /// bands use a single shared image.
-  String? imagePathForBand(AgeBand band, {String gender = 'Girl'}) {
+  String? imagePathForBand(AgeBand band) {
     if (band == AgeBand.sprout && sproutImageId != null) {
       return AgeBandAssetResolver.archetypePath(band, sproutImageId!);
     }
     if (bandImageId == null) return imagePath;
-
-    // Adventurer band has gender-specific scene cards (boy / girl variants).
-    if (band == AgeBand.adventurer) {
-      final suffix = gender.toLowerCase() == 'boy' ? '_boy' : '_girl';
-      return AgeBandAssetResolver.archetypePath(band, '$bandImageId$suffix');
-    }
-
-    // animal_whisperer has no dedicated file in non-sprout band folders yet —
-    // fall back to the existing per-band PNG.
-    if (bandImageId == 'animal_whisperer') {
-      return 'assets/images/archetypes/${band.name}/animal_whisperer.png';
-    }
-
     return AgeBandAssetResolver.archetypePath(band, bandImageId!);
   }
 }
