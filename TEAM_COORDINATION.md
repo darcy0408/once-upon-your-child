@@ -64,9 +64,26 @@ Renamed all user-facing labels from "Big Feelings" / "Feelings" to "Life Quests"
 | `lib/screens/parent_controls_screen.dart` | Section comment updated |
 | `lib/emotions_screen.dart` | Tab label "My Feelings" -> "My Journey" |
 
-### In Progress
-- Phase 1b: Redesign the Life Quests entry screen (replace broken badge grid)
-- Phase 1c: Update companion presentation for older age bands
+### Scope Completed — Phase 1b: Entry Screen Redesign
+
+- Rewrote `FeelingsBadgeGrid` from scratch: replaced tiny hex-icon grid (2x2, 4 pages of scrolling) with polished card layout (emoji + label + subtitle, 2-col grid with 1.6 aspect ratio, all 8 emotions visible)
+- Updated titles: "A Big Feeling!" -> "What's going on?", "How are you feeling?" -> "What's going on?"
+- Updated subtitle: "Help your hero." -> "Life throws curveballs. Pick what fits."
+- Removed hex painter, Taylor series trig, and asset-fallback complexity (224 lines removed, 126 added)
+
+### Scope Completed — Phase 1c: Companion Presentation for Tweens
+
+- Created `_adventurerCompanions` list for 9-11 age band: same 7 companions, reordered with most mature-looking first (Shadow Cat, Robin, Clever Fox) and most childish last (Unicorn)
+- Updated taglines for tween audience (e.g. "Big courage. Bigger heart." -> "Has your back. Always.", "Kindness that makes you stronger." -> "Quiet strength. Real healing.")
+- Companion grid now selects `_adventurerCompanions` when `band == AgeBand.adventurer`
+
+### Files Changed (Phase 1b + 1c)
+| File | Change |
+|------|--------|
+| `lib/widgets/feelings_badge_grid.dart` | Full rewrite: card-based emotion grid |
+| `lib/widgets/feelings_quest_modal.dart` | Title "How are you feeling?" -> "What's going on?" |
+| `lib/screens/big_feelings_flow_screen.dart` | Step titles + subtitles updated for Life Quests framing |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | New `_adventurerCompanions` list; companion grid uses it for Adventurer band |
 
 ### Known Remaining (Future Phases)
 - Phase 2: Author 8-10 pre-built pick-a-path quest scenarios for non-BYOK users

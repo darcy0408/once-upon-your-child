@@ -4344,6 +4344,61 @@ const _sproutCompanions = [
   ),
 ];
 
+/// Adventurer band (9-11): same companions, reordered so the more mature-
+/// looking characters appear first and the most childish (Unicorn) is last.
+/// Taglines are tweaked to sound less babyish for tweens.
+const _adventurerCompanions = [
+  _CompanionData(
+    id: 'cat',
+    name: 'Shadow Cat',
+    tagline: 'Sets boundaries. Finds the exit.',
+    personality:
+        'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
+  ),
+  _CompanionData(
+    id: 'robin',
+    name: 'Robin',
+    tagline: 'Fierce loyalty. Zero chill.',
+    personality:
+        'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
+  ),
+  _CompanionData(
+    id: 'fox',
+    name: 'Clever Fox',
+    tagline: 'Finds the loophole. Plays it smart.',
+    personality:
+        'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
+  ),
+  _CompanionData(
+    id: 'dragon',
+    name: 'Dragon',
+    tagline: 'Has your back. Always.',
+    personality:
+        'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
+  ),
+  _CompanionData(
+    id: 'owl',
+    name: 'Wise Owl',
+    tagline: 'Sees what others miss.',
+    personality:
+        'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
+  ),
+  _CompanionData(
+    id: 'dog',
+    name: 'Star Dog',
+    tagline: 'Never gives up on you.',
+    personality:
+        'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
+  ),
+  _CompanionData(
+    id: 'unicorn',
+    name: 'Unicorn',
+    tagline: 'Quiet strength. Real healing.',
+    personality:
+        'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
+  ),
+];
+
 const _companions = [
   _CompanionData(
     id: 'dragon',
@@ -4430,11 +4485,14 @@ class _CompanionImageGrid extends StatelessWidget {
           .floorToDouble()
           .clamp(40.0, naturalSize);
 
-      // Sprouts see only their 4 age-appropriate companions; all other bands
-      // see the full general companion roster.
+      // Sprouts see only their 4 age-appropriate companions.
+      // Adventurer band (9-11) gets a reordered list: cooler/more mature
+      // companions first, most childish (Unicorn) last.
       final companionList = band.band == AgeBand.sprout
           ? _sproutCompanions
-          : _companions;
+          : band.band == AgeBand.adventurer
+              ? _adventurerCompanions
+              : _companions;
 
       // Build companion buttons with a uniform, pre-calculated size.
       List<Widget> buttons = companionList.map((c) {
