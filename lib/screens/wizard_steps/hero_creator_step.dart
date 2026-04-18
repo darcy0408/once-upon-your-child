@@ -2434,48 +2434,85 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return widget.wizardData.selectedCharacterAssetPath;
   }
 
-  Widget _buildAvatarBadge({double size = 36}) {
-    final data = _avatarImageData;
-    if (data == null) return const SizedBox.shrink();
+  /// Builds the archetype scene card image with the child's avatar face
+  /// composited onto the blank face oval in the scene card.
+  ///
+  /// Face oval constants are relative to the 1024×1400 source images:
+  ///   - top edge at ~15 % of image height
+  ///   - oval 200×260 px → 19.5 % wide, 18.6 % tall
+  ///   - horizontally centred
+  ///
+  /// TODO: fine-tune _ovalTopFrac once the real generated images are reviewed
+  /// at runtime — the prompt targets 15-20 % so 0.15 is the safe starting point.
+  Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
+    const double ovalTopFrac    = 0.15;
+    const double ovalHeightFrac = 260 / 1400; // ≈ 0.186
+    const double ovalWidthFrac  = 200 / 1024; // ≈ 0.195
+    const double ovalLeftFrac   = (1.0 - ovalWidthFrac) / 2; // ≈ 0.402
 
-    Widget imageWidget;
-    if (data.startsWith('data:image')) {
-      // Base64 generated avatar
-      try {
-        final base64Str = data.split(',').last;
-        imageWidget = Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const Icon(Icons.face_rounded, color: Colors.white),
-        );
-      } catch (_) {
-        return const SizedBox.shrink();
-      }
-    } else {
-      // Asset path (pre-made silhouette)
-      imageWidget = Image.asset(
-        data,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Icon(Icons.face_rounded, color: Colors.white),
-      );
-    }
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFFFD700), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(100),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipOval(child: imageWidget),
+    final imagePath = archetype.imagePathForBand(
+      ageBand,
+      gender: widget.wizardData.characterGender,
     );
+    final avatarData = _avatarImageData;
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final w = constraints.maxWidth;
+      final h = constraints.maxHeight;
+
+      // Build avatar face widget from base64 or asset path.
+      Widget? faceOverlay;
+      if (avatarData != null) {
+        Widget avatarImg;
+        if (avatarData.startsWith('data:image')) {
+          try {
+            avatarImg = Image.memory(
+              base64Decode(avatarData.split(',').last),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            );
+          } catch (_) {
+            avatarImg = const SizedBox.shrink();
+          }
+        } else {
+          avatarImg = Image.asset(
+            avatarData,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          );
+        }
+
+        faceOverlay = Positioned(
+          left:   w * ovalLeftFrac,
+          top:    h * ovalTopFrac,
+          width:  w * ovalWidthFrac,
+          height: h * ovalHeightFrac,
+          child: ClipOval(child: avatarImg),
+        );
+      }
+
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(color: const Color(0xFF1A0A2E)),
+          if (imagePath != null)
+            Image.asset(
+              imagePath,
+              // cover + topCenter keeps the face area visible even if the card
+              // is shorter than the image's natural aspect ratio.
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (_, __, ___) =>
+                  Center(child: Text(archetype.icon ?? '✨',
+                      style: const TextStyle(fontSize: 64))),
+            )
+          else
+            Center(child: Text(archetype.icon ?? '✨',
+                style: const TextStyle(fontSize: 72))),
+          if (faceOverlay != null) faceOverlay,
+        ],
+      );
+    });
   }
 
   Widget _buildGenderPicker() {
@@ -2819,19 +2856,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Container(color: const Color(0xFF1A0A2E)),
-                    if (a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender) != null)
-                      Opacity(
-                        opacity: _hasAvatar ? 0.78 : 1.0,
-                        child: Image.asset(a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender)!, fit: BoxFit.contain, alignment: Alignment.center),
-                      )
-                    else
-                      Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
-                    if (_hasAvatar)
-                      Positioned(
-                        top: 6, left: 6,
-                        child: _buildAvatarBadge(size: 36),
-                      ),
+                    _buildArchetypeSceneImage(a, ageBand),
                     if (isSelected)
                       Positioned(
                         top: 8, right: 8,
@@ -2943,25 +2968,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(color: const Color(0xFF1A0A2E)),
-                      if (a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender) != null)
-                        Opacity(
-                          opacity: _hasAvatar ? 0.78 : 1.0,
-                          child: Image.asset(a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender)!,
-                              fit: BoxFit.contain, alignment: Alignment.center),
-                        )
-                      else
-                        Container(
-                          color: Colors.white10,
-                          child: Center(
-                              child: Text(a.icon ?? '✨',
-                                  style: const TextStyle(fontSize: 64))),
-                        ),
-                      if (_hasAvatar)
-                        Positioned(
-                          top: 8, left: 8,
-                          child: _buildAvatarBadge(size: 44),
-                        ),
+                      _buildArchetypeSceneImage(a, ageBand),
                       Positioned(
                         left: 0,
                         right: 0,
