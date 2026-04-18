@@ -2,6 +2,41 @@
 
 ---
 
+## Session Update — 2026-04-18b (Archetype Streamlining + Scene Template Prompts)
+
+### What was completed this session
+
+#### 1. Archetype Count Reduced: 6 → 5
+Removed **The Storm Rider** — overlapped with Lightning Runner (both "brave action hero" archetypes). Keeps the set therapeutically distinct:
+- **The Quiz Whiz** — intellect / problem-solving
+- **The Master Creator** — creativity / self-expression
+- **The Soul Mender** (renamed from Heart Healer) — empathy / emotional care
+- **The Lightning Runner** — agency / independence
+- **The Animal Whisperer** — connection / gentleness
+
+Sprout/Explorer (ages 3-8) now see 4 archetypes: Lightning Runner, Master Creator, Soul Mender, Animal Whisperer.
+
+#### 2. Heart Healer → Soul Mender Rename
+Updated name, image references, and sprout image ID across code. Kept backward compatibility in wizard_data_mapper (still matches "Heart Healer" for any saved data).
+
+#### 3. Heading Text Fix
+- "Choose your hero type" → "Choose your archetype" (Adventurer band)
+- "Pick your hero style!" → "Pick your archetype!" (Sprout/Explorer bands)
+- MagicEarButton spoken text updated to match
+
+#### 4. Archetype Scene Template Prompts (docs only)
+Created `docs/archetype-scene-prompts.md` — a structured prompt for generating archetype card art via Gemini/ChatGPT. The approach: pre-made scene images with a blank face oval so the child's generated avatar face can be composited on top client-side. No extra API calls at archetype selection time.
+
+### Files changed
+```
+lib/widgets/archetype_card.dart                   — removed Storm Rider, renamed Heart Healer → Soul Mender, updated forBand()
+lib/screens/wizard_steps/wizard_data_mapper.dart  — updated archetype string matching
+lib/screens/wizard_steps/hero_creator_step.dart   — heading text + spoken text
+docs/archetype-scene-prompts.md                   — NEW: art generation prompts for scene templates
+```
+
+---
+
 ## Session Update — 2026-04-17 (Maintenance: Deps + Avatar Refinement + TTS Polish)
 
 ### What was completed this session
