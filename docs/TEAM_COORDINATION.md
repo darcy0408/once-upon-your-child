@@ -2361,3 +2361,49 @@ Name entry step was a bare purple screen with just a text box.
 ### Commits This Session
 - `5aecf68` fix: parental consent screen scrollability and spacing
 - `0209258` fix: UX audit fixes — COPPA scroll, choices narration, age picker, branding, mic
+
+---
+
+## Session Update — 2026-04-18 (CORS Fix, Tooling Setup, Session Log Catch-up)
+
+### CORS Production Web Fix ✅
+Frontend was `reliable-sherbet-2352c4.netlify.app` but backend CORS config had the wrong origin (`story-weaver-app.netlify.app`). All browser API calls were being blocked in production; mobile/desktop unaffected.
+- `backend/config/__init__.py` — updated hardcoded Netlify origin to correct URL
+- Deployed to Railway (`lovely-perfection` service) via GitHub auto-deploy
+- Commit: `a3bf63d`
+
+### Age Gate Polish ✅
+Resolved differences between working draft (`age_gate_screen_UPDATED.dart`) and committed file:
+- Added `Padding(horizontal: 8)` inside `_AgeBandButton` `FittedBox` — text no longer kisses pill edges
+- Fixed doc comment example (said "9–11", correct range is "12–14")
+- Draft file deleted
+- Commit: `eabb5cb`
+
+### Session History Catch-up ✅
+`SESSION_HISTORY.md` was stale — last entry was 2026-03-06, missing 6 weeks of sessions.
+Logged two missing sessions:
+- 2026-04-14: ISAR avatar cache enabled on web via SharedPreferences stub
+- 2026-04-15: ADULT-3 Reflect screen, human companion avatar generation, parent controls cleanup, TTS rate fix
+- Commit: `8ecaf86`
+
+### Railway & Netlify Tooling ✅
+- Installed Railway CLI (`@railway/cli`) and Netlify CLI (`netlify-cli`) via npm
+- Authenticated Railway CLI via browserless login
+- Added Railway Remote MCP server to Claude Code: `claude mcp add railway --transport http https://mcp.railway.com`
+- Installed Railway skills for Claude Code: `railway skills install --agent claude-code`
+- Railway MCP OAuth requires one-time browser authorization on next session start
+
+### Infrastructure Clarification
+- **Frontend**: Netlify (`reliable-sherbet-2352c4.netlify.app`) — free tier, auto-deploys from GitHub
+- **Backend**: Railway `radiant-tranquility` project → `lovely-perfection` service (Flask + Celery + Redis + Postgres)
+- **grand-light** (Railway): duplicate Flutter web frontend — still running, costs credit; to be shut down next session
+
+### Open Items
+- [ ] Shut down `grand-light` Railway service to free credit
+- [ ] Authorize Railway MCP OAuth (triggers on first MCP tool use after Claude Code restart)
+
+### Commits This Session
+- `eabb5cb` fix(age-gate): fix pill label padding and band comment
+- `8ecaf86` docs(sessions): log 2026-04-14 and 2026-04-15 sessions
+- `a3bf63d` fix(cors): update Netlify origin to correct production URL
+
