@@ -54,9 +54,16 @@ The 4 archetypes are: **Quiz Whiz, Master Creator, Lightning Runner, Animal Whis
 
 Both variants: the child looking at this card should see a 10-11 year-old adventurer, not a teenager. No adult proportions.
 
-### Hands and skin
-- Hands are gloved or gauntleted — no bare skin below the neck on either variant
-- Arms covered by costume sleeves
+### Skin coverage — CRITICAL for inclusivity
+**Zero skin is visible anywhere on the character except through the face oval.** This is non-negotiable. The app serves children of all skin tones. Any exposed skin on the scene card (hands, wrists, neck, forearms) will be the wrong colour for most users.
+
+- **Hands**: Full gauntlets or full gloves — no fingerless gloves, no exposed knuckles, no skin between fingers
+- **Wrists**: Gloves must overlap the sleeve with no gap — no wrist skin
+- **Neck**: The costume collar (turtleneck, high neck, gorget, or neck guard) must come all the way up to the chin, meeting the very bottom edge of the face oval. Zero neck skin visible.
+- **Arms**: Sleeves cover completely to where the gloves begin
+- **No skin anywhere below the face oval**
+
+If the archetype's hat or pose would naturally expose a gap at the neck or wrist, add a costume element (scarf, neck guard, longer gauntlet cuff) to fill it.
 
 ### Pose and tone
 - Active but stable — the character is doing something related to their archetype power
@@ -64,7 +71,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 - Warm, empowering — the child should feel "I want to be that hero"
 - No weapons, no blood, no fear, no threatening darkness
 
-### Consistency across all 10 images
+### Consistency across all 8 images
 - Same art style, lighting logic, and color temperature
 - Same face oval size, shape, position, and fill color
 - Same body proportions (within each gender variant)
@@ -85,7 +92,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 **Pose**: Confident stance, one hand on hip, the other reaching out toward floating holographic puzzle pieces and glowing symbols
 
-**Costume**: Smart explorer's vest in rich emerald green with golden geometric patterns, utility belt with small pouches (holding scrolls/tools), fingerless tech gloves with glowing circuit-line patterns
+**Costume**: Smart explorer's vest in rich emerald green with golden geometric patterns over a high-collared turtleneck that covers the neck completely up to the chin, utility belt with small pouches (holding scrolls/tools), full gauntlet gloves with glowing circuit-line patterns on the back of the hand (full finger coverage — no skin visible)
 
 **Environment**: Ancient library meets futuristic lab — floating bookshelves, holographic star maps, warm amber lantern light mixing with cool blue puzzle-glow, stone archways with constellation carvings
 
@@ -104,7 +111,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 **Pose**: Mid-creation — holding a large ornate paintbrush in one hand, the other hand gesturing as painted creatures materialize from colorful paint strokes in the air
 
-**Costume**: Artist's adventurer coat in warm sunset orange/coral, splattered artfully with rainbow paint drops, tool belt with paint vials, fully gloved hands
+**Costume**: Artist's adventurer coat in warm sunset orange/coral with a high-collared inner layer covering the neck completely to the chin, splattered artfully with rainbow paint drops, tool belt with paint vials, full gauntlet gloves (paint-splattered to match the coat — full finger coverage, no skin visible)
 
 **Environment**: Magical art studio merged with a fantasy landscape — half the background is "real" (forest, sky) and half is being actively painted into existence with visible brush strokes, easels floating in the air
 
@@ -123,7 +130,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 **Pose**: Dynamic running stance (one foot forward, leaning hard into speed), arms swept back, motion blur and speed lines suggesting incredible velocity — but the character's upper body and face oval remain sharp and clear
 
-**Costume**: Sleek aerodynamic suit in electric purple and silver, glowing speed-line stripes down the arms and legs, lightweight armoured boots with wing motifs, short speed-cape trailing behind, fully gloved hands
+**Costume**: Sleek aerodynamic full-body suit in electric purple and silver with a built-in high neck that covers the throat completely to the chin, glowing speed-line stripes down the arms and legs, lightweight armoured boots with wing motifs, short speed-cape trailing behind, full aerodynamic gloves integrated into the suit sleeves (no gap at the wrist, full finger coverage)
 
 **Environment**: Cosmic racetrack — running across a bridge of solidified starlight over a galaxy-filled void, planets in the distance, aurora-like colors streaking across the sky
 
@@ -142,7 +149,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 **Pose**: Crouching slightly, one hand extended gently toward a small magical fox or owl companion that has approached them. The other hand rests on a mossy rock. Posture gentle and grounded.
 
-**Costume**: Forest ranger's outfit in deep forest green and warm brown, leaf-pattern armour pieces, a hooded cloak (hood down, resting on shoulders — hood does NOT cover the hat), nature-themed accessories, vine-wrapped gauntlets on both hands (no bare skin)
+**Costume**: Forest ranger's outfit in deep forest green and warm brown with a high-collared inner tunic covering the neck completely to the chin, leaf-pattern armour pieces, a hooded cloak (hood down, resting on shoulders — hood does NOT cover the hat), vine-wrapped full gauntlets on both hands extending up the forearm (no bare skin, full finger coverage)
 
 **Environment**: Deep enchanted forest with massive ancient trees, bioluminescent mushrooms and plants, a hidden woodland clearing with dappled golden sunlight filtering through the canopy, a gentle stream nearby
 
@@ -156,14 +163,17 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 | Problem | Fix |
 |---------|-----|
-| Facial features appear on the oval | Regenerate with: "The face is a BLANK, FEATURELESS, SMOOTH OVAL — like an unfinished mannequin head. Absolutely no eyes, nose, mouth, or any facial feature whatsoever." |
-| Hair visible below/beside the hat | Regenerate with: "The hat covers ALL hair completely. There is ZERO visible hair on this character — not at the brim, not at the neck, not anywhere. No hair exists in this image." |
-| Chest reads as female on boy variant | Regenerate with: "The chest is completely flat — no curve, no bust shape. The chest plate sits flat against a flat torso." |
+| Facial features appear on the oval | Regenerate: "The face is a BLANK, FEATURELESS, SMOOTH OVAL — like an unfinished mannequin head. Absolutely no eyes, nose, mouth, or any facial feature whatsoever." |
+| Hair visible below/beside the hat | Regenerate: "The hat covers ALL hair completely. There is ZERO visible hair on this character — not at the brim, not at the neck, not anywhere. No hair exists in this image." |
+| Skin visible on neck | Regenerate: "The costume collar comes all the way up to the chin, completely covering the neck. There is zero skin between the chin and the collar. The collar meets the bottom edge of the face oval." |
+| Skin visible on hands or fingers | Regenerate: "The character wears FULL gauntlet gloves covering every finger completely. There is zero exposed skin on the hands. No fingerless gloves." |
+| Skin visible at wrist gap | Regenerate: "The gloves overlap the sleeve cuffs with no gap. Zero skin at the wrist." |
+| Chest reads as female on boy variant | Regenerate: "The chest is completely flat — no curve, no bust shape. The chest plate sits flat against a flat torso." |
 | Chest reads as female on girl variant | Same as above — both variants have identical flat chest |
-| Body reads as adult | Regenerate with: "The character is 10-11 years old. Athletic child proportions, not teenager or adult." |
+| Body reads as adult | Regenerate: "The character is 10-11 years old. Athletic child proportions, not teenager or adult." |
 | Tone feels dark or scary | Increase warm lighting, add more golden tones, reduce shadow contrast |
 | Character too small | Zoom in so the character fills 60% of the canvas from mid-thigh up |
-| Oval edges blend into hair or collar | Regenerate with hard-edged oval — "The oval has a clean, sharp edge. It does not fade or blend into the surrounding costume or hat." |
+| Oval edges blend into collar | Regenerate: "The face oval has a clean, sharp hard edge at the bottom. It does not fade or blend into the costume collar." |
 
 ---
 
