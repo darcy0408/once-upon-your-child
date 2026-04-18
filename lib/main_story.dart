@@ -57,6 +57,7 @@ import 'services/child_profile_service.dart';
 import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/feelings_garden_screen.dart';
+import 'screens/life_quest_screen.dart';
 import 'screens/adult_meditation_screen.dart';
 // welcome_screen and wizard_story_screen imported at top of file
 
@@ -282,10 +283,28 @@ class _StoryScreenState extends State<StoryScreen> {
             ))
             .then((_) => setState(() => _selectedTabIndex = 0));
       } else {
+        final charName = _selectedCharacter?.name ?? 'You';
+        final charGender = _selectedCharacter?.gender ?? '';
         Navigator.of(context)
             .push(MaterialPageRoute(
-              builder: (_) => FeelingsGardenScreen(
+              builder: (_) => LifeQuestScreen(
                 childAge: age,
+                childName: charName,
+                pronoun: charGender == 'Girl'
+                    ? 'she'
+                    : charGender == 'Boy'
+                        ? 'he'
+                        : 'they',
+                pronounCap: charGender == 'Girl'
+                    ? 'She'
+                    : charGender == 'Boy'
+                        ? 'He'
+                        : 'They',
+                possessive: charGender == 'Girl'
+                    ? 'her'
+                    : charGender == 'Boy'
+                        ? 'his'
+                        : 'their',
               ),
             ))
             .then((_) => setState(() => _selectedTabIndex = 0));
