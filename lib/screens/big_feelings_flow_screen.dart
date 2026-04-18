@@ -990,7 +990,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
 
   String _titleForStep() {
     if (_isSproutBand) {
-      return _step == 0 ? 'How do you feel?' : 'What can help?';
+      return _step == 0 ? 'How do you feel?' : 'What could help?';
     }
     if (_isCreatorBand) {
       switch (_step) {
@@ -1006,7 +1006,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     }
     switch (_step) {
       case 0:
-        return 'A Big Feeling!';
+        return "What's going on?";
       case 1:
         return 'What happened?';
       case 2:
@@ -1043,7 +1043,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     }
     switch (_step) {
       case 0:
-        return 'Help your hero.';
+        return 'Life throws curveballs. Pick what fits.';
       case 1:
         return 'Pick the part that fits best.';
       case 2:

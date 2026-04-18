@@ -49,7 +49,7 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
       ageBandFromAge(widget.childAge) == AgeBand.adventurer;
 
   static const _titles = [
-    'How are you feeling?',
+    "What's going on?",
     'Tell me more…',
     'Even more specific?',
   ];
@@ -91,7 +91,7 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                   Expanded(
                     child: Text(
                       _useBadgeGrid
-                          ? 'How are you feeling?'
+                          ? "What's going on?"
                           : _titles[_level.clamp(0, 2)],
                       textAlign: TextAlign.center,
                       style: (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false)

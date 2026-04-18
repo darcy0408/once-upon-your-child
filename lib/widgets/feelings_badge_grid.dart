@@ -1,100 +1,89 @@
 // lib/widgets/feelings_badge_grid.dart
 //
-// Scout-badge / RPG-skill style emotion picker for the Adventurer band (ages 9-11).
-// Shows a 2×4 grid of illustrated emotion badges. Single-tap selects and confirms.
-// Falls back to asset image when present; otherwise renders icon + emoji.
+// Emotion card grid for the Adventurer band (ages 9-11).
+// Shows a 4×2 grid of styled emotion cards. Single-tap selects and confirms.
+// Uses large emoji + label with color-coded cards for a polished look.
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/age_band_asset_resolver.dart';
 import '../theme/age_band_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BadgeEmotion {
+class _CardEmotion {
   final String id;
   final String label;
   final String emoji;
-  final IconData icon;
   final Color color;
-  final String assetPath; // optional — silently falls back to icon
+  final String subtitle;
 
-  const _BadgeEmotion({
+  const _CardEmotion({
     required this.id,
     required this.label,
     required this.emoji,
-    required this.icon,
     required this.color,
-    required this.assetPath,
+    required this.subtitle,
   });
 }
 
-List<_BadgeEmotion> _badgesForBand(AgeBand band) => [
-  _BadgeEmotion(
+List<_CardEmotion> _cardsForBand(AgeBand band) => [
+  const _CardEmotion(
     id: 'happy',
     label: 'Happy',
-    emoji: '😄',
-    icon: Icons.sentiment_very_satisfied_rounded,
-    color: const Color(0xFFFFC107),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'happy'),
+    emoji: '\u{1F60A}',
+    color: Color(0xFFFFC107),
+    subtitle: 'Things are good',
   ),
-  _BadgeEmotion(
-    id: 'excited',
-    label: 'Excited',
-    emoji: '🤩',
-    icon: Icons.star_rounded,
-    color: const Color(0xFFAB47BC),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'excited'),
-  ),
-  _BadgeEmotion(
-    id: 'calm',
-    label: 'Calm',
-    emoji: '😌',
-    icon: Icons.spa_rounded,
-    color: const Color(0xFF26A69A),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'calm'),
-  ),
-  _BadgeEmotion(
+  const _CardEmotion(
     id: 'sad',
     label: 'Sad',
-    emoji: '😢',
-    icon: Icons.sentiment_dissatisfied_rounded,
-    color: const Color(0xFF42A5F5),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'sad'),
+    emoji: '\u{1F622}',
+    color: Color(0xFF42A5F5),
+    subtitle: 'Feeling down',
   ),
-  _BadgeEmotion(
+  const _CardEmotion(
     id: 'worried',
     label: 'Worried',
-    emoji: '😟',
-    icon: Icons.psychology_alt_rounded,
-    color: const Color(0xFFFF7043),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'worried'),
+    emoji: '\u{1F61F}',
+    color: Color(0xFFFF7043),
+    subtitle: "Can't stop thinking",
   ),
-  _BadgeEmotion(
+  const _CardEmotion(
     id: 'frustrated',
     label: 'Frustrated',
-    emoji: '😤',
-    icon: Icons.bolt_rounded,
-    color: const Color(0xFFEF5350),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'frustrated'),
+    emoji: '\u{1F624}',
+    color: Color(0xFFEF5350),
+    subtitle: "It's not working",
   ),
-  _BadgeEmotion(
+  const _CardEmotion(
     id: 'angry',
     label: 'Angry',
-    emoji: '😠',
-    icon: Icons.mood_bad_rounded,
-    color: const Color(0xFFD32F2F),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'angry'),
+    emoji: '\u{1F621}',
+    color: Color(0xFFD32F2F),
+    subtitle: 'Ready to explode',
   ),
-  _BadgeEmotion(
+  const _CardEmotion(
     id: 'embarrassed',
     label: 'Embarrassed',
-    emoji: '😳',
-    icon: Icons.face_retouching_natural_rounded,
-    color: const Color(0xFFEC407A),
-    assetPath: AgeBandAssetResolver.feelingPath(band, 'embarrassed'),
+    emoji: '\u{1F633}',
+    color: Color(0xFFEC407A),
+    subtitle: 'Wish I could disappear',
+  ),
+  const _CardEmotion(
+    id: 'excited',
+    label: 'Excited',
+    emoji: '\u{1F929}',
+    color: Color(0xFFAB47BC),
+    subtitle: "Can't wait",
+  ),
+  const _CardEmotion(
+    id: 'calm',
+    label: 'Calm',
+    emoji: '\u{1F60C}',
+    color: Color(0xFF26A69A),
+    subtitle: 'All good right now',
   ),
 ];
 
@@ -102,7 +91,7 @@ List<_BadgeEmotion> _badgesForBand(AgeBand band) => [
 // Widget
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Scout-badge emotion grid for the Adventurer band.
+/// Emotion card grid for the Adventurer band.
 /// Calls [onSelected] with a list containing the chosen emotion id.
 class FeelingsBadgeGrid extends StatefulWidget {
   final ValueChanged<List<String>> onSelected;
@@ -123,25 +112,25 @@ class _FeelingsBadgeGridState extends State<FeelingsBadgeGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final badges = _badgesForBand(widget.band);
+    final cards = _cardsForBand(widget.band);
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: 1.05,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.6,
       ),
-      itemCount: badges.length,
+      itemCount: cards.length,
       itemBuilder: (context, i) {
-        final badge = badges[i];
-        final isHovered = _hoveredId == badge.id;
-        return _BadgeTile(
-          badge: badge,
+        final card = cards[i];
+        final isHovered = _hoveredId == card.id;
+        return _EmotionCard(
+          card: card,
           isHighlighted: isHovered,
-          onTap: () => widget.onSelected([badge.id]),
+          onTap: () => widget.onSelected([card.id]),
           onHoverChanged: (v) =>
-              setState(() => _hoveredId = v ? badge.id : null),
+              setState(() => _hoveredId = v ? card.id : null),
         );
       },
     );
@@ -149,17 +138,17 @@ class _FeelingsBadgeGridState extends State<FeelingsBadgeGrid> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Badge tile
+// Emotion card tile
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BadgeTile extends StatelessWidget {
-  final _BadgeEmotion badge;
+class _EmotionCard extends StatelessWidget {
+  final _CardEmotion card;
   final bool isHighlighted;
   final VoidCallback onTap;
   final ValueChanged<bool> onHoverChanged;
 
-  const _BadgeTile({
-    required this.badge,
+  const _EmotionCard({
+    required this.card,
     required this.isHighlighted,
     required this.onTap,
     required this.onHoverChanged,
@@ -169,184 +158,85 @@ class _BadgeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '${badge.label} — tap to select',
+      label: '${card.label} — ${card.subtitle}',
       child: MouseRegion(
         onEnter: (_) => onHoverChanged(true),
         onExit: (_) => onHoverChanged(false),
         child: GestureDetector(
           onTap: onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutBack,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: isHighlighted
-                  ? badge.color.withAlpha(50)
-                  : Colors.white.withAlpha(12),
-              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  card.color.withAlpha(isHighlighted ? 80 : 35),
+                  card.color.withAlpha(isHighlighted ? 50 : 18),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isHighlighted
-                    ? badge.color
-                    : badge.color.withAlpha(100),
-                width: isHighlighted ? 2.5 : 1.5,
+                    ? card.color
+                    : card.color.withAlpha(80),
+                width: isHighlighted ? 2.0 : 1.0,
               ),
               boxShadow: isHighlighted
                   ? [
                       BoxShadow(
-                        color: badge.color.withAlpha(90),
-                        blurRadius: 18,
-                        spreadRadius: 2,
+                        color: card.color.withAlpha(60),
+                        blurRadius: 12,
+                        spreadRadius: 1,
                       ),
                     ]
                   : null,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _BadgeIcon(badge: badge, highlighted: isHighlighted),
-                const SizedBox(height: 10),
-                Text(
-                  badge.label,
-                  style: GoogleFonts.fredoka(
-                    color: isHighlighted ? badge.color : Colors.white,
-                    fontSize: 16,
-                    fontWeight: isHighlighted
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    letterSpacing: 0.3,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Text(
+                    card.emoji,
+                    style: const TextStyle(fontSize: 36),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          card.label,
+                          style: GoogleFonts.fredoka(
+                            color: isHighlighted
+                                ? Colors.white
+                                : Colors.white.withAlpha(230),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          card.subtitle,
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white.withAlpha(140),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Badge icon — asset with icon fallback
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BadgeIcon extends StatelessWidget {
-  final _BadgeEmotion badge;
-  final bool highlighted;
-
-  const _BadgeIcon({required this.badge, required this.highlighted});
-
-  @override
-  Widget build(BuildContext context) {
-    return _HexClip(
-      size: 64,
-      color: badge.color.withAlpha(highlighted ? 80 : 40),
-      borderColor: badge.color,
-      child: Image.asset(
-        badge.assetPath,
-        width: 44,
-        height: 44,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Icon(
-          badge.icon,
-          color: badge.color,
-          size: 36,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Hexagonal clip shape
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _HexClip extends StatelessWidget {
-  final double size;
-  final Color color;
-  final Color borderColor;
-  final Widget child;
-
-  const _HexClip({
-    required this.size,
-    required this.color,
-    required this.borderColor,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _HexPainter(fill: color, border: borderColor),
-        child: Center(child: child),
-      ),
-    );
-  }
-}
-
-class _HexPainter extends CustomPainter {
-  final Color fill;
-  final Color border;
-  const _HexPainter({required this.fill, required this.border});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _hexPath(size);
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = border
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  Path _hexPath(Size s) {
-    final cx = s.width / 2;
-    final cy = s.height / 2;
-    final r = s.width / 2;
-    final path = Path();
-    for (var i = 0; i < 6; i++) {
-      final angle = (i * 60 - 30) * 3.14159 / 180;
-      final x = cx + r * cos(angle);
-      final y = cy + r * sin(angle);
-      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
-    }
-    path.close();
-    return path;
-  }
-
-  double cos(double rad) => _cos(rad);
-  double sin(double rad) => _sin(rad);
-
-  // Pure Dart trig — no dart:math import needed in painter
-  static double _cos(double x) {
-    // Taylor series: accurate enough for hex vertices
-    x = x % (2 * 3.14159265358979);
-    double result = 1;
-    double term = 1;
-    for (int i = 1; i <= 8; i++) {
-      term *= -x * x / ((2 * i - 1) * (2 * i));
-      result += term;
-    }
-    return result;
-  }
-
-  static double _sin(double x) {
-    x = x % (2 * 3.14159265358979);
-    double result = x;
-    double term = x;
-    for (int i = 1; i <= 8; i++) {
-      term *= -x * x / ((2 * i) * (2 * i + 1));
-      result += term;
-    }
-    return result;
-  }
-
-  @override
-  bool shouldRepaint(_HexPainter old) =>
-      old.fill != fill || old.border != border;
 }
