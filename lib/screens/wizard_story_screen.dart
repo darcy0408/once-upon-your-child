@@ -7,7 +7,7 @@ import '../widgets/moon_phase_progress.dart';
 import '../widgets/avatar_generation_banner.dart';
 import '../providers/age_band_provider.dart';
 import 'character_library_screen.dart';
-import 'feelings_garden_screen.dart';
+import 'life_quest_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/magic_review_step.dart';
 import 'dart:async';
@@ -473,10 +473,31 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         label: 'Life Quests',
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => FeelingsGardenScreen(
+                            builder: (context) => LifeQuestScreen(
                               childAge: _wizardData.characterAge <= 0
                                   ? 8
                                   : _wizardData.characterAge,
+                              childName: _wizardData.characterName.isNotEmpty
+                                  ? _wizardData.characterName
+                                  : 'You',
+                              companionName: _wizardData.companionNames.isNotEmpty
+                                  ? _wizardData.companionNames.first
+                                  : '',
+                              pronoun: _wizardData.characterGender == 'Girl'
+                                  ? 'she'
+                                  : _wizardData.characterGender == 'Boy'
+                                      ? 'he'
+                                      : 'they',
+                              pronounCap: _wizardData.characterGender == 'Girl'
+                                  ? 'She'
+                                  : _wizardData.characterGender == 'Boy'
+                                      ? 'He'
+                                      : 'They',
+                              possessive: _wizardData.characterGender == 'Girl'
+                                  ? 'her'
+                                  : _wizardData.characterGender == 'Boy'
+                                      ? 'his'
+                                      : 'their',
                             ),
                           ),
                         ),
@@ -486,10 +507,16 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         icon: const Icon(Icons.explore_rounded, color: Colors.white),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => FeelingsGardenScreen(
+                            builder: (context) => LifeQuestScreen(
                               childAge: _wizardData.characterAge <= 0
                                   ? 8
                                   : _wizardData.characterAge,
+                              childName: _wizardData.characterName.isNotEmpty
+                                  ? _wizardData.characterName
+                                  : 'You',
+                              companionName: _wizardData.companionNames.isNotEmpty
+                                  ? _wizardData.companionNames.first
+                                  : '',
                             ),
                           ),
                         ),

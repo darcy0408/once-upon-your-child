@@ -85,8 +85,45 @@ Renamed all user-facing labels from "Big Feelings" / "Feelings" to "Life Quests"
 | `lib/screens/big_feelings_flow_screen.dart` | Step titles + subtitles updated for Life Quests framing |
 | `lib/screens/wizard_steps/hero_creator_step.dart` | New `_adventurerCompanions` list; companion grid uses it for Adventurer band |
 
+### Scope Completed — Phase 2: Pre-Built Quest Library
+
+**Data model** (`lib/data/life_quest_data.dart`):
+- `LifeQuestScenario`, `QuestSegment`, `QuestChoice` data classes
+- String interpolation for `{name}`, `{companion}`, `{pronoun}`, `{Pronoun}`, `{possessive}`
+- `interpolateQuest()` helper function
+
+**8 pre-built quest scenarios**, each with 4-6 segments, 3 choices per branch, multiple endings, and reflection prompts:
+
+| Quest | Title | Emotions | Segments |
+|-------|-------|----------|----------|
+| Left Out | "The Empty Seat" | sad, worried, angry, embarrassed | 14 |
+| Peer Pressure | "The Dare" | worried, frustrated, embarrassed | 11 |
+| School Stress | "The Big Test" | worried, frustrated, sad | 7 |
+| Sibling Conflict | "The Last Straw" | angry, frustrated | 6 |
+| Being Teased | "The Comment" | sad, angry, embarrassed | 9 |
+| Family Stress | "Behind Closed Doors" | sad, worried, angry | 7 |
+| Feeling Different | "The Only One" | sad, worried, embarrassed | 7 |
+| Losing Friendship | "The Drift" | sad, worried, angry, embarrassed | 7 |
+
+**Life Quest screen** (`lib/screens/life_quest_screen.dart`):
+- Quest selector: card-based list filtered by selected emotion
+- Quest player: renders segments with choices, TTS toggle, rewind button
+- Reflection step at each ending with "Think About It" prompt
+- "Try Different Choices" (rewind), "Try Another Quest", and "Done" buttons at endings
+- String interpolation applied to all text (name, companion, pronouns)
+- No backend calls — fully offline, works for all users (BYOK and non-BYOK)
+
+**Wiring**:
+- Wizard story screen "Life Quests" nav button now launches `LifeQuestScreen` with character name, companion, and pronouns from wizard data
+
+### Files Changed (Phase 2)
+| File | Change |
+|------|--------|
+| `lib/data/life_quest_data.dart` | NEW: Quest data model + 8 pre-built scenarios |
+| `lib/screens/life_quest_screen.dart` | NEW: Quest selector + player screen |
+| `lib/screens/wizard_story_screen.dart` | Nav button wired to LifeQuestScreen |
+
 ### Known Remaining (Future Phases)
-- Phase 2: Author 8-10 pre-built pick-a-path quest scenarios for non-BYOK users
 - Phase 3: Wire BYOK AI-personalized quests to existing pick-a-path engine
 - Phase 4: Parent dashboard, quest library expansion, companion art refresh
 
