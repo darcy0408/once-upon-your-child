@@ -1,115 +1,203 @@
-# Generated Prompt: Archetype Scene Template Cards for Story Weaver
+# Archetype Scene Template Cards — Adventurer Band (ages 9-11)
 
-## Context & Background
+## Overview
 
-Story Weaver is a therapeutic storytelling app for children aged 3-15. Children create a character by uploading a photo, which gets transformed into an illustrated storybook avatar (chest-up portrait, 1024x1024). They then choose an "archetype" that defines their hero's personality and powers. We need 5 archetype scene cards where the character's body is already posed in-scene, with a **standardized blank face area** so we can digitally composite the child's generated face onto each card in-app. The target audience for this batch is the **Adventurer band (ages 9-11)**. The art must feel warm, therapeutic, empowering, and safe — never scary, violent, or sexualized.
+10 images total: **5 archetypes × 2 gender variants (boy / girl)**. Since children pick their gender during character setup, the app serves the matching variant automatically. Each card has a blank face oval so the child's generated avatar face can be composited on top at runtime.
 
-## Core Role & Capabilities
-
-- You are an expert children's book illustrator creating scene cards for a therapeutic app
-- You produce consistent art across all 5 images: same style, same lighting logic, same proportions
-- Every character body is **gender-neutral** (covered by armour, cloaks, tunics, or gear — no body shape visible)
-- Every character is posed **facing the viewer** (front-facing or slight 3/4 turn, max 15 degrees)
-- The face area is a **smooth, featureless oval** in a neutral skin tone (#D4A574) — no eyes, nose, mouth, or expression — so a real illustrated face can be composited on top
-
-## Technical Configuration
-
-- Output: 1024 x 1400 pixels (portrait orientation, 3:4.1 ratio — fits a mobile card)
-- Art style: Stylized cartoon with semi-realistic proportions, rich saturated color palette, Pixar/Dreamworks quality
-- The character should occupy roughly the **center 60%** of the frame, from mid-thigh up
-- The **blank face oval** must be centered horizontally on the character, positioned at approximately **15-20% from the top** of the image
-- Face oval size: approximately **200 x 260 pixels** (width x height) at 1024px canvas width
-- Background: dynamic, atmospheric, with depth and magical elements appropriate to each archetype
-- Lighting: warm cinematic lighting, rim light on the character, no harsh shadows on the face area
-- No text, no logos, no UI elements in the image
-
-## Operational Guidelines
-
-1. Character body wears a **high-collared tunic, chest plate, or cloak** that fully covers the torso — gender is unreadable
-2. The face is a **perfectly smooth, featureless oval** — flat matte fill in #D4A574, no shading on the oval itself
-3. Hair frames the face but does not cover any part of the oval — hair sits behind/around the oval leaving it fully exposed
-4. The character has **generic medium-length hair** in a dark brown tone that works for any gender
-5. Hands and arms are gloved or gauntleted — no bare skin below the neck
-6. The pose is **active but stable** — the character is doing something related to their archetype power
-7. The background tells the story of the archetype through environment, magical effects, and atmospheric elements
-8. Tone is **warm, therapeutic, empowering** — the child looking at this should feel "I want to be that hero"
-9. No weapons, no blood, no fear expressions, no darkness without balancing warm light
-10. Each image must look like it belongs in the same visual universe as the other 4
-
-## Output Specifications
-
-Generate **5 separate images**, one per archetype. Each image follows the same body/face template rules above but with unique pose, environment, costume details, and magical effects as specified below.
+The art must feel warm, therapeutic, empowering, and safe — never scary, violent, or sexualized.
 
 ---
 
-### Image 1: The Quiz Whiz
+## How to Generate
+
+Run the prompt **twice per archetype** — once with the **[BOY VARIANT]** body spec, once with the **[GIRL VARIANT]** body spec. Everything else (pose, environment, magical effects, hat) stays identical between variants. Only the body silhouette and costume fit change.
+
+---
+
+## Technical Configuration
+
+- **Output**: 1024 × 1400 pixels (portrait, 3:4.1 ratio — fits a mobile card)
+- **Art style**: Stylized cartoon with semi-realistic proportions, rich saturated color palette, Pixar/Dreamworks quality
+- **Character framing**: occupies roughly the center 60% of the frame, from mid-thigh up
+- **Blank face oval**: centered horizontally, positioned approximately 15–20% from the top of the image, approximately 200 × 260 px (width × height) at 1024px canvas width
+- **Oval fill**: flat matte #D4A574 — no shading, no features, no depth. Perfectly smooth like an unfinished mannequin.
+- **Background**: dynamic, atmospheric, with depth and magical elements appropriate to each archetype
+- **Lighting**: warm cinematic, rim light on the character, no harsh shadows falling across the face oval area
+- **No text, no logos, no UI elements**
+
+---
+
+## Universal Rules (apply to every image)
+
+### Hair — CRITICAL for compositing
+**The character's hat completely covers and conceals all hair. Zero hair is visible anywhere on the character.** This is non-negotiable: the compositing system will paste the child's own avatar (which already has its own hair) onto the face oval. If the scene card also shows hair, the result will have two conflicting layers of hair. The hat solves this entirely. Each archetype has a specific hat listed below.
+
+### Face oval
+- Perfectly smooth, featureless, flat matte fill in #D4A574
+- Zero facial features — no suggestion of eyes, nose, mouth, brow ridge, or chin definition
+- Clean hard edge where the oval meets the hat brim and collar — no blending or feathering
+- A soft warm glow or halo *behind* the oval (not on it) is acceptable and looks good
+
+### Body — gender variants
+**[BOY VARIANT]**
+- Broader, squarer shoulders
+- Straight torso — flat chest, no chest curve whatsoever, fully covered by chest plate or thick tunic
+- Slightly stockier build overall
+- Costume sits flat and boxy on the torso
+
+**[GIRL VARIANT]**
+- Slightly narrower shoulders than boy variant but still athletic
+- Flat chest — completely flat, no curve, no bust shape. The chest plate or thick padded tunic makes this area look identical to the boy variant.
+- Costume fits closely but reads as athletic/adventurer, not fashion
+
+Both variants: the child looking at this card should see a 10-11 year-old adventurer, not a teenager. No adult proportions.
+
+### Hands and skin
+- Hands are gloved or gauntleted — no bare skin below the neck on either variant
+- Arms covered by costume sleeves
+
+### Pose and tone
+- Active but stable — the character is doing something related to their archetype power
+- Facing viewer (front-facing or max 15° turn)
+- Warm, empowering — the child should feel "I want to be that hero"
+- No weapons, no blood, no fear, no threatening darkness
+
+### Consistency across all 10 images
+- Same art style, lighting logic, and color temperature
+- Same face oval size, shape, position, and fill color
+- Same body proportions (within each gender variant)
+- Each archetype must be distinguishable by color scheme and environment alone at thumbnail size
+
+---
+
+## The 5 Archetypes
+
+---
+
+### Archetype 1: The Quiz Whiz
+**Target filenames**: `clever_inventor_boy.jpg` / `clever_inventor_girl.jpg`
+
 **Power**: Solves any quiz, puzzle, or brain teaser with clever thinking
-**Pose**: Character in a confident stance, one hand on hip, the other hand reaching out to touch/interact with floating holographic puzzle pieces and glowing symbols
-**Costume**: Smart explorer's vest in rich emerald green with golden geometric patterns, utility belt with small pouches (holding scrolls/tools), fingerless gloves with glowing circuit-like patterns
-**Environment**: Ancient library-meets-futuristic-lab — floating bookshelves, holographic star maps, warm amber lantern light mixing with cool blue puzzle-glow, stone archways with constellation carvings
-**Magical effects**: Floating translucent puzzle pieces, glowing mathematical symbols and constellations orbiting the character, a soft golden "eureka" glow emanating from the character's head area (behind the face oval, not on it)
+
+**Hat**: Explorer's flat-cap with a pair of glowing tech goggles pushed up on the brim — covers all hair completely, no hair visible beneath the cap or behind the neck
+
+**Pose**: Confident stance, one hand on hip, the other reaching out toward floating holographic puzzle pieces and glowing symbols
+
+**Costume**: Smart explorer's vest in rich emerald green with golden geometric patterns, utility belt with small pouches (holding scrolls/tools), fingerless tech gloves with glowing circuit-line patterns
+
+**Environment**: Ancient library meets futuristic lab — floating bookshelves, holographic star maps, warm amber lantern light mixing with cool blue puzzle-glow, stone archways with constellation carvings
+
+**Magical effects**: Floating translucent puzzle pieces, glowing mathematical symbols and constellations orbiting the character, a soft golden "eureka" glow radiating from behind the face oval (not on it)
+
 **Mood**: Clever, curious, confident — the smartest person in the room and they know it
 
-### Image 2: The Master Creator
+---
+
+### Archetype 2: The Master Creator
+**Target filenames**: `gentle_dreamer_boy.jpg` / `gentle_dreamer_girl.jpg`
+
 **Power**: Has a magic paintbrush that brings drawings to life
-**Pose**: Character mid-creation, holding a large ornate paintbrush in one hand, the other hand gesturing as painted creatures/objects materialize from colorful paint strokes in the air
-**Costume**: Artist's adventurer coat in warm sunset orange/coral, splattered artfully with rainbow paint drops, rolled-up sleeves (still gloved), a beret or headband, tool belt with paint vials
-**Environment**: A magical art studio merged with a fantasy landscape — half the background is "real" (forest, sky) and half is being actively painted into existence with visible brush strokes, easels floating in the air
+
+**Hat**: Wide-brimmed artist's hat in warm terracotta, slightly floppy, artfully spattered with paint — covers all hair completely, no hair visible at the brim or behind the neck
+
+**Pose**: Mid-creation — holding a large ornate paintbrush in one hand, the other hand gesturing as painted creatures materialize from colorful paint strokes in the air
+
+**Costume**: Artist's adventurer coat in warm sunset orange/coral, splattered artfully with rainbow paint drops, tool belt with paint vials, fully gloved hands
+
+**Environment**: Magical art studio merged with a fantasy landscape — half the background is "real" (forest, sky) and half is being actively painted into existence with visible brush strokes, easels floating in the air
+
 **Magical effects**: Ribbons of living paint flowing from the brush in rainbow colors, small painted butterflies and birds coming to life mid-flight, paint drops floating weightlessly, golden sparkles where paint meets reality
+
 **Mood**: Creative, joyful, limitless — anything you imagine becomes real
 
-### Image 3: The Soul Mender
+---
+
+### Archetype 3: The Soul Mender
+**Target filenames**: `kind_healer_boy.jpg` / `kind_healer_girl.jpg`
+
 **Power**: Senses emotions and heals broken spirits with kindness
-**Pose**: Character with both hands gently extended forward, palms up, as warm healing light radiates outward from their hands, posture open and welcoming
-**Costume**: Flowing healer's robe in soft rose-pink and lavender, with a gentle golden soul-flame emblem on the chest plate, delicate vine embroidery along the hems, a small crystal pendant (resting on the chest plate, not on skin)
-**Environment**: A peaceful enchanted garden at golden hour — glowing flowers opening as the healing light reaches them, a gentle stream with luminous water, ancient trees with warm fairy lights in their canopy, soft mist
-**Magical effects**: Warm rose-gold healing light emanating from the hands in gentle waves, small luminous soul-sparks floating upward, flowers blooming in response to the light, soft golden aura around the whole character
+
+**Hat**: A woven circlet of glowing flowers and vines that sits flat and wide on the head like a crown-hat — fully covers where hair would be, no hair visible beneath or behind it. The flowers glow softly with healing light.
+
+**Pose**: Both hands gently extended forward, palms up, as warm healing light radiates outward from them. Posture open and welcoming.
+
+**Costume**: Flowing healer's robe in soft rose-pink and lavender, with a flat armoured chest plate bearing a golden soul-flame emblem (chest plate is thick and completely flat — no body curve visible beneath it), delicate vine embroidery along the hems, fully gloved hands
+
+**Environment**: Peaceful enchanted garden at golden hour — glowing flowers opening as healing light reaches them, a gentle stream with luminous water, ancient trees with warm fairy lights in the canopy, soft mist
+
+**Magical effects**: Warm rose-gold healing light in gentle waves from the hands, small luminous soul-sparks floating upward, flowers blooming in response to the light, soft golden aura around the whole character
+
 **Mood**: Compassionate, warm, safe — like being wrapped in the world's best hug
 
-### Image 4: The Lightning Runner
+---
+
+### Archetype 4: The Lightning Runner
+**Target filenames**: `speedy_explorer_boy.jpg` / `speedy_explorer_girl.jpg`
+
 **Power**: Moves faster than sound and leaves trails of stardust
-**Pose**: Character in a dynamic running stance (one foot forward, leaning into speed), arms back, with motion blur and speed lines suggesting incredible velocity, but the character's upper body and face area remain sharp and clear
-**Costume**: Sleek aerodynamic suit in electric purple and silver, with glowing speed-line stripes down the arms and legs, lightweight armoured boots with wing motifs, a short speed-cape that trails behind
-**Environment**: A cosmic racetrack — the character is running across a bridge of solidified starlight over a galaxy-filled void, planets visible in the distance, aurora-like colors streaking across the sky
-**Magical effects**: Trail of golden stardust and tiny stars streaming behind the character, speed lines in electric blue, the ground cracking with light under each footstep, small lightning bolts at the feet
+
+**Hat**: Sleek aerodynamic speed helmet in electric purple and silver with a visor pushed up — form-fitting, covers all hair completely, no hair visible at the back or sides of the neck
+
+**Pose**: Dynamic running stance (one foot forward, leaning hard into speed), arms swept back, motion blur and speed lines suggesting incredible velocity — but the character's upper body and face oval remain sharp and clear
+
+**Costume**: Sleek aerodynamic suit in electric purple and silver, glowing speed-line stripes down the arms and legs, lightweight armoured boots with wing motifs, short speed-cape trailing behind, fully gloved hands
+
+**Environment**: Cosmic racetrack — running across a bridge of solidified starlight over a galaxy-filled void, planets in the distance, aurora-like colors streaking across the sky
+
+**Magical effects**: Trail of golden stardust and tiny stars streaming behind the character, speed lines in electric blue, ground cracking with light under each footstep, small lightning bolts at the feet
+
 **Mood**: Fast, thrilling, unstoppable — pure speed and freedom
 
-### Image 5: The Animal Whisperer
+---
+
+### Archetype 5: The Animal Whisperer
+**Target filenames**: `animal_whisperer_boy.jpg` / `animal_whisperer_girl.jpg`
+
 **Power**: Talks to animals and moves unseen like a shadow through nature
-**Pose**: Character crouching slightly with one hand extended, gently connecting with a small magical fox or owl companion that has approached them, the other hand resting on a mossy rock, posture gentle and grounded
-**Costume**: Forest ranger's outfit in deep forest green and warm brown, with leaf-pattern armour pieces, a hooded cloak (hood down, resting on shoulders), nature-themed accessories — a feather tucked behind the ear, vine bracelet
+
+**Hat**: A wide forest ranger's hat in dark green with a leather band and a small feather tucked into the band — brim is wide enough to cover all hair completely, no hair visible beneath the brim or at the back of the neck
+
+**Pose**: Crouching slightly, one hand extended gently toward a small magical fox or owl companion that has approached them. The other hand rests on a mossy rock. Posture gentle and grounded.
+
+**Costume**: Forest ranger's outfit in deep forest green and warm brown, leaf-pattern armour pieces, a hooded cloak (hood down, resting on shoulders — hood does NOT cover the hat), nature-themed accessories, vine-wrapped gauntlets on both hands (no bare skin)
+
 **Environment**: Deep enchanted forest with massive ancient trees, bioluminescent mushrooms and plants, a hidden woodland clearing with dappled golden sunlight filtering through the canopy, a gentle stream nearby
-**Magical effects**: Soft green nature-magic glow connecting the character's hand to the animal companion, tiny glowing nature spirits (like fireflies but more magical) floating around, leaves gently swirling in a magical updraft, faint animal silhouettes visible deeper in the forest
+
+**Magical effects**: Soft green nature-magic glow connecting the character's hand to the animal companion, tiny glowing nature spirits (like fireflies but more magical) floating around, leaves gently swirling in a magical updraft, faint animal silhouettes deeper in the forest
+
 **Mood**: Gentle, connected, at home in nature — the forest trusts you
 
 ---
 
-## Advanced Features
-
-- **Face oval consistency**: The blank face oval MUST be identical in size, shape, position, and color (#D4A574 matte flat fill) across all 5 images. This is critical for the compositing system to work.
-- **Hair consistency**: Use the same generic dark-brown, medium-length hairstyle across all 5 images. The hair must frame the oval without overlapping it.
-- **Body proportion consistency**: The character's shoulder width, height, and overall build must be identical across all 5 images. Only the costume, pose, and environment change.
-- **No face features whatsoever**: The oval must have zero facial features — no suggestion of eyes, no shadow where a nose would be, no mouth line. Perfectly smooth and flat.
-
 ## Error Handling
 
-- If the AI adds facial features to the oval: regenerate with emphasis on "the face is a BLANK, FEATURELESS, SMOOTH OVAL with absolutely no facial features, like an unfinished mannequin head"
-- If the body reads as gendered: add more armour/cloak coverage and reduce body curvature
-- If the tone feels dark or scary: increase warm lighting, add more golden tones, reduce shadow contrast
-- If the character is too small in frame: zoom in so the character fills 60% of the canvas from mid-thigh up
+| Problem | Fix |
+|---------|-----|
+| Facial features appear on the oval | Regenerate with: "The face is a BLANK, FEATURELESS, SMOOTH OVAL — like an unfinished mannequin head. Absolutely no eyes, nose, mouth, or any facial feature whatsoever." |
+| Hair visible below/beside the hat | Regenerate with: "The hat covers ALL hair completely. There is ZERO visible hair on this character — not at the brim, not at the neck, not anywhere. No hair exists in this image." |
+| Chest reads as female on boy variant | Regenerate with: "The chest is completely flat — no curve, no bust shape. The chest plate sits flat against a flat torso." |
+| Chest reads as female on girl variant | Same as above — both variants have identical flat chest |
+| Body reads as adult | Regenerate with: "The character is 10-11 years old. Athletic child proportions, not teenager or adult." |
+| Tone feels dark or scary | Increase warm lighting, add more golden tones, reduce shadow contrast |
+| Character too small | Zoom in so the character fills 60% of the canvas from mid-thigh up |
+| Oval edges blend into hair or collar | Regenerate with hard-edged oval — "The oval has a clean, sharp edge. It does not fade or blend into the surrounding costume or hat." |
 
-## Quality Controls
+---
 
-- All 5 images should look like sequential cards in a premium children's app
-- The face oval must be pixel-perfect for compositing — clean edges, no blending into surrounding hair/skin
-- Color palette should be rich but not oversaturated — therapeutic, not hyperactive
-- Each archetype must be instantly distinguishable by color scheme and environment alone (even at thumbnail size)
-- The character must look approximately 10-11 years old in body proportions (not a small child, not a teenager)
+## File Naming Convention
 
-## Safety Protocols
+```
+assets/images/archetypes/adventurer/
+  clever_inventor_boy.jpg
+  clever_inventor_girl.jpg
+  gentle_dreamer_boy.jpg
+  gentle_dreamer_girl.jpg
+  kind_healer_boy.jpg
+  kind_healer_girl.jpg
+  speedy_explorer_boy.jpg
+  speedy_explorer_girl.jpg
+  animal_whisperer_boy.jpg
+  animal_whisperer_girl.jpg
+```
 
-- No skin visible below the neck — all covered by costume, gloves, boots
-- Body shape must be completely gender-neutral — no curves, no muscle definition
-- No weapons (the paintbrush is a creative tool, not a weapon)
-- All environments are wondrous, never threatening — forests are safe, speed is joyful
-- The overall feeling must be therapeutic and empowering — a child in therapy should see these and feel hope, agency, and excitement about choosing who they want to be
+> **Note**: The app currently uses `clever_inventor.jpg` (no gender suffix). The code in `archetype_card.dart` will need updating to append `_boy` or `_girl` based on the child's selected gender before these new files go live.
