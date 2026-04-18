@@ -200,7 +200,7 @@ class _StoryScreenState extends State<StoryScreen> {
   static const _quickThemes = [
     {'id': 'vanishing_colors', 'emoji': '🌈', 'label': 'Rainbow Land'},
     {'id': 'crystal_cavern', 'emoji': '💎', 'label': 'Crystal Cave'},
-    {'id': 'big_feelings_quest', 'emoji': '❤️', 'label': 'Big Feelings'},
+    {'id': 'big_feelings_quest', 'emoji': '🧭', 'label': 'Life Quest'},
     {'id': 'doorway_seasons', 'emoji': '🚪', 'label': 'Magic Door'},
     {'id': 'starship_engineers', 'emoji': '🚀', 'label': 'Space Quest'},
     {'id': 'safe_space', 'emoji': '✨', 'label': 'Surprise Me'},
@@ -1712,8 +1712,8 @@ class _StoryScreenState extends State<StoryScreen> {
     },
     {
       'emoji': '💛',
-      'title': 'Big Feelings',
-      'subtitle': 'Name it to tame it',
+      'title': 'Life Quest',
+      'subtitle': 'Handle what life throws at you',
       'lifeChallenge': 'Handling Big Feelings',
       'color': 0xFFF9A825,
     },

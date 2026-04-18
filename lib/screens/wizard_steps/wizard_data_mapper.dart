@@ -610,13 +610,8 @@ class WizardDataMapper {
         // but enhance it to pass the specific ability if we can.
 
         // Specific mapping logic based on the new names
-        if (archetypeId.contains('Storm Rider') ||
-            archetypeId.contains('Adventurer')) {
-          details['strengths'] = ['Bravery', 'Curiosity'];
-          details['interests'] = ['Exploring', 'Maps', 'Nature'];
-          details['specialAbility'] =
-              'Can command wind and weather to soar through storms';
-        } else if (archetypeId.contains('Quiz-Whiz') ||
+        if (archetypeId.contains('Quiz-Whiz') ||
+            archetypeId.contains('Quiz Whiz') ||
             archetypeId.contains('Thinker')) {
           details['strengths'] = ['Problem solving', 'Focus'];
           details['interests'] = ['Quizzes', 'Brain teasers', 'Science'];
@@ -628,7 +623,8 @@ class WizardDataMapper {
           details['interests'] = ['Painting', 'Colors', 'Music'];
           details['specialAbility'] =
               'Has a magic paintbrush that brings drawings to life';
-        } else if (archetypeId.contains('Heart Healer') ||
+        } else if (archetypeId.contains('Soul Mender') ||
+            archetypeId.contains('Heart Healer') ||
             archetypeId.contains('Helper')) {
           details['strengths'] = ['Kindness', 'Empathy'];
           details['interests'] = ['Animals', 'Helping friends'];

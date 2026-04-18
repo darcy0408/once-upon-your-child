@@ -410,7 +410,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         return 'Making a New Friend';
       }
       if (lower.contains('feel') || lower.contains('emotion')) {
-        return 'Big Feelings';
+        return 'Life Quest';
       }
       if (lower.contains('forest') || lower.contains('magic')) {
         return 'Magical Forest';

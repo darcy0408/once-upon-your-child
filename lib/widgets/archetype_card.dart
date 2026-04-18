@@ -233,29 +233,6 @@ class _TraitChip extends StatelessWidget {
 
 /// Predefined character archetypes
 class CharacterArchetypes {
-  static const adventurer = ArchetypeData(
-    icon: '⚡',
-    imagePath: 'assets/images/archetypes/storm_rider_framed.png',
-    name: 'The Storm Rider',
-    description: 'Commands wind and weather, brave explorer',
-    traits: ['Brave', 'Curious', 'Determined'],
-    specialAbility: 'Can command wind and weather to soar through storms',
-    matureName: 'Storm Vanguard',
-    matureDescription: 'Leads through chaos and thrives when the stakes are highest',
-    adventurerDescription: 'The scout who charges into danger first — if there\'s a wall, you find the gap in it.',
-    youngChildName: 'Super Brave!',
-    sproutImageId: 'brave_explorer',
-    bandImageId: 'brave_hero',
-    attributes: {
-      'energy': 80,
-      'sociability': 70,
-      'creativity': 60,
-      'confidence': 85,
-      'empathy': 50,
-      'adventurousness': 95,
-    },
-  );
-
   static const thinker = ArchetypeData(
     icon: '🧩',
     imagePath: 'assets/images/archetypes/quiz_whiz_framed.png',
@@ -304,8 +281,8 @@ class CharacterArchetypes {
 
   static const helper = ArchetypeData(
     icon: '💚',
-    imagePath: 'assets/images/archetypes/heart_healer_framed.png',
-    name: 'The Heart Healer',
+    imagePath: 'assets/images/archetypes/soul_mender_framed.png',
+    name: 'The Soul Mender',
     description: 'Senses emotions and heals broken spirits',
     traits: ['Caring', 'Patient', 'Loyal'],
     specialAbility: 'Can sense emotions and heal broken spirits with kindness',
@@ -313,7 +290,7 @@ class CharacterArchetypes {
     matureDescription: 'Reads emotional undercurrents and mediates conflicts with empathy',
     adventurerDescription: 'The glue that keeps the team from falling apart — you sense what others feel before they say it.',
     youngChildName: 'Kind Helper!',
-    sproutImageId: 'heart_healer',
+    sproutImageId: 'soul_mender',
     bandImageId: 'kind_healer',
     attributes: {
       'energy': 50,
@@ -372,7 +349,6 @@ class CharacterArchetypes {
   );
 
   static List<ArchetypeData> get all => [
-        adventurer,
         thinker,
         artist,
         helper,
@@ -384,8 +360,8 @@ class CharacterArchetypes {
   static List<ArchetypeData> forBand(AgeBand band) {
     if (band == AgeBand.sprout || band == AgeBand.explorer) {
       // 4 archetypes for ages 3-5:
-      // Brave Explorer (brave), Lightning Runner (fast), Art Maker (creative), Animal Whisperer (gentle)
-      return [adventurer, athlete, artist, shyOne];
+      // Lightning Runner (fast), Art Maker (creative), Kind Helper (caring), Animal Friend (gentle)
+      return [athlete, artist, helper, shyOne];
     }
     return all;
   }

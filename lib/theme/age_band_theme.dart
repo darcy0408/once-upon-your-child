@@ -299,7 +299,7 @@ const sproutTheme = AgeBandThemeData(
   // Simple, action-oriented labels
   createCharacterLabel: 'Make Your Hero!',
   feelingsLabel: 'How do you feel?',
-  feelingsNavLabel: 'Feelings',
+  feelingsNavLabel: 'Life Quests',
   newStoryLabel: 'New Story!',
   quickStoryLabel: 'Tell Me a Story!',
   companionLabel: 'Pick a Buddy!',
@@ -347,7 +347,7 @@ const explorerTheme = AgeBandThemeData(
   // Magical labels
   createCharacterLabel: 'Create Your Hero!',
   feelingsLabel: 'How does your hero feel?',
-  feelingsNavLabel: 'Feelings',
+  feelingsNavLabel: 'Life Quests',
   newStoryLabel: 'New Story',
   quickStoryLabel: 'Quick Story',
   companionLabel: 'Choose a Companion',
@@ -395,7 +395,7 @@ const adventurerTheme = AgeBandThemeData(
   // More mature labels
   createCharacterLabel: 'Create Character',
   feelingsLabel: 'Set the mood',
-  feelingsNavLabel: 'Mood',
+  feelingsNavLabel: 'Life Quests',
   newStoryLabel: 'New Story',
   quickStoryLabel: 'Quick Story',
   companionLabel: 'Choose Companion',

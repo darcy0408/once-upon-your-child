@@ -1305,7 +1305,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   static const _remixScenarios = [
     {'id': 'vanishing_colors', 'emoji': '🌈', 'label': 'Rainbow World'},
     {'id': 'crystal_cavern', 'emoji': '💎', 'label': 'Crystal Cave'},
-    {'id': 'big_feelings_quest', 'emoji': '❤️', 'label': 'Big Feelings'},
+    {'id': 'big_feelings_quest', 'emoji': '🧭', 'label': 'Life Quest'},
     {'id': 'volcano_dragons', 'emoji': '🐉', 'label': 'Dragon Volcano'},
     {'id': 'doorway_seasons', 'emoji': '🚪', 'label': 'Magic Door'},
     {'id': 'starship_engineers', 'emoji': '🚀', 'label': 'Space Quest'},

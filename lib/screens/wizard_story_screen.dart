@@ -466,11 +466,11 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         ),
                       ),
                     ),
-                    // Feelings Garden button — labeled for young bands, icon-only for mature
+                    // Life Quests button — labeled for young bands, icon-only for mature
                     if (!band.band.isMature)
                       _LabeledNavButton(
-                        icon: Icons.favorite,
-                        label: 'Feelings',
+                        icon: Icons.explore_rounded,
+                        label: 'Life Quests',
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => FeelingsGardenScreen(
@@ -483,7 +483,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                       )
                     else
                       IconButton(
-                        icon: const Icon(Icons.favorite, color: Colors.white),
+                        icon: const Icon(Icons.explore_rounded, color: Colors.white),
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => FeelingsGardenScreen(
@@ -493,7 +493,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                             ),
                           ),
                         ),
-                        tooltip: 'Feelings Garden',
+                        tooltip: 'Life Quests',
                       ),
                     // Character Library button — labeled for young bands, icon-only for mature
                     if (!band.band.isMature)
