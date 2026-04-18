@@ -2,7 +2,7 @@
 
 ## Overview
 
-10 images total: **5 archetypes × 2 gender variants (boy / girl)**. Since children pick their gender during character setup, the app serves the matching variant automatically. Each card has a blank face oval so the child's generated avatar face can be composited on top at runtime.
+8 images total: **4 archetypes × 2 gender variants (boy / girl)**. Since children pick their gender during character setup, the app serves the matching variant automatically. Each card has a blank face oval so the child's generated avatar face can be composited on top at runtime. The 4 archetypes display in a clean 2×2 grid.
 
 The art must feel warm, therapeutic, empowering, and safe — never scary, violent, or sexualized.
 
@@ -11,6 +11,8 @@ The art must feel warm, therapeutic, empowering, and safe — never scary, viole
 ## How to Generate
 
 Run the prompt **twice per archetype** — once with the **[BOY VARIANT]** body spec, once with the **[GIRL VARIANT]** body spec. Everything else (pose, environment, magical effects, hat) stays identical between variants. Only the body silhouette and costume fit change.
+
+The 4 archetypes are: **Quiz Whiz, Master Creator, Lightning Runner, Animal Whisperer**. Soul Mender was intentionally removed — the empathy/kindness theme is woven into every story regardless of archetype choice, and having an explicit "healer" archetype risks signalling "this is the therapy one" to kids who may then avoid it.
 
 ---
 
@@ -112,26 +114,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 ---
 
-### Archetype 3: The Soul Mender
-**Target filenames**: `kind_healer_boy.jpg` / `kind_healer_girl.jpg`
-
-**Power**: Senses emotions and heals broken spirits with kindness
-
-**Hat**: A woven circlet of glowing flowers and vines that sits flat and wide on the head like a crown-hat — fully covers where hair would be, no hair visible beneath or behind it. The flowers glow softly with healing light.
-
-**Pose**: Both hands gently extended forward, palms up, as warm healing light radiates outward from them. Posture open and welcoming.
-
-**Costume**: Flowing healer's robe in soft rose-pink and lavender, with a flat armoured chest plate bearing a golden soul-flame emblem (chest plate is thick and completely flat — no body curve visible beneath it), delicate vine embroidery along the hems, fully gloved hands
-
-**Environment**: Peaceful enchanted garden at golden hour — glowing flowers opening as healing light reaches them, a gentle stream with luminous water, ancient trees with warm fairy lights in the canopy, soft mist
-
-**Magical effects**: Warm rose-gold healing light in gentle waves from the hands, small luminous soul-sparks floating upward, flowers blooming in response to the light, soft golden aura around the whole character
-
-**Mood**: Compassionate, warm, safe — like being wrapped in the world's best hug
-
----
-
-### Archetype 4: The Lightning Runner
+### Archetype 3: The Lightning Runner
 **Target filenames**: `speedy_explorer_boy.jpg` / `speedy_explorer_girl.jpg`
 
 **Power**: Moves faster than sound and leaves trails of stardust
@@ -150,7 +133,7 @@ Both variants: the child looking at this card should see a 10-11 year-old advent
 
 ---
 
-### Archetype 5: The Animal Whisperer
+### Archetype 4: The Animal Whisperer
 **Target filenames**: `animal_whisperer_boy.jpg` / `animal_whisperer_girl.jpg`
 
 **Power**: Talks to animals and moves unseen like a shadow through nature
@@ -192,8 +175,6 @@ assets/images/archetypes/adventurer/
   clever_inventor_girl.jpg
   gentle_dreamer_boy.jpg
   gentle_dreamer_girl.jpg
-  kind_healer_boy.jpg
-  kind_healer_girl.jpg
   speedy_explorer_boy.jpg
   speedy_explorer_girl.jpg
   animal_whisperer_boy.jpg

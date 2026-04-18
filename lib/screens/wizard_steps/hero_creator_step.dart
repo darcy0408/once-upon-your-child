@@ -2820,10 +2820,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   fit: StackFit.expand,
                   children: [
                     Container(color: const Color(0xFF1A0A2E)),
-                    if (a.imagePathForBand(ageBand) != null)
+                    if (a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender) != null)
                       Opacity(
                         opacity: _hasAvatar ? 0.78 : 1.0,
-                        child: Image.asset(a.imagePathForBand(ageBand)!, fit: BoxFit.contain, alignment: Alignment.center),
+                        child: Image.asset(a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender)!, fit: BoxFit.contain, alignment: Alignment.center),
                       )
                     else
                       Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
@@ -2944,10 +2944,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     fit: StackFit.expand,
                     children: [
                       Container(color: const Color(0xFF1A0A2E)),
-                      if (a.imagePathForBand(ageBand) != null)
+                      if (a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender) != null)
                         Opacity(
                           opacity: _hasAvatar ? 0.78 : 1.0,
-                          child: Image.asset(a.imagePathForBand(ageBand)!,
+                          child: Image.asset(a.imagePathForBand(ageBand, gender: widget.wizardData.characterGender)!,
                               fit: BoxFit.contain, alignment: Alignment.center),
                         )
                       else

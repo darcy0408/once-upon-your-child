@@ -279,29 +279,6 @@ class CharacterArchetypes {
     },
   );
 
-  static const helper = ArchetypeData(
-    icon: '💚',
-    imagePath: 'assets/images/archetypes/soul_mender_framed.png',
-    name: 'The Soul Mender',
-    description: 'Senses emotions and heals broken spirits',
-    traits: ['Caring', 'Patient', 'Loyal'],
-    specialAbility: 'Can sense emotions and heal broken spirits with kindness',
-    matureName: 'Harmony Mediator',
-    matureDescription: 'Reads emotional undercurrents and mediates conflicts with empathy',
-    adventurerDescription: 'The glue that keeps the team from falling apart — you sense what others feel before they say it.',
-    youngChildName: 'Kind Helper!',
-    sproutImageId: 'soul_mender',
-    bandImageId: 'kind_healer',
-    attributes: {
-      'energy': 50,
-      'sociability': 85,
-      'creativity': 50,
-      'confidence': 60,
-      'empathy': 95,
-      'adventurousness': 45,
-    },
-  );
-
   static const athlete = ArchetypeData(
     icon: '🏃',
     imagePath: 'assets/images/archetypes/lightning_runner_framed.png',
@@ -351,20 +328,13 @@ class CharacterArchetypes {
   static List<ArchetypeData> get all => [
         thinker,
         artist,
-        helper,
         athlete,
         shyOne,
       ];
 
-  /// Returns a filtered list for young bands (Sprout/Explorer get 4 archetypes).
-  static List<ArchetypeData> forBand(AgeBand band) {
-    if (band == AgeBand.sprout || band == AgeBand.explorer) {
-      // 4 archetypes for ages 3-5:
-      // Lightning Runner (fast), Art Maker (creative), Kind Helper (caring), Animal Friend (gentle)
-      return [athlete, artist, helper, shyOne];
-    }
-    return all;
-  }
+  /// Returns a filtered list per age band.
+  /// All bands show the same 4 archetypes — fits a clean 2×2 grid.
+  static List<ArchetypeData> forBand(AgeBand band) => all;
 }
 
 class ArchetypeData {
@@ -412,18 +382,29 @@ class ArchetypeData {
     return description;
   }
 
-  String? imagePathForBand(AgeBand band) {
-    // Sprout uses simplified age-appropriate versions from age_band_assets/sprouts/.
+  /// Returns the image path for this archetype in the given age band.
+  ///
+  /// [gender] is 'Boy' or 'Girl' — only applied for the Adventurer band,
+  /// where we generate separate male/female scene card variants. All other
+  /// bands use a single shared image.
+  String? imagePathForBand(AgeBand band, {String gender = 'Girl'}) {
     if (band == AgeBand.sprout && sproutImageId != null) {
       return AgeBandAssetResolver.archetypePath(band, sproutImageId!);
     }
     if (bandImageId == null) return imagePath;
-    // animal_whisperer has no dedicated file in the age_band_assets non-sprout
-    // archetypes folders — fall back to the existing per-band PNG in assets/.
+
+    // Adventurer band has gender-specific scene cards (boy / girl variants).
+    if (band == AgeBand.adventurer) {
+      final suffix = gender.toLowerCase() == 'boy' ? '_boy' : '_girl';
+      return AgeBandAssetResolver.archetypePath(band, '$bandImageId$suffix');
+    }
+
+    // animal_whisperer has no dedicated file in non-sprout band folders yet —
+    // fall back to the existing per-band PNG.
     if (bandImageId == 'animal_whisperer') {
       return 'assets/images/archetypes/${band.name}/animal_whisperer.png';
     }
-    // All other archetypes use the new per-band artwork from age_band_assets/.
+
     return AgeBandAssetResolver.archetypePath(band, bandImageId!);
   }
 }
