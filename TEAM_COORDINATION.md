@@ -129,6 +129,21 @@ Renamed all user-facing labels from "Big Feelings" / "Feelings" to "Life Quests"
 
 ---
 
+## 2026-04-18b — Welcome Screen TTS Greeting (Claude Sonnet 4.6)
+
+**Goal:** Add a friendly welcome before the age picker so the app doesn't open cold.
+
+### Scope Completed
+
+- Updated TTS prompt on first launch from `"How old are you? Tap your age!"` to `"Hi, welcome to Story Weaver! How old are you? Tap your age!"` — no extra screen or tap required
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | TTS greeting prepended to age prompt |
+
+---
+
 ## 2026-04-14 — Welcome Screen Age Gate Fix + Avatar Overlays + Backend Model Updates (Claude Sonnet 4.6)
 
 **Goal:** Fix age picker showing wrong ages; add avatar portrait badge on archetype cards (mirroring scenario card treatment); fix adventurer boy/girl silhouettes; clean up avatar creation flow; update deprecated Gemini model names.

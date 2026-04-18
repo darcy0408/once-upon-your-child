@@ -106,7 +106,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
 
     // Speak age prompt on first load.
-    unawaited(_speak('How old are you? Tap your age!', rateScale: 0.72));
+    unawaited(_speak('Hi, welcome to Story Weaver! How old are you? Tap your age!', rateScale: 0.72));
     _initVoice();
   }
 
