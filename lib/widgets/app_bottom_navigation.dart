@@ -54,7 +54,7 @@ class AppBottomNavigationBar extends StatelessWidget {
       case AgeBand.sprout:
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
-          _TabConfig(Icons.favorite_rounded, 'My Feelings'),
+          _TabConfig(Icons.explore_rounded, 'Life Quests'),
           _TabConfig(Icons.collections_bookmark, 'My Books'),
         ];
         break;
@@ -68,14 +68,14 @@ class AppBottomNavigationBar extends StatelessWidget {
       case AgeBand.adventurer:
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
-          _TabConfig(Icons.spa, 'Feelings Garden'),
+          _TabConfig(Icons.explore_rounded, 'Life Quests'),
           _TabConfig(Icons.library_books, 'Library'),
         ];
         break;
       case AgeBand.creator:
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
-          _TabConfig(Icons.psychology, 'Feelings'),
+          _TabConfig(Icons.explore_rounded, 'Life Quests'),
           _TabConfig(Icons.library_books, 'Library'),
           _TabConfig(Icons.settings, 'Settings'),
         ];

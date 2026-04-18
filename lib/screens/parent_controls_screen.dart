@@ -639,7 +639,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     return '$h:$m $period';
   }
 
-  // ── Big Feelings section ───────────────────────────────────────────────────
+  // ── Life Quests section (parent-facing trigger config) ──────────────────────
 
   Widget _buildBigFeelingsSection() {
     return Column(

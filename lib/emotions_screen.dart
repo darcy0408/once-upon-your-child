@@ -248,7 +248,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> with SingleTickerProvid
           tabs: const [
             Tab(icon: Icon(Icons.favorite), text: 'Check-In'),
             Tab(icon: Icon(Icons.school), text: 'Learn'),
-            Tab(icon: Icon(Icons.timeline), text: 'My Feelings'),
+            Tab(icon: Icon(Icons.timeline), text: 'My Journey'),
             Tab(icon: Icon(Icons.tips_and_updates), text: 'Coping'),
           ],
         ),

@@ -1,5 +1,80 @@
 # Team Coordination
 
+## 2026-04-18 — "Life Quests" Redesign: Big Feelings Rebranding & Feature Evolution (Claude Opus 4.6)
+
+**Goal:** Rebrand "Big Feelings" as "Life Quests" across the app. Redesign the feelings entry screen. Build a choose-your-own-adventure emotional problem-solving feature that works for both BYOK and non-BYOK users. Fix age-appropriateness issues for 9-12 band (companion art, language, UI polish).
+
+### Context & Motivation
+
+Testing the app as an 11-year-old girl revealed:
+- "Big Feelings" label sounds babyish and would cause tweens to disengage
+- The Feelings badge grid screen looks unfinished (tiny icons in huge empty colored quadrants)
+- Some companion images (Unicorn, Dragon) are too young for the Adventurer band
+- The Big Feelings flow collected data but had no payoff -- no interactive experience
+
+### Rebrand: "Big Feelings" -> "Life Quests"
+
+Framing: *"Life throws curveballs. Practice handling them in a story where you make the choices."*
+
+**Phase 1 (this session):** Rename + fix entry UI + companion presentation
+**Phase 2 (next):** Pre-built quest library for non-BYOK users (8-10 core scenarios)
+**Phase 3:** Connect to existing pick-a-path AI engine for BYOK users
+**Phase 4:** Parent dashboard integration, quest expansion, art refresh
+
+### Scope Completed — Phase 1a: Rename
+
+Renamed all user-facing labels from "Big Feelings" / "Feelings" to "Life Quests":
+- Bottom nav tabs (all age bands: sprout, explorer, adventurer, creator)
+- Wizard story screen top-nav button + tooltip
+- Age band theme `feelingsNavLabel` (sprout, explorer, adventurer)
+- Quick theme lists in `main_story.dart` and `story_result_screen.dart`
+- Scenario button labels in `hero_creator_step.dart`
+- Scenario data young title in `scenario_data.dart`
+- Bedtime wizard scenario mapper
+- Emotions screen tab label ("My Feelings" -> "My Journey")
+- Life challenge picker label ("Taming big feelings" -> "Handling life's curveballs")
+- Icon changed from heart/psychology to compass (`Icons.explore_rounded`)
+
+**NOT changed** (backend API contract values):
+- `lifeChallenge: 'Handling Big Feelings'` (backend expects this)
+- `wizard_data_mapper` quest-to-lifeChallenge mapping (maps to backend value)
+- `api_service_manager` world-bible keys (keyed by backend theme names)
+- Internal variable names (`_bigFeelingsExpanded`, etc.) -- cosmetic, no user impact
+
+### BYOK vs Non-BYOK Strategy
+
+| Feature | BYOK | Non-BYOK |
+|---|---|---|
+| Pre-built quests (Phase 2) | Yes (free) | Yes (free) |
+| AI-personalized quests | Yes (user's key) | No |
+| Name/companion injection | Yes (free) | Yes (free) |
+| Light Haiku personalization | Yes (user's key) | Optional (~$0.002/quest) |
+
+### Files Changed (Phase 1a)
+| File | Change |
+|------|--------|
+| `lib/theme/age_band_theme.dart` | `feelingsNavLabel` -> "Life Quests" for sprout, explorer, adventurer bands |
+| `lib/widgets/app_bottom_navigation.dart` | Tab labels + icons updated for sprout, adventurer, creator bands |
+| `lib/screens/wizard_story_screen.dart` | Nav button label, icon, tooltip updated |
+| `lib/main_story.dart` | Quick theme label + life challenge card title/subtitle |
+| `lib/story_result_screen.dart` | Remix scenario label |
+| `lib/data/scenario_data.dart` | `youngTitle` for big_feelings scenario |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Scene button label, life challenge picker label |
+| `lib/screens/bedtime_wizard_screen.dart` | Voice-mapped scenario label |
+| `lib/screens/parent_controls_screen.dart` | Section comment updated |
+| `lib/emotions_screen.dart` | Tab label "My Feelings" -> "My Journey" |
+
+### In Progress
+- Phase 1b: Redesign the Life Quests entry screen (replace broken badge grid)
+- Phase 1c: Update companion presentation for older age bands
+
+### Known Remaining (Future Phases)
+- Phase 2: Author 8-10 pre-built pick-a-path quest scenarios for non-BYOK users
+- Phase 3: Wire BYOK AI-personalized quests to existing pick-a-path engine
+- Phase 4: Parent dashboard, quest library expansion, companion art refresh
+
+---
+
 ## 2026-04-14 — Welcome Screen Age Gate Fix + Avatar Overlays + Backend Model Updates (Claude Sonnet 4.6)
 
 **Goal:** Fix age picker showing wrong ages; add avatar portrait badge on archetype cards (mirroring scenario card treatment); fix adventurer boy/girl silhouettes; clean up avatar creation flow; update deprecated Gemini model names.

@@ -1570,7 +1570,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
       _SceneButtonData(
         id: 'big_feelings_quest',
-        label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Big Feelings Quest',
+        label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
         normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
         pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
         thematicQuestion: thematicQuestionFor('big_feelings_quest'),
@@ -4005,7 +4005,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         'vanishing_colors' => 'Rainbow World!',
         'crystal_cavern' => 'Cave Full of Crystals!',
         'volcano_dragons' => 'Friendly Dragons!',
-        'big_feelings_quest' => 'Big Feelings!',
+        'big_feelings_quest' => 'Life Quest!',
         _ => null,
       };
 }
@@ -4156,7 +4156,7 @@ class HeroCreatorStepData {
   ];
   static const quests = [
     ('🤝 Making new friends', 'Making new friends'),
-    ('🌊 Taming big feelings', 'Taming big feelings'),
+    ('🌊 Handling life\'s curveballs', 'Taming big feelings'),
     ('🦁 Being brave when scared', 'Being brave when scared'),
     ('🎁 Sharing and taking turns', 'Sharing and taking turns'),
     ('🌱 Trying something new', 'Trying something new'),
