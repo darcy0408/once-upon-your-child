@@ -128,7 +128,7 @@ class Config:
         """Get allowed CORS origins based on environment"""
         base_origins = [
             # Netlify production deploy
-            "https://story-weaver-app.netlify.app",
+            "https://reliable-sherbet-2352c4.netlify.app",
             # SECURITY: Do NOT use "https://*.netlify.app" — it allows any
             # Netlify project to make authenticated cross-origin requests.
             # For preview deploys, set PREVIEW_DEPLOY_URL in the environment.
