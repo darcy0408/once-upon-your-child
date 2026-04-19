@@ -1,5 +1,72 @@
 # Team Coordination
 
+## 2026-04-18e — Security Audit + Remediation Plan (Claude Sonnet 4.6)
+
+**Goal:** Full-stack security audit via Six Hats methodology; establish remediation roadmap; make architectural decisions on two features.
+
+### Audit Scope
+Full-stack penetration and architecture review covering: JWT auth, CORS, CSRF, rate limiting, input validation, AI pipeline safety, Celery/Redis, Stripe, Flutter mobile client, Railway deployment, COPPA compliance.
+
+### Key Findings (summary)
+| Severity | Count | Worst examples |
+|----------|-------|----------------|
+| Critical | 2 | Dev JWT secret in source; parent hidden context stored unencrypted |
+| High | 7 | Therapist PIN brute-forceable; no AI output filter; Celery serializer unverified; unpinned deps; no refresh token rotation; client-side API key; age-band bypass path |
+| Medium | 5 | Rate limiting degrades silently without Redis; Sentry may capture story content; Redis unauthenticated; ElevenLabs no quota; anonymous client_id enumeration |
+| Low | 5 | Draft in SharedPreferences; CSRF on future web; no GDPR export; no audit log; no AI cost circuit breaker |
+
+Full audit report with Six Hats analysis, attack chains, and OWASP categorisation available in session history (2026-04-18).
+
+### Architectural Decisions Made
+
+**Decision 1 — Remove Therapist Portal entirely**
+- Reason: Client-side 4-digit PIN with no rate limiting, no audit trail, no server-side verification. Security bar to do this responsibly far exceeds current implementation. Feature removed, not deferred.
+- Scope: `backend/routes/therapist_routes.py`, `backend/models/therapist_client.py`, `middleware/auth.py` (`require_therapist`), `security/iam.py` therapist role, `lib/screens/therapist_portal_screen.dart`, `lib/services/therapist_auth_service.dart`, related tests + fixtures.
+
+**Decision 2 — Remove Parent Hidden Context entirely**
+- Reason: Parents enter family trauma disclosures (e.g. "son witnessed domestic violence") under an expectation of therapeutic confidentiality. Data stored unencrypted. Per-family envelope encryption + access controls + audit logging required to do this safely — substantial work for a pre-launch app. Feature removed until a proper data governance story exists.
+- Product rationale: Big Feelings stories still function without personalization; the false promise of therapeutic confidentiality is worse than the missing feature.
+- Scope: `backend/models/parent_hidden_context.py`, two endpoints in `character_routes.py`, validation layer (lines 13–186), `_resolve_parent_hidden_context` / `_merge_big_feelings_context` / `_build_feelings_prompt_text` / `_augment_therapeutic_prompt` in `story_routes.py`, `_abstract_parent_phrase` + `transform_parent_context_to_story_guidance` in `story_service.py`, parent context calls in `interactive_adventure_prompt_builder.py`, Big Feelings section in `parent_controls_screen.dart`, `parentHiddenContext` field in `wizard_data.dart` + `api_service_manager.dart`, related tests.
+
+### Remediation Phases
+
+**Phase 0 — Remove therapist portal** ← starting next
+**Phase 1 — Remove parent hidden context**
+**Phase 2 — Critical fixes (in priority order)**
+1. Dev JWT secret enforcement (startup assertion, 30 min)
+2. Remove Gemini API key from Flutter binary (1 hr)
+3. Set Celery serializer to JSON (15 min)
+4. Enforce Redis at startup in production (30 min)
+5. Extend Sentry `before_send` to strip story content (30 min)
+6. Implement refresh token rotation with server-side family tracking (2–3 hrs)
+7. Pin Python dependencies with hashes; add pip-audit to CI (1 hr)
+8. Verify Redis authentication in Railway Dashboard (15 min)
+9. Enable Gemini `safety_settings` at `BLOCK_LOW_AND_ABOVE` for all harm categories (1 hr)
+10. Per-user daily AI cost circuit breaker via Redis (2 hrs)
+11. Server-side client_id generation for anonymous sessions (1 hr)
+
+**Phase 3 — Compliance backlog**
+- GDPR data portability export endpoint
+- Audit log table for elevated-access queries
+- Dependabot / pip-audit in CI
+- ElevenLabs per-user TTS quota
+
+### Files Changed This Session
+| File | Change |
+|------|--------|
+| `TEAM_COORDINATION.md` | Added this entry |
+| `backend/routes/therapist_routes.py` | Deleted (Phase 0) |
+| `backend/models/therapist_client.py` | Deleted (Phase 0) |
+| `backend/middleware/auth.py` | Removed `require_therapist` decorator (Phase 0) |
+| `security/iam.py` | Removed therapist role definition (Phase 0) |
+| `lib/screens/therapist_portal_screen.dart` | Deleted (Phase 0) |
+| `lib/services/therapist_auth_service.dart` | Deleted (Phase 0) |
+| `backend/tests/conftest.py` | Removed therapist fixture (Phase 0) |
+| `backend/tests/security/test_authorization.py` | Removed therapist auth tests (Phase 0) |
+| `backend/app.py` | Removed therapist imports + blueprint registration (Phase 0) |
+
+---
+
 ## 2026-04-18d — Companion Full Rebrand: Named Characters + File Cleanup (Claude Sonnet 4.6)
 
 **Goal:** Replace every companion with a personality-driven named character across all 6 age bands; standardise file naming to snake_case; wire correct images and behavior patterns end-to-end.
