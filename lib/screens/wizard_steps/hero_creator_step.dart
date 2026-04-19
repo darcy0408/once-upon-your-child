@@ -2461,8 +2461,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final ageBand = band.band;
 
-    const boyAsset = 'assets/images/ui/adventurer/boy_character.png';
-    const girlAsset = 'assets/images/ui/adventurer/girl_character.png';
+    final String boyAsset;
+    final String girlAsset;
+    switch (ageBand) {
+      case AgeBand.sprout:
+        boyAsset = 'assets/images/ui/gender/gender_sprout_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_sprout_girl.png';
+      case AgeBand.explorer:
+        boyAsset = 'assets/images/ui/gender/gender_explorer_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_explorer_girl.png';
+      case AgeBand.adventurer:
+        boyAsset = 'assets/images/ui/gender/gender_adventurer_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_adventurer_girl.png';
+      case AgeBand.creator:
+        boyAsset = 'assets/images/ui/gender/gender_creator_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_creator_girl.png';
+      case AgeBand.adolescent:
+        boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.png';
+      case AgeBand.adult:
+        boyAsset = 'assets/images/ui/gender/gender_adult_boy.png';
+        girlAsset = 'assets/images/ui/gender/gender_adult_girl.png';
+    }
 
     final gender = widget.wizardData.characterGender;
     return Row(
@@ -5548,7 +5568,7 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         child: AnimatedScale(
-          scale: _pressed ? 0.92 : (_hovered ? 1.04 : 1.0),
+          scale: _pressed ? 1.08 : (_hovered ? 1.04 : 1.0),
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: Column(
@@ -5587,7 +5607,7 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
                   child: _pressed
                       ? ColorFiltered(
                           colorFilter: const ColorFilter.mode(
-                              Color(0x55000000), BlendMode.darken),
+                              Color(0x44FFFFFF), BlendMode.screen),
                           child: imageWidget,
                         )
                       : imageWidget,

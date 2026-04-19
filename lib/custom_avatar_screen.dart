@@ -50,6 +50,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // Selections
   String _gender = 'girl';
+  String? _pressedGender;
   String _hairColor = 'Brown';
   String _eyeColor = 'Brown';
   String _favoriteColor = 'Blue';
@@ -899,13 +900,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       builder: (context, constraints) {
         final halfW = (constraints.maxWidth - (_isSprout ? 20.0 : 16.0)) / 2;
         final cardH = constraints.maxHeight * (_isSprout ? 0.62 : 0.52);
+        final boyAsset = _genderAsset('boy');
+        final girlAsset = _genderAsset('girl');
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildGenderCard(value: 'girl', emoji: '👧', label: 'Girl',
+            _buildGenderCard(value: 'girl', assetPath: girlAsset, label: 'Girl',
                 w: halfW, h: cardH),
-            _buildGenderCard(value: 'boy', emoji: '👦', label: 'Boy',
+            _buildGenderCard(value: 'boy', assetPath: boyAsset, label: 'Boy',
                 w: halfW, h: cardH),
           ],
         );
@@ -913,14 +916,35 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     );
   }
 
+  String _genderAsset(String gender) {
+    final band = _ageBand;
+    final g = gender == 'boy' ? 'boy' : 'girl';
+    return switch (band) {
+      AgeBand.sprout     => 'assets/images/ui/gender/gender_sprout_$g.png',
+      AgeBand.explorer   => 'assets/images/ui/gender/gender_explorer_$g.png',
+      AgeBand.adventurer => 'assets/images/ui/gender/gender_adventurer_$g.png',
+      AgeBand.creator    => 'assets/images/ui/gender/gender_creator_$g.png',
+      AgeBand.adolescent => 'assets/images/ui/gender/gender_adolescent_$g.png',
+      AgeBand.adult      => 'assets/images/ui/gender/gender_adult_$g.png',
+    };
+  }
+
   Widget _buildGenderCard({
     required String value,
-    required String emoji,
+    required String assetPath,
     required String label,
     required double w,
     required double h,
   }) {
     final sel = _gender == value;
+    final pressed = _pressedGender == value;
+    final imageWidget = Image.asset(
+      assetPath,
+      width: w,
+      height: h * 0.78,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => SizedBox(width: w, height: h * 0.78),
+    );
     return GestureDetector(
       onTap: () {
         setState(() => _gender = value);
@@ -929,50 +953,65 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           _sproutAutoAdvance();
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_bt.cardRadiusBase),
-          color: sel ? _bt.primary.withAlpha(160) : Colors.white.withAlpha(22),
-          border: Border.all(
-            color: sel ? _bt.accent : Colors.white.withAlpha(55),
-            width: sel ? 3 : 1.5,
+      onTapDown: (_) => setState(() => _pressedGender = value),
+      onTapUp: (_) => setState(() => _pressedGender = null),
+      onTapCancel: () => setState(() => _pressedGender = null),
+      child: AnimatedScale(
+        scale: pressed ? 1.08 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_bt.cardRadiusBase),
+            color: sel ? _bt.primary.withAlpha(160) : Colors.white.withAlpha(22),
+            border: Border.all(
+              color: sel ? _bt.accent : Colors.white.withAlpha(55),
+              width: sel ? 3 : 1.5,
+            ),
+            boxShadow: sel
+                ? [BoxShadow(color: _bt.accent.withAlpha(90), blurRadius: 22, spreadRadius: 2)]
+                : [],
           ),
-          boxShadow: sel
-              ? [BoxShadow(color: _bt.accent.withAlpha(90), blurRadius: 22, spreadRadius: 2)]
-              : [],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Pulse-scale the emoji when selected
-            TweenAnimationBuilder<double>(
-              key: ValueKey('$value-$sel'),
-              tween: Tween(begin: sel ? 0.7 : 1.0, end: 1.0),
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.elasticOut,
-              builder: (_, scale, child) =>
-                  Transform.scale(scale: scale, child: child),
-              child: Text(emoji,
-                  style: TextStyle(fontSize: _isSprout ? 72 : 52)),
-            ),
-            SizedBox(height: _isSprout ? 12 : 8),
-            Text(
-              label,
-              style: _isSprout
-                  ? GoogleFonts.nunito(
-                      fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)
-                  : GoogleFonts.quicksand(
-                      fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
-            ),
-            if (sel) ...[
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TweenAnimationBuilder<double>(
+                key: ValueKey('$value-$sel'),
+                tween: Tween(begin: sel ? 0.85 : 1.0, end: 1.0),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.elasticOut,
+                builder: (_, scale, child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: pressed
+                      ? ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                              Color(0x44FFFFFF), BlendMode.screen),
+                          child: imageWidget,
+                        )
+                      : imageWidget,
+                ),
+              ),
               SizedBox(height: _isSprout ? 10 : 6),
-              Icon(Icons.check_circle_rounded, color: _bt.accent,
-                  size: _isSprout ? 32 : 22),
+              Text(
+                label,
+                style: _isSprout
+                    ? GoogleFonts.nunito(
+                        fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)
+                    : GoogleFonts.quicksand(
+                        fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+              ),
+              if (sel) ...[
+                SizedBox(height: _isSprout ? 6 : 4),
+                Icon(Icons.check_circle_rounded, color: _bt.accent,
+                    size: _isSprout ? 28 : 20),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

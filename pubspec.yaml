@@ -106,6 +106,7 @@ flutter:
     - assets/images/ui/creator/
     - assets/images/ui/adolescent/
     - assets/images/ui/adult/
+    - assets/images/ui/gender/
     - assets/images/ui/clean/
     - assets/images/ui/glassy/
     - assets/images/archetypes/
