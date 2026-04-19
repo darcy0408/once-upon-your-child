@@ -42,8 +42,9 @@
   - `scene_widgets.dart` — scene card display
 - `hero_creator_step.dart` updated to import from new files; `SafeAssetImage` adopted throughout.
 
-### Open: BUG-P6-02 (stale age) — not yet fixed
-Persisted age from a previous session can bleed into a new session's consent flow. Needs `ParentalConsentService().clearRecordedAge()` called when the user selects a new age on the welcome screen. Deferred — low-risk until multi-profile support is added.
+### ✅ BUG-P6-02 (stale age) — fixed (`427c3b8`)
+- `_onAgeTapped()` now calls `ParentalConsentService().saveDeclaredAge(age)` immediately so any still-running `_resumeFromSavedAge()` sees the new age.
+- `_resumeFromSavedAge()` guards: if `_selectedAge != null` on return, skip the saved-age restore to avoid overwriting an explicit user selection.
 
 ### Files Changed
 | File | Change |
