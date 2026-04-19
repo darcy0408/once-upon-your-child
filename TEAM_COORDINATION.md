@@ -1,5 +1,30 @@
 # Team Coordination
 
+## 2026-04-19f — Companion Showcase Fix + Compile Error Cleanup (Claude Sonnet 4.6)
+
+**Goal:** Resolve BUG-P6-01 (adult companion images 404 in brief wizard) and fix a cascade of compile errors from the incomplete hero_creator_step extraction.
+
+### Root cause (BUG-P6-01)
+`_buildCompanionShowcase()` referenced `_companions` — a variable removed during the companion rebrand — causing an `undefined_identifier` compile error and broken companion images in the adult "Cast & Companions" accordion.
+
+### Fixes
+- **`lib/screens/wizard_steps/hero_creator_step.dart`** — replaced undefined `_companions` reference with `allCompanionEntries()` from `companion_widgets.dart`
+- **`lib/widgets/hero_creator/companion_widgets.dart`** — added `allCompanionEntries() → List<CompanionData>` public function; promoted `_CompanionData` → `CompanionData` and band arrays to public API (linter-driven)
+- **`lib/character_evolution_screen.dart`** — added missing `emotion_recognition_game.dart` import (`EmotionGameLauncher` undefined)
+- **`flutter analyze`** — 0 errors after fixes
+
+### SafeAssetImage migration (stale work committed)
+Remaining 27 widget/screen files not included in the prior `9b99789` commit were committed (`b1607c9`): all `Image.asset + errorBuilder` patterns replaced with `SafeAssetImage(placeholder:)`.
+
+### Commits
+| SHA | Description |
+|-----|-------------|
+| `8bd5b74` | fix(adult-wizard): resolve undefined _companions in companion showcase |
+| `b1607c9` | refactor: migrate remaining Image.asset uses to SafeAssetImage |
+| `2a6bf0a` | fix(hero-creator): resolve companion showcase and missing import errors |
+
+---
+
 ## 2026-04-19e — SafeAssetImage Migration (Claude Opus 4.7 + Sonnet 4.6)
 
 **Goal:** Harden all asset image loading across the app — missing assets previously caused layout breaks and uncaught exceptions.
