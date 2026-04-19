@@ -145,6 +145,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     ],
                   ),
                 ),
+                const _KidSummaryCard(),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Notice to Parents & Guardians 👋',
                   style: GoogleFonts.fredoka(
@@ -553,5 +555,103 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         ),
       );
     }
+  }
+}
+
+/// Collapsible "What this means for me" card written at a 4th-grade reading level.
+/// Sits between the child-facing intro and the parent legal notice, so the child
+/// can read it while waiting for a grown-up to handle the rest.
+class _KidSummaryCard extends StatefulWidget {
+  const _KidSummaryCard();
+
+  @override
+  State<_KidSummaryCard> createState() => _KidSummaryCardState();
+}
+
+class _KidSummaryCardState extends State<_KidSummaryCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C4DFF).withAlpha(25),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF7C4DFF).withAlpha(120)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  const Text('🧒', style: TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'What this means for me',
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white54,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(color: Colors.white24, height: 1),
+                  const SizedBox(height: 10),
+                  _kidPoint('📖', 'Stories are made just for YOU — your name is the hero!'),
+                  _kidPoint('🔒', 'Your choices stay on this device, like a secret journal.'),
+                  _kidPoint('🚫', 'No ads will pop up or follow you around.'),
+                  _kidPoint('📸', 'If you use a selfie for your character, it never leaves this phone.'),
+                  _kidPoint('🛡️', 'A grown-up can change or delete everything, any time.'),
+                  _kidPoint('✅', 'Once a grown-up says yes, your adventure begins!'),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kidPoint(String emoji, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.fredoka(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

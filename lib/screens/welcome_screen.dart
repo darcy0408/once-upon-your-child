@@ -645,7 +645,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Container(
-            key: ValueKey(typedName.isEmpty ? '__prompt__' : typedName),
+            key: ValueKey(typedName.isEmpty),
             constraints: const BoxConstraints(maxWidth: 220),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
@@ -659,15 +659,33 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 ),
               ],
             ),
-            child: Text(
-              typedName.isEmpty ? "What's your name?" : typedName,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: typedName.isEmpty ? 15 : 20,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF3E2723),
-              ),
-            ),
+            child: typedName.isEmpty
+                ? Text(
+                    "What's your name?",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF3E2723),
+                    ),
+                  )
+                : TweenAnimationBuilder<double>(
+                    key: ValueKey(typedName),
+                    tween: Tween(begin: 1.2, end: 1.0),
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.elasticOut,
+                    builder: (_, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: Text(
+                      typedName,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF3E2723),
+                      ),
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -891,6 +909,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   label: entry.label,
                   value: entry.value,
                   size: circleSize,
+                  glyph: _glyphForAge(entry.value),
                   selected: _selectedAge == entry.value,
                   onTap: _submitting
                       ? null
@@ -926,6 +945,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             final selected = _selectedAge == entry.value;
             return _AgeBandButton(
               label: entry.label,
+              glyph: _glyphForOlderBand(entry.value),
               selected: selected,
               onTap: _submitting ? null : () => _onAgeSelected(entry.value),
             );
@@ -933,6 +953,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
       ],
     );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  static String _glyphForAge(int age) {
+    if (age <= 5) return '🌱'; // sprout
+    if (age <= 8) return '🧭'; // explorer
+    return '⚔️'; // adventurer
+  }
+
+  static String? _glyphForOlderBand(int value) {
+    if (value == 12) return '🖊️'; // creator
+    return null; // adolescent / adult — keep clean
   }
 
   // ── Logic ─────────────────────────────────────────────────────────────────
@@ -1077,11 +1110,13 @@ class _AgeBandButton extends StatefulWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.glyph,
   });
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
+  final String? glyph;
 
   @override
   State<_AgeBandButton> createState() => _AgeBandButtonState();
@@ -1124,13 +1159,22 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
           alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.selected ? _gold : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.glyph != null) ...[
+                  Text(widget.glyph!, style: const TextStyle(fontSize: 13, height: 1.0)),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: widget.selected ? _gold : Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1147,6 +1191,7 @@ class _AgeCircle extends StatefulWidget {
     required this.size,
     required this.selected,
     required this.onTap,
+    this.glyph,
   });
 
   final String label;
@@ -1154,6 +1199,7 @@ class _AgeCircle extends StatefulWidget {
   final double size;
   final bool selected;
   final VoidCallback? onTap;
+  final String? glyph;
 
   @override
   State<_AgeCircle> createState() => _AgeCircleState();
@@ -1207,16 +1253,38 @@ class _AgeCircleState extends State<_AgeCircle> {
                   : [],
             ),
             alignment: Alignment.center,
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.selected ? _gold : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: widget.label.length > 2
-                    ? widget.size * 0.19
-                    : widget.size * 0.28,
-              ),
-            ),
+            child: widget.glyph != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.glyph!,
+                        style: TextStyle(fontSize: widget.size * 0.22, height: 1.0),
+                      ),
+                      Text(
+                        widget.label,
+                        style: TextStyle(
+                          color: widget.selected ? _gold : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: widget.label.length > 2
+                              ? widget.size * 0.17
+                              : widget.size * 0.24,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    widget.label,
+                    style: TextStyle(
+                      color: widget.selected ? _gold : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: widget.label.length > 2
+                          ? widget.size * 0.19
+                          : widget.size * 0.28,
+                    ),
+                  ),
           ),
         ),
       ),

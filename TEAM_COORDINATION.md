@@ -1,5 +1,41 @@
 # Team Coordination
 
+## 2026-04-19 — Welcome Screen Polish: Name-Echo Animation, Age Glyphs, Kid Consent Summary (Claude Sonnet 4.6)
+
+**Goal:** Three UX polish items identified via Six Hats / 10-year-old user walkthrough.
+
+### Changes
+
+#### 3.1 Name-echo bubble bounce (`lib/screens/welcome_screen.dart`)
+
+- Speech bubble in the name-entry step now bounces on every keystroke.
+- `AnimatedSwitcher` key changed to `ValueKey(typedName.isEmpty)` so the fade only fires on the prompt↔name transition, not per character.
+- Inner `TweenAnimationBuilder<double>` (key: `ValueKey(typedName)`) animates scale 1.2→1.0 with `Curves.elasticOut` (280 ms) — replays each time the name changes, giving immediate tactile feedback as the child types or speaks their name.
+
+#### 3.2 Age picker personality glyphs (`lib/screens/welcome_screen.dart`)
+
+- `_AgeCircle` widget gains an optional `glyph` (`String?`) parameter.
+- When set, each circle renders a mini Column — emoji on top, number below.
+- Glyph mapping: 🌱 ages 3-5 (Sprout), 🧭 ages 6-8 (Explorer), ⚔️ ages 9-11 (Adventurer).
+- `_AgeBandButton` (older pill buttons) gains the same optional `glyph` field and displays it inline before the label.
+- Creator pill (12-14) gets 🖊️; Adolescent and Adult pills stay clean.
+- Static helpers `_glyphForAge()` and `_glyphForOlderBand()` compute the mapping centrally.
+
+#### 3.3 Kid-readable consent summary (`lib/screens/parental_consent_screen.dart`)
+
+- New `_KidSummaryCard` widget: collapsible panel inserted between the gold child-facing intro box and the "Notice to Parents & Guardians" legal heading.
+- Header: 🧒 "What this means for me" with chevron toggle.
+- Six plain-language bullets at ~4th-grade reading level: stories use your name as the hero; choices stay on device; no ads; selfies never leave the phone; grown-ups can delete everything; adventure begins after grown-up says yes.
+- Styled in purple to visually separate it from the gold parent section.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | Name-echo bounce animation; age circle glyphs; older-band pill glyphs; glyph helpers |
+| `lib/screens/parental_consent_screen.dart` | `_KidSummaryCard` collapsible added before parent notice |
+
+---
+
 ## 2026-04-19 — Age-Band Gender Selection Images (Claude Sonnet 4.6)
 
 **Goal:** Replace the single adventurer boy/girl placeholder with dedicated, age-appropriate artwork for every age band in both gender-selection screens.
