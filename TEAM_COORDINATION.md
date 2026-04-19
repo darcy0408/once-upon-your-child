@@ -1,5 +1,28 @@
 # Team Coordination
 
+## 2026-04-19h — 5 Explorer Life Quests authored (Claude Sonnet 4.6)
+
+**Goal:** Write full CYOA content for the 5 Explorer quests (ages 6–8) deferred in session 2026-04-19g.
+
+### What changed
+- **`lib/data/life_quest_data.dart`** — added 5 new Explorer quests (`questThreeCrowd`, `questBrokenThing`, `questNotFair`, `questSleepover`, `questMyTurnTalk`) with full CYOA content. All tagged `recommendedBands: [AgeBand.explorer]`.
+- **`allLifeQuests`** updated to include all 5 new quests.
+- Explorer band now has 7 quests total (up from 2): Wobbly Day, Sorry Stuck, Three's a Crowd, Broken Thing, It's Not Fair, Goodnight from Far Away, My Turn to Talk.
+
+### Quest topics
+| ID | Title | Hook | Emotions |
+|----|-------|------|----------|
+| `three_crowd` | Three's a Crowd | Your best friend is playing with someone else. | sad, worried, angry |
+| `broken_thing` | I Didn't Mean To | You broke something. Now you have to decide what to do. | scared, worried, sad |
+| `not_fair` | It's Not Fair | Someone else got picked. Why not you? | angry, frustrated, sad |
+| `sleepover` | Goodnight from Far Away | Everyone else seems fine. You just want to go home. | sad, scared, worried |
+| `my_turn_talk` | My Turn to Talk | Everyone is about to look at you. All at once. | scared, worried, excited |
+
+### Commit
+`64f7fa9` — feat(life-quests): add 5 Explorer quests
+
+---
+
 ## 2026-04-19g — hero_creator extraction continued + band avatar loading views (Claude Sonnet 4.6)
 
 **Goal:** Commit stale uncommitted work — further extraction of `hero_creator_step.dart` and new band-specific avatar loading animations.
