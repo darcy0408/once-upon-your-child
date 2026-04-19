@@ -87,8 +87,27 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 image_generator = None
 
 
+_SENTRY_SENSITIVE_KEYS = frozenset({
+    "prompt", "story", "response", "context", "content", "note",
+    "text", "body", "message", "parent", "hidden", "guidance",
+})
+
+def _scrub_sentry_vars(frame_vars: dict) -> dict:
+    """Strip story content and parent context from Sentry exception frames."""
+    scrubbed = {}
+    for k, v in frame_vars.items():
+        key_lower = k.lower()
+        if any(s in key_lower for s in _SENTRY_SENSITIVE_KEYS):
+            scrubbed[k] = "[Filtered — sensitive key]"
+        elif isinstance(v, str) and len(v) > 200:
+            scrubbed[k] = f"[Filtered — string len {len(v)}]"
+        else:
+            scrubbed[k] = v
+    return scrubbed
+
+
 def before_send(event, hint):
-    """Strip request payloads and obvious auth data before sending events to Sentry."""
+    """Strip request payloads, auth data, and story/AI content before sending to Sentry."""
     request_data = event.get("request")
     if isinstance(request_data, dict):
         if "data" in request_data:
@@ -104,7 +123,58 @@ def before_send(event, hint):
     if "user" in event:
         event["user"] = {"id": "[Filtered]"}
 
+    # Scrub local variables in exception frames — catches story text and
+    # parent context that may appear as locals during a generation error.
+    exception = event.get("exception")
+    if isinstance(exception, dict):
+        for exc_val in exception.get("values", []):
+            stacktrace = exc_val.get("stacktrace") if isinstance(exc_val, dict) else None
+            if isinstance(stacktrace, dict):
+                for frame in stacktrace.get("frames", []):
+                    if isinstance(frame, dict) and isinstance(frame.get("vars"), dict):
+                        frame["vars"] = _scrub_sentry_vars(frame["vars"])
+
     return event
+
+def _run_security_assertions(app, config_name: str) -> None:
+    """
+    Fail fast if critical security configuration is missing or weak.
+    Called at startup for all non-testing environments.
+    Raises RuntimeError on any critical failure so the process exits cleanly
+    rather than serving traffic with a broken security posture.
+    """
+    is_prod = config_name in ('prod', 'production')
+    errors = []
+
+    # ── JWT secret ────────────────────────────────────────────────────────────
+    jwt_secret = app.config.get('JWT_SECRET_KEY', '')
+    if jwt_secret == 'dev-secret-key':
+        errors.append(
+            "JWT_SECRET_KEY is the hardcoded dev default. "
+            "Generate a strong secret: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    elif len(jwt_secret) < 32:
+        errors.append(
+            f"JWT_SECRET_KEY is too short ({len(jwt_secret)} chars). Minimum 32 required."
+        )
+
+    # ── Redis in production ───────────────────────────────────────────────────
+    if is_prod:
+        redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+        if not redis_url:
+            errors.append(
+                "REDIS_URL is not set in production. "
+                "Rate limiting will be per-process only and is ineffective across multiple instances. "
+                "Set REDIS_URL or REDIS_PRIVATE_URL."
+            )
+
+    if errors:
+        msg = "Security assertion failures — refusing to start:\n" + "\n".join(
+            f"  [{i+1}] {e}" for i, e in enumerate(errors)
+        )
+        logger.critical(msg)
+        raise RuntimeError(msg)
+
 
 def create_app(config_name):
     logger.info(f"Creating Flask app with config: {config_name}")
@@ -153,6 +223,9 @@ def create_app(config_name):
         app.config.from_object(config_by_name[config_name])
 
     testing_mode = app.config.get('TESTING', False)
+
+    if not testing_mode:
+        _run_security_assertions(app, config_name)
 
     logger.info("Config loaded, initializing database")
     db.init_app(app)
@@ -216,13 +289,7 @@ def create_app(config_name):
     else:
         rate_limit_storage = "memory://"
         if not testing_mode:
-            if is_production():
-                logger.error(
-                    "Rate limiting is using in-memory storage in production. "
-                    "This is not safe for multi-instance deployments; set REDIS_URL/REDIS_PRIVATE_URL."
-                )
-            else:
-                logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
+            logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
 
     limiter = Limiter(
         app=app,

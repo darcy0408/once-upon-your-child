@@ -1,5 +1,34 @@
 # Team Coordination
 
+## 2026-04-18g — Security Hardening: Startup Assertions + Sentry Filter (Claude Sonnet 4.6)
+
+**Goal:** Phase 2 security fixes from the 2026-04-18e audit — fast wins targeting JWT secret enforcement, Redis assertion in production, and Sentry data leakage.
+
+### Fixes Applied
+
+**2a — JWT secret startup assertion** (`backend/app.py`)
+- Added `_run_security_assertions(app, config_name)` called at startup for all non-testing environments
+- Raises `RuntimeError` (refuses to start) if `JWT_SECRET_KEY` is `'dev-secret-key'` or shorter than 32 chars
+- Raises `RuntimeError` in production if `REDIS_URL` / `REDIS_PRIVATE_URL` is absent (rate limiting would be per-process only)
+- Errors are collected and reported together so a misconfigured env surfaces all problems at once
+
+**2b — Celery serializer** (already done — no change needed)
+- `celery_config.py` already sets `task_serializer='json'`, `accept_content=['json']`, `result_serializer='json'`
+- Finding marked resolved
+
+**2c — Sentry frame variable scrubbing** (`backend/app.py`)
+- Extended `before_send` to scrub local variables in every exception stack frame
+- Keys containing `prompt`, `story`, `response`, `context`, `content`, `note`, `text`, `body`, `message`, `parent`, `hidden`, `guidance` → `[Filtered — sensitive key]`
+- String values longer than 200 chars → `[Filtered — string len N]`
+- Prevents story text and parent context from leaking to Sentry on generation exceptions
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/app.py` | Added `_run_security_assertions`, extended `before_send` with frame var scrubbing |
+
+---
+
 ## 2026-04-18f — Life Quests Six Hats Audit + Age-Gate Fixes (Claude Sonnet 4.6)
 
 **Goal:** Playwright-driven Six Hats UX audit across all 6 age bands (Sprout→Adult) for the Life Quests feature. Fix all identified issues.
