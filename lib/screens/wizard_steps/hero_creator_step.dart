@@ -2533,65 +2533,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     if (isSproutFour) {
       final isListening = _listeningFor == 'name';
-      final typedName = widget.wizardData.characterName;
       return Column(
         children: [
-          // ── Mascot + speech bubble (echo's the name) ───────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              BreathingAvatar(
-                period: const Duration(milliseconds: 2800),
-                glowColor: const Color(0xFFFFD54F),
-                child: Image.asset(
-                  'assets/images/ui/sprout/girl_character.png',
-                  height: 90,
-                  errorBuilder: (_, __, ___) =>
-                      const SizedBox(height: 90, width: 70),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Container(
-                    key: ValueKey(
-                        typedName.isEmpty ? '__prompt__' : typedName),
-                    constraints: const BoxConstraints(maxWidth: 160),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD54F),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(14),
-                        topRight: Radius.circular(14),
-                        bottomRight: Radius.circular(14),
-                        bottomLeft: Radius.circular(4),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(38),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      typedName.isEmpty ? "What's your name?" : typedName,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
-                        fontSize: typedName.isEmpty ? 13 : 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF3E2723),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
           // Big mic button — primary input for sprouts
           GestureDetector(
             onTap: () => _toggleListening('name'),
@@ -3303,8 +3246,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final String girlAsset;
     switch (ageBand) {
       case AgeBand.adolescent:
-        boyAsset = 'assets/images/ui/adolescent/boy_character.png';
-        girlAsset = 'assets/images/ui/adolescent/girl_character.png';
+        // No adolescent-specific character art yet; use adventurer as stand-in.
+        boyAsset = 'assets/images/ui/adventurer/boy_character.png';
+        girlAsset = 'assets/images/ui/adventurer/girl_character.png';
         break;
       case AgeBand.adult:
         boyAsset = 'assets/images/ui/adult/man_character_white.png';

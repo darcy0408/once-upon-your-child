@@ -1,5 +1,57 @@
 # Team Coordination
 
+## 2026-04-18f — Life Quests Six Hats Audit + Age-Gate Fixes (Claude Sonnet 4.6)
+
+**Goal:** Playwright-driven Six Hats UX audit across all 6 age bands (Sprout→Adult) for the Life Quests feature. Fix all identified issues.
+
+### Audit Findings (Six Hats Summary)
+
+| Band | Critical Issues Found |
+|------|-----------------------|
+| Sprout (4yo) | CYOA hub showed all 8 adult scenarios ("Behind Closed Doors"); feelings picker showed clinical adult emotions ("Bad", "Fearful"); no sprout-appropriate quests |
+| Explorer (7yo) | Emotion picker led with "Angry" (negative-first); all 6 emotion cards may not fit on screen |
+| Adventurer (10yo) | Scene picker showed "Big Feelings Quest" (old name) instead of "Life Quest" |
+| Creator (12yo) | Feelings modal ignored band theme (hardcoded dark purple) |
+| Adolescent (15yo) | Hero creator showed blank spaces where character images should be (missing asset references) |
+| Adult (18yo) | Correctly routed to Reflect/Meditation — no issues |
+
+### Fixes Applied
+
+**Phase 1 — P0: Age-gate CYOA hub (safety critical)**
+- Added `recommendedBands: List<AgeBand>` field to `LifeQuestScenario` (default: adventurer/creator/adolescent)
+- Filtered `_matchingQuests` in `LifeQuestScreen` to only show age-appropriate quests
+- Added band-appropriate empty state: 🌱 + "More quests coming soon!" for young bands
+- Header subtitle adapts: young bands see "Adventures about feelings are on their way!" not "Life throws curveballs"
+
+**Phase 2 — P1: Fix feelings picker**
+- Added `sproutCoreEmotions` list (Happy, Sad, Mad, Scared) to `FeelingsWheelData` — positive-first, no secondaries
+- `coreEmotionsForAge()` now routes age ≤5 → sproutCoreEmotions (instead of adult clinical list)
+- Moved Excited to first position in `bigFeelingsCoreEmotionsAges6To8` (Explorer now leads positive)
+- `_CoreGrid` in `FeelingsCloudPicker`: dynamic `childAspectRatio` by emotion count (4→1.1, 6→1.05, 8+→0.88); wrapped in `Scrollbar`
+
+**Phase 3 — P1: Fix missing character assets**
+- `_buildBriefGenderSelector()` in `hero_creator_step.dart`: adolescent case now uses adventurer assets as stand-in (was referencing non-existent `adolescent/boy_character.png`)
+
+**Phase 4 — P2: Title/theme/label polish**
+- `scenario_data.dart`: `big_feelings_quest` base title changed from "Big Feelings Quest" → "Life Quest" (Adventurer 9-11 now sees correct name)
+- `feelings_quest_modal.dart`: modal background replaced hardcoded `Color(0xFF1A0E3A)` with `bandTheme?.gradientStart` (band-aware)
+
+**Phase 5 — P3: Verification**
+- Adult band confirmed: routes to `AdultMeditationScreen`, cannot access `LifeQuestScreen`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/data/life_quest_data.dart` | Added `recommendedBands` field with default [adventurer, creator, adolescent] |
+| `lib/screens/life_quest_screen.dart` | Filter quests by band; empty state for young bands; adaptive subtitle |
+| `lib/feelings_wheel_data.dart` | Added `sproutCoreEmotions`; updated `coreEmotionsForAge`; reordered Explorer list (Excited first) |
+| `lib/widgets/feelings_cloud_picker.dart` | Dynamic aspect ratio; Scrollbar wrapper on core grid |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Adolescent gender picker uses adventurer assets as fallback |
+| `lib/data/scenario_data.dart` | `big_feelings_quest` title: "Big Feelings Quest" → "Life Quest" |
+| `lib/widgets/feelings_quest_modal.dart` | Modal background: band-aware `gradientStart` instead of hardcoded purple |
+
+---
+
 ## 2026-04-18e — Security Audit + Remediation Plan (Claude Sonnet 4.6)
 
 **Goal:** Full-stack security audit via Six Hats methodology; establish remediation roadmap; make architectural decisions on two features.

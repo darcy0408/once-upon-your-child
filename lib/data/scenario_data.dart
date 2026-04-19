@@ -458,7 +458,7 @@ class ScenarioData {
     ScenarioCard(
       id: 'big_feelings_quest',
       emoji: '🌊',
-      title: 'Big Feelings Quest',
+      title: 'Life Quest',
       illustration: 'images/scenarios/feelings_quest.png',
       description:
           'Riding the waves of being worried or mad without getting swept away.',

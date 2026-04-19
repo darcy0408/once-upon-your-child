@@ -613,7 +613,99 @@ class FeelingSupportLibrary {
 
 // Feelings Wheel Data
 class FeelingsWheelData {
+  /// Four core emotions for Sprout band (ages ≤5): simple, positive-first.
+  static final List<CoreEmotion> sproutCoreEmotions = [
+    CoreEmotion(
+      id: 'happy',
+      name: 'Happy',
+      color: Color(0xFFFFA726),
+      secondaryColor: Color(0xFFFFB74D),
+      tertiaryColor: Color(0xFFFFCC80),
+      emoji: '😊',
+      eyeType: 'Happy',
+      mouthType: 'Smile',
+      secondary: [],
+    ),
+    CoreEmotion(
+      id: 'sad',
+      name: 'Sad',
+      color: Color(0xFF42A5F5),
+      secondaryColor: Color(0xFF64B5F6),
+      tertiaryColor: Color(0xFF90CAF9),
+      emoji: '😢',
+      eyeType: 'Dizzy',
+      mouthType: 'Concerned',
+      secondary: [],
+    ),
+    CoreEmotion(
+      id: 'mad',
+      name: 'Mad',
+      color: Color(0xFFEF5350),
+      secondaryColor: Color(0xFFE57373),
+      tertiaryColor: Color(0xFFEF9A9A),
+      emoji: '😠',
+      eyeType: 'EyeRoll',
+      mouthType: 'Serious',
+      secondary: [],
+    ),
+    CoreEmotion(
+      id: 'scared',
+      name: 'Scared',
+      color: Color(0xFF5E35B1),
+      secondaryColor: Color(0xFF7E57C2),
+      tertiaryColor: Color(0xFF9575CD),
+      emoji: '😨',
+      eyeType: 'Surprised',
+      mouthType: 'Concerned',
+      secondary: [],
+    ),
+  ];
+
   static final List<CoreEmotion> bigFeelingsCoreEmotionsAges6To8 = [
+    CoreEmotion(
+      id: 'excited',
+      name: 'Excited',
+      color: Color(0xFFFFA726),
+      secondaryColor: Color(0xFFFFB74D),
+      tertiaryColor: Color(0xFFFFCC80),
+      emoji: '🤩',
+      eyeType: 'Happy',
+      mouthType: 'Twinkle',
+      secondary: [
+        SecondaryFeeling(
+          id: 'bouncy',
+          name: 'Bouncy',
+          emoji: '😄',
+          eyeType: 'Happy',
+          mouthType: 'Twinkle',
+          tertiary: ['Wiggly', 'Jumpy', 'Zoomy', 'Bursting'],
+        ),
+        SecondaryFeeling(
+          id: 'proud',
+          name: 'Proud',
+          emoji: '😊',
+          eyeType: 'Happy',
+          mouthType: 'Smile',
+          tertiary: ['Can-do', 'Tall', 'Shiny', 'Brave'],
+        ),
+        SecondaryFeeling(
+          id: "can't-wait",
+          name: "Can't Wait",
+          emoji: '🥳',
+          eyeType: 'Happy',
+          mouthType: 'Twinkle',
+          tertiary: ['Counting down', 'Buzzy', 'Ready now', 'So close'],
+        ),
+        SecondaryFeeling(
+          id: 'hyper',
+          name: 'Hyper',
+          emoji: '🤸',
+          eyeType: 'Happy',
+          mouthType: 'Twinkle',
+          tertiary: ['Buzzy', 'Fast', 'Zooming', 'Too much energy'],
+        ),
+      ],
+    ),
     CoreEmotion(
       id: 'angry',
       name: 'Angry',
@@ -831,50 +923,6 @@ class FeelingsWheelData {
           eyeType: 'Surprised',
           mouthType: 'Concerned',
           tertiary: ['Put on the spot', 'Picked out', 'Notice me less', 'Vulnerable'],
-        ),
-      ],
-    ),
-    CoreEmotion(
-      id: 'excited',
-      name: 'Excited',
-      color: Color(0xFFFFA726),
-      secondaryColor: Color(0xFFFFB74D),
-      tertiaryColor: Color(0xFFFFCC80),
-      emoji: '🤩',
-      eyeType: 'Happy',
-      mouthType: 'Twinkle',
-      secondary: [
-        SecondaryFeeling(
-          id: 'bouncy',
-          name: 'Bouncy',
-          emoji: '😄',
-          eyeType: 'Happy',
-          mouthType: 'Twinkle',
-          tertiary: ['Wiggly', 'Jumpy', 'Zoomy', 'Bursting'],
-        ),
-        SecondaryFeeling(
-          id: 'proud',
-          name: 'Proud',
-          emoji: '😊',
-          eyeType: 'Happy',
-          mouthType: 'Smile',
-          tertiary: ['Can-do', 'Tall', 'Shiny', 'Brave'],
-        ),
-        SecondaryFeeling(
-          id: "can't-wait",
-          name: "Can't Wait",
-          emoji: '🥳',
-          eyeType: 'Happy',
-          mouthType: 'Twinkle',
-          tertiary: ['Counting down', 'Buzzy', 'Ready now', 'So close'],
-        ),
-        SecondaryFeeling(
-          id: 'hyper',
-          name: 'Hyper',
-          emoji: '🤸',
-          eyeType: 'Happy',
-          mouthType: 'Twinkle',
-          tertiary: ['Buzzy', 'Fast', 'Zooming', 'Too much energy'],
         ),
       ],
     ),
@@ -1340,9 +1388,8 @@ class FeelingsWheelData {
   }
 
   static List<CoreEmotion> coreEmotionsForAge(int childAge) {
-    if (childAge >= 6 && childAge <= 8) {
-      return bigFeelingsCoreEmotionsAges6To8;
-    }
+    if (childAge <= 5) return sproutCoreEmotions;
+    if (childAge <= 8) return bigFeelingsCoreEmotionsAges6To8;
     return coreEmotions;
   }
 }

@@ -294,21 +294,26 @@ class _CoreGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cores = FeelingsWheelData.coreEmotionsForAge(childAge);
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 18,
-        childAspectRatio: 0.88,
-      ),
-      itemCount: cores.length,
-      itemBuilder: (_, i) => CloudEmotionCard(
-        id: cores[i].id,
-        name: cores[i].name,
-        emoji: cores[i].emoji,
-        color: cores[i].color!,
-        onTap: () => onPick(cores[i]),
+    // Taller ratio (closer to 1.0) for fewer items so all cards fit on screen;
+    // narrower ratio for larger lists (9+) keeps the familiar card shape.
+    final aspectRatio = cores.length <= 4 ? 1.1 : cores.length <= 6 ? 1.05 : 0.88;
+    return Scrollbar(
+      child: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 18,
+          childAspectRatio: aspectRatio,
+        ),
+        itemCount: cores.length,
+        itemBuilder: (_, i) => CloudEmotionCard(
+          id: cores[i].id,
+          name: cores[i].name,
+          emoji: cores[i].emoji,
+          color: cores[i].color!,
+          onTap: () => onPick(cores[i]),
+        ),
       ),
     );
   }

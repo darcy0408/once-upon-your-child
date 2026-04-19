@@ -60,8 +60,9 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bandTheme = Theme.of(context).extension<AgeBandThemeData>();
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0E3A),
+      backgroundColor: bandTheme?.gradientStart ?? const Color(0xFF1A0E3A),
       body: SafeArea(
         child: Column(
           children: [
