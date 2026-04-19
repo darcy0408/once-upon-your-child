@@ -2761,3 +2761,25 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 - Updated: `docs/LAUNCH_BLOCKERS.md` to reflect both previously listed items are resolved.
 - Next: Darcy sets Railway env var (5 min), then hand assignments to each model in parallel.
 - Completed: Railway redeployed successfully with `RAILWAY_FRONTEND_URL` set — CORS blocker B1 resolved 2026-03-18.
+
+---
+
+## Known Tooling Issue: Playwright MCP "Browser is already in use" (Windows)
+
+**Symptom:** All `mcp__playwright__browser_*` calls fail with:
+> `Error: Browser is already in use for ...mcp-chrome-for-testing-<hash>, use --isolated to run multiple instances of the same browser`
+
+**Cause:** Stale `lockfile` in the Playwright MCP user-data-dir, held open by an orphaned `node.exe` process from a prior Claude Code session. Cannot be resolved from inside the affected session.
+
+**Fix (run in PowerShell, then restart Claude Code):**
+```powershell
+# 1. Find the hash
+Get-ChildItem "C:\Users\darcy\AppData\Local\ms-playwright\" -Filter "mcp-chrome-for-testing-*" -Directory
+
+# 2. Kill orphaned processes
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*playwright/mcp*' -or $_.CommandLine -like '*mcp-chrome-for-testing*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+
+# 3. Delete the lockfile (replace <hash> with value from step 1)
+Remove-Item "C:\Users\darcy\AppData\Local\ms-playwright\mcp-chrome-for-testing-<hash>\lockfile" -Force -ErrorAction SilentlyContinue
+```
+After restarting Claude Code, use `/resume` to pick up where you left off.

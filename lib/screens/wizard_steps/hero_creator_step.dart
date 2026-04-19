@@ -1598,7 +1598,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;
-    final imagePath = archetype.imagePathForBand(ageBand, gender: gender.isNotEmpty ? gender : null);
+    final hasGender = gender.isNotEmpty;
+    final imagePath = archetype.imagePathForBand(ageBand, gender: hasGender ? gender : null);
+    final fallbackPath = hasGender ? archetype.imagePathForBand(ageBand) : null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -1606,6 +1608,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         if (imagePath != null)
           SafeAssetImage(
             imagePath,
+            fallbackPath: fallbackPath,
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             placeholder: Center(child: Text(archetype.icon ?? '✨',

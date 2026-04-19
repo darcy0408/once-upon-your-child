@@ -18,6 +18,7 @@ class SafeAssetImage extends StatelessWidget {
     this.frameBuilder,
     this.placeholder,
     this.semanticLabel,
+    this.fallbackPath,
   });
 
   final String path;
@@ -34,6 +35,9 @@ class SafeAssetImage extends StatelessWidget {
 
   final String? semanticLabel;
 
+  /// If [path] fails to load, try this path before showing [placeholder].
+  final String? fallbackPath;
+
   @override
   Widget build(BuildContext context) {
     return Image.asset(
@@ -46,8 +50,23 @@ class SafeAssetImage extends StatelessWidget {
       filterQuality: filterQuality,
       frameBuilder: frameBuilder,
       semanticLabel: semanticLabel,
-      errorBuilder: (_, __, ___) =>
-          placeholder ?? SizedBox(width: width, height: height),
+      errorBuilder: (_, __, ___) {
+        if (fallbackPath != null) {
+          return Image.asset(
+            fallbackPath!,
+            width: width,
+            height: height,
+            fit: fit,
+            color: color,
+            alignment: alignment,
+            filterQuality: filterQuality,
+            semanticLabel: semanticLabel,
+            errorBuilder: (_, __, ___) =>
+                placeholder ?? SizedBox(width: width, height: height),
+          );
+        }
+        return placeholder ?? SizedBox(width: width, height: height);
+      },
     );
   }
 }
