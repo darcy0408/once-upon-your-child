@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-04-19T17:14:12.779652+00:00",
+  "timestamp_utc": "2026-04-19T20:58:42.179821+00:00",
   "notes": {
     "target_endpoint": "/generate-story",
     "mode": "local flask test client with mocked task behaviors plus optional real-provider probes",
@@ -15,12 +15,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.88,
-        "p50": 182.79,
-        "p95": 213.73,
-        "p99": 214.53,
-        "max": 214.67,
-        "mean": 189.48
+        "min": 182.25,
+        "p50": 185.5,
+        "p95": 213.68,
+        "p99": 220.15,
+        "max": 221.99,
+        "mean": 192.49
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -39,12 +39,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 1.2,
-        "p50": 6.27,
-        "p95": 9.31,
-        "p99": 9.74,
-        "max": 9.85,
-        "mean": 5.83
+        "min": 4.11,
+        "p50": 11.08,
+        "p95": 12.89,
+        "p99": 12.92,
+        "max": 12.93,
+        "mean": 9.75
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -63,12 +63,12 @@
       },
       "error_count": 12,
       "latency_ms": {
-        "min": 29.96,
-        "p50": 40.18,
-        "p95": 60.17,
-        "p99": 62.01,
-        "max": 62.48,
-        "mean": 44.21
+        "min": 39.74,
+        "p50": 58.7,
+        "p95": 73.71,
+        "p99": 77.68,
+        "max": 78.67,
+        "mean": 58.07
       },
       "sample_errors": [
         {
@@ -113,12 +113,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 21998.95,
-        "p50": 42453.69,
-        "p95": 44928.72,
-        "p99": 45111.22,
-        "max": 45156.84,
-        "mean": 35431.68
+        "min": 19130.6,
+        "p50": 20225.72,
+        "p95": 42355.73,
+        "p99": 42409.39,
+        "max": 42422.81,
+        "mean": 28705.37
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -130,37 +130,37 @@
       ],
       "sample_perf": [
         {
-          "ai_call_ms": 19994,
-          "prompt_build_ms": 0,
+          "ai_call_ms": 39068.9,
+          "prompt_build_ms": 0.0,
           "provider": "gemini",
           "provider_sequence": [
             "gemini(success)"
           ],
-          "total_ms": 21149,
-          "validation_attempts": 1,
-          "validation_ms": 4
+          "total_ms": 40873.3,
+          "validation_attempts": 2,
+          "validation_ms": 5.6
         },
         {
-          "ai_call_ms": 27094,
-          "prompt_build_ms": 0,
+          "ai_call_ms": 19323.0,
+          "prompt_build_ms": 0.0,
           "provider": "gemini",
           "provider_sequence": [
             "gemini(success)"
           ],
-          "total_ms": 44944,
+          "total_ms": 19507.4,
           "validation_attempts": 1,
-          "validation_ms": 1
+          "validation_ms": 0.6
         },
         {
-          "ai_call_ms": 23196,
-          "prompt_build_ms": 0,
+          "ai_call_ms": 18802.0,
+          "prompt_build_ms": 0.0,
           "provider": "gemini",
           "provider_sequence": [
             "gemini(success)"
           ],
-          "total_ms": 23367,
+          "total_ms": 18998.6,
           "validation_attempts": 1,
-          "validation_ms": 2
+          "validation_ms": 3.3
         }
       ],
       "perf_ms": {
@@ -173,28 +173,28 @@
           "mean": 0.0
         },
         "ai_call_ms": {
-          "min": 19994.0,
-          "p50": 25560.0,
-          "p95": 40332.4,
-          "p99": 42980.08,
-          "max": 43642.0,
-          "mean": 27897.2
+          "min": 18802.0,
+          "p50": 19725.0,
+          "p95": 35230.8,
+          "p99": 38301.28,
+          "max": 39068.9,
+          "mean": 23359.46
         },
         "validation_ms": {
-          "min": 1.0,
-          "p50": 3.0,
-          "p95": 4.0,
-          "p99": 4.0,
-          "max": 4.0,
-          "mean": 2.8
+          "min": 0.6,
+          "p50": 2.3,
+          "p95": 5.14,
+          "p99": 5.51,
+          "max": 5.6,
+          "mean": 2.6
         },
         "total_ms": {
-          "min": 21149.0,
-          "p50": 42293.0,
-          "p95": 44726.2,
-          "p99": 44900.44,
-          "max": 44944.0,
-          "mean": 35121.6
+          "min": 18998.6,
+          "p50": 20065.2,
+          "p95": 42008.1,
+          "p99": 42235.06,
+          "max": 42291.8,
+          "mean": 28347.26
         }
       },
       "provider_counts": {
@@ -209,12 +209,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 182.58,
-        "p50": 183.41,
-        "p95": 185.97,
-        "p99": 187.14,
-        "max": 187.49,
-        "mean": 183.99
+        "min": 181.82,
+        "p50": 183.44,
+        "p95": 184.52,
+        "p99": 184.76,
+        "max": 184.83,
+        "mean": 183.37
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -233,12 +233,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 182.45,
-        "p50": 183.84,
-        "p95": 190.1,
-        "p99": 193.0,
-        "max": 193.75,
-        "mean": 184.7
+        "min": 181.6,
+        "p50": 182.95,
+        "p95": 185.17,
+        "p99": 190.87,
+        "max": 192.57,
+        "mean": 183.41
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -257,12 +257,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 181.85,
-        "p50": 183.53,
-        "p95": 189.86,
-        "p99": 190.3,
-        "max": 190.3,
-        "mean": 184.31
+        "min": 181.97,
+        "p50": 184.67,
+        "p95": 194.21,
+        "p99": 196.71,
+        "max": 197.44,
+        "mean": 186.43
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -281,12 +281,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 182.0,
-        "p50": 187.5,
-        "p95": 197.91,
-        "p99": 202.11,
-        "max": 203.35,
-        "mean": 188.67
+        "min": 181.92,
+        "p50": 186.1,
+        "p95": 196.17,
+        "p99": 196.91,
+        "max": 197.06,
+        "mean": 187.41
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -305,12 +305,12 @@
       },
       "error_count": 0,
       "latency_ms": {
-        "min": 183.28,
-        "p50": 187.72,
-        "p95": 203.16,
-        "p99": 209.11,
-        "max": 210.79,
-        "mean": 190.21
+        "min": 182.09,
+        "p50": 183.41,
+        "p95": 188.07,
+        "p99": 192.62,
+        "max": 193.96,
+        "mean": 184.44
       },
       "sample_errors": [],
       "sample_body_status": [
@@ -332,7 +332,7 @@
     "first_headers": {
       "X-RateLimit-Limit": "2",
       "X-RateLimit-Remaining": "1",
-      "X-RateLimit-Reset": "1776619040"
+      "X-RateLimit-Reset": "1776632476"
     },
     "third_error": "Rate limit exceeded",
     "after_wait_error": null
@@ -340,57 +340,57 @@
   "fallback_switchover": {
     "status_code": 200,
     "body_status": "complete",
-    "latency_ms": 154.38,
+    "latency_ms": 181.1,
     "perf": {
-      "ai_call_ms": 6,
-      "prompt_build_ms": 0,
+      "ai_call_ms": 4.4,
+      "prompt_build_ms": 0.0,
       "provider": "static",
       "provider_sequence": [
         "gemini(fail:401)",
         "openrouter(fail:no_key)",
         "static"
       ],
-      "total_ms": 149,
+      "total_ms": 173.6,
       "validation_attempts": 3,
-      "validation_ms": 1
+      "validation_ms": 0.5
     },
     "provider_sequence": [
       "gemini(fail:401)",
       "openrouter(fail:no_key)",
       "static"
     ],
-    "summary_line": "fallback_switchover: total=154ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static"
+    "summary_line": "fallback_switchover: total=181ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static"
   },
   "concurrency_ramp": {
     "rows": [
       {
         "concurrency": 1,
-        "p95_ms": 185.97,
-        "mean_ms": 183.99,
+        "p95_ms": 184.52,
+        "mean_ms": 183.37,
         "errors": 0
       },
       {
         "concurrency": 4,
-        "p95_ms": 190.1,
-        "mean_ms": 184.7,
+        "p95_ms": 185.17,
+        "mean_ms": 183.41,
         "errors": 0
       },
       {
         "concurrency": 8,
-        "p95_ms": 189.86,
-        "mean_ms": 184.31,
+        "p95_ms": 194.21,
+        "mean_ms": 186.43,
         "errors": 0
       },
       {
         "concurrency": 16,
-        "p95_ms": 197.91,
-        "mean_ms": 188.67,
+        "p95_ms": 196.17,
+        "mean_ms": 187.41,
         "errors": 0
       },
       {
         "concurrency": 32,
-        "p95_ms": 203.16,
-        "mean_ms": 190.21,
+        "p95_ms": 188.07,
+        "mean_ms": 184.44,
         "errors": 0
       }
     ]
