@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/app_tts_service.dart';
@@ -91,18 +92,21 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.xl,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Child-facing intro — shown before the parent legal content
                 Container(
                   width: double.infinity,
@@ -265,41 +269,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Container(
-                  decoration: BoxDecoration(
-                    color: _consentGiven
-                        ? const Color(0xFFFFD700).withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _consentGiven
-                          ? const Color(0xFFFFD700)
-                          : Colors.white70,
-                      width: _consentGiven ? 2 : 1.5,
-                    ),
-                  ),
-                  child: CheckboxListTile(
-                    title: const Text(
-                      'I am a parent/guardian and give permission',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: const Text(
-                      'I have read the Privacy Policy and Terms of Service',
-                      style: textWhite70,
-                    ),
-                    checkColor: Colors.black,
-                    fillColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return const Color(0xFFFFD700);
-                      }
-                      return Colors.white.withValues(alpha: 0.25);
-                    }),
-                    side: const BorderSide(color: Colors.white70, width: 2),
-                    value: _consentGiven,
-                    onChanged: (value) =>
-                        setState(() => _consentGiven = value ?? false),
-                  ),
-                ),
                 Row(
                   children: [
                     TextButton(
@@ -325,46 +294,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                           style: TextStyle(color: Color(0xFFFFD700))),
                     ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Show a scroll hint until the parent has read to the bottom.
-                if (_scrollProgress < 0.7)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.keyboard_arrow_down,
-                            color: Colors.white.withAlpha(140), size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Scroll to read before giving permission',
-                          style: TextStyle(
-                              color: Colors.white.withAlpha(140), fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: !_consentGiven || !_emailValid || _submitting ||
-                            _scrollProgress < 0.95
-                        ? null
-                        : _submitConsent,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD700),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Text(
-                      _submitting ? 'Saving...' : 'Give Permission ✓',
-                      style: GoogleFonts.fredoka(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 // ── ElevenLabs kudos ─────────────────────────────────────────
@@ -452,10 +381,152 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildStickyFooter(),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _shareToGrownUp() async {
+    final message =
+        "Hi! I want to try Story Weaver, an app that makes me the hero of my own stories. "
+        "It needs a grown-up to say yes before I can play. "
+        "Could you look at this together with me? It takes about a minute. "
+        "Thanks!";
+    await SharePlus.instance.share(ShareParams(text: message));
+  }
+
+  Widget _buildStickyFooter() {
+    final bool readEnough = _scrollProgress >= 0.95;
+    final bool canSubmit =
+        _consentGiven && _emailValid && !_submitting && readEnough;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.md + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E0A3C),
+        border: Border(
+          top: BorderSide(color: Colors.white.withAlpha(30), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(80),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Kid's escape hatch — they can message a grown-up instead of waiting.
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _shareToGrownUp,
+              icon: const Icon(Icons.ios_share,
+                  color: Color(0xFFFFD700), size: 16),
+              label: Text(
+                'Send to a grown-up',
+                style: GoogleFonts.fredoka(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(0, 32),
+              ),
+            ),
+          ),
+          if (!readEnough)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.keyboard_arrow_up,
+                      color: Colors.white.withAlpha(140), size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Please scroll through the notice above',
+                    style: TextStyle(
+                        color: Colors.white.withAlpha(160), fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              color: _consentGiven
+                  ? const Color(0xFFFFD700).withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _consentGiven
+                    ? const Color(0xFFFFD700)
+                    : Colors.white70,
+                width: _consentGiven ? 2 : 1.5,
+              ),
+            ),
+            child: CheckboxListTile(
+              dense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              title: const Text(
+                'I am a parent/guardian and give permission',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              checkColor: Colors.black,
+              fillColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFFFFD700);
+                }
+                return Colors.white.withValues(alpha: 0.25);
+              }),
+              side: const BorderSide(color: Colors.white70, width: 2),
+              value: _consentGiven,
+              onChanged: readEnough
+                  ? (value) =>
+                      setState(() => _consentGiven = value ?? false)
+                  : null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: canSubmit ? _submitConsent : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD700),
+                foregroundColor: Colors.black,
+                disabledBackgroundColor: Colors.white.withAlpha(30),
+                disabledForegroundColor: Colors.white54,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                _submitting ? 'Saving...' : 'Give Permission ✓',
+                style: GoogleFonts.fredoka(
+                    fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

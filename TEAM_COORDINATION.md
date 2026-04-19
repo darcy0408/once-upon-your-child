@@ -1,5 +1,22 @@
 # Team Coordination
 
+## 2026-04-19 — Parental Consent: Sticky Footer + Share-to-Grown-up (Claude Opus 4.7)
+
+**Goal:** Keep consent controls visible while parents read the notice, and give kids a way to hand the flow to a grown-up on another device.
+
+### Changes (`lib/screens/parental_consent_screen.dart`)
+
+- **Sticky footer.** Page restructured from a single `SingleChildScrollView` to a `Column` with an `Expanded` scroll area plus a fixed `_buildStickyFooter()`. The consent checkbox, scroll-hint, and "Give Permission ✓" button now stay pinned to the bottom instead of living at the end of the scroll content.
+- **Scroll gate on the checkbox.** Previously only the submit button was gated on `_scrollProgress >= 0.95`; the checkbox's `onChanged` is now also `null` until the parent has read to 95%. The scroll-hint arrow flips from `keyboard_arrow_down` (inline, when far from the bottom) to `keyboard_arrow_up` in the footer (pointing back at the unread notice).
+- **"Send to a grown-up" button.** Top-right of the footer. Uses `share_plus` (already in `pubspec.yaml`) to fire a pre-written message via the OS share sheet — "Hi! I want to try Story Weaver… Could you look at this together with me?" — so a child who can't complete consent alone can hand the flow to a parent on their own device. Addresses the UX issue where a kid lands on the consent screen with no parent nearby.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/parental_consent_screen.dart` | Sticky footer refactor; scroll-gate extended to checkbox; `_shareToGrownUp` + share button added |
+
+---
+
 ## 2026-04-18k — Security Hardening: Refresh Token Rotation + JWT Blocklist (Claude Sonnet 4.6)
 
 **Goal:** Phase 2 fix 2f — stolen refresh tokens should not remain valid for their full 30-day lifetime.
