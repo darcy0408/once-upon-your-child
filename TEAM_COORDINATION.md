@@ -1,5 +1,115 @@
 # Team Coordination
 
+## 2026-04-18c — Companion Art Overhaul + Asset Cleanup (Claude Sonnet 4.6)
+
+**Goal:** Replace placeholder/old companion assets with new named art; rename companions with personality-driven names; clean up legacy asset directories.
+
+### Companion Renames
+- Robin → "Rockin' Robin" (all bands)
+- Ember Dragon → Sparkfire (explorer)
+- Moon Owl → Whizfeather (explorer)
+- Star Fox → Blazetail (explorer)
+
+### New Companion Assets Added
+- `adventurer/`: Dog.jpg, Night Cat.png, dragon.jpg
+- `explorer/`: Dragonfire.png, Prettykitty.jpg, Puppylove.jpg, Rockinrobin.png
+- `adolescent/`: dragon.png, panther.png, wolf.png
+- `adult/`: dragon.png, robin.jpg
+- `creator/`: Shadow Cat.jpg, dragon.jpg, robin.jpg, wolf.png
+- `sprout/`: cat.jpg
+
+### Assets Removed
+- `age_band_assets_OLD/` entire directory
+- Feelings emotion images (adolescent/creator bands)
+- Race-variant UI character PNGs (explorer, sprout, adolescent)
+- Legacy pressed/hover flat-file companions
+
+### Other Fixes
+- Splash screen duration: 2.4s → 4.0s
+- `hero_creator_step.dart`: all bands use adventurer character assets; silent `SizedBox` on image error
+- `welcome_screen.dart`: TTS punctuation fix + rateScale 0.72 applied consistently
+- `app_tts_service.dart`: removed old greeting phrase from warm-up list
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/data/companion_data.dart` | Robin → "Rockin' Robin" |
+| `lib/screens/wizard_steps/companion_selector_step.dart` | Explorer companion renames; Robin renamed all bands |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Simplified gender asset switch; error fallback to SizedBox |
+| `lib/screens/splash_screen.dart` | Duration 2.4s → 4.0s |
+| `lib/screens/welcome_screen.dart` | TTS punctuation + rateScale consistency |
+| `lib/services/app_tts_service.dart` | Warm-up phrase list updated |
+| `assets/images/companions/` | New named art added; old assets removed |
+| `assets/images/feelings/` | Adolescent + creator emotion images removed |
+| `assets/images/ui/` | Race-variant character PNGs removed |
+| `age_band_assets_OLD/` | Entire directory removed |
+
+---
+
+## 2026-04-18b — Welcome Screen TTS Greeting (Claude Sonnet 4.6)
+
+**Goal:** Add a friendly welcome before the age picker so the app doesn't open cold.
+
+- Updated TTS prompt on first launch: `"How old are you? Tap your age!"` → `"Hi, welcome to Story Weaver! How old are you? Tap your age!"`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | TTS greeting prepended to age prompt |
+
+---
+
+## 2026-04-18 — Splash Screen, TTS Pacing & Companion UX Redesign (Claude Opus 4.6)
+
+**Goal:** Add branded splash screen, fix TTS pacing on companion page, and redesign the companion selection flow to eliminate confusion between adding friends vs pets.
+
+### Splash Screen
+- Added `lib/screens/splash_screen.dart` — full-screen "Once Upon YOUR Child" logo with fade-in/hold/fade-out animation
+- Added `assets/images/splash_logo.png` — branded logo asset
+- Wired into `_AppEntryPoint` in `main_story.dart` — splash plays on every cold start before onboarding/welcome flow
+
+### TTS Pacing Fix
+- Slowed narration for older-band wizard prompts ("Choose your hero's path!", "Who will join you on your quest?") from default `rateScale: 0.85` to `0.75` in `hero_creator_step.dart`
+
+### Companion Page Redesign (Six Hats Analysis, Age 11)
+Performed a Six Thinking Hats UX analysis of the companion selection page from an 11-year-old's perspective using the `ui-audit-prompt.md` framework. Identified and fixed four issues:
+
+**1. Split "bring someone along" into Friend vs Pet (high impact)**
+- Replaced the single "Friend's name..." text input (which confusingly defaulted to species `Dog`) with two clear buttons: "Add a Friend" (person icon, defaults to Human) and "Add My Pet" (paw icon, defaults to Dog)
+- Added `pendingNewSpecies` / `onPendingConsumed` callback pattern on `_PetCard` to support parent-triggered companion creation with correct species default
+- `_addCompanionWithType(species)` method on `_PetCardState` handles both paths
+
+**2. Cancel button on companion editor card (high impact, low effort)**
+- Added X button at top-right of the editor card
+- If companion is blank (default name, no photo), cancelling removes the entry entirely
+- If companion has data, cancelling closes the editor without saving changes
+
+**3. Age-appropriate language: "buddy" -> "companion" (medium impact)**
+- "Your buddy is ready!" -> "Your companion is ready!" for Adventurer+ bands (age 9+)
+- Kept "buddy" for Sprout/Explorer where it fits developmentally
+- Updated all error messages: "pick a buddy" -> "pick a companion", "buddy's photo" -> "companion's photo"
+
+**4. Dynamic hint text based on companion type (medium impact)**
+- Name hint: "Friend's name (e.g. Alex)" for Human, "Pet's name (e.g. Biscuit)" for animals
+- Looks hint: "e.g. brown hair, glasses, blue eyes" for Human, "e.g. golden fur, floppy ears" for animals
+- Voice prompts also adapt: "Say your friend's name" vs "Say your pet's name"
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/splash_screen.dart` | New — splash animation widget |
+| `assets/images/splash_logo.png` | New — branded logo |
+| `lib/main_story.dart` | Splash screen integration |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Companion redesign (Friend/Pet split, cancel button, buddy->companion, dynamic hints), TTS rateScale fix |
+
+### Known Deferred Items
+- Baby Unicorn art is still too young for Adventurer band — needs a more mature illustration (armored/crystal unicorn)
+- `companion_selector_step.dart` still says "Travel Buddy" — separate screen, left unchanged to avoid regressions
+- `_friendNameController` and `_addFriendByName` are now dead code (voice input for 'friend' field) — can be cleaned up in a future pass
+- `additionalCharacters` list is still populated when loading existing characters but no longer added to via the UI
+
+---
+
 ## 2026-04-18 — "Life Quests" Redesign: Big Feelings Rebranding & Feature Evolution (Claude Opus 4.6)
 
 **Goal:** Rebrand "Big Feelings" as "Life Quests" across the app. Redesign the feelings entry screen. Build a choose-your-own-adventure emotional problem-solving feature that works for both BYOK and non-BYOK users. Fix age-appropriateness issues for 9-12 band (companion art, language, UI polish).

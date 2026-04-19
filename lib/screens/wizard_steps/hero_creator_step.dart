@@ -2461,28 +2461,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final ageBand = band.band;
 
-    final String boyAsset;
-    final String girlAsset;
-    switch (ageBand) {
-      case AgeBand.sprout:
-        boyAsset = 'assets/images/ui/sprout/boy_character.png';
-        girlAsset = 'assets/images/ui/sprout/girl_character.png';
-        break;
-      case AgeBand.adventurer:
-        boyAsset = 'assets/images/ui/adventurer/boy_character.png';
-        girlAsset = 'assets/images/ui/adventurer/girl_character.png';
-        break;
-      case AgeBand.explorer:
-        boyAsset = 'assets/images/ui/explorer/boy_character_white.png';
-        girlAsset = 'assets/images/ui/explorer/girl_character_white.png';
-        break;
-      // Mature bands use _buildBriefGenderSelector instead.
-      case AgeBand.creator:
-      case AgeBand.adolescent:
-      case AgeBand.adult:
-        boyAsset = 'assets/images/ui/explorer/boy_character_white.png';
-        girlAsset = 'assets/images/ui/explorer/girl_character_white.png';
-    }
+    const boyAsset = 'assets/images/ui/adventurer/boy_character.png';
+    const girlAsset = 'assets/images/ui/adventurer/girl_character.png';
 
     final gender = widget.wizardData.characterGender;
     return Row(
@@ -2567,11 +2547,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: Image.asset(
                   'assets/images/ui/sprout/girl_character.png',
                   height: 90,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.face_rounded,
-                    size: 70,
-                    color: Color(0xFFFFD700),
-                  ),
+                  errorBuilder: (_, __, ___) =>
+                      const SizedBox(height: 90, width: 70),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2680,6 +2657,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
                 decoration: InputDecoration(
                   border: InputBorder.none,
+                  filled: true,
+                  fillColor: Colors.transparent,
                   hintText: 'or type it here',
                   hintStyle: GoogleFonts.fredoka(
                     color: Colors.white38,
@@ -4305,7 +4284,7 @@ const _adventurerCompanions = [
   ),
   _CompanionData(
     id: 'robin',
-    name: 'Robin',
+    name: 'Rockin\' Robin',
     tagline: 'Fierce loyalty. Zero chill.',
     personality:
         'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
@@ -4392,7 +4371,7 @@ const _companions = [
   ),
   _CompanionData(
     id: 'robin',
-    name: 'Robin',
+    name: 'Rockin\' Robin',
     tagline: 'Overprotective. Loud about it. Loves you completely.',
     personality:
         'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
@@ -5611,6 +5590,8 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
       width: widget.width,
       height: widget.height,
       fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          SizedBox(width: widget.width, height: widget.height),
     );
 
     return GestureDetector(

@@ -21,25 +21,25 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Total duration: 0.4s fade-in + 1.6s hold + 0.4s fade-out = 2.4s
+    // Total duration: 0.6s fade-in + 2.8s hold + 0.6s fade-out = 4.0s
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 4000),
     );
 
-    // Fade in during 0–17% (≈0.4s)
+    // Fade in during 0–15% (≈0.6s)
     _fadeIn = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.17, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.15, curve: Curves.easeIn),
       ),
     );
 
-    // Fade out during 83–100% (≈0.4s)
+    // Fade out during 85–100% (≈0.6s)
     _fadeOut = Tween<double>(begin: 1, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.83, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.85, 1.0, curve: Curves.easeOut),
       ),
     );
 

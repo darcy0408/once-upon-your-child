@@ -199,7 +199,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     } else if (band == AgeBand.creator) {
       unawaited(_speak('Your story begins here.'));
     } else {
-      unawaited(_speak('Hi! Welcome to Story Weaver, What\'s your name?'));
+      unawaited(_speak('Hi! Welcome to Story Weaver. What\'s your name?', rateScale: 0.72));
     }
   }
 
@@ -228,7 +228,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           .speak(
             'Hi, $name! What a great name!',
             awaitCompletion: true,
-            rateScale: 1.05,
+            rateScale: 0.72,
           )
           .then((_) {
         if (mounted) _handleContinue();
@@ -522,70 +522,34 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ── Mascot + speech bubble ──────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            BreathingAvatar(
-              period: const Duration(milliseconds: 2800),
-              glowColor: _goldColor,
-              child: Image.asset(
-                AgeBandAssetResolver.uiPath(
-                  ageBandFromAge(_selectedAge ?? 5),
-                  'girl_character.png',
+        // ── Speech bubble (centred — no mascot image) ──────────────────────
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Container(
+            key: ValueKey(typedName.isEmpty ? '__prompt__' : typedName),
+            constraints: const BoxConstraints(maxWidth: 220),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD54F),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(40),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
-                height: 100,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  'assets/images/ui/sprout/girl_character.png',
-                  height: 100,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.face_rounded,
-                    size: 80,
-                    color: _goldColor,
-                  ),
-                ),
+              ],
+            ),
+            child: Text(
+              typedName.isEmpty ? "What's your name?" : typedName,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: typedName.isEmpty ? 15 : 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF3E2723),
               ),
             ),
-            const SizedBox(width: 10),
-            // Speech bubble showing the name as it's typed/spoken
-            Flexible(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Container(
-                  key: ValueKey(typedName.isEmpty ? '__prompt__' : typedName),
-                  constraints: const BoxConstraints(maxWidth: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD54F),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                      bottomLeft: Radius.circular(4),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(40),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    typedName.isEmpty ? "What's your name?" : typedName,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      fontSize: typedName.isEmpty ? 15 : 20,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF3E2723),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
         _buildNameFieldAndButton(

@@ -94,7 +94,7 @@ const List<CompanionData> magicCompanions = [
   ),
   CompanionData(
     id: 'robin',
-    name: 'Robin',
+    name: 'Rockin\' Robin',
     emoji: '🐦‍⬛',
     description: 'Flies ahead to scout the path and keeps the group safe from danger',
     signaturePower: 'Guardian Flight: Darts ahead of the group to map the path, then calls back with her song — one long clear note means safe, three sharp chirps means stop and wait. She can distract or redirect anything threatening long enough for the group to find another way.',

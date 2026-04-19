@@ -20,7 +20,9 @@ import 'web_audio_player_stub.dart'
 
 /// Common wizard/onboarding phrases pre-warmed at startup.
 const List<String> kWarmUpPhrases = [
-  "Hi! Welcome to Story Weaver, What's your name?",
+  // "Hi! Welcome to Story Weaver. What's your name?" is intentionally excluded
+  // from warm-up so the live speak() call synthesises it at the correct slower
+  // rateScale (0.72) rather than playing a default-speed cached version.
   // "How old are you? Tap your age!" is intentionally excluded from warm-up
   // so the live speak() call synthesises it at the correct slower rateScale
   // (0.72) rather than playing a default-speed cached version.
