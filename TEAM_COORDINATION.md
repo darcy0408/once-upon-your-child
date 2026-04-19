@@ -1,5 +1,42 @@
 # Team Coordination
 
+## 2026-04-19 — Age-Band Gender Selection Images (Claude Sonnet 4.6)
+
+**Goal:** Replace the single adventurer boy/girl placeholder with dedicated, age-appropriate artwork for every age band in both gender-selection screens.
+
+### What was done
+
+- **Image processing** (`scripts/process_gender_images.py`): 14 source images processed into `assets/images/ui/gender/`
+  - BFS flood-fill black-background removal for sprout + explorer chibi art
+  - JPG → PNG conversion for all others
+- **Wiring** — both gender-selection flows updated:
+  - `lib/screens/wizard_steps/hero_creator_step.dart` — `_buildGenderPicker()` now switches on `AgeBand`
+  - `lib/custom_avatar_screen.dart` — `_genderAsset()` helper + `_buildGenderCard()` rewritten to show images
+- **Press effect** changed in both files: tap now scales **up** (1.08×) + brightens (screen blend) instead of shrink + darken
+
+### Asset map (`assets/images/ui/gender/`)
+
+| Band | Ages | Boy asset | Girl asset |
+|------|------|-----------|------------|
+| sprout | ≤5 | `gender_sprout_boy.png` (bg removed) | `gender_sprout_girl.png` (bg removed) |
+| explorer | ≤8 | `gender_explorer_boy.png` (bg removed) | `gender_explorer_girl.png` (bg removed) |
+| adventurer | ≤11 | `gender_adventurer_boy.png` | `gender_adventurer_girl.png` |
+| creator | ≤14 | `gender_creator_boy.png` | `gender_creator_girl.png` |
+| adolescent | ≤17 | `gender_adolescent_boy.png` | `gender_adolescent_girl.png` |
+| adult | 18+ | `gender_adult_boy.png` | `gender_adult_girl.png` |
+
+Spare: `gender_creator_alt_girl.png` (the "13-15 tech-punk girl" art) — not currently wired; swap with `gender_creator_girl.png` if preferred.
+
+### Files Changed
+- `assets/images/ui/gender/` — 13 new PNGs (12 wired + 1 spare)
+- `assets/BoyGirl images/` — 14 source images committed for reference
+- `pubspec.yaml` — added `assets/images/ui/gender/` declaration
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+- `lib/custom_avatar_screen.dart`
+- `scripts/process_gender_images.py` — reusable processing script
+
+---
+
 ## 2026-04-19 — Parental Consent: Sticky Footer + Share-to-Grown-up (Claude Opus 4.7)
 
 **Goal:** Keep consent controls visible while parents read the notice, and give kids a way to hand the flow to a grown-up on another device.
