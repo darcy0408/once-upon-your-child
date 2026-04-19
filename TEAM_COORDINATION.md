@@ -1584,8 +1584,8 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 | NEW-03 | `_HeroFallbackIdentity` column (icon 42px + gap 8 + text 18) overflowed 48×48 container | Creator, Adolescent, Adult | Medium | ✅ Fixed |
 | NEW-04 | Archetype card names truncate in Sprout/Explorer grid (`maxLines: 1`) | Sprout, Explorer | Medium | ✅ Fixed |
 | NEW-05 | Story style step has no default selection for younger bands | Sprout, Explorer | Medium | Not a bug — code defaults to `'tales'` (Story Quest); visual state on web runner may differ from device |
-| NEW-06 | Archetype class shows "—" on Adventurer review when archetype skipped | Adventurer | Low | Deferred |
-| NEW-07 | Adolescent review shows only name + "—", no story summary | Adolescent | Low | Deferred |
+| NEW-06 | Archetype class shows "—" on Adventurer review when archetype skipped | Adventurer | Low | ✅ Fixed |
+| NEW-07 | Adolescent review shows only name + "—", no story summary | Adolescent | Low | ✅ Fixed |
 | NEW-08 | Adult "Begin" button gold/olive colour may read as disabled | Adult | Low | ✅ Fixed |
 
 ### Fix Details
@@ -1601,6 +1601,13 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 
 **NEW-04** — `lib/screens/wizard_steps/hero_creator_step.dart:_buildArchetypeCards`
 - Changed `maxLines: 1` → `maxLines: 2` on the name Text inside the bottom pill overlay; names like "The Animal Whisperer" now wrap to a second line instead of truncating with `…`.
+
+**NEW-06** — `lib/widgets/adventurer_character_sheet.dart`
+- Archetype lookup was comparing `a.name.toLowerCase().replaceAll(' ', '_')` against `selectedArchetypeId` which is stored as the display name (e.g., `"The Lightning Runner"`). The slug transform never matched. Fixed to `a.name == wizardData.selectedArchetypeId` so CLASS and ROLE stats now appear correctly.
+
+**NEW-07** — `lib/screens/wizard_steps/magic_review_step.dart`
+- Creator band: scenario fallback changed from `'—'` to `'Your own story'` so review is never blank.
+- Adolescent band: `scenarioDesc` (from `ScenarioData.descriptionForAge`) now shown as a small italic subtitle below the scenario title, giving users a real story summary before they launch.
 
 **NEW-08** — `lib/screens/wizard_steps/magic_review_step.dart` (Adult CTA button)
 - `foregroundColor` switched to `Color(0xFF1A1A1A)` (dark text) for Adult band — amber+white was ~2.2:1 contrast; dark text meets 4.5:1 minimum.
@@ -1619,7 +1626,8 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 - [x] NEW-03: `_HeroFallbackIdentity` overflow fixed
 - [x] NEW-04: archetype name truncation fixed
 - [x] NEW-08: Adult "Begin" button contrast fixed (commit 25f8ef7)
-- [ ] NEW-06/07: deferred (low priority)
+- [x] NEW-06: Adventurer archetype lookup fixed — was comparing transformed slug against display name
+- [x] NEW-07: Adolescent review scenario description added; Creator fallback '—' → 'Your own story'
 
 ---
 

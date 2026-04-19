@@ -25,8 +25,7 @@ class AdventurerCharacterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final archetype = wizardData.selectedArchetypeId != null
         ? CharacterArchetypes.all
-            .where((a) => a.name.toLowerCase().replaceAll(' ', '_') ==
-                wizardData.selectedArchetypeId)
+            .where((a) => a.name == wizardData.selectedArchetypeId)
             .firstOrNull
         : null;
 

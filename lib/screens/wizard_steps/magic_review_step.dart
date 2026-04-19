@@ -1025,11 +1025,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
     final heroName =
         data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
-    final scenarioLabel = data.selectedScenario != null
-        ? (ScenarioData.getById(data.selectedScenario!)
-                ?.titleForBand(band.band) ??
-            'Your Story')
-        : 'Your own adventure';
+    final scenarioCard = data.selectedScenario != null
+        ? ScenarioData.getById(data.selectedScenario!)
+        : null;
+    final scenarioLabel =
+        scenarioCard?.titleForBand(band.band) ?? (data.selectedScenario != null ? 'Your Story' : 'Your own adventure');
+    final scenarioDesc = scenarioCard?.descriptionForAge(data.characterAge);
     final companionLine = data.companionNames.isEmpty
         ? 'Solo'
         : data.companionNames.join(', ');
@@ -1102,6 +1103,17 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (scenarioDesc != null && scenarioDesc.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    scenarioDesc,
+                    style: GoogleFonts.sourceSans3(
+                      color: band.textOnDark.withValues(alpha: 0.45),
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
                 if (data.companionNames.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -1209,7 +1221,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ? (ScenarioData.getById(data.selectedScenario!)
                 ?.titleForBand(band.band) ??
             'Your Story')
-        : '—';
+        : 'Your own story';
 
     if (_isGenerating) {
       return MagicalLoadingView(
