@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/age_band_theme.dart';
-import '../../theme/app_theme.dart';
 import '../safe_asset_image.dart';
 
 class ImagineItHeroCard extends StatefulWidget {

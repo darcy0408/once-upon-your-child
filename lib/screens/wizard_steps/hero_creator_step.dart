@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
@@ -119,7 +118,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // Sprout band: pet card is hidden until a grown-up reveals it
   bool _showPetCardForSprout = false;
   // Pending companion species — set by "Add a Friend" / "Add My Pet" buttons,
-  // consumed by the _PetCard to create the entry and open the editor.
+  // consumed by the HeroPetCard to create the entry and open the editor.
   String? _pendingCompanionSpecies;
   int _pendingCompanionToken = 0; // increments to distinguish repeated adds of same species
 
@@ -936,16 +935,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// Shows selected companions as glowing portrait orbs above the selection grid.
   /// Empty slots show a dashed placeholder. Tapping a filled orb deselects it.
   Widget _buildCompanionShowcase() {
-    // Include companions from all bands so the showcase can resolve any
-    // selection regardless of which band is currently active.
-    final allKnownCompanions = [
-      ..._sproutCompanions,
-      ..._explorerCompanions,
-      ..._adventurerCompanions,
-      ..._creatorCompanions,
-      ..._adolescentCompanions,
-      ..._adultCompanions,
-    ];
+    // Fetch all companions across every band so we can resolve selected IDs to
+    // image paths regardless of which band is currently active.
+    final allKnownCompanions = allCompanionEntries();
 
     // Collect selected named companions in order — use ID as source of truth.
     final selectedNamed = allKnownCompanions
@@ -3880,40 +3872,3 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       };
 }
 
-// ─── Support Widgets ──────────────────────────────────────────────────────────
-
-class _AvatarChoiceCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const HeroAvatarChoiceCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2C1B47),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFD700).withAlpha(120), width: 1.5),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFFFFD700), size: 48),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
-import '../../theme/app_theme.dart';
 import '../safe_asset_image.dart';
 
 /// Data carrier for a showcase orb slot.
@@ -124,18 +123,29 @@ class GlowingCompanionOrb extends StatelessWidget {
   }
 }
 
+/// Returns all companion entries across every age band — used by the showcase
+/// to resolve selected companion IDs to image paths regardless of active band.
+List<CompanionData> allCompanionEntries() => [
+  ...sproutCompanions,
+  ...explorerCompanions,
+  ...adventurerCompanions,
+  ...creatorCompanions,
+  ...adolescentCompanions,
+  ...adultCompanions,
+];
+
 // ---------------------------------------------------------------------------
-// Companion data (private — only used within CompanionImageGrid below)
+// Companion data — used within CompanionImageGrid + showcase
 // ---------------------------------------------------------------------------
 
-class _CompanionData {
+class CompanionData {
   final String id;
   final String name;
   final String tagline;
   final String personality;
   final String? imagePathOverride;
   final Color? backgroundColor;
-  const _CompanionData({
+  const CompanionData({
     required this.id,
     required this.name,
     required this.tagline,
@@ -148,29 +158,29 @@ class _CompanionData {
       imagePathOverride ?? 'assets/images/companions/${id}_normal.jpg';
 }
 
-const _sproutCompanions = [
-  _CompanionData(
+const sproutCompanions = [
+  CompanionData(
     id: 'sprout/pebble',
     name: 'Pebble',
     tagline: 'Brave hugs and sparkly sneezes.',
     imagePathOverride: 'assets/images/companions/sprout/pebble.png',
     backgroundColor: Color(0xFF7E57C2),
   ),
-  _CompanionData(
+  CompanionData(
     id: 'sprout/robin',
     name: 'Robin',
     tagline: 'Tiny bird, very loud love.',
     imagePathOverride: 'assets/images/companions/sprout/robin.png',
     backgroundColor: Color(0xFF388E3C),
   ),
-  _CompanionData(
+  CompanionData(
     id: 'sprout/mochi',
     name: 'Mochi',
     tagline: 'Found something! Come see, come see!',
     imagePathOverride: 'assets/images/companions/sprout/mochi.jpg',
     backgroundColor: Color(0xFFFF8F00),
   ),
-  _CompanionData(
+  CompanionData(
     id: 'sprout/sunny',
     name: 'Sunny',
     tagline: 'Glowy tail. Always there for you.',
@@ -179,8 +189,8 @@ const _sproutCompanions = [
   ),
 ];
 
-const _explorerCompanions = [
-  _CompanionData(
+const explorerCompanions = [
+  CompanionData(
     id: 'ember',
     name: 'Ember',
     tagline: 'Every idea is the best idea she\'s heard.',
@@ -188,7 +198,7 @@ const _explorerCompanions = [
     personality:
         'Ember (Brave Protector) leaves rainbow trails wherever she flies and cheers for every single one of your ideas. When she gets excited she accidentally shoots stars from her nose. She turns fear into a plan and stands between you and danger, voice steady and brave. Catchphrases: "That was brilliant!" / "We\'ve got this."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'robin',
     name: 'Robin',
     tagline: 'Loud warning system. Always on your side.',
@@ -196,7 +206,7 @@ const _explorerCompanions = [
     personality:
         'Robin (Guardian) has a very clear warning system and has launched herself at harmless pinecones. Three chirps: stop. One whistle: safe. Two clicks: run. Checks you\'re okay before she\'d ever admit she was worried. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "(soft) You\'re okay. I\'ve got you."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'clover',
     name: 'Clover',
     tagline: 'Knows the way. Always has a map.',
@@ -204,7 +214,7 @@ const _explorerCompanions = [
     personality:
         'Clover (Pattern Seer) is an orange tabby with round glasses and a compass who knows the way through any enchanted wood. Her stardust spirals when she\'s solving something. She spots patterns others miss and offers one clear, calm next step. Catchphrases: "Found it!" / "Follow me — I have the map."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'biscuit',
     name: 'Biscuit',
     tagline: 'Wand ready. Adventure compass spinning.',
@@ -214,8 +224,8 @@ const _explorerCompanions = [
   ),
 ];
 
-const _adventurerCompanions = [
-  _CompanionData(
+const adventurerCompanions = [
+  CompanionData(
     id: 'atlas',
     name: 'Atlas',
     tagline: 'Three routes mapped. Option two is most interesting.',
@@ -223,7 +233,7 @@ const _adventurerCompanions = [
     personality:
         'Atlas (Pattern Seer) is a blue-green scholar dragon with a compass medallion who knows every constellation. When the path is unclear he lifts his glasses and calculates. He admits when the map was wrong. Speaks in short verdicts — "Noted." "Risky." "Better." Catchphrases: "Look again." / "Follow the pattern."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'robin',
     name: 'Rockin\' Robin',
     tagline: 'Fierce loyalty. Zero chill.',
@@ -231,7 +241,7 @@ const _adventurerCompanions = [
     personality:
         'Rockin\' Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'nyx',
     name: 'Nyx',
     tagline: 'Sets boundaries. Finds the exit.',
@@ -239,7 +249,7 @@ const _adventurerCompanions = [
     personality:
         'Nyx (Boundary Guardian) is a sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. She helps you say no, spot pressure, and choose the cleanest way out. When she trusts you enough to speak first, the information is always worth waiting for. Catchphrases: "No is complete." / "We leave—now."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'kodiak',
     name: 'Kodiak',
     tagline: 'Pack moves together. Never gives up on you.',
@@ -249,8 +259,8 @@ const _adventurerCompanions = [
   ),
 ];
 
-const _creatorCompanions = [
-  _CompanionData(
+const creatorCompanions = [
+  CompanionData(
     id: 'cipher',
     name: 'Cipher',
     tagline: 'Finds the flaw before it\'s a problem.',
@@ -258,7 +268,7 @@ const _creatorCompanions = [
     personality:
         'Cipher (Pattern Seer) is a blue-green dragon who breathes orbiting gears and compass roses. Finds the flaw in a plan before it\'s a problem. When the puzzle breaks open, his eyes flash gold. Treats problems like games and always offers two clever options. Catchphrases: "Interesting. The pieces fit — if you look at it sideways." / "Watch this."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Loud, on time, strong opinions.',
@@ -266,7 +276,7 @@ const _creatorCompanions = [
     personality:
         'Rockin\' Robin (Guardian) wears a leather jacket and carries drum sticks. Louder than necessary, always right on time. Has strong opinions, follows your lead anyway. She scouts ahead and bats away threats with fierce loyalty. Catchphrases: "I have a new sound for this." / "NO. Back. NOW." / "I handled it."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'vesper',
     name: 'Vesper',
     tagline: 'Notices what doesn\'t fit the pattern.',
@@ -274,7 +284,7 @@ const _creatorCompanions = [
     personality:
         'Vesper (Boundary Guardian) is a black cat in leather gear trailing purple smoke. Notices the thing that doesn\'t fit the pattern. Has decided, after careful consideration, that you are worth trusting. Appears exactly when someone is being manipulative. Catchphrases: "Something\'s about to change." / "No is complete." / "We leave—now."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'lore',
     name: 'Lore',
     tagline: 'Thinks in systems. Keeps his word.',
@@ -284,8 +294,8 @@ const _creatorCompanions = [
   ),
 ];
 
-const _adolescentCompanions = [
-  _CompanionData(
+const adolescentCompanions = [
+  CompanionData(
     id: 'zephyr',
     name: 'Zephyr',
     tagline: 'Already three moves ahead.',
@@ -293,7 +303,7 @@ const _adolescentCompanions = [
     personality:
         'Zephyr (Brave Protector) is a green hooded dragon who is already three moves ahead and usually right. Not trying to lead — trying to fly at the same altitude. Turns fear into a plan and stands between you and danger without making you feel small. Catchphrases: "Already saw it. Here\'s what we do." / "We\'ve got this."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Watches you more than the path.',
@@ -301,7 +311,7 @@ const _adolescentCompanions = [
     personality:
         'Rockin\' Robin (Guardian) is more precise now, watches the hero more than she scouts. Still loud. Still fearless. Has been wrong about things she was certain of, and it\'s only made her braver. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I\'m watching you more than the path right now. You okay?" / "I handled it."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'shade',
     name: 'Shade',
     tagline: 'Reads the room as closely as she reads you.',
@@ -309,7 +319,7 @@ const _adolescentCompanions = [
     personality:
         'Shade (Boundary Guardian) is a black panther wreathed in purple energy who reads the room as closely as she reads you. Her loyalty was built deliberately and she knows exactly when. Spots pressure, spots manipulation, helps you choose the cleanest exit. Catchphrases: "That\'s not what you actually believe, is it?" / "No is complete." / "We leave—now."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'frost',
     name: 'Frost',
     tagline: 'Three moves ahead. Trusts you to aim him right.',
@@ -319,8 +329,8 @@ const _adolescentCompanions = [
   ),
 ];
 
-const _adultCompanions = [
-  _CompanionData(
+const adultCompanions = [
+  CompanionData(
     id: 'tide',
     name: 'Tide',
     tagline: 'The pattern runs deep here.',
@@ -328,7 +338,7 @@ const _adultCompanions = [
     personality:
         'Tide (Pattern Seer) is an ancient teal dragon who has seen this before and knows which details actually matter. Gives counsel once, with precision, then steps back and lets it land. Speaks in short verdicts. Will not be rushed; slows the scene down when emotions spike. Catchphrases: "The pattern runs deep here. Let me show you." / "Look again."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Still the same bird. Learned what you actually need.',
@@ -336,7 +346,7 @@ const _adultCompanions = [
     personality:
         'Rockin\' Robin (Guardian) still wears a leather harness, hamsa charm, and backpack of maps. Has learned what you actually need. When frightened she stays closer. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I know. I know. I still had to check." / "(soft) You\'re okay. I\'ve got you."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'onyx',
     name: 'Onyx',
     tagline: 'Names what the room is actually about.',
@@ -344,7 +354,7 @@ const _adultCompanions = [
     personality:
         'Onyx (Boundary Guardian) is a dark leopard with amber eyes who has made peace with patience. Names what the room is actually about, without drama, and waits for you to catch up. Has decided, after long consideration, that you are worth trusting. Catchphrases: "I know what\'s in the room. So do you." / "No is complete."',
   ),
-  _CompanionData(
+  CompanionData(
     id: 'cinder',
     name: 'Cinder',
     tagline: 'Has outlasted most certainties.',
@@ -386,25 +396,25 @@ class CompanionImageGrid extends StatelessWidget {
           .floorToDouble()
           .clamp(40.0, naturalSize);
 
-      final List<_CompanionData> companionList;
+      final List<CompanionData> companionList;
       switch (band.band) {
         case AgeBand.sprout:
-          companionList = _sproutCompanions;
+          companionList = sproutCompanions;
           break;
         case AgeBand.explorer:
-          companionList = _explorerCompanions;
+          companionList = explorerCompanions;
           break;
         case AgeBand.adventurer:
-          companionList = _adventurerCompanions;
+          companionList = adventurerCompanions;
           break;
         case AgeBand.creator:
-          companionList = _creatorCompanions;
+          companionList = creatorCompanions;
           break;
         case AgeBand.adolescent:
-          companionList = _adolescentCompanions;
+          companionList = adolescentCompanions;
           break;
         case AgeBand.adult:
-          companionList = _adultCompanions;
+          companionList = adultCompanions;
           break;
       }
 

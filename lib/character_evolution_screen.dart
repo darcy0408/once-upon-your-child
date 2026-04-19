@@ -9,6 +9,7 @@ import 'family_relationship_stories.dart';
 import 'conflict_resolution_stories.dart';
 import 'coping_strategy_library.dart';
 import 'therapeutic_models.dart';
+import 'emotion_recognition_game.dart';
 
 class CharacterEvolutionScreen extends StatefulWidget {
   final Character character;
