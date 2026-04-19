@@ -70,6 +70,7 @@ To exercise these rights or to request deletion of your child's data, contact us
 Story Weaver
 2816 Orchard Ave
 Grand Junction, CO 81501
+Phone: (970) 640-2011
 Email: onceuponyourchild@gmail.com
 ''',
             ),

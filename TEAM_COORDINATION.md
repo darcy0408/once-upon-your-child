@@ -1824,11 +1824,11 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 
 ### Phase 4 — Compliance & Legal (Required Before Public Launch)
 
-| # | Issue | Action |
-|---|-------|--------|
-| 25 | Privacy policy | Add physical postal address and phone number (COPPA requirement) |
-| 26 | `lib/screens/parental_consent_screen.dart` | Photo consent toggle defaults ON → change to OFF; parent must explicitly opt in |
-| 27 | Consent form | Confirm email field is NOT pre-filled with PII in production builds; guard with `kDebugMode` |
+| # | Issue | Action | Status |
+|---|-------|--------|--------|
+| 25 | Privacy policy | Add physical postal address and phone number (COPPA requirement) | ✅ Phone (970) 640-2011 added to `privacy_policy_screen.dart`; postal address already present |
+| 26 | `parental_consent_service.dart` | Photo consent toggle defaults ON → change to OFF; parent must explicitly opt in | ✅ `getAllowPhotoAvatar()` and `recordConsent()` both default to `false` |
+| 27 | Consent form | Confirm email field is NOT pre-filled with PII in production builds | ✅ Verified: no pre-fill exists — email field starts empty, no getter retrieves stored email |
 
 ### Phase 5 — P2 Polish (partial ✅ — 2026-03-28)
 

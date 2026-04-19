@@ -21,7 +21,7 @@ class ParentalConsentService {
 
   Future<bool> getAllowPhotoAvatar() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyAllowPhotoAvatar) ?? true;
+    return prefs.getBool(_keyAllowPhotoAvatar) ?? false;
   }
 
   Future<void> setAllowPhotoAvatar(bool allow) async {
@@ -69,7 +69,7 @@ class ParentalConsentService {
     required int age,
     String? parentEmail,
     String method = 'email_verified',
-    bool allowPhotoAvatar = true,
+    bool allowPhotoAvatar = false,
   }) async {
     final recordedAt = DateTime.now().toIso8601String();
     final prefs = await SharedPreferences.getInstance();
