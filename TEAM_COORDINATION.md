@@ -1,5 +1,20 @@
 # Team Coordination
 
+## 2026-04-19e — SafeAssetImage Migration (Claude Opus 4.7 + Sonnet 4.6)
+
+**Goal:** Harden all asset image loading across the app — missing assets previously caused layout breaks and uncaught exceptions.
+
+### What changed
+- **Extended `lib/widgets/safe_asset_image.dart`** to support `alignment` (default `Alignment.center`), `filterQuality` (default `FilterQuality.medium`), and `frameBuilder` — making it a true drop-in for every `Image.asset` call pattern in the codebase.
+- **Migrated 50 `Image.asset` call sites** across 22 files to `SafeAssetImage`. All `errorBuilder:` lambdas converted to `placeholder:`. Nested fallback chains (e.g. `feelings_cloud_picker.dart`, `character_preview.dart`, `character_library_screen.dart`) preserved as nested `SafeAssetImage(placeholder: SafeAssetImage(...))`.
+- **Intentional holdouts (2 calls)** in `lib/screens/big_feelings_flow_screen.dart:1450/1461` — their `errorBuilder` calls `setState(() => _index++)` to cycle through fallback asset paths; this is imperative state mutation that `placeholder:` cannot replicate. Left as raw `Image.asset`.
+- `flutter analyze` clean after migration (0 errors).
+
+### Files touched
+`safe_asset_image.dart`, `companion_selector.dart`, `emotion_recognition_game.dart`, `custom_avatar_screen.dart`, `main_story.dart`, `feelings_wheel_screen.dart`, `quick_story_screen.dart`, `archetype_card.dart`, `avatar_tweak_panel.dart`, `image_make_magic_button.dart`, `image_crystal_formation.dart`, `adventurer_unlock_celebration.dart`, `image_continue_button.dart`, `feelings_cloud_picker.dart`, `image_mode_orb.dart`, `magical_loading_view.dart`, `magic_orb.dart`, `image_progress_orb.dart`, `character_preview.dart`, `mood_lantern_selector.dart`, `ui/widgets/magical_avatar.dart`, `screens/splash_screen.dart`, `screens/character_library_screen.dart`, `screens/midjourney_avatar_picker_screen.dart`, `screens/wizard_steps/companion_selector_step.dart`, `screens/wizard_steps/feeling_selection_step.dart`, `screens/wizard_steps/magic_review_step.dart`, `screens/wizard_steps/hero_creator_step.dart`, `widgets/hero_creator/companion_widgets.dart`, `widgets/hero_creator/scene_widgets.dart`, `widgets/hero_creator/hero_input_widgets.dart`
+
+---
+
 ## 2026-04-19d — TTS Pause Polish + Parent Controls Character Creation Link (Claude Sonnet 4.6)
 
 **Goal:** Two small UX fixes raised during manual testing.
