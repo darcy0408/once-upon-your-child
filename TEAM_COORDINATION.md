@@ -1,5 +1,26 @@
 # Team Coordination
 
+## 2026-04-19g — hero_creator extraction continued + band avatar loading views (Claude Sonnet 4.6)
+
+**Goal:** Commit stale uncommitted work — further extraction of `hero_creator_step.dart` and new band-specific avatar loading animations.
+
+### What changed
+- **`hero_creator_creative_brief.dart`** (NEW) — adult/mature Creative Brief wizard page extracted from `hero_creator_step.dart` (~1600 lines removed from monolith)
+- **`avatar_generating_view.dart`** (NEW) — shared avatar-generating spinner extracted from `custom_avatar_screen.dart`
+- **`widgets/avatar_loading_bands/`** (NEW) — 6 band-specific loading animations while avatar is generating:
+  - `sprout_egg_hatch.dart`, `explorer_constellation.dart`, `adventurer_treasure_map.dart`
+  - `creator_digital_canvas.dart`, `adolescent_holographic_portal.dart`, `adult_ink_wash.dart`
+- **5 new archetype images** — adolescent boy (animal whisperer, lightning runner, master creator) + creator girl (animal whisperer, master creator)
+- **`life_quest_data.dart`** — removed 5 undefined Explorer quest stubs (`questThreeCrowd`, `questBrokenThing`, `questNotFair`, `questSleepover`, `questMyTurnTalk`) from `allLifeQuests`; left as TODO comment. Quest content not yet written.
+
+### Deferred
+- 5 Explorer Life Quests (ages 6–8) — stubs exist in `allLifeQuests` as a TODO comment. Each quest needs ~100–200 lines of CYOA content authored before being re-added.
+
+### Commit
+`97796ba` — feat(hero-creator): extract creative brief + band avatar loading views
+
+---
+
 ## 2026-04-19f — Companion Showcase Fix + Compile Error Cleanup (Claude Sonnet 4.6)
 
 **Goal:** Resolve BUG-P6-01 (adult companion images 404 in brief wizard) and fix a cascade of compile errors from the incomplete hero_creator_step extraction.
