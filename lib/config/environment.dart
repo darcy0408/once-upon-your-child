@@ -15,10 +15,6 @@ class Environment {
   static String get bannerLabel => FlavorConfig.instance.bannerLabel;
   static Color get bannerColor => FlavorConfig.instance.bannerColor;
   static Color get primaryColor => FlavorConfig.instance.primaryColor;
-  static String? get geminiApiKey =>
-      FlavorConfig.instance.geminiApiKey.isEmpty
-          ? null
-          : FlavorConfig.instance.geminiApiKey;
   static String get sentryDsn => FlavorConfig.instance.sentryDsn;
 
   // Legacy helpers for explicit endpoints.

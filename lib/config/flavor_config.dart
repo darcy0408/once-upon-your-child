@@ -15,7 +15,6 @@ class FlavorConfig {
   final Color primaryColor;
   final String bannerLabel;
   final Color bannerColor;
-  final String geminiApiKey;
   final String sentryDsn;
 
   bool get showBanner => bannerLabel.isNotEmpty;
@@ -27,7 +26,6 @@ class FlavorConfig {
     required this.primaryColor,
     required this.bannerLabel,
     required this.bannerColor,
-    required this.geminiApiKey,
     required this.sentryDsn,
   });
 
@@ -59,10 +57,6 @@ class FlavorConfig {
           primaryColor: Colors.deepPurple,
           bannerLabel: '',
           bannerColor: Colors.transparent,
-          geminiApiKey: const String.fromEnvironment(
-            'PROD_GEMINI_API_KEY',
-            defaultValue: '',
-          ),
           sentryDsn: const String.fromEnvironment(
             'SENTRY_DSN',
             defaultValue:
@@ -82,10 +76,6 @@ class FlavorConfig {
           primaryColor: Colors.orange,
           bannerLabel: 'STAGING',
           bannerColor: Colors.deepOrange,
-          geminiApiKey: const String.fromEnvironment(
-            'STAGING_GEMINI_API_KEY',
-            defaultValue: '',
-          ),
           sentryDsn: const String.fromEnvironment(
             'SENTRY_DSN',
             defaultValue:
@@ -108,10 +98,6 @@ class FlavorConfig {
           primaryColor: Colors.green.shade700,
           bannerLabel: 'DEV',
           bannerColor: Colors.green.shade800,
-          geminiApiKey: const String.fromEnvironment(
-            'DEV_GEMINI_API_KEY',
-            defaultValue: '',
-          ),
           sentryDsn: const String.fromEnvironment(
             'SENTRY_DSN',
             defaultValue:

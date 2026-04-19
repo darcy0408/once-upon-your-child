@@ -29,6 +29,34 @@
 
 ---
 
+## 2026-04-18h — Security Hardening: Remove Gemini API Key from Flutter Client (Claude Sonnet 4.6)
+
+**Goal:** Phase 2 fix 2b — eliminate the `geminiApiKey` field from Flutter config so an API key can never be compiled into the binary.
+
+### Finding
+`FlavorConfig` had `geminiApiKey` plumbed via `String.fromEnvironment('PROD_GEMINI_API_KEY')` (and staging/dev variants). The key is never consumed anywhere in the app — `Environment.geminiApiKey` has zero callers outside the config layer. It was dead code that created a build-time key injection path.
+
+### Fix
+- Removed `geminiApiKey` field from `FlavorConfig._internal` constructor and all three flavor cases
+- Removed `Environment.geminiApiKey` getter
+- All Gemini calls already go through the Flask backend — no client-side path exists
+
+### Manual Step Required
+`backend/requirements.txt` has version-pinned but not hash-pinned dependencies. To complete fix 2g (supply chain hardening), run locally:
+```bash
+pip install pip-tools
+pip-compile --generate-hashes backend/requirements.in > backend/requirements.txt
+```
+Then commit the result. Consider adding `pip-audit` to CI.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/config/flavor_config.dart` | Removed `geminiApiKey` field, constructor param, and all three flavor assignments |
+| `lib/config/environment.dart` | Removed `geminiApiKey` getter |
+
+---
+
 ## 2026-04-18f — Life Quests Six Hats Audit + Age-Gate Fixes (Claude Sonnet 4.6)
 
 **Goal:** Playwright-driven Six Hats UX audit across all 6 age bands (Sprout→Adult) for the Life Quests feature. Fix all identified issues.
