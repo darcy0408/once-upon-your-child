@@ -12,7 +12,7 @@ import 'safe_asset_image.dart';
 /// - Tap to auto-fill character attributes
 /// - Accessible with screen reader support
 /// - Parent hover shows description (for parents, not kids)
-class ArchetypeCard extends StatelessWidget {
+class ArchetypeCard extends StatefulWidget {
   final String? icon; // Optional fallback emoji
   final String? imagePath; // Path to archetype image
   final String name;
@@ -35,10 +35,24 @@ class ArchetypeCard extends StatelessWidget {
   });
 
   @override
+  State<ArchetypeCard> createState() => _ArchetypeCardState();
+}
+
+class _ArchetypeCardState extends State<ArchetypeCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final bandTheme = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isYoung = bandTheme.band == AgeBand.sprout || bandTheme.band == AgeBand.explorer;
     final cardWidth = isYoung ? 200.0 : 160.0;
+    final String? icon = widget.icon;
+    final String? imagePath = widget.imagePath;
+    final String name = widget.name;
+    final String description = widget.description;
+    final String specialAbility = widget.specialAbility;
+    final List<String> traits = widget.traits;
+    final bool isSelected = widget.isSelected;
 
     return Semantics(
       button: true,
@@ -48,11 +62,15 @@ class ArchetypeCard extends StatelessWidget {
       child: Tooltip(
         message: description, // Shows on hover for parents
         waitDuration: const Duration(milliseconds: 500),
-        child: InkWell(
-          onTap: onUseTemplate,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            widget.onUseTemplate();
+          },
+          onTapCancel: () => setState(() => _isPressed = false),
           child: AnimatedScale(
-            scale: isSelected ? 1.03 : 1.0,
+            scale: _isPressed ? 0.94 : (isSelected ? 1.03 : 1.0),
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutBack,
             child: AnimatedContainer(
@@ -95,6 +113,15 @@ class ArchetypeCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
+                if (_isPressed)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                  ),
                 if (isSelected)
                   Positioned.fill(
                     child: Opacity(
@@ -119,7 +146,7 @@ class ArchetypeCard extends StatelessWidget {
                       // Image or Icon/Emoji fallback
                       if (imagePath != null)
                         SafeAssetImage(
-                          imagePath!,
+                          imagePath,
                           width: isYoung ? 140 : 116,
                           height: isYoung ? 140 : 116,
                           fit: BoxFit.contain,
