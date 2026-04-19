@@ -257,6 +257,8 @@ def _auth_session_get(entity, key):
             email="story-load-audit@example.com",
             role="user",
             subscription_tier="premium",
+            is_under_13=False,
+            declared_age=None,
         )
     return None
 

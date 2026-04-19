@@ -1,6 +1,6 @@
 # Story Load Audit
 
-- Generated (UTC): `2026-03-30T13:03:57.281677+00:00`
+- Generated (UTC): `2026-04-19T17:10:57.402788+00:00`
 - Target endpoint: `/generate-story`
 
 ## Scenarios
@@ -9,72 +9,72 @@
 - Concurrency: `6`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 181.18, 'p50': 182.4, 'p95': 207.29, 'p99': 207.53, 'max': 207.58, 'mean': 188.12}`
+- Latency ms: `{'min': 181.73, 'p50': 183.93, 'p95': 231.95, 'p99': 234.75, 'max': 235.5, 'mean': 194.99}`
 
 ### timeout_async_fallback
 - Requests: `16`
 - Concurrency: `4`
 - Status counts: `{'202': 16}`
 - Errors: `0`
-- Latency ms: `{'min': 2.95, 'p50': 4.16, 'p95': 6.99, 'p99': 8.1, 'max': 8.38, 'mean': 4.66}`
+- Latency ms: `{'min': 2.02, 'p50': 5.76, 'p95': 11.25, 'p99': 12.76, 'max': 13.14, 'mean': 6.2}`
 
 ### quota_error_429
 - Requests: `12`
 - Concurrency: `4`
 - Status counts: `{'429': 12}`
 - Errors: `12`
-- Latency ms: `{'min': 19.23, 'p50': 30.17, 'p95': 44.27, 'p99': 48.75, 'max': 49.87, 'mean': 31.69}`
-- Sample errors: `[{'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Geminin API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Geminin API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Geminin API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Geminin API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Geminin API quota exceeded. Please try again later.'}]`
+- Latency ms: `{'min': 37.9, 'p50': 62.02, 'p95': 78.83, 'p99': 84.48, 'max': 85.89, 'mean': 60.08}`
+- Sample errors: `[{'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Gemini API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Gemini API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Gemini API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Gemini API quota exceeded. Please try again later.'}, {'status_code': 429, 'error': 'QUOTA_EXCEEDED', 'message': 'Google Gemini API quota exceeded. Please try again later.'}]`
 
 ### concurrency_ramp_c1
 - Requests: `24`
 - Concurrency: `1`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 181.22, 'p50': 181.66, 'p95': 182.27, 'p99': 185.54, 'max': 186.52, 'mean': 181.9}`
+- Latency ms: `{'min': 182.32, 'p50': 182.98, 'p95': 183.95, 'p99': 184.25, 'max': 184.33, 'mean': 183.11}`
 
 ### concurrency_ramp_c4
 - Requests: `24`
 - Concurrency: `4`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 181.15, 'p50': 181.57, 'p95': 182.27, 'p99': 182.41, 'max': 182.44, 'mean': 181.63}`
+- Latency ms: `{'min': 182.06, 'p50': 182.83, 'p95': 186.09, 'p99': 186.91, 'max': 187.09, 'mean': 183.2}`
 
 ### concurrency_ramp_c8
 - Requests: `24`
 - Concurrency: `8`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 180.88, 'p50': 181.85, 'p95': 182.71, 'p99': 182.76, 'max': 182.77, 'mean': 181.87}`
+- Latency ms: `{'min': 181.83, 'p50': 182.79, 'p95': 188.14, 'p99': 192.31, 'max': 193.48, 'mean': 184.05}`
 
 ### concurrency_ramp_c16
 - Requests: `24`
 - Concurrency: `16`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 180.84, 'p50': 181.51, 'p95': 182.21, 'p99': 182.97, 'max': 183.18, 'mean': 181.53}`
+- Latency ms: `{'min': 181.93, 'p50': 183.87, 'p95': 195.65, 'p99': 197.92, 'max': 198.55, 'mean': 186.22}`
 
 ### concurrency_ramp_c32
 - Requests: `24`
 - Concurrency: `32`
 - Status counts: `{'200': 24}`
 - Errors: `0`
-- Latency ms: `{'min': 181.32, 'p50': 181.86, 'p95': 182.41, 'p99': 182.55, 'max': 182.59, 'mean': 181.84}`
+- Latency ms: `{'min': 182.33, 'p50': 183.9, 'p95': 189.67, 'p99': 193.01, 'max': 193.95, 'mean': 184.62}`
 
 ## Concurrency Ramp
 
 | concurrency | p95_ms | mean_ms | errors |
 | --- | ---: | ---: | ---: |
-| 1 | 182.27 | 181.9 | 0 |
-| 4 | 182.27 | 181.63 | 0 |
-| 8 | 182.71 | 181.87 | 0 |
-| 16 | 182.21 | 181.53 | 0 |
-| 32 | 182.41 | 181.84 | 0 |
+| 1 | 183.95 | 183.11 | 0 |
+| 4 | 186.09 | 183.2 | 0 |
+| 8 | 188.14 | 184.05 | 0 |
+| 16 | 195.65 | 186.22 | 0 |
+| 32 | 189.67 | 184.62 | 0 |
 
 ## Fallback Switchover
-- `fallback_switchover: total=2558ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static`
+- `fallback_switchover: total=2268ms provider_sequence=gemini(fail:401)->openrouter(fail:no_key)->static`
 
 ## Reset Check
 - Initial statuses: `[200, 200, 429]`
 - After wait status: `200`
-- First response headers: `{'X-RateLimit-Limit': '2', 'X-RateLimit-Remaining': '1', 'X-RateLimit-Reset': '1774875849'}`
+- First response headers: `{'X-RateLimit-Limit': '2', 'X-RateLimit-Remaining': '1', 'X-RateLimit-Reset': '1776618669'}`
