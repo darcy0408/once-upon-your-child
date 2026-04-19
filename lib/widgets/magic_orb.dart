@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../utils/motion_utils.dart';
 import 'magical_float.dart';
+import 'safe_asset_image.dart';
 
 /// A magical orb widget that displays a scenario image with pulsing glow and sparkles.
 /// 
@@ -222,10 +223,10 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
                   children: [
                     // Scenario Background (Only if path provided)
                     if (widget.imagePath.isNotEmpty)
-                      Image.asset(
+                      SafeAssetImage(
                         widget.imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+                        placeholder: Container(
                           color: AppColors.primary.withValues(alpha: 0.3),
                           child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
                         ),

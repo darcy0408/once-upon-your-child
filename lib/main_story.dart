@@ -58,6 +58,7 @@ import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/life_quest_screen.dart';
 import 'screens/adult_meditation_screen.dart';
+import 'widgets/safe_asset_image.dart';
 // welcome_screen and wizard_story_screen imported at top of file
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -1570,10 +1571,10 @@ class _StoryScreenState extends State<StoryScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Image.asset(
+                      child: SafeAssetImage(
                         companion['image']!,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.pets,
+                        placeholder: const Icon(Icons.pets,
                             size: 40, color: Colors.deepPurple),
                       ),
                     ),
@@ -2334,7 +2335,7 @@ class _AvatarImage extends StatelessWidget {
     if (generated != null && generated.imageBase64.isNotEmpty) {
       final data = generated.imageBase64;
       if (data.startsWith('assets/')) {
-        return Image.asset(data, fit: BoxFit.cover);
+        return SafeAssetImage(data, fit: BoxFit.cover);
       }
       if (data.startsWith('http')) {
         return Image.network(data,

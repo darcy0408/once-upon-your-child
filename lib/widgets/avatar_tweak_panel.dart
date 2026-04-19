@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service_manager.dart';
+import 'safe_asset_image.dart';
 
 /// Panel shown after a gallery avatar is selected, letting premium users
 /// optionally change the hair length or eye colour before confirming.
@@ -76,7 +77,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
   Widget _buildOriginalAvatar({double size = 140}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(size / 2),
-      child: Image.asset(
+      child: SafeAssetImage(
         widget.assetPath,
         width: size,
         height: size,

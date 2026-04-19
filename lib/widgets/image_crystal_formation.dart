@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
+import 'safe_asset_image.dart';
 
 /// Code-rendered crystal formation toggle with transparent-friendly visuals.
 class ImageCrystalFormation extends StatefulWidget {
@@ -157,7 +158,7 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
                                     ),
                                   ],
                           ),
-                          child: Image.asset(
+                          child: SafeAssetImage(
                             _getImagePath(widget.type),
                             fit: BoxFit.contain,
                             filterQuality: FilterQuality.high,

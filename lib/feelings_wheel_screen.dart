@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'feelings_wheel_data.dart';
 import 'sunset_jungle_theme.dart';
+import 'widgets/safe_asset_image.dart';
 
 class FeelingsWheelScreen extends StatefulWidget {
   final SelectedFeeling? currentFeeling;
@@ -162,10 +163,10 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(
+                      SafeAssetImage(
                         'assets/images/FeelingsWheel.png',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+                        placeholder: const SizedBox.shrink(),
                       ),
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
@@ -194,7 +195,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  Image.asset(
+                                  SafeAssetImage(
                                     'assets/images/FeelingsWheel.png',
                                     fit: BoxFit.contain,
                                   ),

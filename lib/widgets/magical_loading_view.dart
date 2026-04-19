@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import '../utils/motion_utils.dart';
+import 'safe_asset_image.dart';
 
 /// A magical loading view with a central weaving "loom" animation,
 /// orbiting sparkles, rotating flavor messages, and layered aura glows.
@@ -755,9 +756,9 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
 
   Widget _loadCompanionImage(String path) {
     if (path.startsWith('assets/')) {
-      return Image.asset(path, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)));
+      return SafeAssetImage(path,
+          fit: BoxFit.cover,
+          placeholder: const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)));
     }
     if (path.startsWith('http')) {
       return Image.network(path, fit: BoxFit.cover,

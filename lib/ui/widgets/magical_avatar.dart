@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:math' as math;
+import '../../widgets/safe_asset_image.dart';
 
 /// Magical avatar widget with glow effects and optional particles
 ///
@@ -136,7 +137,7 @@ class _MagicalAvatarState extends State<MagicalAvatar>
   /// Build avatar content (SVG, Asset, or placeholder)
   Widget _buildAvatarContent() {
     if (widget.assetPath != null && widget.assetPath!.isNotEmpty) {
-      return Image.asset(
+      return SafeAssetImage(
         widget.assetPath!,
         fit: BoxFit.cover,
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
@@ -157,10 +158,7 @@ class _MagicalAvatarState extends State<MagicalAvatar>
           }
           return child;
         },
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('MagicalAvatar: Failed to load asset: $error');
-          return widget.placeholder ?? _buildDefaultPlaceholder();
-        },
+        placeholder: widget.placeholder ?? _buildDefaultPlaceholder(),
       );
     }
 

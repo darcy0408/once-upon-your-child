@@ -21,6 +21,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../feelings_wheel_data.dart';
 import '../theme/age_band_asset_resolver.dart';
 import '../theme/age_band_theme.dart';
+import 'safe_asset_image.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public result type
@@ -661,26 +662,24 @@ class _FaceImage extends StatelessWidget {
     // Try band-specific artwork first; fall back to global flat library; then emoji.
     if (band != null) {
       final bandPath = AgeBandAssetResolver.feelingPath(band, id);
-      return Image.asset(
+      return SafeAssetImage(
         bandPath,
         height: height,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Image.asset(
+        placeholder: SafeAssetImage(
           flatPath,
           height: height,
           fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              Text(emoji, style: TextStyle(fontSize: height * 0.65)),
+          placeholder: Text(emoji, style: TextStyle(fontSize: height * 0.65)),
         ),
       );
     }
 
-    return Image.asset(
+    return SafeAssetImage(
       flatPath,
       height: height,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) =>
-          Text(emoji, style: TextStyle(fontSize: height * 0.65)),
+      placeholder: Text(emoji, style: TextStyle(fontSize: height * 0.65)),
     );
   }
 }

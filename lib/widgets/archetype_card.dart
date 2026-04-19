@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import 'safe_asset_image.dart';
 
 /// ArchetypeCard - Displays character archetype templates
 ///
@@ -117,12 +118,12 @@ class ArchetypeCard extends StatelessWidget {
                     children: [
                       // Image or Icon/Emoji fallback
                       if (imagePath != null)
-                        Image.asset(
+                        SafeAssetImage(
                           imagePath!,
                           width: isYoung ? 140 : 116,
                           height: isYoung ? 140 : 116,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => Text(
+                          placeholder: Text(
                             icon ?? '✨',
                             style: const TextStyle(fontSize: 64),
                           ),
@@ -534,13 +535,12 @@ class _WheelItem extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: archetype.imagePath != null
-                ? Image.asset(
+                ? SafeAssetImage(
                     archetype.imagePath!,
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        _ArchetypeIconFallback(icon: archetype.icon),
+                    placeholder: _ArchetypeIconFallback(icon: archetype.icon),
                   )
                 : _ArchetypeIconFallback(icon: archetype.icon),
           ),

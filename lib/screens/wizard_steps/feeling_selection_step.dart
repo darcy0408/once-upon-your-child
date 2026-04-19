@@ -18,6 +18,7 @@ import '../../widgets/age_band_badge.dart';
 import '../../widgets/parallax_tilt_card.dart';
 import '../../services/onboarding_service.dart';
 import '../big_feelings_flow_screen.dart';
+import '../../widgets/safe_asset_image.dart';
 
 const double _settingCardWidth = 220;
 
@@ -1377,12 +1378,12 @@ class _ScenarioCardWidget extends StatelessWidget {
         : 'assets/$illustrationPath';
 
     Widget imageWidget(double? width, double? height) {
-      final sceneImage = Image.asset(
+      final sceneImage = SafeAssetImage(
         resolvedPath,
         width: width,
         height: height,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
+        placeholder: Container(
           width: width,
           height: height,
           decoration: BoxDecoration(

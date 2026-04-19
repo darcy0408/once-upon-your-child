@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'emotions_learning_system.dart';
 import 'therapeutic_models.dart';
+import 'widgets/safe_asset_image.dart';
 
 /// Game configuration for emotion recognition training
 class EmotionRecognitionConfig {
@@ -476,10 +477,10 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(13),
-                        child: Image.asset(
+                        child: SafeAssetImage(
                           currentQuestion.imagePath,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
+                          placeholder: const Icon(
                             Icons.face,
                             size: 80,
                             color: Colors.grey,

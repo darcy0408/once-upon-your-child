@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'safe_asset_image.dart';
 
 const _kAdventurerUnlockSeenKey = 'adventurer_band_unlock_seen';
 
@@ -170,10 +171,10 @@ class _ScenarioUnlockCard extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(9),
-              child: Image.asset(
+              child: SafeAssetImage(
                 scenario.imagePath,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(
+                placeholder: Icon(
                   scenario.icon,
                   color: const Color(0xFF80CBC4),
                   size: 28,

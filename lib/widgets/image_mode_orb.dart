@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
+import 'safe_asset_image.dart';
 
 /// Illustrated rectangular scene-thumbnail card for story mode selection.
 /// Each card shows the mode illustration over a per-mode gradient, with the
@@ -148,7 +149,7 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                         child: AnimatedScale(
                           duration: const Duration(milliseconds: 200),
                           scale: widget.isActive ? 1.05 : 1.0,
-                          child: Image.asset(
+                          child: SafeAssetImage(
                             _getAssetPath(),
                             fit: BoxFit.contain,
                             filterQuality: FilterQuality.high,

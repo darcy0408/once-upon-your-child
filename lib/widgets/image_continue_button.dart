@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import 'safe_asset_image.dart';
 
 /// Image-based Continue Button using the Codex-generated PNG asset.
 /// Mirrors the pulsing/glow behaviour of [ImageMakeMagicButton].
@@ -134,13 +135,13 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
                 // Button image
                 Opacity(
                   opacity: widget.isEnabled ? 1.0 : 0.45,
-                  child: Image.asset(
+                  child: SafeAssetImage(
                     _isPressed ? pressedAsset : normalAsset,
                     width: buttonWidth,
                     height: 72,
                     fit: BoxFit.contain,
                     filterQuality: FilterQuality.high,
-                    errorBuilder: (_, __, ___) => _FallbackContinueButton(
+                    placeholder: _FallbackContinueButton(
                       width: buttonWidth,
                       isEnabled: widget.isEnabled,
                     ),

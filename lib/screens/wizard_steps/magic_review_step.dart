@@ -35,6 +35,7 @@ import '../../widgets/mission_ready_button.dart';
 import '../../utils/motion_utils.dart';
 import '../../services/onboarding_service.dart';
 import '../bedtime_wizard_screen.dart';
+import '../../widgets/safe_asset_image.dart';
 
 /// Step 4: Magic Review & Launch
 /// Updated with audio prompts and consistent magical typography.
@@ -798,12 +799,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       maxScale: 1.04,
                       period: const Duration(milliseconds: 3200),
                       glowColor: band.primaryLight,
-                      child: Image.asset(
+                      child: SafeAssetImage(
                         companionImg,
                         width: 80,
                         height: 80,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        placeholder: const SizedBox.shrink(),
                       ),
                     ),
                   ],
@@ -1629,10 +1630,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         size: sideCircleSize,
                         auraColor: const Color(0xFFFFD9A6),
                         child: ClipOval(
-                            child: Image.asset(
+                            child: SafeAssetImage(
                           _scenarioImage,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          placeholder: Container(
                             color: const Color(0xFF3B1F6A),
                             child: const Icon(Icons.landscape,
                                 color: Colors.white54, size: 40),
@@ -1980,7 +1981,7 @@ class _HeroAvatar extends StatelessWidget {
     final data = generatedAvatar!.imageBase64;
     Widget img;
     if (data.startsWith('assets/')) {
-      img = Image.asset(data, fit: BoxFit.cover);
+      img = SafeAssetImage(data, fit: BoxFit.cover);
     } else if (data.startsWith('http')) {
       img = Image.network(data, fit: BoxFit.cover);
     } else {
@@ -2078,10 +2079,10 @@ class _CompanionAvatar extends StatelessWidget {
     if (companionImage!.startsWith('assets/')) {
       return ClipOval(
         clipBehavior: Clip.antiAlias,
-        child: Image.asset(
+        child: SafeAssetImage(
           companionImage!,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+          placeholder: const _GradientSphereFallback(
             child: Icon(Icons.pets, color: Colors.white, size: 48),
           ),
         ),

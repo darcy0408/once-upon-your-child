@@ -14,6 +14,7 @@ import 'services/api_service_manager.dart';
 import 'services/app_tts_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
+import 'widgets/safe_asset_image.dart';
 
 // ── Step definitions ─────────────────────────────────────────────────────────
 // sproutWelcome is only included in the step order for Sprout (3-5) band.
@@ -938,12 +939,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }) {
     final sel = _gender == value;
     final pressed = _pressedGender == value;
-    final imageWidget = Image.asset(
+    final imageWidget = SafeAssetImage(
       assetPath,
       width: w,
       height: h * 0.78,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => SizedBox(width: w, height: h * 0.78),
     );
     return GestureDetector(
       onTap: () {

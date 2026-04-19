@@ -11,6 +11,7 @@ import '../../theme/age_band_asset_resolver.dart';
 import '../../theme/age_band_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../../widgets/safe_asset_image.dart';
 
 /// Step 3: The Adventure Team Selector
 /// Updated with audio prompts and consistent typography for young children.
@@ -180,7 +181,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
           Companion(
             id: 'robin',
             emoji: '🐦',
-            name: 'Robin',
+            name: 'Rockin\' Robin',
             color: const Color(0xFFE53935),
             greeting: '*three sharp chirps* — wait. One long note. Safe to come.',
             description: 'Very low threshold for danger. Loud, fearless, sometimes wrong, never slower for it. Brings gifts when the danger clears.',
@@ -471,7 +472,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                               borderRadius: BorderRadius.circular(15),
                               child: Image.network(pickedPhoto!.path,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Image.asset(
+                                  errorBuilder: (_, __, ___) => SafeAssetImage(
                                       pickedPhoto!.path,
                                       fit: BoxFit.cover)),
                             )
@@ -1141,13 +1142,13 @@ class _CompanionCardState extends State<_CompanionCard> {
     if (widget.companion.character?.generatedAvatar != null) {
       final b64 = widget.companion.character!.generatedAvatar!.imageBase64;
       if (b64.startsWith('assets/')) {
-        return Image.asset(b64, height: 120, fit: BoxFit.cover);
+        return SafeAssetImage(b64, height: 120, fit: BoxFit.cover);
       }
       return Image.memory(base64Decode(b64.split(',').last),
           height: 120, fit: BoxFit.cover);
     }
     if (widget.companion.imagePath != null) {
-      return Image.asset(widget.companion.imagePath!,
+      return SafeAssetImage(widget.companion.imagePath!,
           height: 120, fit: BoxFit.cover);
     }
     return Container(

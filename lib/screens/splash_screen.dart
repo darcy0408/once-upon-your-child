@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/safe_asset_image.dart';
 
 /// Full-screen splash that fades in the "Once Upon YOUR Child" logo,
 /// holds it briefly, then fades out and calls [onComplete].
@@ -73,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
           );
         },
         child: Center(
-          child: Image.asset(
+          child: SafeAssetImage(
             'assets/images/splash_logo.png',
             width: 320,
             fit: BoxFit.contain,

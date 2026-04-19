@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../theme/age_band_theme.dart';
 import '../data/mood_lantern_data.dart';
 import '../feelings_wheel_data.dart';
+import 'safe_asset_image.dart';
 
 /// Callback type for lantern selection.
 typedef OnLanternSelected = void Function(SelectedFeeling feeling);
@@ -351,41 +352,37 @@ class _LanternWidget extends StatelessWidget {
                       AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
                         opacity: isSelected ? 1.0 : 0.85,
-                        child: Image.asset(
+                        child: SafeAssetImage(
                           lantern.imagePath,
                           width: size - 4,
                           height: size - 4,
                           fit: BoxFit.contain,
-                          // Don't use color filter - let PNG transparency work
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to colored circle with emoji
-                            return Container(
-                              width: size - 4,
-                              height: size - 4,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    vividColor.withValues(alpha: 0.95),
-                                    vividColor.withValues(alpha: 0.7),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: vividColor.withValues(alpha: 0.5),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
+                          placeholder: Container(
+                            width: size - 4,
+                            height: size - 4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  vividColor.withValues(alpha: 0.95),
+                                  vividColor.withValues(alpha: 0.7),
                                 ],
                               ),
-                              child: Center(
-                                child: Text(
-                                  lantern.emoji,
-                                  style: TextStyle(fontSize: size * 0.45), // Larger fallback emoji
+                              boxShadow: [
+                                BoxShadow(
+                                  color: vividColor.withValues(alpha: 0.5),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
                                 ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                lantern.emoji,
+                                style: TextStyle(fontSize: size * 0.45),
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
                       ),
                       // Selection ring

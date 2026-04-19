@@ -10,6 +10,7 @@ import '../config/environment.dart';
 import 'wizard_story_screen.dart';
 import 'character_editor_screen.dart';
 import 'chronicles_list_screen.dart';
+import '../widgets/safe_asset_image.dart';
 
 /// Character Library Screen
 ///
@@ -665,7 +666,7 @@ class _CharacterCard extends StatelessWidget {
       final isUrl = data.startsWith('http://') || data.startsWith('https://');
       final isAsset = data.startsWith('assets/');
       if (isAsset) {
-        return Image.asset(data, fit: BoxFit.cover);
+        return SafeAssetImage(data, fit: BoxFit.cover);
       }
       if (isUrl) {
         return Image.network(data, fit: BoxFit.cover);
@@ -689,13 +690,13 @@ class _CharacterCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return Image.asset(
+    return SafeAssetImage(
       'assets/images/character_placeholder.png',
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Image.asset(
+      placeholder: SafeAssetImage(
         'thePlaceholderImageBeforeCharacterGeneration.jpeg',
         fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Center(
+        placeholder: Center(
           child: Text(
             emoji,
             style: const TextStyle(fontSize: 40),

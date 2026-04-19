@@ -11,6 +11,7 @@ import 'subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'utils/paywall_gate.dart';
+import 'widgets/safe_asset_image.dart';
 import 'widgets/storybook_page.dart';
 
 class QuickStoryScreen extends StatefulWidget {
@@ -256,7 +257,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             fit: StackFit.expand,
             children: [
               // Background image
-              Image.asset(
+              SafeAssetImage(
                 theme['image']!,
                 fit: BoxFit.cover,
               ),

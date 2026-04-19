@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import '../utils/motion_utils.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import 'safe_asset_image.dart';
 
 /// Image-based Make Magic Button using transparent PNG asset.
 ///
@@ -251,25 +252,23 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                       // Button image
                       Opacity(
                         opacity: widget.isEnabled ? 1.0 : 0.4,
-                        child: Image.asset(
+                        child: SafeAssetImage(
                           _isPressed ? _assetPressed : _assetNormal,
                           width: buttonWidth,
                           height: buttonHeight,
                           fit: BoxFit.contain,
                           filterQuality: FilterQuality.high,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _FallbackButton(
-                              label: widget.label ??
-                                  (widget.ageBand == AgeBand.adventurer
-                                      ? 'START ADVENTURE'
-                                      : widget.ageBand == AgeBand.creator
-                                          ? 'CREATE STORY'
-                                          : 'MAKE MAGIC'),
-                              width: buttonWidth,
-                              isEnabled: widget.isEnabled,
-                              isPressed: _isPressed,
-                            );
-                          },
+                          placeholder: _FallbackButton(
+                            label: widget.label ??
+                                (widget.ageBand == AgeBand.adventurer
+                                    ? 'START ADVENTURE'
+                                    : widget.ageBand == AgeBand.creator
+                                        ? 'CREATE STORY'
+                                        : 'MAKE MAGIC'),
+                            width: buttonWidth,
+                            isEnabled: widget.isEnabled,
+                            isPressed: _isPressed,
+                          ),
                         ),
                       ),
 

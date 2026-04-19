@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:convert';
 import '../theme/app_theme.dart';
 import '../models/generated_avatar.dart';
+import 'safe_asset_image.dart';
 
 /// CharacterPreview - Large character display with magical sparkle circle
 ///
@@ -256,14 +257,12 @@ class _CharacterPreviewState extends State<CharacterPreview>
         ),
         child: ClipOval(
           child: isAsset
-              ? Image.asset(
+              ? SafeAssetImage(
                   imageData,
                   width: size,
                   height: size,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildPlaceholder(size);
-                  },
+                  placeholder: _buildPlaceholder(size),
                 )
               : isUrl
                   ? Image.network(
@@ -309,22 +308,18 @@ class _CharacterPreviewState extends State<CharacterPreview>
         child: Stack(
           children: [
             // The placeholder image
-            Image.asset(
+            SafeAssetImage(
               'assets/images/character_placeholder.png',
               width: size,
               height: size,
               fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (context, error, stackTrace) {
-                // Final fallback if even the placeholder asset is missing
-                return Image.asset(
-                  'thePlaceholderImageBeforeCharacterGeneration.jpeg',
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => _buildEmojiPlaceholder(size),
-                );
-              },
+              placeholder: SafeAssetImage(
+                'thePlaceholderImageBeforeCharacterGeneration.jpeg',
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholder: _buildEmojiPlaceholder(size),
+              ),
             ),
             // Soft gradient vignette
             Container(

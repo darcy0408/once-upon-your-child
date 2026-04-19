@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'magical_float.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import 'safe_asset_image.dart';
 
 /// Image-based Progress Orb using transparent PNG assets
 class ImageProgressOrb extends StatefulWidget {
@@ -105,23 +106,21 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
                 ],
               ),
               child: ClipOval(
-                child: Image.asset(
+                child: SafeAssetImage(
                   orbAsset,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Color(0xFFE5DAFF),
-                            Color(0xFF9E6CFF),
-                            Color(0xFF7C4DFF),
-                          ],
-                        ),
+                  placeholder: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Color(0xFFE5DAFF),
+                          Color(0xFF9E6CFF),
+                          Color(0xFF7C4DFF),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
             ),

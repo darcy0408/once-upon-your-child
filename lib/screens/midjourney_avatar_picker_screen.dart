@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/safe_asset_image.dart';
 
 /// Midjourney Avatar Picker Screen
 ///
@@ -341,15 +342,13 @@ class _MidjourneyAvatarPickerScreenState extends State<MidjourneyAvatarPickerScr
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
+              SafeAssetImage(
                 'assets/avatars/midjourney/${avatar.filename}',
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.person, size: 50),
-                  );
-                },
+                placeholder: Container(
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.person, size: 50),
+                ),
               ),
               if (isSelected)
                 Positioned(
