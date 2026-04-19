@@ -274,6 +274,7 @@ class CharacterArchetypes {
     youngChildName: 'Super Smart!',
     sproutImageId: 'quiz_whiz',
     bandImageId: 'clever_inventor',
+    genderedImageId: 'quiz_whiz',
     attributes: {
       'energy': 40,
       'sociability': 30,
@@ -297,6 +298,7 @@ class CharacterArchetypes {
     youngChildName: 'Art Maker!',
     sproutImageId: 'master_creator',
     bandImageId: 'gentle_dreamer',
+    genderedImageId: 'master_creator',
     attributes: {
       'energy': 60,
       'sociability': 50,
@@ -320,6 +322,7 @@ class CharacterArchetypes {
     youngChildName: 'Super Fast!',
     sproutImageId: 'lightning_runner',
     bandImageId: 'speedy_explorer',
+    genderedImageId: 'lightning_runner',
     attributes: {
       'energy': 95,
       'sociability': 75,
@@ -343,6 +346,7 @@ class CharacterArchetypes {
     youngChildName: 'Animal Friend!',
     sproutImageId: 'animal_whisperer',
     bandImageId: 'animal_whisperer',
+    genderedImageId: 'animal_whisperer',
     attributes: {
       'energy': 35,
       'sociability': 25,
@@ -381,6 +385,9 @@ class ArchetypeData {
   final String? youngChildName;
   final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
   final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
+  /// Base name for gendered variants: resolves to {band}/{genderedImageId}_{boy|girl}.png.
+  /// When set and a gender is provided, this takes priority over bandImageId.
+  final String? genderedImageId;
 
   const ArchetypeData({
     this.icon,
@@ -396,6 +403,7 @@ class ArchetypeData {
     this.youngChildName,
     this.sproutImageId,
     this.bandImageId,
+    this.genderedImageId,
   });
 
   String nameForAge(int age) {
@@ -411,7 +419,14 @@ class ArchetypeData {
   }
 
   /// Returns the image path for this archetype in the given age band.
-  String? imagePathForBand(AgeBand band) {
+  ///
+  /// Pass [gender] ('Boy' or 'Girl') to get the gendered variant when one
+  /// exists — resolves to assets/images/archetypes/{band}/{genderedImageId}_{boy|girl}.png.
+  /// Falls back to the non-gendered bandImageId path if no gender is supplied.
+  String? imagePathForBand(AgeBand band, {String? gender}) {
+    if (genderedImageId != null && gender != null && gender.isNotEmpty) {
+      return 'assets/images/archetypes/${band.name}/${genderedImageId}_${gender.toLowerCase()}.png';
+    }
     if (band == AgeBand.sprout && sproutImageId != null) {
       return AgeBandAssetResolver.archetypePath(band, sproutImageId!);
     }

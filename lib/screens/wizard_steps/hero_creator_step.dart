@@ -37,6 +37,8 @@ import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/hero_effects.dart';
 import '../../widgets/hero_creator/genre_chip.dart';
 import '../../widgets/safe_asset_image.dart';
+import 'hero_creator_scene_page.dart';
+import 'hero_creator_story_type_page.dart';
 
 // ---------------------------------------------------------------------------
 class _PetAvatarGenerationResult {
@@ -2443,7 +2445,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
-    final imagePath = archetype.imagePathForBand(ageBand);
+    final gender = widget.wizardData.characterGender;
+    final imagePath = archetype.imagePathForBand(ageBand, gender: gender.isNotEmpty ? gender : null);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -3038,8 +3041,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _buildPage2(),
                   _buildPage3(),
                   _buildPage4Companions(),
-                  _buildPage5(),
-                  _buildPage6(),
+                  HeroScenePage(
+                    wizardData: widget.wizardData,
+                    imagineItController: _imagineItController,
+                    wishController: _wishController,
+                    listeningFor: _listeningFor,
+                    speechAvailable: _speechAvailable,
+                    onChanged: () => setState(() {}),
+                    onContinue: _heroNextPage,
+                    onSceneTap: _onSceneTap,
+                    onToggleListening: _toggleListening,
+                    onSpeakForSprout: _speakForSprout,
+                  ),
+                  HeroStoryTypePage(
+                    wizardData: widget.wizardData,
+                    wishController: _wishController,
+                    listeningFor: _listeningFor,
+                    speechAvailable: _speechAvailable,
+                    onChanged: () => setState(() {}),
+                    onContinue: widget.onNext,
+                    onToggleListening: _toggleListening,
+                  ),
                 ],
               ),
             if (!isTeen && _heroPage > 0)
