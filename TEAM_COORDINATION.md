@@ -1,5 +1,42 @@
 # Team Coordination
 
+## 2026-04-18d — Companion Full Rebrand: Named Characters + File Cleanup (Claude Sonnet 4.6)
+
+**Goal:** Replace every companion with a personality-driven named character across all 6 age bands; standardise file naming to snake_case; wire correct images and behavior patterns end-to-end.
+
+### Naming System
+Four companion types evolve across all bands: **Dragon**, **Robin**, **Cat→Panther**, **Dog→Wolf**
+
+| Band | Dragon | Robin | Cat/Panther | Dog/Wolf |
+|------|--------|-------|-------------|----------|
+| sprout | Pebble | Robin | Mochi | Sunny |
+| explorer | Ember | Robin | Clover | Biscuit |
+| adventurer | Atlas | Robin | Nyx | Kodiak |
+| creator | Cipher | Rockin' Robin | Vesper | Lore |
+| adolescent | Zephyr | Rockin' Robin | Shade | Frost |
+| adult | Tide | Rockin' Robin | Onyx | Cinder |
+
+Robin = "Robin" for sprout/explorer/adventurer; "Rockin' Robin" for creator/adolescent/adult.
+
+### File Renames (all 24 companions)
+- All files normalised to snake_case, spaces removed
+- Mixed .jpg/.png retained (no needless conversion)
+- `rockin_robin` used as file + companion ID for creator/adolescent/adult robin
+
+### Architecture Change
+- `AgeBandAssetResolver.companionPath(band, filename)` now takes full filename with extension (was `companionId` with hardcoded `.png`)
+- Companion IDs in `companion_selector_step.dart` now match `companion_personality_data.dart` keys exactly: `${band}_${id}`
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `assets/images/companions/` | All 24 files renamed to snake_case personality names |
+| `lib/theme/age_band_asset_resolver.dart` | `companionPath` takes full filename instead of bare ID |
+| `lib/screens/wizard_steps/companion_selector_step.dart` | Full rewrite of all 6 band companion sets |
+| `lib/data/companion_personality_data.dart` | All keys updated to match new IDs; 12 new behavior entries added |
+
+---
+
 ## 2026-04-18c — Companion Art Overhaul + Asset Cleanup (Claude Sonnet 4.6)
 
 **Goal:** Replace placeholder/old companion assets with new named art; rename companions with personality-driven names; clean up legacy asset directories.

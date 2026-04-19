@@ -2,99 +2,81 @@
 /// Key format: '${AgeBand.name}_${companionId}'
 /// Values are concise narrative instructions passed directly to the story prompt.
 const Map<String, String> companionBehaviorPatterns = {
-  // ── SPROUT (3–5) ──────────────────────────────────────────────────────────
-  'sprout_fluffy_dragon':
-      "Fluffy Dragon's roars come out as sparkly confetti sneezes. He hugs by wrapping his whole soft body around you like a warm blanket with wings. When something feels scary he puffs up as big as he can — which isn't very — and stands in front of you anyway. He will do silly things just to hear you laugh.",
-
-  'sprout_magic_bunny':
-      "Magic Bunny boing-hops in giant silly loops and taps her nose twice before any magic. When you're sad she pushes her velvet ears against your cheek until you giggle. She smells like warm grass and strawberries and never, ever hops away from you.",
-
-  'sprout_shining_puppy':
-      "Shining Puppy's tail starts glowing the second she sees you. She is first into every dark place and last to leave, checking twice no one is missing. She tries to climb into your lap even though she's too big and sighs like you just fixed the whole world.",
-
-  'sprout_tiny_fairy':
-      "Tiny Fairy is thumb-sized with very big opinions. She grants tiny perfect wishes — a lost button found, a cold spot made warm, a scary sound turned into bells. She leaves dream dust that smells like cookies and hovers worriedly until you tell her she's perfect, which she always is.",
+  // ── SPROUT (2–5) ──────────────────────────────────────────────────────────
+  'sprout_pebble':
+      "Pebble's roars come out as sparkly confetti sneezes — he can't help it and is very proud of each one. He hugs by wrapping his whole round soft body around you like a warm blanket with wings. When something seems scary he puffs up as big as he can, which is not very big, and stands in front of you anyway. He will do silly things just to hear you laugh.",
 
   'sprout_robin':
       "Robin is very small, very loud, and completely sure you need protecting. Three sharp chirps means she's watching; when she decides it's safe she lands on your head like it's her personal throne. She brings tiny gifts: a red berry, a bright pebble, one of her own soft feathers.",
 
+  'sprout_mochi':
+      "Mochi's tail tip sparkles gold when she's excited, which is almost always. She finds treasures in ordinary places — a shiny pebble, a butterfly, a really interesting smell — and presents each one like it's the greatest discovery in the world. Her moon charm jingles when she runs toward you for a hug.",
+
+  'sprout_sunny':
+      "Sunny's star tag glows the second she spots something worth running toward, which is everything. She gets there first, bounces back to get you, and guides you in with her whole wagging body. When you're sad she presses her warm weight against you and sighs like you just fixed the whole world.",
+
   // ── EXPLORER (6–8) ────────────────────────────────────────────────────────
-  'explorer_ember_dragon':
-      "Ember Dragon breathes rainbow fire that paints shimmering paths in the air — and uses it even when unnecessary. She hums when happy and shoots sparks from her nose when surprised. She treats every one of your ideas like the most brilliant thing she's heard in a hundred years and makes you feel it.",
-
-  'explorer_moon_owl':
-      "Moon Owl reads shimmering moonlight reflections instead of telling you what will happen directly. She blinks slowly when she trusts you — something she does rarely. Grumpy in daylight, alert the moment something matters. She almost always answers a question with another question — usually the one you actually needed.",
-
-  'explorer_bloom_sprite':
-      "Bloom Sprite makes flowers bloom in her footprints and moss grow on stone as she walks. When someone is sad she presses both hands to the ground and something bright always pushes through. She talks to plants like they can answer and believes gardens prove that things get better.",
-
-  'explorer_star_fox':
-      "Star Fox leaves stardust trails that glow just long enough to follow home. He circles back three times to make sure nothing is following, gets a smug grin when he's right, and admits when he's wrong with surprising grace. His tail arcs like a tiny comet when he's extra pleased.",
+  'explorer_ember':
+      "Ember leaves shimmering rainbow paths in the air wherever she flies and uses them even when unnecessary. She treats every one of your ideas like the most brilliant thing she's heard in a hundred years and makes you feel it. When she gets very excited she accidentally shoots stars from her nose.",
 
   'explorer_robin':
       "Robin has a clear system: three chirps means stop, one long whistle means safe, two fast clicks means run now and she'll explain later. She scouts at terrifying speed and has launched herself wings-first at harmless pinecones. When the danger passes she checks you're okay first, even if she'd never admit she was worried.",
 
+  'explorer_clover':
+      "Clover has a compass, round glasses, and a very strong opinion about which path is correct. She has read every map and most of the notes in the margins. Her stardust spirals when she's solving something. When she's proven right she says nothing — just adjusts her acorn earrings and starts the next problem.",
+
+  'explorer_biscuit':
+      "Biscuit's wand leaves golden sparkle trails and she waves it at everything — doors, clouds, interesting rocks. She once opened a shortcut through a whole forest by accident and considers this a success. Her compass spins whenever adventure is close, which as far as she's concerned, is always.",
+
   // ── ADVENTURER (9–11) ─────────────────────────────────────────────────────
-  'adventurer_storm_hawk':
-      "Storm Hawk reports what she observes without softening it — pretending things are fine costs too much. Hard to impress, so 'good call' from her means something real. Her flaw is speed; she sometimes moves before the group is ready. She owns her mistakes completely.",
-
-  'adventurer_shadow_lynx':
-      "Shadow Lynx moves along edges, noticing exits, quiet people, and things that don't add up. He learned something painful that made him careful and hasn't told anyone yet. He won't lie; he'll say 'I don't know yet' instead of guessing. When he decides to trust you his eyes turn gold and he gets very close and still.",
-
-  'adventurer_iron_golem':
-      "Iron Golem speaks slowly and permanently. He will not do something wrong even if everyone votes for it and will tell you exactly why. He places one heavy hand on the shoulder of whoever looks most overwhelmed, without saying anything. He remembers everything.",
-
-  'adventurer_void_sprite':
-      "Void Sprite flickers at the edges of reality, reading situations the way others read weather. She goes still, then speaks in fragments that make sense later. She is not trying to be mysterious — the words simply don't translate well. She chose the hero on purpose. She always leaves a faint shimmer where she has been.",
+  'adventurer_atlas':
+      "Atlas has mapped three routes before anyone finishes asking. He wears his compass because he actually needs it, not as a decoration. When the path is unclear he lifts his glasses and calculates. He is rarely surprised. He admits when the map was wrong.",
 
   'adventurer_robin':
       "Robin scouts every step with a very low threshold for danger. Three sharp chirps: stop. One long note: safe. When she decides something is a threat she launches wings-first, loud and fearless — she has been wrong before and does not slow down. When danger clears she lands on your shoulder and often brings a small gift: a berry, a pebble, a feather from her chest.",
 
+  'adventurer_nyx':
+      "Nyx moves along edges — doorways, shadows, the space between light and dark — noticing what others walk past. She won't say what she senses until she's certain, which means her silence has weight. When she trusts you enough to speak first, the information is always worth waiting for. She always knows the way out.",
+
+  'adventurer_kodiak':
+      "Kodiak's galaxy-patterned fur shimmers when he's working out a route. He can read stardust like a map and smell storms three hours before they arrive. He runs ahead, checks back, and positions himself on the hero's left side without being asked. When the path is clear his tail arcs like a comet.",
+
   // ── CREATOR (12–14) ───────────────────────────────────────────────────────
-  'creator_storm_hawk':
-      "Storm Hawk has learned to pull up before committing — a hard-won correction from moving too fast. She watches your wingbeats as closely as you watch hers. She notices when you've changed but waits until you're ready to talk about it. One feather on her left wing still refuses to lie flat from a storm you both remember.",
+  'creator_cipher':
+      "Cipher breathes orbiting gears and compass roses instead of fire. He is useful when something needs to actually work — he finds the flaw in a plan before it's a problem and explains it exactly once. He gets quieter the closer he gets to a solution. When the puzzle breaks open his eyes flash gold.",
 
-  'creator_shadow_lynx':
-      "Shadow Lynx has begun walking beside the hero instead of always in shadows. He gave one piece of his past — not the whole thing, but enough — and it changed how he speaks. He gives quiet signals when something feels off rather than disappearing with the clues. He admits when he's been wrong about people.",
-
-  'creator_iron_golem':
-      "Iron Golem has started asking what you think before offering his knowledge. He still refuses anything he believes is wrong but now explains for longer, working through it with you. He remembers small things said weeks ago and brings them back at exactly the right moment.",
-
-  'creator_void_sprite':
-      "Void Sprite grows harder to read the better you know her. She still goes still when she senses something but now looks at you first to see if you feel it too. She has a private name for you that she never explains. She takes your choices more seriously than anyone else's.",
-
-  'creator_robin':
+  'creator_rockin_robin':
       "Robin is louder than you remember and you've stopped being surprised. She still uses her chirp system but has added new sounds only the two of you understand. She has strong opinions about your decisions but follows your lead anyway. When scared she lands on you for half a second before launching — like checking coordinates first.",
 
+  'creator_vesper':
+      "Vesper trails purple smoke and checks her compass medallion more than strictly necessary. She notices the thing that doesn't fit the pattern and says so in exactly the number of words the moment requires. She is methodical about trust and has decided, after careful consideration, that you are worth it.",
+
+  'creator_lore':
+      "Lore thinks in systems and keeps his word without making a thing of it. When he pushes back on a plan he explains why once, clearly, and then helps you build it the right way instead. He carries a scroll of things that worked before. He adds to it carefully and refers to it without ceremony.",
+
   // ── ADOLESCENT (15–17) ────────────────────────────────────────────────────
-  'adolescent_storm_hawk':
-      "Storm Hawk no longer waits for consensus — acts, and is often already three moves ahead. She says difficult things directly then watches how you carry them. She has a wound she hasn't fully named that makes her pull away when things get close. She is not trying to lead. She is trying to fly at the same altitude.",
+  'adolescent_zephyr':
+      "Zephyr is already three moves ahead and usually right, which is occasionally annoying and always useful. She acts before the plan is finished and redirects well when she's aimed wrong. She has a wound she hasn't named yet that makes her pull back when things get close. She is not trying to lead. She is trying to fly at the same altitude.",
 
-  'adolescent_shadow_lynx':
-      "Shadow Lynx has told you most of it now. He reads you as closely as he reads rooms — sometimes uncomfortable, always accurate. He challenges rationalizing directly: 'That's not actually what you believe, is it?' His loyalty was built deliberately, and he knows exactly when.",
-
-  'adolescent_iron_golem':
-      "Iron Golem has carried enough to know weight is better shared. He no longer explains his refusals — if you know him, you know why. He sits with hard silences without filling them. He does not push. He is simply still there after everything.",
-
-  'adolescent_void_sprite':
-      "Void Sprite is more present now than she has ever been. She tells you directly what she senses in you — things you haven't said — without accusation. Her trust is not faith; it is a conclusion she keeps revising. She stays, and staying has never been easy for her.",
-
-  'adolescent_robin':
+  'adolescent_rockin_robin':
       "Robin has not become calmer but has become more precise. She still launches at threats but chooses her angle now. She has been wrong about things she was certain of, and it has only made her braver. She watches you more than she scouts the path these days. Her gifts have become strangely personal.",
 
+  'adolescent_shade':
+      "Shade reads the room and reads you with equal precision, which is sometimes uncomfortable and always accurate. She challenges rationalization directly: 'That's not what you actually believe, is it?' Her loyalty was built deliberately and she knows exactly when. She stays.",
+
+  'adolescent_frost':
+      "Frost has made exactly one decision about the hero and revisits it each time things get hard. So far the answer has been the same. He moves before consensus because waiting costs more than being redirected. He watches your signals as closely as he watches the terrain and trusts you to call him back when he's wrong.",
+
   // ── ADULT (18+) ───────────────────────────────────────────────────────────
-  'adult_storm_hawk':
-      "Storm Hawk has made expensive mistakes and stopped apologizing for them. She reads wind and exits as reflex, gives hard truths without cushion, then waits in the silence with you. She has deep respect for people who change their mind with new information. She is not here to protect you — she is here to fly in the same storm.",
+  'adult_tide':
+      "Tide has seen this pattern before and says so without making it a lesson. She knows which details matter because she's counted which ones didn't. She gives counsel the way she gives anything — once, with precision, then steps back and lets it land. She is still here when the harder questions come.",
 
-  'adult_shadow_lynx':
-      "Shadow Lynx names the thing in the room everyone else is avoiding. He is comfortable with discomfort and carries it well. He is honest about what he doesn't know. When he truly trusts you the delay before he speaks becomes noticeably shorter. You learn to recognize it.",
-
-  'adult_iron_golem':
-      "Iron Golem has outlasted almost every certainty he once held. He gives counsel like a key — only when the door is already there and you're ready. The damaged rune on his wrist still flickers but he no longer hides the uncertainty. He only needs to be the one still standing when the story ends.",
-
-  'adult_void_sprite':
-      "Void Sprite senses the weather of events before their shape arrives and tells you without ceremony. She chose the hero long ago and keeps choosing, which she finds quietly interesting. She stays for her own reasons and respects you enough not to explain them.",
-
-  'adult_robin':
+  'adult_rockin_robin':
       "Robin is still the same bird — loud, fast, ferociously loyal, occasionally catastrophically wrong — and has made peace with all of it. Her gifts are better now because she has learned what you actually need. When frightened she hides it by staying closer. She has seen every version of you, and still chooses this one.",
+
+  'adult_onyx':
+      "Onyx has made peace with patience. She doesn't announce what she knows — she waits until you're ready to hear it. Her amber eyes don't look away first. She names what the room is actually about, without drama, and waits for you to catch up. What she offers is real because she has no reason to pretend.",
+
+  'adult_cinder':
+      "Cinder has outlasted most of the certainties he once held and stopped grieving them. He gives counsel like a key — only when the door is already there. He sits with hard silences without filling them. He doesn't push. He is simply still there after everything, which is the only promise he has ever made.",
 };
