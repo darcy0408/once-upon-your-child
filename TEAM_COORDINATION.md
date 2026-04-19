@@ -1,5 +1,48 @@
 # Team Coordination
 
+## 2026-04-19d — TTS Pause Polish + Parent Controls Character Creation Link (Claude Sonnet 4.6)
+
+**Goal:** Two small UX fixes raised during manual testing.
+
+### TTS natural pauses (`lib/screens/welcome_screen.dart`, `lib/services/app_tts_service.dart`)
+- Added `...` after sentence-ending punctuation in two ElevenLabs prompts so the voice pauses naturally between clauses instead of running sentences together:
+  - `'How old are you?... Tap your age!'` (both the teaser and post-dismiss variants)
+  - `'Hi, $name!... What a great name!'`
+- Updated the corresponding comment in `kWarmUpPhrases` to match the new phrasing.
+
+### Parent Controls → character creation (`lib/screens/parent_controls_screen.dart`)
+- When no child profile exists, the "No child profile active" box previously had a static icon and a "Go back and start a story" link that only popped the route.
+- The icon (`Icons.person_add_alt_1_rounded`) is now wrapped in a `GestureDetector`.
+- Both the icon and the renamed "Create a character" link call `_goToCharacterCreation()`, which pushes `WizardStoryScreen(initialStep: 0)` and reloads settings on return so the profile appears immediately.
+- Added `import 'wizard_story_screen.dart'` to the file.
+
+### Hero creator widget extraction (`lib/screens/wizard_steps/hero_creator_step.dart` → `lib/widgets/hero_creator/`)
+- `hero_creator_step.dart` was a ~5000-line monolith. Private widget classes extracted to a dedicated `lib/widgets/hero_creator/` directory:
+  - `avatar_choice_cards.dart` — `HeroCharacterChoiceCard`
+  - `companion_widgets.dart` — companion UI
+  - `genre_chip.dart` — `GenreChip`
+  - `hero_effects.dart` — `StarBurstOverlay` (was `_StarBurstOverlay`)
+  - `hero_input_widgets.dart` — name input, gender picker helpers
+  - `pet_card.dart` — `PetCard`
+  - `scene_widgets.dart` — scene card display
+- `hero_creator_step.dart` updated to import from new files; `SafeAssetImage` adopted throughout.
+
+### Open: BUG-P6-02 (stale age) — not yet fixed
+Persisted age from a previous session can bleed into a new session's consent flow. Needs `ParentalConsentService().clearRecordedAge()` called when the user selects a new age on the welcome screen. Deferred — low-risk until multi-profile support is added.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | `...` pause added to age-prompt and name-celebration TTS strings |
+| `lib/services/app_tts_service.dart` | Warm-up comment updated to match new phrasing |
+| `lib/screens/parent_controls_screen.dart` | Icon + link navigate to character creation wizard; import added |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Imports updated; private widgets extracted to `lib/widgets/hero_creator/` |
+| `lib/widgets/hero_creator/` | NEW — 7 extracted widget files |
+| `assets/BoyGirl images/` | Old flat source images deleted; new subdirectories added for processed band assets |
+| `assets/images/archetypes/adventurer/clever_inventor.jpg` | Updated archetype image |
+
+---
+
 ## 2026-04-19c — Phase 6 Test Report + Load Audit Harness Fix (Claude Sonnet 4.6)
 
 **Goal:** Document phase 6 automated test results and fix the broken load-audit harness.

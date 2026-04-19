@@ -12,6 +12,7 @@ import '../services/screen_time_service.dart';
 import '../settings_screen.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
+import 'wizard_story_screen.dart';
 
 class ParentControlsScreen extends StatefulWidget {
   /// Set [openBigFeelings] to open the Big Feelings section immediately
@@ -115,6 +116,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   // ── State ─────────────────────────────────────────────────────────────────
 
   bool _allowPhotoAvatar = true;
+  bool _hasApiKey = false;
   bool _loading = true;
   bool _deletingData = false;
   int? _dailyLimitMinutes;
@@ -161,6 +163,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   }
 
   Future<void> _loadSettings() async {
+    final hasKey = await ApiServiceManager.isUsingOwnApiKey();
     final allowPhoto = await _consentService.getAllowPhotoAvatar();
     final limit = await _consentService.getDailyLimitMinutes();
     final bedtimeEnabled = await _consentService.isBedtimeLockoutEnabled();
@@ -204,6 +207,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     }
 
     setState(() {
+      _hasApiKey = hasKey;
       _allowPhotoAvatar = allowPhoto;
       _dailyLimitMinutes = limit;
       _bedtimeEnabled = bedtimeEnabled;
@@ -323,10 +327,15 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     ),
                   ),
                   _ActionTile(
-                    icon: Icons.vpn_key_rounded,
-                    title: 'Connect your free API key',
-                    subtitle:
-                        'Takes 2 minutes — unlock premium illustrations & avatars',
+                    icon: _hasApiKey
+                        ? Icons.check_circle_rounded
+                        : Icons.vpn_key_rounded,
+                    title: _hasApiKey
+                        ? 'API key connected'
+                        : 'Connect your free API key',
+                    subtitle: _hasApiKey
+                        ? 'Tap to update or remove your Gemini key'
+                        : 'Takes 2 minutes — unlock premium illustrations & avatars',
                     onTap: () async {
                       final result = await Navigator.of(context).push<String>(
                         MaterialPageRoute(
@@ -334,6 +343,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                         ),
                       );
                       if (result != null && result.isNotEmpty && context.mounted) {
+                        setState(() => _hasApiKey = true);
                         await ProviderScope.containerOf(context)
                             .read(settingsProvider.notifier)
                             .reload();
@@ -721,6 +731,15 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     );
   }
 
+  Future<void> _goToCharacterCreation() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const WizardStoryScreen(initialStep: 0),
+      ),
+    );
+    if (mounted) _loadSettings();
+  }
+
   Widget _buildNoProfileState() {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -731,8 +750,11 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.person_add_alt_1_rounded,
-              color: Color(0xFFFFD700), size: 36),
+          GestureDetector(
+            onTap: _goToCharacterCreation,
+            child: const Icon(Icons.person_add_alt_1_rounded,
+                color: Color(0xFFFFD700), size: 36),
+          ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'No child profile active',
@@ -750,15 +772,15 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: _goToCharacterCreation,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.arrow_back_rounded,
+                const Icon(Icons.arrow_forward_rounded,
                     color: Color(0xFFFFD700), size: 18),
                 const SizedBox(width: 6),
                 Text(
-                  'Go back and start a story',
+                  'Create a character',
                   style: GoogleFonts.fredoka(
                     color: const Color(0xFFFFD700),
                     fontSize: 13,

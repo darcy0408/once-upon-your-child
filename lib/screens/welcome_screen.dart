@@ -140,7 +140,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       return;
     }
     unawaited(_speak(
-        'Hi, welcome to Story Weaver! How old are you? Tap your age!',
+        'Hi, welcome to Story Weaver! How old are you?... Tap your age!',
         rateScale: 0.72));
   }
 
@@ -152,7 +152,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (!mounted) return;
     setState(() => _step = 0);
     unawaited(_speak(
-        'How old are you? Tap your age!',
+        'How old are you?... Tap your age!',
         rateScale: 0.72));
   }
 
@@ -272,7 +272,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       // Say "Hi <name>!" and wait for it to finish before advancing.
       AppTtsService.instance
           .speak(
-            'Hi, $name! What a great name!',
+            'Hi, $name!... What a great name!',
             awaitCompletion: true,
             rateScale: 0.72,
           )

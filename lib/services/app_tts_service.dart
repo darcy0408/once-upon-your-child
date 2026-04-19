@@ -23,7 +23,7 @@ const List<String> kWarmUpPhrases = [
   // "Hi! Welcome to Story Weaver. What's your name?" is intentionally excluded
   // from warm-up so the live speak() call synthesises it at the correct slower
   // rateScale (0.72) rather than playing a default-speed cached version.
-  // "How old are you? Tap your age!" is intentionally excluded from warm-up
+  // "How old are you?... Tap your age!" is intentionally excluded from warm-up
   // so the live speak() call synthesises it at the correct slower rateScale
   // (0.72) rather than playing a default-speed cached version.
   "What is your hero's name? Tap the microphone to say it!",
@@ -91,9 +91,9 @@ const List<String> kWarmUpPhrases = [
   "Nature Friend!",
   "Clever Inventor!",
   "Star Dreamer!",
-  "Fluffy Dragon",
-  "Magic Bunny",
-  "Shining Puppy",
+  "Pebble",
+  "Mochi",
+  "Sunny",
   "Robin",
 ];
 
