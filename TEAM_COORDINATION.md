@@ -1,5 +1,42 @@
 # Team Coordination
 
+## 2026-04-18k — Security Hardening: Refresh Token Rotation + JWT Blocklist (Claude Sonnet 4.6)
+
+**Goal:** Phase 2 fix 2f — stolen refresh tokens should not remain valid for their full 30-day lifetime.
+
+### Problem
+The `/auth/refresh` endpoint issued a new access token but kept the old refresh token alive and valid. A stolen refresh token could be used indefinitely to mint fresh access tokens.
+
+### Fix
+
+**Backend — JWT revocation blocklist** (`backend/app.py`)
+- Registered `@jwt.token_in_blocklist_loader` immediately after `JWTManager(app)` — checked on every JWT-protected request
+- Callback looks up `jwt:blocklist:{jti}` in Redis; returns `False` (pass) if Redis is unreachable so a Redis outage never locks users out
+
+**Backend — refresh token rotation** (`backend/routes/utility_routes.py`)
+- Added `_blocklist_jti(jti, exp, logger)` module-level helper: writes the spent JTI to Redis with a TTL equal to the token's remaining lifetime (auto-expires, no cleanup job needed). No-ops gracefully if Redis is absent.
+- `/auth/refresh` now:
+  1. Extracts the old JTI and `exp` via `get_jwt()` and blocklists them before responding
+  2. Issues both a new access token *and* a new refresh token (`create_refresh_token`)
+  3. Returns `refresh_token` alongside `token` in the response body
+
+**Flutter — persist rotated refresh token** (`lib/services/api_service_manager.dart`)
+- `_tryRefreshAccessToken()` now reads `data['refresh_token']` from the server response and saves it to `SharedPreferences` + the in-memory `_refreshToken` field, completing the rotation on the client side
+
+### Security properties after fix
+- A refresh token can be used **at most once** — replaying a spent token returns 401 (jti is blocklisted)
+- If a refresh token is stolen but hasn't been used yet, it still has a 30-day window — acceptable for this app's threat model; shortening `JWT_REFRESH_TOKEN_EXPIRES` is an env-var tunable if needed
+- Redis outages degrade to "blocklist skipped" rather than "all users locked out"
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/app.py` | `@jwt.token_in_blocklist_loader` callback backed by Redis |
+| `backend/routes/utility_routes.py` | `_blocklist_jti` helper; `/auth/refresh` rotates token + blocklists old JTI |
+| `lib/services/api_service_manager.dart` | `_tryRefreshAccessToken` persists new refresh token from server |
+
+---
+
 ## 2026-04-18j — Security Hardening: AI Quota Circuit Breaker + Anonymous Auth Fix (Claude Sonnet 4.6)
 
 **Goal:** Phase 2 fixes 2j and 2k — prevent unbounded AI spend from a single account, and close the anonymous auth session-hijack vector.

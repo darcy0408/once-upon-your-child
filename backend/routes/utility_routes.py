@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
+    get_jwt,
     get_jwt_identity,
     jwt_required,
 )
@@ -16,6 +17,27 @@ from ..models.user import User
 from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
 from ..middleware.auth import require_auth, require_admin, require_owner
+
+
+def _blocklist_jti(jti: str, exp: int, logger) -> None:
+    """Write a consumed JWT ID to Redis so it cannot be replayed.
+
+    The key expires automatically at the token's original expiry time so no
+    cleanup job is needed.  A Redis outage is logged but never raises — losing
+    the ability to blocklist one token is far less harmful than breaking auth.
+    """
+    from datetime import datetime, timezone
+
+    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    if not redis_url:
+        return
+    try:
+        import redis as _redis_lib
+        r = _redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        remaining = max(1, exp - int(datetime.now(timezone.utc).timestamp()))
+        r.setex(f'jwt:blocklist:{jti}', remaining, '1')
+    except Exception as exc:
+        logger.warning('jwt refresh: failed to blocklist old JTI %s (%s)', jti, exc)
 
 
 def create_utility_blueprint(logger, log_error, limiter=None):
@@ -272,7 +294,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     @rate_limit("30 per minute")
     @jwt_required(refresh=True)
     def refresh_auth_token():
-        """Issue a new access token using a valid refresh token."""
+        """Issue a new access + refresh token pair and revoke the old refresh token."""
         user_id = get_jwt_identity()
         if not user_id:
             return jsonify({'error': 'Invalid refresh token'}), 401
@@ -281,9 +303,19 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         if not user:
             return jsonify({'error': 'User not found'}), 401
 
+        # Blocklist the consumed refresh token so it cannot be reused even within
+        # its remaining TTL (refresh token rotation / family invalidation).
+        old_claims = get_jwt()
+        old_jti = old_claims.get('jti')
+        old_exp = old_claims.get('exp')
+        if old_jti and old_exp:
+            _blocklist_jti(old_jti, old_exp, logger)
+
         token = create_access_token(identity=user.id)
+        new_refresh = create_refresh_token(identity=user.id)
         return jsonify({
             'token': token,
+            'refresh_token': new_refresh,
             'user_id': user.id,
         }), 200
 

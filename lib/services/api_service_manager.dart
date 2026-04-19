@@ -209,6 +209,13 @@ class ApiServiceManager {
       _authToken = newToken;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_tokenKey, newToken);
+
+      // Persist the rotated refresh token returned by the server.
+      final newRefreshToken = data['refresh_token']?.toString();
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        _refreshToken = newRefreshToken;
+        await prefs.setString(_refreshTokenKey, newRefreshToken);
+      }
       return true;
     } catch (_) {
       return false;
