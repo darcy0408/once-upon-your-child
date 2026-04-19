@@ -928,8 +928,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// Shows selected companions as glowing portrait orbs above the selection grid.
   /// Empty slots show a dashed placeholder. Tapping a filled orb deselects it.
   Widget _buildCompanionShowcase() {
-    // Include both general and Sprout-specific companions in the search.
-    final allKnownCompanions = [..._companions, ..._sproutCompanions];
+    // Include companions from all bands so the showcase can resolve any
+    // selection regardless of which band is currently active.
+    final allKnownCompanions = [
+      ..._sproutCompanions,
+      ..._explorerCompanions,
+      ..._adventurerCompanions,
+      ..._creatorCompanions,
+      ..._adolescentCompanions,
+      ..._adultCompanions,
+    ];
 
     // Collect selected named companions in order — use ID as source of truth.
     final selectedNamed = allKnownCompanions

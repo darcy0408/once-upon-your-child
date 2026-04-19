@@ -17,10 +17,10 @@ Automated Playwright + load audit run across Welcome → Age Picker → COPPA ga
 | Welcome + age picker | ✅ Pass |
 | COPPA gate (Sprout) | ✅ Pass |
 | Adult band visual/character/archetype | ✅ Pass |
-| Companion images (adult brief wizard) | ❌ 7 images 404 |
+| Companion images (adult brief wizard) | ✅ Fixed — `_companions` undefined; replaced with all-band list |
 | Load audit harness | ❌ Broken (fixed above) |
 
-**Open bugs from phase 6:** 7 adult companion images 404 in the brief wizard. Real-API load audit deferred until harness verified post-fix.
+**Open bugs from phase 6:** ✅ BUG-P6-01 fixed — `_companions` undefined identifier resolved. Real-API load audit deferred.
 
 ### Files Changed
 | File | Change |
