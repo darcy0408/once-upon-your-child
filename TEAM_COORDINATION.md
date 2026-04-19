@@ -1519,7 +1519,7 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 | NEW-05 | Story style step has no default selection for younger bands | Sprout, Explorer | Medium | Not a bug — code defaults to `'tales'` (Story Quest); visual state on web runner may differ from device |
 | NEW-06 | Archetype class shows "—" on Adventurer review when archetype skipped | Adventurer | Low | Deferred |
 | NEW-07 | Adolescent review shows only name + "—", no story summary | Adolescent | Low | Deferred |
-| NEW-08 | Adult "Begin" button gold/olive colour may read as disabled | Adult | Low | Deferred |
+| NEW-08 | Adult "Begin" button gold/olive colour may read as disabled | Adult | Low | ✅ Fixed |
 
 ### Fix Details
 
@@ -1535,10 +1535,14 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 **NEW-04** — `lib/screens/wizard_steps/hero_creator_step.dart:_buildArchetypeCards`
 - Changed `maxLines: 1` → `maxLines: 2` on the name Text inside the bottom pill overlay; names like "The Animal Whisperer" now wrap to a second line instead of truncating with `…`.
 
+**NEW-08** — `lib/screens/wizard_steps/magic_review_step.dart` (Adult CTA button)
+- `foregroundColor` switched to `Color(0xFF1A1A1A)` (dark text) for Adult band — amber+white was ~2.2:1 contrast; dark text meets 4.5:1 minimum.
+- Added warm border rim `Color(0xFFD4B97A)` width 1.5 and a soft amber shadow so the button reads as interactive, not muted.
+
 ### Files Changed
 | File | What |
 |------|------|
-| `lib/screens/wizard_steps/magic_review_step.dart` | Length chip Row→Wrap; `_HeroFallbackIdentity` size reduction |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Length chip Row→Wrap; `_HeroFallbackIdentity` size reduction; Adult button contrast |
 | `lib/widgets/adventurer_unlock_celebration.dart` | Padding→SingleChildScrollView |
 | `lib/screens/wizard_steps/hero_creator_step.dart` | Archetype name pill maxLines 1→2 |
 
@@ -1547,7 +1551,8 @@ All scenarios clean: sync fast path 24/24 @ p95=207ms, concurrency 1→32 flat a
 - [x] NEW-02: unlock dialog overflow fixed
 - [x] NEW-03: `_HeroFallbackIdentity` overflow fixed
 - [x] NEW-04: archetype name truncation fixed
-- [ ] NEW-06/07/08: deferred (low priority)
+- [x] NEW-08: Adult "Begin" button contrast fixed (commit 25f8ef7)
+- [ ] NEW-06/07: deferred (low priority)
 
 ---
 
