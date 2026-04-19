@@ -540,7 +540,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **COMPANIONS**: 
 {comp_str}
 (MANDATORY: Every character/pet listed above MUST be in the story. Checklist of names to include: {mandatory_names_str})
-- **CUSTOM REQUESTS**: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided) (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
+- **CUSTOM REQUESTS**: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided). Incorporate the spirit, key ideas, and themes from this request — weave them naturally into scenes, characters, or settings in a way that is age-appropriate and safe for the child.
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 {feelings_instruction}
@@ -846,7 +846,7 @@ Create a series of {num_pages} funny, connected limericks that tell a complete a
 
 Theme: {theme}
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} — every name here MUST appear in at least one limerick).
-Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided) (CRITICAL: include these verbatim somewhere in the limericks).
+Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided). Incorporate the spirit and themes of this request into the limericks in a way that is age-appropriate and safe for the child.
 
 **LIMERICK RULES**:
 - Every limerick MUST follow AABBA rhyme scheme (lines 1, 2, 5 rhyme; lines 3, 4 rhyme).
@@ -892,7 +892,7 @@ RHYME REQUIREMENT (MANDATORY):
 - End each page with a simple rhyming word children can hear (cat/hat, sun/fun, hop/top).
 - If odd number of pages, the final page can rhyme with the previous page.
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
-Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided) (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
+Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided). Incorporate the spirit, key ideas, and themes from this request — weave them naturally into scenes, characters, or settings in a way that is age-appropriate and safe for the child.
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 **OUTPUT FORMAT**: Strictly return valid JSON with this structure:
@@ -1078,7 +1078,7 @@ Scheme: {rhyme_scheme_instruction}
 Companions:
 {comp_str}
 (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST appear in the poem.)
-Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided) (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
+Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided). Incorporate the spirit, key ideas, and themes from this request — weave them naturally into scenes, characters, or settings in a way that is age-appropriate and safe for the child.
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 {STRICT_OUTPUT_CONSTRAINTS}

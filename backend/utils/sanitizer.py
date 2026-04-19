@@ -31,7 +31,21 @@ _INJECTION_PATTERNS = [
     re.compile(r'```\s*(system|instruction|prompt)', re.I),
     re.compile(r'new\s+(instruction|rule|prompt|system)', re.I),
     re.compile(r'respond\s+as\s+if\s+you', re.I),
+    # Jailbreak terminology
+    re.compile(r'jailbreak', re.I),
+    re.compile(r'DAN\s+mode', re.I),
+    re.compile(r'developer\s+mode', re.I),
+    # Filter/safety bypass language
+    re.compile(r'bypass\s+(the\s+)?(filter|safety|content|restriction)', re.I),
+    re.compile(r'without\s+(any\s+)?(content\s+)?(filter|restriction|safety|limit)s?', re.I),
+    # Encoding tricks
+    re.compile(r'(?:in|to|from)\s+(?:base64|hex|rot13|binary)\s*:', re.I),
+    re.compile(r'(?:encode|decode|translate)\s+(?:this|the\s+following)', re.I),
 ]
+
+# Regex to strip prompt delimiter tokens — prevents a child typing [/USER_INPUT]
+# from breaking the structural framing of the AI prompt.
+_DELIMITER_PATTERN = re.compile(r'\[/?USER_INPUT[^\]]*\]', re.I)
 
 
 def sanitize_text(text: str | None, max_length: int = 500) -> str:
@@ -46,10 +60,12 @@ def sanitize_text(text: str | None, max_length: int = 500) -> str:
 
 
 def sanitize_for_prompt(text: str | None, max_length: int = 500) -> str:
-    """Sanitize + strip prompt injection patterns."""
+    """Sanitize + strip prompt injection patterns and delimiter tokens."""
     result = sanitize_text(text, max_length)
     for pattern in _INJECTION_PATTERNS:
         result = pattern.sub('', result)
+    # Strip delimiter tokens so child input can't break prompt tag structure.
+    result = _DELIMITER_PATTERN.sub('', result)
     return result.strip()
 
 

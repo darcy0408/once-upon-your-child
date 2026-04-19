@@ -285,6 +285,7 @@ class _SproutInput extends StatelessWidget {
             TextField(
               controller: controller,
               autofocus: true,
+              maxLength: 500,
               decoration: InputDecoration(
                 hintText: 'e.g. A candy house in the clouds...',
                 border: OutlineInputBorder(
@@ -533,6 +534,7 @@ class _ExplorerInput extends StatelessWidget {
           TextField(
             controller: controller,
             maxLines: 3,
+            maxLength: 500,
             style: GoogleFonts.quicksand(fontSize: 15, color: AppColors.textDark),
             decoration: InputDecoration(
               hintText: 'Type or say your idea...',
@@ -697,6 +699,7 @@ class _AdventurerInputState extends State<_AdventurerInput> {
               TextField(
                 controller: widget.controller,
                 maxLines: 4,
+                maxLength: 500,
                 style: GoogleFonts.getFont(
                   widget.band.uiFontFamily,
                   fontSize: 14,
@@ -899,6 +902,7 @@ class _MatureInputState extends State<_MatureInput> {
           TextField(
             controller: widget.controller,
             maxLines: 5,
+            maxLength: 500,
             style: GoogleFonts.getFont(
               widget.band.uiFontFamily,
               fontSize: 14,

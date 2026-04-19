@@ -536,7 +536,7 @@ class ScenarioData {
       category: 'Real-Life Heroes',
       featured: true,
       worldBible:
-          'This is the user\'s own creation — honour their description exactly. Build the world from whatever they type in the free-text input. If they give a brief description, expand it with rich sensory details that match their intent. If they give a detailed description, follow it faithfully. Always maintain internal consistency with whatever world rules the user implies. The tone should match the child\'s age band.',
+          'Draw inspiration from the child\'s description and bring their ideas to life with rich sensory detail. If they give a brief description, expand it with warm, imaginative touches. If they give a detailed description, honour its spirit faithfully. Always maintain internal consistency with the world the child has imagined. Keep all content age-appropriate and safe.',
       youngTitle: 'Make One Up!',
       youngDescription:
           'What magical place do you want to visit? Tell us and we\'ll go there!',
@@ -550,7 +550,7 @@ class ScenarioData {
       matureConflictHook:
           'Any place, any atmosphere, any vibe. Set the scene and we\'ll do the rest.',
       matureWorldBible:
-          'Respect the user\'s creative vision completely. Build the world with sophisticated detail, internal logic, and atmospheric depth appropriate to whatever they describe. If they give a genre (sci-fi, fantasy, realistic), lean into its conventions. Add complexity, moral ambiguity, and stakes appropriate to their age.',
+          'Draw deeply on the user\'s creative vision. Build the world with sophisticated detail, internal logic, and atmospheric depth appropriate to whatever they describe. If they give a genre (sci-fi, fantasy, realistic), lean into its conventions. Add complexity, moral ambiguity, and stakes appropriate to their age. Keep all content appropriate for the user\'s age band.',
       // The title is intentionally shared — "Imagine It" resonates equally well at 12-14.
       creatorTitle: null,
     ),

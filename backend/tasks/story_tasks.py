@@ -504,11 +504,6 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         validation_error = "Meta leakage detected"
                         break
 
-                missing_custom_elements = _find_missing_custom_elements(required_custom_elements, story_body)
-                if missing_custom_elements:
-                    is_clean = False
-                    validation_error = f"Missing custom elements: {', '.join(missing_custom_elements)}"
-                
                 missing_names = []
                 for name in mandatory_names:
                     # Basic case-insensitive check for name in story
@@ -562,8 +557,6 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         # Append feedback to prompt for next attempt
                         if not is_clean:
                             prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
-                            if missing_custom_elements:
-                                prompt += "\n\nRETRY INSTRUCTION: The story must include these exact phrases at least once each: " + ", ".join(missing_custom_elements)
                             if missing_names:
                                 prompt += "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: " + ", ".join(missing_names)
                         if not is_long_enough:
@@ -579,6 +572,58 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             validation_loop_ms = (time.perf_counter() - validation_loop_start) * 1000.0
             validation_ms = max(validation_loop_ms - ai_call_ms, 0.0)
             logger.debug("perf phase=validation ms=%.1f", validation_ms)
+
+            # --- Output content moderation ---
+            # Two-layer safety check on the generated story before it reaches the child.
+            # Layer 1: fast age-band-aware keyword filter.
+            # Layer 2: LLM-based contextual classifier (skipped if Layer 1 already flagged).
+            # Both layers fail open — story is delivered and logged rather than crashed.
+            from backend.utils.app_helpers import make_filter_story_content
+            from backend.utils.content_moderator import moderate_story_content
+
+            _filter_fn = make_filter_story_content(logger)
+            _, keyword_flagged = _filter_fn(story_body, age)
+
+            llm_flagged = False
+            llm_flag_reason = ""
+            if not keyword_flagged:
+                llm_safe, llm_flag_reason = moderate_story_content(story_body, age)
+                llm_flagged = not llm_safe
+
+            if keyword_flagged or llm_flagged:
+                flag_source = "keyword filter" if keyword_flagged else f"LLM classifier ({llm_flag_reason})"
+                logger.warning(
+                    f"Story flagged by {flag_source} for age {age} — "
+                    f"substituting safe fallback story."
+                )
+                # Replace with a safe, generic story using the character and theme
+                # but without the custom elements that may have contributed to the issue.
+                fallback_prompt = engine.generate_enhanced_prompt(
+                    character=character_name,
+                    theme=theme,
+                    companion=companion,
+                    companion_pets=companion_pets,
+                    companion_characters=companion_character_details,
+                    custom_elements="",  # Strip custom elements for fallback
+                    additional_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
+                    therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
+                    feelings_prompt=kwargs.get("feelings_prompt"),
+                    character_details=char_details,
+                    story_length=story_length,
+                    story_duration=story_duration,
+                    age=age,
+                )
+                fallback_text = _generate_story_text(fallback_prompt, theme, character_name, companion)
+                fallback_title, _, fallback_body, fallback_pages, fallback_post = _safe_extract_title_and_gem(
+                    fallback_text, theme
+                )
+                if fallback_body:
+                    title = fallback_title
+                    story_body = fallback_body
+                    pages = fallback_pages
+                    post_story = fallback_post
+
+            # --- End output content moderation ---
 
             # NEW: Page-based story structure for duration-based generation
             adventure_steps = []

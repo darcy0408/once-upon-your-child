@@ -9,11 +9,17 @@ from flask_limiter.util import get_remote_address
 
 from ..models.user import User
 
-# Keyword list for story safety checks
-INAPPROPRIATE_KEYWORDS = [
-    'violence', 'weapon', 'death', 'kill', 'hurt', 'blood',
-    'scary', 'monster', 'nightmare', 'attack', 'fight', 'gun',
-    'knife', 'suicide', 'self-harm'
+# Keywords inappropriate for ALL ages — always block regardless of age band.
+_KEYWORDS_ALL_AGES = [
+    'suicide', 'suicidal', 'self-harm', 'self harm', 'sexual', 'porn', 'erotic',
+    'genitals', 'intercourse', 'rape', 'nude', 'naked',
+]
+
+# Keywords only inappropriate for young children (age <= 7).
+# Older age bands may have age-appropriate conflict, peril, or mild scary elements.
+_KEYWORDS_YOUNG_ONLY = [
+    'kill', 'murder', 'blood', 'death', 'gun', 'knife', 'stab',
+    'weapon', 'torture', 'scary', 'monster', 'nightmare',
 ]
 
 
@@ -87,20 +93,28 @@ def get_tier_limits(operation: str = 'default') -> str | None:
 
 
 def make_filter_story_content(logger):
-    def filter_story_content(story_text: str) -> tuple[str, bool]:
-        """Detect potentially inappropriate keywords in story content."""
+    def filter_story_content(story_text: str, age: int = 5) -> tuple[str, bool]:
+        """Detect age-inappropriate keywords in generated story content.
+
+        Returns (story_text, flagged). Content is never modified — callers
+        decide whether to use a fallback. Young children (age <= 7) have a
+        stricter keyword set than older children and adults.
+        """
         if not story_text:
             return story_text, False
 
         lower_text = story_text.lower()
-        had_issues = False
-        for keyword in INAPPROPRIATE_KEYWORDS:
-            if keyword in lower_text:
-                had_issues = True
-                logger.warning(f"Content filter triggered: {keyword} in story text")
-        if had_issues:
-            logger.warning(f"Flagged story content (first 200 chars): {story_text[:200]!r}")
-        return story_text, had_issues
+        keywords = list(_KEYWORDS_ALL_AGES)
+        if age <= 7:
+            keywords.extend(_KEYWORDS_YOUNG_ONLY)
+
+        triggered = [kw for kw in keywords if kw in lower_text]
+        if triggered:
+            logger.warning(
+                f"Content filter triggered for age {age}: {triggered!r} "
+                f"(first 200 chars): {story_text[:200]!r}"
+            )
+        return story_text, bool(triggered)
 
     return filter_story_content
 
