@@ -116,7 +116,11 @@ const allLifeQuests = <LifeQuestScenario>[
   // Explorer band (ages 6-8)
   questWobblyDay,
   questSorryStuck,
-  // TODO: questThreeCrowd, questBrokenThing, questNotFair, questSleepover, questMyTurnTalk — Explorer content pending
+  questThreeCrowd,
+  questBrokenThing,
+  questNotFair,
+  questSleepover,
+  questMyTurnTalk,
   // Adventurer / Creator / Adolescent (ages 9+)
   questTryout,
   questLeftOut,

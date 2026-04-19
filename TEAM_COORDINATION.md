@@ -34,10 +34,7 @@
   - `sprout_egg_hatch.dart`, `explorer_constellation.dart`, `adventurer_treasure_map.dart`
   - `creator_digital_canvas.dart`, `adolescent_holographic_portal.dart`, `adult_ink_wash.dart`
 - **5 new archetype images** — adolescent boy (animal whisperer, lightning runner, master creator) + creator girl (animal whisperer, master creator)
-- **`life_quest_data.dart`** — removed 5 undefined Explorer quest stubs (`questThreeCrowd`, `questBrokenThing`, `questNotFair`, `questSleepover`, `questMyTurnTalk`) from `allLifeQuests`; left as TODO comment. Quest content not yet written.
-
-### Deferred
-- 5 Explorer Life Quests (ages 6–8) — stubs exist in `allLifeQuests` as a TODO comment. Each quest needs ~100–200 lines of CYOA content authored before being re-added.
+- **`life_quest_data.dart`** — 5 Explorer quests temporarily removed as undefined stubs; authored and restored by session 2026-04-19h (`64f7fa9`).
 
 ### Commit
 `97796ba` — feat(hero-creator): extract creative brief + band avatar loading views
