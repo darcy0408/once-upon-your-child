@@ -4235,110 +4235,183 @@ const _sproutCompanions = [
   ),
 ];
 
-/// Adventurer band (9-11): same companions, reordered so the more mature-
-/// looking characters appear first and the most childish (Unicorn) is last.
-/// Taglines are tweaked to sound less babyish for tweens.
-const _adventurerCompanions = [
+/// Explorer band (6–8): four companions with band-specific images.
+const _explorerCompanions = [
   _CompanionData(
-    id: 'cat',
-    name: 'Shadow Cat',
-    tagline: 'Sets boundaries. Finds the exit.',
+    id: 'ember',
+    name: 'Ember',
+    tagline: 'Every idea is the best idea she\'s heard.',
+    imagePathOverride: 'assets/images/companions/explorer/ember.png',
     personality:
-        'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
+        'Ember (Brave Protector) leaves rainbow trails wherever she flies and cheers for every single one of your ideas. When she gets excited she accidentally shoots stars from her nose. She turns fear into a plan and stands between you and danger, voice steady and brave. Catchphrases: "That was brilliant!" / "We\'ve got this."',
   ),
   _CompanionData(
     id: 'robin',
-    name: 'Rockin\' Robin',
-    tagline: 'Fierce loyalty. Zero chill.',
+    name: 'Robin',
+    tagline: 'Loud warning system. Always on your side.',
+    imagePathOverride: 'assets/images/companions/explorer/robin.png',
     personality:
-        'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
+        'Robin (Guardian) has a very clear warning system and has launched herself at harmless pinecones. Three chirps: stop. One whistle: safe. Two clicks: run. Checks you\'re okay before she\'d ever admit she was worried. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "(soft) You\'re okay. I\'ve got you."',
   ),
   _CompanionData(
-    id: 'fox',
-    name: 'Clever Fox',
-    tagline: 'Finds the loophole. Plays it smart.',
+    id: 'clover',
+    name: 'Clover',
+    tagline: 'Knows the way. Always has a map.',
+    imagePathOverride: 'assets/images/companions/explorer/clover.jpg',
     personality:
-        'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
+        'Clover (Pattern Seer) is an orange tabby with round glasses and a compass who knows the way through any enchanted wood. Her stardust spirals when she\'s solving something. She spots patterns others miss and offers one clear, calm next step. Catchphrases: "Found it!" / "Follow me — I have the map."',
   ),
   _CompanionData(
-    id: 'dragon',
-    name: 'Dragon',
-    tagline: 'Has your back. Always.',
+    id: 'biscuit',
+    name: 'Biscuit',
+    tagline: 'Wand ready. Adventure compass spinning.',
+    imagePathOverride: 'assets/images/companions/explorer/biscuit.jpg',
     personality:
-        'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
-  ),
-  _CompanionData(
-    id: 'owl',
-    name: 'Wise Owl',
-    tagline: 'Sees what others miss.',
-    personality:
-        'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
-  ),
-  _CompanionData(
-    id: 'dog',
-    name: 'Star Dog',
-    tagline: 'Never gives up on you.',
-    personality:
-        'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
-  ),
-  _CompanionData(
-    id: 'unicorn',
-    name: 'Unicorn',
-    tagline: 'Quiet strength. Real healing.',
-    personality:
-        'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
+        'Biscuit (Hope Engine) is a golden puppy in an adventure vest who aims her wand at the sky and leaves sparkle trails to follow. Gets there first, bounces back to get you, and guides you in with her whole wagging body. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'m right here!"',
   ),
 ];
 
-const _companions = [
+/// Adventurer band (9–11): four named companions with band-specific images.
+const _adventurerCompanions = [
   _CompanionData(
-    id: 'dragon',
-    name: 'Dragon',
-    tagline: 'Big courage. Bigger heart.',
+    id: 'atlas',
+    name: 'Atlas',
+    tagline: 'Three routes mapped. Option two is most interesting.',
+    imagePathOverride: 'assets/images/companions/adventurer/atlas.jpg',
     personality:
-        'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
-  ),
-  _CompanionData(
-    id: 'owl',
-    name: 'Wise Owl',
-    tagline: 'Quiet mind, clear sight.',
-    personality:
-        'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
-  ),
-  _CompanionData(
-    id: 'cat',
-    name: 'Shadow Cat',
-    tagline: 'Soft paws. Strong boundaries.',
-    personality:
-        'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
-  ),
-  _CompanionData(
-    id: 'dog',
-    name: 'Star Dog',
-    tagline: 'Light up. Keep going.',
-    personality:
-        'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
-  ),
-  _CompanionData(
-    id: 'unicorn',
-    name: 'Unicorn',
-    tagline: 'Kindness that makes you stronger.',
-    personality:
-        'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
-  ),
-  _CompanionData(
-    id: 'fox',
-    name: 'Clever Fox',
-    tagline: 'Smart paths, sneaky wins.',
-    personality:
-        'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
+        'Atlas (Pattern Seer) is a blue-green scholar dragon with a compass medallion who knows every constellation. When the path is unclear he lifts his glasses and calculates. He admits when the map was wrong. Speaks in short verdicts — "Noted." "Risky." "Better." Catchphrases: "Look again." / "Follow the pattern."',
   ),
   _CompanionData(
     id: 'robin',
-    name: 'Rockin\' Robin',
-    tagline: 'Overprotective. Loud about it. Loves you completely.',
+    name: 'Robin',
+    tagline: 'Fierce loyalty. Zero chill.',
+    imagePathOverride: 'assets/images/companions/adventurer/robin.png',
     personality:
-        'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
+        'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
+  ),
+  _CompanionData(
+    id: 'nyx',
+    name: 'Nyx',
+    tagline: 'Sets boundaries. Finds the exit.',
+    imagePathOverride: 'assets/images/companions/adventurer/nyx.png',
+    personality:
+        'Nyx (Boundary Guardian) is a sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. She helps you say no, spot pressure, and choose the cleanest way out. When she trusts you enough to speak first, the information is always worth waiting for. Catchphrases: "No is complete." / "We leave—now."',
+  ),
+  _CompanionData(
+    id: 'kodiak',
+    name: 'Kodiak',
+    tagline: 'Pack moves together. Never gives up on you.',
+    imagePathOverride: 'assets/images/companions/adventurer/kodiak.jpg',
+    personality:
+        'Kodiak (Hope Engine) is a galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'ve got your left side."',
+  ),
+];
+
+/// Creator band (12–14): four named companions with band-specific images.
+const _creatorCompanions = [
+  _CompanionData(
+    id: 'cipher',
+    name: 'Cipher',
+    tagline: 'Finds the flaw before it\'s a problem.',
+    imagePathOverride: 'assets/images/companions/creator/cipher.jpg',
+    personality:
+        'Cipher (Pattern Seer) is a blue-green dragon who breathes orbiting gears and compass roses. Finds the flaw in a plan before it\'s a problem. When the puzzle breaks open, his eyes flash gold. Treats problems like games and always offers two clever options. Catchphrases: "Interesting. The pieces fit — if you look at it sideways." / "Watch this."',
+  ),
+  _CompanionData(
+    id: 'rockin_robin',
+    name: 'Rockin\' Robin',
+    tagline: 'Loud, on time, strong opinions.',
+    imagePathOverride: 'assets/images/companions/creator/rockin_robin.jpg',
+    personality:
+        'Rockin\' Robin (Guardian) wears a leather jacket and carries drum sticks. Louder than necessary, always right on time. Has strong opinions, follows your lead anyway. She scouts ahead and bats away threats with fierce loyalty. Catchphrases: "I have a new sound for this." / "NO. Back. NOW." / "I handled it."',
+  ),
+  _CompanionData(
+    id: 'vesper',
+    name: 'Vesper',
+    tagline: 'Notices what doesn\'t fit the pattern.',
+    imagePathOverride: 'assets/images/companions/creator/vesper.jpg',
+    personality:
+        'Vesper (Boundary Guardian) is a black cat in leather gear trailing purple smoke. Notices the thing that doesn\'t fit the pattern. Has decided, after careful consideration, that you are worth trusting. Appears exactly when someone is being manipulative. Catchphrases: "Something\'s about to change." / "No is complete." / "We leave—now."',
+  ),
+  _CompanionData(
+    id: 'lore',
+    name: 'Lore',
+    tagline: 'Thinks in systems. Keeps his word.',
+    imagePathOverride: 'assets/images/companions/creator/lore.png',
+    personality:
+        'Lore (Hope Engine) is a white wolf in a scholar\'s cloak who thinks in systems and keeps his word. When he pushes back on a plan he explains why once, clearly, then helps you build it the right way. Stays close and guides you forward even when the path is unclear. Catchphrases: "I know what you\'re building. I want to help." / "One more step."',
+  ),
+];
+
+/// Adolescent band (15–17): four named companions with band-specific images.
+const _adolescentCompanions = [
+  _CompanionData(
+    id: 'zephyr',
+    name: 'Zephyr',
+    tagline: 'Already three moves ahead.',
+    imagePathOverride: 'assets/images/companions/adolescent/zephyr.png',
+    personality:
+        'Zephyr (Brave Protector) is a green hooded dragon who is already three moves ahead and usually right. Not trying to lead — trying to fly at the same altitude. Turns fear into a plan and stands between you and danger without making you feel small. Catchphrases: "Already saw it. Here\'s what we do." / "We\'ve got this."',
+  ),
+  _CompanionData(
+    id: 'rockin_robin',
+    name: 'Rockin\' Robin',
+    tagline: 'Watches you more than the path.',
+    imagePathOverride: 'assets/images/companions/adolescent/rockin_robin.png',
+    personality:
+        'Rockin\' Robin (Guardian) is more precise now, watches the hero more than she scouts. Still loud. Still fearless. Has been wrong about things she was certain of, and it\'s only made her braver. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I\'m watching you more than the path right now. You okay?" / "I handled it."',
+  ),
+  _CompanionData(
+    id: 'shade',
+    name: 'Shade',
+    tagline: 'Reads the room as closely as she reads you.',
+    imagePathOverride: 'assets/images/companions/adolescent/shade.png',
+    personality:
+        'Shade (Boundary Guardian) is a black panther wreathed in purple energy who reads the room as closely as she reads you. Her loyalty was built deliberately and she knows exactly when. Spots pressure, spots manipulation, helps you choose the cleanest exit. Catchphrases: "That\'s not what you actually believe, is it?" / "No is complete." / "We leave—now."',
+  ),
+  _CompanionData(
+    id: 'frost',
+    name: 'Frost',
+    tagline: 'Three moves ahead. Trusts you to aim him right.',
+    imagePathOverride: 'assets/images/companions/adolescent/frost.png',
+    personality:
+        'Frost (Hope Engine) is a blue-eyed wolf in a dark cloak who is already moving and trusts you to aim him right. Watches your signals as closely as the terrain. Stays close, lifts your mood in the hardest moments, and never gives up on you. Catchphrases: "Three moves ahead. Redirect me if I\'m wrong." / "I\'m right here."',
+  ),
+];
+
+/// Adult band (18+): four named companions with band-specific images.
+const _adultCompanions = [
+  _CompanionData(
+    id: 'tide',
+    name: 'Tide',
+    tagline: 'The pattern runs deep here.',
+    imagePathOverride: 'assets/images/companions/adult/tide.png',
+    personality:
+        'Tide (Pattern Seer) is an ancient teal dragon who has seen this before and knows which details actually matter. Gives counsel once, with precision, then steps back and lets it land. Speaks in short verdicts. Will not be rushed; slows the scene down when emotions spike. Catchphrases: "The pattern runs deep here. Let me show you." / "Look again."',
+  ),
+  _CompanionData(
+    id: 'rockin_robin',
+    name: 'Rockin\' Robin',
+    tagline: 'Still the same bird. Learned what you actually need.',
+    imagePathOverride: 'assets/images/companions/adult/rockin_robin.jpg',
+    personality:
+        'Rockin\' Robin (Guardian) still wears a leather harness, hamsa charm, and backpack of maps. Has learned what you actually need. When frightened she stays closer. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I know. I know. I still had to check." / "(soft) You\'re okay. I\'ve got you."',
+  ),
+  _CompanionData(
+    id: 'onyx',
+    name: 'Onyx',
+    tagline: 'Names what the room is actually about.',
+    imagePathOverride: 'assets/images/companions/adult/onyx.png',
+    personality:
+        'Onyx (Boundary Guardian) is a dark leopard with amber eyes who has made peace with patience. Names what the room is actually about, without drama, and waits for you to catch up. Has decided, after long consideration, that you are worth trusting. Catchphrases: "I know what\'s in the room. So do you." / "No is complete."',
+  ),
+  _CompanionData(
+    id: 'cinder',
+    name: 'Cinder',
+    tagline: 'Has outlasted most certainties.',
+    imagePathOverride: 'assets/images/companions/adult/cinder.png',
+    personality:
+        'Cinder (Hope Engine) is a wolf by firelight who has outlasted most certainties. Gives counsel like a key — only when the door is already there. Simply still there after everything. Watches your signals closely and never gives up on you. Catchphrases: "Wind from the east. Here\'s what I see." / "I\'m right here."',
   ),
 ];
 
@@ -4376,14 +4449,27 @@ class _CompanionImageGrid extends StatelessWidget {
           .floorToDouble()
           .clamp(40.0, naturalSize);
 
-      // Sprouts see only their 4 age-appropriate companions.
-      // Adventurer band (9-11) gets a reordered list: cooler/more mature
-      // companions first, most childish (Unicorn) last.
-      final companionList = band.band == AgeBand.sprout
-          ? _sproutCompanions
-          : band.band == AgeBand.adventurer
-              ? _adventurerCompanions
-              : _companions;
+      final List<_CompanionData> companionList;
+      switch (band.band) {
+        case AgeBand.sprout:
+          companionList = _sproutCompanions;
+          break;
+        case AgeBand.explorer:
+          companionList = _explorerCompanions;
+          break;
+        case AgeBand.adventurer:
+          companionList = _adventurerCompanions;
+          break;
+        case AgeBand.creator:
+          companionList = _creatorCompanions;
+          break;
+        case AgeBand.adolescent:
+          companionList = _adolescentCompanions;
+          break;
+        case AgeBand.adult:
+          companionList = _adultCompanions;
+          break;
+      }
 
       // Build companion buttons with a uniform, pre-calculated size.
       List<Widget> buttons = companionList.map((c) {

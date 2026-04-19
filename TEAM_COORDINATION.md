@@ -1,5 +1,59 @@
 # Team Coordination
 
+## 2026-04-19c — Phase 6 Test Report + Load Audit Harness Fix (Claude Sonnet 4.6)
+
+**Goal:** Document phase 6 automated test results and fix the broken load-audit harness.
+
+### Load audit harness bug fixed (`backend/tests/story_load_audit.py`)
+- All load audit scenarios were returning 500: `'types.SimpleNamespace' object has no attribute 'is_under_13'`
+- Root cause: the mock User SimpleNamespace was created before the `is_under_13` and `declared_age` fields were added to the User model
+- Fix: added `is_under_13=False, declared_age=None` to the SimpleNamespace in `_auth_session_get()`
+
+### Phase 6 test findings (`docs/phase6_test_report_2026-04-19.md`)
+Automated Playwright + load audit run across Welcome → Age Picker → COPPA gate → Adult band wizard.
+
+| Area | Result |
+|------|--------|
+| Welcome + age picker | ✅ Pass |
+| COPPA gate (Sprout) | ✅ Pass |
+| Adult band visual/character/archetype | ✅ Pass |
+| Companion images (adult brief wizard) | ❌ 7 images 404 |
+| Load audit harness | ❌ Broken (fixed above) |
+
+**Open bugs from phase 6:** 7 adult companion images 404 in the brief wizard. Real-API load audit deferred until harness verified post-fix.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/tests/story_load_audit.py` | Add `is_under_13`/`declared_age` to mock user SimpleNamespace |
+| `backend/tests/artifacts/story_load_audit_latest.*` | Updated artifacts (pre-fix, 500 errors — documents the broken state) |
+| `docs/phase6_test_report_2026-04-19.md` | Full phase 6 test report |
+| `docs/phase6_artifacts/` | Playwright screenshots (24 images) |
+
+---
+
+## 2026-04-19b — Band-Specific Companion Images: Explorer, Adventurer, Creator (Claude Sonnet 4.6)
+
+**Goal:** Wire named companions with `imagePathOverride` for Explorer (6–8), Adventurer (9–11), and Creator (12–14) bands — completing the companion rebrand started in `2026-04-18d`.
+
+### Changes (`lib/screens/wizard_steps/hero_creator_step.dart`)
+- Added `_explorerCompanions` — Ember, Robin, Clover, Biscuit with `assets/images/companions/explorer/*.png/jpg`
+- Replaced generic `_adventurerCompanions` with named band-specific list — Atlas, Robin, Nyx, Kodiak with `assets/images/companions/adventurer/*.jpg/png`
+- Added `_creatorCompanions` — Cipher, Rockin' Robin, Vesper, Lore with `assets/images/companions/creator/*.jpg/png`
+- All companions use `imagePathOverride` so band-specific art is served rather than the generic fallback
+
+### `SafeAssetImage` widget enhancement (`lib/widgets/safe_asset_image.dart`)
+- Added `alignment`, `filterQuality`, and `frameBuilder` optional parameters — passed through to the underlying `Image.asset` call
+- Allows callers to control image rendering quality and frame animation without bypassing the error-handling wrapper
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Explorer/Adventurer/Creator companion lists with band-specific image paths |
+| `lib/widgets/safe_asset_image.dart` | `alignment`, `filterQuality`, `frameBuilder` props |
+
+---
+
 ## 2026-04-19 — Welcome Screen Polish: Name-Echo Animation, Age Glyphs, Kid Consent Summary (Claude Sonnet 4.6)
 
 **Goal:** Three UX polish items identified via Six Hats / 10-year-old user walkthrough.

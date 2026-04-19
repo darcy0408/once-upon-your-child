@@ -13,6 +13,9 @@ class SafeAssetImage extends StatelessWidget {
     this.height,
     this.fit,
     this.color,
+    this.alignment = Alignment.center,
+    this.filterQuality = FilterQuality.medium,
+    this.frameBuilder,
     this.placeholder,
     this.semanticLabel,
   });
@@ -22,6 +25,9 @@ class SafeAssetImage extends StatelessWidget {
   final double? height;
   final BoxFit? fit;
   final Color? color;
+  final AlignmentGeometry alignment;
+  final FilterQuality filterQuality;
+  final ImageFrameBuilder? frameBuilder;
 
   /// Optional custom placeholder. Defaults to a sized [SizedBox].
   final Widget? placeholder;
@@ -36,6 +42,9 @@ class SafeAssetImage extends StatelessWidget {
       height: height,
       fit: fit,
       color: color,
+      alignment: alignment,
+      filterQuality: filterQuality,
+      frameBuilder: frameBuilder,
       semanticLabel: semanticLabel,
       errorBuilder: (_, __, ___) =>
           placeholder ?? SizedBox(width: width, height: height),
