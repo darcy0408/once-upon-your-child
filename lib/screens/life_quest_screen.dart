@@ -48,10 +48,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   List<LifeQuestScenario> get _matchingQuests {
-    if (widget.selectedEmotion == null) return allLifeQuests;
-    return allLifeQuests
-        .where((q) => q.emotions.contains(widget.selectedEmotion))
+    final band = ageBandFromAge(widget.childAge);
+    var quests = allLifeQuests
+        .where((q) => q.recommendedBands.contains(band))
         .toList();
+    if (widget.selectedEmotion != null) {
+      quests = quests.where((q) => q.emotions.contains(widget.selectedEmotion)).toList();
+    }
+    return quests;
   }
 
   String _interpolate(String text) {
@@ -136,6 +140,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   Widget _buildQuestSelector(AgeBandThemeData band) {
     final quests = _matchingQuests;
+    final isYoung = widget.childAge <= 8;
     return Column(
       children: [
         // Header
@@ -165,7 +170,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Text(
-            'Life throws curveballs. Practice handling them here.',
+            isYoung
+                ? 'Adventures about feelings are on their way!'
+                : 'Life throws curveballs. Practice handling them here.',
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(
               color: Colors.white60,
@@ -173,14 +180,53 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             ),
           ),
         ),
-        // Quest cards
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: quests.length,
-            itemBuilder: (context, i) => _buildQuestCard(quests[i], band),
+        // Quest cards or empty state
+        if (quests.isEmpty)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isYoung ? '🌱' : '🚀',
+                      style: const TextStyle(fontSize: 64),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'More quests coming soon!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isYoung
+                          ? 'Check back later for stories about big feelings.'
+                          : 'New scenarios are being added.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white38,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              itemCount: quests.length,
+              itemBuilder: (context, i) => _buildQuestCard(quests[i], band),
+            ),
           ),
-        ),
       ],
     );
   }
