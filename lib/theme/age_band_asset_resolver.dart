@@ -24,9 +24,10 @@ class AgeBandAssetResolver {
   static String scenePath(AgeBand band, String sceneId) =>
       'assets/images/scenes/${_folder(band)}/$sceneId.jpg';
 
-  /// Companion creature image — e.g. 'fluffy_dragon', 'ember_dragon'.
-  static String companionPath(AgeBand band, String companionId) =>
-      'assets/images/companions/${_folder(band)}/$companionId.png';
+  /// Companion creature image — pass the full filename including extension,
+  /// e.g. 'pebble.png' or 'mochi.jpg'.
+  static String companionPath(AgeBand band, String filename) =>
+      'assets/images/companions/${_folder(band)}/$filename';
 
   /// Feeling face image. Core 8: angry, calm, confused, excited, happy, sad, scared, surprised.
   static String feelingPath(AgeBand band, String feelingName) =>

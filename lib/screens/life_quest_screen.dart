@@ -360,123 +360,51 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Divider
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            children: [
-              Expanded(child: Divider(color: Colors.white.withAlpha(40))),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'Quest Complete',
-                  style: GoogleFonts.fredoka(
-                    color: band.accent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+        const SizedBox(height: 24),
+        // Primary action: try a different path
+        if (_segmentHistory.isNotEmpty) ...[
+          FilledButton.icon(
+            icon: const Icon(Icons.undo_rounded, size: 18),
+            label: const Text('Want to try a different path?'),
+            style: FilledButton.styleFrom(
+              backgroundColor: band.accent,
+              foregroundColor: Colors.black87,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-              Expanded(child: Divider(color: Colors.white.withAlpha(40))),
-            ],
-          ),
-        ),
-        // Reflection prompt
-        if (segment.reflectionPrompt != null) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(10),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withAlpha(30)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Think About It',
-                  style: GoogleFonts.fredoka(
-                    color: band.accent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _interpolate(segment.reflectionPrompt!),
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white.withAlpha(200),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
+            onPressed: _rewind,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
         ],
-        // Action buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.undo_rounded, size: 18),
-                label: const Text('Try Different Choices'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: Colors.white.withAlpha(60)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _rewind,
-              ),
+        // Secondary actions
+        OutlinedButton.icon(
+          icon: const Icon(Icons.explore_rounded, size: 18),
+          label: const Text('Try another quest'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white70,
+            side: BorderSide(color: Colors.white.withAlpha(60)),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+          ),
+          onPressed: _resetToSelector,
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.explore_rounded, size: 18),
-                label: const Text('Try Another Quest'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: Colors.white.withAlpha(60)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _resetToSelector,
-              ),
+        TextButton(
+          onPressed: () {
+            AppTtsService.instance.stop();
+            Navigator.of(context).pop();
+          },
+          child: Text(
+            'Done',
+            style: GoogleFonts.fredoka(
+              color: Colors.white54,
+              fontSize: 14,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: const Text('Done'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: band.accent,
-                  foregroundColor: Colors.black87,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  AppTtsService.instance.stop();
-                  Navigator.of(context).pop();
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
