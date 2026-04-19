@@ -101,6 +101,23 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     }
   }
 
+  String _selectorSubtitle() {
+    final band = ageBandFromAge(widget.childAge);
+    switch (band) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return 'Adventures about feelings are on their way!';
+      case AgeBand.adventurer:
+        return 'Life throws curveballs. Practice handling them here.';
+      case AgeBand.creator:
+        return 'Your feelings run deep. These stories explore them.';
+      case AgeBand.adolescent:
+        return "Some situations don't have easy answers. Let's sit with them.";
+      case AgeBand.adult:
+        return 'Reflect on the moments that shape you.';
+    }
+  }
+
   void _resetToSelector() {
     AppTtsService.instance.stop();
     setState(() {
@@ -170,9 +187,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Text(
-            isYoung
-                ? 'Adventures about feelings are on their way!'
-                : 'Life throws curveballs. Practice handling them here.',
+            _selectorSubtitle(),
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(
               color: Colors.white60,

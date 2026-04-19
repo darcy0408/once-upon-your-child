@@ -121,16 +121,26 @@ const allLifeQuests = <LifeQuestScenario>[
   questNotFair,
   questSleepover,
   questMyTurnTalk,
-  // Adventurer / Creator / Adolescent (ages 9+)
+  // Adventurer + Creator (ages 9-14)
   questTryout,
   questLeftOut,
-  questPeerPressure,
-  questSchoolStress,
   questSiblingConflict,
   questBeingTeased,
+  // All three bands (ages 9-17)
+  questSchoolStress,
+  // Creator + Adolescent (ages 12-17)
+  questPeerPressure,
   questFamilyStress,
   questFeelingDifferent,
   questLosingFriendship,
+  // Creator only (ages 12-14)
+  questGroupChat,
+  questMyWorkMyWay,
+  questMirrorMirror,
+  // Adolescent only (ages 15-17)
+  questSomeoneNeedsHelp,
+  questThingIDidntSay,
+  questWhereAreYouGoing,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -143,6 +153,7 @@ const questLeftOut = LifeQuestScenario(
   hook: 'The whole group went somewhere. Nobody told you.',
   emoji: '\u{1F494}',
   emotions: ['sad', 'worried', 'angry', 'embarrassed'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'lo_start',
   segments: {
     'lo_start': QuestSegment(
@@ -629,6 +640,7 @@ const questPeerPressure = LifeQuestScenario(
   hook: 'The can is in your hand. So is the choice.',
   emoji: '\u{1F62C}',
   emotions: ['worried', 'frustrated', 'embarrassed'],
+  recommendedBands: [AgeBand.creator, AgeBand.adolescent],
   startSegmentId: 'pp_start',
   segments: {
     'pp_start': QuestSegment(
@@ -1144,6 +1156,7 @@ const questSiblingConflict = LifeQuestScenario(
   hook: 'Your sibling\'s back again. Fourth time.',
   emoji: '\u{1F4A2}',
   emotions: ['angry', 'frustrated'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'sc_start',
   segments: {
     'sc_start': QuestSegment(
@@ -1349,6 +1362,7 @@ const questBeingTeased = LifeQuestScenario(
   hook: 'Someone said something in the hallway. It\'s still in your head.',
   emoji: '\u{1F62A}',
   emotions: ['sad', 'angry', 'embarrassed'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'bt_start',
   segments: {
     'bt_start': QuestSegment(
@@ -1604,6 +1618,7 @@ const questFamilyStress = LifeQuestScenario(
   hook: 'The voices downstairs aren\'t quite yelling.',
   emoji: '\u{1F3E0}',
   emotions: ['sad', 'worried', 'angry'],
+  recommendedBands: [AgeBand.creator, AgeBand.adolescent],
   startSegmentId: 'fs_start',
   segments: {
     'fs_start': QuestSegment(
@@ -1804,6 +1819,7 @@ const questFeelingDifferent = LifeQuestScenario(
   hook: 'Everyone has a matching outfit. You have a regular day.',
   emoji: '\u{1F30D}',
   emotions: ['sad', 'worried', 'embarrassed'],
+  recommendedBands: [AgeBand.creator, AgeBand.adolescent],
   startSegmentId: 'fd_start',
   segments: {
     'fd_start': QuestSegment(
@@ -2007,6 +2023,7 @@ const questLosingFriendship = LifeQuestScenario(
   hook: 'Your best friend is becoming someone else\'s best friend.',
   emoji: '\u{1F494}',
   emotions: ['sad', 'worried', 'angry', 'embarrassed'],
+  recommendedBands: [AgeBand.creator, AgeBand.adolescent],
   startSegmentId: 'lf_start',
   segments: {
     'lf_start': QuestSegment(
@@ -2485,6 +2502,7 @@ const questTryout = LifeQuestScenario(
   hook: 'You\'ve practised a hundred times. None of that matters right now.',
   emoji: '🎭',
   emotions: ['worried', 'excited', 'scared', 'embarrassed'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'tt_start',
   segments: {
     'tt_start': QuestSegment(
@@ -3433,6 +3451,930 @@ const questMyTurnTalk = LifeQuestScenario(
           'Every time you do this, '
           'it gets just a little bit less scary. '
           'Even the messy times count.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREATOR QUEST 1: The Group Chat
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questGroupChat = LifeQuestScenario(
+  id: 'group_chat',
+  title: 'The Group Chat',
+  hook: 'You said something. The replies stopped.',
+  emoji: '\u{1F4F1}',
+  emotions: ['worried', 'embarrassed', 'sad'],
+  recommendedBands: [AgeBand.creator],
+  startSegmentId: 'gc_start',
+  segments: {
+    'gc_start': QuestSegment(
+      id: 'gc_start',
+      content:
+          'You typed it fast. A joke — or what you thought was a joke.\n\n'
+          'It landed in the group chat and then... nothing. '
+          'The typing bubbles that were bouncing a second ago '
+          'have gone still. Thirty people in this chat '
+          'and not one of them is typing.\n\n'
+          'You scroll back up and read your message again. '
+          'It reads differently now. Harsher. '
+          'You can see how someone could take it the wrong way.\n\n'
+          '«{companion} texts you privately: "uh, that came out weird" »\n\n'
+          'Your face is burning. What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'gc_fix',
+          text: 'Send a follow-up: "that came out wrong, sorry"',
+          nextSegmentId: 'gc_fix',
+        ),
+        QuestChoice(
+          id: 'gc_wait',
+          text: 'Put the phone down and wait it out.',
+          nextSegmentId: 'gc_wait',
+        ),
+      ],
+    ),
+
+    'gc_fix': QuestSegment(
+      id: 'gc_fix',
+      content:
+          'You type: "hey that came out way harsher than I meant, sorry"\n\n'
+          'A few seconds pass. Then someone drops a thumbs-up. '
+          'Someone else sends a meme. The chat moves on.\n\n'
+          'But one person — the one your comment was sort of about — '
+          'hasn\'t said anything.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'gc_dm',
+          text: 'DM them directly to check in.',
+          nextSegmentId: 'gc_end_dm',
+        ),
+        QuestChoice(
+          id: 'gc_leave_it',
+          text: 'Leave it — the group moved on, so it must be fine.',
+          nextSegmentId: 'gc_end_leave_it',
+        ),
+      ],
+    ),
+
+    'gc_wait': QuestSegment(
+      id: 'gc_wait',
+      content:
+          'You put the phone face-down on your desk.\n\n'
+          'Your brain is not face-down. Your brain is replaying '
+          'every possible reading of that message on a loop. '
+          'Are they talking about you in a different chat right now? '
+          'Are they screenshotting it?\n\n'
+          'Ten minutes later you check. '
+          'Someone\'s changed the subject. '
+          'But you can\'t tell if that means it\'s fine '
+          'or if everyone just decided to pretend.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'gc_late_apology',
+          text: 'Send a late apology — better late than never.',
+          nextSegmentId: 'gc_end_late_apology',
+        ),
+        QuestChoice(
+          id: 'gc_in_person',
+          text: 'Talk to the person face-to-face tomorrow.',
+          nextSegmentId: 'gc_end_in_person',
+        ),
+      ],
+    ),
+
+    'gc_end_dm': QuestSegment(
+      id: 'gc_end_dm',
+      content:
+          '"Hey, I\'m sorry about what I said in the chat. '
+          'I didn\'t mean it that way."\n\n'
+          'They take a minute to reply. Then: '
+          '"It\'s okay. It did sting a bit but I know you didn\'t mean it."\n\n'
+          'That was hard to send. '
+          'But the relief of knowing where you actually stand with someone '
+          'is worth the thirty seconds of vulnerability.\n\n'
+          'Text is tricky. Tone doesn\'t travel well through a screen. '
+          'But owning it quickly does.',
+      isEnding: true,
+    ),
+
+    'gc_end_leave_it': QuestSegment(
+      id: 'gc_end_leave_it',
+      content:
+          'Maybe it is fine. Maybe they barely noticed.\n\n'
+          'Or maybe they\'re doing the same thing you\'re doing — '
+          'staring at their phone, wondering whether they overreacted.\n\n'
+          'The thing about text is that silence can mean "no worries" '
+          'or it can mean "I\'m hurt and I don\'t know how to say it." '
+          'You can\'t always tell which.\n\n'
+          'If the uneasy feeling is still there tomorrow, '
+          'it might be worth a quick word in person.',
+      isEnding: true,
+    ),
+
+    'gc_end_late_apology': QuestSegment(
+      id: 'gc_end_late_apology',
+      content:
+          'You type it out. Delete it. Type it again. Hit send.\n\n'
+          '"Hey, that thing I said earlier — I\'m sorry. '
+          'It wasn\'t what I meant."\n\n'
+          'Someone replies: "oh lol I already forgot about that"\n\n'
+          'Maybe they did. Maybe they\'re being kind. '
+          'Either way, you said the thing that was sitting on your chest, '
+          'and it\'s lighter now.\n\n'
+          'Late apologies still count.',
+      isEnding: true,
+    ),
+
+    'gc_end_in_person': QuestSegment(
+      id: 'gc_end_in_person',
+      content:
+          'The next day you find them by the lockers.\n\n'
+          '"Hey — about what I said in the group chat. '
+          'It came out wrong. I\'m sorry."\n\n'
+          'They look surprised. "Oh. Thanks for saying that."\n\n'
+          'In person is harder than text. '
+          'You can\'t edit, you can\'t delete, '
+          'you have to look at their actual face.\n\n'
+          'But that\'s also why it lands differently. '
+          'It means more because it costs more.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREATOR QUEST 2: My Work, My Way
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMyWorkMyWay = LifeQuestScenario(
+  id: 'my_work_my_way',
+  title: 'My Work, My Way',
+  hook: 'You made something you care about. Someone just laughed at it.',
+  emoji: '\u{1F3A8}',
+  emotions: ['sad', 'angry', 'embarrassed'],
+  recommendedBands: [AgeBand.creator],
+  startSegmentId: 'mw_start',
+  segments: {
+    'mw_start': QuestSegment(
+      id: 'mw_start',
+      content:
+          'You worked on this for days. '
+          'It\'s not perfect — you know that — '
+          'but it\'s yours, and when you look at it you feel something.\n\n'
+          'Then someone in class glances at it and says, '
+          '"Wait, that\'s what you\'re handing in?"\n\n'
+          'A couple of people laugh. Not everyone. '
+          'But enough.\n\n'
+          'The thing you were proud of five minutes ago '
+          'now feels like it\'s shrinking in your hands.\n\n'
+          '«{companion} is watching from across the room. »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'mw_defend',
+          text: 'Say something back — stand up for your work.',
+          nextSegmentId: 'mw_defend',
+        ),
+        QuestChoice(
+          id: 'mw_fold',
+          text: 'Flip it over so nobody else can see.',
+          nextSegmentId: 'mw_fold',
+        ),
+      ],
+    ),
+
+    'mw_defend': QuestSegment(
+      id: 'mw_defend',
+      content:
+          '"I actually like it," you say.\n\n'
+          'It comes out quieter than you wanted, '
+          'but you said it. The person who laughed shrugs '
+          'and looks away.\n\n'
+          'Your heart is hammering. '
+          'You\'re not sure if that was brave or stupid.\n\n'
+          'How do you feel about your work now?',
+      choices: [
+        QuestChoice(
+          id: 'mw_still_proud',
+          text: 'I still like it. Their opinion is their opinion.',
+          nextSegmentId: 'mw_end_still_proud',
+        ),
+        QuestChoice(
+          id: 'mw_doubt',
+          text: 'I don\'t know anymore. Maybe they saw something I didn\'t.',
+          nextSegmentId: 'mw_end_doubt',
+        ),
+      ],
+    ),
+
+    'mw_fold': QuestSegment(
+      id: 'mw_fold',
+      content:
+          'You turn it over, face-down. '
+          'The laughter fades into normal classroom noise.\n\n'
+          'But the feeling doesn\'t fade. '
+          'Something that was open is closed now, '
+          'and you\'re the one who closed it.\n\n'
+          '«{companion} comes over. "Can I see it?" »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'mw_show_friend',
+          text: 'Show it — to someone you trust.',
+          nextSegmentId: 'mw_end_show_friend',
+        ),
+        QuestChoice(
+          id: 'mw_change_it',
+          text: 'Start over. Make something safer.',
+          nextSegmentId: 'mw_end_change_it',
+        ),
+      ],
+    ),
+
+    'mw_end_still_proud': QuestSegment(
+      id: 'mw_end_still_proud',
+      content:
+          'Good.\n\n'
+          'Here\'s the thing about making something real: '
+          'not everyone will get it. '
+          'That doesn\'t mean it\'s wrong — '
+          'it means it\'s actually yours.\n\n'
+          'The stuff that everyone agrees on immediately '
+          'is usually the stuff nobody remembers.\n\n'
+          'Keep making things that make you feel something.',
+      isEnding: true,
+    ),
+
+    'mw_end_doubt': QuestSegment(
+      id: 'mw_end_doubt',
+      content:
+          'Doubt is normal after someone laughs at your work. '
+          'It doesn\'t mean they\'re right.\n\n'
+          'There\'s a difference between useful feedback '
+          'and someone who just wants a reaction. '
+          'The first one helps you grow. '
+          'The second one says nothing about your work '
+          'and everything about theirs.\n\n'
+          'Give yourself a day. '
+          'Then look at your work again with fresh eyes. '
+          'You\'ll know.',
+      isEnding: true,
+    ),
+
+    'mw_end_show_friend': QuestSegment(
+      id: 'mw_end_show_friend',
+      content:
+          'You turn it over, slowly.\n\n'
+          'Your friend looks at it properly — '
+          'not a glance, not a joke, '
+          'an actual look.\n\n'
+          '"I really like this part," they say, '
+          'pointing to something specific.\n\n'
+          'One person who actually looks is worth more '
+          'than a roomful of people who don\'t.\n\n'
+          'Be careful who you show your real work to. '
+          'Not everyone has earned that.',
+      isEnding: true,
+    ),
+
+    'mw_end_change_it': QuestSegment(
+      id: 'mw_end_change_it',
+      content:
+          'You start again. Something simpler. Something nobody will laugh at.\n\n'
+          'It\'s fine. It looks like everyone else\'s.\n\n'
+          'And you feel... nothing.\n\n'
+          'The original is still in your bag. '
+          'It\'s not gone. You can always pull it back out — '
+          'today, or next week, or in a month when the sting has faded.\n\n'
+          'The work that scares you a little '
+          'is usually the work that matters.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREATOR QUEST 3: Mirror, Mirror
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMirrorMirror = LifeQuestScenario(
+  id: 'mirror_mirror',
+  title: 'Mirror, Mirror',
+  hook: 'They make it look so easy. You make it look like trying.',
+  emoji: '\u{1FA9E}',
+  emotions: ['sad', 'worried', 'embarrassed'],
+  recommendedBands: [AgeBand.creator],
+  startSegmentId: 'mm_start',
+  segments: {
+    'mm_start': QuestSegment(
+      id: 'mm_start',
+      content:
+          'You see them every day — that person who just seems '
+          'to have it figured out. The right clothes. '
+          'The easy laugh. The way people gravitate toward them '
+          'like it costs them nothing.\n\n'
+          'Then there\'s you, in the bathroom mirror before school, '
+          'trying to make your hair do a thing it won\'t do, '
+          'wearing the third outfit you\'ve tried on this morning.\n\n'
+          'You\'re late now.\n\n'
+          '«{companion} is waiting by the door. »\n\n'
+          'What goes through your head?',
+      choices: [
+        QuestChoice(
+          id: 'mm_compare',
+          text: 'Why can\'t I just look like them?',
+          nextSegmentId: 'mm_compare',
+        ),
+        QuestChoice(
+          id: 'mm_stop',
+          text: 'This is what I\'ve got. Move.',
+          nextSegmentId: 'mm_stop',
+        ),
+      ],
+    ),
+
+    'mm_compare': QuestSegment(
+      id: 'mm_compare',
+      content:
+          'The comparing starts and it doesn\'t stop.\n\n'
+          'At school you notice everything — '
+          'how they walk, what they eat, '
+          'who sits next to them. '
+          'Every detail confirms the same thought: '
+          'they have something you don\'t.\n\n'
+          'By lunch, the inside of your head is exhausting.\n\n'
+          'What do you do with this?',
+      choices: [
+        QuestChoice(
+          id: 'mm_talk',
+          text: 'Tell someone how you\'re feeling.',
+          nextSegmentId: 'mm_end_talk',
+        ),
+        QuestChoice(
+          id: 'mm_examine',
+          text: 'Ask yourself what exactly you\'re jealous of.',
+          nextSegmentId: 'mm_end_examine',
+        ),
+      ],
+    ),
+
+    'mm_stop': QuestSegment(
+      id: 'mm_stop',
+      content:
+          'You pull on what you had and walk out the door.\n\n'
+          'It\'s not a victory — more like a truce. '
+          'You don\'t love what you see in the mirror, '
+          'but you\'re not going to let it eat your morning.\n\n'
+          'At school, something small happens — '
+          'someone compliments your shoes, or laughs at your joke, '
+          'or chooses you first for something.\n\n'
+          'How does that land?',
+      choices: [
+        QuestChoice(
+          id: 'mm_accept_it',
+          text: 'Let it in. Maybe I\'m harder on myself than I should be.',
+          nextSegmentId: 'mm_end_accept',
+        ),
+        QuestChoice(
+          id: 'mm_dismiss_it',
+          text: 'They\'re just being nice. It doesn\'t really count.',
+          nextSegmentId: 'mm_end_dismiss',
+        ),
+      ],
+    ),
+
+    'mm_end_talk': QuestSegment(
+      id: 'mm_end_talk',
+      content:
+          '"I just feel like everyone else has it figured out '
+          'and I\'m still... figuring."\n\n'
+          'The person you\'re talking to is quiet for a second. '
+          'Then: "Yeah. Me too, honestly."\n\n'
+          'Oh.\n\n'
+          'The person you thought had it together '
+          'is standing here telling you they don\'t.\n\n'
+          'Everyone is comparing themselves to someone. '
+          'The question is whether you let it run your day.',
+      isEnding: true,
+    ),
+
+    'mm_end_examine': QuestSegment(
+      id: 'mm_end_examine',
+      content:
+          'You sit with it. What exactly do they have?\n\n'
+          'Confidence? A certain look? The way people respond to them?\n\n'
+          'Here\'s the thing: some of that is real. '
+          'Some of it is performance. '
+          'And some of it is a story you\'re telling yourself '
+          'about who they are from the outside.\n\n'
+          'You\'re comparing your insides to their outsides. '
+          'That\'s never going to be a fair comparison.',
+      isEnding: true,
+    ),
+
+    'mm_end_accept': QuestSegment(
+      id: 'mm_end_accept',
+      content:
+          'You let the nice thing sit for a moment '
+          'instead of explaining it away.\n\n'
+          'It doesn\'t fix everything. '
+          'The mirror will still be difficult some mornings.\n\n'
+          'But maybe the mirror isn\'t the most reliable narrator. '
+          'It shows you one angle, frozen, at your most critical moment.\n\n'
+          'The people around you are seeing something '
+          'the mirror doesn\'t show.',
+      isEnding: true,
+    ),
+
+    'mm_end_dismiss': QuestSegment(
+      id: 'mm_end_dismiss',
+      content:
+          'You wave it off. Easy to do. '
+          'Dismissing compliments is almost automatic by now.\n\n'
+          'But notice what you just did: '
+          'you accepted the criticism from your own head instantly, '
+          'and rejected the kindness from someone else instantly.\n\n'
+          'That\'s not honesty. That\'s a habit.\n\n'
+          'Habits can change — '
+          'but only once you notice them.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADOLESCENT QUEST 1: Someone Needs Help
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questSomeoneNeedsHelp = LifeQuestScenario(
+  id: 'someone_needs_help',
+  title: 'Someone Needs Help',
+  hook: 'Your friend hasn\'t been okay. You can see it.',
+  emoji: '\u{1F6A8}',
+  emotions: ['worried', 'scared', 'sad'],
+  recommendedBands: [AgeBand.adolescent],
+  startSegmentId: 'sh_start',
+  segments: {
+    'sh_start': QuestSegment(
+      id: 'sh_start',
+      content:
+          'It\'s been building for weeks.\n\n'
+          'Your friend used to be the first person in the group chat, '
+          'the one who made plans, the one who showed up early. '
+          'Now they cancel everything. They laugh at the wrong moments. '
+          'Yesterday they said something that stuck with you — '
+          'offhand, almost casual — and you haven\'t been able '
+          'to stop thinking about it since.\n\n'
+          'You\'re not a therapist. You\'re not their parent. '
+          'You\'re sixteen and you\'re scared.\n\n'
+          '«{companion} noticed too. '
+          '"Should we say something?" {companion} asks. »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'sh_ask',
+          text: 'Ask them directly: "Are you okay? Like, really."',
+          nextSegmentId: 'sh_ask',
+        ),
+        QuestChoice(
+          id: 'sh_tell_adult',
+          text: 'Tell a trusted adult — a teacher, a counsellor, a parent.',
+          nextSegmentId: 'sh_tell_adult',
+        ),
+      ],
+    ),
+
+    'sh_ask': QuestSegment(
+      id: 'sh_ask',
+      content:
+          'You find a moment when it\'s just the two of you.\n\n'
+          '"Hey. I\'ve noticed you seem really different lately. '
+          'Are you actually okay?"\n\n'
+          'They go quiet. For a long time. '
+          'Then they say: "Not really. No."\n\n'
+          'You don\'t know what to say next. '
+          'Your heart is pounding.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'sh_listen',
+          text: 'Just listen. Don\'t try to fix it.',
+          nextSegmentId: 'sh_end_listen',
+        ),
+        QuestChoice(
+          id: 'sh_help_them_get_help',
+          text: 'Gently suggest they talk to someone who can actually help.',
+          nextSegmentId: 'sh_end_suggest',
+        ),
+      ],
+    ),
+
+    'sh_tell_adult': QuestSegment(
+      id: 'sh_tell_adult',
+      content:
+          'You find a teacher you trust.\n\n'
+          '"I\'m worried about someone. '
+          'I don\'t know if it\'s serious, but something feels wrong."\n\n'
+          'The teacher listens. Takes it seriously. '
+          'Says they\'ll look into it.\n\n'
+          'You walk away feeling two things at once.\n\n'
+          'What hits you first?',
+      choices: [
+        QuestChoice(
+          id: 'sh_relief',
+          text: 'Relief — I did the right thing.',
+          nextSegmentId: 'sh_end_relief',
+        ),
+        QuestChoice(
+          id: 'sh_guilt',
+          text: 'Guilt — what if they find out I told someone?',
+          nextSegmentId: 'sh_end_guilt',
+        ),
+      ],
+    ),
+
+    'sh_end_listen': QuestSegment(
+      id: 'sh_end_listen',
+      content:
+          'You sit with them. You don\'t fill the silence.\n\n'
+          'They talk, stop, talk again. It comes out in fragments. '
+          'You don\'t understand all of it, '
+          'but you don\'t need to.\n\n'
+          'Sometimes what someone needs isn\'t answers. '
+          'It\'s proof that someone noticed.\n\n'
+          'You noticed. You asked. You stayed.\n\n'
+          'That matters more than you know. '
+          'But if what they shared worries you — '
+          'it\'s okay to loop in an adult too. '
+          'Caring about someone and getting them real help '
+          'aren\'t opposites.',
+      isEnding: true,
+    ),
+
+    'sh_end_suggest': QuestSegment(
+      id: 'sh_end_suggest',
+      content:
+          '"I\'m glad you told me," you say. '
+          '"But I think you should talk to someone '
+          'who knows more than I do. '
+          'A counsellor, or an adult you trust."\n\n'
+          'They look away. "I don\'t want to make it a big deal."\n\n'
+          '"It already is a big deal," you say quietly. '
+          '"That\'s why I\'m asking."\n\n'
+          'You\'re not responsible for fixing this. '
+          'But pointing someone toward help — '
+          'gently, honestly — is one of the most important things '
+          'a friend can do.\n\n'
+          'You did enough. And it\'s okay to tell an adult yourself '
+          'if you\'re still worried.',
+      isEnding: true,
+    ),
+
+    'sh_end_relief': QuestSegment(
+      id: 'sh_end_relief',
+      content:
+          'You did the right thing.\n\n'
+          'It doesn\'t feel triumphant. It feels heavy. '
+          'But this is what caring about someone looks like sometimes — '
+          'doing the thing that helps them '
+          'even when it makes you uncomfortable.\n\n'
+          'You\'re not betraying their trust. '
+          'You\'re choosing their safety over their secrecy. '
+          'That\'s not betrayal — that\'s love.',
+      isEnding: true,
+    ),
+
+    'sh_end_guilt': QuestSegment(
+      id: 'sh_end_guilt',
+      content:
+          'The guilt is real. You might feel like a snitch, '
+          'a bad friend, someone who broke a trust.\n\n'
+          'But here\'s what you need to hear: '
+          'there are situations where keeping a secret '
+          'is more dangerous than telling it.\n\n'
+          'If your friend is struggling in a way '
+          'that\'s bigger than what a friend can hold — '
+          'and you felt that, or you wouldn\'t be here — '
+          'then telling someone isn\'t betrayal. '
+          'It\'s the hardest, most caring thing you could do.\n\n'
+          'They might be angry. They might not understand yet. '
+          'But you chose their safety. That took guts.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADOLESCENT QUEST 2: The Thing I Didn't Say
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questThingIDidntSay = LifeQuestScenario(
+  id: 'thing_i_didnt_say',
+  title: "The Thing I Didn't Say",
+  hook: 'You saw it happen. You said nothing.',
+  emoji: '\u{1F910}',
+  emotions: ['worried', 'sad', 'angry'],
+  recommendedBands: [AgeBand.adolescent],
+  startSegmentId: 'ts_start',
+  segments: {
+    'ts_start': QuestSegment(
+      id: 'ts_start',
+      content:
+          'It happened in front of you.\n\n'
+          'A comment. A push. A joke that wasn\'t a joke. '
+          'Someone targeted, someone laughing, '
+          'and you — standing right there — '
+          'with all the words locked behind your teeth.\n\n'
+          'You didn\'t say anything. '
+          'Nobody did.\n\n'
+          'That was two hours ago and you\'re still carrying it.\n\n'
+          '«{companion} was there too. '
+          '{companion} hasn\'t mentioned it either. »\n\n'
+          'What do you do now?',
+      choices: [
+        QuestChoice(
+          id: 'ts_reach_out',
+          text: 'Find the person it happened to. Check on them.',
+          nextSegmentId: 'ts_reach_out',
+        ),
+        QuestChoice(
+          id: 'ts_sit_with_it',
+          text: 'Sit with the discomfort and think about why you froze.',
+          nextSegmentId: 'ts_sit_with_it',
+        ),
+      ],
+    ),
+
+    'ts_reach_out': QuestSegment(
+      id: 'ts_reach_out',
+      content:
+          'You find them. They look tired.\n\n'
+          '"Hey. About earlier — that wasn\'t okay. '
+          'I\'m sorry I didn\'t say anything."\n\n'
+          'They look at you for a long moment. '
+          'Then: "Yeah. It wasn\'t."\n\n'
+          'There\'s a pause. It\'s not comfortable.\n\n'
+          'What do you say?',
+      choices: [
+        QuestChoice(
+          id: 'ts_ask_how',
+          text: '"Is there anything I can do?"',
+          nextSegmentId: 'ts_end_ask_how',
+        ),
+        QuestChoice(
+          id: 'ts_be_honest',
+          text: '"I froze. I want to do better next time."',
+          nextSegmentId: 'ts_end_be_honest',
+        ),
+      ],
+    ),
+
+    'ts_sit_with_it': QuestSegment(
+      id: 'ts_sit_with_it',
+      content:
+          'Why did you freeze?\n\n'
+          'Fear? You didn\'t want to become the next target.\n'
+          'Shock? It happened too fast to process.\n'
+          'Social calculus? You weighed the cost of speaking up '
+          'and decided, in that split second, that it was too high.\n\n'
+          'None of those reasons feel good. '
+          'But they\'re honest.\n\n'
+          'What matters now?',
+      choices: [
+        QuestChoice(
+          id: 'ts_next_time',
+          text: 'Decide what I\'ll do next time.',
+          nextSegmentId: 'ts_end_next_time',
+        ),
+        QuestChoice(
+          id: 'ts_report',
+          text: 'Report what I saw — even late.',
+          nextSegmentId: 'ts_end_report',
+        ),
+      ],
+    ),
+
+    'ts_end_ask_how': QuestSegment(
+      id: 'ts_end_ask_how',
+      content:
+          'They think about it.\n\n'
+          '"Honestly? Just... don\'t pretend it didn\'t happen. '
+          'Everyone else is acting like it was nothing."\n\n'
+          'That\'s the thing about being a bystander — '
+          'your silence looks a lot like agreement '
+          'from the perspective of the person it happened to.\n\n'
+          'You can\'t undo the silence. '
+          'But showing up after — acknowledging what happened, '
+          'refusing to pretend — that\'s not nothing.',
+      isEnding: true,
+    ),
+
+    'ts_end_be_honest': QuestSegment(
+      id: 'ts_end_be_honest',
+      content:
+          '"I froze. I want to do better next time."\n\n'
+          'They nod slowly. '
+          '"At least you\'re being honest about it."\n\n'
+          'There\'s something powerful about admitting you fell short '
+          'without making excuses. '
+          'It doesn\'t erase what happened, '
+          'but it changes what happens next.\n\n'
+          'The person who recognises their own silence '
+          'is more likely to break it next time.',
+      isEnding: true,
+    ),
+
+    'ts_end_next_time': QuestSegment(
+      id: 'ts_end_next_time',
+      content:
+          'You can\'t script it perfectly. '
+          'You can\'t guarantee you\'ll be braver.\n\n'
+          'But you can decide, right now, in this calm moment, '
+          'what kind of person you want to be '
+          'when the next moment isn\'t calm.\n\n'
+          'Sometimes it\'s a word. Sometimes it\'s a look. '
+          'Sometimes it\'s just standing next to the person afterward '
+          'so they know they\'re not alone.\n\n'
+          'Courage isn\'t the absence of fear. '
+          'It\'s deciding that something else matters more.',
+      isEnding: true,
+    ),
+
+    'ts_end_report': QuestSegment(
+      id: 'ts_end_report',
+      content:
+          'You find a teacher or counsellor.\n\n'
+          '"Something happened earlier and I didn\'t say anything at the time. '
+          'But I think someone should know."\n\n'
+          'They listen. They ask clarifying questions. '
+          'They thank you for coming forward.\n\n'
+          'Late is better than never. '
+          'The person who speaks up — even after the fact — '
+          'is the reason things change.\n\n'
+          'It\'s not comfortable. '
+          'But it\'s right.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADOLESCENT QUEST 3: Where Are You Going?
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questWhereAreYouGoing = LifeQuestScenario(
+  id: 'where_are_you_going',
+  title: 'Where Are You Going?',
+  hook: 'Everyone seems to know their future. You don\'t even know next month.',
+  emoji: '\u{1F9ED}',
+  emotions: ['worried', 'sad', 'frustrated'],
+  recommendedBands: [AgeBand.adolescent],
+  startSegmentId: 'way_start',
+  segments: {
+    'way_start': QuestSegment(
+      id: 'way_start',
+      content:
+          'The question comes at you from every direction.\n\n'
+          'Teachers. Parents. Relatives you see once a year. '
+          'Even friends — casually, like it\'s simple: '
+          '"So what are you going to do after school?"\n\n'
+          'Everyone else seems to have an answer. '
+          'Medicine. Engineering. Gap year. The army. Something.\n\n'
+          'You have: a blank space where the answer should be.\n\n'
+          '«{companion} shrugs when you bring it up. '
+          '"I don\'t know either," {companion} says, '
+          'which helps and doesn\'t help at the same time. »\n\n'
+          'Someone asks you again. What do you say?',
+      choices: [
+        QuestChoice(
+          id: 'way_bluff',
+          text: 'Make something up so they stop asking.',
+          nextSegmentId: 'way_bluff',
+        ),
+        QuestChoice(
+          id: 'way_honest',
+          text: '"I don\'t know yet."',
+          nextSegmentId: 'way_honest',
+        ),
+      ],
+    ),
+
+    'way_bluff': QuestSegment(
+      id: 'way_bluff',
+      content:
+          '"Probably something with computers," you say, '
+          'or "Maybe business," or whatever answer '
+          'will end the conversation fastest.\n\n'
+          'They nod, satisfied. Move on.\n\n'
+          'You\'re off the hook — '
+          'but you also feel like a fraud. '
+          'You just told someone a version of your future '
+          'that you don\'t even believe.\n\n'
+          'Later, alone, the real question resurfaces.\n\n'
+          'What do you do with it?',
+      choices: [
+        QuestChoice(
+          id: 'way_explore',
+          text: 'Think about what you actually enjoy — start there.',
+          nextSegmentId: 'way_end_explore',
+        ),
+        QuestChoice(
+          id: 'way_table_it',
+          text: 'Decide that not knowing right now is okay.',
+          nextSegmentId: 'way_end_table_it',
+        ),
+      ],
+    ),
+
+    'way_honest': QuestSegment(
+      id: 'way_honest',
+      content:
+          '"I don\'t know yet."\n\n'
+          'The person\'s face does a thing — '
+          'surprise, then maybe a flicker of concern, '
+          'then an attempt to be helpful.\n\n'
+          '"Well, you\'d better figure it out soon! '
+          'Time flies!"\n\n'
+          'Thanks. That didn\'t help.\n\n'
+          'How do you feel?',
+      choices: [
+        QuestChoice(
+          id: 'way_panicked',
+          text: 'Panicked — maybe they\'re right and I\'m behind.',
+          nextSegmentId: 'way_end_panicked',
+        ),
+        QuestChoice(
+          id: 'way_steady',
+          text: 'Steady — I said the truth and I\'m not ashamed of it.',
+          nextSegmentId: 'way_end_steady',
+        ),
+      ],
+    ),
+
+    'way_end_explore': QuestSegment(
+      id: 'way_end_explore',
+      content:
+          'You think about it differently this time.\n\n'
+          'Not "what job" but "what pulls me in." '
+          'What do you lose time doing? '
+          'What problems do you actually care about? '
+          'What would you do if nobody was watching or grading?\n\n'
+          'You don\'t need the answer today. '
+          'But asking better questions '
+          'is how you eventually find one.',
+      isEnding: true,
+    ),
+
+    'way_end_table_it': QuestSegment(
+      id: 'way_end_table_it',
+      content:
+          'You decide, deliberately, to be okay with not knowing.\n\n'
+          'Not forever. Not as an excuse. '
+          'But as an honest statement about where you are '
+          'right now.\n\n'
+          'The pressure to have a plan at 16 '
+          'is real but manufactured. '
+          'Most adults changed direction three times '
+          'before they found their thing.\n\n'
+          'Not knowing isn\'t failure. '
+          'It\'s the starting condition for everyone.',
+      isEnding: true,
+    ),
+
+    'way_end_panicked': QuestSegment(
+      id: 'way_end_panicked',
+      content:
+          'The panic is real. It sits in your chest like a timer '
+          'counting down to something you can\'t see.\n\n'
+          'But here\'s what nobody tells you: '
+          'almost nobody at your age actually knows. '
+          'The ones who sound sure? '
+          'Some of them are. Most are just saying something '
+          'so the adults stop asking.\n\n'
+          'You\'re not behind. '
+          'You\'re just the one brave enough to admit '
+          'you haven\'t figured it out yet.\n\n'
+          'That\'s a better starting point than a fake answer.',
+      isEnding: true,
+    ),
+
+    'way_end_steady': QuestSegment(
+      id: 'way_end_steady',
+      content:
+          'Good.\n\n'
+          '"I don\'t know yet" is an honest answer '
+          'in a world that rewards confident performances.\n\n'
+          'Some people will try to make you feel bad about it. '
+          'That says more about their discomfort with uncertainty '
+          'than yours.\n\n'
+          'You\'ll figure it out. Not on anyone else\'s timeline — '
+          'on yours. And when you do, '
+          'it\'ll be because you chose it, '
+          'not because you panicked into it.',
       isEnding: true,
     ),
   },
