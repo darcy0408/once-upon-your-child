@@ -44,6 +44,11 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-flask
 
+      - name: Audit dependencies for known CVEs
+        run: |
+          pip install pip-audit
+          pip-audit --requirement backend/requirements.txt --skip-editable
+
       - name: Set environment variables
         run: |
           echo "DATABASE_URL=postgresql://postgres:testpassword@localhost:5432/test_db" >> $GITHUB_ENV
