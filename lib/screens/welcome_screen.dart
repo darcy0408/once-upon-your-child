@@ -122,6 +122,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     final teaserSeen = prefs.getBool(_kTeaserSeenKey) ?? false;
     if (!mounted) return;
     if (savedAge != null) {
+      // Guard: if the user already tapped the age picker while we were
+      // awaiting prefs, don't overwrite their explicit selection.
+      if (_selectedAge != null) return;
       setState(() {
         _selectedAge = savedAge;
         _step = 2; // Skip teaser, age picker, and title splash.
@@ -230,6 +233,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // First user gesture — unlock web audio.
     AppTtsService.instance.markInteracted();
     AppTtsService.instance.stop();
+    // Persist immediately so any still-running _resumeFromSavedAge() reads the
+    // correct age if it hasn't hit SharedPreferences yet.
+    unawaited(const ParentalConsentService().saveDeclaredAge(age));
     setState(() {
       _selectedAge = age;
       _step = 1; // advance to title splash
