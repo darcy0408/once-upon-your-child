@@ -206,3 +206,18 @@ tmp_big_feelings_live.json
 
 # Pre-redesign asset backups (temporary — delete after QA sign-off)
 **/backup_pre_redesign_*.png
+
+# Office temp lock files
+.~lock.*#
+
+# UI audit artifacts
+ui-audit-prompt.md
+ui-audit-*.png
+band-audit-*.png
+adolescent-*.png
+adventurer-*.png
+creator-*.png
+explorer-*.png
+sprout-*.png
+reset-*.png
+six-hats-*.png
