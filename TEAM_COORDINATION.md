@@ -1,5 +1,44 @@
 # Team Coordination
 
+## 2026-04-19l — Age-band avatar loading animations (Claude Sonnet 4.6)
+
+**Goal:** Replace the plain `CircularProgressIndicator` in `custom_avatar_screen.dart` with rich, age-band-specific loading animations shown during the ~60s avatar generation wait.
+
+### What was done
+
+Created 7 new files and modified 1:
+
+| File | What it does |
+|------|-------------|
+| `lib/widgets/avatar_generating_view.dart` | Shared shell — progress steps, rotating flavor messages, cancel button, tap counter. Delegates central animation to band widget. |
+| `lib/widgets/avatar_loading_bands/sprout_egg_hatch.dart` | Sprout (2-5): glowing egg wobbles, tap to add cracks + golden glow peeks through |
+| `lib/widgets/avatar_loading_bands/explorer_constellation.dart` | Explorer (6-8): stars appear + lines draw between them, drifting tap targets to catch |
+| `lib/widgets/avatar_loading_bands/adventurer_treasure_map.dart` | Adventurer (9-11): parchment map, teal ink trail draws via PathMetrics, landmark icons, compass tap |
+| `lib/widgets/avatar_loading_bands/creator_digital_canvas.dart` | Creator (12-14): geometric shapes compose on dark canvas, tap adds ripple, no particles |
+| `lib/widgets/avatar_loading_bands/adolescent_holographic_portal.dart` | Adolescent (15-17): chromatic aberration rings, teal data-stream rain, silhouette materializes, tap glitch |
+| `lib/widgets/avatar_loading_bands/adult_ink_wash.dart` | Adult (18+): amber brush strokes bloom with ink diffusion, meditative, no interaction |
+| `lib/custom_avatar_screen.dart` | `_buildGeneratingView()` replaced with `AvatarGeneratingView` |
+
+All bands respect `MotionPrefs` accessibility (reduceMotion, showParticles, sparkleIntensity). `flutter analyze` passes with zero new issues.
+
+### After restart — what's left
+
+1. **Visual testing** — run the app, trigger avatar generation at each age:
+   - Age 4 → egg wobbles, tap to crack it
+   - Age 7 → constellation draws, catch drifting stars
+   - Age 10 → treasure map ink trail, tap compass
+   - Age 13 → geometric shapes compose, tap for ripple
+   - Age 16 → holographic portal, tap for glitch
+   - Age 25 → ink wash brush strokes, no interaction
+2. **Animation timing** — progress steps advance every 15s over ~60s; tune if it feels off.
+3. **Companion image** — `AvatarGeneratingView` accepts `companionImagePath` but `custom_avatar_screen.dart` passes `null`. Wire in the selected companion if available in context.
+4. **TTS** — shell has a hook ready; consider speaking a comfort phrase on mount for Sprout/Explorer.
+
+### Status
+Not yet visually tested. Committed but not pushed (see git status below).
+
+---
+
 ## 2026-04-19k — Archetype gendered images + press-state feedback (Claude Sonnet 4.6)
 
 **Goal:** Wire up gender-based archetype image routing for adventurer and creator bands; add tactile press-state feedback to archetype cards.
