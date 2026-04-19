@@ -16,6 +16,7 @@ from ..models.user import User
 from ..models import Character, ParentHiddenContext
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
+from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..services.story_service import transform_parent_context_to_story_guidance
 from ..utils.validators import (
@@ -389,6 +390,18 @@ def create_story_blueprint(
         theme = payload.get("theme") or "Adventure"
         # Enforce authenticated user ID
         user_id = request.current_user.id
+        user_tier = getattr(request.current_user, 'subscription_tier', 'free') or 'free'
+
+        # Daily AI generation quota — circuit breaker against unbounded Gemini spend.
+        allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
+        if not allowed:
+            return jsonify({
+                "error": "Daily story limit reached",
+                "code": "QUOTA_EXCEEDED",
+                "limit": daily_limit,
+                "used": current_count,
+                "message": "You've reached your story limit for today. Come back tomorrow!",
+            }), 429
 
         # Validate character ownership
         character_id = payload.get("character_id")
@@ -507,6 +520,7 @@ def create_story_blueprint(
                 "task_id": "sync_task", # No task ID needed
                 "async_illustrations": payload.get("async_illustrations", False),
             }
+            increment_daily_quota(user_id, user_tier)
             return jsonify(response_payload), 200
 
         except (FuturesTimeoutError, CeleryTimeoutError) as exc:
@@ -808,7 +822,7 @@ def create_story_blueprint(
 
             # Filter content
             segment_content = result['segment']['content']
-            filtered_content, flagged = filter_story_content(segment_content)
+            filtered_content, flagged = filter_story_content(segment_content, age)
             result['segment']['content'] = filtered_content
 
             if flagged:
@@ -884,9 +898,10 @@ def create_story_blueprint(
                 custom_text=custom_text or None
             )
 
-            # Filter content
+            # Filter content — use story's age if available, fall back to 5
+            story_age = getattr(story, 'age', None) or 5
             segment_content = result['segment']['content']
-            filtered_content, flagged = filter_story_content(segment_content)
+            filtered_content, flagged = filter_story_content(segment_content, story_age)
             result['segment']['content'] = filtered_content
 
             if flagged:

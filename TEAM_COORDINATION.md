@@ -1,5 +1,44 @@
 # Team Coordination
 
+## 2026-04-18j — Security Hardening: AI Quota Circuit Breaker + Anonymous Auth Fix (Claude Sonnet 4.6)
+
+**Goal:** Phase 2 fixes 2j and 2k — prevent unbounded AI spend from a single account, and close the anonymous auth session-hijack vector.
+
+### 2j — Per-user daily AI generation quota (`backend/utils/ai_quota.py`, `backend/routes/story_routes.py`)
+
+**Problem:** No per-user rate limit on story generation. A single compromised or abusive account could generate unlimited Gemini calls and run up the API bill.
+
+**Fix:**
+- New module `backend/utils/ai_quota.py` — Redis-backed daily counter per user:
+  - `check_daily_quota(user_id, user_tier)` — checks before generation; returns `(allowed, current, limit)`
+  - `increment_daily_quota(user_id, user_tier)` — increments after a successful story; sets 2-day TTL
+  - Limits: `free=10`, `premium=50`, `family=75` stories/day; BYOK tier is exempt
+  - Limits overridable via `AI_QUOTA_FREE` / `AI_QUOTA_PREMIUM` / `AI_QUOTA_FAMILY` env vars
+  - Redis key format: `ai:quota:{user_id}:{YYYY-MM-DD}`
+  - Gracefully degrades to allow-all on Redis outage (never blocks story generation from a Redis failure)
+- Wired into `generate_story_endpoint()` in `story_routes.py`:
+  - Checks quota before calling story service; returns `429 QUOTA_EXCEEDED` with `daily_limit` and `stories_used` in response body
+  - Increments quota only after a successful `200` response
+
+### 2k — Anonymous client_id session-hijack fix (`backend/routes/utility_routes.py`)
+
+**Problem:** `/auth/anonymous` accepted a `client_id` from the request body and issued a JWT for that user ID without verifying the account was actually anonymous. An attacker could supply any registered user's ID and receive a valid JWT for that account.
+
+**Fix:**
+- Endpoint now validates any client-supplied `client_id` against the user's email domain
+- Only IDs belonging to accounts with `@anonymous.storyweaver.app` email are honoured
+- If the ID maps to a registered (non-anonymous) account, it is silently discarded and a fresh anonymous session is created — no fingerprinting of valid user IDs
+- Warning logged when a non-anonymous ID is supplied, for monitoring
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/utils/ai_quota.py` | New file — Redis quota circuit breaker |
+| `backend/routes/story_routes.py` | Quota check before generation; increment after success |
+| `backend/routes/utility_routes.py` | Anonymous endpoint hardened against client-supplied non-anonymous IDs |
+
+---
+
 ## 2026-04-18g — Security Hardening: Startup Assertions + Sentry Filter (Claude Sonnet 4.6)
 
 **Goal:** Phase 2 security fixes from the 2026-04-18e audit — fast wins targeting JWT secret enforcement, Redis assertion in production, and Sentry data leakage.

@@ -192,43 +192,56 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     def get_anonymous_token():
         """Get or create an anonymous user and return a JWT token.
 
-        This allows the frontend to make authenticated requests without
-        requiring user registration. The anonymous user ID is generated
-        client-side and sent to persist data across sessions.
+        The server always generates the anonymous user ID.  A client may
+        send a previously issued `client_id` to reclaim an existing
+        anonymous session, but only if that ID maps to a confirmed
+        anonymous account (email domain @anonymous.storyweaver.app).
+        Client-supplied IDs that map to registered accounts are silently
+        ignored and a fresh anonymous account is created instead — this
+        prevents the endpoint from being used as an auth-bypass to obtain
+        JWTs for arbitrary user IDs.
         """
         import uuid
         data = request.get_json(silent=True) or {}
         client_id = data.get('client_id')
+        user = None
 
-        if not client_id:
-            # Generate a new anonymous ID if client doesn't have one
-            client_id = f"anon_{uuid.uuid4().hex[:16]}"
+        # Only honour client-supplied IDs that belong to anonymous accounts.
+        if client_id:
+            candidate = User.query.filter_by(id=client_id).first()
+            if candidate and candidate.email.endswith('@anonymous.storyweaver.app'):
+                user = candidate
+                logger.info("Anonymous session reclaimed: %s", client_id)
+            elif candidate:
+                # ID exists but belongs to a registered user — reject silently.
+                logger.warning(
+                    "auth/anonymous: client_id %s matches a non-anonymous account; "
+                    "ignoring and creating new anonymous session.",
+                    client_id,
+                )
 
-        # Find or create anonymous user
-        anonymous_email = f"{client_id}@anonymous.storyweaver.app"
-        user = User.query.filter_by(id=client_id).first()
         if not user:
+            # Always generate the ID server-side for new anonymous accounts.
+            new_id = f"anon_{uuid.uuid4().hex[:16]}"
+            anonymous_email = f"{new_id}@anonymous.storyweaver.app"
             user = User(
-                id=client_id,
-                username=f"guest_{client_id[-8:]}",
-                email=anonymous_email
+                id=new_id,
+                username=f"guest_{new_id[-8:]}",
+                email=anonymous_email,
             )
-            # Set a random password (user won't need it for anonymous access)
             user.set_password(uuid.uuid4().hex)
             db.session.add(user)
             try:
                 db.session.commit()
-                logger.info(f"Created anonymous user: {client_id}")
+                logger.info("Created anonymous user: %s", new_id)
             except IntegrityError:
-                # Two concurrent requests can race to create the same anonymous user.
-                # Recover by loading the row created by the winning request.
                 db.session.rollback()
-                user = User.query.filter_by(id=client_id).first()
+                user = User.query.filter_by(id=new_id).first()
                 if not user:
                     user = User.query.filter_by(email=anonymous_email).first()
                 if not user:
                     raise
-                logger.info(f"Anonymous user already exists after race: {client_id}")
+                logger.info("Anonymous user already exists after race: %s", new_id)
 
         token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
@@ -236,7 +249,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             'token': token,
             'refresh_token': refresh_token,
             'user_id': user.id,
-            'is_anonymous': True
+            'is_anonymous': True,
         }), 200
 
     @utility_bp.route("/auth/login", methods=["POST"])
