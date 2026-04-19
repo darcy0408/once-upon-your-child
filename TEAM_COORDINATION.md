@@ -29,6 +29,30 @@
 
 ---
 
+## 2026-04-18i — Security Hardening: Gemini Output Safety Filter (Claude Sonnet 4.6)
+
+**Goal:** Phase 2 fix 2i — add output-side content classification to every Gemini call so safety-blocked responses never reach a child.
+
+### What Was Missing
+`story_generation_service.py` had strong input-side defenses (13 injection patterns, USER_INPUT delimiters) but no output-side filter. A successful prompt injection or unexpected model behaviour would deliver the raw Gemini output directly to the child.
+
+### Fix (`backend/services/story_generation_service.py`)
+- Added `_CHILD_SAFETY_SETTINGS` — four `SafetySetting` entries applied via `GenerateContentConfig` to every `generate_content` call:
+  - `HARM_CATEGORY_SEXUALLY_EXPLICIT` → `BLOCK_LOW_AND_ABOVE` (zero tolerance)
+  - `HARM_CATEGORY_DANGEROUS_CONTENT` → `BLOCK_MEDIUM_AND_ABOVE` (allows mild conflict/fear language for age-appropriate stories)
+  - `HARM_CATEGORY_HARASSMENT` → `BLOCK_LOW_AND_ABOVE`
+  - `HARM_CATEGORY_HATE_SPEECH` → `BLOCK_LOW_AND_ABOVE`
+- Added `_extract_text(response)` helper — single place for text extraction that also detects prompt-level blocks (`prompt_feedback.block_reason`) and response-level blocks (`finish_reason == SAFETY`). Logs triggered safety categories for monitoring without exposing prompt content.
+- Added `_SAFETY_FALLBACK` — child-friendly message returned on any safety block ("I wasn't able to create that story right now. Let's try a different adventure!")
+- Applied to both the primary model call and the fallback model call
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/services/story_generation_service.py` | Added safety settings, extract helper, safety fallback |
+
+---
+
 ## 2026-04-18h — Security Hardening: Remove Gemini API Key from Flutter Client (Claude Sonnet 4.6)
 
 **Goal:** Phase 2 fix 2b — eliminate the `geminiApiKey` field from Flutter config so an API key can never be compiled into the binary.
