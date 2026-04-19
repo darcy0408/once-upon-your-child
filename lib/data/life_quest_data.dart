@@ -2718,3 +2718,718 @@ const questTryout = LifeQuestScenario(
     ),
   },
 );
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPLORER QUEST 3: Three's a Crowd
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questThreeCrowd = LifeQuestScenario(
+  id: 'three_crowd',
+  title: "Three's a Crowd",
+  hook: 'Your best friend is playing with someone else.',
+  emoji: '\u{1F641}',
+  emotions: ['sad', 'worried', 'angry'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'tc_start',
+  segments: {
+    'tc_start': QuestSegment(
+      id: 'tc_start',
+      content:
+          'You walk out to the playground and look for your best friend.\n\n'
+          'You spot {pronoun} over by the climbing frame — '
+          'but {pronoun}\'s not alone. '
+          'There\'s a new kid laughing next to {pronoun}, '
+          'and they\'re already doing some kind of silly handshake '
+          'you\'ve never seen before.\n\n'
+          'Your tummy feels tight. '
+          'That was supposed to be YOUR spot. '
+          'YOUR friend.\n\n'
+          '«{companion} walks up beside you. '
+          '"You okay?" {companion} asks quietly. »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'tc_go_over',
+          text: 'Walk over and say hi.',
+          nextSegmentId: 'tc_go_over',
+        ),
+        QuestChoice(
+          id: 'tc_hang_back',
+          text: 'Stay where you are and wait.',
+          nextSegmentId: 'tc_hang_back',
+        ),
+      ],
+    ),
+
+    'tc_go_over': QuestSegment(
+      id: 'tc_go_over',
+      content:
+          'You take a big breath and walk over.\n\n'
+          '"Hi," you say. Your voice comes out smaller than you wanted.\n\n'
+          'Your friend\'s face lights up. '
+          '"Oh! This is {name}!" {Pronoun} turns to the new kid. '
+          '"This is my best friend!"\n\n'
+          'The new kid smiles at you. "Cool. Want to see the handshake?"\n\n'
+          'You\'re still a little wobbly inside — '
+          'but a tiny bit of the tight feeling starts to loosen.',
+      choices: [
+        QuestChoice(
+          id: 'tc_join',
+          text: 'Try to learn the handshake.',
+          nextSegmentId: 'tc_end_join',
+        ),
+        QuestChoice(
+          id: 'tc_ask_alone',
+          text: 'Ask your friend if you can talk privately for a sec.',
+          nextSegmentId: 'tc_end_ask_alone',
+        ),
+      ],
+    ),
+
+    'tc_hang_back': QuestSegment(
+      id: 'tc_hang_back',
+      content:
+          'You stay back and watch.\n\n'
+          'They\'re laughing a lot. '
+          'Your friend doesn\'t look over, not even once.\n\n'
+          'The tight feeling gets a bit bigger. '
+          'You wonder if {pronoun} even notices you\'re not there.\n\n'
+          '«{companion} gently bumps your arm. »\n\n'
+          'Waiting isn\'t really working. What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'tc_go_over_late',
+          text: 'Walk over now.',
+          nextSegmentId: 'tc_end_go_over_late',
+        ),
+        QuestChoice(
+          id: 'tc_find_someone',
+          text: 'Find something else to do for now.',
+          nextSegmentId: 'tc_end_find_someone',
+        ),
+      ],
+    ),
+
+    'tc_end_join': QuestSegment(
+      id: 'tc_end_join',
+      content:
+          'You mess up the handshake three times, '
+          'and on the fourth try you finally get it.\n\n'
+          'You all cheer. Your friend squeezes your arm.\n\n'
+          'It still feels a little strange — '
+          'like the playground got rearranged while you weren\'t looking. '
+          'But strange doesn\'t always mean bad.\n\n'
+          'Sometimes your circle just gets a little bigger.',
+      isEnding: true,
+    ),
+
+    'tc_end_ask_alone': QuestSegment(
+      id: 'tc_end_ask_alone',
+      content:
+          'You and your friend step a little bit away.\n\n'
+          '"I just felt kind of left out," you say.\n\n'
+          'Your friend looks surprised. "I didn\'t mean to do that. '
+          'I was going to find you at lunch!"\n\n'
+          'It helps to hear that. '
+          'You didn\'t know what {pronoun} was thinking — '
+          'but now you do.\n\n'
+          'Saying the hard thing out loud made it smaller.',
+      isEnding: true,
+    ),
+
+    'tc_end_go_over_late': QuestSegment(
+      id: 'tc_end_go_over_late',
+      content:
+          'You walk over, and your friend immediately waves you in.\n\n'
+          '"Where were you? I kept looking for you!"\n\n'
+          'Oh. {Pronoun} was looking.\n\n'
+          'You just couldn\'t tell from far away.\n\n'
+          'Sometimes things look different up close '
+          'than they do from across the playground.',
+      isEnding: true,
+    ),
+
+    'tc_end_find_someone': QuestSegment(
+      id: 'tc_end_find_someone',
+      content:
+          'You find something else to do — '
+          'a ball game, a book, a quiet spot by the fence.\n\n'
+          'It\'s okay. Not every playtime has to be with the same person.\n\n'
+          'At the end of lunch, your friend runs over. '
+          '"Are you mad at me?"\n\n'
+          '"A little," you say honestly.\n\n'
+          '{Pronoun} smiled. '
+          '"Let\'s sit together after school. Just us."\n\n'
+          'That helps.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPLORER QUEST 4: I Didn't Mean To
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questBrokenThing = LifeQuestScenario(
+  id: 'broken_thing',
+  title: "I Didn't Mean To",
+  hook: 'You broke something. Now you have to decide what to do.',
+  emoji: '\u{1F625}',
+  emotions: ['scared', 'worried', 'sad'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'bt_start',
+  segments: {
+    'bt_start': QuestSegment(
+      id: 'bt_start',
+      content:
+          'It happened so fast.\n\n'
+          'One second you were just reaching for something, '
+          'and then there was a crash, and now there\'s a broken thing '
+          'on the floor in front of you.\n\n'
+          'Your heart is going really fast.\n\n'
+          'You didn\'t mean to. It was an accident. '
+          'But it\'s still broken.\n\n'
+          '«{companion} freezes beside you. »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'bt_tell',
+          text: 'Go and tell a grown-up right now.',
+          nextSegmentId: 'bt_tell',
+        ),
+        QuestChoice(
+          id: 'bt_hide',
+          text: "Try to hide it or pretend it didn't happen.",
+          nextSegmentId: 'bt_hide',
+        ),
+      ],
+    ),
+
+    'bt_tell': QuestSegment(
+      id: 'bt_tell',
+      content:
+          'Your legs feel shaky as you walk over.\n\n'
+          '"I broke something," you say. '
+          '"It was an accident. I\'m really sorry."\n\n'
+          'The grown-up looks at the broken thing. '
+          'Then they look at you.\n\n'
+          '"Thank you for telling me," they say.\n\n'
+          'That\'s it? You were expecting something much worse.\n\n'
+          'How does it feel?',
+      choices: [
+        QuestChoice(
+          id: 'bt_end_relief',
+          text: 'A huge wave of relief.',
+          nextSegmentId: 'bt_end_relief',
+        ),
+        QuestChoice(
+          id: 'bt_end_still_bad',
+          text: 'Still bad — even though they were kind about it.',
+          nextSegmentId: 'bt_end_still_bad',
+        ),
+      ],
+    ),
+
+    'bt_hide': QuestSegment(
+      id: 'bt_hide',
+      content:
+          'You push the pieces out of sight and walk away.\n\n'
+          'But the bad feeling doesn\'t go away. '
+          'It follows you all morning, sitting in your stomach like a stone.\n\n'
+          'At lunch you can\'t really eat. '
+          'You keep thinking someone is about to find out.\n\n'
+          '«{companion} looks at you. "You seem really worried." »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'bt_tell_late',
+          text: "Go tell the truth — even though it's late.",
+          nextSegmentId: 'bt_end_tell_late',
+        ),
+        QuestChoice(
+          id: 'bt_keep_hiding',
+          text: 'Try to keep it secret.',
+          nextSegmentId: 'bt_end_keep_hiding',
+        ),
+      ],
+    ),
+
+    'bt_end_relief': QuestSegment(
+      id: 'bt_end_relief',
+      content:
+          'You breathe out the longest breath.\n\n'
+          'The whole thing was still scary — '
+          'but it was over in two minutes '
+          'instead of sitting in your tummy all day.\n\n'
+          'Telling the truth when something goes wrong '
+          'is one of the hardest things. '
+          'You did it.\n\n'
+          'That matters.',
+      isEnding: true,
+    ),
+
+    'bt_end_still_bad': QuestSegment(
+      id: 'bt_end_still_bad',
+      content:
+          'Sometimes even when things go okay, '
+          'it still takes a while for the wobbly feeling to calm down.\n\n'
+          'That\'s normal.\n\n'
+          'Your body was ready for something scary, '
+          'and it needs a little time to notice the scary part didn\'t come.\n\n'
+          'You told the truth. That was brave.',
+      isEnding: true,
+    ),
+
+    'bt_end_tell_late': QuestSegment(
+      id: 'bt_end_tell_late',
+      content:
+          'It takes a lot of courage to walk back and say it.\n\n'
+          '"I broke something earlier," you say. '
+          '"I was scared to tell you. I\'m sorry I waited."\n\n'
+          'The grown-up nods. '
+          '"It means a lot that you came back and told me."\n\n'
+          'Late is not the same as never.\n\n'
+          'You did the right thing.',
+      isEnding: true,
+    ),
+
+    'bt_end_keep_hiding': QuestSegment(
+      id: 'bt_end_keep_hiding',
+      content:
+          'Keeping a secret like this is really hard work.\n\n'
+          'It takes up a lot of brain space that could be used for '
+          'things that are actually fun.\n\n'
+          'The thing is — it\'s never too late to tell the truth. '
+          'Even tomorrow. Even next week.\n\n'
+          'When you\'re ready, the option is still there.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPLORER QUEST 5: It's Not Fair
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questNotFair = LifeQuestScenario(
+  id: 'not_fair',
+  title: "It's Not Fair",
+  hook: 'Someone else got picked. Why not you?',
+  emoji: '\u{1F621}',
+  emotions: ['angry', 'frustrated', 'sad'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'nf_start',
+  segments: {
+    'nf_start': QuestSegment(
+      id: 'nf_start',
+      content:
+          'The teacher says the name — and it isn\'t yours.\n\n'
+          'It should have been yours. You worked hard. '
+          'You had your hand up. '
+          'You\'ve been waiting for this all week.\n\n'
+          'Hot angry feelings rush up into your face.\n\n'
+          'It\'s not fair.\n\n'
+          '«{companion} glances over at you. »\n\n'
+          'What do you do with all that feeling?',
+      choices: [
+        QuestChoice(
+          id: 'nf_say_it',
+          text: "Say \"That's not fair!\" out loud.",
+          nextSegmentId: 'nf_say_it',
+        ),
+        QuestChoice(
+          id: 'nf_swallow',
+          text: 'Push the feeling down and say nothing.',
+          nextSegmentId: 'nf_swallow',
+        ),
+      ],
+    ),
+
+    'nf_say_it': QuestSegment(
+      id: 'nf_say_it',
+      content:
+          'The words come out before you can stop them.\n\n'
+          '"That\'s not fair!"\n\n'
+          'The room goes a little quiet. '
+          'Everyone is looking at you now. '
+          'Your face gets even hotter.\n\n'
+          'The teacher looks at you steadily. '
+          '"Can you tell me more about why you feel that way?"\n\n'
+          'What do you say?',
+      choices: [
+        QuestChoice(
+          id: 'nf_explain',
+          text: "Explain calmly that you've been waiting and worked hard.",
+          nextSegmentId: 'nf_end_explain',
+        ),
+        QuestChoice(
+          id: 'nf_embarrassed',
+          text: 'Go quiet — you feel embarrassed now.',
+          nextSegmentId: 'nf_end_embarrassed',
+        ),
+      ],
+    ),
+
+    'nf_swallow': QuestSegment(
+      id: 'nf_swallow',
+      content:
+          'You press your lips together and look at your desk.\n\n'
+          'The hot feeling is still there. '
+          'It doesn\'t go away just because you didn\'t say it.\n\n'
+          'It sort of... sits there.\n\n'
+          'By the end of the lesson you still feel bad, '
+          'and now you also feel tired from holding it all in.\n\n'
+          'What do you do next?',
+      choices: [
+        QuestChoice(
+          id: 'nf_tell_someone',
+          text: "Tell a friend or a grown-up how you're feeling.",
+          nextSegmentId: 'nf_end_tell_someone',
+        ),
+        QuestChoice(
+          id: 'nf_let_go',
+          text: 'Try to let it go and think about something else.',
+          nextSegmentId: 'nf_end_let_go',
+        ),
+      ],
+    ),
+
+    'nf_end_explain': QuestSegment(
+      id: 'nf_end_explain',
+      content:
+          'You take a breath. '
+          '"I\'ve had my hand up a lot, and I\'ve been practising. '
+          'I just really wanted this one."\n\n'
+          'The teacher nods. '
+          '"I hear you. I\'ll make sure you get a turn soon."\n\n'
+          'That\'s not everything you wanted. '
+          'But it\'s something.\n\n'
+          'Saying what you need, calmly, is a very hard skill. '
+          'You\'re getting better at it.',
+      isEnding: true,
+    ),
+
+    'nf_end_embarrassed': QuestSegment(
+      id: 'nf_end_embarrassed',
+      content:
+          'You shake your head and look down.\n\n'
+          'The big feeling came out and now you wish it hadn\'t.\n\n'
+          'That\'s okay. It happens to everyone.\n\n'
+          'Big feelings are strong — '
+          'they\'re faster than the thinking part of your brain sometimes.\n\n'
+          'Next time, you\'ll have a tiny bit more practice '
+          'catching them before they get out.',
+      isEnding: true,
+    ),
+
+    'nf_end_tell_someone': QuestSegment(
+      id: 'nf_end_tell_someone',
+      content:
+          '"It wasn\'t fair," you say. "I\'m really annoyed."\n\n'
+          'The person you\'re talking to nods. "That sounds really frustrating."\n\n'
+          'Just having someone understand makes the feeling smaller.\n\n'
+          'Feelings don\'t always need to be fixed — '
+          'sometimes they just need to be heard.',
+      isEnding: true,
+    ),
+
+    'nf_end_let_go': QuestSegment(
+      id: 'nf_end_let_go',
+      content:
+          'You think about something you\'re looking forward to. '
+          'Lunch. Home time. A game you want to play.\n\n'
+          'Little by little, the hot feeling cools.\n\n'
+          'Not every unfair thing can be fixed right away. '
+          'Sometimes letting it settle is the best move you\'ve got.\n\n'
+          'And that\'s okay too.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPLORER QUEST 6: Goodnight from Far Away
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questSleepover = LifeQuestScenario(
+  id: 'sleepover',
+  title: 'Goodnight from Far Away',
+  hook: 'Everyone else seems fine. You just want to go home.',
+  emoji: '\u{1F319}',
+  emotions: ['sad', 'scared', 'worried'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'gf_start',
+  segments: {
+    'gf_start': QuestSegment(
+      id: 'gf_start',
+      content:
+          'The lights go off. '
+          'Sleeping bags rustle. '
+          'Someone giggles in the dark.\n\n'
+          'Everyone else seems fine.\n\n'
+          'You are not fine.\n\n'
+          'The missing feeling has been creeping in since dinner — '
+          'something that feels like homesick, '
+          'something that feels like you just want your own bed '
+          'and your own things and maybe a hug '
+          'from someone who knows you really well.\n\n'
+          '«{companion} is in the sleeping bag next to yours. »\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'gf_try',
+          text: 'Try to go to sleep and see if the feeling passes.',
+          nextSegmentId: 'gf_try',
+        ),
+        QuestChoice(
+          id: 'gf_tell_friend',
+          text: "Whisper to the friend whose house it is.",
+          nextSegmentId: 'gf_tell_friend',
+        ),
+      ],
+    ),
+
+    'gf_try': QuestSegment(
+      id: 'gf_try',
+      content:
+          'You squeeze your eyes shut and try to make your brain be quiet.\n\n'
+          'It doesn\'t really work. '
+          'You think about your bedroom. '
+          'You think about your mum or dad or whoever tucks you in. '
+          'You think about your pet, '
+          'or your favourite corner of the sofa.\n\n'
+          'The missing feeling gets bigger, not smaller.\n\n'
+          '«{companion} whispers, "You okay?" »\n\n'
+          'What do you do now?',
+      choices: [
+        QuestChoice(
+          id: 'gf_call',
+          text: 'Ask a grown-up if you can call home.',
+          nextSegmentId: 'gf_end_call',
+        ),
+        QuestChoice(
+          id: 'gf_keep_trying',
+          text: 'Keep trying — you want to stay the whole night.',
+          nextSegmentId: 'gf_end_keep_trying',
+        ),
+      ],
+    ),
+
+    'gf_tell_friend': QuestSegment(
+      id: 'gf_tell_friend',
+      content:
+          '"I feel a bit homesick," you whisper.\n\n'
+          'There\'s a pause. '
+          'Then your friend whispers back: '
+          '"I felt like that at my cousin\'s house once. '
+          'It went away after a bit."\n\n'
+          'You didn\'t know that. '
+          'It helps to know you\'re not the only one.\n\n'
+          'How are you feeling?',
+      choices: [
+        QuestChoice(
+          id: 'gf_talk',
+          text: "Talk quietly for a little while — it's helping.",
+          nextSegmentId: 'gf_end_talk',
+        ),
+        QuestChoice(
+          id: 'gf_call_from_friend',
+          text: 'Ask your friend to help you find a grown-up.',
+          nextSegmentId: 'gf_end_call',
+        ),
+      ],
+    ),
+
+    'gf_end_call': QuestSegment(
+      id: 'gf_end_call',
+      content:
+          'A grown-up passes you the phone.\n\n'
+          'You hear the voice you needed to hear. '
+          'It\'s just a few words — '
+          '"We love you. You\'re doing great." — '
+          'but something in your chest untwists.\n\n'
+          'You hand the phone back and get into your sleeping bag.\n\n'
+          'It\'s still not home. But it feels a little more okay now.\n\n'
+          'Asking for help isn\'t giving up. '
+          'It\'s knowing what you need.',
+      isEnding: true,
+    ),
+
+    'gf_end_keep_trying': QuestSegment(
+      id: 'gf_end_keep_trying',
+      content:
+          'You stay curled up and keep breathing slowly.\n\n'
+          'Slowly, slowly, the room feels a tiny bit less strange. '
+          'The sounds around you start to feel like background, not alarm.\n\n'
+          'You don\'t know exactly when it happened, '
+          'but at some point you fell asleep.\n\n'
+          'In the morning, someone passes you a pancake '
+          'and you feel like yourself again.\n\n'
+          'You made it.',
+      isEnding: true,
+    ),
+
+    'gf_end_talk': QuestSegment(
+      id: 'gf_end_talk',
+      content:
+          'You talk quietly about small things — '
+          'favourite animals, weird dreams, what you want for breakfast.\n\n'
+          'The homesick feeling doesn\'t disappear, '
+          'but it gets softer and smaller '
+          'as the talking fills up the quiet dark.\n\n'
+          'You drift off mid-sentence.\n\n'
+          'Sometimes the best cure for missing home '
+          'is just having company.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPLORER QUEST 7: My Turn to Talk
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMyTurnTalk = LifeQuestScenario(
+  id: 'my_turn_talk',
+  title: 'My Turn to Talk',
+  hook: 'Everyone is about to look at you. All at once.',
+  emoji: '\u{1F62C}',
+  emotions: ['scared', 'worried', 'excited'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'mtt_start',
+  segments: {
+    'mtt_start': QuestSegment(
+      id: 'mtt_start',
+      content:
+          'The teacher calls your name.\n\n'
+          'This is it. Your turn to stand up and talk to the class.\n\n'
+          'Your heart is going VERY fast. '
+          'Your hands feel a little bit sweaty. '
+          'All the faces in the room are turning toward you.\n\n'
+          '«{companion} gives you a quick encouraging nod. »\n\n'
+          'You stand up. '
+          'What do you do first?',
+      choices: [
+        QuestChoice(
+          id: 'mtt_back_wall',
+          text: "Look at the back wall — not at anyone's face.",
+          nextSegmentId: 'mtt_back_wall',
+        ),
+        QuestChoice(
+          id: 'mtt_friendly_face',
+          text: 'Find one friendly face and look at that person.',
+          nextSegmentId: 'mtt_friendly_face',
+        ),
+      ],
+    ),
+
+    'mtt_back_wall': QuestSegment(
+      id: 'mtt_back_wall',
+      content:
+          'You focus on a spot above everyone\'s heads.\n\n'
+          'You start talking. Your voice shakes a little at first. '
+          'Then it gets steadier.\n\n'
+          'Mostly you\'re just saying the words, one after another, '
+          'until they\'re all gone.\n\n'
+          'How does it go?',
+      choices: [
+        QuestChoice(
+          id: 'mtt_strong_finish',
+          text: "You get to the end — and it wasn't as bad as you thought.",
+          nextSegmentId: 'mtt_end_strong_finish',
+        ),
+        QuestChoice(
+          id: 'mtt_lose_place',
+          text: 'You lose your place and go blank for a second.',
+          nextSegmentId: 'mtt_lose_place',
+        ),
+      ],
+    ),
+
+    'mtt_friendly_face': QuestSegment(
+      id: 'mtt_friendly_face',
+      content:
+          'You find someone who looks kind — '
+          'a friend, or someone who\'s smiling at you.\n\n'
+          'You talk to them. Just them. '
+          'Like it\'s a normal conversation, not a performance.\n\n'
+          'The rest of the room sort of blurs at the edges.\n\n'
+          'How does it go?',
+      choices: [
+        QuestChoice(
+          id: 'mtt_strong_finish',
+          text: "You get to the end — and it wasn't as bad as you thought.",
+          nextSegmentId: 'mtt_end_strong_finish',
+        ),
+        QuestChoice(
+          id: 'mtt_lose_place',
+          text: 'You lose your place and go blank for a second.',
+          nextSegmentId: 'mtt_lose_place',
+        ),
+      ],
+    ),
+
+    'mtt_lose_place': QuestSegment(
+      id: 'mtt_lose_place',
+      content:
+          'Oh no. You had it — and now you don\'t.\n\n'
+          'The blank is just a few seconds, but it feels like forever.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'mtt_pause_recover',
+          text: 'Take a breath. Find your place. Keep going.',
+          nextSegmentId: 'mtt_end_recover',
+        ),
+        QuestChoice(
+          id: 'mtt_rush_finish',
+          text: 'Rush to the end as fast as you can.',
+          nextSegmentId: 'mtt_end_rush',
+        ),
+      ],
+    ),
+
+    'mtt_end_strong_finish': QuestSegment(
+      id: 'mtt_end_strong_finish',
+      content:
+          'You finish. You sit down.\n\n'
+          'Your heart is still going fast — '
+          'but a different kind of fast. '
+          'The kind that happens after something hard '
+          'that you actually did.\n\n'
+          '«{companion} grins at you. »\n\n'
+          'The thing you were most scared of? '
+          'You just did it.',
+      isEnding: true,
+    ),
+
+    'mtt_end_recover': QuestSegment(
+      id: 'mtt_end_recover',
+      content:
+          'You find the words again and keep going.\n\n'
+          'Maybe one or two people noticed. '
+          'Most didn\'t.\n\n'
+          'Everyone who has ever talked in front of a class '
+          'has had a blank moment. '
+          'The ones who are good at it are the ones '
+          'who learned to breathe and carry on.\n\n'
+          'That\'s what you just did.',
+      isEnding: true,
+    ),
+
+    'mtt_end_rush': QuestSegment(
+      id: 'mtt_end_rush',
+      content:
+          'You tumble through the last bit really fast '
+          'and sit down hard.\n\n'
+          'Phew. Over.\n\n'
+          'It wasn\'t perfect. '
+          'But you got through it — '
+          'and getting through it is the whole point.\n\n'
+          'Every time you do this, '
+          'it gets just a little bit less scary. '
+          'Even the messy times count.',
+      isEnding: true,
+    ),
+  },
+);
