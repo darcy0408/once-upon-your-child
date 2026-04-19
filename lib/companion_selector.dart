@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widgets/safe_asset_image.dart';
 
 
 /// Backend-aligned companion names.
@@ -305,11 +306,11 @@ class _ImageOrIcon extends StatelessWidget {
       if (name == 'none') icon = Icons.block;
       return Icon(icon, size: size);
     }
-    return Image.asset(
+    return SafeAssetImage(
       asset,
       width: size,
       height: size,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      placeholder: const Icon(Icons.image_not_supported),
     );
   }
 }
