@@ -14,7 +14,6 @@ class ParentHiddenContext(db.Model):
     body_signal = db.Column(db.String(160), nullable=True)  # auto-selected by story engine
     coping_tool = db.Column(db.String(320), nullable=False)  # comma-separated union across triggers
     repair_goal = db.Column(db.String(320), nullable=False)  # comma-separated union across triggers
-    parent_hidden_context = db.Column(db.String(280), nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -39,7 +38,6 @@ class ParentHiddenContext(db.Model):
             "body_signal": self.body_signal,
             "coping_tool": self.coping_tool,
             "repair_goal": self.repair_goal,
-            "parent_hidden_context": self.parent_hidden_context,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

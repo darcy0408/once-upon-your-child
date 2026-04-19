@@ -124,11 +124,10 @@ def test_user_a_cannot_read_user_b_parent_hidden_context(client, auth_headers, a
             user_id=other_user.id,
             child_profile_id="shared-profile-id",
             feeling="frustrated",
-            trigger="bedtime",
-            body_signal="tight fists",
+            trigger="a limit is set",
+            body_signal="a hot face",
             coping_tool="dragon breaths",
-            repair_goal="reconnect kindly",
-            parent_hidden_context="private note for other family",
+            repair_goal="try again with warmth",
         )
         db.session.add(context)
         db.session.commit()
@@ -139,6 +138,7 @@ def test_user_a_cannot_read_user_b_parent_hidden_context(client, auth_headers, a
     )
 
     assert response.status_code == 200
+    # User A sees no record because the profile belongs to user B
     assert response.get_json()["parent_hidden_context"] is None
 
 
@@ -150,11 +150,10 @@ def test_user_a_put_parent_hidden_context_does_not_modify_user_b_record(
             user_id=other_user.id,
             child_profile_id="shared-profile-id",
             feeling="sad",
-            trigger="rainy day",
-            body_signal="droopy shoulders",
-            coping_tool="snuggle blanket",
-            repair_goal="ask for a hug",
-            parent_hidden_context="other user's note",
+            trigger="a sibling conflict starts",
+            body_signal="a tight tummy",
+            coping_tool="a quiet pause",
+            repair_goal="say sorry simply",
         )
         db.session.add(context)
         db.session.commit()
@@ -163,11 +162,10 @@ def test_user_a_put_parent_hidden_context_does_not_modify_user_b_record(
         "/child-profiles/shared-profile-id/parent-hidden-context",
         json={
             "feeling": "frustrated",
-            "trigger": "screen time ended",
-            "body_signal": "hot face",
+            "trigger": "a limit is set",
+            "body_signal": "a hot face",
             "coping_tool": "dragon breaths",
-            "repair_goal": "help clean up",
-            "parent_hidden_context": "my own note",
+            "repair_goal": "help fix what happened",
         },
         headers=auth_headers,
     )
@@ -179,13 +177,14 @@ def test_user_a_put_parent_hidden_context_does_not_modify_user_b_record(
             user_id=other_user.id,
             child_profile_id="shared-profile-id",
         ).one()
-        assert other_context.parent_hidden_context == "other user's note"
+        # User B's record is unchanged
+        assert other_context.trigger == "a sibling conflict starts"
 
         current_user_context = ParentHiddenContext.query.filter_by(
             user_id="test_user_123",
             child_profile_id="shared-profile-id",
         ).one()
-        assert current_user_context.parent_hidden_context == "my own note"
+        assert current_user_context.trigger == "a limit is set"
 
 
 @pytest.mark.parametrize(

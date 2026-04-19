@@ -34,7 +34,6 @@ class ParentControlsScreen extends StatefulWidget {
 class _ParentControlsScreenState extends State<ParentControlsScreen> {
   final _consentService = const ParentalConsentService();
   final _api = ApiServiceManager();
-  final _customConcernController = TextEditingController();
   final _mathController = TextEditingController();
 
   // ── Trigger-centric data model ────────────────────────────────────────────
@@ -151,7 +150,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   @override
   void dispose() {
     _autoSaveTimer?.cancel();
-    _customConcernController.dispose();
     _mathController.dispose();
     super.dispose();
   }
@@ -217,8 +215,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _selectedTriggers = savedTriggers;
       _copingSelections = copingSelections;
       _repairSelections = repairSelections;
-      _customConcernController.text =
-          hiddenContext?['parent_hidden_context']?.toString() ?? '';
       _loading = false;
     });
   }
@@ -263,7 +259,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
         'trigger': _selectedTriggers.join(', '),
         'coping_tool': allCoping.join(', '),
         'repair_goal': allRepair.join(', '),
-        'parent_hidden_context': _customConcernController.text.trim(),
       });
     } catch (_) {}
     if (mounted) setState(() => _autoSaving = false);
@@ -910,8 +905,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           const SizedBox(height: AppSpacing.sm),
         ],
 
-        // "Something else" card
-        _buildSomethingElseCard(),
       ],
     );
   }
@@ -1102,89 +1095,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     );
   }
 
-  Widget _buildSomethingElseCard() {
-    final hasText = _customConcernController.text.trim().isNotEmpty;
-    return Container(
-      decoration: BoxDecoration(
-        color: hasText
-            ? const Color(0xFFFFD76A).withAlpha(28)
-            : Colors.white.withAlpha(12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: hasText
-              ? const Color(0xFFFFD76A).withAlpha(120)
-              : Colors.white24,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                const Text('\u270f\ufe0f', style: TextStyle(fontSize: 22)),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Something else',
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'Describe what\'s been hard lately.',
-                        style: GoogleFonts.fredoka(
-                            color: Colors.white60, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-            child: TextField(
-              controller: _customConcernController,
-              maxLength: 280,
-              maxLines: 3,
-              style: GoogleFonts.fredoka(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                counterStyle:
-                    GoogleFonts.fredoka(color: Colors.white38, fontSize: 11),
-                hintText:
-                    'Anything else you\'d like stories to gently address?',
-                hintStyle:
-                    GoogleFonts.fredoka(color: Colors.white38, fontSize: 13),
-                filled: true,
-                fillColor: Colors.white.withAlpha(12),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.white24),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFFFD700)),
-                ),
-              ),
-              onChanged: (_) {
-                setState(() {}); // refresh hasText border
-                _debouncedSave();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─── Reusable widgets ─────────────────────────────────────────────────────────

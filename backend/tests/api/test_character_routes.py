@@ -287,7 +287,6 @@ def test_parent_hidden_context_round_trip(client, auth_headers, test_user):
         "body_signal": "a hot face",
         "coping_tool": "dragon breaths",
         "repair_goal": "help fix what happened",
-        "parent_hidden_context": "keep it general and private",
     }
 
     save_response = client.put(
@@ -319,23 +318,6 @@ def test_parent_hidden_context_requires_auth(client):
     assert response.get_json()["error"] == "Authentication required"
 
 
-def test_parent_hidden_context_rejects_pii_in_note(client, auth_headers, test_user):
-    response = client.put(
-        "/child-profiles/profile-1/parent-hidden-context",
-        json={
-            "feeling": "frustrated",
-            "trigger": "a limit is set",
-            "body_signal": "a hot face",
-            "coping_tool": "dragon breaths",
-            "repair_goal": "help fix what happened",
-            "parent_hidden_context": "email me at parent@example.com",
-        },
-        headers=auth_headers,
-    )
-
-    assert response.status_code == 400
-    assert "disallowed personal information" in response.get_json()["error"]
-
 
 def test_parent_hidden_context_rejects_non_allowlisted_trigger(client, auth_headers, test_user):
     response = client.put(
@@ -351,21 +333,6 @@ def test_parent_hidden_context_rejects_non_allowlisted_trigger(client, auth_head
     assert response.status_code == 400
     assert "unrecognised values" in response.get_json()["error"]
 
-
-def test_parent_hidden_context_rejects_harmful_note(client, auth_headers, test_user):
-    response = client.put(
-        "/child-profiles/profile-1/parent-hidden-context",
-        json={
-            "trigger": "a limit is set",
-            "coping_tool": "dragon breaths",
-            "repair_goal": "help fix what happened",
-            "parent_hidden_context": "the child is worthless and nobody loves them",
-        },
-        headers=auth_headers,
-    )
-
-    assert response.status_code == 400
-    assert "harmful" in response.get_json()["error"].lower()
 
 
 def test_parent_hidden_context_accepts_multi_trigger(client, auth_headers, test_user):

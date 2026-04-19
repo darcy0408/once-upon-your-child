@@ -56,51 +56,6 @@ _ALLOWLIST_MAP: dict[str, frozenset[str]] = {
 _PARENT_CONTEXT_REQUIRED_FIELDS = ("trigger", "coping_tool", "repair_goal")
 _PARENT_CONTEXT_OPTIONAL_FIELDS = ("feeling", "body_signal")
 
-# ── Harmful content blocklist ───────────────────────────────────────────────
-# Patterns that should never appear in the free-text parent note.  These
-# target intent to harm, not accidental word use — each pattern is scoped
-# narrowly to reduce false positives while catching real abuse vectors.
-
-_HARMFUL_PATTERNS = [
-    # Shame / degradation
-    re.compile(
-        r"\b(worthless|stupid|ugly|disgusting|pathetic|useless|dumb|fat|"
-        r"retard(ed)?|idiot|loser|hate\s+(you|them|him|her|the\s+child))\b", re.I),
-    # Fear / trauma induction (scoped to directives, not descriptions of fears)
-    re.compile(
-        r"\b(you\s+will\s+die|going\s+to\s+die|"
-        r"kill\s+(you|them|him|her)|"
-        r"monsters?\s+(are|will)\s+(real|come|get)\s+(you|them|him|her)|"
-        r"no\s*one\s+(loves?|cares?\s*(about)?)\s+(you|them|him|her)|"
-        r"nobody\s+(loves?|cares?\s*(about)?)\s+(you|them|him|her)|"
-        r"left\s+behind\s+forever|"
-        r"scare\s+(them|the\s+child|him|her)\s+about)\b", re.I),
-    # Abuse normalisation
-    re.compile(
-        r"\b(it'?s?\s+ok(ay)?\s+(when|if|for)\s+(adults?|grown.?ups?|people)\s+"
-        r"(touch|hit|hurt|punish)|"
-        r"deserve\s+(to\s+be\s+)?(hit|hurt|punish(ed|ment)?|beaten|smack(ed)?))\b", re.I),
-    # Self-harm / suicide
-    re.compile(
-        r"\b(cut\s+(your|them)self|hurt\s+(your|them)self|"
-        r"sui?cide|kill\s+(your|them)self|end\s+(your|their)\s+life|"
-        r"better\s+off\s+dead|don'?t\s+deserve\s+to\s+live)\b", re.I),
-    # Sexual content
-    re.compile(
-        r"\b(sex(ual)?|naked|nude|genital|private\s+parts?\s+(touch|rub)|"
-        r"molest|rape|porn)\b", re.I),
-    # Substance references directed at minors
-    re.compile(
-        r"\b(give\s+(them|the\s+child|him|her)\s+(drugs?|alcohol|beer|wine|vodka|weed|pills)|"
-        r"make\s+(them|the\s+child|him|her)\s+(drink|smoke|take\s+drugs))\b", re.I),
-]
-
-_GENTLE_REJECTION = (
-    "This note contains language that could be harmful in a child's story. "
-    "Please describe the situation gently — for example, "
-    "'has a hard time when a limit is set' instead of specifics."
-)
-
 
 def _contains_disallowed_pii(value: str | None) -> bool:
     if not value:
@@ -112,12 +67,6 @@ def _contains_disallowed_pii(value: str | None) -> bool:
     ]
     return any(re.search(pattern, value) for pattern in patterns)
 
-
-def _contains_harmful_content(value: str | None) -> bool:
-    """Return True if the text matches any harmful content pattern."""
-    if not value:
-        return False
-    return any(p.search(value) for p in _HARMFUL_PATTERNS)
 
 
 def _validate_allowlisted_field(
@@ -173,15 +122,6 @@ def _sanitize_parent_hidden_payload(data: dict) -> tuple[dict | None, str | None
         if value and _contains_disallowed_pii(value):
             return None, f"{field} contains disallowed personal information"
         sanitized[field] = value
-
-    # ── Free-text note — full defense stack ──────────────────────────────
-    note = sanitize_for_prompt(data.get("parent_hidden_context"), max_length=280)
-    if note:
-        if _contains_disallowed_pii(note):
-            return None, "parent_hidden_context contains disallowed personal information"
-        if _contains_harmful_content(note):
-            return None, _GENTLE_REJECTION
-    sanitized["parent_hidden_context"] = note or None
 
     return sanitized, None
 

@@ -259,39 +259,6 @@ def _normalize_parent_context_value(value: Any) -> str | None:
     return cleaned or None
 
 
-def _abstract_parent_phrase(value: str | None) -> str | None:
-    if not value:
-        return None
-
-    sanitized = value.lower().strip()
-    replacements = [
-        (r"\bhitting\b|\bhit\b|\bpunching\b|\bpunch\b|\bkicking\b|\bkick\b|\bbiting\b|\bbite\b|\bshoving\b|\bpush(?:ing)?\b|\bgrabbing\b|\bgrab\b", "has quick impulses when upset"),
-        (r"\byelling\b|\byelled\b|\bscreaming\b|\bscreamed\b", "uses loud words when feelings spill over"),
-        (r"\bmeltdown\b|\bmeltdowns\b", "gets overwhelmed fast"),
-        (r"\bshutdown\b|\bshuts down\b", "pulls inward when feelings get big"),
-        (r"\brefus(?:e|ing)\b|\bwon't\b|\bwill not\b", "has a hard time with change or limits"),
-        (r"\bhearing no\b|\bsaid no\b|\bno\b", "has a hard time when a limit is set"),
-        (r"\bstuck\b", "feels trapped when something is not working"),
-        (r"\bsister\b|\bbrother\b|\bsibling\b", "a sibling"),
-        (r"\bfriend\b|\bfriends\b", "another child"),
-        (r"\bbedtime\b", "nighttime"),
-        (r"\bschool\b|\bclass\b|\bteacher\b", "a busy group setting"),
-        (r"\btransition(?:s)?\b", "a change between activities"),
-    ]
-
-    for pattern, replacement in replacements:
-        sanitized = re.sub(pattern, replacement, sanitized)
-
-    sanitized = re.sub(r"\b(my|their|the)\s+(mom|dad|mother|father|teacher|babysitter)\b", "a grown-up", sanitized)
-    sanitized = re.sub(r"\b[A-Z][a-z]+\b", "", sanitized)
-    sanitized = re.sub(r"[^a-z0-9 ,.'-]", " ", sanitized)
-    sanitized = re.sub(r"\s+", " ", sanitized).strip(" ,.-")
-
-    if not sanitized:
-        return None
-
-    return sanitized[:140]
-
 
 def transform_parent_context_to_story_guidance(parent_context: dict | None) -> dict[str, Any]:
     """Translate private parent context into child-safe story guidance."""
@@ -303,9 +270,6 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
     body_signal = _normalize_parent_context_value(parent_context.get("body_signal"))
     coping_tool = _normalize_parent_context_value(parent_context.get("coping_tool"))
     repair_goal = _normalize_parent_context_value(parent_context.get("repair_goal"))
-    private_note = _normalize_parent_context_value(
-        parent_context.get("parent_hidden_context")
-    )
 
     # Wrap every parent-supplied value in USER_INPUT delimiters so the AI
     # treats them as story element descriptions, never as instructions.
@@ -315,10 +279,9 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
         else None
     )
 
-    trigger_phrase = _abstract_parent_phrase(trigger)
     trigger_guidance = (
-        f"The challenge should come from a familiar moment where the character {wrap_user_input(trigger_phrase, 'trigger')}."
-        if trigger_phrase
+        f"The challenge should come from a familiar moment where the character {wrap_user_input(trigger.lower(), 'trigger')}."
+        if trigger
         else None
     )
 
@@ -340,13 +303,6 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
         else None
     )
 
-    note_phrase = _abstract_parent_phrase(private_note)
-    note_guidance = (
-        f"Use a metaphor-first setup and keep the story private and indirect around moments where the character {wrap_user_input(note_phrase, 'parent_note')}."
-        if note_phrase
-        else None
-    )
-
     lines = [
         line
         for line in [
@@ -355,7 +311,6 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
             body_guidance,
             coping_guidance,
             repair_guidance,
-            note_guidance,
             "Never retell an exact real-life incident or use parent-facing language.",
             "Keep the emotional arc focused on noticing, calming, and making things better without shame.",
         ]
@@ -364,7 +319,7 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
 
     return {
         "feeling": feeling,
-        "trigger": trigger_phrase,
+        "trigger": trigger,
         "body_signal": body_signal,
         "coping_tool": coping_tool,
         "repair_goal": repair_goal,
