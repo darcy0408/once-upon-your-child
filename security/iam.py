@@ -38,17 +38,6 @@ class IdentityAccessManager:
                 'permissions': ['*'],  # All permissions
                 'description': 'Full system access'
             },
-            'therapist': {
-                'permissions': [
-                    'read:user_profile',
-                    'write:user_profile',
-                    'read:therapeutic_sessions',
-                    'write:therapeutic_sessions',
-                    'read:analytics',
-                    'export:data'
-                ],
-                'description': 'Therapist access to user data and sessions'
-            },
             'user': {
                 'permissions': [
                     'read:own_profile',

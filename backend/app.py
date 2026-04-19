@@ -36,7 +36,6 @@ try:
     from backend.models.parent_hidden_context import ParentHiddenContext
     from backend.models.achievement import UserAchievement, AchievementStats
     from backend.models.user import User
-    from backend.models.therapist_client import TherapistClient
 
     from backend.services.story_service import AdvancedStoryEngine
     from backend.cost_tracking import track_cost
@@ -62,7 +61,6 @@ except ImportError:
     from models.parent_hidden_context import ParentHiddenContext
     from models.achievement import UserAchievement, AchievementStats
     from models.user import User
-    from models.therapist_client import TherapistClient
 
     from services.story_service import AdvancedStoryEngine
     from cost_tracking import track_cost
@@ -545,7 +543,6 @@ def create_app(config_name):
         from backend.routes.avatar_gallery_routes import avatar_gallery_bp
         from backend.routes.health_routes import create_health_blueprint
         from backend.routes.utility_routes import create_utility_blueprint
-        from backend.routes.therapist_routes import create_therapist_blueprint
         from backend.routes.chronicle_routes import create_chronicle_blueprint
     except ImportError:
         from routes.story_routes import create_story_blueprint
@@ -555,7 +552,6 @@ def create_app(config_name):
         from routes.avatar_gallery_routes import avatar_gallery_bp
         from routes.health_routes import create_health_blueprint
         from routes.utility_routes import create_utility_blueprint
-        from routes.therapist_routes import create_therapist_blueprint
         from routes.chronicle_routes import create_chronicle_blueprint
 
     story_bp = create_story_blueprint(
@@ -579,7 +575,6 @@ def create_app(config_name):
         logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL, limiter=limiter
     )
     utility_bp = create_utility_blueprint(logger=logger, log_error=log_error, limiter=limiter)
-    therapist_bp = create_therapist_blueprint(logger=logger, limiter=limiter)
     chronicle_bp = create_chronicle_blueprint(api_key=api_key, limiter=limiter)
 
     app.register_blueprint(story_bp)
@@ -587,7 +582,6 @@ def create_app(config_name):
     app.register_blueprint(admin_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(utility_bp)
-    app.register_blueprint(therapist_bp)
     app.register_blueprint(chronicle_bp)
     app.register_blueprint(create_avatar_blueprint(limiter), url_prefix='/avatar')
     app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')

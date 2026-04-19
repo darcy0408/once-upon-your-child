@@ -268,31 +268,6 @@ def _jwt_extended_headers(app, user: User) -> dict[str, str]:
     }
 
 
-@pytest.fixture
-def therapist_auth_headers(therapist_user):
-    return _auth_headers_for_user(therapist_user)
-
-
-@pytest.fixture
-def other_therapist(app):
-    with app.app_context():
-        user = User(
-            id="therapist_user_789",
-            username="othertherapist",
-            email="other-therapist@example.com",
-            password_hash="hashed_password",
-            subscription_tier="free",
-            role="therapist",
-        )
-        db.session.add(user)
-        db.session.commit()
-        yield user
-
-
-@pytest.fixture
-def other_therapist_headers(other_therapist):
-    return _auth_headers_for_user(other_therapist)
-
 
 def test_api_key_set_requires_auth(client):
     response = client.post("/api/user/settings/api-key", json={"api_key": "AIza" + ("a" * 35)})
@@ -370,45 +345,6 @@ def test_generate_coloring_pages_requires_auth(client):
 
     assert response.status_code == 401
 
-
-def test_therapist_client_list_requires_therapist_role(client, auth_headers):
-    response = client.get("/therapist/clients", headers=auth_headers)
-
-    assert response.status_code == 403
-
-
-def test_therapist_cannot_access_other_therapists_clients(
-    client, therapist_auth_headers, other_therapist_headers, test_user
-):
-    create_response = client.post(
-        "/therapist/clients",
-        json={"child_user_id": test_user.id, "child_display_name": "Client A"},
-        headers=therapist_auth_headers,
-    )
-    response = client.get(
-        f"/therapist/clients/{create_response.get_json()['id']}/progress",
-        headers=other_therapist_headers,
-    )
-
-    assert create_response.status_code == 201
-    assert response.status_code in (403, 404)
-
-
-def test_therapist_cannot_delete_other_therapists_client(
-    client, therapist_auth_headers, other_therapist_headers, test_user
-):
-    create_response = client.post(
-        "/therapist/clients",
-        json={"child_user_id": test_user.id, "child_display_name": "Client A"},
-        headers=therapist_auth_headers,
-    )
-    response = client.delete(
-        f"/therapist/clients/{create_response.get_json()['id']}",
-        headers=other_therapist_headers,
-    )
-
-    assert create_response.status_code == 201
-    assert response.status_code in (403, 404)
 
 
 def test_achievement_data_requires_auth(client):

@@ -29,7 +29,6 @@ class AuthorizationMiddleware:
         self.rate_limits = {
             'user': {'requests': 100, 'window': 60},      # 100 req/minute
             'premium': {'requests': 500, 'window': 60},   # 500 req/minute
-            'therapist': {'requests': 1000, 'window': 60}, # 1000 req/minute
             'admin': {'requests': 5000, 'window': 60}     # 5000 req/minute
         }
 

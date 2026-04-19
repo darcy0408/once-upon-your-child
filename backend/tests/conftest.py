@@ -342,27 +342,6 @@ def admin_headers(admin_user):
     }
 
 @pytest.fixture
-def therapist_user(app):
-    """Create a therapist user in the database."""
-    from backend.database import db
-    from backend.models import User
-
-    with app.app_context():
-        user = User(
-            id='therapist_user_456',
-            username='therapistuser',
-            email='therapist@test.com',
-            password_hash='hashed_password',
-            subscription_tier='free',
-            role='therapist'
-        )
-        db.session.add(user)
-        db.session.commit()
-        yield user
-        db.session.delete(user)
-        db.session.commit()
-
-@pytest.fixture
 def test_character(app, test_user):
     """Create a test character in the database."""
     from backend.database import db
