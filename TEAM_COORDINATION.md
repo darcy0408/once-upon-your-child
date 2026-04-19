@@ -1,5 +1,28 @@
 # Team Coordination
 
+## 2026-04-19m — Creator/Adolescent differentiation + 6 new quests (Claude Opus 4.6)
+
+**Goal:** Close the Creator/Adolescent differentiation gap — both bands previously shared identical quest lists and flows.
+
+### What changed
+
+**Re-tagged existing quests by developmental fit:**
+- `questLeftOut`, `questSiblingConflict`, `questBeingTeased`, `questTryout` → `[adventurer, creator]`
+- `questPeerPressure`, `questFamilyStress`, `questFeelingDifferent`, `questLosingFriendship` → `[creator, adolescent]`
+- `questSchoolStress` → unchanged (all three bands)
+
+**3 Creator-only quests (12-14):** The Group Chat, My Work My Way, Mirror Mirror
+**3 Adolescent-only quests (15-17):** Someone Needs Help, The Thing I Didn't Say, Where Are You Going?
+
+**Band-specific selector copy** in `life_quest_screen.dart`
+
+### Quest distribution: Explorer 7, Adventurer 5, Creator 12, Adolescent 8
+
+### Commit
+`1c813be` — feat(life-quests): differentiate Creator and Adolescent bands
+
+---
+
 ## 2026-04-19l — Age-band avatar loading animations (Claude Sonnet 4.6)
 
 **Goal:** Replace the plain `CircularProgressIndicator` in `custom_avatar_screen.dart` with rich, age-band-specific loading animations shown during the ~60s avatar generation wait.
