@@ -1,0 +1,44 @@
+import 'package:flutter/material.dart';
+
+/// Drop-in replacement for [Image.asset] that never overflows or crashes
+/// when the asset is missing. Returns an empty [SizedBox] of the declared
+/// dimensions if the asset fails to load, preserving the intended layout.
+///
+/// Use this anywhere a missing asset would disrupt layout or user experience.
+class SafeAssetImage extends StatelessWidget {
+  const SafeAssetImage(
+    this.path, {
+    super.key,
+    this.width,
+    this.height,
+    this.fit,
+    this.color,
+    this.placeholder,
+    this.semanticLabel,
+  });
+
+  final String path;
+  final double? width;
+  final double? height;
+  final BoxFit? fit;
+  final Color? color;
+
+  /// Optional custom placeholder. Defaults to a sized [SizedBox].
+  final Widget? placeholder;
+
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      path,
+      width: width,
+      height: height,
+      fit: fit,
+      color: color,
+      semanticLabel: semanticLabel,
+      errorBuilder: (_, __, ___) =>
+          placeholder ?? SizedBox(width: width, height: height),
+    );
+  }
+}

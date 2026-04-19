@@ -1,18 +1,18 @@
 """
-Per-user daily AI generation quota enforced via Redis.
+Per-user daily quota enforcement via Redis.
 
-Provides a circuit breaker that prevents a single account from generating
-unbounded Gemini calls in a 24-hour window — guarding against both
-accidental abuse and deliberate cost attacks.
+Two resources are tracked:
 
-Limits are checked BEFORE the Gemini call and incremented AFTER a
-successful response so failed/safety-blocked generations don't count
-against the user's quota.
+  ai   — Gemini story generation (ai:quota:{user_id}:{date})
+  tts  — ElevenLabs TTS synthesis (tts:quota:{user_id}:{date})
 
-Redis keys: ai:quota:{user_id}:{YYYY-MM-DD}  (TTL: 2 days)
+Limits are checked BEFORE the API call and incremented AFTER a successful
+response so failed/error responses don't count against the user's quota.
 
-Graceful degradation: if Redis is unreachable the check is skipped with
-a WARNING so a Redis outage never blocks story generation.
+TTL on all Redis keys: 2 days (auto-expiry, no cleanup job needed).
+
+Graceful degradation: if Redis is unreachable the check is skipped with a
+WARNING so a Redis outage never blocks user-facing features.
 """
 
 import logging
@@ -126,3 +126,86 @@ def increment_daily_quota(user_id: str, user_tier: str) -> None:
         pipe.execute()
     except Exception as exc:
         logger.warning("ai_quota: Redis error during increment (%s)", exc)
+
+
+# ---------------------------------------------------------------------------
+# TTS (ElevenLabs) daily quota
+# ---------------------------------------------------------------------------
+
+# Daily TTS synthesis limits per subscription tier.
+# BYOK users have their own Gemini key but share ElevenLabs — they are NOT exempt.
+_TTS_DAILY_LIMITS: dict[str, int] = {
+    "free": 20,
+    "premium": 100,
+    "family": 150,
+    "byok": 50,
+}
+
+_ENV_TTS_OVERRIDES = {
+    "free": "TTS_QUOTA_FREE",
+    "premium": "TTS_QUOTA_PREMIUM",
+    "family": "TTS_QUOTA_FAMILY",
+    "byok": "TTS_QUOTA_BYOK",
+}
+
+
+def _get_tts_limit(tier: str) -> int:
+    env_key = _ENV_TTS_OVERRIDES.get(tier)
+    if env_key and os.getenv(env_key):
+        try:
+            return int(os.getenv(env_key))
+        except ValueError:
+            pass
+    return _TTS_DAILY_LIMITS.get(tier, _TTS_DAILY_LIMITS["free"])
+
+
+def _tts_redis_key(user_id: str) -> str:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"tts:quota:{user_id}:{today}"
+
+
+def check_tts_quota(user_id: str, user_tier: str) -> tuple[bool, int, int]:
+    """
+    Check whether *user_id* is within their daily TTS synthesis quota.
+
+    Returns (allowed, current_count, limit).
+    Never raises; falls back to allowed=True on Redis errors.
+    """
+    limit = _get_tts_limit(user_tier)
+
+    r = _get_redis()
+    if r is None:
+        return True, 0, limit
+
+    key = _tts_redis_key(user_id)
+    try:
+        current = int(r.get(key) or 0)
+        if current >= limit:
+            logger.warning(
+                "tts_quota: user=%s tier=%s count=%d limit=%d — quota exceeded",
+                user_id, user_tier, current, limit,
+            )
+            return False, current, limit
+        return True, current, limit
+    except Exception as exc:
+        logger.warning("tts_quota: Redis error during check (%s) — allowing request", exc)
+        return True, 0, limit
+
+
+def increment_tts_quota(user_id: str, user_tier: str) -> None:
+    """
+    Increment the daily TTS counter after a successful synthesis.
+    Sets a 2-day TTL. No-op if Redis is unavailable.
+    """
+    r = _get_redis()
+    if r is None:
+        return
+
+    key = _tts_redis_key(user_id)
+    try:
+        pipe = r.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, 60 * 60 * 48)  # 2-day TTL
+        pipe.execute()
+    except Exception as exc:
+        logger.warning("tts_quota: Redis error during increment (%s)", exc)

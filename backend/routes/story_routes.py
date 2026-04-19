@@ -17,6 +17,7 @@ from ..models import Character, ParentHiddenContext
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
+from ..utils.audit import audit_log
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..services.story_service import transform_parent_context_to_story_guidance
 from ..utils.validators import (
@@ -395,6 +396,7 @@ def create_story_blueprint(
         # Daily AI generation quota — circuit breaker against unbounded Gemini spend.
         allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
         if not allowed:
+            audit_log('ai_quota_exceeded', user_id=user_id, data={'tier': user_tier, 'count': current_count, 'limit': daily_limit})
             return jsonify({
                 "error": "Daily story limit reached",
                 "code": "QUOTA_EXCEEDED",
@@ -521,6 +523,7 @@ def create_story_blueprint(
                 "async_illustrations": payload.get("async_illustrations", False),
             }
             increment_daily_quota(user_id, user_tier)
+            audit_log('story_generated', user_id=user_id, data={'tier': user_tier, 'mode': 'sync'})
             return jsonify(response_payload), 200
 
         except (FuturesTimeoutError, CeleryTimeoutError) as exc:
@@ -623,6 +626,7 @@ def create_story_blueprint(
                         "wisdom_gem": story_payload.get("wisdom_gem"),
                         "async_illustrations": payload.get("async_illustrations", False),
                     }
+                    audit_log('story_generated', user_id=user_id, data={'tier': user_tier, 'mode': 'async_fallback'})
                     return jsonify(response_payload), 200
                 except Exception as fallback_exc:
                     logger.exception("Synchronous retry also failed: %s", fallback_exc)

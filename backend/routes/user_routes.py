@@ -6,6 +6,7 @@ from backend.models.story import Story
 from backend.models.consent_record import ConsentRecord
 from backend.database import db
 from backend.middleware.auth import require_auth, require_owner
+from backend.utils.audit import audit_log
 
 # Subscription limits
 SUBSCRIPTION_LIMITS = {
@@ -264,6 +265,7 @@ def create_user_routes_blueprint(limiter=None):
             db.session.commit()
 
             current_app.logger.info('All data deleted for user %s (anonymized)', user_id)
+            audit_log('data_deleted', user_id=user_id)
 
             return jsonify({
                 'success': True,
@@ -340,6 +342,7 @@ def create_user_routes_blueprint(limiter=None):
                 'achievements': achievements_data,
             }
 
+            audit_log('data_exported', user_id=user_id)
             response = jsonify(export)
             response.headers['Content-Disposition'] = f'attachment; filename="storyweaver_export_{user_id[:8]}.json"'
             return response

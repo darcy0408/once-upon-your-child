@@ -10,10 +10,70 @@
 - **Scroll gate on the checkbox.** Previously only the submit button was gated on `_scrollProgress >= 0.95`; the checkbox's `onChanged` is now also `null` until the parent has read to 95%. The scroll-hint arrow flips from `keyboard_arrow_down` (inline, when far from the bottom) to `keyboard_arrow_up` in the footer (pointing back at the unread notice).
 - **"Send to a grown-up" button.** Top-right of the footer. Uses `share_plus` (already in `pubspec.yaml`) to fire a pre-written message via the OS share sheet — "Hi! I want to try Story Weaver… Could you look at this together with me?" — so a child who can't complete consent alone can hand the flow to a parent on their own device. Addresses the UX issue where a kid lands on the consent screen with no parent nearby.
 
+### Changes (`lib/screens/welcome_screen.dart`)
+
+- **Welcome teaser screen (step -1).** On first launch, users now see a brief intro screen ("Story Weaver / Your hero. Your story.") before the age picker. Uses `SharedPreferences` key `welcome_teaser_seen` so it only shows once. TTS: "Welcome to Story Weaver! Where you are the hero."
+- **Age resume.** On subsequent launches, if an age is already saved (parental consent granted), the welcome screen skips straight to name entry (step 2) with a "Welcome back!" greeting. Avoids re-entering age after app reinstall if consent persists.
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `lib/widgets/safe_asset_image.dart` | Drop-in `Image.asset` replacement that shows a blank `SizedBox` on missing asset instead of crashing. Use this everywhere to avoid red error boxes. |
+| `scripts/process_gender_images.py` | One-off script: BFS background removal + JPG→PNG conversion for `assets/BoyGirl images/` → `assets/images/ui/gender/` |
+
 ### Files Changed
 | File | Change |
 |------|--------|
 | `lib/screens/parental_consent_screen.dart` | Sticky footer refactor; scroll-gate extended to checkbox; `_shareToGrownUp` + share button added |
+| `lib/screens/welcome_screen.dart` | Welcome teaser (step -1); age-resume logic on re-launch |
+
+---
+
+## 2026-04-18l — Phase 3 Compliance: TTS Quota + Audit Log (Claude Sonnet 4.6)
+
+**Goal:** Complete the Phase 3 compliance backlog from the 2026-04-18e security audit.
+
+### Items resolved
+
+**Dependabot** — already configured (`/.github/dependabot.yml`, pip + pub + GitHub Actions on monthly schedule). No change needed.
+
+**pip-audit in CI** — already wired into `backend-tests.yml`. No change needed.
+
+**GDPR data portability** — already implemented: `GET /api/user/<id>/export` (full JSON download) and `DELETE /api/user/<id>/data` (right to erasure with anonymisation). No change needed.
+
+**ElevenLabs per-user TTS quota** (`backend/utils/ai_quota.py`, `backend/routes/tts_routes.py`)
+- Added `check_tts_quota` / `increment_tts_quota` to `ai_quota.py` using the same Redis pattern as the AI quota
+- Redis key format: `tts:quota:{user_id}:{YYYY-MM-DD}` (2-day TTL)
+- Daily limits: `free=20`, `premium=100`, `family=150`, `byok=50` — overridable via env vars (`TTS_QUOTA_FREE` etc.)
+- BYOK users are NOT exempt (they share ElevenLabs with everyone else)
+- Returns `429 TTS_QUOTA_EXCEEDED` with `daily_limit` and `syntheses_used` in body
+- Incremented only after successful audio bytes returned
+
+**Audit log** (`backend/models/audit_log.py`, `backend/utils/audit.py`)
+- New `AuditLog` SQLAlchemy model (`audit_log` table): `id`, `user_id`, `event_type`, `event_data` (JSON), `ip_address`, `created_at`
+- Auto-created by `db.create_all()` at startup — no manual migration needed
+- `audit_log()` helper in `backend/utils/audit.py`: one-line fire-and-forget call, never raises
+- Events wired in:
+  - `story_generated` — sync and async-fallback story paths (`story_routes.py`)
+  - `ai_quota_exceeded` — daily AI generation limit hit (`story_routes.py`)
+  - `tts_quota_exceeded` — daily TTS limit hit (`tts_routes.py`)
+  - `user_login` — successful password login (`utility_routes.py`)
+  - `token_refreshed` — refresh token used (`utility_routes.py`)
+  - `anonymous_session` — new anonymous account created (`utility_routes.py`)
+  - `data_exported` — GDPR data export downloaded (`user_routes.py`)
+  - `data_deleted` — GDPR right-to-erasure executed (`user_routes.py`)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `backend/utils/ai_quota.py` | Added `check_tts_quota`, `increment_tts_quota`, `_TTS_DAILY_LIMITS` |
+| `backend/models/audit_log.py` | New — `AuditLog` SQLAlchemy model |
+| `backend/models/__init__.py` | Added `AuditLog` import so `create_all` picks it up |
+| `backend/utils/audit.py` | New — `audit_log()` fire-and-forget helper |
+| `backend/routes/tts_routes.py` | TTS quota check + increment + quota exceeded audit event |
+| `backend/routes/story_routes.py` | `audit_log` import; story_generated + ai_quota_exceeded events |
+| `backend/routes/utility_routes.py` | user_login, token_refreshed, anonymous_session events |
+| `backend/routes/user_routes.py` | data_exported, data_deleted events |
 
 ---
 

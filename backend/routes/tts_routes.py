@@ -92,6 +92,27 @@ def create_tts_blueprint(limiter, require_auth):
                            "Set ELEVENLABS_API_KEY in backend/.env.",
             }), 503
 
+        # Per-user daily TTS quota check
+        try:
+            from backend.utils.ai_quota import check_tts_quota, increment_tts_quota
+            from backend.utils.audit import audit_log
+        except ImportError:
+            from utils.ai_quota import check_tts_quota, increment_tts_quota
+            from utils.audit import audit_log
+
+        user_id = request.current_user.id if hasattr(request, 'current_user') and request.current_user else None
+        user_tier = getattr(request.current_user, 'subscription_tier', 'free') or 'free'
+        if user_id:
+            allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
+            if not allowed:
+                audit_log('tts_quota_exceeded', user_id=user_id, data={'tier': user_tier, 'count': tts_count, 'limit': tts_limit})
+                return jsonify({
+                    "error": "Daily narration limit reached",
+                    "code": "TTS_QUOTA_EXCEEDED",
+                    "daily_limit": tts_limit,
+                    "syntheses_used": tts_count,
+                }), 429
+
         data = request.get_json(force=True, silent=True) or {}
         text = (data.get("text") or "").strip()
         if not text:
@@ -147,6 +168,9 @@ def create_tts_blueprint(limiter, require_auth):
 
         if not audio_bytes:
             return jsonify({"error": "Empty audio returned"}), 500
+
+        if user_id:
+            increment_tts_quota(user_id, user_tier)
 
         return jsonify({
             "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),

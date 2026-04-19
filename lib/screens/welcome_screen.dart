@@ -22,6 +22,7 @@ import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
 
 const _kUserNameKey = 'user_name';
+const _kTeaserSeenKey = 'welcome_teaser_seen';
 
 /// Shown on first launch to collect the child's name and age.
 /// Steps: 0 = age picker, 1 = title splash, 2 = name input.
@@ -47,7 +48,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _speechEnabled = false;
   bool _isListening = false;
 
-  /// Current step: 0 = age picker, 1 = title splash, 2 = name input.
+  /// Current step: -1 = teaser, 0 = age picker, 1 = title splash, 2 = name input.
   int _step = 0;
 
   Timer? _titleTimer;
@@ -105,9 +106,54 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       CurvedAnimation(parent: _tapHintCtrl, curve: Curves.easeInOut),
     );
 
-    // Speak age prompt on first load.
-    unawaited(_speak('Hi, welcome to Story Weaver! How old are you? Tap your age!', rateScale: 0.72));
+    _resumeFromSavedAge();
     _initVoice();
+  }
+
+  /// Determines the initial step on launch:
+  /// 1. Age saved → jump to name entry (parental consent persists age; name
+  ///    does not persist until consent is granted, so name is still required).
+  /// 2. Teaser not yet seen → show the teaser before the age picker so the
+  ///    user has context before being asked for data.
+  /// 3. Otherwise → go straight to the age picker.
+  Future<void> _resumeFromSavedAge() async {
+    final savedAge = await const ParentalConsentService().getRecordedAge();
+    final prefs = await SharedPreferences.getInstance();
+    final teaserSeen = prefs.getBool(_kTeaserSeenKey) ?? false;
+    if (!mounted) return;
+    if (savedAge != null) {
+      setState(() {
+        _selectedAge = savedAge;
+        _step = 2; // Skip teaser, age picker, and title splash.
+      });
+      if (ageBandFromAge(savedAge) == AgeBand.creator) {
+        unawaited(_speak("Welcome back! What should we call you?", rateScale: 0.85));
+      } else {
+        unawaited(_speak("Welcome back! What's your name?", rateScale: 0.85));
+      }
+      return;
+    }
+    if (!teaserSeen) {
+      setState(() => _step = -1);
+      unawaited(_speak("Welcome to Story Weaver! Where you are the hero.",
+          rateScale: 0.8));
+      return;
+    }
+    unawaited(_speak(
+        'Hi, welcome to Story Weaver! How old are you? Tap your age!',
+        rateScale: 0.72));
+  }
+
+  Future<void> _dismissTeaser() async {
+    AppTtsService.instance.markInteracted();
+    AppTtsService.instance.stop();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTeaserSeenKey, true);
+    if (!mounted) return;
+    setState(() => _step = 0);
+    unawaited(_speak(
+        'How old are you? Tap your age!',
+        rateScale: 0.72));
   }
 
   Future<void> _initVoice() async {
@@ -294,6 +340,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   Widget _buildStep() {
     switch (_step) {
+      case -1:
+        return _buildTeaserStep();
       case 1:
         return _buildTitleStep();
       case 2:
@@ -301,6 +349,77 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       default:
         return _buildAgeStep();
     }
+  }
+
+  // ── Step -1: First-launch teaser ──────────────────────────────────────────
+
+  Widget _buildTeaserStep() {
+    return GestureDetector(
+      key: const ValueKey('teaser'),
+      onTap: _dismissTeaser,
+      behavior: HitTestBehavior.opaque,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeTransition(
+                opacity: _tapHintOpacity,
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: _goldColor,
+                  size: 72,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Story Weaver',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cinzelDecorative(
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  color: _goldColor,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Your hero.\nYour story.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.fredoka(
+                  fontSize: 22,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: _dismissTeaser,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _goldColor,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 36, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40)),
+                  elevation: 8,
+                  shadowColor: _goldColor.withAlpha(160),
+                ),
+                child: Text(
+                  "Let's start!",
+                  style: GoogleFonts.fredoka(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ── Step 1: Title splash ──────────────────────────────────────────────────

@@ -17,6 +17,7 @@ from ..models.user import User
 from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
 from ..middleware.auth import require_auth, require_admin, require_owner
+from ..utils.audit import audit_log
 
 
 def _blocklist_jti(jti: str, exp: int, logger) -> None:
@@ -267,6 +268,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
+        audit_log('anonymous_session', user_id=user.id)
         return jsonify({
             'token': token,
             'refresh_token': refresh_token,
@@ -286,6 +288,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         if user and user.check_password(password):
             token = create_access_token(identity=user.id)
             refresh_token = create_refresh_token(identity=user.id)
+            audit_log('user_login', user_id=user.id)
             return jsonify({'token': token, 'refresh_token': refresh_token}), 200
 
         return jsonify({'message': 'Invalid credentials'}), 401
@@ -313,6 +316,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         token = create_access_token(identity=user.id)
         new_refresh = create_refresh_token(identity=user.id)
+        audit_log('token_refreshed', user_id=user.id)
         return jsonify({
             'token': token,
             'refresh_token': new_refresh,
