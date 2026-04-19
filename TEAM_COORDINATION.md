@@ -1,5 +1,130 @@
 # Team Coordination
 
+## 2026-04-19k — Archetype gendered images + press-state feedback (Claude Sonnet 4.6)
+
+**Goal:** Wire up gender-based archetype image routing for adventurer and creator bands; add tactile press-state feedback to archetype cards.
+
+### What was done
+
+#### Press-state ("tap feedback") on ArchetypeCard
+- Converted `ArchetypeCard` from `StatelessWidget` to `StatefulWidget`.
+- Added `_isPressed` state, tracked via `GestureDetector` `onTapDown`/`onTapUp`/`onTapCancel` (replaced `InkWell`).
+- `AnimatedScale` now uses scale `0.94` when pressed (vs `1.03` selected, `1.0` default) — the "push-in" feel.
+- White brightness overlay (`Colors.white` at 18% opacity) flashes in the Stack when pressed.
+
+#### Gender routing — SafeAssetImage fallback chain
+- Added `fallbackPath` parameter to `SafeAssetImage`: if the primary path fails, tries `fallbackPath` before showing the placeholder widget. Nested `Image.asset` `errorBuilder` handles the cascade.
+- Updated `_buildArchetypeSceneImage` in `hero_creator_step.dart` to pass `fallbackPath: archetype.imagePathForBand(ageBand)` (gender-neutral) alongside the gendered primary path. Any band without a gendered variant gracefully degrades to the generic `.jpg`.
+
+#### New adventurer band gendered images
+- Added 8 files to `assets/images/archetypes/adventurer/`: `quiz_whiz_boy.png`, `master_creator_boy.png`, `lightning_runner_boy.png`, `animal_whisperer_boy.png` + matching `_girl` variants.
+- Naming follows the established `{archetypeName}_{boy|girl}.png` convention used in the creator band.
+- `imagePathForBand` already resolved `genderedImageId` + gender to this path — no code change needed to activate routing for adventurer.
+
+#### Typo fix — `mastor_creator` → `master_creator`
+- Renamed `mastor_creator_boy.png` → `master_creator_boy.png` in both `creator/` and `adult/` bands.
+- Added `master_creator_girl.png` to `adult/` (was missing).
+
+### Files changed
+| File | Change |
+|------|--------|
+| `lib/widgets/archetype_card.dart` | StatefulWidget + GestureDetector press state |
+| `lib/widgets/safe_asset_image.dart` | `fallbackPath` parameter + nested error chain |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Pass `fallbackPath` in `_buildArchetypeSceneImage` |
+| `assets/images/archetypes/adventurer/*_{boy\|girl}.png` | 8 new gendered variants |
+| `assets/images/archetypes/creator/master_creator_boy.png` | Renamed from `mastor_creator_boy.png` |
+| `assets/images/archetypes/adult/master_creator_{boy\|girl}.png` | Typo fix + added missing girl file |
+
+### Remaining / follow-up
+- Other bands (explorer, adolescent) still use generic `.jpg` fallbacks — add `_boy`/`_girl` PNGs when art is ready; no code changes needed.
+- Sprout band uses `sproutImageId` not `genderedImageId` — gendered routing for sprout would need a small extension to `imagePathForBand`.
+- Adult band still missing: `quiz_whiz_girl.png`, `lightning_runner_girl.png`, `animal_whisperer_girl.png` — add when art is ready.
+
+---
+
+## 2026-04-19j — Phase 6 Bug Fixes: P6-01 companions, P6-02 stale age, P6-03/04 load audit (Claude Sonnet 4.6)
+
+**Goal:** Fix all four open bugs from the Phase 6 test report and re-run the load audit with a valid real-API baseline.
+
+### What was done
+
+#### BUG-P6-01 — Companion images 404 in adult/mature brief wizard (`lib/screens/wizard_steps/hero_creator_step.dart`)
+- Root cause: `_adventurerCompanions` and `_companions` const lists used old generic IDs (`dragon`, `cat`, `owl`, `dog`, `unicorn`, `fox`, `robin`) with no `imagePathOverride`, falling back to `${id}_normal.jpg` which doesn't exist.
+- Fix: replaced both lists with five per-band const lists (`_explorerCompanions`, `_adventurerCompanions`, `_creatorCompanions`, `_adolescentCompanions`, `_adultCompanions` — `_sproutCompanions` was already correct). Each entry uses `imagePathOverride` pointing to `assets/images/companions/{band}/{filename}`, matching actual on-disk assets and the pattern in `companion_selector_step.dart`.
+- Updated band selection in `_CompanionImageGrid.build()` from a 3-branch ternary to an exhaustive `switch` covering all 6 `AgeBand` values.
+- **Visual verify still pending** — Playwright browser session was closed; confirm 0 console 404s in the adult brief wizard Cast & Companions accordion after restart.
+
+#### BUG-P6-02 — Stale age in localStorage causes wrong COPPA flow (`lib/screens/welcome_screen.dart`)
+- Root cause: race condition. `initState()` renders step 0 (age picker) immediately then calls `_resumeFromSavedAge()` async. If the user taps a new age before the prefs read returns, `_resumeFromSavedAge()` finishes after and overwrites `_selectedAge` with the stale persisted age, causing COPPA to fire with the wrong age.
+- Fix 1: guard in `_resumeFromSavedAge()` — bail out if `_selectedAge != null` (user already picked).
+- Fix 2: in `_onAgeSelected()`, `unawaited(ParentalConsentService().saveDeclaredAge(age))` immediately, so any concurrent prefs read sees the new age.
+
+#### BUG-P6-03 — Load audit harness 100% 500s (`backend/tests/story_load_audit.py`)
+- Root cause: mock user `SimpleNamespace` in `_auth_session_get()` was missing `is_under_13` and `declared_age` fields added to `User` model in 2026-03-31 COPPA work.
+- Fix: added `is_under_13=False, declared_age=None` to the SimpleNamespace.
+
+#### BUG-P6-04 — Fallback switchover measurement broken
+- Was blocked by P6-03. After fix, switchover measured correctly: gemini(fail:401) → openrouter(fail:no_key) → static in ~154ms.
+
+### Load audit re-run results (post-fix, `--real-api`)
+- **Mocked scenarios:** 0 errors, p95 ~185–203ms (test client + static fallback overhead).
+- **Real Gemini baseline:** 5/5 success, p50=42.5s, p95=44.9s, mean=35.4s. First valid real-provider baseline.
+- Artifacts updated: `backend/tests/artifacts/story_load_audit_latest.*`
+
+### Files changed
+| File | Change |
+|------|--------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Per-band companion lists with `imagePathOverride`; exhaustive band switch |
+| `lib/screens/welcome_screen.dart` | Race condition fix: guard in `_resumeFromSavedAge`, immediate persist in `_onAgeSelected` |
+| `backend/tests/story_load_audit.py` | Add `is_under_13`/`declared_age` to mock user SimpleNamespace |
+
+### After restart — resume here
+1. **Companion image visual verify** (5 min): open adult brief wizard in browser, expand Cast & Companions, confirm 0 console 404s. Screenshot to `docs/phase6_artifacts/adult_companions_fixed.png`.
+2. **Phase 7 manual QA** (audio-only CTA): see `2026-04-19i` entry below for full test plan.
+
+---
+
+## 2026-04-19i — Phase 7 audio-only CTA QA — BLOCKED on Playwright MCP (Claude Opus 4.7)
+
+**Goal:** Verify the audio-only CTA from `magic_review_step.dart` (commit `789fa48`) works end-to-end on Railway across all 6 age bands — the last open item from the 2026-03-25 Codex audit (line 1998 of this file).
+
+### Status: PAUSED — resume after computer restart
+
+Browser automation against `https://story-weaver-app-production.up.railway.app/` could not start. The Playwright MCP server hit `Error: Browser is already in use for ...mcp-chrome-for-testing-85fd96c` because a stale `lockfile` in the dedicated user-data-dir was still held by an orphaned Playwright MCP `node.exe` process from a prior session. Killing the chrome child processes alone did not release the file handle — only killing the parent node process does, and that severs the live MCP connection mid-session.
+
+**Recovery before resuming:**
+1. Exit Claude Code.
+2. Run in PowerShell:
+   ```powershell
+   Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*playwright/mcp*' -or $_.CommandLine -like '*mcp-chrome-for-testing*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+   Remove-Item "C:\Users\darcy\AppData\Local\ms-playwright\mcp-chrome-for-testing-85fd96c\lockfile" -Force -ErrorAction SilentlyContinue
+   ```
+   (A computer restart accomplishes the same thing.)
+3. Restart Claude Code, `/resume`, pick the session whose first message starts "Phase 7 manual QA still pending".
+
+Memory entry `reference_playwright_mcp_lockfile.md` also captures this for future Windows + Playwright MCP sessions.
+
+### Test plan (when unblocked)
+
+The audio-only CTA only renders when `data.interactiveMode == true` (see diff in `789fa48`: `if (data.interactiveMode) ...`). Plan per band:
+
+1. Open the deployed app → enter wizard with **interactive mode enabled** for the target band.
+2. Complete name + scenario + hero + feelings to reach `magic_review_step.dart`.
+3. Confirm CTA copy:
+   - Mature bands (adolescent, adult): "Want the same pick-a-path story without the screen?" + button "Start Audio-Only Adventure".
+   - Other bands (sprout, explorer, adventurer, creator): "Want this adventure in audio-only bedtime mode?" + button "Start Bedtime Audio Adventure".
+4. Click CTA → verify push to `BedtimeWizardScreen(isInteractive: true)`.
+5. Confirm TTS network call returns 200 and audio element loads. (Audible playback verification is on-device, not Playwright-observable.)
+6. Watch console + Railway backend logs for the 401 from the `userId: 'guest'` hardcode flagged at line 1997 of this file — that bug is still open and may surface here.
+
+Bands to cover (6): sprouts, early_readers (explorer), adventurers, creators, adolescents, adults.
+
+### Open question to resolve at resume
+
+Confirm whether the prod app exposes the wizard via guest/anonymous flow or requires real auth. If auth is required, get test credentials before kicking off the sweep.
+
+---
+
 ## 2026-04-19h — 5 Explorer Life Quests authored (Claude Sonnet 4.6)
 
 **Goal:** Write full CYOA content for the 5 Explorer quests (ages 6–8) deferred in session 2026-04-19g.
