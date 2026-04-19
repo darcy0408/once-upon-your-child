@@ -113,6 +113,11 @@ String interpolateQuest(
 // ─────────────────────────────────────────────────────────────────────────────
 
 const allLifeQuests = <LifeQuestScenario>[
+  // Explorer band (ages 6-8)
+  questWobblyDay,
+  questSorryStuck,
+  // Adventurer / Creator / Adolescent (ages 9+)
+  questTryout,
   questLeftOut,
   questPeerPressure,
   questSchoolStress,
@@ -2183,6 +2188,531 @@ const questLosingFriendship = LifeQuestScenario(
           'than one best friend.\n\n'
           'You don\'t lose Morgan. You just start making room '
           'for other things. The spring comes. You\'re okay.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST 9: The Wobbly Day  [Explorer: ages 6-8]
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questWobblyDay = LifeQuestScenario(
+  id: 'wobbly_day',
+  title: 'The Wobbly Day',
+  hook: 'New place. New people. Butterflies doing backflips.',
+  emoji: '🦋',
+  emotions: ['worried', 'excited', 'scared'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'wd_start',
+  segments: {
+    'wd_start': QuestSegment(
+      id: 'wd_start',
+      content:
+          'Your tummy has butterflies this morning.\n\n'
+          'Today is your first day — new classroom, new teacher, new everything. '
+          'You\'ve been thinking about it all week.\n\n'
+          '«{companion} walks beside you. "{companion} says: \'You\'ve got this.\'"»\n\n'
+          'You stop just outside the door. Through the little window you can see '
+          'kids already at their desks. Some are laughing. Some look as '
+          'nervous as you feel.\n\n'
+          'You take a big breath. What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'wd_c1a',
+          text: 'Walk straight in with your head up',
+          nextSegmentId: 'wd_brave',
+        ),
+        QuestChoice(
+          id: 'wd_c1b',
+          text: 'Wait by the door a little longer',
+          nextSegmentId: 'wd_peek',
+        ),
+      ],
+    ),
+
+    'wd_brave': QuestSegment(
+      id: 'wd_brave',
+      content:
+          'You walk right in — and guess what? Nobody even notices at first. '
+          'Everyone is busy with their own butterflies.\n\n'
+          'You find a seat near the front. A kid with a green pencil case '
+          'looks over at you and gives you a small smile.\n\n'
+          'Just a small smile. But it feels like a lot.',
+      choices: [
+        QuestChoice(
+          id: 'wd_c2a',
+          text: 'Smile back and say "Hi, I\'m {name}."',
+          nextSegmentId: 'wd_hi',
+        ),
+        QuestChoice(
+          id: 'wd_c2b',
+          text: 'Smile back and look at your desk — maybe later',
+          nextSegmentId: 'wd_quiet',
+        ),
+      ],
+    ),
+
+    'wd_peek': QuestSegment(
+      id: 'wd_peek',
+      content:
+          'You watch through the window for a moment.\n\n'
+          'Then the teacher opens the door — and almost walks right into you! '
+          '{pronoun} laughs. A nice laugh. "Oh! Are you coming in?"\n\n'
+          'Your cheeks go warm. But {pronoun} holds the door open wide '
+          'and says, "We\'re so glad you\'re here."',
+      choices: [
+        QuestChoice(
+          id: 'wd_c3a',
+          text: 'Step inside and say thank you',
+          nextSegmentId: 'wd_thanks',
+        ),
+        QuestChoice(
+          id: 'wd_c3b',
+          text: 'Step inside quietly and find a spot by the window',
+          nextSegmentId: 'wd_window',
+        ),
+      ],
+    ),
+
+    'wd_hi': QuestSegment(
+      id: 'wd_hi',
+      content:
+          '"Hi, I\'m {name}," you say.\n\n'
+          'The kid with the green pencil case says their name back. '
+          'Then: "Do you like stickers?"\n\n'
+          'You laugh — you didn\'t expect that. But yeah, actually, '
+          'you do like stickers.\n\n'
+          'The butterflies are still there. But they\'re flying in '
+          'formation now.\n\n'
+          'Sometimes being brave is just saying two words.',
+      isEnding: true,
+    ),
+
+    'wd_quiet': QuestSegment(
+      id: 'wd_quiet',
+      content:
+          'You smile back but stay quiet for now. That\'s okay too.\n\n'
+          'At lunch, the same kid taps your shoulder. '
+          '"Is this seat taken?"\n\n'
+          'You shake your head. They sit down.\n\n'
+          'You didn\'t say a word all morning — and somehow you still '
+          'made a friend by the afternoon.\n\n'
+          'Butterflies don\'t last forever.',
+      isEnding: true,
+    ),
+
+    'wd_thanks': QuestSegment(
+      id: 'wd_thanks',
+      content:
+          '"Thank you," you say, and step inside.\n\n'
+          'The teacher shows you your desk. There\'s a little name card '
+          'on it — with your name spelled perfectly.\n\n'
+          'Someone already knew you were coming. '
+          'Someone already made space for you.\n\n'
+          'That\'s a good feeling to hold onto.',
+      isEnding: true,
+    ),
+
+    'wd_window': QuestSegment(
+      id: 'wd_window',
+      content:
+          'You find a seat by the window and look outside for a moment.\n\n'
+          'Everything familiar, and far away at the same time.\n\n'
+          'The teacher starts talking and you turn back to the room.\n\n'
+          'New doesn\'t have to mean worse. It just means different. '
+          'And different... you can handle.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST 10: The Sorry Stuck in Your Throat  [Explorer: ages 6-8]
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questSorryStuck = LifeQuestScenario(
+  id: 'sorry_stuck',
+  title: 'The Sorry Stuck in Your Throat',
+  hook: 'You said something wrong. Now you have to fix it.',
+  emoji: '🤐',
+  emotions: ['sad', 'angry', 'embarrassed', 'worried'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'ss_start',
+  segments: {
+    'ss_start': QuestSegment(
+      id: 'ss_start',
+      content:
+          'It was just a game.\n\n'
+          'You were losing and you got really frustrated. The words came '
+          'out before you could stop them — something mean, something '
+          'you didn\'t totally mean.\n\n'
+          'Your friend stopped playing. They looked at you like they '
+          'didn\'t quite know who you were for a second.\n\n'
+          'Now they\'re sitting across the room with their back to you.\n\n'
+          '«{companion} sits down next to you. '
+          '"That was pretty rough," {pronoun} says quietly.»\n\n'
+          'Your face feels hot. You didn\'t mean it — or you did '
+          'in that moment, but you don\'t now.',
+      choices: [
+        QuestChoice(
+          id: 'ss_c1a',
+          text: 'Go over and say sorry right now',
+          nextSegmentId: 'ss_sorry_now',
+        ),
+        QuestChoice(
+          id: 'ss_c1b',
+          text: 'Wait — maybe they\'ll cool down on their own',
+          nextSegmentId: 'ss_wait',
+        ),
+      ],
+    ),
+
+    'ss_sorry_now': QuestSegment(
+      id: 'ss_sorry_now',
+      content:
+          'You walk over. Your heart is going fast.\n\n'
+          '"Hey," you say. Your friend doesn\'t turn around yet.\n\n'
+          'You take a breath. "I\'m sorry. What I said was mean. '
+          'I was frustrated but that\'s not an excuse."\n\n'
+          'Silence. Then your friend turns around. Their eyes are '
+          'still a little pink.\n\n'
+          '"It really hurt," they say.',
+      choices: [
+        QuestChoice(
+          id: 'ss_c2a',
+          text: '"I know. I\'m really sorry. Is there anything I can do?"',
+          nextSegmentId: 'ss_do_something',
+        ),
+        QuestChoice(
+          id: 'ss_c2b',
+          text: '"I know. I\'m sorry." — and give them some space',
+          nextSegmentId: 'ss_space',
+        ),
+      ],
+    ),
+
+    'ss_wait': QuestSegment(
+      id: 'ss_wait',
+      content:
+          'You wait. The minutes feel long.\n\n'
+          'Your friend doesn\'t come over. Lunch ends. The bell rings.\n\n'
+          'Walking to class, they\'re ahead of you. The sorry is still '
+          'stuck in your throat, getting heavier.\n\n'
+          'Sorrys don\'t get easier the longer you hold them.',
+      choices: [
+        QuestChoice(
+          id: 'ss_c3a',
+          text: 'Run to catch up before the bell',
+          nextSegmentId: 'ss_sorry_late',
+        ),
+        QuestChoice(
+          id: 'ss_c3b',
+          text: 'Send a message from home tonight',
+          nextSegmentId: 'ss_text',
+        ),
+      ],
+    ),
+
+    'ss_do_something': QuestSegment(
+      id: 'ss_do_something',
+      content:
+          '"Is there anything I can do?" you ask.\n\n'
+          'Your friend thinks for a second. "Let me win the next game," '
+          'they say — but then they smile. A wobbly, still-a-little-hurt smile.\n\n'
+          'You laugh. Relief-laugh. Like letting out a breath '
+          'you\'ve been holding all day.\n\n'
+          '"Deal," you say.\n\n'
+          'Saying sorry is scary. But it makes room for the good stuff to come back.',
+      isEnding: true,
+    ),
+
+    'ss_space': QuestSegment(
+      id: 'ss_space',
+      content:
+          'You step back and give them room.\n\n'
+          'It\'s hard not to keep apologising — but sometimes sorry '
+          'needs a moment to settle in.\n\n'
+          'By the time recess is over, your friend comes and sits next to you.\n\n'
+          '"Thanks for saying it," they say simply.\n\n'
+          'Sometimes the best thing after sorry is just... quiet.',
+      isEnding: true,
+    ),
+
+    'ss_sorry_late': QuestSegment(
+      id: 'ss_sorry_late',
+      content:
+          'You run to catch up. "Hey — wait."\n\n'
+          'Your friend stops.\n\n'
+          '"I\'m really sorry," you say, a little out of breath. '
+          '"I should have said it sooner."\n\n'
+          'They look at you. "Yeah, you should have."\n\n'
+          'It stings — but they\'re right. '
+          'Then: "But okay. Thanks."\n\n'
+          'Late is better than never. '
+          'Sorrys don\'t expire. They just need to get out.',
+      isEnding: true,
+    ),
+
+    'ss_text': QuestSegment(
+      id: 'ss_text',
+      content:
+          'That night, you type it out. Delete it. Type it again.\n\n'
+          'Finally you send it: "I\'m really sorry about what I said. '
+          'I didn\'t mean it like that. Are we okay?"\n\n'
+          'You watch the little dots appear. Disappear. Appear again.\n\n'
+          '"Yeah. It hurt though."\n\n'
+          '"I know. I\'m sorry."\n\n'
+          'Sometimes sorry is easier when you\'re not face to face. '
+          'That\'s okay. What matters is that you said it.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST 11: The Tryout  [Adventurer / Creator / Adolescent: ages 9+]
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questTryout = LifeQuestScenario(
+  id: 'the_tryout',
+  title: 'The Tryout',
+  hook: 'You\'ve practised a hundred times. None of that matters right now.',
+  emoji: '🎭',
+  emotions: ['worried', 'excited', 'scared', 'embarrassed'],
+  startSegmentId: 'tt_start',
+  segments: {
+    'tt_start': QuestSegment(
+      id: 'tt_start',
+      content:
+          'The sign-up sheet went up three weeks ago and you stared at it '
+          'for four days before you wrote your name. Your handwriting looked '
+          'wrong — too small, like part of you was already trying to take it back.\n\n'
+          '«{companion} saw you do it. "Finally," {pronoun} said, '
+          'and you weren\'t sure if that was encouraging or terrifying.»\n\n'
+          'Now it\'s the day. The room smells the way high-stakes places always do: '
+          'floor wax, nervous breath, and the particular silence of people '
+          'trying to act casual.\n\n'
+          'Everyone waiting has the same expression — the one that says '
+          'I\'m fine while their knee bounces.\n\n'
+          'They\'ll call your name. You\'ll stand up and show them '
+          'what you\'ve been practising in your room at night '
+          'when you were sure nobody was watching.\n\n'
+          '{possessive} hands won\'t stop sweating.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c1a',
+          text: 'Find a corner and run through it in your head one more time',
+          nextSegmentId: 'tt_mental',
+        ),
+        QuestChoice(
+          id: 'tt_c1b',
+          text: 'Watch the people going before you — study them',
+          nextSegmentId: 'tt_watch',
+        ),
+        QuestChoice(
+          id: 'tt_c1c',
+          text: 'Talk to someone else waiting — break the silence',
+          nextSegmentId: 'tt_connect',
+        ),
+      ],
+    ),
+
+    'tt_mental': QuestSegment(
+      id: 'tt_mental',
+      content:
+          'You close your eyes and run through it. Every beat, every word, '
+          'every moment you\'ve rehearsed. It flows perfectly in your head — '
+          'it always does in your head.\n\n'
+          'Then they call your name.\n\n'
+          'You stand up. The room is smaller than you remembered from the doorway '
+          'and bigger once you\'re standing in it. '
+          'You can feel everyone\'s eyes like a physical thing.\n\n'
+          'The first moment is the hardest. Your throat closes '
+          'and for one terrible second you can\'t remember how it starts.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c2a',
+          text: 'Breathe, find the beginning, and begin',
+          nextSegmentId: 'tt_through',
+        ),
+        QuestChoice(
+          id: 'tt_c2b',
+          text: 'Ask for a second to collect yourself',
+          nextSegmentId: 'tt_pause',
+        ),
+      ],
+    ),
+
+    'tt_watch': QuestSegment(
+      id: 'tt_watch',
+      content:
+          'You watch. One person goes too fast, nerves running away with them. '
+          'Another is so polished they seem barely human.\n\n'
+          'And then there\'s someone who stumbles in the middle — '
+          'stops, breathes, starts again — and somehow that\'s the one '
+          'you can\'t look away from. That one felt real.\n\n'
+          'They call your name. You\'ve learned something '
+          'watching all of them: being perfect isn\'t the same as being good.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c3a',
+          text: 'Go in aiming for real, not perfect',
+          nextSegmentId: 'tt_through',
+        ),
+        QuestChoice(
+          id: 'tt_c3b',
+          text: 'Try to be flawless — you\'ve seen what mistakes look like',
+          nextSegmentId: 'tt_overcontrol',
+        ),
+      ],
+    ),
+
+    'tt_connect': QuestSegment(
+      id: 'tt_connect',
+      content:
+          'You lean over to the person next to you. '
+          '"Have you done one of these before?"\n\n'
+          'They shake their head. "First time. You?"\n\n'
+          '"Same."\n\n'
+          'That\'s all. But the silence after it is different — '
+          'easier, shared. Two people in the same boat, '
+          'both pretending they\'re not terrified.\n\n'
+          'When they call your name, you feel slightly less alone going up there.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c4a',
+          text: 'Go in carrying that feeling — you\'re not the only one',
+          nextSegmentId: 'tt_through',
+        ),
+        QuestChoice(
+          id: 'tt_c4b',
+          text: 'Go in trying to forget everything and just focus',
+          nextSegmentId: 'tt_through',
+        ),
+      ],
+    ),
+
+    'tt_through': QuestSegment(
+      id: 'tt_through',
+      content:
+          'You get through it.\n\n'
+          'Not perfectly. There\'s a moment somewhere in the middle '
+          'where you feel the wobble — the catch, the half-second '
+          'where the whole thing almost unravels. '
+          'But you breathe through it. You keep going.\n\n'
+          'When you finish, the room is quiet for a beat '
+          'before the polite applause.\n\n'
+          'You don\'t know if it was enough. That\'s the thing '
+          'about tryouts — you never know in the room.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c5a',
+          text: 'Walk out with your head up — you showed up, that\'s real',
+          nextSegmentId: 'tt_end_good',
+        ),
+        QuestChoice(
+          id: 'tt_c5b',
+          text: 'Replay every mistake in your head on the way out',
+          nextSegmentId: 'tt_end_spiral',
+        ),
+      ],
+    ),
+
+    'tt_overcontrol': QuestSegment(
+      id: 'tt_overcontrol',
+      content:
+          'You go in tight. Everything controlled. No mistakes.\n\n'
+          'And you\'re right — there are no mistakes. '
+          'But there\'s also no breath in it, no risk. '
+          'You can feel yourself holding back, playing it safe, '
+          'choosing the version that can\'t fail rather than '
+          'the version that could be great.\n\n'
+          'When you finish, the judges smile and make a note. '
+          'You can\'t read it.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c6a',
+          text: 'Tell yourself it was the right call — safety first',
+          nextSegmentId: 'tt_end_safe',
+        ),
+        QuestChoice(
+          id: 'tt_c6b',
+          text: 'Wish you\'d taken the risk — file it away for next time',
+          nextSegmentId: 'tt_end_learn',
+        ),
+      ],
+    ),
+
+    'tt_pause': QuestSegment(
+      id: 'tt_pause',
+      content:
+          '"Could I have just a second?" you ask.\n\n'
+          'The judge nods. A beat of silence, longer than a heartbeat, '
+          'shorter than it felt.\n\n'
+          'You breathe. Find the beginning. Begin.\n\n'
+          'The pause cost you three seconds. What it gave you was '
+          'the ability to actually be present for what came after.\n\n'
+          'That was the right call.',
+      choices: [
+        QuestChoice(
+          id: 'tt_c7a',
+          text: 'Walk out knowing you handled that like a professional',
+          nextSegmentId: 'tt_end_good',
+        ),
+      ],
+    ),
+
+    'tt_end_good': QuestSegment(
+      id: 'tt_end_good',
+      content:
+          'The waiting is its own thing. A different kind of hard.\n\n'
+          'But here\'s what you know for certain, regardless of what comes back: '
+          'three weeks ago you were standing in front of a sign-up sheet '
+          'that you almost didn\'t touch. Today you stood in the room.\n\n'
+          'That\'s not a small thing. That\'s the whole thing, really. '
+          'Everything else is just outcome.',
+      isEnding: true,
+    ),
+
+    'tt_end_spiral': QuestSegment(
+      id: 'tt_end_spiral',
+      content:
+          'You replay it. The wobble. The half-second catch. '
+          'What you should have done instead.\n\n'
+          'You could do that for the rest of the afternoon, or you could '
+          'notice that you actually got through it — '
+          'that the wobble happened and the world didn\'t end.\n\n'
+          'Every person who gets good at something has a long list '
+          'of moments exactly like the one you just had. '
+          'They\'re not evidence that you can\'t do this. '
+          'They\'re the doing of it.',
+      isEnding: true,
+    ),
+
+    'tt_end_safe': QuestSegment(
+      id: 'tt_end_safe',
+      content:
+          'Maybe. Or maybe you\'ll never know.\n\n'
+          'The thing about playing it safe is that you don\'t fail — '
+          'but you also don\'t find out what you\'re actually capable of.\n\n'
+          'There\'ll be another tryout. Another room. '
+          'Another chance to find out what happens '
+          'when you let it be a little less controlled.\n\n'
+          'You don\'t have to decide today.',
+      isEnding: true,
+    ),
+
+    'tt_end_learn': QuestSegment(
+      id: 'tt_end_learn',
+      content:
+          'Good. File it.\n\n'
+          'The fact that you know the difference — between the version '
+          'that can\'t fail and the version that could be great — '
+          'means you\'re already further along than you think.\n\n'
+          'Most people spend years before they can even '
+          'name what they held back.\n\n'
+          'Next time, you\'ll know what to reach for.',
       isEnding: true,
     ),
   },
