@@ -13,7 +13,7 @@ import 'config/environment.dart';
 import 'services/api_service_manager.dart';
 import 'services/app_tts_service.dart';
 import 'theme/age_band_theme.dart';
-import 'theme/app_theme.dart';
+import 'widgets/avatar_generating_view.dart';
 import 'widgets/safe_asset_image.dart';
 
 // ── Step definitions ─────────────────────────────────────────────────────────
@@ -1358,42 +1358,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Generating view ─────────────────────────────────────────────────────────
   Widget _buildGeneratingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_isSprout) ...[
-            const Text('🪄', style: TextStyle(fontSize: 80)),
-            const SizedBox(height: 24),
-          ],
-          const CircularProgressIndicator(color: AppColors.gold),
-          const SizedBox(height: 20),
-          Text(
-            _isSprout
-                ? 'Making your magic hero...'
-                : 'Brewing your magical avatar...',
-            style: _isSprout
-                ? GoogleFonts.nunito(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900)
-                : GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _isSprout
-                ? '(This takes about a minute!)'
-                : '(Usually about a minute)',
-            style: GoogleFonts.quicksand(
-              color: Colors.white.withAlpha(195),
-              fontSize: _isSprout ? 16 : 14,
-            ),
-          ),
-        ],
-      ),
+    return AvatarGeneratingView(
+      ageBand: _ageBand,
+      status: _isSprout
+          ? 'Making your magic hero...'
+          : 'Brewing your magical avatar...',
+      onCancel: () => setState(() => _isGenerating = false),
     );
   }
 
