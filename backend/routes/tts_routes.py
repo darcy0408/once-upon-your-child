@@ -76,7 +76,7 @@ def create_tts_blueprint(limiter, require_auth):
 
     @tts_bp.route("/tts/synthesize", methods=["POST"])
     @require_auth
-    @limiter.limit("20 per hour", key_func=lambda: request.current_user.id if hasattr(request, 'current_user') and request.current_user else request.remote_addr)
+    @limiter.limit("500 per hour", key_func=lambda: request.current_user.id if hasattr(request, 'current_user') and request.current_user else request.remote_addr)
     def synthesize():
         """
         Generate ElevenLabs MP3 narration for a story text.

@@ -60,6 +60,7 @@ class Config:
     """Base configuration."""
     # SECRET_KEY is required in production - no silent fallback
     SECRET_KEY = _get_required_secret('SECRET_KEY')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', '')
 
     # Mock Testing Mode - Use mock endpoints instead of real API calls
     MOCK_TESTING_MODE = os.environ.get('MOCK_TESTING_MODE', 'false').lower() in ['true', '1', 'yes']

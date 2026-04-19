@@ -476,8 +476,44 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       debugPrint('❌ Error generating custom avatar: $e');
       if (mounted) {
         setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF2D1060),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              _isSprout ? "Oops! Something went wrong." : 'Generation failed',
+              style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w800),
+            ),
+            content: Text(
+              msg,
+              style: GoogleFonts.quicksand(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white60)),
+              ),
+              if (widget.onOpenGallery != null)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5F4BDB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    Navigator.of(context).pop();
+                    widget.onOpenGallery!();
+                  },
+                  child: Text(
+                    _isSprout ? 'Pick a ready hero!' : 'Pick a premade hero',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+                  ),
+                ),
+            ],
+          ),
         );
       }
     }

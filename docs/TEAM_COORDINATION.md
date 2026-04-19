@@ -2,6 +2,56 @@
 
 ---
 
+## Session Update — 2026-04-18c (Companion Overhaul + Asset Cleanup)
+
+### What was completed this session
+
+#### 1. Companion Names & Images — Full Overhaul (All Bands)
+Every companion across all 6 age bands was renamed with age-appropriate character names. Each band now has 4 companions: a dragon, a robin, a cat, and a dog.
+
+| Band | Dragon | Robin | Cat | Dog |
+|------|--------|-------|-----|-----|
+| Sprout (3-5) | Pebble | Robin | Mochi | Sunny |
+| Explorer (6-8) | Ember | Robin | Clover | Biscuit |
+| Adventurer (9-11) | Atlas | Robin | Nyx | Kodiak |
+| Creator (12-14) | Cipher | Rockin' Robin | Vesper | Lore |
+| Adolescent (15-17) | Zephyr | Rockin' Robin | Shade | Frost |
+| Adult (18+) | Tide | Rockin' Robin | Onyx | Cinder |
+
+Robin is "Robin" for sprout/explorer bands, "Rockin' Robin" for older bands.
+
+All 24 companion images verified present and correctly referenced. `companionPath()` updated to accept full filename with extension.
+
+#### 2. Unused Asset Cleanup
+Deleted 7 orphaned image files:
+- `archetypes/heart_healer.jpg`, `heart_healer_framed.png`, `storm_rider_framed.png` — removed archetypes
+- `create_character_card.jpg` — legacy mockup
+- `ui/continue_hover.png`, `continue_normal.png`, `continue_pressed.png` — old button states
+
+Also removed 15 legacy companion files (old `_normal.jpg`/`_pressed.jpg` pairs from root companions folder and misnamed band files).
+
+#### 3. Avatar Error Handling Upgrade
+Custom avatar generation failures now show a styled dialog (matching app theme) with "Try Again" and "Pick a premade hero" options, replacing the old snackbar.
+
+#### 4. Backend Tweaks
+- JWT_SECRET_KEY config added
+- TTS rate limit bumped from 20/hr to 500/hr
+
+### Files changed
+```
+lib/screens/wizard_steps/companion_selector_step.dart  — full companion rename + new images
+lib/data/companion_data.dart                           — Robin → Rockin' Robin
+lib/screens/wizard_steps/hero_creator_step.dart        — companion name updates
+lib/custom_avatar_screen.dart                          — avatar error dialog
+lib/theme/age_band_asset_resolver.dart                 — companionPath accepts full filename
+backend/config/__init__.py                             — JWT_SECRET_KEY
+backend/routes/tts_routes.py                           — TTS rate limit 500/hr
+assets/images/companions/*/                            — 24 new companion images
+assets/images/ (various)                               — 22 unused files deleted
+```
+
+---
+
 ## Session Update — 2026-04-18b (Archetype Streamlining + Scene Template Prompts)
 
 ### What was completed this session
