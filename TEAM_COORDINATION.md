@@ -1,5 +1,133 @@
 # Team Coordination
 
+## 2026-04-19n — Creator/Adolescent Differentiation Plan (Claude Sonnet 4.6)
+
+**Goal:** Close the remaining differentiation gap between Creator (12-14) and Adolescent (15-17) bands. Both share identical story prompts, scenario copy, and have thin life quest coverage. Plan generated from full codebase audit.
+
+**Current state:** Creator ~60% differentiated, Adolescent ~40%. Visual themes already distinct; gap is in story logic, AI prompts, and scenario content.
+
+---
+
+### Phase 1 — Scenario Content Gap *(zero risk, pure data)*
+
+**File:** `lib/data/scenario_data.dart`
+
+Add 5 new fields to `ScenarioCard`:
+- `adolescentTitle`, `adolescentDescription`, `adolescentThematicQuestion`, `adolescentConflictHook`, `adolescentWorldBible`
+
+Update accessors `titleForBand()`, `descriptionForAge()`, `conflictHookForAge()`, `worldBibleForAge()` to serve adolescent-specific copy at ages 15-17 before falling through to `matureTitle` fallback.
+
+**Tone rule:** Creator asks *"what does this reveal about me?"* (identity formation). Adolescent asks *"what does this mean?"* (moral ambiguity, social complexity).
+
+**Example copy pairs (5 scenarios):**
+
+| Scenario | Creator (12-14) | Adolescent (15-17) |
+|---|---|---|
+| Doorway Between Seasons | "The Door You're Afraid to Open" | "Seasons That Don't Come Back" |
+| Volcano of Dragons | "What Wakes the Fire Inside" | "What the Fire Has Already Cost" |
+| Brave Friend | "Showing Up" | "The Risk of Being Known" |
+| Change is Coming | "Leaving the Person You Were" | "What You Carry Forward" |
+| Big Feelings Quest | "The Feeling That Won't Let Go" | "What You've Been Carrying Alone" |
+
+**Acceptance criteria:** `titleForBand(AgeBand.adolescent)` returns a distinct string from `titleForBand(AgeBand.creator)` for at least 8 of 12 scenarios.
+
+---
+
+### Phase 2 — Story Generation Prompts *(touches API service only)*
+
+**File:** `lib/services/api_service_manager.dart`
+
+Add `ageBand` param to `generateStory()`. Add private `_buildBandSystemPrompt(AgeBand band, {bool isByok})` injected into both `_buildAdventurePrompt` and `_buildTherapeuticPrompt`.
+
+**Creator base prompt:**
+- Identity formation is the subtext — protagonist's choices reveal who they are becoming
+- Tone: energised, personal, slightly urgent
+- Conflict style: external obstacles mirror internal questions ("Am I brave enough?")
+- Arc: from uncertainty to agency — one clear act of self-determination
+- Language: direct, concrete, no condescension; metaphors grounded
+- Length: 600-800 words
+
+**Adolescent base prompt:**
+- Psychological and social depth — protagonist is aware others have full inner lives
+- Tone: measured, cinematic, restrained; subtext matters
+- Conflict style: moral ambiguity — no purely good choices
+- Arc: autonomy under pressure — act on own judgment when no clear right answer
+- Language: mature vocabulary, complex sentences; avoid moralising
+- Include at least one moment of genuine uncertainty
+- Length: 600-800 words
+
+**BYOK enhancement (appended when `isByok: true`):**
+- Creator: distinct protagonist voice, recurring motifs, one invented-not-discovered solution, unresolved question on final page
+- Adolescent: deep internal arc (not resolved — *shifted*), ambiguous ending, two genuine self-questioning moments, dual interpretation, literary-register vocabulary
+
+Also send `'age_band': band.name` in all backend payloads so server-side mirrors same differentiation for non-BYOK users.
+
+**Acceptance criteria:** `_buildAdventurePrompt(age: 13)` contains Creator block; `_buildAdventurePrompt(age: 16, isByok: true)` contains Adolescent base + BYOK enhancement. No regression for other age bands.
+
+---
+
+### Phase 3 — Life Quests *(zero risk, pure data — ship any time)*
+
+**File:** `lib/data/life_quest_data.dart`
+
+**3 new Adolescent-exclusive quests:**
+
+| Quest | Theme |
+|---|---|
+| `questTheRumour` | Information as power — no clean choice between silence, confrontation, or going direct |
+| `questTheAudition` | Social cost of individual achievement — how do you hold success when someone you care about didn't get in |
+| `questNobodyAsked` | Witness responsibility — what do you owe a situation you didn't choose to see |
+
+**2 new Creator-exclusive quests:**
+
+| Quest | Theme |
+|---|---|
+| `questTheyChangedIt` | Collaborative ownership — when does a shared project stop feeling like yours |
+| `questShowedThem` | Vulnerability in sharing creative work — what you do after the reaction wasn't what you hoped |
+
+Result: Adolescent 3 → 6 exclusive quests. Creator 3 → 5 exclusive quests.
+
+---
+
+### Phase 4 — UI Screen Differentiation *(after Phase 1)*
+
+**Files:** `magic_review_step.dart`, `feeling_selection_step.dart`, `big_feelings_flow_screen.dart`, `age_band_theme.dart`
+
+| Screen | Change |
+|---|---|
+| `MagicReviewStep` (Adolescent) | Header → `'Set the premise'`; add `adolescentThematicQuestion` in italics below header; CTA → `'Begin'`; sub-label → `'No fanfare. Just the story.'` |
+| `MagicReviewStep` (Creator) | No change — already correctly differentiated |
+| `FeelingSelectionStep` | Surface `adolescentThematicQuestion` on scenario cards (same pattern as existing `creatorThematicQuestion` overlay) |
+| `BigFeelingsFlowScreen` | Extend journal reflection gate to Adolescent; Creator prompt: "What do you notice about this feeling?" / Adolescent: "What's underneath this feeling — what else is going on?" |
+| `age_band_theme.dart` | `adolescentTheme.launchStoryLabel` → `'Begin'` (Creator keeps `'Start Writing'`) |
+
+No new widgets needed — all changes are parametrised via existing band config patterns.
+
+---
+
+### Phase 5 — BYOK Enhancement Layer *(after Phases 2 + 4)*
+
+**Files:** `feeling_selection_step.dart`, `magic_review_step.dart`, `hero_creator_creative_brief.dart`
+
+- **Creator BYOK:** Surface optional field in Creative Brief — *"Describe one rule of your world that defies reality."* — gated on `isUsingOwnApiKey()`. Richer illustrations automatically improve from Phase 2 prompt quality.
+- **Adolescent BYOK:** Add `'Explore without resolution'` toggle in `FeelingSelectionStep` (Adolescent + BYOK only). Stored as `WizardData.exploreWithoutResolution`. Appends ambiguous-endings instruction to prompt.
+- **Discovery signal:** In Adolescent review step, show `'Enhanced depth active'` in teal at 45% opacity when BYOK is live.
+- **Non-BYOK guarantee:** Base band prompts (Phase 2) deliver a complete, satisfying experience via backend route. The `'age_band'` field ensures full differentiation without an API key.
+
+---
+
+### Dependency Order
+
+```
+Phase 1 ──────────── Phase 4
+Phase 2 ─────────────────── Phase 5
+Phase 3  (independent)
+```
+
+Recommended sequence: Phase 1 + Phase 3 together (pure data) → Phase 2 in parallel → Phase 4 after Phase 1 lands → Phase 5 last.
+
+---
+
 ## 2026-04-19m — Creator/Adolescent differentiation + 6 new quests (Claude Opus 4.6)
 
 **Goal:** Close the Creator/Adolescent differentiation gap — both bands previously shared identical quest lists and flows.
