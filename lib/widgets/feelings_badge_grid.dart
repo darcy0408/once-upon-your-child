@@ -159,6 +159,8 @@ class _EmotionCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: '${card.label} — ${card.subtitle}',
+      onTap: onTap,
+      excludeSemantics: true,
       child: MouseRegion(
         onEnter: (_) => onHoverChanged(true),
         onExit: (_) => onHoverChanged(false),
