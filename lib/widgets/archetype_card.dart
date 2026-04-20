@@ -262,7 +262,7 @@ class _TraitChip extends StatelessWidget {
 /// Predefined character archetypes
 class CharacterArchetypes {
   static const thinker = ArchetypeData(
-    icon: '🧩',
+    icon: '🦁',
     imagePath: 'assets/images/archetypes/quiz_whiz_framed.png',
     name: 'The Quiz Whiz',
     description: 'Solves tricky puzzles and brain teasers',
@@ -271,10 +271,20 @@ class CharacterArchetypes {
     matureName: 'Logic Architect',
     matureDescription: 'Deconstructs complex problems and architects elegant solutions',
     adventurerDescription: 'The strategist who cracks the impossible puzzle when everyone else is stuck.',
-    youngChildName: 'Super Smart!',
-    sproutImageId: 'quiz_whiz',
+    explorerName: 'The Brave Explorer',
+    explorerDescription: 'First to leap in, brave enough to lead the way no matter what.',
+    youngChildName: 'Brave Hero!',
+    sproutImageId: 'brave_hero',
     bandImageId: 'clever_inventor',
     genderedImageId: 'quiz_whiz',
+    genderedImageIdPerBand: {
+      AgeBand.sprout: 'brave_hero',
+      AgeBand.explorer: 'brave_hero',
+      AgeBand.adventurer: 'quiz_whiz',
+      AgeBand.creator: 'quiz_whiz',
+      AgeBand.adolescent: 'quiz_whiz',
+      AgeBand.adult: 'quiz_whiz',
+    },
     attributes: {
       'energy': 40,
       'sociability': 30,
@@ -295,6 +305,8 @@ class CharacterArchetypes {
     matureName: 'Vision Architect',
     matureDescription: 'Creates art that bleeds into reality — illustrations gain a life of their own',
     adventurerDescription: 'The wildcard who invents solutions nobody else thought of — creativity is your superpower.',
+    explorerName: 'The Art Wizard',
+    explorerDescription: 'Turns the ordinary into something nobody has ever seen before.',
     youngChildName: 'Art Maker!',
     sproutImageId: 'master_creator',
     bandImageId: 'gentle_dreamer',
@@ -310,7 +322,7 @@ class CharacterArchetypes {
   );
 
   static const athlete = ArchetypeData(
-    icon: '🏃',
+    icon: '⚡',
     imagePath: 'assets/images/archetypes/lightning_runner_framed.png',
     name: 'The Lightning Runner',
     description: 'Moves faster than sound, leaves stardust trails',
@@ -319,6 +331,8 @@ class CharacterArchetypes {
     matureName: 'Kinetic Specialist',
     matureDescription: 'Channels raw physical energy into precision movement and split-second decisions',
     adventurerDescription: 'The one the team counts on when seconds matter — no obstacle slows you down.',
+    explorerName: 'The Speed Star',
+    explorerDescription: 'Fastest on the team — nothing can catch you, nothing can slow you down.',
     youngChildName: 'Super Fast!',
     sproutImageId: 'lightning_runner',
     bandImageId: 'speedy_explorer',
@@ -343,6 +357,8 @@ class CharacterArchetypes {
     matureName: 'Ecological Whisperer',
     matureDescription: 'Reads the language of ecosystems and hears what the living world doesn\'t say aloud',
     adventurerDescription: 'The scout who moves unseen and hears what the world won\'t say out loud — nothing escapes your notice.',
+    explorerName: 'The Animal Whisperer',
+    explorerDescription: 'Animals trust you with secrets they tell nobody else.',
     youngChildName: 'Animal Friend!',
     sproutImageId: 'animal_whisperer',
     bandImageId: 'animal_whisperer',
@@ -376,18 +392,25 @@ class ArchetypeData {
   final String description;
   final List<String> traits;
   final Map<String, int> attributes;
-  final String specialAbility; // New: physics-defying power for adventures
+  final String specialAbility;
   final String? matureName;
   final String? matureDescription;
   /// Adventurer band (ages 9-11): role in the adventure, not just appearance.
   final String? adventurerDescription;
+  /// Explorer band (ages 6-8): vivid, magical, action-oriented.
+  final String? explorerName;
+  final String? explorerDescription;
   /// Young child name (ages ≤ 5) — short, concrete, instantly understood.
   final String? youngChildName;
   final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
   final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
-  /// Base name for gendered variants: resolves to {band}/{genderedImageId}_{boy|girl}.png.
-  /// When set and a gender is provided, this takes priority over bandImageId.
+  /// Default gendered image base name (fallback when [genderedImageIdPerBand]
+  /// has no entry for the current band).
   final String? genderedImageId;
+  /// Per-band gendered image base name — e.g. sprout/explorer use 'brave_hero'
+  /// while adventurer+ use 'quiz_whiz'. Resolves to
+  /// assets/images/archetypes/{band}/{id}_{boy|girl}.png.
+  final Map<AgeBand, String>? genderedImageIdPerBand;
 
   const ArchetypeData({
     this.icon,
@@ -400,14 +423,18 @@ class ArchetypeData {
     this.matureName,
     this.matureDescription,
     this.adventurerDescription,
+    this.explorerName,
+    this.explorerDescription,
     this.youngChildName,
     this.sproutImageId,
     this.bandImageId,
     this.genderedImageId,
+    this.genderedImageIdPerBand,
   });
 
   String nameForAge(int age) {
     if (age <= 5 && youngChildName != null) return youngChildName!;
+    if (age >= 6 && age <= 8 && explorerName != null) return explorerName!;
     if (age >= 12 && matureName != null) return matureName!;
     return name;
   }
@@ -415,17 +442,21 @@ class ArchetypeData {
   String descriptionForAge(int age) {
     if (age >= 12 && matureDescription != null) return matureDescription!;
     if (age >= 9 && age <= 11 && adventurerDescription != null) return adventurerDescription!;
+    if (age >= 6 && age <= 8 && explorerDescription != null) return explorerDescription!;
     return description;
   }
 
   /// Returns the image path for this archetype in the given age band.
   ///
   /// Pass [gender] ('Boy' or 'Girl') to get the gendered variant when one
-  /// exists — resolves to assets/images/archetypes/{band}/{genderedImageId}_{boy|girl}.png.
-  /// Falls back to the non-gendered bandImageId path if no gender is supplied.
+  /// exists. Checks [genderedImageIdPerBand] first, then falls back to
+  /// [genderedImageId], then to the non-gendered [bandImageId] path.
   String? imagePathForBand(AgeBand band, {String? gender}) {
-    if (genderedImageId != null && gender != null && gender.isNotEmpty) {
-      return 'assets/images/archetypes/${band.name}/${genderedImageId}_${gender.toLowerCase()}.png';
+    if (gender != null && gender.isNotEmpty) {
+      final id = genderedImageIdPerBand?[band] ?? genderedImageId;
+      if (id != null) {
+        return 'assets/images/archetypes/${band.name}/${id}_${gender.toLowerCase()}.png';
+      }
     }
     if (band == AgeBand.sprout && sproutImageId != null) {
       return AgeBandAssetResolver.archetypePath(band, sproutImageId!);

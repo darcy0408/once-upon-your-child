@@ -83,14 +83,16 @@ const List<String> kWarmUpPhrases = [
   "3... 2... 1... Let the magic begin!",
   "Your story is about to come alive!",
 
-  // Sprout archetype youngChildNames — pre-warm so ElevenLabs is used, not
-  // the robotic on-device fallback, when a young child taps an archetype card.
-  "Brave Explorer!",
-  "Kind Helper!",
+  // Sprout/Explorer archetype names — pre-warm so ElevenLabs is used, not
+  // the robotic on-device fallback, when a child taps an archetype card.
+  "Brave Hero!",
   "Art Maker!",
-  "Nature Friend!",
-  "Clever Inventor!",
-  "Star Dreamer!",
+  "Super Fast!",
+  "Animal Friend!",
+  "The Brave Explorer",
+  "The Art Wizard",
+  "The Speed Star",
+  "The Animal Whisperer",
   "Pebble",
   "Mochi",
   "Sunny",
