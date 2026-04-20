@@ -47,6 +47,37 @@ if (widget.pendingNewSpecies != null &&
 
 ---
 
+## 2026-04-20b — TTS Prewarm Dedup + Stripe Anon Guard (Claude Sonnet 4.6)
+
+**Goal:** Fix BUG-002 (TTS 429 storm during session warm-up) and BUG-003 (Stripe 403 console noise for anonymous users), as surfaced by QA_PLAYWRIGHT_REPORT_2026-04-20.
+
+### BUG-002 — TTS warm-up 429 storm ✅ FIXED
+
+**Root cause:** `_prewarm()` in `app_tts_service.dart` fired all ~100 warm-up phrases with no throttle and no guard against concurrent calls, saturating the ElevenLabs rate limit (40+ `429 Too Many Requests` per session in QA).
+
+**Fix (commit `b6b5c15`):**
+- `tts_api_service.dart` — added `TtsRateLimitException`; `synthesize()` throws on HTTP 429 instead of silently returning null.
+- `app_tts_service.dart` — added `bool _prewarming` dedup flag (second warm-up call during same session returns immediately). On `TtsRateLimitException`, backs off with doubling delay starting at 2 s (2→4→8→30 s max, 4 attempts per phrase).
+
+### BUG-003 — Stripe 403 for anonymous users ✅ FIXED
+
+**Root cause:** `SubscriptionSyncService.syncSubscriptionStatus()` called `GET /api/stripe/subscription-status/{userId}` for anonymous sessions (`anon_` prefix). Backend returns 403 — anonymous tokens are not Stripe customers. Console noise on every page load.
+
+**Fix (commit `de5758f`):**
+- `subscription_sync_service.dart` — if `resolvedUserId.startsWith('anon_')`, emit `SubscriptionStatus(tier: free, status: inactive)` and return without any network call.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/services/tts_api_service.dart` | Add `TtsRateLimitException`; throw on 429 |
+| `lib/services/app_tts_service.dart` | `_prewarming` dedup flag; exponential backoff on `TtsRateLimitException` |
+| `lib/services/subscription_sync_service.dart` | Skip Stripe fetch for `anon_` users; emit free tier directly |
+
+### QA Re-run Status
+Playwright MCP disconnected before re-run completed (Windows lockfile — requires Claude Code restart). Fixes verified analytically; full regression re-run pending next session.
+
+---
+
 ## 2026-04-19o — Gendered Archetypes All Bands + Story Mapper Fix (Claude Sonnet 4.6)
 
 **Goal:** Wire gendered archetype images for all 6 age bands, add age-appropriate archetype names, and fix story generation so archetype data actually reaches the AI prompt.
@@ -2698,7 +2729,7 @@ A real email address was visible in the parental consent screenshot (in the pre-
 ### Open / Still-Needed Items (as of 2026-03-27)
 
 #### Bug / Regression
-- **Subscription sync 403 on web** — anonymous users hit `{"error": "Access denied"}` when the app tries to sync subscription status. Visible in dev console on every load. Likely the `/api/subscription/status` endpoint rejecting anonymous tokens — needs backend auth middleware check.
+- ✅ **Subscription sync 403 on web** — fixed 2026-04-20 (commit `de5758f`): `SubscriptionSyncService` now skips the network call entirely for `anon_` users and emits free tier directly. See session 2026-04-20b.
 - **Device TTS fallback still logs `[object SpeechSynthesisErrorEvent]`** — this is inside `flutter_tts_web.dart`'s `utterance.onError` handler (`print(event)` on line ~99). Cannot be suppressed from app code; only relevant if ElevenLabs is unavailable. File a `flutter_tts` upstream issue or patch via override if it becomes noisy in prod.
 
 #### Auth / Pick-A-Path (from 2026-03-25 Codex audit — status unknown)
