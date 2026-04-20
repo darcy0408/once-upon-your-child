@@ -44,7 +44,13 @@ class _GenderImageButtonState extends State<GenderImageButton> {
       fit: BoxFit.cover,
     );
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      label: widget.label ?? widget.gender,
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
@@ -134,6 +140,7 @@ class _GenderImageButtonState extends State<GenderImageButton> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
