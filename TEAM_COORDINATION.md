@@ -1,5 +1,22 @@
 # Team Coordination
 
+## 2026-04-20b — Feelings Badge Grid: semantic onTap wiring (Claude Opus 4.7)
+
+**Bug:** Adventurer-band-exclusive emotion picker ("What's going on?" modal, `FeelingsQuestModal` with `_useBadgeGrid=true`) appeared stuck — taps produced hover glow but never popped the modal or advanced the wizard.
+
+**Root cause:** `_EmotionCard` in `lib/widgets/feelings_badge_grid.dart` wrapped its cards in `Semantics(button: true, label: ...)` without passing `onTap`. Semantic tap events reached the `Semantics` node and stopped; the inner `GestureDetector.onTap` never fired.
+
+**Fix:** Mirror the `GenderImageButton` fix from commit `1711a57` — pass `onTap` to `Semantics` and set `excludeSemantics: true` so the inner `GestureDetector` does not double-announce. Pointer events still route through `GestureDetector` unchanged.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/widgets/feelings_badge_grid.dart` | `Semantics(onTap: onTap, excludeSemantics: true)` on `_EmotionCard` |
+
+Shipped in `f60affe`.
+
+---
+
 ## 2026-04-20a — Hero Creator: setState-during-build crash on quick-add companion (Claude Opus 4.7)
 
 **Bug:** Selecting a species from the quick-add companion picker surfaced a red screen in `HeroCreatorStep`:
