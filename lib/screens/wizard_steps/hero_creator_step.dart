@@ -1650,11 +1650,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
 
     final gender = widget.wizardData.characterGender;
+    final isAdult = ageBand == AgeBand.adult;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         GenderImageButton(
           gender: 'Boy',
+          label: isAdult ? 'Man' : null,
           assetPath: boyAsset,
           isSelected: gender == 'Boy',
           width: 140,
@@ -1664,6 +1666,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         SizedBox(width: band.space(32)),
         GenderImageButton(
           gender: 'Girl',
+          label: isAdult ? 'Woman' : null,
           assetPath: girlAsset,
           isSelected: gender == 'Girl',
           width: 140,

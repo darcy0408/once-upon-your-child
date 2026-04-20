@@ -7,6 +7,7 @@ class GenderImageButton extends StatefulWidget {
   const GenderImageButton({
     super.key,
     required this.gender,
+    this.label,
     required this.assetPath,
     required this.isSelected,
     required this.width,
@@ -15,6 +16,8 @@ class GenderImageButton extends StatefulWidget {
   });
 
   final String gender;
+  /// Display label shown below the image. Defaults to [gender] if not provided.
+  final String? label;
   final String assetPath;
   final bool isSelected;
   final double width;
@@ -126,7 +129,7 @@ class _GenderImageButtonState extends State<GenderImageButton> {
                             ? FontWeight.bold
                             : FontWeight.normal,
                       ),
-                child: Text(widget.gender),
+                child: Text(widget.label ?? widget.gender),
               ),
             ],
           ),
