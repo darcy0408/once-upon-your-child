@@ -1,5 +1,58 @@
 # Team Coordination
 
+## 2026-04-19o — Gendered Archetypes All Bands + Story Mapper Fix (Claude Sonnet 4.6)
+
+**Goal:** Wire gendered archetype images for all 6 age bands, add age-appropriate archetype names, and fix story generation so archetype data actually reaches the AI prompt.
+
+### Gendered archetype images — all bands
+
+Added boy/girl variants to every band folder (`assets/images/archetypes/{band}/`):
+
+| Band | Archetypes |
+|------|-----------|
+| **Sprout** (3-5) | `brave_hero`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+| **Explorer** (6-8) | `brave_hero`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+| **Adventurer** (9-11) | `quiz_whiz`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+| **Creator** (12-14) | `quiz_whiz`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+| **Adolescent** (15-17) | `quiz_whiz`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+| **Adult** (18+) | `quiz_whiz`, `master_creator`, `lightning_runner`, `animal_whisperer` |
+
+Sprout/Explorer use `brave_hero` (heroic, action-oriented) where older bands use `quiz_whiz` (strategic, cerebral) — same archetype slot, different visual identity.
+
+### File fixes
+- Renamed `explorer/masster_creator_*.png` → `master_creator_*.png` (typo)
+- Renamed `sprout/*.jpg` → `*.png` for consistency with the `.png` extension in the code path
+
+### Age-appropriate archetype names (`lib/widgets/archetype_card.dart`)
+
+Added `explorerName`, `explorerDescription`, and `genderedImageIdPerBand` fields to `ArchetypeData`.
+
+| Archetype | Sprout (3-5) | Explorer (6-8) | Adventurer (9-11) | Creator+ (12+) |
+|---|---|---|---|---|
+| Thinker | Brave Hero! | The Brave Explorer | The Quiz Whiz | Logic Architect |
+| Artist | Art Maker! | The Art Wizard | The Master Creator | Vision Architect |
+| Athlete | Super Fast! | The Speed Star | The Lightning Runner | Kinetic Specialist |
+| Nature | Animal Friend! | The Animal Whisperer | The Animal Whisperer | Ecological Whisperer |
+
+### Story mapper fix (`lib/screens/wizard_steps/wizard_data_mapper.dart`)
+
+**Bug:** `_mapArchetypeToDetails()` used `.contains()` matching on archetype names. The new band-specific names ("Brave Hero!", "The Art Wizard", "The Speed Star", etc.) fell through to the empty default — the AI received **no strengths, no special ability, and no interests** for those archetypes.
+
+**Fix:** Added all name variants to the matcher. Enriched strengths: Intelligence for thinker, Teamwork for runner, Observation for whisperer.
+
+### TTS warm-up (`lib/services/app_tts_service.dart`)
+- Updated warm-up phrases to match new Sprout/Explorer archetype names
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/widgets/archetype_card.dart` | `explorerName`, `explorerDescription`, `genderedImageIdPerBand` fields; updated `nameForAge`/`descriptionForAge`/`imagePathForBand` |
+| `lib/screens/wizard_steps/wizard_data_mapper.dart` | Match all band-specific archetype names in story mapper |
+| `lib/services/app_tts_service.dart` | Warm-up phrases for new archetype names |
+| `assets/images/archetypes/*/` | 48 gendered PNG files across 6 bands |
+
+---
+
 ## 2026-04-19n — Creator/Adolescent Differentiation Plan (Claude Sonnet 4.6)
 
 **Goal:** Close the remaining differentiation gap between Creator (12-14) and Adolescent (15-17) bands. Both share identical story prompts, scenario copy, and have thin life quest coverage. Plan generated from full codebase audit.
