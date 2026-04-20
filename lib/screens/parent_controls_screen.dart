@@ -19,14 +19,18 @@ class ParentControlsScreen extends StatefulWidget {
   /// (e.g. when launched from the onboarding flow right after consent).
   /// Set [skipMathGate] when the caller has already verified the parent
   /// (e.g. immediately after the COPPA consent screen).
+  /// Set [isOnboarding] to show a prominent "Start the adventure" button
+  /// at the bottom so parents know how to hand the device back to their child.
   const ParentControlsScreen({
     super.key,
     this.openBigFeelings = false,
     this.skipMathGate = false,
+    this.isOnboarding = false,
   });
 
   final bool openBigFeelings;
   final bool skipMathGate;
+  final bool isOnboarding;
 
   @override
   State<ParentControlsScreen> createState() => _ParentControlsScreenState();
@@ -585,6 +589,26 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (widget.isOnboarding)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD700),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Text(
+                          'Start the adventure →',
+                          style: GoogleFonts.fredoka(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               ),

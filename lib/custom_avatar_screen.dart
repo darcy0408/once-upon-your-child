@@ -1117,7 +1117,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   Widget _buildPhotoStep() {
     final previewSize = _isSprout ? 180.0 : 150.0;
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         // Preview circle / placeholder — tappable to open picker directly
         GestureDetector(
@@ -1215,42 +1215,42 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             ],
           ),
         ] else ...[
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _takePhoto,
-                  icon: const Icon(Icons.camera_alt_rounded),
-                  label: const Text('Camera'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5F4BDB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(_bt.buttonRadiusBase),
-                    ),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _takePhoto,
+              icon: const Icon(Icons.camera_alt_rounded),
+              label: const Text('Camera'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5F4BDB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
                 ),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _pickFromGallery,
-                  icon: const Icon(Icons.photo_library_rounded),
-                  label: const Text('Upload'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7A3FC8),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(_bt.buttonRadiusBase),
-                    ),
-                  ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _pickFromGallery,
+              icon: const Icon(Icons.photo_library_rounded),
+              label: const Text('Upload'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7A3FC8),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                minimumSize: const Size(double.infinity, 52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
                 ),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-            ],
+            ),
           ),
         ],
         if (_imageBytes != null) ...[
