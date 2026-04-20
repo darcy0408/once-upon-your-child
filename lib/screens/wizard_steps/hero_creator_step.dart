@@ -597,8 +597,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       }
       return;
     }
-    // Gate: character look must be chosen for new characters
-    if (_isCreatingNew && !_hasAvatar) {
+    // Gate: character look must be chosen for new characters.
+    // Mature bands skip this — CreativeBriefWidget has no avatar UI (see build() isTeen branch).
+    final isMatureBand =
+        Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
+    if (_isCreatingNew && !_hasAvatar && !isMatureBand) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please choose a look for your character first'),
