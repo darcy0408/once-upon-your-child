@@ -143,7 +143,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // Teaser seen, no age yet — go straight to name.
     setState(() => _step = 0);
     unawaited(_speak(
-        'Hi!! Welcome to Story Weaver!! What\'s YOUR name?',
+        'Hi!! Welcome to Story Weaver!! So... what is your name?',
         rateScale: 0.72));
   }
 
@@ -155,7 +155,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (!mounted) return;
     setState(() => _step = 0);
     unawaited(_speak(
-        'Hi!! Welcome to Story Weaver!! What\'s YOUR name?',
+        'Hi!! Welcome to Story Weaver!! So... what is your name?',
         rateScale: 0.72));
     unawaited(_promptNameAndListen());
   }
@@ -251,8 +251,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       unawaited(_speak('Welcome to Story Weaver.'));
     } else if (band == AgeBand.creator) {
       unawaited(_speak('Your story begins here.'));
-    } else {
-      unawaited(_speak('Hi!! Welcome to Story Weaver!! What\'s YOUR name?', rateScale: 0.72));
+    } else if (band != AgeBand.adventurer) {
+      // Adventurer has its own welcome sequence narration — don't overlap
+      final name = _nameController.text.trim();
+      unawaited(_speak(
+        name.isNotEmpty ? 'Get ready, $name!' : 'Welcome to Story Weaver!',
+        rateScale: 0.72,
+      ));
     }
   }
 
@@ -271,12 +276,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       _speech.stop();
       setState(() => _celebratingName = true);
       unawaited(_burstController.trigger());
-      // Say "Hi <name>!" and wait for it to finish before advancing.
+      final isMature = _selectedAge != null && ageBandFromAge(_selectedAge!).isMature;
+      final greeting = isMature ? 'Hi, $name.' : 'Hi, $name! Nice to meet you!';
       AppTtsService.instance
           .speak(
-            'Hi, $name!! Oh wow, what an AMAZING name!!',
+            greeting,
             awaitCompletion: true,
-            rateScale: 0.72,
+            rateScale: isMature ? 0.85 : 0.72,
           )
           .then((_) {
         if (mounted) {
