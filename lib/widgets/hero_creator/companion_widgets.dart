@@ -386,15 +386,18 @@ class CompanionImageGrid extends StatelessWidget {
           Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
       final naturalSize = (band.touchTargetMin / 64.0 * 100).roundToDouble();
 
-      const perRow = 4;
-      const hSpacing = 8.0;
+      const perRow = 2;
+      const hSpacing = 12.0;
       const buttonWidthExtra = 8.0;
+      // In a 2-column grid, naturalSize is a floor for touch targets but
+      // shouldn't cap the display size — let the art breathe up to ~180px.
+      final maxTileSize = naturalSize > 180.0 ? naturalSize : 180.0;
       final itemSize = ((constraints.maxWidth -
                   perRow * buttonWidthExtra -
                   perRow * hSpacing) /
               perRow)
           .floorToDouble()
-          .clamp(40.0, naturalSize);
+          .clamp(40.0, maxTileSize);
 
       final List<CompanionData> companionList;
       switch (band.band) {
@@ -685,13 +688,13 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                 widget.tagline,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 11,
                   color: widget.isSelected
                       ? const Color(0xFFFFD700).withAlpha(200)
                       : Colors.white54,
                   fontStyle: FontStyle.italic,
                 ),
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
