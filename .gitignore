@@ -136,6 +136,7 @@ Twins Great Adventures - Copy/
 # Screenshots and images
 Screenshot*.png
 /*.jpg
+/*.jpeg
 HowDoYouFeelToday.jpg
 # Track asset JPGs (override root-level ignore)
 !assets/images/**/*.jpg
