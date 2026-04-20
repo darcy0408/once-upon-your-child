@@ -23,7 +23,7 @@ const _kUserNameKey = 'user_name';
 const _kTeaserSeenKey = 'welcome_teaser_seen';
 
 /// Shown on first launch to collect the child's name and age.
-/// Steps: 0 = age picker, 1 = title splash, 2 = name input.
+/// Steps: 0 = name input, 1 = age picker, 2 = title splash.
 class WelcomeScreen extends ConsumerStatefulWidget {
   /// Called after onboarding is fully complete (consent granted if needed).
   final VoidCallback onComplete;
@@ -46,7 +46,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _speechEnabled = false;
   bool _isListening = false;
 
-  /// Current step: -1 = teaser, 0 = age picker, 1 = title splash, 2 = name input.
+  /// Current step: -1 = teaser, 0 = name input, 1 = age picker, 2 = title splash.
   int _step = 0;
 
   Timer? _titleTimer;
@@ -125,7 +125,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (_selectedAge != null) return;
       setState(() {
         _selectedAge = savedAge;
-        _step = 2; // Skip teaser, age picker, and title splash.
+        _step = 0; // Skip teaser and age picker; still need a name.
       });
       if (ageBandFromAge(savedAge) == AgeBand.creator) {
         unawaited(_speak("Welcome back! What should we call you?", rateScale: 0.85));
@@ -140,8 +140,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           rateScale: 0.8));
       return;
     }
+    // Teaser seen, no age yet — go straight to name.
+    setState(() => _step = 0);
     unawaited(_speak(
-        'Hi, welcome to Story Weaver! How old are you?... Tap your age!',
+        'Hi!! Welcome to Story Weaver!! What\'s YOUR name?',
         rateScale: 0.72));
   }
 
@@ -153,8 +155,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (!mounted) return;
     setState(() => _step = 0);
     unawaited(_speak(
-        'How old are you?... Tap your age!',
+        'Hi!! Welcome to Story Weaver!! What\'s YOUR name?',
         rateScale: 0.72));
+    unawaited(_promptNameAndListen());
   }
 
   Future<void> _initVoice() async {
@@ -236,12 +239,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     unawaited(const ParentalConsentService().saveDeclaredAge(age));
     setState(() {
       _selectedAge = age;
-      _step = 1; // advance to title splash
+      _step = 2; // advance to title splash
     });
-    // Auto-advance from splash to name after 5 s (tap also advances).
+    // Auto-advance from splash to complete after 5 s (tap also advances).
     _titleTimer?.cancel();
     _titleTimer = Timer(const Duration(milliseconds: 5000), () {
-      if (mounted && _step == 1) _enterNameStep();
+      if (mounted && _step == 2) _handleContinue();
     });
     final band = ageBandFromAge(age);
     if (band == AgeBand.adolescent || band == AgeBand.adult) {
@@ -249,26 +252,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     } else if (band == AgeBand.creator) {
       unawaited(_speak('Your story begins here.'));
     } else {
-      unawaited(_speak('Hi! Welcome to Story Weaver. What\'s your name?', rateScale: 0.72));
+      unawaited(_speak('Hi!! Welcome to Story Weaver!! What\'s YOUR name?', rateScale: 0.72));
     }
   }
 
   void _advanceFromTitle() {
     AppTtsService.instance.markInteracted();
     _titleTimer?.cancel();
-    if (mounted && _step == 1) {
-      _enterNameStep();
+    if (mounted && _step == 2) {
+      _handleContinue();
     }
-  }
-
-  void _enterNameStep() {
-    setState(() => _step = 2);
-    unawaited(_promptNameAndListen());
   }
 
   void _advanceFromName() {
     final name = _nameController.text.trim();
-    if (name.isNotEmpty && _step == 2 && !_celebratingName) {
+    if (name.isNotEmpty && _step == 0 && !_celebratingName) {
       AppTtsService.instance.stop();
       _speech.stop();
       setState(() => _celebratingName = true);
@@ -276,12 +274,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       // Say "Hi <name>!" and wait for it to finish before advancing.
       AppTtsService.instance
           .speak(
-            'Hi, $name!... What a great name!',
+            'Hi, $name!! Oh wow, what an AMAZING name!!',
             awaitCompletion: true,
             rateScale: 0.72,
           )
           .then((_) {
-        if (mounted) _handleContinue();
+        if (mounted) {
+          setState(() {
+            _celebratingName = false;
+            _step = 1; // advance to age picker
+          });
+          unawaited(_speak('How old are you?... Tap your age!', rateScale: 0.72));
+        }
       });
     }
   }
@@ -346,10 +350,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     switch (_step) {
       case -1:
         return _buildTeaserStep();
-      case 1:
-        return _buildTitleStep();
-      case 2:
+      case 0:
         return _buildNameStep();
+      case 1:
+        return _buildAgeStep();
+      case 2:
+        return _buildTitleStep();
       default:
         return _buildAgeStep();
     }
@@ -913,7 +919,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   label: entry.label,
                   value: entry.value,
                   size: circleSize,
-                  glyph: _glyphForAge(entry.value),
                   selected: _selectedAge == entry.value,
                   onTap: _submitting
                       ? null
@@ -949,7 +954,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             final selected = _selectedAge == entry.value;
             return _AgeBandButton(
               label: entry.label,
-              glyph: _glyphForOlderBand(entry.value),
               selected: selected,
               onTap: _submitting ? null : () => _onAgeSelected(entry.value),
             );
@@ -987,6 +991,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       // For under-13 users, obtain parental consent BEFORE persisting the
       // child's name — collecting personal info prior to consent is a COPPA
       // violation (M-1).
+      if (!mounted) return;
+      AppTtsService.instance.stop();
+      await Future.delayed(const Duration(milliseconds: 650));
       if (!mounted) return;
       final granted = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
@@ -1045,6 +1052,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 builder: (_) => const ParentControlsScreen(
                   openBigFeelings: true,
                   skipMathGate: true, // parent just completed consent
+                  isOnboarding: true,
                 ),
               ),
             );
