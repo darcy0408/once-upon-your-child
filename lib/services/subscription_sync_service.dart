@@ -54,6 +54,18 @@ class SubscriptionSyncService {
     final resolvedUserId =
         userId ?? await UserIdentityService.getOrCreateUserId();
 
+    // Anonymous users (prefixed 'anon_') have no Stripe record — skip the
+    // network call and emit free tier immediately to avoid 403 console noise.
+    if (resolvedUserId.startsWith('anon_')) {
+      _emit(SubscriptionStatus(
+        userId: resolvedUserId,
+        tier: SubscriptionTier.free,
+        status: 'inactive',
+        cancelAtPeriodEnd: false,
+      ));
+      return;
+    }
+
     try {
       final status = await _fetchWithRetry(resolvedUserId);
       await _cacheSubscriptionStatus(status);
