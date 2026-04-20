@@ -1,5 +1,35 @@
 # Team Coordination
 
+## 2026-04-20a — Hero Creator: setState-during-build crash on quick-add companion (Claude Opus 4.7)
+
+**Bug:** Selecting a species from the quick-add companion picker surfaced a red screen in `HeroCreatorStep`:
+
+> `setState() or markNeedsBuild() called during build.`
+> `This HeroCreatorStep widget cannot be marked as needing to build because the framework is already in the process of building widgets.`
+
+**Root cause:** `HeroPetCard.didUpdateWidget` (`lib/widgets/hero_creator/pet_card.dart:93`) reacted to a new `pendingNewSpecies` by synchronously calling `_addCompanionWithType(species)` followed by `widget.onPendingConsumed?.call()`. Both `_addCompanionWithType` (via `widget.onChanged` = `() => setState(() {})` at `hero_creator_step.dart:1233/1241`) and `onPendingConsumed` (`() => setState(() => _pendingCompanionSpecies = null)`) mutate the parent while it is mid-build, violating the framework invariant.
+
+**Fix:** Defer the cascade to a post-frame callback with a `mounted` guard so the parent's `setState` fires after the current build completes:
+
+```dart
+if (widget.pendingNewSpecies != null &&
+    widget.pendingNewSpecies != oldWidget.pendingNewSpecies) {
+  final species = widget.pendingNewSpecies!.split(':').first;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    _addCompanionWithType(species);
+    widget.onPendingConsumed?.call();
+  });
+}
+```
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/widgets/hero_creator/pet_card.dart` | Wrap `_addCompanionWithType` + `onPendingConsumed` in `addPostFrameCallback` to avoid setState-during-build cascade |
+
+---
+
 ## 2026-04-19o — Gendered Archetypes All Bands + Story Mapper Fix (Claude Sonnet 4.6)
 
 **Goal:** Wire gendered archetype images for all 6 age bands, add age-appropriate archetype names, and fix story generation so archetype data actually reaches the AI prompt.

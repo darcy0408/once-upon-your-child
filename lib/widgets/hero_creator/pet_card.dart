@@ -93,8 +93,11 @@ class _HeroPetCardState extends State<HeroPetCard> {
     if (widget.pendingNewSpecies != null &&
         widget.pendingNewSpecies != oldWidget.pendingNewSpecies) {
       final species = widget.pendingNewSpecies!.split(':').first;
-      _addCompanionWithType(species);
-      widget.onPendingConsumed?.call();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _addCompanionWithType(species);
+        widget.onPendingConsumed?.call();
+      });
     }
   }
 
