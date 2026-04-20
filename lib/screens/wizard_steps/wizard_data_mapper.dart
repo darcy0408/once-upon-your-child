@@ -609,20 +609,51 @@ class WizardDataMapper {
         // Actually, we can import it. Let's rely on the string matching logic for now
         // but enhance it to pass the specific ability if we can.
 
-        // Specific mapping logic based on the new names
-        if (archetypeId.contains('Quiz-Whiz') ||
-            archetypeId.contains('Quiz Whiz') ||
+        // Match all band-specific names for each archetype.
+        // Sprout: "Brave Hero!", Explorer: "The Brave Explorer",
+        // Adventurer: "The Quiz Whiz", Creator+: "Logic Architect"
+        if (archetypeId.contains('Quiz Whiz') ||
+            archetypeId.contains('Quiz-Whiz') ||
+            archetypeId.contains('Brave Hero') ||
+            archetypeId.contains('Brave Explorer') ||
+            archetypeId.contains('Logic Architect') ||
             archetypeId.contains('Thinker')) {
-          details['strengths'] = ['Problem solving', 'Focus'];
-          details['interests'] = ['Quizzes', 'Brain teasers', 'Science'];
+          details['strengths'] = ['Intelligence', 'Problem solving', 'Focus'];
+          details['interests'] = ['Puzzles', 'Brain teasers', 'Brave adventures'];
           details['specialAbility'] =
-              'Can solve any quiz, puzzle, or brain teaser with clever thinking';
+              'Can solve any quiz, puzzle, or brain teaser with clever thinking — and has the courage to face anything';
+        // Sprout: "Art Maker!", Explorer: "The Art Wizard",
+        // Adventurer: "The Master Creator", Creator+: "Vision Architect"
         } else if (archetypeId.contains('Master Creator') ||
+            archetypeId.contains('Art Maker') ||
+            archetypeId.contains('Art Wizard') ||
+            archetypeId.contains('Vision Architect') ||
             archetypeId.contains('Artist')) {
-          details['strengths'] = ['Creativity', 'Vision'];
-          details['interests'] = ['Painting', 'Colors', 'Music'];
+          details['strengths'] = ['Creativity', 'Vision', 'Imagination'];
+          details['interests'] = ['Painting', 'Inventing', 'Making things'];
           details['specialAbility'] =
               'Has a magic paintbrush that brings drawings to life';
+        // Sprout: "Super Fast!", Explorer: "The Speed Star",
+        // Adventurer: "The Lightning Runner", Creator+: "Kinetic Specialist"
+        } else if (archetypeId.contains('Lightning Runner') ||
+            archetypeId.contains('Super Fast') ||
+            archetypeId.contains('Speed Star') ||
+            archetypeId.contains('Kinetic Specialist') ||
+            archetypeId.contains('Athlete')) {
+          details['strengths'] = ['Speed', 'Energy', 'Determination', 'Teamwork'];
+          details['interests'] = ['Running', 'Sports', 'Racing', 'Games'];
+          details['specialAbility'] =
+              'Moves faster than sound and leaves trails of stardust';
+        // Sprout: "Animal Friend!", Explorer+: "The Animal Whisperer",
+        // Creator+: "Ecological Whisperer"
+        } else if (archetypeId.contains('Animal Whisperer') ||
+            archetypeId.contains('Animal Friend') ||
+            archetypeId.contains('Ecological Whisperer') ||
+            archetypeId.contains('Shy')) {
+          details['strengths'] = ['Kindness', 'Nature Magic', 'Observation'];
+          details['interests'] = ['Animals', 'Nature', 'Secrets'];
+          details['specialAbility'] =
+              'Can talk to animals and move unseen like a shadow';
         } else if (archetypeId.contains('Soul Mender') ||
             archetypeId.contains('Heart Healer') ||
             archetypeId.contains('Helper')) {
@@ -630,18 +661,6 @@ class WizardDataMapper {
           details['interests'] = ['Animals', 'Helping friends'];
           details['specialAbility'] =
               'Can sense emotions and heal broken spirits with kindness';
-        } else if (archetypeId.contains('Lightning Runner') ||
-            archetypeId.contains('Athlete')) {
-          details['strengths'] = ['Energy', 'Teamwork'];
-          details['interests'] = ['Sports', 'Running', 'Games'];
-          details['specialAbility'] =
-              'Moves faster than sound and leaves trails of stardust';
-        } else if (archetypeId.contains('Animal Whisperer') ||
-            archetypeId.contains('Shy')) {
-          details['strengths'] = ['Kindness', 'Nature Magic'];
-          details['interests'] = ['Animals', 'Nature', 'Secrets'];
-          details['specialAbility'] =
-              'Can talk to animals and move unseen like a shadow';
         }
       } catch (e) {
         debugPrint('Error mapping archetype details: $e');
