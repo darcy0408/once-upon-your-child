@@ -1,5 +1,55 @@
 # Team Coordination
 
+## 2026-04-20c — Playwright QA sweep + BUG-001 + gender button a11y (Claude Sonnet 4.6 / Opus 4.7)
+
+**Scope:** End-to-end Playwright QA across all 6 age bands against the live Railway build, plus the two code fixes surfaced that aren't already logged under 2026-04-20a/b.
+
+### QA sweep (`docs/QA_PLAYWRIGHT_REPORT_2026-04-20.md`, commit `0ebb117`)
+
+- Target: `https://grand-light-production-68d9.up.railway.app`, viewport 1400 × 900, 3 sessions (context splits).
+- Bands 1–3 (Sprout / Explorer / Adventurer) and Band 5 (Adolescent) ✅ PASS — `/generate-story` returned 200.
+- Band 4 (Creator) ⚠️ PARTIAL — generation 200, COPPA consent 201 OK.
+- Band 6 (Adult) ❌ FAIL — blocked by BUG-001 below.
+- Also deleted 307 stray `qa_*.png` / `band6_*.png` screenshot artifacts from repo root.
+
+### BUG-001 — Adult band Create Story blocked for new users (CRITICAL) ✅ FIXED
+
+**File:** `lib/screens/wizard_steps/hero_creator_step.dart`
+
+`_handleContinue()` gated submission on `_hasAvatar` (`_generatedAvatar != null || _customAvatarFilePath != null`), but the mature-band form (`CreativeBriefWidget`) has no avatar-generation UI — only Boy/Girl buttons that set `characterGender`. Every new adult user hit *"Please choose a look for your character first"* and could not proceed.
+
+**Fix (commit `73ee489`):** skip the avatar gate when the active band is mature.
+
+```dart
+final isMatureBand =
+    Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
+if (_isCreatingNew && !_hasAvatar && !isMatureBand) { ... }
+```
+
+`AgeBand.isMature` (`lib/theme/age_band_theme.dart:574`) covers creator, adolescent, adult — so Bands 4/5/6 all bypass the gate.
+
+### GenderImageButton a11y (Test #3) ✅ FIXED
+
+**File:** `lib/widgets/hero_creator/hero_input_widgets.dart`
+
+`GenderImageButton` wrapped a bare `GestureDetector`, so semantic tap actions did not dispatch to `onTap` — screen readers saw a generic tap target with no selected state, and Playwright could not register selection via semantic click.
+
+**Fix (commit `1711a57`):** wrap in `Semantics(button: true, selected: …, label: …, onTap: …, excludeSemantics: true)`. Pointer events still route through the inner `GestureDetector`. Same pattern later reused for `FeelingsBadgeGrid` (see 2026-04-20b).
+
+### Files Changed
+
+| File | Change | Commit |
+|------|--------|--------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Skip avatar gate for mature bands (BUG-001) | `73ee489` |
+| `lib/widgets/hero_creator/hero_input_widgets.dart` | Semantic button wrapper around `GenderImageButton` | `1711a57` |
+| `docs/QA_PLAYWRIGHT_REPORT_2026-04-20.md` | New QA report — full band 1–6 results, 3 bugs | `0ebb117` |
+
+### Verification status
+
+BUG-001 fix is on `main` but has not yet been re-verified end-to-end against the live Railway build. Open follow-up: re-run Band 6 happy path once Playwright MCP is available in-session (Claude Code restart required per `reference_playwright_mcp_lockfile`).
+
+---
+
 ## 2026-04-20b — Feelings Badge Grid: semantic onTap wiring (Claude Opus 4.7)
 
 **Bug:** Adventurer-band-exclusive emotion picker ("What's going on?" modal, `FeelingsQuestModal` with `_useBadgeGrid=true`) appeared stuck — taps produced hover glow but never popped the modal or advanced the wizard.
