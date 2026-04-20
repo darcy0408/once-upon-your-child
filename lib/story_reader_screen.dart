@@ -449,7 +449,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       mainAxisAlignment: MainAxisAlignment.center,
       children: speeds.map((speed) {
         final isActive = (_playbackRate - speed).abs() < 0.01;
-        final label = speed == 1.0 ? '1×' : '${speed}×';
+        final label = speed == 1.0 ? '1×' : '$speed×';
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 3),
           child: GestureDetector(

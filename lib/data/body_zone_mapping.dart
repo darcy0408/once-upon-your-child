@@ -7,8 +7,6 @@
 /// to "Warm chest" for Happy but "Hollow chest" for Grief). At runtime,
 /// [bodyZoneToSignal] resolves the best match given the active feeling's
 /// available options.
-library body_zone_mapping;
-
 /// Returns the best-matching body-signal value for a tapped [zoneId], given
 /// the list of [availableOptions] for the active feeling.
 ///

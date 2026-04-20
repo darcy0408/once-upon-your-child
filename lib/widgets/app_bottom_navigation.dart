@@ -133,7 +133,7 @@ class AppBottomNavigationBar extends StatelessWidget {
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w700),
         unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
         selectedItemColor: bandTheme.primary,
-        unselectedItemColor: bandTheme.textOnDark.withOpacity(0.5),
+        unselectedItemColor: bandTheme.textOnDark.withValues(alpha: 0.5),
         showUnselectedLabels: true,
         items: items,
       ),

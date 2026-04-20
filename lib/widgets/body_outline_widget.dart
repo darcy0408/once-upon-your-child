@@ -115,8 +115,7 @@ class _Zone {
 
 /// Scale a normalised path to [size].
 Path _scalePath(Path normalized, Size size) {
-  final m = Matrix4.identity()
-    ..scale(size.width, size.height);
+  final m = Matrix4.diagonal3Values(size.width, size.height, 1.0);
   return normalized.transform(m.storage);
 }
 

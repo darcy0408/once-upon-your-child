@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../services/app_tts_service.dart';
@@ -1384,7 +1383,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final success = !result.isError;
     final message = result.message ??
         (success
-            ? (species == 'Human' ? '✨ ${name} is ready for the adventure!' : '✨ Magical pet avatar ready!')
+            ? (species == 'Human' ? '✨ $name is ready for the adventure!' : '✨ Magical pet avatar ready!')
             : "Oops! Magic isn't working on that picture. Want to pick a companion instead?");
     setState(() {
       _isPetAvatarGenerating = false;
@@ -1587,14 +1586,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   bool get _hasAvatar =>
       _generatedAvatar != null || _customAvatarFilePath != null;
-
-  String? get _avatarImageData {
-    if (_generatedAvatar != null && _generatedAvatar!.imageBase64.isNotEmpty) {
-      return _generatedAvatar!.imageBase64;
-    }
-    // Fall back to selected character asset path (pre-made silhouette)
-    return widget.wizardData.selectedCharacterAssetPath;
-  }
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;

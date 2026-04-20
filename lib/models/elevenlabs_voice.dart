@@ -52,19 +52,19 @@ class ElevenLabsVoice {
   /// Fin narrating → Callum.
   /// Male narrators (George/Charlie/Callum) → Gigi.
   static String characterVoiceForNarrator(String narratorVoiceId) {
-    const _femaleIds = {
+    const femaleIds = {
       'XrExE9yKIg1WjnnlVkGX', // Matilda
       '21m00Tcm4TlvDq8ikWAM', // Rachel
       'ThT5KcBeYPX3keUQqHPh', // Dorothy
       'jBpfuIE2acCO8z3wKNLl', // Gigi
     };
-    const _finId = 'D38z5RcWu1voky8WS1ja';
-    const _callumId = 'N2lVS1w4EtoT3dr4eOWO';
-    const _gigiId = 'jBpfuIE2acCO8z3wKNLl';
+    const finId = 'D38z5RcWu1voky8WS1ja';
+    const callumId = 'N2lVS1w4EtoT3dr4eOWO';
+    const gigiId = 'jBpfuIE2acCO8z3wKNLl';
 
-    if (_femaleIds.contains(narratorVoiceId)) return _finId;
-    if (narratorVoiceId == _finId) return _callumId;
-    return _gigiId; // George, Charlie, Callum
+    if (femaleIds.contains(narratorVoiceId)) return finId;
+    if (narratorVoiceId == finId) return callumId;
+    return gigiId; // George, Charlie, Callum
   }
 
   static ElevenLabsVoice? byId(String id) {

@@ -522,7 +522,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                   const SizedBox(height: 12),
                   // Species
                   DropdownButtonFormField<String>(
-                    value: selectedSpecies,
+                    initialValue: selectedSpecies,
                     dropdownColor: const Color(0xFF2A1A4E),
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
