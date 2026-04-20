@@ -13,6 +13,13 @@ import '../config/environment.dart';
 import '../models/elevenlabs_voice.dart';
 import 'api_service_manager.dart';
 
+/// Thrown by [TtsApiService.synthesize] when the backend returns HTTP 429.
+/// Callers should apply exponential backoff before retrying.
+class TtsRateLimitException implements Exception {
+  @override
+  String toString() => 'TtsRateLimitException: ElevenLabs rate limit exceeded';
+}
+
 /// Result from the TTS synthesize endpoint.
 /// [wordTimestamps] is empty when the backend could not return timing data
 /// (long/chunked stories, dialogue mode, or older backend). The caller should
@@ -105,6 +112,9 @@ class TtsApiService {
         }
       }
 
+      if (response.statusCode == 429) {
+        throw TtsRateLimitException();
+      }
       // 503 = API key not configured → expected graceful fallback
       if (response.statusCode != 503) {
         debugPrint(

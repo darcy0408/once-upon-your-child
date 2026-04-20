@@ -107,6 +107,7 @@ class AppTtsService {
   final FlutterTts _fallback = FlutterTts();
   final Map<String, Uint8List> _cache = {};
   bool _ready = false;
+  bool _prewarming = false;
 
   /// On web, browsers block audio until the user has interacted with the page.
   /// Call [markInteracted] from the first user gesture (e.g. a tap) so that
@@ -138,17 +139,40 @@ class AppTtsService {
   }
 
   Future<void> _prewarm(List<String> phrases) async {
-    final voiceId = await _savedVoiceId();
-    for (final phrase in phrases) {
-      final key = phrase.trim();
-      if (_cache.containsKey(key)) continue;
-      try {
-        final ttsResult = await TtsApiService.synthesize(key, voiceId: voiceId);
-        final mp3 = ttsResult?.audioBytes;
-        if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
-      } catch (e) {
-        debugPrint('TTS prewarm failed for phrase: $e');
+    // Deduplicate concurrent warm-up calls within a session.
+    if (_prewarming) return;
+    _prewarming = true;
+    try {
+      final voiceId = await _savedVoiceId();
+      var backoffMs = 2000;
+      for (final phrase in phrases) {
+        final key = phrase.trim();
+        if (_cache.containsKey(key)) continue;
+        var attempts = 0;
+        while (attempts < 4) {
+          try {
+            final ttsResult =
+                await TtsApiService.synthesize(key, voiceId: voiceId);
+            final mp3 = ttsResult?.audioBytes;
+            if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
+            backoffMs = 2000; // reset after a successful call
+            break;
+          } on TtsRateLimitException {
+            attempts++;
+            debugPrint(
+              'TTS prewarm 429 — waiting ${backoffMs}ms before retry '
+              '($attempts/4)',
+            );
+            await Future<void>.delayed(Duration(milliseconds: backoffMs));
+            backoffMs = (backoffMs * 2).clamp(2000, 30000);
+          } catch (e) {
+            debugPrint('TTS prewarm failed for phrase: $e');
+            break;
+          }
+        }
       }
+    } finally {
+      _prewarming = false;
     }
   }
 
