@@ -32,6 +32,7 @@ class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
 
   // Ages 3-11: individual big buttons for young children (3×3 grid).
   static const _youngAgeEntries = <({String label, int value})>[
+    (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),

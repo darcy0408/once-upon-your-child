@@ -1880,7 +1880,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           Widget card = Semantics(
             button: true,
             selected: isSelected,
-            label: 'Role: ${a.name}',
+            label: 'Role: ${a.nameForAge(widget.wizardData.characterAge)}',
             hint: isSelected
                 ? 'Currently selected. Double tap to keep this role.'
                 : 'Double tap to select this role for your hero.',
@@ -1981,7 +1981,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         return Semantics(
           button: true,
           selected: isSelected,
-          label: 'Role: ${a.name}',
+          label: 'Role: ${a.nameForAge(widget.wizardData.characterAge)}',
           hint: isSelected
               ? 'Currently selected. Double tap to keep this role.'
               : 'Double tap to select this role for your hero.',

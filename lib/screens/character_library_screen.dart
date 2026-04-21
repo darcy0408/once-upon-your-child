@@ -11,6 +11,7 @@ import 'wizard_story_screen.dart';
 import 'character_editor_screen.dart';
 import 'chronicles_list_screen.dart';
 import '../widgets/safe_asset_image.dart';
+import '../widgets/archetype_card.dart';
 
 /// Character Library Screen
 ///
@@ -212,13 +213,14 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
         ),
         child: Column(
           children: [
-            _BackendStatusBanner(
-              isChecking: _isCheckingBackend,
-              isOnline: _backendOnline,
-              backendUrl: Environment.backendUrl,
-              lastChecked: _lastBackendCheck,
-              onRefresh: _checkBackendStatus,
-            ),
+            if (_isCheckingBackend || _backendOnline == false)
+              _BackendStatusBanner(
+                isChecking: _isCheckingBackend,
+                isOnline: _backendOnline,
+                backendUrl: Environment.backendUrl,
+                lastChecked: _lastBackendCheck,
+                onRefresh: _checkBackendStatus,
+              ),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -569,7 +571,11 @@ class _CharacterCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   _DetailRow(
                     icon: Icons.star,
-                    label: character.role,
+                    label: CharacterArchetypes.all
+                            .where((a) => a.name == character.role)
+                            .firstOrNull
+                            ?.nameForAge(character.age) ??
+                        character.role,
                   ),
                   if (character.likes != null &&
                       character.likes!.isNotEmpty) ...[
