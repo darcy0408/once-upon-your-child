@@ -151,6 +151,201 @@ Manual browser test not yet re-run after the fix. Suggest: Parent Controls → U
 
 ---
 
+## 2026-04-21 — Comprehensive Fix Plan (Claude Sonnet 4.6)
+
+Plan to resolve all bugs logged in the Six Hats audits (Sprout + Adult). Grouped into 4 sprints by priority, then by logical batch to minimize file churn. Each batch lists files touched, concrete change, risk, and test plan.
+
+**Stats:** 29 open issues → 4 sprints. Sprint 1 (P0) unblocks new-user flow. Sprint 2 (P1) removes high-friction UX snags. Sprint 3 (P2) improves safety/polish. Sprint 4 (P3) is longer-term redesign.
+
+---
+
+### 🚨 SPRINT 1 — P0 Critical (Blockers) — target: same-day
+
+These fixes are blockers for any further user testing. All are low-effort. Do them first, in one session, one PR.
+
+#### Batch 1A — Onboarding escape hatches (`welcome_screen.dart`)
+
+Single file, 3 related fixes. Do them together.
+
+| Task | Fix |
+|------|-----|
+| **BUG-013** Continue silent fail on empty name | In `_handleContinue`, if `_nameController.text.trim().isEmpty`, show inline error (`setState(() => _nameError = 'Enter a name to continue')`). Render `TextField(errorText: _nameError)`. Clear `_nameError` on text change. |
+| **BUG-014** No back button from profile screen | Add `IconButton(icon: Icons.arrow_back)` in `_buildNameStep` header, calling `setState(() => _step = Step.age)`. |
+| **BUG-004** Back→COPPA stuck | In `_handleContinue`, guard with `if (_coppaDone && mounted) _coppaDone = false` before navigating. On COPPA Back, reset guard. |
+
+**Risk:** Touches shared state on welcome_screen. Test all 6 age bands retain working flow.  
+**Test plan:** Manual + Playwright — 18+, 15-17, 12-14, 9-11, 6-8, 3-5. Empty-name click, mis-tap back button, BUG-004 repro (name → COPPA → back → edit → "That's me!").
+
+#### Batch 1B — Backend stability (`backend/middleware/auth.py`, `backend/routes/avatar_routes.py`)
+
+| Task | Fix |
+|------|-----|
+| **BUG-010** `SimpleNamespace` crash | `auth.py:88` — replace `current_user.is_under_13` with `getattr(current_user, 'is_under_13', False)`. Same for `declared_age`. |
+| **BUG-009** Avatar routes no timeout | Wrap Gemini/Replicate calls in `asyncio.wait_for(..., timeout=30.0)` (or `requests.post(..., timeout=30)` for sync). On `TimeoutError`, return 504 + fallback preset. |
+
+**Risk:** auth.py is auth-critical — test both authenticated adult and authenticated under-13 with valid consent.  
+**Test plan:** Unit test SimpleNamespace input doesn't crash; integration test avatar route with slow mock upstream returns fallback within 30s.
+
+**Sprint 1 deliverable:** one branch, one PR, commits grouped by batch. Target: 2–4 hours total.
+
+---
+
+### 🔥 SPRINT 2 — P1 High Friction — target: next session
+
+High-impact UX improvements. Each batch is ~1 hour.
+
+#### Batch 2A — Wizard progress and exit (`wizard_story_screen.dart`)
+
+| Task | Fix |
+|------|-----|
+| Wizard breadcrumb false affordance | Either (a) make steps tappable — wrap each in `GestureDetector` calling `_pageController.animateToPage(i)`, only allow backward nav, or (b) restyle as non-interactive progress pipe. **Recommend (a)** — supports Task 17 ("← Change age" affordance pattern). |
+| **BUG-011** No generation progress indicator | Wrap generation call in a `Stream<int>` that emits elapsed seconds. Show "Weaving your story… Xs / ~60s" with a progress bar. Swap to "Almost there…" at 60s. Timeout message at 120s. |
+| Wizard X exit confirmation | Wrap X button in `showDialog` returning bool — "Leave story setup? Your progress will be lost." Cancel / Leave. |
+
+**Risk:** PageController interactions can break mid-generation. Test: tap breadcrumb while story generating → should be disabled.  
+**Test plan:** Tap breadcrumb forward (no-op), tap backward (navigate), tap X during step 1 (confirmation), tap X during generation (blocked).
+
+#### Batch 2B — Character creator polish (`hero_creator_step.dart`)
+
+| Task | Fix |
+|------|-----|
+| **BUG-005** Binary gender picker | Add 3rd option: "Other" or two additions ("Non-binary", "Prefer not to say"). Use neutral silhouette asset. `hero_creator_step.dart:1651`. |
+| **BUG-006** Gender tap auto-advance | Remove synchronous `_heroNextPage()` from `_handleGenderSelection`. Require explicit Next tap. Highlight selection with gold border; enable Next button. |
+| Archetype chips no tooltips | Wrap each archetype chip in `Tooltip(message: '…')`. Define tooltips in a map `_kArchetypeTooltips` keyed by archetype ID. |
+| Archetype display names a11y | Replace internal IDs in `Semantics(label:)` with user-facing display names from existing `_kArchetypeDisplayNames` map. |
+
+**Risk:** Gender option added = story prompt must handle new value. Check `backend/services/story_generation_service.py` prompt construction for `gender` field.  
+**Test plan:** Each gender option → generate story → verify pronouns and description match selection. Screen reader read-through for archetype chips.
+
+#### Batch 2C — Adult band safety valves (`adult_meditation_screen.dart`)
+
+| Task | Fix |
+|------|-----|
+| AdultMeditationScreen no close button | Add `IconButton(icon: Icons.arrow_back)` in AppBar `leading`. Calls `Navigator.pop(context)`. |
+| Adult Reflect prompts no skip | Add "Not tonight →" TextButton below prompt. Cycles `_kReflectivePrompts` index without saving journal entry. |
+
+**Risk:** Low.  
+**Test plan:** Open screen from tab, tap back → returns to Stories. Tap "Not tonight" → new prompt shown, no journal entry created.
+
+---
+
+### 🔧 SPRINT 3 — P2 Medium Polish — target: following session
+
+#### Batch 3A — Error message copy (`backend/routes/story_routes.py`, `backend/routes/tts_routes.py`, new `backend/utils/error_copy.py`)
+
+| Task | Fix |
+|------|-----|
+| **BUG-012** Technical error messages | Create `backend/utils/error_copy.py` with an `ERROR_COPY` dict. Replace all `return jsonify({'error': str(e)})` with `_user_facing_error(error_code)`. Log raw `e` server-side only. |
+
+Mapping (seed `error_copy.py`):
+```python
+ERROR_COPY = {
+  'STORY_TIMEOUT': "Story generation is taking longer than usual. Please try again.",
+  'TTS_QUOTA_EXCEEDED': "You've used today's narration allowance. Come back tomorrow, or upgrade for more.",
+  'AVATAR_FAILED': "We couldn't create your avatar. Try a different style or come back in a moment.",
+  'STORY_REJECTED': "This story couldn't be generated. Please try different character traits.",
+  'PARENTAL_CONSENT_REQUIRED': "A grown-up needs to give permission before you can make stories.",
+}
+```
+
+**Risk:** Client code may rely on specific error strings — grep `errorMessage ==` in Flutter for matches.  
+**Test plan:** Trigger each error (disconnect, quota exceed, moderation reject) → user sees friendly copy, server logs raw.
+
+#### Batch 3B — Backend hardening (`backend/routes/webhook_handler.py`)
+
+| Task | Fix |
+|------|-----|
+| Stripe webhook no timestamp validation | Add `if abs(time.time() - event.created) > 300: abort(400, 'stale webhook')`. Use Stripe library's built-in signature validation which includes timestamp. |
+
+**Test plan:** Replay old webhook → rejected. Valid webhook → accepted.
+
+#### Batch 3C — Age-gate reconciliation (`welcome_screen.dart`, `age_gate_screen.dart`, `parental_consent_screen.dart`)
+
+| Task | Fix |
+|------|-----|
+| **BUG-007** Dual age-gate implementations diverge | Extract shared consent flow to `lib/services/consent_flow.dart`. Both screens call the same function. |
+| **BUG-008** Consent scroll progress bar not visible | Move progress bar from AppBar to a sticky `PreferredSize` at bottom. Add "↓ Keep scrolling" hint while `scrollController.offset < maxScrollExtent - 100`. |
+| Age 2 missing from picker | Add `{age: 2, emoji: '🌱'}` to `_youngAgeEntries` in both files. Update Sprout band = 2–5. |
+
+**Risk:** Consolidation touches 3 screens. Snapshot tests for each band before/after.  
+**Test plan:** Full onboarding per age (2, 4, 7, 10, 13, 16, 21) → correct consent flow fires.
+
+#### Batch 3D — Sprout polish (`hero_creator_step.dart` + content files)
+
+| Task | Fix |
+|------|-----|
+| Sprout Life Quests empty | Author 3–5 Sprout quests in `lib/content/life_quests_sprout.json`. Keep language simple, 1-sentence prompts. Run past content moderator keyword filter. |
+| Sprout companion limit feedback | In `_buildAdventureTeamPage`, when `_selectedCompanions.length >= maxSlots`, disable/grey-out remaining tiles + show "Buddy chosen!" toast. |
+| Sprout pet reveal looks static | Add `Icon(Icons.keyboard_arrow_right)` or "Tap here ▸" label inside `GestureDetector`. Add ripple. |
+| "Add a Friend" name clash | Rename button to "Add from Photo" in `hero_creator_step.dart:1163`. |
+| Mochi black card background | Update Mochi asset or wrap in `Container(color: <band-appropriate>)` matching other buddies. |
+| Title splash no back | Add small "← Change age" TextButton in `_buildTitleStep`. |
+| 5s title splash cuts TTS | Use `TtsService.onComplete` callback to start timer, or bump to 7s with `min(7, ttsDuration + 0.5)` cap. |
+| "Hearing no" copy | Rename to "Struggling with 'no'" in `welcome_screen.dart:1027`. |
+| "Story service is ready" banner | Gate behind `kDebugMode` or admin role. |
+
+**Test plan:** Load app as Sprout age 4 → Life Quests has content, companion max feedback visible, pet reveal tappable.
+
+---
+
+### 🌱 SPRINT 4 — P3 Longer-term (Backlog) — target: planning
+
+Larger changes needing design discussion before implementation.
+
+| Task | Approach |
+|------|---------|
+| Archetype renaming (corporate → evocative) | Design doc: propose new names (Detective, Visionary, Warrior, Healer). Keep internal IDs stable; only change display labels. Review with writer/child psychologist. |
+| Adult home screen redesign | New screen: recent stories grid + quick-create CTA + Feelings peer feature. Replaces wizard-as-landing for returning adults. Gate: `isAdult && hasStories`. |
+| "Who is this for?" first-run disambiguation | Before name entry, ask "Creating for yourself, or setting up for a child?" → route to adult self-onboarding or parent-for-child onboarding. |
+| Adult Reflect journaling on same view | Merge REFLECT tab's prompt+journal into single view. Prompt at top, text field below, save button inline. Eliminate tab-switch. |
+| BUG-001 full E2E Band 6 | Needs Playwright restart OR manual incognito. Tab→Enter keyboard method. |
+| BUG-002 TTS backoff fresh-session | Same — Playwright restart or manual. |
+
+---
+
+### Dependency graph
+
+```
+Sprint 1 (P0) ─────────────────────────┐
+  ├─ 1A Onboarding escape ─┐           │
+  └─ 1B Backend stability ─┘           │
+                                        ▼
+Sprint 2 (P1)                  User testing unblocked
+  ├─ 2A Wizard progress                 │
+  ├─ 2B Character creator (dep: 2A)     │
+  └─ 2C Adult safety valves             ▼
+                                 Adult band ready
+Sprint 3 (P2)
+  ├─ 3A Error copy (touches many routes)
+  ├─ 3B Backend hardening
+  ├─ 3C Age-gate reconciliation
+  └─ 3D Sprout polish
+
+Sprint 4 (P3) — Backlog, needs design review
+```
+
+### Acceptance criteria
+
+- **Sprint 1 done:** Fresh user opens app → 18+ → enter name → advance → lands in wizard. Mis-tap name screen back → returns to age picker. Avatar generation timeout returns 504 within 30s. Auth middleware does not throw on SimpleNamespace inputs.
+- **Sprint 2 done:** Wizard has visible generation progress. X confirms exit. All gender options selectable without auto-advance. Archetype tooltips on tap. AdultMeditationScreen has visible close button.
+- **Sprint 3 done:** All backend errors return user-friendly copy. Stripe webhooks reject replays. Single consent flow shared between welcome + age-gate. Age 2 available. Sprout has Life Quests content.
+- **Sprint 4 done:** Deferred — design review required first.
+
+### Estimates
+
+| Sprint | Issues | Effort | Wall time |
+|--------|--------|--------|-----------|
+| 1 (P0) | 5 | Low | 2–4 hours |
+| 2 (P1) | 9 | Low-Medium | 4–6 hours |
+| 3 (P2) | 12 | Medium | 6–8 hours |
+| 4 (P3) | 6 | High (design + build) | 2–4 days |
+
+### Coordination note
+
+A parallel session has uncommitted changes to `welcome_screen.dart` and `hero_creator_step.dart` (as of commit `ae3d5d5`). Before starting Sprint 1, reconcile with that work — the Batch 1A fixes may overlap. Coordinate or rebase before making these changes.
+
+---
+
 ## 2026-04-21 — Six Hats Adult UX Audit — Frontend + Backend + Screenshots (Claude Sonnet 4.6)
 
 **Method:** Flutter code review (62 screens), backend API audit, 20 screenshots analysed.  
