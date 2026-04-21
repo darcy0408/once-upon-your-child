@@ -6,10 +6,10 @@
 |---|------|---------|----------|
 | 1 | BUG-001 full E2E — Band 6 `/generate-story` 200 | Needs Playwright restart or manual incognito test | `docs/briefings/TASK1_PLAYWRIGHT_BAND6_REVERIFY.md` |
 | 2 | BUG-002 TTS backoff — fresh-session verification | Needs Playwright restart or manual incognito test | `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md` |
-| 3 | BUG-004 Back→COPPA stuck — "That's me!" breaks after COPPA Back | Code fix: `_handleContinue` navigation guard | See §2026-04-21 Six Hats below |
-| 4 | Age 2 missing from age picker | Code fix: add entry to `_youngAgeEntries` in both `welcome_screen.dart` and `age_gate_screen.dart` | Sprout band is 2-5; picker starts at 3 |
-| 5 | Archetype display names in Heroes/a11y labels | Show "Animal Friend!" not "The Animal Whisperer" | Semantic labels leak internal IDs |
-| 6 | "Story service is ready" banner visible in child view | Hide from non-admin views | Dev status exposed to users |
+| ~~3~~ | ~~BUG-004 Back→COPPA stuck — "That's me!" breaks after COPPA Back~~ | ✅ Fixed `115b37b` — `_step` reset to 0 when COPPA dismissed | ~~See §2026-04-21 Six Hats below~~ |
+| ~~4~~ | ~~Age 2 missing from age picker~~ | ✅ Fixed `115b37b` — added to `_youngAgeEntries` in both `welcome_screen.dart` and `age_gate_screen.dart` | ~~Sprout band is 2-5; picker starts at 3~~ |
+| ~~5~~ | ~~Archetype display names in Heroes/a11y labels~~ | ✅ Fixed `115b37b` — `character_library_screen` uses `nameForAge()`; a11y labels in both grid paths updated | ~~Semantic labels leak internal IDs~~ |
+| ~~6~~ | ~~"Story service is ready" banner visible in child view~~ | ✅ Fixed `115b37b` — banner hidden when `_backendOnline == true`; only shows when checking or offline | ~~Dev status exposed to users~~ |
 | 7 | Mochi black card background | Give Mochi a coloured background like other buddies | Visual inconsistency |
 | 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
 | 9 | **BUG-005** Binary-only gender picker (HIGH — inclusivity) | Add "Other / Prefer not to say" option with neutral archetype image path; affects all bands | `hero_creator_step.dart:1651` — `_buildGenderPicker()` |
@@ -35,6 +35,27 @@
 | 29 | Archetype chips have no tooltips | On tap, show one-sentence explanation (required field is currently opaque) | `hero_creator_step.dart` |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
+
+---
+
+## 2026-04-21 — Sprout UX Fixes + Playwright Verification (Claude Sonnet 4.6)
+
+**Method:** Six Hats Sprout audit (previous session) identified issues; this session applied code fixes and verified each one via Playwright MCP. Commit: `115b37b`.
+
+### Fixes Applied
+
+| Fix | File(s) | Verified |
+|-----|---------|---------|
+| Age 2 added to age picker | `welcome_screen.dart`, `age_gate_screen.dart` | ✅ Playwright — visible as first circle in grid |
+| BUG-004: Back→COPPA resets wizard step | `welcome_screen.dart:1012` — `_step = 0` alongside `_submitting = false` | ✅ Playwright — "That's me!" re-advances to age picker after Back |
+| Archetype display names use `nameForAge()` | `character_library_screen.dart:572` | Code-verified (backend offline in local dev) |
+| A11y semantic labels use `nameForAge()` | `hero_creator_step.dart:1883, 1984` | Code-verified |
+| Backend status banner hidden when online | `character_library_screen.dart:215` — wrapped in `if (_isCheckingBackend \|\| _backendOnline == false)` | ✅ Playwright — red "waking up" shown when offline; green never shown |
+
+### Deferred
+- **Mochi black background** — code shows `Color(0xFFFF8F00)` (orange); likely screenshot artifact. Needs human verification on device.
+- **Sprout Life Quests** — deferred to Opus; requires creative content authoring for ages 2-5.
+- **Step 4 summary recap** — low priority; add visual recap of choices before GO! button.
 
 ---
 
