@@ -1630,14 +1630,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         boyAsset = 'assets/images/ui/gender/gender_explorer_boy.png';
         girlAsset = 'assets/images/ui/gender/gender_explorer_girl.png';
       case AgeBand.adventurer:
-        boyAsset = 'assets/images/ui/gender/gender_adventurer_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_adventurer_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_adventurer_boy.jpg';
+        girlAsset = 'assets/images/ui/gender/gender_adventurer_girl.jpg';
       case AgeBand.creator:
-        boyAsset = 'assets/images/ui/gender/gender_creator_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_creator_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_creator_boy.jpg';
+        girlAsset = 'assets/images/ui/gender/gender_creator_girl.jpg';
       case AgeBand.adolescent:
         boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.png';
+        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.jpg';
       case AgeBand.adult:
         boyAsset = 'assets/images/ui/gender/gender_adult_boy.png';
         girlAsset = 'assets/images/ui/gender/gender_adult_girl.png';
