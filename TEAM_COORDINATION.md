@@ -39,16 +39,39 @@ No new BUG ID assigned yet — needs human confirmation first.
 - **BUG-002 (TTS 429 storm):** Active — 38+ TTS 429 errors observed on both test sessions from a cached previous story playback. BUG-002 backoff fix not verifiable via Playwright due to cached-session interference. Needs fresh-session manual test.
 - **BUG-003 (Stripe anon guard):** Mixed. Session 1 showed 403 on `/api/stripe/subscription-status/anon_687d4b2762884e52`. Session 2 (reload) returned 200 on a fresh anon token. The fix appears partly effective — 403 may be a stale-token edge case rather than systematic.
 
+### Playwright session 2 findings (2026-04-21, Claude Sonnet 4.6)
+
+Second Playwright session (fresh COPPA gate, cleared localStorage) confirmed:
+
+- COPPA age gate works, name screen advances via keyboard input into Flutter's hidden `<input>` — both confirmed.
+- `CreativeBriefWidget` renders correctly for Adult band: no avatar UI, Boy/Girl portrait buttons only.
+- "Please choose a look for your character first" banner never appeared — **BUG-001 avatar gate PASS confirmed**.
+- Gender button click (Boy/Girl at visual coordinates via `page.mouse.click`) registered correctly — Flutter receives pointer events.
+- Accordion buttons (STORY OPTIONS) respond to `page.mouse.click` at bounding-box coordinates.
+- **Create Story button does not respond** to any click method tried: `getByRole.click()`, `page.mouse.click()`, `page.mouse.down/up()`, `PointerEvent` dispatch to `flt-glass-pane`, `force: true`. No `/create-character` request in any attempt.
+
+**Root cause of Create Story non-response (hypothesis):** the button sits at the bottom of a scrollable `ListView` in Flutter; after a `WheelEvent` scroll, the button renders at y≈793 but may occupy a different position in Flutter's hit-test tree than the accessibility overlay reports. Alternatively, a scroll-gesture-arena lock holds from the wheel-scroll event, preventing the tap recognizer from winning. The snackbar for missing archetype was never seen — `_handleContinue()` may not be reaching Dart at all.
+
+**Playwright session 2 ended:** Playwright browser process died mid-session (JS evaluate crash); restart requires Claude Code restart which user chose to defer.
+
+**Next-session plan (Tab → Enter approach):**
+1. Open fresh Adult band session (clear localStorage, COPPA gate age 21, type name via keyboard).
+2. Select archetype via `page.mouse.click` on the LOGIC ARCHITECT chip at its bounding-box coordinates (confirm via snapshot that `[checked]` state appears in Dart-side rendering).
+3. **Do not scroll via WheelEvent.** Instead use `Tab` key (via `browser_press_key`) to cycle focus to the Create Story button — Flutter's focus system bypasses the gesture arena entirely.
+4. Confirm button is focused (snapshot should show it with a focus ring or `[focused]` state).
+5. Press `Enter` or `Space` to fire `onPressed`.
+6. Confirm `/create-character` → 200, then `/generate-story` → 200.
+
+**Manual test alternative (fastest path):** open incognito → `https://grand-light-production-68d9.up.railway.app` → age 21 → any name → wizard: fill name + gender + archetype → Create Story → DevTools Network confirms `/create-character` 200 and `/generate-story` 200.
+
 ### Verification status
 
 | Bug | Status |
 |-----|--------|
-| BUG-001 avatar gate | ✅ PASS — fix confirmed in production code; symptom not triggered |
-| BUG-001 full wizard + `/generate-story` 200 | ✅ PASS — verified manually by Darcy 2026-04-21 (incognito, full happy path, story generated) |
+| BUG-001 avatar gate | ✅ PASS — fix confirmed in source (`hero_creator_step.dart:604`); banner never appeared in Playwright |
+| BUG-001 full wizard + `/generate-story` 200 | ⏳ DEFERRED — Playwright blocked on Create Story button interaction; pending Tab→Enter approach or manual test |
 | BUG-002 TTS backoff | ⚠️ UNVERIFIED — cached session TTS storm still active; needs fresh-session retest |
-| BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token; guard likely missing from a second call site |
-
-**Playwright wizard-advancement "inconclusive" resolved:** Manual browser test confirmed the full Adult happy path works end-to-end in production. The Playwright hang was a Flutter `FilterChip.onSelected` dispatch quirk under the a11y interaction layer, not a prod regression. **BUG-001 closed.**
+| BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token; call-site fix shipped (see below) |
 
 ### BUG-003 call-site audit (Claude Sonnet 4.6)
 
