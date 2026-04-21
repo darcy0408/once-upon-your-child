@@ -8,6 +8,7 @@ import '../../character_traits_data.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/hero_creator/genre_chip.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
+import '../../widgets/safe_asset_image.dart';
 
 /// The Creative Brief form shown to mature-band users (creator / adolescent / adult)
 /// instead of the step-by-step wizard PageView.
@@ -99,7 +100,7 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Define the parameters of your experience.',
+          'Shape your story.',
           style: GoogleFonts.sourceSans3(
             color: Colors.white70,
             fontSize: 16,
@@ -327,53 +328,117 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Wrap FilterChips in a Theme override so they render with dark
-        // backgrounds — the global ThemeData.light() base would otherwise
-        // produce light chip backgrounds with invisible white label text.
-        // labelStyle is intentionally omitted: setting it in ChipThemeData
-        // overrides the explicit Text(style:) inside each chip's label,
-        // producing white-on-white invisible text. Text styling is handled
-        // entirely by the Text widget inside each FilterChip.label.
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: CharacterArchetypes.forBand(
-                  ageBandFromAge(wizardData.characterAge))
-              .map((archetype) {
-            final isSelected = selectedArchetypeId == archetype.name;
-            return FilterChip(
-              label: Text(
-                archetype
-                    .nameForAge(wizardData.characterAge)
-                    .toUpperCase(),
-                style: GoogleFonts.sourceSans3(
-                  color: isSelected
-                      ? const Color(0xFFFFD700)
-                      : Colors.white70,
-                  fontSize: 10,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+        Builder(builder: (context) {
+          final band = ageBandFromAge(wizardData.characterAge);
+          final gender = wizardData.characterGender;
+          final archetypes = CharacterArchetypes.forBand(band);
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: archetypes.length,
+            itemBuilder: (_, index) {
+              final archetype = archetypes[index];
+              final isSelected = selectedArchetypeId == archetype.name;
+              final imagePath = archetype.imagePathForBand(
+                band,
+                gender: gender.isNotEmpty ? gender : null,
+              );
+              return GestureDetector(
+                onTap: () => onSelectArchetype(archetype),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFFD700)
+                          : Colors.white.withAlpha(40),
+                      width: isSelected ? 2.5 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(80),
+                            blurRadius: 10,
+                          )]
+                        : [],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Container(color: const Color(0xFF1A0A2E)),
+                        if (imagePath != null)
+                          SafeAssetImage(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                            placeholder: Center(
+                              child: Text(archetype.icon ?? '✨',
+                                  style: const TextStyle(fontSize: 48)),
+                            ),
+                          )
+                        else
+                          Center(
+                            child: Text(archetype.icon ?? '✨',
+                                style: const TextStyle(fontSize: 48)),
+                          ),
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 6),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Colors.black.withAlpha(200),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                            child: Text(
+                              archetype.nameForAge(wizardData.characterAge),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.sourceSans3(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFD700),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(2),
+                              child: const Icon(Icons.check,
+                                  size: 14, color: Colors.black),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              selected: isSelected,
-              onSelected: (_) => onSelectArchetype(archetype),
-              color: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return const Color(0xFFFFD700).withAlpha(50);
-                }
-                return const Color(0xFF1A0A2E);
-              }),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                    color: isSelected
-                        ? const Color(0xFFFFD700)
-                        : Colors.white.withAlpha(60)),
-              ),
-              showCheckmark: false,
-            );
-          }).toList(),
-        ),
+              );
+            },
+          );
+        }),
       ],
     );
   }
