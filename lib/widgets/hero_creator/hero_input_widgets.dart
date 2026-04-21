@@ -41,7 +41,7 @@ class _GenderImageButtonState extends State<GenderImageButton> {
       widget.assetPath,
       width: widget.width,
       height: widget.height,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
     );
 
     return Semantics(
@@ -69,6 +69,7 @@ class _GenderImageButtonState extends State<GenderImageButton> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
+                  color: const Color(0xFF1E1828),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: widget.isSelected
                       ? [
