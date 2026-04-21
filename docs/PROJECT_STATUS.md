@@ -90,10 +90,11 @@ ADULT-3 Reflect screen, Life Quests rebrand, security audit + remediation, Creat
 
 ## Known Issues
 
-1. **Content moderator failing open** — `gemini-2.0-flash-lite` is deprecated (404 NOT_FOUND). `content_moderator` fails open, meaning stories are not safety-classified pre-delivery. **P0 — silent safety regression.** Fix pending (see `docs/briefings/TASK2_MODERATOR_MODEL_BUMP.md`).
-2. **BUG-001 re-verification pending** — Adult-band Create Story avatar-gate fix (commit `73ee489`) landed on `main` but has not been Playwright-verified against the live Railway build. See `docs/briefings/TASK1_PLAYWRIGHT_BAND6_REVERIFY.md`.
-3. **BUG-002 / BUG-003 regression re-run pending** — TTS 429 backoff + Stripe anon guard fixed analytically on 2026-04-20b; full Playwright regression re-run deferred.
-4. **CORS blocking production web** — Backend CORS config prevents frontend from reaching API in production web deployment. Mobile/desktop unaffected.
+1. **Content moderator model bumped** — `gemini-2.0-flash-lite` deprecated; bumped to `gemini-2.5-flash-lite` in commit `4f077ba`. ✅ Fixed 2026-04-21.
+2. **BUG-001 re-verification** — Avatar gate confirmed PASS; wizard advancement inconclusive via Playwright (archetype `FilterChip` semantics unreliable). Needs manual browser test.
+3. **BUG-002 TTS backoff** — Fix landed 2026-04-20b; fresh-session verification still pending (cached-session TTS storm interferes with Playwright test). See `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`.
+4. **BUG-003 Stripe anon guard** ✅ Fixed + deployed 2026-04-21 — `StripeService.getSubscriptionStatus()` now early-returns free/inactive for `anon_` users, covering all 3 unguarded call sites. Deployment `b33e04b9` live on Railway.
+4. ~~**CORS blocking production web**~~ — Resolved 2026-03-18 via `RAILWAY_FRONTEND_URL` env var on Railway. Production confirmed working.
 
 ## Planned (v1.1+)
 

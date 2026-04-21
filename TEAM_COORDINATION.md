@@ -466,7 +466,7 @@ Playwright browser locked ("Browser is already in use") due to multiple running 
 **Manual alternative (fastest if Playwright is still awkward):**
 Open Chrome DevTools → Network tab → filter `tts` → navigate to app → age 8 → land on welcome screen → watch for 60 s → report total request count, 429 count, and timing gaps between retries on any single phrase.
 
-### BUG-003 call-site audit (Claude Sonnet 4.6)
+### BUG-003 call-site audit + deploy (Claude Sonnet 4.6)
 
 **Call sites found hitting `/api/stripe/subscription-status/`:**
 
@@ -491,6 +491,8 @@ if (userId.startsWith('anon_')) {
 This is the single HTTP boundary all callers use, so one change covers all three unguarded paths. Backend 403 policy unchanged.
 
 **Verification:** Added unit test `getSubscriptionStatus returns free/inactive for anon_ user without network call` in `test/unit/services/stripe_service_test.dart` — verifies no HTTP call is made and the returned payload is `{status: inactive, tier: free}`. Test passes. Pre-existing auth-header test failures (2) are unrelated.
+
+**Deployed:** Pushed to `main` → GitHub → Railway auto-deploy. Deployment `b33e04b9` status `SUCCESS`. Backend 403 policy unchanged. `RAILWAY_TOKEN` in `~/.claude/settings.json` updated to remove stale token — future sessions use OAuth config automatically.
 
 ---
 
