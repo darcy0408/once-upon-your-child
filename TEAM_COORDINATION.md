@@ -23,8 +23,185 @@
 | 17 | Title splash has no back affordance to change age | Add small "← Change age" link; wrong age = wrong entire experience | `welcome_screen.dart:443` — `_buildTitleStep` |
 | 18 | Adult Reflect prompts have no skip/safety valve | Add quiet "Not tonight →" to cycle prompt without journaling | `adult_meditation_screen.dart:23` — `_kReflectivePrompts` |
 | 19 | 5-second title splash timer may cut TTS mid-sentence | Gate timer start until TTS completes, or extend to 7s | `welcome_screen.dart:246` — `_titleTimer` |
+| 20 | **BUG-009** Avatar generation routes have no timeout (HIGH) | Add 30s timeout + 504 fallback-preset response | `backend/routes/avatar_routes.py` — no timeout on Gemini/Replicate calls |
+| 21 | **BUG-010** `SimpleNamespace` crash in auth middleware (HIGH) | Add `hasattr` guard before `current_user.is_under_13` access; returns 500 to all under-13 users hitting this path | `backend/middleware/auth.py:88` — seen in `backend_errors.log` 2026-04-19 |
+| 22 | **BUG-011** No story generation progress indicator (MEDIUM) | Show "Weaving your story… (~60s)" with elapsed time; 120s timeout is silent | `wizard_story_screen.dart` — no progress feedback during generation |
+| 23 | **BUG-012** Technical error messages exposed to users (MEDIUM) | Replace "Timed out after 120s in synchronous mode" / ElevenLabs error details with friendly copy | `backend/routes/story_routes.py`, `tts_routes.py` |
+| 24 | **BUG-013** Continue button silent fail with empty name on profile screen (CRITICAL) | Show inline validation "Enter a name to continue" — screenshots confirm 4x identical state after click | `welcome_screen.dart` — `_buildNameStep` / `_handleContinue` |
+| 25 | **BUG-014** No back button from profile setup screen (HIGH) | Add `←` AppBar back to age picker; no escape path currently | `welcome_screen.dart` — `_buildNameStep` |
+| 26 | Stripe webhook no timestamp validation | Reject events older than 5 minutes to prevent replay attacks | `backend/routes/webhook_handler.py` |
+| 27 | AdultMeditationScreen no explicit close button | Add "← Stories" back button in AppBar; tab-only exit not discoverable for emotionally loaded screen | `adult_meditation_screen.dart` |
+| 28 | Wizard X button has no exit confirmation | Add "Leave story setup? Progress will be lost." dialog | `wizard_story_screen.dart` |
+| 29 | Archetype chips have no tooltips | On tap, show one-sentence explanation (required field is currently opaque) | `hero_creator_step.dart` |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
+
+---
+
+## 2026-04-21 — Six Hats Adult UX Audit — Frontend + Backend + Screenshots (Claude Sonnet 4.6)
+
+**Method:** Flutter code review (62 screens), backend API audit, 20 screenshots analysed.  
+**Band:** Adult (18+). Traced every screen, every nav path, every API failure mode.
+
+---
+
+### 🤍 WHITE HAT — What Was Observed
+
+**Onboarding flow (screenshots: `fresh-landing`, `coppa-gate`, `after-18plus`, `after-continue` x3, `after-profile`):**
+- Landing: dark purple gradient, gold "STORY WEAVER" logo, "Your hero. Your story.", yellow "Let's start!" CTA, "Parent" link top-right. Clean.
+- Age picker: 3–11 as large circles in 3×3 grid with emoji icons; 12–14 / 15–17 / 18+ as pill buttons below. Subtitle: "Parents: please select your child's age."
+- After 18+ → "Set up your profile" screen: microphone button ("Tap to say your name") + text field ("What should we call you?") + Continue.
+- **Screenshots `after-18plus`, `after-continue`, `after-continue2`, `after-profile` all show identical "Set up your profile" screen with empty name field.** The Continue button did not advance — 4 sequential captures show the same state. Either a silent validation failure or a loop bug.
+- No back button anywhere on the profile screen.
+
+**Wizard (screenshots: `create-story-clicked`, `after-create-story2`, `bug001-*`, `scrolled-down`, `prefs-preloaded`):**
+- 4-step header breadcrumb: Character → Companions → Setting → Begin. Visual only — steps 2/3/4 are not tappable.
+- Step 1 shows: PROTAGONIST NAME (pre-filled "Alex"), optional character motivation field, CHARACTER GENDER (Boy / Girl portraits), CORE ARCHETYPE (4 chips, required). Below fold: PERSONALITY, CAST & COMPANIONS, WORLD & SETTING, STORY OPTIONS (all collapsed). Pinned "Create Story" CTA at bottom.
+- Bug screenshots: wizard stuck at step 1, "Create Story" button entered `[active]` state but did not advance. No snackbar visible.
+- `prefs-preloaded`: same wizard state with Boy selected (yellow border). Confirms BUG-001 avatar-gate fix holds; "Please choose a look" snackbar absent.
+- X button top-left exits wizard; destination unclear.
+
+**Backend facts (from code audit):**
+- `POST /generate-story`: 120s sync timeout, 5 Gemini retries with backoff, 10 stories/day free tier, Redis quota.
+- Content moderation: keyword layer (all ages) + Gemini-2.5-flash-lite classifier (fails open on error).
+- TTS: ElevenLabs primary, 20 syntheses/day free, 500/hr rate limit, no word-level timestamps on chunked stories.
+- Avatar generation: no timeout specified on routes — can hang indefinitely.
+- Stripe webhooks: no timestamp validation. Silent failure on processing error (tier doesn't update).
+
+---
+
+### ❤️ RED HAT — Emotional Reactions
+
+**Delightful:**
+- The landing page is genuinely beautiful. Purple gradient + gold sparks + clean single CTA = excellent first impression.
+- Age picker emoji icons (🌱 for young, 🧭 for mid, ⚔️ for older) are charming and communicate without words.
+- The adult wizard copy ("Define the parameters of your experience", "What does your character want more than anything?") respects adult intelligence. Feels considered.
+- Gold-bordered portrait selection is tactile and satisfying.
+
+**Frustrating:**
+- **The "Set up your profile" Continue button appears to do nothing with an empty field — silently.** No error, no shake, no toast. You just sit there tapping a button that doesn't work. First impression = broken app. This is catastrophic for new user retention.
+- The profile screen has no back button. If you're an adult who selected 18+ by mistake and want to go back, you're stuck. There is no escape except a browser refresh — losing everything.
+- The wizard breadcrumb steps (2, 3, 4) look interactive — numbered circles with labels — but tapping them does nothing. Every new user will try this and feel confused.
+- Story generation has a 120-second timeout with zero progress feedback. No spinner text, no "almost there", nothing. 2 minutes of silence then either a story or a cryptic timeout error. Extremely stressful.
+- Archetype names (Logic Architect, Vision Architect, Kinetic Specialist, Ecological Whisperer) feel like a job description form, not a fantasy character creator. An adult trying to write an adventure story has no intuitive mapping here.
+- The REFLECT tab in AdultMeditationScreen surfaces prompts like "What are you still carrying that was never yours to carry?" — genuinely powerful, but there's no safe exit. You can only leave by tapping a different tab. For emotionally heavy content, a clear "I'm done" or close affordance is table stakes.
+
+---
+
+### 🖤 BLACK HAT — Problems and Risks
+
+**CRITICAL:**
+
+1. **Continue button silent fail on empty name — `welcome_screen.dart`.**  
+   Screenshots confirm 4 identical states after clicking Continue with empty field. No error message. Blocks all new first-time users cold.
+
+2. **No back navigation from profile setup — `welcome_screen.dart`.**  
+   Zero affordance to return to landing or age picker. Wrong-age adults, curious children trying a parent's account, anyone who mis-tapped is completely stuck.
+
+3. **`SimpleNamespace` crash in auth middleware — `backend/middleware/auth.py` line 88.**  
+   ```python
+   AttributeError: 'types.SimpleNamespace' object has no attribute 'is_under_13'
+   ```
+   Returns 500 to all users hitting this code path (seen in `backend_errors.log` 2026-04-19). Under-13 users get a 500 instead of a consent gate. Needs fixing before any production load.
+
+4. **Avatar generation routes have no timeout — `backend/routes/avatar_routes.py`.**  
+   If Gemini or Replicate is slow, the request hangs indefinitely. Users see a loading spinner with no resolution. No timeout = no fallback = silent hang.
+
+5. **Wizard step breadcrumb is a false affordance.**  
+   Steps 2/3/4 are rendered as interactive-looking numbered buttons but do nothing. `wizard_story_screen.dart` PageController is one-directional. Every user will tap these, feel confused, and distrust the UI.
+
+6. **AdultMeditationScreen has no close button — `adult_meditation_screen.dart`.**  
+   Tab-only exit. After reading "What are you trying not to feel right now?", an adult wanting to leave has no visible affordance except guessing the bottom tab bar exists.
+
+7. **Wizard "Create Story" button doesn't advance — BUG-001 secondary finding.**  
+   Confirmed across 4+ screenshots (bug001-*). Archetype chip appears `[checked]` but `_selectedArchetypeId` may be null due to Flutter FilterChip semantics not firing `onSelected` reliably via accessibility layer. Or a separate regression. Needs human device test.
+
+8. **Stripe webhook has no timestamp validation — `backend/routes/webhook_handler.py`.**  
+   Replay attacks possible — same subscription event could be re-submitted to manually set tier.
+
+9. **Content moderation and Redis quota checks both fail open.**  
+   When classifier is unavailable, all stories pass moderation. When Redis is unavailable, quota checks pass. This is a deliberate availability-over-safety tradeoff, but should be a known, documented decision — not a silent surprise.
+
+10. **Gender picker is binary — `hero_creator_step.dart`.**  
+    Only Boy/Girl for adults. Non-binary adults have no representative character option. This is exclusionary and inconsistent with 2026 norms.
+
+**Age-appropriateness:**
+- All adult content observed (wizard, meditation, grounding, reflective prompts) is appropriate for 18+.
+- The REFLECT prompts are emotionally sophisticated but not harmful.
+- Age gating is properly server-side enforced (`@require_parental_consent` in `backend/middleware/auth.py`). Cannot be bypassed by manipulating request body for under-13 users once authenticated.
+- The `isAdult` boolean flag in Flutter should be backed by an explicit `age >= 18` check rather than a stored boolean — boolean can drift on age re-entry.
+
+---
+
+### 💛 YELLOW HAT — What Works Well
+
+1. **Landing page visual design is excellent.** Professional, atmospheric, appropriate for adults.
+2. **Age-band content separation is strong.** Adults get fundamentally different content from children — different wizard copy, different feelings tab, different theme depth.
+3. **Server-side age enforcement is robust.** COPPA gate, declared-age cap, consent record requirement — all enforced server-side, not just on client.
+4. **Two-layer content moderation** (keyword + LLM classifier) is a thoughtful approach. Keyword filter catches obvious violations instantly; LLM handles context-sensitive issues.
+5. **Quota system degrades gracefully.** Redis unavailable → quotas fail open (availability wins). For a kids' storytelling app, this is the right tradeoff.
+6. **Story generation has 5 retries with backoff.** Users rarely experience a single Gemini hiccup as a failure.
+7. **COPPA compliance is complete** — consent record, right-to-erasure (`DELETE /api/user/<id>/data`), right-to-access export all implemented.
+8. **"Parent" link always top-right** — accessible from any screen without navigation.
+9. **Collapsible wizard sections** prevent overwhelm. Advanced users can expand; casual users go straight to Create Story.
+10. **The "What does your character want more than anything?" prompt** is an outstanding story-writing input that meaningfully improves generation quality.
+
+---
+
+### 💚 GREEN HAT — Improvements
+
+**P0 — Fix before any user testing:**
+
+1. **Show inline validation on Continue with empty name** — a red outline + "Enter a name to continue" message. One line of code, prevents the #1 first-impression failure. (`welcome_screen.dart`)
+2. **Add back button to profile setup screen** — `←` AppBar button returning to age picker. (`welcome_screen.dart`)
+3. **Add timeout to avatar generation routes** — 30s should be sufficient; return 504 + fallback preset if exceeded. (`backend/routes/avatar_routes.py`)
+4. **Fix `SimpleNamespace` crash in auth middleware** — add `hasattr` guard or type check before accessing `is_under_13`. (`backend/middleware/auth.py:88`)
+
+**P1 — High friction fixes:**
+
+5. **Make wizard breadcrumb steps either tappable or visually non-interactive** — if non-interactive, style as progress pipe (filled/unfilled segments), not numbered buttons. (`wizard_story_screen.dart`)
+6. **Add story generation progress indicator** — even a "Weaving your story… (this takes about 60 seconds)" message with elapsed time. Backend already knows the 120s timeout; surface it. (`wizard_story_screen.dart`)
+7. **Add close/back button to AdultMeditationScreen** — "← Stories" in AppBar. Tab navigation is not discoverable enough as an exit path for emotionally loaded content. (`adult_meditation_screen.dart`)
+8. **Add non-binary / prefer-not-to-say gender option** for adult and 15-17 bands. (`hero_creator_step.dart`)
+9. **Archetype tooltips** — on tap/hover, one sentence explaining each. Required field should not be opaque. (`hero_creator_step.dart`)
+
+**P2 — Quality of life:**
+
+10. **Differentiate pre-filled cached values** — "Alex" in the name field looks identical to a placeholder. Show a small "From last story" chip or use different background tint.
+11. **Add exit confirmation on wizard X button** — "Leave story setup? Your progress will be lost." with Cancel/Leave. (`wizard_story_screen.dart`)
+12. **Replace technical error messages with user-friendly copy** — "Timed out after 120s in synchronous mode" → "Story generation is taking longer than usual. Please try again." (`backend/routes/story_routes.py`)
+13. **Add Stripe webhook timestamp validation** — reject events older than 5 minutes. (`backend/routes/webhook_handler.py`)
+14. **Email user when subscription webhook fails** — silent tier drift is worse than a "your subscription may not have updated" email.
+15. **Add prompt + response on same view in Reflect tab** — currently the prompt is on one view and journaling is a separate tab. Put them together. (`adult_meditation_screen.dart`)
+
+**P3 — Longer term:**
+
+16. **Rename archetypes to story-evocative labels** — "The Detective", "The Visionary", "The Warrior", "The Healer" are instantly understood vs. "Logic Architect" etc.
+17. **Adult home screen distinct from child wizard** — returning adults don't need "Build Your Story / Define the parameters." Consider a dashboard with recent stories, quick-create, and Feelings as a peer feature.
+18. **"Who is this for?" disambiguation on first load** — before name entry, ask "Creating for yourself or setting up for a child?" and route accordingly. Adult self-use and parent-for-child are different enough to warrant separate flows.
+
+---
+
+### 🔵 BLUE HAT — Priority Table
+
+| Priority | Issue | File | Effort |
+|----------|-------|------|--------|
+| P0 | Continue button silent fail | `welcome_screen.dart` | Low |
+| P0 | No back button from profile screen | `welcome_screen.dart` | Low |
+| P0 | `SimpleNamespace` crash in auth | `middleware/auth.py:88` | Low |
+| P0 | Avatar generation no timeout | `avatar_routes.py` | Low |
+| P1 | Wizard breadcrumb false affordance | `wizard_story_screen.dart` | Low |
+| P1 | No story generation progress feedback | `wizard_story_screen.dart` | Low |
+| P1 | AdultMeditationScreen no close button | `adult_meditation_screen.dart` | Low |
+| P1 | Gender binary for adult band | `hero_creator_step.dart` | Medium |
+| P1 | Archetype chips no tooltips | `hero_creator_step.dart` | Low |
+| P2 | Technical error messages exposed to users | `story_routes.py`, `tts_routes.py` | Low |
+| P2 | Stripe webhook no timestamp validation | `webhook_handler.py` | Low |
+| P2 | Wizard X button no exit confirmation | `wizard_story_screen.dart` | Low |
+| P3 | Archetype naming (corporate, not evocative) | `hero_creator_step.dart` | Medium |
+| P3 | Adult home screen redesign | `main_story.dart` | High |
+
+**New tasks to add to Pending Tasks:** BUG-009 (avatar no timeout), BUG-010 (SimpleNamespace crash), BUG-011 (story generation no progress indicator), BUG-012 (technical error copy).
 
 ---
 
