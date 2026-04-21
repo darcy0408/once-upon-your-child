@@ -70,8 +70,25 @@ Second Playwright session (fresh COPPA gate, cleared localStorage) confirmed:
 |-----|--------|
 | BUG-001 avatar gate | ✅ PASS — fix confirmed in source (`hero_creator_step.dart:604`); banner never appeared in Playwright |
 | BUG-001 full wizard + `/generate-story` 200 | ⏳ DEFERRED — Playwright blocked on Create Story button interaction; pending Tab→Enter approach or manual test |
-| BUG-002 TTS backoff | ⚠️ UNVERIFIED — cached session TTS storm still active; needs fresh-session retest |
+| BUG-002 TTS backoff | ⏳ DEFERRED — fresh-session Playwright test blocked (browser lockfile + multiple running instances); see plan below |
 | BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token; call-site fix shipped (see below) |
+
+### BUG-002 fresh-session retest — DEFERRED (2026-04-21)
+
+Playwright browser locked ("Browser is already in use") due to multiple running Claude Code instances sharing the same Chrome profile. No automated non-browser alternative exists — the backoff logic is client-side Flutter/Dart compiled to JS and only executes in a real browser.
+
+**`.mcp.json` updated** — added `--isolated` flag to Playwright MCP args so future sessions each get their own Chrome profile and won't clash. Takes effect after next Claude Code restart.
+
+**Resume plan (next session):**
+1. Start a fresh Claude Code instance (or restart after clearing other sessions).
+2. The `--isolated` flag in `.mcp.json` is already in place — Playwright should launch cleanly.
+3. Follow briefing `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md` verbatim.
+4. Target: `https://grand-light-production-68d9.up.railway.app`, viewport 1400×900, age 8 (Explorer band).
+5. Attach network listener before navigation; wait ~60 s after landing; dump `/tts/*` request log.
+6. Pass/fail criteria and deliverable format are in the briefing.
+
+**Manual alternative (fastest if Playwright is still awkward):**
+Open Chrome DevTools → Network tab → filter `tts` → navigate to app → age 8 → land on welcome screen → watch for 60 s → report total request count, 429 count, and timing gaps between retries on any single phrase.
 
 ### BUG-003 call-site audit (Claude Sonnet 4.6)
 
