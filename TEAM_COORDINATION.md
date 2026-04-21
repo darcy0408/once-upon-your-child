@@ -17,6 +17,20 @@
 
 ---
 
+## 2026-04-21 — Archetype image wiring for mature bands (Claude Sonnet 4.6)
+
+**Scope:** Wire archetype images into `CreativeBriefWidget` (creator / adolescent / adult).
+
+**Root cause:** `CreativeBriefWidget` rendered archetypes as text-only `FilterChip`s. The child-wizard `_buildArchetypeCards()` used image grids, but mature bands skip the child PageView entirely and render `CreativeBriefWidget` instead.
+
+**Fix:** Replaced the `FilterChip` `Wrap` with a 2×2 `GridView` that calls `archetype.imagePathForBand(band, gender)` — mirrors the child wizard layout. `SafeAssetImage` provides emoji fallback. All six band folders contain the expected `.png` files and are declared in `pubspec.yaml`. Child-wizard bands (sprout/explorer/adventurer) were already wired correctly.
+
+**Files changed:** `lib/screens/wizard_steps/hero_creator_creative_brief.dart` — commit `aac7a5d`
+
+**Verification needed:** Playwright locked (browser lockfile, needs Claude Code restart). Manual check: open adult/adolescent/creator band in incognito → confirm 2×2 image grid in CORE ARCHETYPE section, images update when gender changes.
+
+---
+
 ## 2026-04-21 — Six Hats Sprout UX Review (Claude Sonnet 4.6)
 
 Full wizard walk-through as Sprout age 4 ("Lily") against live Railway build.
