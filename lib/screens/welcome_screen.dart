@@ -244,7 +244,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     });
     // Auto-advance from splash to complete after 5 s (tap also advances).
     _titleTimer?.cancel();
-    _titleTimer = Timer(const Duration(milliseconds: 5000), () {
+    _titleTimer = Timer(const Duration(milliseconds: 7000), () {
       if (mounted && _step == 2) _handleContinue();
     });
     final band = ageBandFromAge(age);
@@ -270,9 +270,22 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
   }
 
+  void _goBack() {
+    _titleTimer?.cancel();
+    AppTtsService.instance.stop();
+    _speech.stop();
+    setState(() => _step = _step - 1);
+  }
+
   void _advanceFromName() {
     final name = _nameController.text.trim();
-    if (name.isNotEmpty && _step == 0 && !_celebratingName) {
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name first!')),
+      );
+      return;
+    }
+    if (_step == 0 && !_celebratingName) {
       AppTtsService.instance.stop();
       _speech.stop();
       setState(() => _celebratingName = true);
@@ -332,6 +345,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
       ),
+      if (_step > 0)
+        Positioned(
+          top: 8,
+          left: 8,
+          child: SafeArea(
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white54),
+              onPressed: _goBack,
+            ),
+          ),
+        ),
       // Labeled parent button — more visible than a bare gear icon
       Positioned(
         top: 8,

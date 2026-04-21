@@ -10,28 +10,28 @@
 | ~~4~~ | ~~Age 2 missing from age picker~~ | ✅ Fixed `115b37b` — added to `_youngAgeEntries` in both `welcome_screen.dart` and `age_gate_screen.dart` | ~~Sprout band is 2-5; picker starts at 3~~ |
 | ~~5~~ | ~~Archetype display names in Heroes/a11y labels~~ | ✅ Fixed `115b37b` — `character_library_screen` uses `nameForAge()`; a11y labels in both grid paths updated | ~~Semantic labels leak internal IDs~~ |
 | ~~6~~ | ~~"Story service is ready" banner visible in child view~~ | ✅ Fixed `115b37b` — banner hidden when `_backendOnline == true`; only shows when checking or offline | ~~Dev status exposed to users~~ |
-| 7 | Mochi black card background | Give Mochi a coloured background like other buddies | Visual inconsistency |
+| ~~7~~ | ~~Mochi black card background~~ | ✅ Fixed — wrapped in `Container(color: companion.color.withAlpha(40))`, `BoxFit.contain`. `companion_selector_step.dart:1150` | |
 | 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
 | ~~9~~ | ~~**BUG-005** Binary-only gender picker~~ | ✅ Fixed — "Other" / "Non-binary / Other" pill added below Boy/Girl row; non-binary falls through to genderless archetype image. `hero_creator_step.dart` | |
 | ~~10~~ | ~~**BUG-006** Gender tap auto-advances instantly~~ | ✅ Fixed — 400ms delay before `_heroNextPage()` in `_handleGenderSelection`. `hero_creator_step.dart` | |
-| 11 | **BUG-007** Two age-gate implementations diverge (MEDIUM) | `welcome_screen.dart` and `age_gate_screen.dart` have different consent flows for 13–17; need reconciliation | Parental knowledge dialog only in `age_gate_screen.dart` |
-| 12 | **BUG-008** Consent scroll progress bar not visible while scrolling (LOW) | Add sticky "↓ Scroll to continue" hint near bottom of consent form | `parental_consent_screen.dart:78` — progress bar in AppBar |
+| ~~11~~ | ~~**BUG-007** Two age-gate implementations diverge~~ | ✅ Fixed — `age_gate_screen.dart` was dead code (never instantiated); deleted file. Only `WelcomeScreen` is used. | |
+| ~~12~~ | ~~**BUG-008** Consent scroll progress bar not visible~~ | ✅ Already implemented — sticky "Please scroll through the notice above ↑" visible when `!readEnough`. `parental_consent_screen.dart:456` | |
 | ~~13~~ | ~~"Hearing no" ambiguous copy in Shape the stories dialog~~ | ✅ Fixed — changed to "Struggling with 'no'". `welcome_screen.dart` | |
-| 14 | Sprout companion limit (1) has no visual feedback | Disable/overlay remaining companion tiles once limit reached; show "Buddy chosen!" | `hero_creator_step.dart` — `_buildAdventureTeamPage`, maxSlots=1 |
-| 15 | Sprout pet reveal looks like static text, not interactive | Add chevron or "Tap here" label to `GestureDetector` container | `hero_creator_step.dart:1204` |
-| 16 | "Add a Friend" button name clashes with "Your Friends:" saved-character section | Rename button to "Add from Photo" or similar | `hero_creator_step.dart:1163` |
-| 17 | Title splash has no back affordance to change age | Add small "← Change age" link; wrong age = wrong entire experience | `welcome_screen.dart:443` — `_buildTitleStep` |
-| 18 | Adult Reflect prompts have no skip/safety valve | Add quiet "Not tonight →" to cycle prompt without journaling | `adult_meditation_screen.dart:23` — `_kReflectivePrompts` |
-| 19 | 5-second title splash timer may cut TTS mid-sentence | Gate timer start until TTS completes, or extend to 7s | `welcome_screen.dart:246` — `_titleTimer` |
+| ~~14~~ | ~~Sprout companion limit (1) has no visual feedback~~ | ✅ Already implemented — `dimmed: !isSelected && atLimit`, opacity 0.35. `companion_widgets.dart:424` | |
+| ~~15~~ | ~~Sprout pet reveal looks like static text, not interactive~~ | ✅ Already implemented — chevron icon present in Sprout pet reveal. `hero_creator_step.dart` | |
+| ~~16~~ | ~~"Add a Friend" button name clashes with "Your Friends:" section~~ | ✅ Already implemented — button already labelled "Add from Photo". `hero_creator_step.dart:1166` | |
+| ~~17~~ | ~~Title splash has no back affordance to change age~~ | ✅ Fixed — `_goBack()` + Positioned back arrow (`_step > 0`). `welcome_screen.dart` | |
+| ~~18~~ | ~~Adult Reflect prompts have no skip/safety valve~~ | ✅ Already implemented — "I'm okay tonight →" button sets `_promptDismissed`. `adult_meditation_screen.dart:589` | |
+| ~~19~~ | ~~5-second title splash timer may cut TTS mid-sentence~~ | ✅ Fixed — timer extended to 7000ms. `welcome_screen.dart:247` | |
 | 20 | **BUG-009** Avatar generation routes have no timeout (HIGH) | Add 30s timeout + 504 fallback-preset response | `backend/routes/avatar_routes.py` — no timeout on Gemini/Replicate calls |
-| 21 | **BUG-010** `SimpleNamespace` crash in auth middleware (HIGH) | Add `hasattr` guard before `current_user.is_under_13` access; returns 500 to all under-13 users hitting this path | `backend/middleware/auth.py:88` — seen in `backend_errors.log` 2026-04-19 |
+| ~~21~~ | ~~**BUG-010** `SimpleNamespace` crash in auth middleware (HIGH)~~ | ✅ Fixed — added `hasattr(current_user, 'is_under_13') and` guard. `backend/middleware/auth.py:88` | |
 | 22 | **BUG-011** No story generation progress indicator (MEDIUM) | Show "Weaving your story… (~60s)" with elapsed time; 120s timeout is silent | `wizard_story_screen.dart` — no progress feedback during generation |
 | 23 | **BUG-012** Technical error messages exposed to users (MEDIUM) | Replace "Timed out after 120s in synchronous mode" / ElevenLabs error details with friendly copy | `backend/routes/story_routes.py`, `tts_routes.py` |
-| 24 | **BUG-013** Continue button silent fail with empty name on profile screen (CRITICAL) | Show inline validation "Enter a name to continue" — screenshots confirm 4x identical state after click | `welcome_screen.dart` — `_buildNameStep` / `_handleContinue` |
-| 25 | **BUG-014** No back button from profile setup screen (HIGH) | Add `←` AppBar back to age picker; no escape path currently | `welcome_screen.dart` — `_buildNameStep` |
+| ~~24~~ | ~~**BUG-013** Continue button silent fail with empty name (CRITICAL)~~ | ✅ Fixed — SnackBar "Please enter your name first!" when name is empty. `welcome_screen.dart:_advanceFromName` | |
+| ~~25~~ | ~~**BUG-014** No back button from profile setup screen (HIGH)~~ | ✅ Fixed — `_goBack()` + Positioned back arrow covers name step + title splash + age picker. `welcome_screen.dart` | |
 | 26 | Stripe webhook no timestamp validation | Reject events older than 5 minutes to prevent replay attacks | `backend/routes/webhook_handler.py` |
-| 27 | AdultMeditationScreen no explicit close button | Add "← Stories" back button in AppBar; tab-only exit not discoverable for emotionally loaded screen | `adult_meditation_screen.dart` |
-| 28 | Wizard X button has no exit confirmation | Add "Leave story setup? Progress will be lost." dialog | `wizard_story_screen.dart` |
+| ~~27~~ | ~~AdultMeditationScreen no explicit close button~~ | ✅ Already implemented — pushed as `MaterialPageRoute`; Flutter provides back button automatically. `main_story.dart:245` | |
+| ~~28~~ | ~~Wizard X button has no exit confirmation~~ | ✅ Already implemented — "Leave story creation?" dialog with Keep/Leave actions. `wizard_story_screen.dart:406` | |
 | 29 | Archetype chips have no tooltips | On tap, show one-sentence explanation (required field is currently opaque) | `hero_creator_step.dart` |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.

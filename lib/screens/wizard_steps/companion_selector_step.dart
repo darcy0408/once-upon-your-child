@@ -1148,8 +1148,12 @@ class _CompanionCardState extends State<_CompanionCard> {
           height: 120, fit: BoxFit.cover);
     }
     if (widget.companion.imagePath != null) {
-      return SafeAssetImage(widget.companion.imagePath!,
-          height: 120, fit: BoxFit.cover);
+      return Container(
+        height: 120,
+        color: widget.companion.color.withAlpha(40),
+        child: SafeAssetImage(widget.companion.imagePath!,
+            height: 120, fit: BoxFit.contain),
+      );
     }
     return Container(
         height: 120,

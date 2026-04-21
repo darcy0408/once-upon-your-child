@@ -85,7 +85,7 @@ def require_auth(f):
             # declared age so story routes can cap content calibration accordingly.
             # An under-13 user cannot request adult-calibrated content by sending
             # a higher age value in the request body.
-            if current_user.is_under_13 and current_user.declared_age:
+            if hasattr(current_user, 'is_under_13') and current_user.is_under_13 and current_user.declared_age:
                 g.minor_age_cap = current_user.declared_age
             else:
                 g.minor_age_cap = None
