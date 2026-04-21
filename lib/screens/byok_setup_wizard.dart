@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/environment.dart';
 import '../services/illustration_preference_service.dart';
 import '../services/secure_storage_service.dart';
 import '../theme/app_theme.dart';
@@ -465,32 +466,38 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
 
     try {
       final uri = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models?key=$key');
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        setState(() {
-          _valid = true;
-          _status = 'Great! Your key looks good. Tap finish to save.';
-          _validating = false;
-        });
-      } else {
-        final Map<String, dynamic>? body =
-            response.body.isNotEmpty ? jsonDecode(response.body) : null;
-        setState(() {
-          _status =
-              'Validation failed: ${body?['error']?['message'] ?? 'Unknown error'}';
-          _valid = false;
-          _validating = false;
-        });
-      }
-    } catch (_) {
-      // Network/CORS errors (common on web deployments) — treat a well-formed
-      // AIza key as valid so the wizard isn't permanently blocked.
+          '${Environment.backendUrl}/api/user/settings/validate-api-key');
+      final response = await http
+          .post(
+            uri,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'api_key': key}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      final Map<String, dynamic>? body =
+          response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      final bool ok = body != null && body['valid'] == true;
+
+      setState(() {
+        _valid = ok;
+        _status = ok
+            ? 'Great! Your key looks good. Tap finish to save.'
+            : 'Validation failed: ${body?['message'] ?? body?['error'] ?? 'Unknown error'}';
+        _validating = false;
+      });
+    } on http.ClientException catch (e) {
       setState(() {
         _status =
-            'Could not reach Google to verify the key, but the format looks right. '
-            'Tap Finish to save and we\'ll confirm it on first use.';
-        _valid = true;
+            'Could not reach the validation service. Please check your connection and try again. (${e.message})';
+        _valid = false;
+        _validating = false;
+      });
+    } catch (_) {
+      setState(() {
+        _status =
+            'Could not reach the validation service right now. Please try again in a moment.';
+        _valid = false;
         _validating = false;
       });
     }

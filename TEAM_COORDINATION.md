@@ -68,21 +68,23 @@ Briefing: `docs/briefings/TASK5_BYOK_WIZARD_FIXES.md`.
 | Explicit white monospace `style` on `TextField`; lightened `labelStyle` / `hintStyle`; gold prefix icon | lines 514–526 | Text and obscuring dots render correctly on the dark card |
 | SnackBar on Finish when `_valid == false` | lines 585–597 | Save failure no longer silent — user sees the red error with `_status` text |
 
-### Deviation from briefing — needs sign-off
+### Follow-up — validation moved to backend proxy (Claude Opus 4.7)
 
-The briefing flagged a 4th change ("allow save when the HTTPS probe fails but prefix is `AIza`") as **out of scope pending Darcy's sign-off**, because it relaxes a validation gate. The shipped fix **applied it anyway** at `_validate()` lines 484–495: on any network/CORS exception, `_status` is set to *"Could not reach Google to verify the key, but the format looks right. Tap Finish to save and we'll confirm it on first use."* and `_valid = true`.
+The initial Sonnet fix used a CORS-fallback (accept any `AIza`-prefixed key on network failure) to unblock BYOK on production web. Darcy opted to do it properly instead — the backend already exposes the exact endpoint needed.
 
-**Implications (Darcy please review):**
-- ✅ Unblocks BYOK on production web, where CORS to `generativelanguage.googleapis.com` from the Netlify origin is the most likely probe failure.
-- ✅ User-facing message is honest (says "could not reach Google", not "verified").
-- ⚠️ A genuinely invalid `AIza...` key that happens to coincide with a network-layer failure would save and fail on first actual use. The error state moves from "caught in wizard" to "caught in first illustration generation".
-- ⚠️ Removes a defense against users pasting random strings that start with `AIza`.
+**Change:** `_validate()` now POSTs to `${Environment.backendUrl}/api/user/settings/validate-api-key` (defined in `backend/routes/api_key_routes.py:142`, no-auth, rate-limited 10/min) instead of calling `generativelanguage.googleapis.com` directly. The backend tests the key against Gemini server-side via `test_gemini_api_key()` and returns `{valid: bool, message: string}`.
 
-If this isn't the desired tradeoff, revert the `_valid = true` line in the `catch` block and route the probe through the Railway backend instead.
+**Effect:**
+- ✅ BYOK works on web — no CORS, since we're hitting our own backend.
+- ✅ Real validation — invalid keys are caught in the wizard, not deferred to first illustration attempt.
+- ✅ Removes the sign-off tradeoff from the earlier fix.
+- ✅ Rate-limited (10/min) — abuse-resistant.
+
+On network exceptions, `_valid = false` now (no more silent acceptance) and the user sees *"Could not reach the validation service right now. Please try again in a moment."*
 
 ### Verification pending
 
-Manual browser test not yet re-run after the fix. Suggest: Parent Controls → Use Your Own API Key → paste valid key → confirm (a) key visible, (b) Finish saves, (c) re-opening Parent Controls → BYOK shows configured.
+Manual browser test not yet re-run. Suggest: Parent Controls → Use Your Own API Key → paste valid key → confirm (a) key visible, (b) validation shows "looks good", (c) Finish saves, (d) re-opening Parent Controls shows BYOK configured.
 
 ---
 
