@@ -4077,3 +4077,45 @@ The **binary gender issue** (UX-01) is the only item that could cause real harm 
 3. [ ] UX-02 — Add wizard close confirmation + draft notice
 4. [ ] UX-05 — Add age 2 to COPPA picker
 5. [ ] UX-10 — Phased story generation progress labels
+
+---
+
+## 2026-04-21 — Six Hats Full Audit Fix Pass (Claude Sonnet 4.6)
+
+Session objective: work through the comprehensive Six Hats UX audit items from the user's full audit report, building on the earlier UX-01–UX-13 fixes.
+
+### Status check — what was already done
+
+Before making any changes, verified current state of all audit items:
+
+| Item | Status |
+|------|--------|
+| Gender diversity (non-binary option) | ✅ Already implemented — `_buildGenderPicker` in `hero_creator_step.dart` has "Non-binary / Other" pill button for all bands |
+| Gender auto-advance delay | ✅ Already implemented — 400ms `Future.delayed` before `_heroNextPage()` |
+| Age 2 in picker | ✅ Already in `welcome_screen.dart` (confirmed from earlier Sprout audit fix commit) |
+| "Hearing no" copy | ✅ Already fixed — reads "Struggling with 'no'" |
+| Wizard × close confirmation | ✅ Already implemented — "Leave story creation?" dialog with draft-saved message |
+| Consent scroll hint in footer | ✅ Already present — "Please scroll through the notice above" in `_buildStickyFooter` |
+
+### Changes made this session
+
+| File | Change |
+|------|--------|
+| `lib/screens/adult_meditation_screen.dart` | **Adult Reflect safety valve** — added `_promptDismissed` bool; "I'm okay tonight →" button advances prompt and collapses journal to a "You're all good tonight ✨" card with "Actually, show me the prompt" escape |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | **Sprout pet reveal affordance** — added `Icons.chevron_right` trailing icon and brightened text from white54 → white70 so it looks tappable |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | **Companion naming** — renamed "Add a Friend" button → "Add from Photo" to distinguish it from the "Your Friends:" saved-character section above |
+| `lib/widgets/hero_creator/companion_widgets.dart` | **Sprout companion limit feedback** — non-selected companion tiles animate to 35% opacity when the `maxCompanions` limit is reached; `_CompanionImageButton` gained `dimmed` parameter |
+
+### Remaining open items (from new audit)
+
+These were confirmed still open and should be addressed in future sessions:
+
+| Priority | Item | Recommended model |
+|----------|------|-------------------|
+| HIGH | Age-gate consolidation — `welcome_screen.dart` vs `age_gate_screen.dart` divergence; missing consent recording for 13–17 on welcome path | **Opus** — risky refactor touching COPPA flow |
+| HIGH | Adolescent `.jpg` → `.png` for `gender_adolescent_girl` | Sonnet — asset rename + reference update |
+| MEDIUM | Consent AppBar title contextual ("Just one sec!" while TTS plays, "Parental Consent" after) | Sonnet |
+| MEDIUM | Title splash "< Change age" link + TTS-finish guard before 5s auto-advance | Sonnet |
+| MEDIUM | Cancel on parental knowledge dialog for 13–17 should block entry (currently fires `onConsentCompleted` anyway) | Sonnet |
+| LOW | "Go Solo" TextButton restyled as more prominent option | Sonnet |
+| LOW | HeroCreatorStep page 0 missing back button | Sonnet |

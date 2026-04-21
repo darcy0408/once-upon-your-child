@@ -116,6 +116,7 @@ class _AdultMeditationScreenState extends State<AdultMeditationScreen>
 
   // Reflect state
   int _promptIndex = 0;
+  bool _promptDismissed = false;
   String _journalDraft = '';
   List<_ReflectEntry> _entries = [];
   final TextEditingController _journalCtrl = TextEditingController();
@@ -456,7 +457,46 @@ class _AdultMeditationScreenState extends State<AdultMeditationScreen>
         children: [
           _SectionLabel('Today\'s prompt'),
           const SizedBox(height: 16),
-          Container(
+          if (_promptDismissed)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border.all(color: _kGoldDim),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                children: [
+                  const Text('✨',
+                      style: TextStyle(fontSize: 28)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'You\'re all good tonight.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _kText,
+                      fontFamily: 'SourceSansPro',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => setState(() => _promptDismissed = false),
+                    child: const Text(
+                      'Actually, show me the prompt',
+                      style: TextStyle(
+                        color: _kSubtext,
+                        fontFamily: 'SourceSansPro',
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -475,6 +515,7 @@ class _AdultMeditationScreenState extends State<AdultMeditationScreen>
               ),
             ),
           ),
+          if (!_promptDismissed) ...[
           const SizedBox(height: 20),
           TextField(
             controller: _journalCtrl,
@@ -542,6 +583,24 @@ class _AdultMeditationScreenState extends State<AdultMeditationScreen>
               ),
             ],
           ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () {
+                _advancePrompt();
+                setState(() => _promptDismissed = true);
+              },
+              child: const Text(
+                'I\'m okay tonight →',
+                style: TextStyle(
+                  color: _kSubtext,
+                  fontFamily: 'SourceSansPro',
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+          ],
 
           if (_entries.isNotEmpty) ...[
             const SizedBox(height: 32),

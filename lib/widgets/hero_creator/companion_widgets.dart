@@ -421,6 +421,7 @@ class CompanionImageGrid extends StatelessWidget {
           break;
       }
 
+      final atLimit = wizardData.companionNames.length >= maxCompanions;
       List<Widget> buttons = companionList.map((c) {
         final isSelected = wizardData.companionNames.contains(c.name) ||
             wizardData.selectedCompanions.contains(c.id);
@@ -429,6 +430,7 @@ class CompanionImageGrid extends StatelessWidget {
           name: c.name,
           tagline: c.tagline,
           isSelected: isSelected,
+          dimmed: !isSelected && atLimit,
           size: itemSize,
           imagePath: c.imagePath,
           backgroundColor: c.backgroundColor,
@@ -511,6 +513,7 @@ class _CompanionImageButton extends StatefulWidget {
   final String name;
   final String tagline;
   final bool isSelected;
+  final bool dimmed;
   final VoidCallback onTap;
   final String? photoBase64;
   final double? size;
@@ -523,6 +526,7 @@ class _CompanionImageButton extends StatefulWidget {
     required this.tagline,
     required this.isSelected,
     required this.onTap,
+    this.dimmed = false,
     this.photoBase64,
     this.size,
     this.imagePath,
@@ -604,7 +608,10 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
       );
     }
 
-    return GestureDetector(
+    return AnimatedOpacity(
+      opacity: widget.dimmed ? 0.35 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      child: GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
         setState(() => _pressed = false);
@@ -701,6 +708,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
           ),
         ),
       ),
+    ),
     );
   }
 }

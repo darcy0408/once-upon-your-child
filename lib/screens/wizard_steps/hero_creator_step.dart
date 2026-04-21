@@ -1163,7 +1163,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     _pendingCompanionToken++;
                   }),
                   icon: const Icon(Icons.person_add_rounded, size: 18),
-                  label: const Text('Add a Friend'),
+                  label: const Text('Add from Photo'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Color(0xFF7C4DFF)),
@@ -1218,10 +1218,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     Flexible(
                       child: Text(
                         'Ask a grown-up to add your real pet!',
-                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
                         textAlign: TextAlign.center,
                       ),
                     ),
+                    SizedBox(width: 8),
+                    Icon(Icons.chevron_right, color: Colors.white38, size: 20),
                   ],
                 ),
               ),
