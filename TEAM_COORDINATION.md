@@ -1,5 +1,16 @@
 # Team Coordination
 
+## Pending Tasks
+
+| # | Task | Blocker | Briefing |
+|---|------|---------|----------|
+| 1 | BUG-001 full E2E — Band 6 `/generate-story` 200 | Needs Playwright restart or manual incognito test | `docs/briefings/TASK1_PLAYWRIGHT_BAND6_REVERIFY.md` |
+| 2 | BUG-002 TTS backoff — fresh-session verification | Needs Playwright restart or manual incognito test | `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md` |
+
+**Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
+
+---
+
 ## 2026-04-21 — Content moderator model bump (Claude Sonnet 4.6)
 
 Content moderator model bump — `gemini-2.0-flash-lite` → `gemini-2.5-flash-lite`. Was failing open (404). Verified locally: classifier runs.
