@@ -44,9 +44,11 @@ No new BUG ID assigned yet — needs human confirmation first.
 | Bug | Status |
 |-----|--------|
 | BUG-001 avatar gate | ✅ PASS — fix confirmed in production code; symptom not triggered |
-| BUG-001 full wizard + `/generate-story` 200 | ❌ INCONCLUSIVE — secondary blocker prevents reaching story generation |
-| BUG-002 TTS backoff | ⚠️ UNVERIFIED — cached session TTS storm still active |
-| BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token |
+| BUG-001 full wizard + `/generate-story` 200 | ✅ PASS — verified manually by Darcy 2026-04-21 (incognito, full happy path, story generated) |
+| BUG-002 TTS backoff | ⚠️ UNVERIFIED — cached session TTS storm still active; needs fresh-session retest |
+| BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token; guard likely missing from a second call site |
+
+**Playwright wizard-advancement "inconclusive" resolved:** Manual browser test confirmed the full Adult happy path works end-to-end in production. The Playwright hang was a Flutter `FilterChip.onSelected` dispatch quirk under the a11y interaction layer, not a prod regression. **BUG-001 closed.**
 
 ---
 
