@@ -3408,3 +3408,109 @@ Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*playwright
 Remove-Item "C:\Users\darcy\AppData\Local\ms-playwright\mcp-chrome-for-testing-<hash>\lockfile" -Force -ErrorAction SilentlyContinue
 ```
 After restarting Claude Code, use `/resume` to pick up where you left off.
+
+---
+
+## Six Hats UX Audit — 2026-04-21
+
+**Method:** Code read + 21 QA screenshots (adult/18+ band flow). Covers landing → onboarding → wizard → home shell. Blind spots: story reader, feelings wheel live interaction, TTS quality, younger-band wizard UI in motion.
+
+---
+
+### White Hat — Facts
+
+- 6 age bands: Sprout (2–5) → Explorer (6–8) → Adventurer (9–11) → Creator (12–14) → Adolescent (15–17) → Adult (18+)
+- 4-step wizard: Hero Creator → Feeling Selection → Companion Selector → Magic Review
+- Adult/mature band uses a single-scroll accordion wizard (one long page, collapsible sections), not the per-page flow used for younger bands
+- Bottom nav is age-differentiated: 3 tabs (under 12), 4 tabs (12+)
+- Wizard draft auto-saves to SharedPreferences — crash/session recovery exists but is silent
+- Story generation takes ~37 seconds (measured in QA log)
+- COPPA age gate present; parent math-gate on parent controls
+
+---
+
+### Red Hat — Gut Reactions
+
+**Good feels:**
+- Landing screen is stunning. Deep indigo, gold sparkles, "Your hero. Your story." — premium and evocative immediately.
+- The big-circle age picker is delightful. Felt exactly right for a mixed-age app.
+- Voice input throughout is a huge differentiator — "Tap to say your name" is lovely for young users.
+- Adult Reflect prompts are genuinely moving: *"What are you still carrying that was never yours to carry?"* — the app earns trust here.
+
+**Bad feels:**
+- Entering the adult wizard kills the magic. "Build Your Story / *Define the parameters of your experience*" reads like a government form.
+- The profile setup screen (microphone + one text field on a black void) feels lonely and uncertain — what is this for? Where am I?
+- The COPPA gate asks "How old are you?" to the child and "Parents: please select your child's age" in the subtitle — talking to two people at once feels confused.
+- 37 seconds staring at a loading spinner with no detail is genuinely anxiety-inducing the first time.
+
+---
+
+### Black Hat — Problems & Risks
+
+| # | Severity | Location | Issue |
+|---|----------|----------|-------|
+| UX-01 | HIGH | Adult wizard | Binary gender only (Boy / Girl). For an 18+ therapeutic app this is exclusionary and potentially harmful. No non-binary / custom option. |
+| UX-02 | HIGH | All wizard bands | The ✕ close button has no confirmation dialog. Tapping it accidentally destroys the wizard session. Draft recovery exists but users don't know it. |
+| UX-03 | MEDIUM | Adult wizard | "Define the parameters of your experience" — cold, clinical copy that immediately breaks immersion. |
+| UX-04 | MEDIUM | Adult wizard | All accordion sections default collapsed with no hint of which are required vs optional. Only CORE ARCHETYPE has an asterisk. Users don't know if they need to open PERSONALITY or WORLD & SETTING before submitting. |
+| UX-05 | MEDIUM | COPPA gate | Age picker starts at 3 — Sprout band officially covers ages 2–5, but age 2 is not selectable. Parents of 2-year-olds are turned away. |
+| UX-06 | MEDIUM | COPPA gate | Dual-audience copy ("How old are you?" + "Parents: please select") is confusing. Reads as if unsure who is holding the device. |
+| UX-07 | MEDIUM | Wizard step nav | Step indicator circles (1/2/3/4) at top of wizard look decorative. Not obviously tappable. No hover cursor or affordance — users likely won't know they can jump steps. |
+| UX-08 | MEDIUM | Character portraits | Boy/Girl portrait images have white/light square backgrounds that look jarring on the dark wizard UI. Appears unfinished. |
+| UX-09 | LOW | Profile setup | "Continue" button appears enabled even with empty name field — unclear if name is required or optional. |
+| UX-10 | LOW | Story generation | 37-second wait has no phased progress detail. A single generic spinner at this length causes users to wonder if it crashed. |
+| UX-11 | LOW | Companion selector | Age-group emoji logic uses `👦` for 13–18 which reads as male-coded for all teens regardless of gender. |
+| UX-12 | LOW | Voice input | "Tap to say your name" on web requires a browser microphone permission popup. First-time users (especially young children) may be confused or alarmed by the OS permission dialog. |
+| UX-13 | LOW | Adult wizard header | "Build Your Story" followed by "Character / Companions / Setting / Begin" step labels — "Begin" as step 4 is ambiguous. Is it a step or a button? |
+
+---
+
+### Yellow Hat — What's Working Well
+
+1. **Landing screen** — atmospheric, premium, correct emotional tone immediately.
+2. **Age picker design** — big circles for young, pill bands for older — genuinely clever and accessible.
+3. **Voice input throughout** — a clear differentiator for the app's target audience.
+4. **Draft recovery** — wizard state auto-saved means users don't lose work on crash or tab switch.
+5. **Adult Reflect content** — 4-7-8, Box Breath, grounding anchors, and the reflective prompts are genuinely high quality therapeutic content.
+6. **Parent math gate** — simple, effective child-proofing without requiring an account.
+7. **Band-differentiated bottom nav** — Sprout gets "My Books", Explorer gets "My Garden", etc. Thoughtful.
+8. **Life Quests CYOA** — therapeutic framing of emotional problem-solving in a narrative format is the core value prop done well.
+9. **Archetype system** — giving kids identity hooks (Logic Architect, Kinetic Specialist) instead of generic roles is meaningfully different.
+10. **"Tap to hear" in Sprout** — scenario preview via TTS before committing is perfect for pre-readers.
+
+---
+
+### Green Hat — Improvement Ideas
+
+| Priority | Idea |
+|----------|------|
+| HIGH | **Add non-binary / custom gender** to adult (18+) band. At minimum a third option: "Other / Prefer not to say". |
+| HIGH | **Add confirmation on wizard ✕ close** — "Leave story creation? Your progress is saved as a draft." — then actually tell them it's saved. |
+| HIGH | **Rewrite adult wizard header copy** — replace "Define the parameters of your experience" with something warmer, e.g. "Shape your story" or remove the subtitle entirely. |
+| HIGH | **Add age 2** to the COPPA picker (Sprout band starts at 2). |
+| MEDIUM | **Story generation progress phases** — show labeled stages: "Imagining your hero… Weaving the adventure… Adding magic…" at 37s this is non-negotiable for trust. |
+| MEDIUM | **Accordion required/optional labels** — add "(optional)" after collapsed section headers in adult wizard, or show a "fields remaining" count. |
+| MEDIUM | **Step indicator affordance** — add a cursor pointer + subtle hover state to the 1/2/3/4 step circles so users discover they're tappable. |
+| MEDIUM | **Character portrait backgrounds** — circular crop with transparent/dark bg or match card bg color. |
+| MEDIUM | **COPPA gate copy split** — child-facing line: "How old are you?" | parent-facing line: "Parents — tap your child's age" — different font weights to signal different audiences. |
+| LOW | **Profile setup context** — add a small line under "Set up your profile" explaining why: "So your story knows your name!" |
+| LOW | **Name field validation** — if name is required, disable Continue until non-empty. If optional, label the field explicitly "Optional". |
+| LOW | **Companion emoji** — use `🧑` (gender-neutral teen) instead of `👦` for 13–18 group. |
+| LOW | **Rename "Begin" step** — step 4 "Begin" reads like a button. "Review" or "Launch" or "Make Magic" would be less ambiguous. |
+
+---
+
+### Blue Hat — Overall Assessment
+
+The app's visual identity and core concept are strong. The landing screen, age picker, and voice input all punch well above indie-app level. The therapeutic content (Life Quests, Adult Reflect) is genuinely good.
+
+The main friction point is the **adult wizard**, which swings from magical onboarding straight into cold, form-like UX. This is the most used path for the largest-spending tier and deserves a targeted pass.
+
+The **binary gender issue** (UX-01) is the only item that could cause real harm to users and should be addressed before any marketing push to adult users.
+
+**Recommended next session priorities:**
+1. [ ] UX-01 — Add non-binary gender option (adult band)
+2. [ ] UX-03 — Rewrite adult wizard header copy
+3. [ ] UX-02 — Add wizard close confirmation + draft notice
+4. [ ] UX-05 — Add age 2 to COPPA picker
+5. [ ] UX-10 — Phased story generation progress labels
