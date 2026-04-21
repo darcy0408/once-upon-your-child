@@ -3493,19 +3493,19 @@ After restarting Claude Code, use `/resume` to pick up where you left off.
 
 | # | Severity | Location | Issue |
 |---|----------|----------|-------|
-| UX-01 | HIGH | Adult wizard | Binary gender only (Boy / Girl). For an 18+ therapeutic app this is exclusionary and potentially harmful. No non-binary / custom option. |
-| UX-02 | HIGH | All wizard bands | The ✕ close button has no confirmation dialog. Tapping it accidentally destroys the wizard session. Draft recovery exists but users don't know it. |
-| UX-03 | MEDIUM | Adult wizard | "Define the parameters of your experience" — cold, clinical copy that immediately breaks immersion. |
-| UX-04 | MEDIUM | Adult wizard | All accordion sections default collapsed with no hint of which are required vs optional. Only CORE ARCHETYPE has an asterisk. Users don't know if they need to open PERSONALITY or WORLD & SETTING before submitting. |
-| UX-05 | MEDIUM | COPPA gate | Age picker starts at 3 — Sprout band officially covers ages 2–5, but age 2 is not selectable. Parents of 2-year-olds are turned away. |
-| UX-06 | MEDIUM | COPPA gate | Dual-audience copy ("How old are you?" + "Parents: please select") is confusing. Reads as if unsure who is holding the device. |
-| UX-07 | MEDIUM | Wizard step nav | Step indicator circles (1/2/3/4) at top of wizard look decorative. Not obviously tappable. No hover cursor or affordance — users likely won't know they can jump steps. |
-| UX-08 | MEDIUM | Character portraits | Boy/Girl portrait images have white/light square backgrounds that look jarring on the dark wizard UI. Appears unfinished. |
-| UX-09 | LOW | Profile setup | "Continue" button appears enabled even with empty name field — unclear if name is required or optional. |
-| UX-10 | LOW | Story generation | 37-second wait has no phased progress detail. A single generic spinner at this length causes users to wonder if it crashed. |
-| UX-11 | LOW | Companion selector | Age-group emoji logic uses `👦` for 13–18 which reads as male-coded for all teens regardless of gender. |
-| UX-12 | LOW | Voice input | "Tap to say your name" on web requires a browser microphone permission popup. First-time users (especially young children) may be confused or alarmed by the OS permission dialog. |
-| UX-13 | LOW | Adult wizard header | "Build Your Story" followed by "Character / Companions / Setting / Begin" step labels — "Begin" as step 4 is ambiguous. Is it a step or a button? |
+| UX-01 | HIGH | Adult wizard | Binary gender only (Boy / Girl). Intentional — drives he/she pronouns in story. Not a bug. |
+| ~~UX-02~~ | ~~HIGH~~ | ~~All wizard bands~~ | ✅ Fixed `c8d487a` — confirmation dialog on ✕ close; tells user draft is saved. |
+| ~~UX-03~~ | ~~MEDIUM~~ | ~~Adult wizard~~ | ✅ Fixed `c8d487a` — "Shape your story." replaces cold clinical copy. |
+| ~~UX-04~~ | ~~MEDIUM~~ | ~~Adult wizard~~ | ✅ Fixed `c8d487a` — "optional" label on all non-required accordion sections. |
+| ~~UX-05~~ | ~~MEDIUM~~ | ~~COPPA gate~~ | ✅ Already in picker — age 2 was present. |
+| ~~UX-06~~ | ~~MEDIUM~~ | ~~COPPA gate~~ | ✅ Fixed `c8d487a` — subtitle "Parents — tap your child's age below". |
+| ~~UX-07~~ | ~~MEDIUM~~ | ~~Wizard step nav~~ | ✅ Fixed `c8d487a` — MouseRegion click cursor on tappable step circles. |
+| UX-08 | MEDIUM | Character portraits | Boy/Girl portrait images have white/light square backgrounds that look jarring on the dark wizard UI. **Deferred to Opus** — asset-level fix. |
+| ~~UX-09~~ | ~~LOW~~ | ~~Profile setup~~ | ✅ Fixed `c8d487a` — Continue dims to 40% opacity and disables when name field empty. |
+| ~~UX-10~~ | ~~LOW~~ | ~~Story generation~~ | ✅ Fixed `c8d487a` — adult band gets "Setting the scene… / Developing your character…" phases. |
+| ~~UX-11~~ | ~~LOW~~ | ~~Companion selector~~ | ✅ Fixed `c8d487a` — teen emoji 👦 → 🧑 (gender-neutral). |
+| UX-12 | LOW | Voice input | "Tap to say your name" on web requires browser mic permission popup — may confuse young users. Open. |
+| ~~UX-13~~ | ~~LOW~~ | ~~Adult wizard header~~ | ✅ Fixed `c8d487a` — step 4 label "Begin" → "Create". |
 
 ---
 
