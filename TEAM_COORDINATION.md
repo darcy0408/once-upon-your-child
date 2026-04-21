@@ -1,5 +1,15 @@
 # Team Coordination
 
+## 2026-04-21 — Content moderator model bump (Claude Sonnet 4.6)
+
+Content moderator model bump — `gemini-2.0-flash-lite` → `gemini-2.5-flash-lite`. Was failing open (404). Verified locally: classifier runs.
+
+- Updated `_CLASSIFIER_MODEL` constant and inline `generate_content` call in `backend/utils/content_moderator.py`.
+- Updated story generation fallback in `backend/services/story_generation_service.py`.
+- Added `gemini-2.5-flash-lite` pricing entry to `backend/cost_tracking.py`; kept `gemini-2.0-flash-lite` entry for historical log compatibility.
+
+---
+
 ## 2026-04-21 — BUG-001 re-verification (Claude Sonnet 4.6)
 
 **Scope:** Re-run Band 6 (Adult) happy path via Playwright MCP against live Railway build to confirm BUG-001 avatar-gate fix (`73ee489`) holds in production.

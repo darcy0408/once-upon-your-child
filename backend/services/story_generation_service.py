@@ -163,7 +163,7 @@ class StoryGenerationService:
             except Exception as e:
                 error_text = str(e)
                 if "not found for API version" in error_text or "is not supported for generateContent" in error_text:
-                    fallback_model = "gemini-2.0-flash-lite"
+                    fallback_model = "gemini-2.5-flash-lite"
                     if self._model_name != fallback_model:
                         logger.warning(
                             "Model %s unavailable; retrying with fallback %s.",

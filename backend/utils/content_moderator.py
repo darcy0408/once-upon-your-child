@@ -8,7 +8,7 @@ Design principles:
 - Fail open: if the classifier errors, the story passes (keyword filter
   already ran as the first layer).
 - Age-band-aware: the classifier prompt is tailored to the child's age.
-- Fast and cheap: uses gemini-2.0-flash-lite, not the full story model.
+- Fast and cheap: uses gemini-2.5-flash-lite, not the full story model.
 - Classifies only; never modifies story text.
 """
 
@@ -18,7 +18,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_CLASSIFIER_MODEL = "gemini-2.0-flash-lite"
+_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
 
 # Module-level client — initialised lazily so tests can patch os.getenv.
 _client = None
@@ -90,7 +90,7 @@ def moderate_story_content(story_text: str, age: int, client=None) -> tuple[bool
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash-lite",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
         )
         raw = ""

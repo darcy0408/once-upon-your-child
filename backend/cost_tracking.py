@@ -24,6 +24,10 @@ COST_RATES = {
         'output_tokens': 0.00000040,   # $0.40 per million tokens
     },
     'gemini-2.0-flash-lite': {
+        'input_tokens': 0.000000075,   # $0.075 per million tokens — kept for historical log lookups
+        'output_tokens': 0.00000030,   # $0.30 per million tokens
+    },
+    'gemini-2.5-flash-lite': {
         'input_tokens': 0.000000075,   # $0.075 per million tokens
         'output_tokens': 0.00000030,   # $0.30 per million tokens
     },
