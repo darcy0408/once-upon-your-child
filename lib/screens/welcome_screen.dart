@@ -846,7 +846,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
+        AnimatedOpacity(
+          opacity: _nameController.text.trim().isEmpty ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 220),
+          child: Text(
+            'Type your name to continue',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.sourceSans3(
+              color: Colors.white.withAlpha(140),
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
         Semantics(
           button: true,
           label: "Submit your name",

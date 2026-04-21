@@ -1594,9 +1594,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;
-    final hasGender = gender.isNotEmpty && gender != 'Non-binary';
-    final imagePath = archetype.imagePathForBand(ageBand, gender: hasGender ? gender : null);
-    final fallbackPath = hasGender ? archetype.imagePathForBand(ageBand) : null;
+    final imagePath = archetype.imagePathForBand(ageBand, gender: gender.isNotEmpty ? gender : null);
+    final fallbackPath = gender.isNotEmpty ? archetype.imagePathForBand(ageBand) : null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -1647,73 +1646,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final gender = widget.wizardData.characterGender;
     final isAdult = ageBand == AgeBand.adult;
-    final isMatureOrTeen = ageBand == AgeBand.creator ||
-        ageBand == AgeBand.adolescent ||
-        ageBand == AgeBand.adult;
-    final otherLabel = isMatureOrTeen ? 'Non-binary / Other' : 'Other';
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GenderImageButton(
-              gender: 'Boy',
-              label: isAdult ? 'Man' : null,
-              assetPath: boyAsset,
-              isSelected: gender == 'Boy',
-              width: 140,
-              height: 180,
-              onTap: () => _handleGenderSelection('Boy'),
-            ),
-            SizedBox(width: band.space(32)),
-            GenderImageButton(
-              gender: 'Girl',
-              label: isAdult ? 'Woman' : null,
-              assetPath: girlAsset,
-              isSelected: gender == 'Girl',
-              width: 140,
-              height: 180,
-              onTap: () => _handleGenderSelection('Girl'),
-            ),
-          ],
+        GenderImageButton(
+          gender: 'Boy',
+          label: isAdult ? 'Man' : null,
+          assetPath: boyAsset,
+          isSelected: gender == 'Boy',
+          width: 140,
+          height: 180,
+          onTap: () => _handleGenderSelection('Boy'),
         ),
-        const SizedBox(height: 16),
-        Semantics(
-          button: true,
-          selected: gender == 'Non-binary',
-          label: otherLabel,
-          child: GestureDetector(
-            onTap: () => _handleGenderSelection('Non-binary'),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: gender == 'Non-binary'
-                      ? const Color(0xFFFFD700)
-                      : Colors.white30,
-                  width: gender == 'Non-binary' ? 2 : 1.5,
-                ),
-                color: gender == 'Non-binary'
-                    ? const Color(0xFFFFD700).withAlpha(20)
-                    : Colors.transparent,
-              ),
-              child: Text(
-                otherLabel,
-                style: TextStyle(
-                  color: gender == 'Non-binary'
-                      ? const Color(0xFFFFD700)
-                      : Colors.white54,
-                  fontSize: 14,
-                  fontWeight: gender == 'Non-binary'
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
+        SizedBox(width: band.space(32)),
+        GenderImageButton(
+          gender: 'Girl',
+          label: isAdult ? 'Woman' : null,
+          assetPath: girlAsset,
+          isSelected: gender == 'Girl',
+          width: 140,
+          height: 180,
+          onTap: () => _handleGenderSelection('Girl'),
         ),
       ],
     );

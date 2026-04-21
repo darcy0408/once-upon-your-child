@@ -313,7 +313,7 @@ class CreativeBriefWidget extends StatelessWidget {
             controller: characterDesireController,
             style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Optional — adds depth to your story',
+              hintText: 'e.g. to prove themselves, to reconnect with family',
               hintStyle: TextStyle(
                   color: Colors.white.withAlpha(35), fontSize: 14),
               enabledBorder: UnderlineInputBorder(

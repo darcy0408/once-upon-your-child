@@ -4121,3 +4121,61 @@ These were confirmed still open and should be addressed in future sessions:
 | MEDIUM | Cancel on parental knowledge dialog for 13–17 should block entry (currently fires `onConsentCompleted` anyway) | Sonnet |
 | LOW | "Go Solo" TextButton restyled as more prominent option | Sonnet |
 | LOW | HeroCreatorStep page 0 missing back button | Sonnet |
+
+---
+
+## 2026-04-21 — BYOK Wizard Bug Fixes (Claude Sonnet 4.6)
+
+### Root cause analysis
+
+Two compounding bugs made BYOK setup silently fail on web:
+
+1. **Invisible key field** — `_showKey = false` defaulted the TextField to `obscureText: true`. Combined with no explicit text color on a dark card (`0xFF120226` / `0xFF2C1B47`), both the obscuring dots and any typed text were invisible. The cursor moved but nothing was visible, causing pastes to appear to fail.
+
+2. **Silent no-op on failed Finish** — because the key couldn't be seen/confirmed, `_validate()` failed (wrong or empty key) → `_valid` stayed false → `widget.onDone()` was never called → key never written to `SecureStorageService` / `SharedPreferences`. Any subsequent call to "Full illustrations" re-opened the wizard at step 0 because `getApiKey('gemini')` returned null.
+
+3. **CORS block on web** — the HTTP probe to `generativelanguage.googleapis.com` is blocked by CORS in production web deployments, meaning a perfectly valid key would always fail validation and the wizard was permanently un-completable on web.
+
+### Changes made
+
+| File | Change |
+|------|--------|
+| `lib/screens/byok_setup_wizard.dart` | `_showKey = true` — key visible by default; "Show key" checkbox still lets user hide it |
+| `lib/screens/byok_setup_wizard.dart` | `style: TextStyle(color: Colors.white)` on TextField — explicit white text so text/dots render on dark card |
+| `lib/screens/byok_setup_wizard.dart` | CORS fallback — network/timeout errors no longer block save; well-formed `AIza…` key accepted with "couldn't verify, will confirm on first use" message |
+| `lib/screens/byok_setup_wizard.dart` | Snackbar on failed Finish — red snackbar echoes the validation error so failure is impossible to miss |
+
+---
+
+## 2026-04-21 — Six Hats Creator Review Closeout (Claude Opus 4.7)
+
+User pasted a full Six Hats creator review (~15 items, 2× P0 / 3× P1 / 3× P2 / rest P3) asking for a comprehensive fix plan. Triaged against current code — **most items were already resolved** across prior commits (`c8d487a`, `115b37b`, `b34c3ab`, `1bedede`, `6fa4d0f`, `1bf26c3`). The review was drafted from pre-fix screenshots in the working tree.
+
+### Triage summary
+
+| Review claim | Reality | Action |
+|---|---|---|
+| P0 Silent failure on empty name | Continue already dims to 40% + disables (UX-09) — but no *textual* explanation of why | Added helper hint |
+| P0 Boy avatar checkerboard | Fixed `b34c3ab` | Already closed |
+| P1 Wizard step counter mismatch | Intentional — 4 circles flatten sub-steps inside `HeroCreatorStep` | Keep as-is |
+| P1 Archetype jargon for children | Age-banded — children see "Brave Hero!"; only 12+ sees "Logic Architect" | Keep as-is |
+| P1 Gender binary only | Non-binary option present at `hero_creator_step.dart:1680-1715` | Keep as-is |
+| P2 No discard confirmation on × | Dialog exists at `wizard_story_screen.dart:408-427` | Keep as-is |
+| P2 Sections hidden by default | Intentional — UX-04 added "optional" labels | Keep as-is |
+| P2 Onboarding order (age before name) | Code is name → age (`welcome_screen.dart:273-297`) | Review was reversed |
+| P3 Age 2 in picker | Intentional per UX-05 | Keep as-is |
+| P3 Age gate mixed-voice copy | Fixed in UX-06 ("Parents — tap your child's age below") | Already closed |
+| P3 Step indicators not tappable | Tappable on step 0 + UX-07 cursor | Already closed |
+| P3 "What does your character want?" placeholder bland | Mature-only field ("Optional — adds depth…" is adult-flavored but vague) | Updated placeholder |
+| P3 No back button on age gate | Back button at `age_gate_screen.dart:185-189` | Already closed |
+
+### Changes made this session
+
+| File | Change |
+|------|--------|
+| `lib/screens/welcome_screen.dart` | **Empty-name helper hint** — subtle "Type your name to continue" caption fades in between field and dimmed Continue button; `AnimatedOpacity` keyed off controller emptiness, fades to 0 once user types |
+| `lib/screens/wizard_steps/hero_creator_creative_brief.dart` | **Character desire placeholder** — replaced "Optional — adds depth to your story" with concrete example: "e.g. to prove themselves, to reconnect with family" (field only renders for mature bands, so mature-flavored examples are appropriate) |
+
+### Verification
+
+`flutter analyze` on both files — 4 pre-existing warnings unrelated to these edits (`_glyphForAge`, `_glyphForOlderBand` unused; two unused `glyph` params). No new warnings introduced.
