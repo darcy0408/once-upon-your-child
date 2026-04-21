@@ -59,14 +59,19 @@ class MoonPhaseProgress extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: onStepTap == null ? null : () => onStepTap!(index),
-                behavior: HitTestBehavior.opaque,
-                child: _GoldStepCircle(
-                  stepNumber: index + 1,
-                  isActive: isActive,
-                  isCompleted: isCompleted,
-                  label: stepLabels[index],
+              MouseRegion(
+                cursor: onStepTap != null
+                    ? SystemMouseCursors.click
+                    : MouseCursor.defer,
+                child: GestureDetector(
+                  onTap: onStepTap == null ? null : () => onStepTap!(index),
+                  behavior: HitTestBehavior.opaque,
+                  child: _GoldStepCircle(
+                    stepNumber: index + 1,
+                    isActive: isActive,
+                    isCompleted: isCompleted,
+                    label: stepLabels[index],
+                  ),
                 ),
               ),
               if (showLabels) ...[

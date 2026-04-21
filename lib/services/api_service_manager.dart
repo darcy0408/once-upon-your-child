@@ -592,6 +592,7 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    List<String>? progressPhases,
     // Age-appropriate story parameters
     String? therapeuticPrompt,
     String? conflictHook,
@@ -646,6 +647,7 @@ class ApiServiceManager {
         bedtimeMood: bedtimeMood,
         bedtimeDurationMinutes: bedtimeDurationMinutes,
         onProgress: onProgress,
+        progressPhases: progressPhases,
         therapeuticPrompt: therapeuticPrompt,
         conflictHook: conflictHook,
         sensoryPalette: sensoryPalette,
@@ -897,6 +899,7 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
     String? sensoryPalette,
@@ -940,6 +943,7 @@ class ApiServiceManager {
           bedtimeMood: bedtimeMood,
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
+          progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
           sensoryPalette: sensoryPalette,
@@ -998,6 +1002,7 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
     String? sensoryPalette,
@@ -1100,16 +1105,24 @@ class ApiServiceManager {
         // Progress feedback
         if (onProgress != null) {
           final elapsedSec = stopwatch.elapsed.inSeconds;
+          final phases = progressPhases ??
+              const [
+                'Gathering stardust...',
+                'Summoning characters...',
+                'Weaving magic words...',
+                'Adding sparkle...',
+                'Almost ready...',
+              ];
           if (elapsedSec < 3) {
-            onProgress('Gathering stardust...');
+            onProgress(phases[0]);
           } else if (elapsedSec < 8) {
-            onProgress('Summoning characters...');
+            onProgress(phases[1]);
           } else if (elapsedSec < 15) {
-            onProgress('Weaving magic words...');
+            onProgress(phases[2]);
           } else if (elapsedSec < 25) {
-            onProgress('Adding sparkle...');
+            onProgress(phases[3]);
           } else {
-            onProgress('Almost ready...');
+            onProgress(phases[4]);
           }
         }
 

@@ -396,8 +396,30 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         color: Colors.white,
                       ),
                       onPressed: _currentStep == 0
-                          ? () {
-                              if (Navigator.of(context).canPop()) {
+                          ? () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Leave story creation?'),
+                                  content: const Text(
+                                      'Your progress is saved as a draft — you can pick up where you left off next time.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: const Text('Keep going'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      child: const Text('Leave'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if ((confirmed ?? false) &&
+                                  context.mounted &&
+                                  Navigator.of(context).canPop()) {
                                 Navigator.of(context).pop();
                               }
                             }

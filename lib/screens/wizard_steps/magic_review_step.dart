@@ -358,7 +358,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               if (mounted) {
                 setState(() => _loadingStatus = status);
               }
-            });
+            },
+            progressPhases: ageBandFromAge(
+                        requestData['age'] as int? ?? 5)
+                    .isMature
+                ? const [
+                    'Setting the scene...',
+                    'Developing your character...',
+                    'Writing your story...',
+                    'Adding depth and detail...',
+                    'Almost ready...',
+                  ]
+                : null);
 
         if (widget.wizardData.customAvatarPath != null && !kIsWeb) {
           try {

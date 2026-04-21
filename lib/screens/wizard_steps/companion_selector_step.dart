@@ -77,7 +77,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   String _getEmojiForAge(int age) {
     if (age <= 5) return '👶';
     if (age <= 12) return '🧒';
-    if (age <= 18) return '👦';
+    if (age <= 18) return '🧑';
     if (age <= 60) return '👨';
     return '👴';
   }

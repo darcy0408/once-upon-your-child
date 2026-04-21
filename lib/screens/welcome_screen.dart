@@ -74,6 +74,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   // Ages 2-8: individual big buttons (sprout + explorer bands).
   // Ages 3-11: individual big buttons for young children (3×3 grid).
   static const _youngAgeEntries = <({String label, int value})>[
+    (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),
@@ -842,8 +843,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         Semantics(
           button: true,
           label: "Submit your name",
-          child: _PressableButton(
-            onPressed: _advanceFromName,
+          child: Opacity(
+            opacity: _nameController.text.trim().isEmpty ? 0.4 : 1.0,
+            child: _PressableButton(
+            onPressed: _nameController.text.trim().isEmpty ? null : _advanceFromName,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               decoration: BoxDecoration(
@@ -876,6 +879,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               ),
             ),
           ),
+          ),
         ),
       ],
     );
@@ -901,9 +905,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
         const SizedBox(height: 4),
         const Text(
-          'Parents: please select your child\'s age',
+          'Parents — tap your child\'s age below',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
         const SizedBox(height: 12),
         // Big circles for young children (ages 3-11) — 3×3 grid
@@ -1009,7 +1013,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
       );
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) setState(() { _submitting = false; _step = 0; });
       if (granted == true) {
         // Consent obtained — now safe to persist the child's name.
         final prefs = await SharedPreferences.getInstance();

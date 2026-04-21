@@ -537,7 +537,7 @@ const adultTheme = AgeBandThemeData(
   companionLabel: 'Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'Explore the emotional landscape',
-  launchStoryLabel: 'Begin',
+  launchStoryLabel: 'Create',
   companionCTALabel: 'Continue',
   scenarioPageTitle: 'Choose a Premise',
   scenarioPageSubtitle: 'What narrative interests you?',

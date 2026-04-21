@@ -118,6 +118,7 @@ class CreativeBriefWidget extends StatelessWidget {
     String title,
     Widget content, {
     bool initiallyExpanded = false,
+    bool optional = false,
     Key? sectionKey,
   }) {
     return Theme(
@@ -127,14 +128,29 @@ class CreativeBriefWidget extends StatelessWidget {
         initiallyExpanded: initiallyExpanded,
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 16),
-        title: Text(
-          title.toUpperCase(),
-          style: GoogleFonts.sourceSans3(
-            color: const Color(0xFFFFD700).withAlpha(180),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+        title: Row(
+          children: [
+            Text(
+              title.toUpperCase(),
+              style: GoogleFonts.sourceSans3(
+                color: const Color(0xFFFFD700).withAlpha(180),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            if (optional) ...[
+              const SizedBox(width: 6),
+              Text(
+                'optional',
+                style: GoogleFonts.sourceSans3(
+                  color: Colors.white30,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ],
         ),
         iconColor: const Color(0xFFFFD700),
         collapsedIconColor: Colors.white30,
@@ -875,23 +891,27 @@ class CreativeBriefWidget extends StatelessWidget {
             context,
             'Personality',
             _buildBriefPersonalitySliders(context),
+            optional: true,
           ),
           _buildBriefSection(
             context,
             'Cast & Companions',
             _buildBriefCompanionsInputs(),
+            optional: true,
             sectionKey: briefCompanionsKey,
           ),
           _buildBriefSection(
             context,
             'World & Setting',
             _buildBriefWorldInputs(context, band),
+            optional: true,
             sectionKey: briefWorldKey,
           ),
           _buildBriefSection(
             context,
             'Story Options',
             _buildBriefConfigInputs(context, band),
+            optional: true,
             sectionKey: briefConfigKey,
           ),
           const SizedBox(height: 48),
