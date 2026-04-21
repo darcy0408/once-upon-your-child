@@ -6,8 +6,30 @@
 |---|------|---------|----------|
 | 1 | BUG-001 full E2E — Band 6 `/generate-story` 200 | Needs Playwright restart or manual incognito test | `docs/briefings/TASK1_PLAYWRIGHT_BAND6_REVERIFY.md` |
 | 2 | BUG-002 TTS backoff — fresh-session verification | Needs Playwright restart or manual incognito test | `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md` |
+| 3 | BUG-004 Back→COPPA stuck — "That's me!" breaks after COPPA Back | Code fix: `_handleContinue` navigation guard | See §2026-04-21 Six Hats below |
+| 4 | Age 2 missing from age picker | Code fix: add circle for age 2 | Sprout is 2-5; picker starts at 3 |
+| 5 | Archetype display names in Heroes/a11y labels | Show "Animal Friend!" not "The Animal Whisperer" | Semantic labels leak internal IDs |
+| 6 | "Story service is ready" banner visible in child view | Hide from non-admin views | Dev status exposed to users |
+| 7 | Mochi black card background | Give Mochi a coloured background like other buddies | Visual inconsistency |
+| 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
+
+---
+
+## 2026-04-21 — Six Hats Sprout UX Review (Claude Sonnet 4.6)
+
+Full wizard walk-through as Sprout age 4 ("Lily") against live Railway build.
+
+### BUG-004 — Back→COPPA breaks name submit (HIGH)
+
+**Steps to reproduce:** Age picker → enter name → submit → COPPA loads → press Back → edit name → press "That's me!" → nothing happens. App stuck, requires reload.
+
+**Root cause hypothesis:** `_handleContinue` on the name screen likely has a flag or state that marks COPPA as "already shown" but then blocks re-navigation because the COPPA route is still mounted or the guard isn't reset on Back pop.
+
+**File to check:** `lib/screens/onboarding/name_entry_screen.dart` (or equivalent) — look for COPPA navigation guard / `_coppaDone` flag.
+
+### Other findings logged in TEAM_COORDINATION Pending Tasks table above.
 
 ---
 
@@ -81,8 +103,16 @@ Second Playwright session (fresh COPPA gate, cleared localStorage) confirmed:
 |-----|--------|
 | BUG-001 avatar gate | ✅ PASS — fix confirmed in source (`hero_creator_step.dart:604`); banner never appeared in Playwright |
 | BUG-001 full wizard + `/generate-story` 200 | ⏳ DEFERRED — Playwright blocked on Create Story button interaction; pending Tab→Enter approach or manual test |
-| BUG-002 TTS backoff | ⏳ DEFERRED — fresh-session Playwright test blocked (browser lockfile + multiple running instances); see plan below |
+| BUG-002 TTS backoff | ⚠️ CODE FIX RE-APPLIED — original fix was broken (exception swallowed); rethrow added; runtime verification still pending |
 | BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token; call-site fix shipped (see below) |
+
+### BUG-002 static code audit — root cause found & fix re-applied (2026-04-21, Claude Sonnet 4.6)
+
+**Finding:** The `b6b5c15` backoff fix was silently broken. `TtsRateLimitException` was thrown at `tts_api_service.dart:117` *inside* the outer `try` block, whose bare `catch (e)` clause caught all exceptions — including `TtsRateLimitException`. The exception was swallowed, `null` returned, and it never propagated to `_prewarm()`'s `on TtsRateLimitException` handler. Net effect: on a 429, the phrase was skipped immediately with no delay and no retry — identical to pre-fix behaviour.
+
+**Fix applied:** added `on TtsRateLimitException { rethrow; }` before the generic `catch (e)` in `TtsApiService.synthesize()`. `TtsRateLimitException` now escapes `synthesize()` and reaches the backoff loop in `_prewarm()`. `dart analyze` clean.
+
+**Verdict:** ❌ FAIL (b6b5c15 as shipped) → fix re-applied correctly; backoff loop in `app_tts_service.dart` is sound once the exception propagates. Runtime Playwright verification still pending.
 
 ### BUG-002 fresh-session retest — DEFERRED (2026-04-21)
 

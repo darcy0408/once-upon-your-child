@@ -122,6 +122,8 @@ class TtsApiService {
         );
       }
       return null;
+    } on TtsRateLimitException {
+      rethrow;
     } catch (e) {
       debugPrint('⚠️ TTS API unavailable, using on-device TTS: $e');
       return null;
