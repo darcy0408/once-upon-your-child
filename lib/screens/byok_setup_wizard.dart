@@ -427,7 +427,7 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
   bool _validating = false;
   String? _status;
   bool _valid = false;
-  bool _showKey = false;
+  bool _showKey = true;
   int _attempts = 0;
 
   @override
@@ -484,9 +484,13 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         });
       }
     } catch (_) {
+      // Network/CORS errors (common on web deployments) — treat a well-formed
+      // AIza key as valid so the wizard isn't permanently blocked.
       setState(() {
-        _status = 'We could not validate right now. Please try again.';
-        _valid = false;
+        _status =
+            'Could not reach Google to verify the key, but the format looks right. '
+            'Tap Finish to save and we\'ll confirm it on first use.';
+        _valid = true;
         _validating = false;
       });
     }
@@ -510,10 +514,16 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
           AppCard(
             child: TextField(
               controller: _controller,
-              decoration: const InputDecoration(
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'monospace',
+              ),
+              decoration: InputDecoration(
                 labelText: 'API Key',
                 hintText: 'AIza...',
-                prefixIcon: Icon(Icons.key),
+                prefixIcon: const Icon(Icons.key, color: Color(0xFFFFD54F)),
+                labelStyle: const TextStyle(color: Color(0xB3FFFFFF)),
+                hintStyle: TextStyle(color: Colors.white.withAlpha(80)),
               ),
               obscureText: !_showKey,
               maxLines: 1,
@@ -577,6 +587,14 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                             await prefs.setBool('is_premium_byok', true);
                             await SecureStorageService.saveApiKey('gemini', key);
                             if (mounted) widget.onDone(key);
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    _status ?? 'Key not saved — please check the error above.'),
+                                backgroundColor: Colors.red.shade700,
+                              ),
+                            );
                           }
                         },
                   icon: Icons.check,
