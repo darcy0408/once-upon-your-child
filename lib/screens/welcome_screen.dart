@@ -1039,7 +1039,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               ),
               content: Text(
                 'Is there something your child could use a little help with '
-                'right now? Hearing no, bedtime worry, sibling moments?\n\n'
+                'right now? Struggling with \'no\', bedtime worry, sibling moments?\n\n'
                 'Pick what\'s been tough and stories will quietly work on it. '
                 'Your child will never see these choices.',
                 style: const TextStyle(color: Colors.white70, height: 1.5),

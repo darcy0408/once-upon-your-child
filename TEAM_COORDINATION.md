@@ -12,11 +12,11 @@
 | ~~6~~ | ~~"Story service is ready" banner visible in child view~~ | ✅ Fixed `115b37b` — banner hidden when `_backendOnline == true`; only shows when checking or offline | ~~Dev status exposed to users~~ |
 | 7 | Mochi black card background | Give Mochi a coloured background like other buddies | Visual inconsistency |
 | 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
-| 9 | **BUG-005** Binary-only gender picker (HIGH — inclusivity) | Add "Other / Prefer not to say" option with neutral archetype image path; affects all bands | `hero_creator_step.dart:1651` — `_buildGenderPicker()` |
-| 10 | **BUG-006** Gender tap auto-advances instantly (MEDIUM) | Add 400ms confirmation delay or a Next button before calling `_heroNextPage()` | `hero_creator_step.dart:1674` — `_handleGenderSelection` |
+| ~~9~~ | ~~**BUG-005** Binary-only gender picker~~ | ✅ Fixed — "Other" / "Non-binary / Other" pill added below Boy/Girl row; non-binary falls through to genderless archetype image. `hero_creator_step.dart` | |
+| ~~10~~ | ~~**BUG-006** Gender tap auto-advances instantly~~ | ✅ Fixed — 400ms delay before `_heroNextPage()` in `_handleGenderSelection`. `hero_creator_step.dart` | |
 | 11 | **BUG-007** Two age-gate implementations diverge (MEDIUM) | `welcome_screen.dart` and `age_gate_screen.dart` have different consent flows for 13–17; need reconciliation | Parental knowledge dialog only in `age_gate_screen.dart` |
 | 12 | **BUG-008** Consent scroll progress bar not visible while scrolling (LOW) | Add sticky "↓ Scroll to continue" hint near bottom of consent form | `parental_consent_screen.dart:78` — progress bar in AppBar |
-| 13 | "Hearing no" ambiguous copy in Shape the stories dialog | Change to "Struggling with 'no'" | `welcome_screen.dart:1027` — parent controls setup dialog |
+| ~~13~~ | ~~"Hearing no" ambiguous copy in Shape the stories dialog~~ | ✅ Fixed — changed to "Struggling with 'no'". `welcome_screen.dart` | |
 | 14 | Sprout companion limit (1) has no visual feedback | Disable/overlay remaining companion tiles once limit reached; show "Buddy chosen!" | `hero_creator_step.dart` — `_buildAdventureTeamPage`, maxSlots=1 |
 | 15 | Sprout pet reveal looks like static text, not interactive | Add chevron or "Tap here" label to `GestureDetector` container | `hero_creator_step.dart:1204` |
 | 16 | "Add a Friend" button name clashes with "Your Friends:" saved-character section | Rename button to "Add from Photo" or similar | `hero_creator_step.dart:1163` |
