@@ -4,6 +4,109 @@ This file tracks all work sessions on the Story Weaver App project. Each entry r
 
 ---
 
+## 2026-04-20 - Playwright QA Sweep + BUG-001/002/003 Fixes + A11y Wiring
+
+**Summary:** End-to-end Playwright QA against the live Railway build across all 6 age bands surfaced three bugs, all of which were fixed and committed the same day. Also fixed a setState-during-build crash on companion quick-add and restored semantic `onTap` on two tap targets.
+
+**Key Changes:**
+- `lib/screens/wizard_steps/hero_creator_step.dart` — **BUG-001 (CRITICAL):** Adult band Create Story was blocked for all new users. `_handleContinue()` gated submission on `_hasAvatar`, but mature-band `CreativeBriefWidget` has no avatar UI. Skip the avatar gate when `AgeBand.isMature` is true (covers creator / adolescent / adult). Commit `73ee489`.
+- `lib/widgets/hero_creator/pet_card.dart` — Deferred `_addCompanionWithType` + `onPendingConsumed` cascade to `WidgetsBinding.instance.addPostFrameCallback` with `mounted` guard to eliminate the setState-during-build crash on quick-add companion species select. Commit `c35c390`.
+- `lib/widgets/feelings_badge_grid.dart` — Adventurer-exclusive emotion picker was unresponsive (hover worked, tap didn't pop modal). Root cause: `Semantics(button: true, label: ...)` absorbed tap events without an `onTap`. Fixed: pass `onTap` into `Semantics` and set `excludeSemantics: true`. Commit `f60affe`.
+- `lib/widgets/hero_creator/hero_input_widgets.dart` — Same semantic-button fix applied to `GenderImageButton`. Commit `1711a57`.
+- `lib/services/tts_api_service.dart` — **BUG-002:** Added `TtsRateLimitException`; `synthesize()` throws on HTTP 429 instead of silently returning null.
+- `lib/services/app_tts_service.dart` — `_prewarming` dedup flag (second warm-up in same session is a no-op); exponential backoff 2→4→8→30s (4 attempts) on `TtsRateLimitException` to stop the ~40+ 429 storm seen in QA. Commit `b6b5c15`.
+- `lib/services/subscription_sync_service.dart` — **BUG-003:** For `anon_*` user IDs, emit `SubscriptionStatus(tier: free, status: inactive)` immediately and skip the 403-generating `/api/stripe/subscription-status/` call. Commit `de5758f`.
+- `docs/QA_PLAYWRIGHT_REPORT_2026-04-20.md` *(new)* — Full band 1–6 QA results; 307 stray `qa_*.png` / `band6_*.png` screenshot artifacts cleaned from repo root. Commit `0ebb117`.
+
+**Decisions Made:**
+- Mature-band bypass used `AgeBand.isMature` rather than a new flag — already established in `lib/theme/age_band_theme.dart:574`.
+- Semantic-button pattern (`onTap` + `excludeSemantics: true`) established as the standard for any `Semantics(button: true, ...)` wrapper that contains a `GestureDetector`.
+- Stripe anon guard returns a synthetic `free/inactive` status instead of null to keep downstream consumers happy.
+
+**Issues Encountered:**
+- Playwright MCP disconnected mid-session due to a Windows lockfile (`reference_playwright_mcp_lockfile.md`). Required Claude Code restart. BUG-001 fix not re-verified end-to-end against live Railway build — deferred to 2026-04-21.
+
+**Remaining Tasks:**
+- Re-run Band 6 happy path Playwright QA to verify BUG-001 fix in production.
+- Regression re-run for BUG-002 / BUG-003 (fixed analytically; not Playwright-verified).
+
+**Impact:**
+- Adult band is unblocked for all new users — largest-severity release regression cleared.
+- TTS warm-up no longer saturates the ElevenLabs rate limit on session start.
+- Anonymous sessions no longer generate 403 console noise on every page load.
+- Two silently broken tap targets (emotion cards, gender buttons) now respond to both pointer and semantic taps.
+
+---
+
+## 2026-04-19 - Gendered Archetypes All Bands + Story Mapper Fix + Hero Creator Refactor + 5 Explorer Life Quests
+
+**Summary:** Rolled out gendered archetype images (boy/girl variants) across all 6 age bands, fixed the story-generation mapper that was silently dropping archetype data, continued the hero-creator extraction work, authored the 5 Explorer Life Quests that had been deferred, and landed a Creator/Adolescent differentiation plan for upcoming scenario copy.
+
+**Key Changes:**
+- `assets/images/archetypes/{band}/` — 48 new gendered PNG files across Sprout / Explorer / Adventurer / Creator / Adolescent / Adult. Sprout/Explorer use `brave_hero` (heroic, action) where older bands use `quiz_whiz` (strategic, cerebral) — same slot, different visual identity.
+- `lib/widgets/archetype_card.dart` — Added `explorerName`, `explorerDescription`, and `genderedImageIdPerBand` fields to `ArchetypeData`; band-specific names ("Brave Hero!", "The Speed Star", "The Quiz Whiz", "Logic Architect") served by `nameForAge`/`descriptionForAge`/`imagePathForBand`.
+- `lib/screens/wizard_steps/wizard_data_mapper.dart` — **Bug fix:** `_mapArchetypeToDetails()` used `.contains()` on archetype names; the new band-specific names fell through to an empty default, so the AI received **no strengths, no special ability, and no interests** for those archetypes. Added all name variants; enriched strengths (Intelligence for thinker, Teamwork for runner, Observation for whisperer).
+- `lib/services/app_tts_service.dart` — Updated TTS warm-up phrases to match new Sprout/Explorer archetype names.
+- `lib/data/life_quests/*.dart` — 5 new Explorer-band (ages 6–8) CYOA quests with full branching content, completing the quests deferred from 2026-04-19g.
+- Hero Creator widget extraction continued: `lib/widgets/hero_creator/` directory grew to include `hero_input_widgets.dart`, `pet_card.dart`, and related helpers; hero creator loading views added per band.
+
+**Decisions Made:**
+- One archetype slot can carry different visual identities per band (Sprout/Explorer "Brave Hero" ≠ Adventurer+ "Quiz Whiz") — richer than a single image per archetype.
+- Life Quest content model locked in: `title`, `scenario`, `choices[]` with `consequence`, `growthPrompt`. Non-BYOK uses authored branches; BYOK augments via AI.
+
+**Issues Encountered:**
+- Typo in filename (`explorer/masster_creator_*.png`) and inconsistent `.jpg` extensions in Sprout folder — both fixed during the sweep.
+
+**Remaining Tasks:**
+- Creator/Adolescent differentiation — 5 new fields on `ScenarioCard` (`adolescentTitle`, `adolescentDescription`, etc.) planned but not yet implemented. Accessors `titleForBand()`/`descriptionForAge()`/`conflictHookForAge()`/`worldBibleForAge()` need updating to serve adolescent-specific copy at 15–17.
+- 6 additional Creator/Adolescent Life Quests authored in-session; full rollout tracked separately.
+
+**Impact:**
+- Visual identity now consistent across genders for every archetype in every band.
+- Story generation quality meaningfully improved — AI now receives archetype strengths and special abilities that were previously silently dropped.
+- Explorer band Life Quests feature is content-complete.
+
+---
+
+## 2026-04-18 - Life Quests Rebrand + Splash/TTS/Companion UX + Security Hardening Sweep
+
+**Summary:** Rebranded Big Feelings → Life Quests with new feature architecture (CYOA emotional problem-solving, BYOK/non-BYOK split), completed splash screen redesign and TTS pacing overhaul, and landed a large security-hardening sweep (7 commits) including Gemini API key removal from the client, output safety filter, refresh token rotation, JWT blocklist, TTS quota + audit log, and removal of the therapist portal.
+
+**Key Changes:**
+- **Life Quests rebrand** — Big Feelings screens, routes, copy, and navigation entries all renamed. New CYOA engine with authored branches for non-BYOK users and AI augmentation for BYOK. Parent-guidance metadata preserved from the old flow.
+- **Splash screen + TTS pacing + Companion UX** — Splash redesigned; TTS rate-scale defaults re-tuned (foundation for the later 0.85× global change); Companion showcase flow refined with fewer clicks to select a saved companion. Welcome screen TTS greeting landed with name-echo animation and kid-friendly consent summary.
+- **Companion rebrand + art overhaul** — Named characters replace generic slots; asset cleanup across `assets/images/companions/`; band-specific companion images for Explorer, Adventurer, and Creator.
+- `lib/services/*` and `backend/*` — Security hardening sweep:
+  - Gemini API key removed from Flutter client (backend-proxied only).
+  - Gemini output safety filter on the backend.
+  - Startup assertions + Sentry filter to suppress noise and catch misconfigurations early.
+  - AI quota circuit breaker + anonymous-auth flow fix.
+  - Refresh token rotation + JWT blocklist for compromised tokens.
+  - TTS quota enforcement + audit log.
+  - Therapist portal removed entirely (security bar for responsible implementation exceeds current effort; not deferred, removed).
+- **Life Quests Six Hats audit + age-gate fixes** — Audit surfaced age-gate edge cases across Life Quests entry points; fixed in the same session.
+- **Parental consent: sticky footer + share-to-grown-up** — Consent flow now has a persistent CTA footer and a flow for kids to share a consent link with a parent/guardian.
+- **Welcome screen polish** — Name-echo animation, age glyphs per band, kid-consent summary, age-band gender selection images.
+
+**Decisions Made:**
+- Therapist portal: removed, not deferred. Client-side 4-digit PIN with no rate limiting / no audit / no server-side verification was below the security bar; feature is gone from the codebase.
+- Life Quests: authored CYOA branches for non-BYOK users (deterministic, safe, no AI cost); AI augmentation only for BYOK. Same content surface, different fulfillment.
+- Gemini client-side keys: removed unconditionally — all AI calls now backend-proxied, even on BYOK tiers (BYOK key stored server-side against the user).
+
+**Issues Encountered:**
+- None blocking. Security audit findings triaged and patched in the same day.
+
+**Remaining Tasks:**
+- Life Quests content — Explorer authoring completed 2026-04-19; Creator/Adolescent quests partially authored; Adventurer/Adult quests pending.
+- Post-rebrand copy sweep: a few incidental strings still reference "Big Feelings" in older places; cleanup tracked in `TEAM_COORDINATION.md`.
+
+**Impact:**
+- Security posture improved substantially — no client-side AI secrets, server-side rate/quota enforcement, auditable token lifecycle.
+- Life Quests is now the canonical therapeutic-flow brand; supports both free-tier (authored) and BYOK (AI-augmented) users with one UX.
+- Parent/child onboarding is smoother end-to-end (splash → welcome → age-gate → kid consent → parental consent → wizard).
+
+---
+
 ## 2026-04-15 - ADULT-3 Reflect Screen, Human Companion Avatar, Parent Controls Cleanup & TTS Rate Fix
 
 **Summary:** Delivered ADULT-3 (the Adult band's Reflect tab), added human-companion avatar generation, removed the unready therapist portal from Parent Controls, refreshed BYOK copy, and globally softened TTS narration pace.
