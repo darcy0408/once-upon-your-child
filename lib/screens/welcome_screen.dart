@@ -803,6 +803,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             _isListening ? 'Listening…' : 'Tap to say your name',
             style: GoogleFonts.sourceSans3(color: Colors.white70, fontSize: 15),
           ),
+          if (kIsWeb && !_isListening) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Your browser will ask for microphone permission',
+              style: GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 11),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
         ],
         // ── Text field ────────────────────────────────────────────────────

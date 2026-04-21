@@ -3825,7 +3825,8 @@ After restarting Claude Code, use `/resume` to pick up where you left off.
 | ~~UX-09~~ | ~~LOW~~ | ~~Profile setup~~ | ✅ Fixed `c8d487a` — Continue dims to 40% opacity and disables when name field empty. |
 | ~~UX-10~~ | ~~LOW~~ | ~~Story generation~~ | ✅ Fixed `c8d487a` — adult band gets "Setting the scene… / Developing your character…" phases. |
 | ~~UX-11~~ | ~~LOW~~ | ~~Companion selector~~ | ✅ Fixed `c8d487a` — teen emoji 👦 → 🧑 (gender-neutral). |
-| UX-12 | LOW | Voice input | "Tap to say your name" on web requires browser mic permission popup — may confuse young users. Open. |
+| ~~UX-12~~ | ~~LOW~~ | ~~Voice input~~ | ✅ Fixed — web-only hint "Your browser will ask for microphone permission" shown below mic button before tap. |
+| ~~UX-08~~ | ~~MEDIUM~~ | ~~Character portraits~~ | ✅ Fixed `b34c3ab` — dark card background `#1E1828` + BoxFit.contain; transparent PNG renders cleanly. |
 | ~~UX-13~~ | ~~LOW~~ | ~~Adult wizard header~~ | ✅ Fixed `c8d487a` — step 4 label "Begin" → "Create". |
 
 ---
