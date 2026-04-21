@@ -45,6 +45,29 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   final List<String> _segmentHistory = []; // for rewind
   bool _ttsEnabled = false;
 
+  // ── Fonts ─────────────────────────────────────────────────────────────────
+  // Life Quest is cross-band: younger bands use Fredoka (playful, rounded);
+  // mature bands (creator/adolescent/adult) use SourceSans3 to match their
+  // cinematic/editorial UI chrome.
+  TextStyle _chromeStyle(
+    AgeBandThemeData band, {
+    required double fontSize,
+    Color color = Colors.white,
+    FontWeight? fontWeight,
+  }) {
+    return band.band.isMature
+        ? GoogleFonts.sourceSans3(
+            color: color,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+          )
+        : GoogleFonts.fredoka(
+            color: color,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+          );
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   List<LifeQuestScenario> get _matchingQuests {
@@ -173,11 +196,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                 child: Text(
                   'Pick Your Quest',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: _chromeStyle(band,
+                      fontSize: 22, fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(width: 48),
@@ -189,10 +209,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           child: Text(
             _selectorSubtitle(),
             textAlign: TextAlign.center,
-            style: GoogleFonts.fredoka(
-              color: Colors.white60,
-              fontSize: 14,
-            ),
+            style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
         ),
         // Quest cards or empty state
@@ -212,11 +229,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     Text(
                       'More quests coming soon!',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: _chromeStyle(band,
+                          color: Colors.white70,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -224,10 +240,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                           ? 'Check back later for stories about big feelings.'
                           : 'New scenarios are being added.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
-                        color: Colors.white38,
-                        fontSize: 14,
-                      ),
+                      style: _chromeStyle(band,
+                          color: Colors.white38, fontSize: 14),
                     ),
                   ],
                 ),
@@ -271,19 +285,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     children: [
                       Text(
                         quest.title,
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: _chromeStyle(band,
+                            fontSize: 17, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         quest.hook,
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
+                        style: _chromeStyle(band,
+                            color: Colors.white70, fontSize: 13),
                       ),
                     ],
                   ),
@@ -314,29 +323,23 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
           child: Row(
             children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white60),
+                tooltip: 'Back to quests',
+                onPressed: _resetToSelector,
+              ),
               if (_segmentHistory.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.undo_rounded, color: Colors.white70),
                   tooltip: 'Try a different choice',
                   onPressed: _rewind,
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white60),
-                  onPressed: () {
-                    AppTtsService.instance.stop();
-                    Navigator.of(context).pop();
-                  },
                 ),
               Expanded(
                 child: Text(
                   _activeQuest!.title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: _chromeStyle(band,
+                      fontSize: 18, fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -405,11 +408,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             ),
             child: Text(
               _interpolate(choice.text),
-              style: GoogleFonts.fredoka(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+              style: _chromeStyle(band,
+                  fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
         ),
@@ -461,10 +461,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           },
           child: Text(
             'Done',
-            style: GoogleFonts.fredoka(
-              color: Colors.white54,
-              fontSize: 14,
-            ),
+            style: _chromeStyle(band, color: Colors.white54, fontSize: 14),
           ),
         ),
       ],

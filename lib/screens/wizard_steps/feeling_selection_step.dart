@@ -580,8 +580,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
       case AgeBand.adult:
         return 'e.g., Keep it calm, reflective, and focused on starting over';
       case AgeBand.creator:
-      case AgeBand.adolescent:
         return 'e.g., Keep it grounded and focused on confidence at school';
+      case AgeBand.adolescent:
+        return 'e.g., Keep it honest and focused on starting over after a hard week';
       case AgeBand.sprout:
       case AgeBand.explorer:
       case AgeBand.adventurer:
