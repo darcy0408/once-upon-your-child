@@ -214,8 +214,8 @@ class CreativeBriefWidget extends StatelessWidget {
     final String girlAsset;
     switch (ageBand) {
       case AgeBand.adolescent:
-        boyAsset = 'assets/images/ui/adventurer/boy_character.png';
-        girlAsset = 'assets/images/ui/adventurer/girl_character.png';
+        boyAsset = 'assets/images/archetypes/adolescent/master_creator_boy.png';
+        girlAsset = 'assets/images/archetypes/adolescent/master_creator_girl.png';
         break;
       case AgeBand.adult:
         boyAsset = 'assets/images/ui/adult/man_character_white.png';

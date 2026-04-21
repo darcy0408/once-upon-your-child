@@ -289,6 +289,14 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   void _showBedtimeSettingsDialog(BuildContext context) {
     bool isInteractive = false;
     double timerMinutes = 0; // 0 means off
+    final isMature =
+        Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
+    final dialogTitle = isMature ? 'Voice Story Settings' : 'Bedtime Settings';
+    final interactiveTitle =
+        isMature ? 'Interactive Voice Adventure' : 'Interactive Bedtime Adventure';
+    final interactiveSubtitle = isMature
+        ? 'Voice-led pick-a-path story.'
+        : 'Voice-led pick-a-path bedtime story.';
 
     showDialog(
       context: context,
@@ -300,16 +308,16 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: const Text(
-                'Bedtime Settings',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                dialogTitle,
+                style: const TextStyle(color: Colors.white),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SwitchListTile(
-                    title: const Text('Interactive Bedtime Adventure', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Voice-led pick-a-path bedtime story.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    title: Text(interactiveTitle, style: const TextStyle(color: Colors.white)),
+                    subtitle: Text(interactiveSubtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     value: isInteractive,
                     activeThumbColor: const Color(0xFFFFD700),
                     onChanged: (val) => setDialogState(() => isInteractive = val),
@@ -609,11 +617,11 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     else
                       Semantics(
                         button: true,
-                        label: 'Bedtime mode',
+                        label: 'Voice story mode',
                         child: IconButton(
-                          icon: const Icon(Icons.bedtime_outlined, color: Colors.white),
+                          icon: const Icon(Icons.mic_none_rounded, color: Colors.white),
                           onPressed: () => _showBedtimeSettingsDialog(context),
-                          tooltip: 'Bedtime Story Mode',
+                          tooltip: 'Voice Story Mode',
                         ),
                       ),
                   ],

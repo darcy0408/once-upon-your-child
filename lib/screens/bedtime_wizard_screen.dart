@@ -106,8 +106,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     await AppTtsService.instance.stop();
     if (!mounted) return;
     setState(() => _step = BedtimeStep.done);
-    await _speak(
-        "It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
+    await _speak(_isMature
+        ? "Time's up. Rest well, ${widget.childName}."
+        : "It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
     await Future.delayed(const Duration(seconds: 3));
     if (mounted) Navigator.of(context).pop();
   }
@@ -118,9 +119,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     final hasKey = await ApiServiceManager.isUsingOwnApiKey();
     if (!hasKey && mounted) {
       setState(() => _step = BedtimeStep.byokSetup);
-      await _speak(
-        "Bedtime stories need a free Gemini API key. A parent can set one up in Settings — it only takes a minute!",
-      );
+      await _speak(_isMature
+          ? "Voice stories need a free Gemini API key. You can set one up in Settings — it only takes a minute."
+          : "Bedtime stories need a free Gemini API key. A parent can set one up in Settings — it only takes a minute!");
       return; // Stay on the byokSetup screen; parent taps Settings or Exit
     }
     await _runStep();
@@ -543,8 +544,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         await _runRegularStory(requestData, additionalChars);
       }
     } catch (e) {
-      await _speak(
-          "Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
+      await _speak(_isMature
+          ? "Something went wrong generating the story. Try again in a moment."
+          : "Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -671,6 +673,12 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   }
 
   Widget _buildByokSetupCard(BuildContext context) {
+    final title = _isMature ? 'Set Up Voice Stories' : 'Set Up Bedtime Stories';
+    final blurb = _isMature
+        ? 'Voice stories play without a screen — just listen. '
+            'Uses a free Gemini AI key that you add once and never need to touch again.'
+        : 'Bedtime stories play without a screen — your child just listens. '
+            'This uses a free Gemini AI key that you add once and never need to touch again.';
     return Scaffold(
       backgroundColor: const Color(0xFF0D0B2E),
       body: SafeArea(
@@ -682,10 +690,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
             children: [
               const Icon(Icons.nights_stay_rounded, color: Colors.amber, size: 56),
               const SizedBox(height: 20),
-              const Text(
-                'Set Up Bedtime Stories',
+              Text(
+                title,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -699,21 +707,20 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bedtime stories play without a screen — your child just listens. '
-                      'This uses a free Gemini AI key that you add once and never need to touch again.',
-                      style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                      blurb,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
                     ),
-                    SizedBox(height: 14),
-                    Text('How to get your free key:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 8),
-                    _SetupStep(number: '1', text: 'Visit aistudio.google.com (free Google account)'),
-                    _SetupStep(number: '2', text: 'Click "Get API key" → "Create API key"'),
-                    _SetupStep(number: '3', text: 'Copy the key'),
-                    _SetupStep(number: '4', text: 'Open Settings in this app and paste it under "Gemini API Key"'),
+                    const SizedBox(height: 14),
+                    const Text('How to get your free key:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    const _SetupStep(number: '1', text: 'Visit aistudio.google.com (free Google account)'),
+                    const _SetupStep(number: '2', text: 'Click "Get API key" → "Create API key"'),
+                    const _SetupStep(number: '3', text: 'Copy the key'),
+                    const _SetupStep(number: '4', text: 'Open Settings in this app and paste it under "Gemini API Key"'),
                   ],
                 ),
               ),
