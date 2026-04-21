@@ -140,16 +140,20 @@ Manual browser test not yet re-run. Suggest: Parent Controls → Use Your Own AP
 - `lib/screens/wizard_story_screen.dart`: `_showBedtimeSettingsDialog` now reads `isMature` from theme extension and retitles dialog ("Voice Story Settings"), SwitchListTile ("Interactive Voice Adventure" + subtitle). Icon-only mature-band launcher switched from `Icons.bedtime_outlined` → `Icons.mic_none_rounded`; tooltip & semantic label become "Voice Story Mode".
 - Internal class/enum/file names (`BedtimeWizardScreen`, `BedtimeStep`, `bedtime_wizard_screen.dart`) unchanged — user-visible copy only.
 
+### Fixes shipped — commit `abea63d` (P3)
+
+- `lib/settings_screen.dart`: arithmetic-gate condition was `band.band != AgeBand.creator` — this incorrectly locked Adult account holders behind a puzzle while Adolescents passed it trivially. Flipped to `!band.band.isMature`, so young bands (sprout/explorer/adventurer) keep the gate and mature bands (creator/adolescent/adult) bypass it.
+- `lib/settings_screen.dart`: for mature bands, "Parent Dashboard" → "Activity Dashboard" and "Manage Child Profiles" → "Manage Profiles"; subtitle copy updated. Young-band labels unchanged.
+
 ### Deferred — see backlog
 
-- **P3 — Settings split for adolescent/adult:** separate "Your account" vs "Managed by a parent" sections. Not started; needs read of `lib/settings_screen.dart` first.
 - **Fix 7 — Life Quest content expansion:** six candidate themes authored in `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md` — romantic rupture, social-media shame, family conflict, academic burnout, identity formation, first job / money. Content-authoring task, no code changes required.
 
 ### Verification
 
-- `flutter analyze` on all five touched files: **no issues** (both P1 and P2 batches).
+- `flutter analyze` on all six touched files: **no issues** (P1 + P2 + P3).
 - Not Playwright-verified — MCP lockfile blocker persists. User will smoke-test visually post-merge.
-- No regression risk expected on younger bands: every change is either gated on `isMature`/`_isMature` or touches files only used by mature bands.
+- No regression risk expected on younger bands: every change is either gated on `isMature`/`_isMature` or touches files only used by mature bands. P3 specifically leaves sprout/explorer/adventurer behavior intact.
 
 ---
 
