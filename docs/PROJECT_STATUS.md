@@ -92,7 +92,7 @@ ADULT-3 Reflect screen, Life Quests rebrand, security audit + remediation, Creat
 
 1. **Content moderator model bumped** — `gemini-2.0-flash-lite` deprecated; bumped to `gemini-2.5-flash-lite` in commit `4f077ba`. ✅ Fixed 2026-04-21.
 2. **BUG-001 re-verification** — Avatar gate confirmed PASS; wizard advancement inconclusive via Playwright (archetype `FilterChip` semantics unreliable). Needs manual browser test.
-3. **BUG-002 TTS backoff** — Fix landed 2026-04-20b; fresh-session verification still pending (cached-session TTS storm interferes with Playwright test). See `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`.
+3. **BUG-002 TTS backoff** ⚠️ Partial — Fresh-session test 2026-04-21: 9 total 429s (2 bounded bursts of 4–5), no storm. Fix is working but backoff loop has no hard retry cap; second burst hit 5 retries vs ≤4 target. Not user-visible. Follow-up: add retry cap to `_prewarm()` in `app_tts_service.dart`.
 4. **BUG-003 Stripe anon guard** ✅ Fixed + deployed 2026-04-21 — `StripeService.getSubscriptionStatus()` now early-returns free/inactive for `anon_` users, covering all 3 unguarded call sites. Deployment `b33e04b9` live on Railway.
 4. ~~**CORS blocking production web**~~ — Resolved 2026-03-18 via `RAILWAY_FRONTEND_URL` env var on Railway. Production confirmed working.
 

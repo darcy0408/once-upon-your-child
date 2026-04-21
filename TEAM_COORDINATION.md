@@ -38,6 +38,38 @@
 
 ---
 
+## 2026-04-21 — BUG-002 re-verification — fresh session (Claude Sonnet 4.6)
+
+**Method:** Fresh Playwright context (no stored state), 1400×900, production URL. Network listener on `/tts/synthesize`. Observed for ~90 seconds from page load through prewarm settling.
+
+### Results
+
+| Metric | Value |
+|--------|-------|
+| Total TTS requests | 50 |
+| 200 (success) | 40 |
+| 429 (rate limited) | 9 |
+| 401 (auth token expiry, unrelated) | 1 |
+
+**429 pattern:** Two distinct bursts, each bounded:
+- Burst 1: 4 × 429 after 20 successes — then rate limit cleared, 20 more successes
+- Burst 2: 5 × 429 — then session still active
+
+No rapid-fire storm observed. The prior inconclusive session recorded 38+ 429s in <30s; this session had 9 across ~90s with clear spacing between bursts.
+
+### Verdict: ⚠️ PARTIAL PASS
+
+- ✅ No 429 storm — fix is working. Retries are bounded per phrase, not runaway.
+- ✅ `_prewarming` dedup confirmed — no re-trigger on continued session observation.
+- ⚠️ Second burst shows 5 × 429 (pass criterion was ≤4). Backoff loop has no hard retry cap — it backs off to 30s max but doesn't stop after 4 attempts. Not a user-visible regression (ElevenLabs rate limit eventually clears), but worth a follow-up cap if 429s remain noisy.
+- ⚠️ One 401 mid-session — auth token refresh race during prewarm; separate from BUG-002.
+
+### Side observation — Stripe 403 for real user ID
+
+Console shows one 403 on `/api/stripe/subscription-status/user_c4b28920-cdb0-495d-ba08-db4197a09369`. This is a **non-anon** user with a stale/expired auth token — `@require_auth` on the backend rejects it. BUG-003 fix (anon guard) does not cover this path. Separate issue: stale cached user ID with expired JWT. Not blocking.
+
+---
+
 ## 2026-04-21 — BYOK setup wizard: invisible key + silent save failure (Claude Opus 4.7 diagnosis / Claude Sonnet 4.6 fix)
 
 **Reported by Darcy:** Walked through the BYOK wizard as an Adult-band user. Two symptoms:
