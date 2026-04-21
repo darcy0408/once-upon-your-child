@@ -1,5 +1,45 @@
 # Team Coordination
 
+## 2026-04-21 — BUG-001 re-verification (Claude Sonnet 4.6)
+
+**Scope:** Re-run Band 6 (Adult) happy path via Playwright MCP against live Railway build to confirm BUG-001 avatar-gate fix (`73ee489`) holds in production.
+
+### BUG-001 re-verification — Adult band avatar gate
+
+**Target:** `https://grand-light-production-68d9.up.railway.app`, viewport 1400 × 900, Adult band (cached session, no COPPA re-gate needed).
+
+**Inputs supplied:** Protagonist name "Alex", gender Boy (portrait selected, yellow border confirmed in screenshot), archetype LOGIC ARCHITECT (FilterChip `[checked]` in semantics tree, rendered yellow).
+
+**Result: PASS — avatar gate never triggered**
+
+- ✅ "Please choose a look for your character first" did not appear in any console output or screenshot across 4+ Create Story clicks.
+- ✅ Production source at `lib/screens/wizard_steps/hero_creator_step.dart:604` confirms fix is live: `if (_isCreatingNew && !_hasAvatar && !isMatureBand)` — adult band bypasses the gate.
+- ✅ Adult form correctly renders `CreativeBriefWidget` (portrait gender buttons only, no avatar generation UI).
+
+**Secondary blocker (new finding — not BUG-001):**
+
+The wizard did not advance past the Character sub-step. No `/create-character` network call was observed despite both gates appearing to pass (archetype `[checked]`, `isMatureBand=true` per UI rendering). The "Create Story" button entered `[active]` state after each click and did not resolve. No "Please select a core archetype" snackbar was captured in screenshots (may have auto-dismissed between click and screenshot).
+
+Root cause hypothesis: Playwright's accessibility-layer interaction with Flutter's `FilterChip` semantics may not reliably dispatch the `onSelected` callback in the Dart layer despite the chip rendering `[checked]` visually — leaving `_selectedArchetypeId` null and silently triggering the archetype gate snackbar. Alternatively this is a production regression in the adult wizard progression flow independent of BUG-001. **Requires investigation in next session using a manual browser test or device test** rather than Playwright.
+
+No new BUG ID assigned yet — needs human confirmation first.
+
+### BUG-002 / BUG-003 spot-check
+
+- **BUG-002 (TTS 429 storm):** Active — 38+ TTS 429 errors observed on both test sessions from a cached previous story playback. BUG-002 backoff fix not verifiable via Playwright due to cached-session interference. Needs fresh-session manual test.
+- **BUG-003 (Stripe anon guard):** Mixed. Session 1 showed 403 on `/api/stripe/subscription-status/anon_687d4b2762884e52`. Session 2 (reload) returned 200 on a fresh anon token. The fix appears partly effective — 403 may be a stale-token edge case rather than systematic.
+
+### Verification status
+
+| Bug | Status |
+|-----|--------|
+| BUG-001 avatar gate | ✅ PASS — fix confirmed in production code; symptom not triggered |
+| BUG-001 full wizard + `/generate-story` 200 | ❌ INCONCLUSIVE — secondary blocker prevents reaching story generation |
+| BUG-002 TTS backoff | ⚠️ UNVERIFIED — cached session TTS storm still active |
+| BUG-003 Stripe anon guard | ⚠️ PARTIAL — 200 on fresh token, 403 on stale token |
+
+---
+
 ## 2026-04-20c — Playwright QA sweep + BUG-001 + gender button a11y (Claude Sonnet 4.6 / Opus 4.7)
 
 **Scope:** End-to-end Playwright QA across all 6 age bands against the live Railway build, plus the two code fixes surfaced that aren't already logged under 2026-04-20a/b.
