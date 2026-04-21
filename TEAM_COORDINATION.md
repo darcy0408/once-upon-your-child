@@ -50,6 +50,32 @@ No new BUG ID assigned yet — needs human confirmation first.
 
 **Playwright wizard-advancement "inconclusive" resolved:** Manual browser test confirmed the full Adult happy path works end-to-end in production. The Playwright hang was a Flutter `FilterChip.onSelected` dispatch quirk under the a11y interaction layer, not a prod regression. **BUG-001 closed.**
 
+### BUG-003 call-site audit (Claude Sonnet 4.6)
+
+**Call sites found hitting `/api/stripe/subscription-status/`:**
+
+| File | Guarded? |
+|------|----------|
+| `lib/services/subscription_sync_service.dart` | ✅ already guarded (`startsWith('anon_')` early return) |
+| `lib/services/stripe_service.dart:62` | ❌ raw HTTP call, no guard |
+| `lib/services/subscription_service.dart:31` | ❌ creates `StripeService()` directly, bypasses sync service |
+| `lib/screens/subscription_management_screen.dart:85` | ❌ calls `_stripeService.getSubscriptionStatus(userId)` directly |
+| `lib/providers/subscription_provider.dart:58` | ❌ calls `SubscriptionService.getSubscriptionStatus()` → hits unguarded path |
+
+**Root cause:** `SubscriptionSyncService` holds the only guard, but three other paths call `StripeService.getSubscriptionStatus()` directly, bypassing it entirely. A stale anon token is still an `anon_`-prefixed userId — it hits the backend 403 because the client-side guard was never reached.
+
+**Fix chosen: Option B — guard in `StripeService.getSubscriptionStatus()` itself**
+
+Added an early return at the top of `StripeService.getSubscriptionStatus()`:
+```dart
+if (userId.startsWith('anon_')) {
+  return {'status': 'inactive', 'tier': 'free'};
+}
+```
+This is the single HTTP boundary all callers use, so one change covers all three unguarded paths. Backend 403 policy unchanged.
+
+**Verification:** Added unit test `getSubscriptionStatus returns free/inactive for anon_ user without network call` in `test/unit/services/stripe_service_test.dart` — verifies no HTTP call is made and the returned payload is `{status: inactive, tier: free}`. Test passes. Pre-existing auth-header test failures (2) are unrelated.
+
 ---
 
 ## 2026-04-20c — Playwright QA sweep + BUG-001 + gender button a11y (Claude Sonnet 4.6 / Opus 4.7)

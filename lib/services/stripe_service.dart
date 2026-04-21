@@ -60,6 +60,9 @@ class StripeService {
 
   /// Fetch the subscription status for a specific user.
   Future<Map<String, dynamic>> getSubscriptionStatus(String userId) async {
+    if (userId.startsWith('anon_')) {
+      return {'status': 'inactive', 'tier': 'free'};
+    }
     try {
       final response = await _httpClient
           .get(

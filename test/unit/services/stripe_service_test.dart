@@ -202,6 +202,15 @@ void main() {
       expect(result['tier'], 'free');
     });
 
+    test('getSubscriptionStatus returns free/inactive for anon_ user without network call',
+        () async {
+      final result = await stripeService.getSubscriptionStatus('anon_abc123');
+
+      expect(result['status'], 'inactive');
+      expect(result['tier'], 'free');
+      verifyNever(() => mockHttpClient.get(any(), headers: any(named: 'headers')));
+    });
+
     test('getSubscriptionStatus calls subscription endpoint with user id',
         () async {
       when(() => mockHttpClient.get(
