@@ -7,13 +7,44 @@
 | 1 | BUG-001 full E2E — Band 6 `/generate-story` 200 | Needs Playwright restart or manual incognito test | `docs/briefings/TASK1_PLAYWRIGHT_BAND6_REVERIFY.md` |
 | 2 | BUG-002 TTS backoff — fresh-session verification | Needs Playwright restart or manual incognito test | `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md` |
 | 3 | BUG-004 Back→COPPA stuck — "That's me!" breaks after COPPA Back | Code fix: `_handleContinue` navigation guard | See §2026-04-21 Six Hats below |
-| 4 | Age 2 missing from age picker | Code fix: add circle for age 2 | Sprout is 2-5; picker starts at 3 |
+| 4 | Age 2 missing from age picker | Code fix: add entry to `_youngAgeEntries` in both `welcome_screen.dart` and `age_gate_screen.dart` | Sprout band is 2-5; picker starts at 3 |
 | 5 | Archetype display names in Heroes/a11y labels | Show "Animal Friend!" not "The Animal Whisperer" | Semantic labels leak internal IDs |
 | 6 | "Story service is ready" banner visible in child view | Hide from non-admin views | Dev status exposed to users |
 | 7 | Mochi black card background | Give Mochi a coloured background like other buddies | Visual inconsistency |
 | 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
+| 9 | **BUG-005** Binary-only gender picker (HIGH — inclusivity) | Add "Other / Prefer not to say" option with neutral archetype image path; affects all bands | `hero_creator_step.dart:1651` — `_buildGenderPicker()` |
+| 10 | **BUG-006** Gender tap auto-advances instantly (MEDIUM) | Add 400ms confirmation delay or a Next button before calling `_heroNextPage()` | `hero_creator_step.dart:1674` — `_handleGenderSelection` |
+| 11 | **BUG-007** Two age-gate implementations diverge (MEDIUM) | `welcome_screen.dart` and `age_gate_screen.dart` have different consent flows for 13–17; need reconciliation | Parental knowledge dialog only in `age_gate_screen.dart` |
+| 12 | **BUG-008** Consent scroll progress bar not visible while scrolling (LOW) | Add sticky "↓ Scroll to continue" hint near bottom of consent form | `parental_consent_screen.dart:78` — progress bar in AppBar |
+| 13 | "Hearing no" ambiguous copy in Shape the stories dialog | Change to "Struggling with 'no'" | `welcome_screen.dart:1027` — parent controls setup dialog |
+| 14 | Sprout companion limit (1) has no visual feedback | Disable/overlay remaining companion tiles once limit reached; show "Buddy chosen!" | `hero_creator_step.dart` — `_buildAdventureTeamPage`, maxSlots=1 |
+| 15 | Sprout pet reveal looks like static text, not interactive | Add chevron or "Tap here" label to `GestureDetector` container | `hero_creator_step.dart:1204` |
+| 16 | "Add a Friend" button name clashes with "Your Friends:" saved-character section | Rename button to "Add from Photo" or similar | `hero_creator_step.dart:1163` |
+| 17 | Title splash has no back affordance to change age | Add small "← Change age" link; wrong age = wrong entire experience | `welcome_screen.dart:443` — `_buildTitleStep` |
+| 18 | Adult Reflect prompts have no skip/safety valve | Add quiet "Not tonight →" to cycle prompt without journaling | `adult_meditation_screen.dart:23` — `_kReflectivePrompts` |
+| 19 | 5-second title splash timer may cut TTS mid-sentence | Gate timer start until TTS completes, or extend to 7s | `welcome_screen.dart:246` — `_titleTimer` |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
+
+---
+
+## 2026-04-21 — Six Hats UX Code Review (Claude Sonnet 4.6)
+
+Full code-based Six Hats exploration across all 6 age bands. No Playwright (browser lockfile active). All findings traced to source lines.
+
+**New bugs logged:** BUG-005 (gender binary), BUG-006 (gender auto-advance), BUG-007 (dual age-gate divergence), BUG-008 (consent scroll UX). See Pending Tasks table rows 9–19.
+
+**Key findings summary:**
+
+- **Critical — inclusivity:** Gender picker is binary (Boy/Girl/Man/Woman only) across all 6 bands. No non-binary / "prefer not to say" option. Especially harmful for Creator (12–14) and Adolescent (15–17) bands. `hero_creator_step.dart:1651`
+- **High — navigation:** Gender tap immediately auto-advances (`_handleGenderSelection` calls `_heroNextPage()` synchronously). Accidental mis-tap sends user to next page with no confirmation. `hero_creator_step.dart:1674`
+- **Medium — structural:** Two parallel age-gate implementations (`welcome_screen.dart` vs `age_gate_screen.dart`) diverge: one auto-advances on age tap, the other requires explicit Continue; parental knowledge dialog only in the latter; consent-recording for 13–17 skipped on welcome path. Risk of one rotting.
+- **Medium — COPPA UX:** Consent scroll progress bar is in AppBar (top of screen) while parent is reading at the bottom — invisible while scrolling. Submit stays greyed out with no explanation. `parental_consent_screen.dart:78`
+- **Low — copy:** "Hearing no, bedtime worry, sibling moments?" in the Shape the stories dialog is ambiguous — "Hearing no" could mean hearing loss. `welcome_screen.dart:1027`
+- **Low — Sprout:** Sprout companion limit is 1 but remaining tiles show no disabled state. Pet card reveal (`GestureDetector`) looks like static text — no tap affordance. Title splash has no back button to correct a wrong age selection.
+- **Positive findings:** COPPA compliance solid; age-band differentiation excellent; wizard back navigation functional; draft persistence; voice UX for Sprout; Adult Reflect content is high quality.
+
+Full analysis delivered in conversation — not duplicated here.
 
 ---
 
