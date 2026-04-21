@@ -38,6 +38,50 @@
 
 ---
 
+## 2026-04-21 — Six Hats Adolescent UX Review + P1/P2 fixes (Claude Sonnet 4.6)
+
+**Method:** Code-level walkthrough (Playwright MCP blocked on Windows lockfile; user opted for code review instead of restart). Mapped wizard flow, tab shell, Life Quest player, bedtime wizard, feeling selection, and Creative Brief form. Plan: `C:\Users\darcy\.claude\plans\federated-marinating-kernighan.md`.
+
+**Scope:** Adolescent band (ages 15–17, `AgeBand.adolescent`, `isMature=true`).
+
+### Findings — severity ranked
+
+| # | Issue | Severity | Shipped |
+|---|-------|----------|---------|
+| 1 | Fredoka font across all Life Quest UI chrome (9 call sites) — wrong for cinematic dark bands | High | ✅ commit `bcd54e2` |
+| 2 | Quest player lost close button once user made a choice — no in-app path back to selector | High | ✅ commit `bcd54e2` |
+| 3 | Creative Brief gender portraits for adolescent pointed at Adventurer (9–11 yr) assets | High | ✅ commit `ceee86a` |
+| 4 | "Bedtime" framing leaked into mature bands (dialog titles, tooltip, byok card, timer/error voice) | Medium | ✅ commit `ceee86a` |
+| 5 | Story Note placeholder undersold band depth (Creator-style copy on adolescent) | Low | ✅ commit `bcd54e2` |
+| 6 | Settings tab mixes account-level with parent-control settings from teen's POV | Medium | ⬜ P3 — deferred |
+| 7 | Only 3 Life Quests shipped for this band | Strategic | ⬜ backlog authored: `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md` |
+
+### Fixes shipped — commit `bcd54e2` (P1)
+
+- `lib/screens/life_quest_screen.dart`: introduced `_chromeStyle(band, ...)` helper that returns `GoogleFonts.sourceSans3` when `band.band.isMature`, else `GoogleFonts.fredoka`. Replaced 9 inline Fredoka call sites (selector title/subtitle, empty-state, quest cards, player title, choice buttons, ending link). Narrative body text (Merriweather) untouched.
+- `lib/screens/life_quest_screen.dart`: `_buildQuestPlayer` top bar now always shows close (wired to `_resetToSelector`); rewind appears alongside when `_segmentHistory` is non-empty.
+- `lib/screens/wizard_steps/feeling_selection_step.dart:582–586`: split the creator/adolescent switch arm; adolescent placeholder becomes `"e.g., Keep it honest and focused on starting over after a hard week"`.
+
+### Fixes shipped — commit `ceee86a` (P2)
+
+- `lib/screens/wizard_steps/hero_creator_creative_brief.dart:215–219`: adolescent gender portraits point at `assets/images/archetypes/adolescent/master_creator_{boy,girl}.png` (gender-split, age-appropriate, shipped with commit `a07aedd`).
+- `lib/screens/bedtime_wizard_screen.dart`: added `_isMature` branches to timer-expiry voice line, BYOK voice prompt, generation-error voice line, and BYOK setup card title + blurb. Young bands keep "Bedtime" framing; mature bands see "Voice Stories".
+- `lib/screens/wizard_story_screen.dart`: `_showBedtimeSettingsDialog` now reads `isMature` from theme extension and retitles dialog ("Voice Story Settings"), SwitchListTile ("Interactive Voice Adventure" + subtitle). Icon-only mature-band launcher switched from `Icons.bedtime_outlined` → `Icons.mic_none_rounded`; tooltip & semantic label become "Voice Story Mode".
+- Internal class/enum/file names (`BedtimeWizardScreen`, `BedtimeStep`, `bedtime_wizard_screen.dart`) unchanged — user-visible copy only.
+
+### Deferred — see backlog
+
+- **P3 — Settings split for adolescent/adult:** separate "Your account" vs "Managed by a parent" sections. Not started; needs read of `lib/settings_screen.dart` first.
+- **Fix 7 — Life Quest content expansion:** six candidate themes authored in `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md` — romantic rupture, social-media shame, family conflict, academic burnout, identity formation, first job / money. Content-authoring task, no code changes required.
+
+### Verification
+
+- `flutter analyze` on all five touched files: **no issues** (both P1 and P2 batches).
+- Not Playwright-verified — MCP lockfile blocker persists. User will smoke-test visually post-merge.
+- No regression risk expected on younger bands: every change is either gated on `isMature`/`_isMature` or touches files only used by mature bands.
+
+---
+
 ## 2026-04-21 — Six Hats Adult UX Audit — Frontend + Backend + Screenshots (Claude Sonnet 4.6)
 
 **Method:** Flutter code review (62 screens), backend API audit, 20 screenshots analysed.  
