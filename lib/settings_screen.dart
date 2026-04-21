@@ -357,7 +357,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeMode = ref.watch(themeModeNotifierProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final band = Theme.of(context).extension<AgeBandThemeData>();
-    final isChildBand = band != null && band.band != AgeBand.creator;
+    // Gate parent-only settings behind an arithmetic puzzle for young bands
+    // (sprout/explorer/adventurer). Mature bands (creator/adolescent/adult)
+    // are the account holder — no gate. Previously the gate only excluded
+    // Creator, which inadvertently locked adults out of their own account.
+    final isMature = band?.band.isMature ?? false;
+    final isChildBand = band != null && !isMature;
 
     if (settings.isLoading) {
       return Scaffold(
@@ -412,10 +417,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.dashboard_rounded,
                       color: AppColors.primary),
-                  title: const Text('Parent Dashboard',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle:
-                      const Text('Stories, feelings trends & activity'),
+                  title: Text(isMature ? 'Activity Dashboard' : 'Parent Dashboard',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(isMature
+                      ? 'Your stories, feelings trends & activity'
+                      : 'Stories, feelings trends & activity'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
@@ -429,10 +435,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.people_rounded,
                       color: AppColors.primary),
-                  title: const Text('Manage Child Profiles',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text(
-                      'Add, edit or switch child profiles'),
+                  title: Text(isMature ? 'Manage Profiles' : 'Manage Child Profiles',
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(isMature
+                      ? 'Add, edit or switch profiles'
+                      : 'Add, edit or switch child profiles'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
