@@ -34,6 +34,7 @@ When closing a session:
 - **MT-010** [open] Investigate stale-JWT 403 for real user (created by c4ea) — during BUG-002 TTS session, saw Stripe 403 for `user_c4b28920-cdb0-495d-ba08-db4197a09369` (non-anon). Backend returns 403 instead of 401 for expired/invalid JWT. Check auth middleware — should return 401 so Flutter can trigger re-auth rather than silently failing.
 
 - **MT-011** [open] BUG-002 TTS backoff runtime verification (created by 2571) — fresh Claude Code instance required (so --isolated in .mcp.json activates). Follow docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md: age 8 Explorer band, network-filter /tts/, wait 60 s, verify 429 count bounded (<=4 per phrase) and retry spacing shows backoff curve (~2 s, ~4 s, ~8 s). Manual fallback: Chrome DevTools Network tab. BUG-001 browser confirm already tracked as MT-005.
+- **MT-012** [open] Age-gate consolidation audit (created by 7df8) — `welcome_screen.dart` and `age_gate_screen.dart` diverge in behavior; users aged 13–17 on the welcome path may not record COPPA consent correctly. Assign to Opus — risky refactor touching compliance logic. Entry point: `lib/screens/welcome_screen.dart:998` (`_handleContinue`) and `lib/screens/age_gate_screen.dart`. Prior session notes flagged this as highest remaining HIGH item.
 
 ## Closed tasks
 
