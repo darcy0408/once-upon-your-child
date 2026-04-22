@@ -53,6 +53,21 @@ All 14 images from `assets/BoyGirl images/BoyGirl placeholder images/` copied in
 
 ---
 
+## Manual Tasks (Darcy-only)
+
+Things no agent can or should do without direct human judgment. Check these off as you complete them.
+
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Verify BYOK end-to-end** after the backend-proxy validation fix (commit `b8f8009`). Parent Controls → Use Your Own API Key → paste a real `AIza...` key → confirm wizard shows "Great! Your key looks good." → Finish → re-open wizard from another entry point and confirm key is persisted. Test on **production web** specifically since the fix targeted web CORS. | §2026-04-21 BYOK setup wizard |
+| M2 | **Clean up QA screenshot debris at repo root.** 70+ `.png` files left over from multiple Playwright sessions (`hat-*.png`, `verify-*.png`, `bug001-*.png`, `byok-*.png`, loose `after-*.png` / `before-*.png`, `coppa-gate.png`, etc.). Same kind of artifacts swept out on 2026-04-20c. Decide: delete all, or add a glob to `.gitignore` so they stop showing up in `git status`. | Repo-root noise |
+| M3 | **Review uncommitted `backend/middleware/auth.py` edit** — one-line change swapping `user.is_under_13` → `getattr(user, 'is_under_13', False)` in `require_parental_consent`. Looks like a follow-up refinement to BUG-010 (pending task #21 notes the fix as shipped at a different line). Decide whether to commit, combine with another change, or drop. | BUG-010 follow-up |
+| M4 | **Confirm `gender_adolescent_girl.jpg` deletion is intended.** The working tree shows the `.jpg` deleted. Commit `e81d292` ("adolescent asset jpg→png") already added the `.png` replacement, so the stale `.jpg` removal appears to be cleanup that commit forgot to stage. Safe to `git rm` it, but confirm no code path still points at the `.jpg` before committing. | Asset cleanup |
+| M5 | **Decide fate of `test_archetypes.mjs`** (untracked, repo root). One-off Playwright script verifying archetype images across Adult/Adolescent/Creator bands. If it's reusable, move to `tools/` or `test/e2e/` and commit. Otherwise delete. | One-off test artifact |
+| M6 | **Restart Playwright MCP** if you plan to keep using it this session — the Windows lockfile workaround from `reference_playwright_mcp_lockfile.md` requires a Claude Code restart to take effect. TASK1 (BUG-001 full E2E) and TASK2 (BUG-002 fresh-session) both depend on a working Playwright MCP. | `reference_playwright_mcp_lockfile.md` |
+
+---
+
 ## 2026-04-21 — BUG-002 re-verification — fresh session (Claude Sonnet 4.6)
 
 **Method:** Fresh Playwright context (no stored state), 1400×900, production URL. Network listener on `/tts/synthesize`. Observed for ~90 seconds from page load through prewarm settling.
