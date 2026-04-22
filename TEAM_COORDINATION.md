@@ -26,7 +26,7 @@ All 14 images from  copied into  and wired into the  switch in . Extensions corr
 | ~~5~~ | ~~Archetype display names in Heroes/a11y labels~~ | ✅ Fixed `115b37b` — `character_library_screen` uses `nameForAge()`; a11y labels in both grid paths updated | ~~Semantic labels leak internal IDs~~ |
 | ~~6~~ | ~~"Story service is ready" banner visible in child view~~ | ✅ Fixed `115b37b` — banner hidden when `_backendOnline == true`; only shows when checking or offline | ~~Dev status exposed to users~~ |
 | ~~7~~ | ~~Mochi black card background~~ | ✅ Fixed — wrapped in `Container(color: companion.color.withAlpha(40))`, `BoxFit.contain`. `companion_selector_step.dart:1150` | |
-| 8 | Sprout Life Quests empty | Author 3-5 Sprout quests | Dead-end for primary target age band |
+| ~~8~~ | ~~Sprout Life Quests empty~~ | ✅ Fixed `9635005` — 3 Sprout quests added (`questBigBearHug`, `questBigLoud`, `questMyTurnYourTurn`) with short segments, simple words, 2 choices, warm endings. `lib/data/life_quest_data.dart` | ~~Dead-end for primary target age band~~ |
 | ~~9~~ | ~~**BUG-005** Binary-only gender picker~~ | ✅ Fixed — "Other" / "Non-binary / Other" pill added below Boy/Girl row; non-binary falls through to genderless archetype image. `hero_creator_step.dart` | |
 | ~~10~~ | ~~**BUG-006** Gender tap auto-advances instantly~~ | ✅ Fixed — 400ms delay before `_heroNextPage()` in `_handleGenderSelection`. `hero_creator_step.dart` | |
 | ~~11~~ | ~~**BUG-007** Two age-gate implementations diverge~~ | ✅ Fixed — `age_gate_screen.dart` was dead code (never instantiated); deleted file. Only `WelcomeScreen` is used. | |
