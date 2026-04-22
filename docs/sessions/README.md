@@ -10,7 +10,7 @@ Where `<id>` is a 4-character hex tag (e.g. `a7f3`) chosen at session-close time
 
 ## File structure
 
-Each session file follows this template (see `.claude/commands/session-close.md` for the canonical version):
+Each session file follows this template (see `.claude/commands/close-session.md` for the canonical version):
 
 ```markdown
 # SESSION CLOSE — YYYY-MM-DD HH:MM [id] — Branch: <branch> — <topic>
