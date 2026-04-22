@@ -245,7 +245,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // Auto-advance from splash to complete after 5 s (tap also advances).
     _titleTimer?.cancel();
     _titleTimer = Timer(const Duration(milliseconds: 7000), () {
-      if (mounted && _step == 2) _handleContinue();
+      if (mounted && _step == 2) {
+        AppTtsService.instance.stop();
+        _handleContinue();
+      }
     });
     final band = ageBandFromAge(age);
     if (band == AgeBand.adolescent || band == AgeBand.adult) {
@@ -264,6 +267,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   void _advanceFromTitle() {
     AppTtsService.instance.markInteracted();
+    AppTtsService.instance.stop();
     _titleTimer?.cancel();
     if (mounted && _step == 2) {
       _handleContinue();
@@ -466,16 +470,35 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   // ── Step 1: Title splash ──────────────────────────────────────────────────
 
   Widget _buildTitleStep() {
-    return GestureDetector(
+    return Stack(
       key: const ValueKey('title'),
-      onTap: _advanceFromTitle,
-      child: _isAdolescent
-          ? _buildAdolescentTitleStep()
-          : _isCreator
-              ? _buildCreatorTitleStep()
-              : _isAdventurer
-                  ? _buildAdventurerTitleStep()
-                  : _buildDefaultTitleStep(),
+      children: [
+        GestureDetector(
+          onTap: _advanceFromTitle,
+          child: _isAdolescent
+              ? _buildAdolescentTitleStep()
+              : _isCreator
+                  ? _buildCreatorTitleStep()
+                  : _isAdventurer
+                      ? _buildAdventurerTitleStep()
+                      : _buildDefaultTitleStep(),
+        ),
+        Positioned(
+          top: 8,
+          left: 0,
+          child: TextButton.icon(
+            onPressed: _goBack,
+            icon: const Icon(Icons.chevron_left, color: Colors.white54, size: 18),
+            label: const Text(
+              'Change age',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -1638,7 +1638,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         girlAsset = 'assets/images/ui/gender/gender_creator_girl.jpg';
       case AgeBand.adolescent:
         boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.jpg';
+        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.png';
       case AgeBand.adult:
         boyAsset = 'assets/images/ui/gender/gender_adult_boy.png';
         girlAsset = 'assets/images/ui/gender/gender_adult_girl.png';
