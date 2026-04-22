@@ -1,5 +1,56 @@
 # Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — Six Hats UX audit context-continuation (immediate close)
+
+### Accomplished
+- Nothing new — this session resumed a prior conversation that hit context limits. All Six Hats UX audit work (12/13 issues fixed across 8 files) was completed and pushed in the prior context. See commits referenced in the Six Hats audit section of this file.
+
+### Still Pending / Deferred
+- Same as previous session: BUG-001 browser confirm (M1), screenshot cleanup (M2), Playwright MCP lockfile.
+
+### Blockers
+- None.
+
+### Manual Tasks (Darcy)
+- See active Manual Tasks table below — no new items this session.
+
+### Next Session: Start Here
+> Check the active Manual Tasks table for highest-priority item. BUG-001 browser confirm (M1) is a 2-minute check that formally closes the last open QA bug.
+
+---
+
+## SESSION CLOSE — 2026-04-22 — Branch: main — Six Hats adult audit + fix plan + BUG-012 error copy (Sonnet 4.6)
+
+### Accomplished
+- **Six Hats adult UX audit** (`ae3d5d5`) — full audit via code review + 20 screenshots; 62 screens mapped; ~15 issues identified
+- **4-sprint fix plan** (`da35457`) — comprehensive plan added to TEAM_COORDINATION.md covering P0→P3 items
+- **BUG-012 fixed** (`d081266`) — stripped `str(exc)` leaks from `story_routes.py` (6 instances) and `tts_routes.py` (2 instances); replaced with structured error codes (`STORY_FAILED`, `STORY_TIMEOUT`, `TTS_FAILED`, `STT_FAILED`) + friendly copy; raw errors logged server-side only
+- **BUG-010 second guard** (`abbbaa3`) — `backend/middleware/auth.py:130` `require_parental_consent` now uses `getattr(user, 'is_under_13', False)`
+- **Stale asset cleanup** (`abbbaa3`) — deleted `assets/images/ui/gender/gender_adolescent_girl.jpg` (replaced by `.png` in prior commit)
+- **Sprint 1/2 reconciliation** — verified BUG-009 (avatar timeout), BUG-011 (loading progress), rows 8/22/26/29 already shipped by parallel sessions; avoided duplicate work
+
+### Still Pending / Deferred
+- **BUG-001** — Band 6 `/generate-story` full E2E — needs Playwright restart or manual incognito test; use Tab→Enter keyboard nav (not WheelEvent scroll)
+- **BUG-002** — TTS retry cap (`app_tts_service.dart:~147` `_maxPrewarmRetries`) — partial pass last audit; one 401 auth-token race still unresolved
+- **Flutter client error strings** — grep for old strings `"Story generation failed"` / `"Synthesis failed"` in Flutter code that may need updating to match new `STORY_FAILED` / `TTS_FAILED` codes from `d081266`
+- **Sprint 3 (P2)** — age-gate flow reconciliation (`welcome_screen.dart` vs `age_gate_screen.dart`), COPPA consent recording for 13-17 path
+- **Sprint 4 (P3)** — adult home redesign, archetype renaming, first-run disambiguation — needs design discussion
+
+### Blockers
+- Playwright MCP browser lockfile (Windows) — parallel sessions holding browser; needs Claude Code restart to clear
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Smoke-test BUG-012** | Hit `/tts/synthesize` and `/generate-story` with bad inputs; confirm JSON responses now show `STORY_FAILED`/`TTS_FAILED` codes and friendly copy, not raw Python exception text |
+| M2 | **Flutter error string grep** | `grep -r "Story generation failed\|Synthesis failed\|Transcription failed" lib/` — update any Flutter UI copy that pattern-matches old error strings from before `d081266` |
+| M3 | **Clean root-level PNGs** | ~70 untracked `.png` files at repo root — `git clean -n *.png` to preview, `git clean -f *.png` to delete |
+
+### Next Session: Start Here
+> BUG-002 retry cap is the quickest win: `_maxPrewarmRetries = 4` in `app_tts_service.dart ~line 147`. Then Sprint 3 age-gate consolidation (`welcome_screen.dart` + `age_gate_screen.dart`) — flag as COPPA-risk refactor, use Opus.
+
+---
+
 ## SESSION CLOSE -- 2026-04-22 ~07:10 -- Branch: main -- Six Hats creator review triage + BUG-010 auth guard hardening
 
 ### Accomplished
