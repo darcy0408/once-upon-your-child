@@ -18,6 +18,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-22 | 12:16 | 9b80 | main | TASK5 BYOK wizard re-check (no-op; already shipped) | [link](docs/sessions/2026-04-22-1216-9b80.md) |
 | 2026-04-22 | 12:16 | cd57 | main | Six Hats UX audit (general app) — context-continuation close | [link](docs/sessions/2026-04-22-1216-cd57.md) |
 | 2026-04-22 | 12:15 | c4ea | main | BUG-003 Stripe anon guard + BUG-002 TTS backoff verification | [link](docs/sessions/2026-04-22-1215-c4ea.md) |
+| 2026-04-22 | 12:16 | 8a9d | main | Archetype image grid for mature bands (creator/adolescent/adult) | [link](docs/sessions/2026-04-22-1216-8a9d.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---
