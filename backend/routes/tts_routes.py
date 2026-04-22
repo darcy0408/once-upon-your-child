@@ -164,7 +164,7 @@ def create_tts_blueprint(limiter, require_auth):
                 )
         except Exception as e:
             logger.error("ElevenLabs TTS synthesis error: %s", e)
-            return jsonify({"error": "Synthesis failed", "message": str(e)}), 500
+            return jsonify({"error": "TTS_FAILED", "message": "Narration is unavailable right now. Please try again in a moment."}), 500
 
         if not audio_bytes:
             return jsonify({"error": "Empty audio returned"}), 500
@@ -213,6 +213,6 @@ def create_tts_blueprint(limiter, require_auth):
             return jsonify({"text": text.strip()})
         except Exception as e:
             logger.error("ElevenLabs STT error: %s", e)
-            return jsonify({"error": "Transcription failed", "message": str(e)}), 500
+            return jsonify({"error": "STT_FAILED", "message": "Voice transcription is unavailable right now. Please try again in a moment."}), 500
 
     return tts_bp

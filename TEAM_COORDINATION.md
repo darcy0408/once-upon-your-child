@@ -41,13 +41,13 @@ All 14 images from  copied into  and wired into the  switch in . Extensions corr
 | ~~20~~ | ~~**BUG-009** Avatar generation routes have no timeout (HIGH)~~ | ✅ Fixed — `concurrent.futures` 30s timeout on all 4 avatar routes; returns 504 + fallback avatars. `avatar_routes.py` | |
 | ~~21~~ | ~~**BUG-010** `SimpleNamespace` crash in auth middleware (HIGH)~~ | ✅ Fixed — added `hasattr(current_user, 'is_under_13') and` guard. `backend/middleware/auth.py:88` | |
 | ~~22~~ | ~~**BUG-011** No story generation progress indicator (MEDIUM)~~ | ✅ Fixed — elapsed seconds shown after 10s; "taking longer than usual" message after 90s. `magical_loading_view.dart` | |
-| 23 | **BUG-012** Technical error messages exposed to users (MEDIUM) | Replace "Timed out after 120s in synchronous mode" / ElevenLabs error details with friendly copy | `backend/routes/story_routes.py`, `tts_routes.py` |
+| ~~23~~ | ~~**BUG-012** Technical error messages exposed to users (MEDIUM)~~ | ✅ Fixed — removed all `str(exc)` from response bodies; replaced with `STORY_TIMEOUT`/`STORY_FAILED`/`TTS_FAILED`/`STT_FAILED` codes + friendly copy. Raw errors logged server-side only. `story_routes.py`, `tts_routes.py` | |
 | ~~24~~ | ~~**BUG-013** Continue button silent fail with empty name (CRITICAL)~~ | ✅ Fixed — SnackBar "Please enter your name first!" when name is empty. `welcome_screen.dart:_advanceFromName` | |
 | ~~25~~ | ~~**BUG-014** No back button from profile setup screen (HIGH)~~ | ✅ Fixed — `_goBack()` + Positioned back arrow covers name step + title splash + age picker. `welcome_screen.dart` | |
-| 26 | Stripe webhook no timestamp validation | Reject events older than 5 minutes to prevent replay attacks | `backend/routes/webhook_handler.py` |
+| ~~26~~ | ~~Stripe webhook no timestamp validation~~ | ✅ Already handled — `stripe.Webhook.construct_event` in Stripe SDK validates timestamp within 300s tolerance by default. `webhook_handler.py:29` | |
 | ~~27~~ | ~~AdultMeditationScreen no explicit close button~~ | ✅ Already implemented — pushed as `MaterialPageRoute`; Flutter provides back button automatically. `main_story.dart:245` | |
 | ~~28~~ | ~~Wizard X button has no exit confirmation~~ | ✅ Already implemented — "Leave story creation?" dialog with Keep/Leave actions. `wizard_story_screen.dart:406` | |
-| 29 | Archetype chips have no tooltips | On tap, show one-sentence explanation (required field is currently opaque) | `hero_creator_step.dart` |
+| ~~29~~ | ~~Archetype chips have no tooltips~~ | ✅ Already implemented — `ArchetypeCard` widget wraps in `Tooltip(message: description)`; Adventurer/Creator bands also show `descriptionForAge()` inline on card. `archetype_card.dart:62` | |
 
 **Next Playwright approach for TASK1:** Tab→Enter keyboard method — do not use WheelEvent scroll + mouse click. See `TEAM_COORDINATION.md §2026-04-21 BUG-001 re-verification → Next-session plan` for full steps.
 

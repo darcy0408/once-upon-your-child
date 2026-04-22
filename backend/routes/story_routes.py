@@ -541,7 +541,6 @@ def create_story_blueprint(
                         {
                             "error": "STORY_TIMEOUT",
                             "message": "Story generation took too long. Please try again.",
-                            "details": f"Timed out after {sync_story_timeout}s in synchronous mode.",
                         }
                     ),
                     504,
@@ -562,7 +561,7 @@ def create_story_blueprint(
                 )
             except Exception as async_exc:
                 logger.exception("Async fallback after sync timeout also failed: %s", async_exc)
-                return jsonify({"error": "Story generation timed out and async fallback failed", "details": str(async_exc)}), 500
+                return jsonify({"error": "STORY_TIMEOUT", "message": "Story generation took too long. Please try again."}), 500
 
         except Exception as exc:
             import traceback
@@ -578,7 +577,7 @@ def create_story_blueprint(
 
             if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
-                return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(exc)}), 429
+                return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
 
             logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             if _celery_runs_eagerly():
@@ -587,8 +586,8 @@ def create_story_blueprint(
                 )
                 return jsonify(
                     {
-                        "error": "Story generation failed",
-                        "details": str(exc),
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong generating your story. Please try again.",
                     }
                 ), 500
             try:
@@ -608,7 +607,7 @@ def create_story_blueprint(
             except Exception as async_exc:
                 if "429" in str(async_exc) or "ResourceExhausted" in str(async_exc) or "Quota exceeded" in str(async_exc):
                      logger.warning(f"Quota exceeded in async generation: {async_exc}")
-                     return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(async_exc)}), 429
+                     return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
 
                 logger.exception("Async fallback also failed: %s", async_exc)
                 # Last resort: retry synchronously before giving up entirely
@@ -630,7 +629,7 @@ def create_story_blueprint(
                     return jsonify(response_payload), 200
                 except Exception as fallback_exc:
                     logger.exception("Synchronous retry also failed: %s", fallback_exc)
-                    return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
+                    return jsonify({"error": "STORY_FAILED", "message": "Something went wrong generating your story. Please try again."}), 500
 
     @story_bp.route("/generate-story-mock", methods=["POST"])
     def generate_story_mock_endpoint():
