@@ -38,9 +38,9 @@ All 14 images from  copied into  and wired into the  switch in . Extensions corr
 | ~~17~~ | ~~Title splash has no back affordance to change age~~ | ✅ Fixed — `_goBack()` + Positioned back arrow (`_step > 0`). `welcome_screen.dart` | |
 | ~~18~~ | ~~Adult Reflect prompts have no skip/safety valve~~ | ✅ Already implemented — "I'm okay tonight →" button sets `_promptDismissed`. `adult_meditation_screen.dart:589` | |
 | ~~19~~ | ~~5-second title splash timer may cut TTS mid-sentence~~ | ✅ Fixed — timer extended to 7000ms. `welcome_screen.dart:247` | |
-| 20 | **BUG-009** Avatar generation routes have no timeout (HIGH) | Add 30s timeout + 504 fallback-preset response | `backend/routes/avatar_routes.py` — no timeout on Gemini/Replicate calls |
+| ~~20~~ | ~~**BUG-009** Avatar generation routes have no timeout (HIGH)~~ | ✅ Fixed — `concurrent.futures` 30s timeout on all 4 avatar routes; returns 504 + fallback avatars. `avatar_routes.py` | |
 | ~~21~~ | ~~**BUG-010** `SimpleNamespace` crash in auth middleware (HIGH)~~ | ✅ Fixed — added `hasattr(current_user, 'is_under_13') and` guard. `backend/middleware/auth.py:88` | |
-| 22 | **BUG-011** No story generation progress indicator (MEDIUM) | Show "Weaving your story… (~60s)" with elapsed time; 120s timeout is silent | `wizard_story_screen.dart` — no progress feedback during generation |
+| ~~22~~ | ~~**BUG-011** No story generation progress indicator (MEDIUM)~~ | ✅ Fixed — elapsed seconds shown after 10s; "taking longer than usual" message after 90s. `magical_loading_view.dart` | |
 | 23 | **BUG-012** Technical error messages exposed to users (MEDIUM) | Replace "Timed out after 120s in synchronous mode" / ElevenLabs error details with friendly copy | `backend/routes/story_routes.py`, `tts_routes.py` |
 | ~~24~~ | ~~**BUG-013** Continue button silent fail with empty name (CRITICAL)~~ | ✅ Fixed — SnackBar "Please enter your name first!" when name is empty. `welcome_screen.dart:_advanceFromName` | |
 | ~~25~~ | ~~**BUG-014** No back button from profile setup screen (HIGH)~~ | ✅ Fixed — `_goBack()` + Positioned back arrow covers name step + title splash + age picker. `welcome_screen.dart` | |

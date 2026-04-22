@@ -53,6 +53,9 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   final List<_TapTarget> _tapTargets = [];
   Timer? _targetSpawnTimer;
 
+  int _elapsedSeconds = 0;
+  Timer? _elapsedTimer;
+
   static const List<String> _phaseMessages = <String>[
     'Your hero is lacing up their boots...',
     'The adventure map is being drawn...',
@@ -97,6 +100,11 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       duration: const Duration(milliseconds: 1800),
       vsync: this,
     )..repeat();
+
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _elapsedSeconds++);
+    });
 
     // A lightweight particle field: orbit + drift + twinkle.
     for (int i = 0; i < 22; i++) {
@@ -180,6 +188,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     _stepTimer?.cancel();
     _targetSpawnTimer?.cancel();
     _constellationTimer?.cancel();
+    _elapsedTimer?.cancel();
     _pulseController.dispose();
     _rotationController.dispose();
     _weaveController.dispose();
@@ -530,6 +539,26 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Quicksand',
                   ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedOpacity(
+              opacity: _elapsedSeconds >= 10 ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 600),
+              child: Text(
+                _elapsedSeconds >= 90
+                    ? 'Taking a little longer than usual — almost there! ✨'
+                    : '${_elapsedSeconds}s',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: _elapsedSeconds >= 90 ? 12 : 11,
+                  color: _elapsedSeconds >= 90
+                      ? AppColors.gold
+                      : Colors.white38,
+                  fontStyle: _elapsedSeconds >= 90
+                      ? FontStyle.italic
+                      : FontStyle.normal,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Container(

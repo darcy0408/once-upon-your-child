@@ -2,8 +2,11 @@
 Avatar Routes - API endpoints for magical avatar generation
 """
 import time
+import concurrent.futures
 from flask import Blueprint, request, jsonify, make_response, after_this_request, current_app
 import logging
+
+_AVATAR_TIMEOUT_SECONDS = 30
 
 try:
     from backend.utils.app_helpers import get_user_tier, get_user_identifier
@@ -148,15 +151,18 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                avatar_data = service.generate_custom_avatar(
-                    character_name=character_name,
-                    age=age,
-                    gender=gender,
-                    eye_color=eye_color,
-                    favorite_color=favorite_color,
-                    photo_bytes=photo_bytes,
-                    refinement_note=refinement_note,
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(
+                        service.generate_custom_avatar,
+                        character_name=character_name,
+                        age=age,
+                        gender=gender,
+                        eye_color=eye_color,
+                        favorite_color=favorite_color,
+                        photo_bytes=photo_bytes,
+                        refinement_note=refinement_note,
+                    )
+                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
 
                 logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")
 
@@ -164,6 +170,14 @@ def create_avatar_blueprint(limiter):
                     'status': 'success',
                     'avatar': avatar_data
                 }), 200
+
+            except concurrent.futures.TimeoutError:
+                logger.warning("Custom avatar generation timed out")
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'TIMEOUT',
+                    'message': get_error_message('timeout'),
+                }), 504
 
             except ValueError as e:
                 logger.warning(f"Custom avatar validation error: {e}")
@@ -178,7 +192,7 @@ def create_avatar_blueprint(limiter):
                 return jsonify({
                     'status': 'error',
                     'error_code': 'GENERATION_FAILED',
-                    'message': f"Our magic paintbrush hit a snag: {str(e)}"
+                    'message': get_error_message('generation_failed')
                 }), 500
 
         except Exception as e:
@@ -249,16 +263,16 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                if companion_type == 'human':
-                    avatar_data = service.generate_human_companion_avatar(
-                        name=pet_name,
-                        appearance_description=breed_description,
-                        owner_favorite_color=owner_favorite_color,
-                        photo_bytes=photo_bytes,
-                        owner_age=owner_age,
-                    )
-                else:
-                    avatar_data = service.generate_pet_avatar(
+                def _run_companion():
+                    if companion_type == 'human':
+                        return service.generate_human_companion_avatar(
+                            name=pet_name,
+                            appearance_description=breed_description,
+                            owner_favorite_color=owner_favorite_color,
+                            photo_bytes=photo_bytes,
+                            owner_age=owner_age,
+                        )
+                    return service.generate_pet_avatar(
                         pet_name=pet_name,
                         species=species,
                         breed_description=breed_description,
@@ -266,6 +280,9 @@ def create_avatar_blueprint(limiter):
                         photo_bytes=photo_bytes,
                         owner_age=owner_age,
                     )
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    avatar_data = ex.submit(_run_companion).result(timeout=_AVATAR_TIMEOUT_SECONDS)
 
                 logger.info(f"Companion avatar generated successfully: {avatar_data['id']} (type={companion_type})")
 
@@ -280,12 +297,20 @@ def create_avatar_blueprint(limiter):
                     'transformation_applied': transformation_applied,
                 }), status_code
 
+            except concurrent.futures.TimeoutError:
+                logger.warning("Companion avatar generation timed out")
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'TIMEOUT',
+                    'message': get_error_message('timeout'),
+                }), 504
+
             except Exception as e:
                 logger.error(f"Pet avatar generation failed: {e}")
                 return jsonify({
                     'status': 'error',
                     'error_code': 'GENERATION_FAILED',
-                    'message': f"Our magic paintbrush hit a snag with the pet avatar: {str(e)}"
+                    'message': get_error_message('generation_failed')
                 }), 500
 
         except Exception as e:
@@ -439,14 +464,17 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                avatar_data = service.generate_avatar(
-                    character_name=character_name,
-                    age=age,
-                    style=style,
-                    features=features,
-                    emotion_data=emotion_data,
-                    seed=seed
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(
+                        service.generate_avatar,
+                        character_name=character_name,
+                        age=age,
+                        style=style,
+                        features=features,
+                        emotion_data=emotion_data,
+                        seed=seed,
+                    )
+                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
 
                 logger.info(f"Avatar generated successfully: {avatar_data['id']}")
 
@@ -455,8 +483,17 @@ def create_avatar_blueprint(limiter):
                     'avatar': avatar_data
                 }), 200
 
+            except concurrent.futures.TimeoutError:
+                logger.warning("Avatar generation timed out")
+                fallback_avatars = service.get_fallback_avatars(style)
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'TIMEOUT',
+                    'message': get_error_message('timeout'),
+                    'fallback_avatars': fallback_avatars,
+                }), 504
+
             except ValueError as ve:
-                # Validation error
                 logger.warning(f"Avatar validation error: {ve}")
                 return jsonify({
                     'status': 'error',
@@ -465,11 +502,8 @@ def create_avatar_blueprint(limiter):
                 }), 400
 
             except Exception as e:
-                # Generation error - offer fallbacks
                 logger.error(f"Avatar generation failed: {e}")
-
                 fallback_avatars = service.get_fallback_avatars(style)
-
                 return jsonify({
                     'status': 'error',
                     'error_code': 'GENERATION_FAILED',
@@ -531,14 +565,17 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                avatar_data = service.generate_avatar(
-                    character_name=character_name,
-                    age=age,
-                    style=style,
-                    features=features,
-                    emotion_data=emotion_data,
-                    seed=None  # New seed for variation
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(
+                        service.generate_avatar,
+                        character_name=character_name,
+                        age=age,
+                        style=style,
+                        features=features,
+                        emotion_data=emotion_data,
+                        seed=None,
+                    )
+                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
 
                 logger.info(f"Avatar re-rolled successfully: {avatar_data['id']}")
 
@@ -547,11 +584,19 @@ def create_avatar_blueprint(limiter):
                     'avatar': avatar_data
                 }), 200
 
+            except concurrent.futures.TimeoutError:
+                logger.warning("Avatar re-roll timed out")
+                fallback_avatars = service.get_fallback_avatars(style)
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'TIMEOUT',
+                    'message': get_error_message('timeout'),
+                    'fallback_avatars': fallback_avatars,
+                }), 504
+
             except Exception as e:
                 logger.error(f"Avatar re-roll failed: {e}")
-
                 fallback_avatars = service.get_fallback_avatars(style)
-
                 return jsonify({
                     'status': 'error',
                     'error_code': 'REGENERATION_FAILED',
@@ -676,11 +721,21 @@ def create_avatar_blueprint(limiter):
                 from gemini_image_generator import GeminiImageGenerator
 
             generator = GeminiImageGenerator()
-            images = generator.tweak_gallery_avatar(
-                image_bytes=image_bytes,
-                hair_length=hair_length,
-                eye_color=eye_color,
-            )
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    images = ex.submit(
+                        generator.tweak_gallery_avatar,
+                        image_bytes=image_bytes,
+                        hair_length=hair_length,
+                        eye_color=eye_color,
+                    ).result(timeout=_AVATAR_TIMEOUT_SECONDS)
+            except concurrent.futures.TimeoutError:
+                logger.warning("Gallery avatar tweak timed out")
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'TIMEOUT',
+                    'message': get_error_message('timeout'),
+                }), 504
 
             if not images:
                 return jsonify({
