@@ -14,6 +14,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-22 | 12:14 | 76e3 | main | Six Hats adult audit + BUG-012 error copy + BUG-010 guard | [link](docs/sessions/2026-04-22-1214-76e3.md) |
 | 2026-04-22 | 12:14 | a488 | main | Session-handoff follow-ups (read-count bump + rename) | [link](docs/sessions/2026-04-22-1214-a488.md) |
 | 2026-04-22 | 12:15 | c29c | main | BUG-001/002/003 status audit + CORS stale-entry cleanup | [link](docs/sessions/2026-04-22-1215-c29c.md) |
+| 2026-04-22 | 12:16 | d1c2 | main | BYOK visible key + SnackBar fix; Sprout quests | [link](docs/sessions/2026-04-22-1216-d1c2.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---
