@@ -13,9 +13,10 @@ git status
 git log --oneline -8
 git diff --stat HEAD
 git branch --show-current
+date +%H:%M
 ```
 
-Note the current branch, any uncommitted or untracked files, and the last 8 commits to understand what was done this session.
+Note the current branch, any uncommitted or untracked files, and the last 8 commits to understand what was done this session. Capture the `HH:MM` output — you'll need it for the heading in Step 4.
 
 ---
 
@@ -53,10 +54,27 @@ Review the entire conversation and extract:
 
 Open `TEAM_COORDINATION.md` and **prepend** a new dated section immediately after the `# Team Coordination` heading. Do NOT replace existing content — insert above it.
 
-Use this exact structure:
+### IMPORTANT: Concurrent sessions
+
+Darcy runs ~10 instances simultaneously. **Multiple session-closes on the same day are expected and normal.** Your job is to add YOUR entry regardless of how many already exist for today — do not skip, merge, or defer because another `SESSION CLOSE — <today>` heading is already at the top of the file. Every session gets its own entry, every time.
+
+To make each entry unique and diffable, the heading **must include HH:MM** (24-hour, local time). Get the current time with `date +%H:%M` as part of your Step 1 orient commands.
+
+### Heading format (required)
+
+```
+## SESSION CLOSE — {YYYY-MM-DD} {HH:MM} — Branch: {branch} — {1-line topic summary}
+```
+
+All four fields are required. No placeholders, no skipped time. Example:
+```
+## SESSION CLOSE — 2026-04-22 15:47 — Branch: main — BUG-003 Stripe anon guard verified
+```
+
+### Body structure
 
 ```markdown
-## SESSION CLOSE — {DATE} {TIME} — Branch: {branch} — {1-line topic summary}
+## SESSION CLOSE — {YYYY-MM-DD} {HH:MM} — Branch: {branch} — {1-line topic summary}
 
 ### Accomplished
 - {item with commit SHA if applicable}
@@ -80,9 +98,36 @@ Use this exact structure:
 ---
 ```
 
-Replace `{DATE}` with today's date (2026-04-22), `{TIME}` with approximate time if known, and `{branch}` with the current git branch.
-
 If the Pending Tasks table already has entries for items you're tracking, mark them ~~struck~~ with a ✅ note rather than duplicating them.
+
+### How to actually prepend (race-safe)
+
+The `Edit` tool uses a read-then-write pattern that fails with `File has been modified since read` when another session prepends between the two calls. In a 10-instance setup this happens often. Use the following **atomic bash prepend** as your primary method — it completes in a single subprocess and is far less racy:
+
+```bash
+# 1. Write your new section to a temp file
+cat > /tmp/sc_block.md <<'SESSION_END'
+## SESSION CLOSE — YYYY-MM-DD HH:MM — Branch: main — topic
+
+### Accomplished
+- ...
+
+<rest of your section exactly as specified above, ending with the --- separator and a trailing blank line>
+
+SESSION_END
+
+# 2. Split the existing file at the "# Team Coordination" heading (always first 2 lines: heading + blank)
+head -n 2 TEAM_COORDINATION.md > /tmp/sc_head.md
+tail -n +3 TEAM_COORDINATION.md > /tmp/sc_tail.md
+
+# 3. Reassemble: head + your block + rest-of-file
+cat /tmp/sc_head.md /tmp/sc_block.md /tmp/sc_tail.md > TEAM_COORDINATION.md
+
+# 4. Clean up
+rm /tmp/sc_block.md /tmp/sc_head.md /tmp/sc_tail.md
+```
+
+If for some reason this fails, fall back to `Edit` — but if `Edit` returns `File has been modified since read`, do a fresh `Read` of the top of the file and retry (up to 3 attempts). **Never give up on your session-close prepend just because the file is contended.**
 
 ---
 
