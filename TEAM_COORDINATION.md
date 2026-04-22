@@ -1,17 +1,17 @@
-# Team Coordination
+﻿# Team Coordination
 
 ## 2026-04-21 — Gender picker images wired in for all age bands (Claude Sonnet 4.6)
 
-All 14 images from  copied into  and wired into the  switch in . Extensions corrected (adventurer, creator use ; others ). Commit .
+All 14 images from `assets/BoyGirl images/BoyGirl placeholder images/` copied into `assets/images/ui/gender/` and wired into the `_buildGenderPicker()` switch in `hero_creator_step.dart`. Extensions corrected (adventurer, creator use `.jpg`; others `.png`). Commit `bf94b8b`.
 
 | Band | Boy | Girl |
 |------|-----|------|
-| sprout |  |  |
-| explorer |  |  |
-| adventurer |  |  |
-| creator |  |  |
-| adolescent |  |  |
-| adult |  |  |
+| sprout | ``sprouts_boy.png`` | ``sprouts_girl.png`` |
+| explorer | ``5-7 year old boy.png`` | ``5-7 year old girl.png`` |
+| adventurer | ``8-10 year old boy.jpg`` | ``8-10 year old girl.jpg`` |
+| creator | ``14 boy.jpg`` | ``14 girl.jpg`` |
+| adolescent | ``16 boy.png`` | ``13 - 15 girl.jpg`` |
+| adult | ``boy adult.png`` | ``girl adult.png`` |
 
 ---
 
