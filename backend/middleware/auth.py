@@ -127,7 +127,7 @@ def require_parental_consent(f):
             return jsonify({'error': 'Authentication required'}), 401
 
         user = request.current_user
-        if not user.is_under_13:
+        if not getattr(user, 'is_under_13', False):
             # User is 13 or older — no consent check needed.
             return f(*args, **kwargs)
 
