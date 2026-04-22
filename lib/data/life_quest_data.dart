@@ -145,6 +145,12 @@ const allLifeQuests = <LifeQuestScenario>[
   questSomeoneNeedsHelp,
   questThingIDidntSay,
   questWhereAreYouGoing,
+  questFightAtHome,
+  questAfterTheBreakup,
+  questScreenshotSpreading,
+  questBurningOut,
+  questWhoAmIBecoming,
+  questFirstPaycheck,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4379,6 +4385,176 @@ const questWhereAreYouGoing = LifeQuestScenario(
           'on yours. And when you do, '
           'it\'ll be because you chose it, '
           'not because you panicked into it.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADOLESCENT QUEST 4: The Fight at Home
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questFightAtHome = LifeQuestScenario(
+  id: 'the_fight_at_home',
+  title: 'The Fight at Home',
+  hook: 'Words said you can\'t take back. Now the house is too quiet.',
+  emoji: '\u{1F6AA}',
+  emotions: ['angry', 'sad', 'frustrated'],
+  recommendedBands: [AgeBand.adolescent],
+  startSegmentId: 'fh_start',
+  segments: {
+    'fh_start': QuestSegment(
+      id: 'fh_start',
+      content:
+          'You can still hear the door slam in your ears.\n\n'
+          'The argument built fast. '
+          'Something they said. Something you said back. '
+          'Then everything you\'ve been holding for months, '
+          'out in the open, ugly.\n\n'
+          'You didn\'t apologise. Neither did they.\n\n'
+          'Now the house is quiet. Too quiet.\n\n'
+          '«{companion} is in the next room pretending not to have heard.»\n\n'
+          'Two hours have passed. '
+          'You can hear your parent in the kitchen, moving around.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'fh_go_out',
+          text: 'Go out there. Try to fix it.',
+          nextSegmentId: 'fh_go_out',
+        ),
+        QuestChoice(
+          id: 'fh_stay_in',
+          text: 'Stay in your room. You\'re not sorry.',
+          nextSegmentId: 'fh_stay_in',
+        ),
+      ],
+    ),
+
+    'fh_go_out': QuestSegment(
+      id: 'fh_go_out',
+      content:
+          'You walk down the hall.\n\n'
+          'Your parent is at the sink, back to you. They don\'t turn around.\n\n'
+          '"Hey."\n\n'
+          '"Hey." Still not turning.\n\n'
+          'This is the hard part. '
+          'You could apologise for the whole thing — '
+          'smooth it away, make dinner happen, '
+          'pretend the next morning is fresh.\n\n'
+          'Or you could apologise for *how* it went. '
+          'Not for *what you meant*.\n\n'
+          'What do you say?',
+      choices: [
+        QuestChoice(
+          id: 'fh_smooth',
+          text: '"Sorry. Let\'s just forget it."',
+          nextSegmentId: 'fh_end_smooth',
+        ),
+        QuestChoice(
+          id: 'fh_partial',
+          text: '"I\'m sorry I yelled. I\'m not sorry for what I said."',
+          nextSegmentId: 'fh_end_partial',
+        ),
+      ],
+    ),
+
+    'fh_stay_in': QuestSegment(
+      id: 'fh_stay_in',
+      content:
+          'You stay put. The light fades outside.\n\n'
+          'Your phone buzzes once. Maybe your parent. Maybe not.\n'
+          'You don\'t check.\n\n'
+          'You weren\'t wrong. You know that. '
+          'But as the minutes pass, you notice something else — '
+          'you\'re not feeling *right* either.\n\n'
+          'Being correct and being at peace aren\'t the same thing.\n\n'
+          'What now?',
+      choices: [
+        QuestChoice(
+          id: 'fh_text',
+          text: 'Text them. Something short. Something true.',
+          nextSegmentId: 'fh_end_text',
+        ),
+        QuestChoice(
+          id: 'fh_hold',
+          text: 'Hold your ground. Let them come to you.',
+          nextSegmentId: 'fh_end_hold',
+        ),
+      ],
+    ),
+
+    'fh_end_smooth': QuestSegment(
+      id: 'fh_end_smooth',
+      content:
+          'Your parent turns around, looking tired.\n\n'
+          '"Okay. Forget it."\n\n'
+          'And just like that, the fight is filed away.\n\n'
+          'The house warms up again. Dinner happens. '
+          'By the morning it\'s as if it never happened.\n\n'
+          'Except you remember it. '
+          'And the thing you were fighting about — '
+          'the reason it got that loud — '
+          'is still there. Unspoken.\n\n'
+          'Sometimes smoothing over is the kind thing to do. '
+          'Sometimes it\'s just postponing the same fight.\n\n'
+          'Only you know which one this was.',
+      isEnding: true,
+    ),
+
+    'fh_end_partial': QuestSegment(
+      id: 'fh_end_partial',
+      content:
+          'Your parent puts down the dish towel.\n\n'
+          'They look at you for a long moment. '
+          'You can see them deciding something.\n\n'
+          '"Okay," they say. "I can work with that."\n\n'
+          'It\'s not a reconciliation. '
+          'It\'s not even agreement. '
+          'It\'s an acknowledgement that you said something real, '
+          'and you\'re not taking it back.\n\n'
+          'The hardest thing in family isn\'t being wrong. '
+          'It\'s staying in the room *while* you\'re right.\n\n'
+          'You stayed in the room.',
+      isEnding: true,
+    ),
+
+    'fh_end_text': QuestSegment(
+      id: 'fh_end_text',
+      content:
+          'You type and delete three drafts before one feels honest:\n\n'
+          '*I\'m still mad. But I don\'t want us not talking. '
+          'I\'ll come out when dinner\'s ready.*\n\n'
+          'You send it. The three dots appear.\n\n'
+          'Then: *Okay.*\n\n'
+          'Just that. One word.\n\n'
+          'It\'s not everything you wanted. '
+          'It\'s not a win. '
+          'But it\'s a door cracked open — '
+          'and you\'re the one who cracked it.\n\n'
+          'Sometimes the bravest thing in a fight '
+          'isn\'t holding your ground. '
+          'It\'s refusing to let silence grow teeth.',
+      isEnding: true,
+    ),
+
+    'fh_end_hold': QuestSegment(
+      id: 'fh_end_hold',
+      content:
+          'You hold.\n\n'
+          'Dinner comes and goes. You don\'t eat with them. '
+          'The house stays cold.\n\n'
+          'Eventually you fall asleep. '
+          'In the morning no one says anything, '
+          'and neither do you. '
+          'The fight just… sits there. For days.\n\n'
+          'Holding ground feels powerful in the moment. '
+          'It feels less powerful on day three.\n\n'
+          'Being right doesn\'t warm a house. '
+          'Someone has to speak first — '
+          'and the person who speaks first isn\'t the one who lost.\n\n'
+          'You can decide, later, to be that person. '
+          'It\'s not too late until you decide it is.',
       isEnding: true,
     ),
   },
