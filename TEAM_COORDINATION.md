@@ -1,5 +1,29 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-001/002/003 status audit + CORS stale-entry cleanup
+
+### Accomplished
+- **CORS stale entry cleared** — `docs/PROJECT_STATUS.md` still listed "CORS blocking production web" as a Known Issue. Confirmed resolved 2026-03-18 via `RAILWAY_FRONTEND_URL` env var on Railway. Entry removed.
+- **BUG-002/003 confirmed done** — Both fully addressed in earlier today sessions (`7eff5de`, `6d71454`, `f60aafb`). No further action needed.
+- **BUG-001 wizard advancement — Playwright artifact, not a regression** — Code review of `lib/screens/wizard_steps/hero_creator_creative_brief.dart:368` shows archetype grid uses `GestureDetector` + `onTap`, not `FilterChip`. Playwright's accessibility layer was incorrectly representing it as a chip. Real tap path is correct. Manual browser confirmation still pending to formally close.
+
+### Still Pending / Deferred
+- **BUG-001 manual browser confirm** — Incognito → production → 18+ band → wizard → select archetype → "Create Story". Verify it advances. Code looks correct; this is final confirmation only.
+
+### Blockers
+- Playwright MCP lockfile held by MCP server process (not Chrome). `taskkill /F /IM chrome.exe` does not fix it. Requires Claude Code restart.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **BUG-001 browser test** | Incognito → production → 18+ age band → wizard → tap any archetype card → tap "Create Story". Should advance past Hero Creator. |
+| M2 | **Delete Playwright screenshots + test_archetypes.mjs** | 70+ untracked `.png` files + `test_archetypes.mjs` in repo root. All Playwright artifacts, safe to delete. |
+
+### Next Session: Start Here
+> Do the 2-minute BUG-001 browser test (M1) to formally close the last open QA bug. After that the known-issues list is clean and work can shift to v1.1+ features.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — Six-Hats Adolescent review → full P1/P2/P3 + 6 Life Quests shipped
 
 ### Accomplished
