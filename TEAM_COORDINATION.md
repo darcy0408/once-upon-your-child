@@ -1,5 +1,32 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-003 Stripe anon guard + BUG-002 fresh-session verification
+
+### Accomplished
+- **BUG-003 fixed + deployed** — Added `anon_` guard to `StripeService.getSubscriptionStatus()`, covering 3 unguarded callers: `SubscriptionService`, `subscription_management_screen.dart`, `subscription_provider.dart`. Unit test added. Commits: `6d71454` (fix) + `f60aafb` (docs). Railway deploy `b33e04b9` ✅ SUCCESS.
+- **Railway token cleanup** — Stale `RAILWAY_TOKEN` in `~/.claude/settings.json` was blocking deploys. Cleared; session now uses OAuth from `~/.railway/config.json` automatically.
+- **BUG-002 TTS backoff verified (fresh session)** — Playwright fresh-context: 50 TTS requests, 9×429 in 2 bounded bursts (4+5). No storm vs prior 38+. Fix working. Commit `7eff5de`.
+- **Pending table audit** — Confirmed BUG-009, BUG-011, BUG-013, BUG-014 already resolved in prior commits; table was accurate.
+
+### Still Pending / Deferred
+- **BUG-002 retry cap** — `_prewarm()` loop has no hard cap; second burst hit 5×429 vs ≤4. Add `_maxPrewarmRetries = 4` in `lib/services/app_tts_service.dart` ~line 147.
+- **BUG-012** — Technical error strings exposed to users. `backend/routes/story_routes.py` + `tts_routes.py`. Not started.
+- **Row 26** — Stripe webhook timestamp validation (replay attack). `backend/routes/webhook_handler.py`. Not started.
+
+### Blockers
+- None.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Verify BUG-003 in production** | Fresh incognito → production URL → DevTools Network. No 403s on `/api/stripe/subscription-status/` for anon users. |
+| M2 | **Investigate Stripe 403 for real user ID** | Playwright saw 403 for `user_c4b28920-...` (non-anon, stale JWT). BUG-003 doesn't cover this. May be auth middleware returning 403 instead of 401 on expired tokens. |
+
+### Next Session: Start Here
+> Add `_maxPrewarmRetries = 4` to `app_tts_service.dart` `_prewarm()` to fully close BUG-002 (5-min fix), then tackle **Row 26** Stripe webhook timestamp validation in `backend/routes/webhook_handler.py`.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-002 TTS backoff root-cause fix + Playwright MCP isolation
 
 ### Accomplished
