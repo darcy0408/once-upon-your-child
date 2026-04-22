@@ -1,5 +1,42 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — BYOK wizard bugs diagnosed, fixed via backend proxy; parallel-session briefings authored (Claude Opus 4.7)
+
+### Accomplished
+- Fired two Sonnet sidecars from authored briefings — TASK1 (Playwright Band 6 re-verification) and TASK2 (content moderator model bump). Task 2 shipped cleanly (`4f077ba`: `gemini-2.0-flash-lite` → `gemini-2.5-flash-lite` across `content_moderator.py`, `story_generation_service.py`, and `cost_tracking.py`). Task 1 avatar gate PASS but wizard-advancement inconclusive (Playwright quirk, not regression — Darcy confirmed manual pass).
+- Doc sync `a2a3b25` — `PROJECT_STATUS.md` refreshed to 2026-04-21 (Phase 4 added); `SESSION_HISTORY.md` backfilled with rollup entries for 2026-04-18, -19, -20.
+- Closed BUG-001 after Darcy's manual browser test (`c85d29f`).
+- Authored follow-up briefings for TASK3 (BUG-002 TTS fresh-session verify) and TASK4 (BUG-003 Stripe anon guard call-site audit).
+- **BYOK wizard diagnosis + fix.** Darcy reported invisible pasted key + silent save failure. Authored TASK5 briefing, Sonnet shipped `62b09a6` (visibility + SnackBar + CORS-fallback). Darcy flagged the CORS-fallback tradeoff; I replaced it with the proper solution in `b8f8009` — `_validate()` now POSTs to the existing backend endpoint `POST /api/user/settings/validate-api-key` (`api_key_routes.py:142`, no-auth, rate-limited 10/min). No more CORS issues, no more relaxed validation.
+- Added Manual Tasks section (M1–M6) to TEAM_COORDINATION.md (`2ea69f7`).
+- Consolidated `.claude/commands/` — deleted old `close-session.md` + `close-session-gemini.md`, replaced with single `session-close.md`; updated `start-session.md` to read the new SESSION CLOSE block format (`a995571`).
+
+### Still Pending / Deferred
+- **Pending Task #1 — BUG-001 full E2E via Playwright** — still open in the table; Darcy's manual test passed but Playwright a11y-layer quirk on the archetype `FilterChip.onSelected` dispatch means automated verification needs the Tab→Enter keyboard approach, not mouse click.
+- **Pending Task #2 — BUG-002 TTS backoff fresh-session** — requires working Playwright MCP. Briefing at `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`.
+- **BUG-003 Stripe anon guard call-site audit (TASK4)** — briefing written but not dispatched; there's a second call site somewhere hitting `/api/stripe/subscription-status/` without the `startsWith('anon_')` guard, causing 403s on stale anon tokens.
+- **Uncommitted in working tree** (not my scope to commit — belong to other agents' flows): `backend/middleware/auth.py` 1-line `getattr(user, 'is_under_13', False)` refinement (BUG-010 follow-up), and `assets/images/ui/gender/gender_adolescent_girl.jpg` deletion (orphan from `e81d292` jpg→png rename).
+
+### Blockers
+- **Playwright MCP Windows lockfile** — requires Claude Code restart to recover. See `reference_playwright_mcp_lockfile.md`. Blocks TASK1 and TASK3 full verification.
+
+### Manual Tasks (Darcy)
+
+Adding to the existing M1–M6 list — these are fresh items surfaced this session:
+
+| # | Task | Context |
+|---|------|---------|
+| M7 | **Verify BYOK on production web** after `b8f8009`. This is the single highest-value verification item — the whole fix targeted web CORS. Parent Controls → BYOK wizard → paste real `AIza...` key → should see "Great! Your key looks good." → Finish → re-open wizard elsewhere → should not relaunch at step 0. | §SESSION CLOSE 2026-04-22 (this block) |
+| M8 | **Dispatch TASK4 to a Sonnet** if BUG-003 Stripe 403 noise still matters. Briefing at `docs/briefings/TASK4_BUG003_STRIPE_ANON_AUDIT.md`. Low-effort call-site audit + guard replication. | `docs/briefings/TASK4_BUG003_STRIPE_ANON_AUDIT.md` |
+
+(M1–M6 from previous session still stand — M7 supersedes M1 since the proxy-validation fix replaces the CORS-fallback that M1 was testing.)
+
+### Next Session: Start Here
+
+> Run M7 first — 5-minute manual BYOK test on production web. If the proxy-validation fix works end-to-end, close out M1/M7 and move to TASK4 (Stripe anon guard). If it fails, root-cause before anything else — BYOK is the monetization-critical path.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — Sprout UX audit fixes + 3 Sprout Life Quests
 
 ### Accomplished
