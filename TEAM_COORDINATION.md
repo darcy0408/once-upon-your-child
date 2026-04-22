@@ -1,5 +1,34 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-002 TTS backoff root-cause fix + Playwright MCP isolation
+
+### Accomplished
+- **BUG-002 root cause found via static audit** — `TtsRateLimitException` was thrown inside a `try` block in `TtsApiService.synthesize()` and caught by the bare `catch (e)` below it, swallowing it before it could reach `_prewarm()`'s backoff handler. The backoff in `app_tts_service.dart` was dead code as shipped.
+- **Fix committed** (cherry-picked to HEAD) — added `on TtsRateLimitException { rethrow; }` before the generic `catch (e)` in `tts_api_service.dart`. `dart analyze` clean.
+- **Playwright MCP `--isolated` flag** added to `.mcp.json` — prevents future "Browser is already in use" lockfile conflicts when multiple Claude Code instances run simultaneously. Takes effect on next process start.
+- **Git cleanup** — orphaned commits from a mid-session rebase recovered and cherry-picked; staged leftovers from another session committed and pushed.
+- **`TEAM_COORDINATION.md`** updated with BUG-002 static audit findings, defer plan, and resume instructions.
+
+### Still Pending / Deferred
+- **BUG-002 runtime verification** — Briefing at `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`. Needs a fresh Claude Code instance (so `--isolated` Playwright is active). See `§BUG-002 fresh-session retest — DEFERRED` below for full plan.
+- **BUG-001 full wizard + `/generate-story` 200** — Create Story button still unverified via automation; Tab→Enter approach documented. Manual alternative: incognito → age 21 → fill wizard → DevTools Network confirms 200s.
+- **70+ untracked screenshots at repo root** — `hat-*.png`, `verify-*.png`, `bug001-*.png` etc. — not committed; safe to delete manually.
+
+### Blockers
+- **Playwright MCP lockfile** — 14+ competing non-isolated node processes sharing one Chrome profile. Fix (`--isolated`) is in `.mcp.json` and takes effect on next Claude Code restart.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Clean up root-level screenshots** | Run `rm *.png` from repo root — 70+ untracked Playwright screenshots, safe to delete |
+| M2 | **BUG-002 runtime verification** | Fresh Claude Code instance → Playwright per `docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`, OR: Chrome DevTools → Network filter `tts` → app → age 8 → wait 60 s |
+| M3 | **BUG-001 Create Story button** | Incognito → `https://grand-light-production-68d9.up.railway.app` → age 21 → fill wizard → Create Story → confirm `/create-character` + `/generate-story` both 200 |
+
+### Next Session: Start Here
+> The TTS backoff fix is now correct in code — priority is runtime verification via BUG-002 fresh-session test (`docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md`). Start a fresh Claude Code instance so `--isolated` Playwright is active, run the test, and write the verdict to `TEAM_COORDINATION.md`.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — BYOK wizard bugs diagnosed, fixed via backend proxy; parallel-session briefings authored (Claude Opus 4.7)
 
 ### Accomplished
