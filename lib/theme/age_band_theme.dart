@@ -274,9 +274,9 @@ const sproutTheme = AgeBandThemeData(
   primary: Color(0xFFE65100), // Deep orange
   primaryLight: Color(0xFFFF8A50), // Light orange
   primaryDark: Color(0xFFBF360C), // Burnt orange
-  gradientStart: Color(0xFF1A0533), // Deep plum (keeps magic feel)
-  gradientMid: Color(0xFF3D1260), // Warm purple
-  gradientEnd: Color(0xFF2E1B4E), // Purple-pink
+  gradientStart: Color(0xFF2D1B42), // Warm plum — cozy, not cold
+  gradientMid: Color(0xFF5F2776), // Rose-purple — bedtime story feel
+  gradientEnd: Color(0xFF8B3A6B), // Dusty rose — sunset warmth
   accent: Color(0xFFFFD54F), // Gold (shared)
   accentLight: Color(0xFFFFE082),
   surface: Color(0xFFFFF3E0), // Warm cream

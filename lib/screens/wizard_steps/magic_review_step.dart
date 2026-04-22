@@ -821,7 +821,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   ],
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+
+              // ── Visual recap: who + where (and optionally buddy) ──
+              _buildSproutRecap(band, heroName),
+              const SizedBox(height: 24),
 
               // ── GO! button ──
               _PulsingCastSpellFrame(
@@ -874,6 +878,65 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Small warm recap card for Sprout launch screen — shows name + scenario
+  /// in plain words so a pre-reader's parent can double-check before GO!
+  Widget _buildSproutRecap(AgeBandThemeData band, String heroName) {
+    final wd = widget.wizardData;
+    final scenarioName = wd.selectedScenario == null ? null : _scenarioLabel;
+    final buddyName = wd.companionNames.isEmpty ? null : wd.companionNames.first;
+
+    Widget row(String emoji, String label, String value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                value,
+                style: GoogleFonts.nunito(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: band.accent,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: band.accent.withValues(alpha: 0.35), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          row('🦸', 'I am', heroName),
+          if (scenarioName != null) row('🏰', 'Going to', scenarioName),
+          if (buddyName != null) row('🐾', 'With', buddyName),
+        ],
       ),
     );
   }
