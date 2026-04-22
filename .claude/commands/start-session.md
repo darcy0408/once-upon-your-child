@@ -27,12 +27,14 @@ Then read these files:
 
 ## Step 2 — Pick relevant session files
 
-From the Recent Sessions table:
+Darcy runs ~10 simultaneous instances, so the relevant handoff context is usually spread across many recent closes — not just the most recent one. Read **up to 15 session files** with branch-aware prioritisation:
 
-1. **Filter by current branch.** Find the most recent 1–3 rows where `Branch` matches the current branch.
-2. **If none match**, fall back to the most recent row on `main` and explicitly note in the briefing: *"No prior closes on branch `<X>`; pulling context from main."*
-3. **Read those session files** from `docs/sessions/`.
-4. **Always note other live work today**: count rows from today's date and report e.g. *"Other today: 4 closes on main, 1 on bug-004-fix."*
+1. **First fill (branch-matched).** From the Recent Sessions table, find every row where `Branch` matches the current branch. Take the most recent **up to 10**.
+2. **Then top up (main-branch context).** If the result has fewer than 15 entries and the current branch is not `main`, add the most recent `main`-branch rows until you reach 15. Note in the briefing: *"Including N closes from main for context."*
+3. **If the current branch is `main`**, just take the most recent 15 rows from any branch.
+4. **If a row's `File` link points to a path that doesn't exist**, skip that row (it may be from before the per-session file system, or the file was archived) — don't fail.
+5. **Read each selected session file** from `docs/sessions/`. These files are small (30–60 lines each); reading 15 is fine.
+6. **Always note other live work today**: count rows from today's date in the table and report e.g. *"15 closes today across 4 branches."*
 
 ---
 
@@ -78,7 +80,7 @@ Format (one screenful, bold the key facts):
 ## Important Rules
 
 - Don't read the whole `TEAM_COORDINATION.md` — only the Recent Sessions table and Pending Tasks table near the top. Old SESSION CLOSE blocks below are historical, not current.
-- Don't read more than 3 session files in `docs/sessions/`. If you need more context, ask Darcy first.
+- Read up to 15 session files in `docs/sessions/` per Step 2. Reading more without a specific reason wastes context; reading fewer misses cross-instance context.
 - Don't update or write to `TEAM_COORDINATION.md` during start. That's the close skill's job.
 - If the Recent Sessions table is empty (fresh repo), say so and brief from `git log` only.
 - Never invent session IDs or task IDs. If you can't find one, say "no record found."
