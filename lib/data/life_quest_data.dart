@@ -113,6 +113,10 @@ String interpolateQuest(
 // ─────────────────────────────────────────────────────────────────────────────
 
 const allLifeQuests = <LifeQuestScenario>[
+  // Sprout band (ages 2-5)
+  questBigBearHug,
+  questBigLoud,
+  questMyTurnYourTurn,
   // Explorer band (ages 6-8)
   questWobblyDay,
   questSorryStuck,
@@ -4375,6 +4379,376 @@ const questWhereAreYouGoing = LifeQuestScenario(
           'on yours. And when you do, '
           'it\'ll be because you chose it, '
           'not because you panicked into it.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPROUT QUEST 1: The Big Bear Hug  [Sprout: ages 2-5]
+// Short segments. Simple words. Two choices. Both paths are kind.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questBigBearHug = LifeQuestScenario(
+  id: 'big_bear_hug',
+  title: 'The Big Bear Hug',
+  hook: 'Your favorite teddy is missing. Where could he be?',
+  emoji: '\u{1F9F8}',
+  emotions: ['sad', 'worried'],
+  recommendedBands: [AgeBand.sprout],
+  startSegmentId: 'bbh_start',
+  segments: {
+    'bbh_start': QuestSegment(
+      id: 'bbh_start',
+      content:
+          'It is bedtime.\n\n'
+          'You look on your pillow. '
+          'No teddy.\n\n'
+          'You look under the blanket. '
+          'No teddy.\n\n'
+          'Your tummy feels wobbly. '
+          'Where is he?',
+      choices: [
+        QuestChoice(
+          id: 'bbh_c1a',
+          text: 'Call out — "Mommy! Daddy!"',
+          nextSegmentId: 'bbh_call',
+        ),
+        QuestChoice(
+          id: 'bbh_c1b',
+          text: 'Go look in the toy box',
+          nextSegmentId: 'bbh_look',
+        ),
+      ],
+    ),
+
+    'bbh_call': QuestSegment(
+      id: 'bbh_call',
+      content:
+          '"I can\'t find Teddy!"\n\n'
+          'Big footsteps. A warm hand on your back.\n\n'
+          '"Let\'s look together."\n\n'
+          'It is so much easier with two.',
+      choices: [
+        QuestChoice(
+          id: 'bbh_c2a',
+          text: 'Check the couch first',
+          nextSegmentId: 'bbh_couch',
+        ),
+        QuestChoice(
+          id: 'bbh_c2b',
+          text: 'Check the car first',
+          nextSegmentId: 'bbh_car',
+        ),
+      ],
+    ),
+
+    'bbh_look': QuestSegment(
+      id: 'bbh_look',
+      content:
+          'You dig — blocks, books, a sock.\n\n'
+          'No teddy in the toy box.\n\n'
+          '«{companion} nudges your leg. »Your eyes feel hot.\n\n'
+          'A small tear slips out. That\'s okay. '
+          'Tears help when we feel sad.',
+      choices: [
+        QuestChoice(
+          id: 'bbh_c3a',
+          text: 'Take a big breath',
+          nextSegmentId: 'bbh_breath',
+        ),
+        QuestChoice(
+          id: 'bbh_c3b',
+          text: 'Go find a grown-up',
+          nextSegmentId: 'bbh_call',
+        ),
+      ],
+    ),
+
+    'bbh_couch': QuestSegment(
+      id: 'bbh_couch',
+      content:
+          'You both kneel by the couch.\n\n'
+          'A furry ear pokes out between the cushions.\n\n'
+          'TEDDY!\n\n'
+          'You squeeze him tight. '
+          'He squeezes back — in your heart.\n\n'
+          'Lost things can be found. '
+          'And grown-ups love helping.',
+      isEnding: true,
+    ),
+
+    'bbh_car': QuestSegment(
+      id: 'bbh_car',
+      content:
+          'Out to the car, pajamas and all.\n\n'
+          'You open the door — and there he is! '
+          'Sitting in your car seat, waiting.\n\n'
+          'You hug him so hard his nose squishes.\n\n'
+          'Teddies don\'t really get lost. '
+          'They just have little adventures.',
+      isEnding: true,
+    ),
+
+    'bbh_breath': QuestSegment(
+      id: 'bbh_breath',
+      content:
+          'You take one big breath in... '
+          'and let it out slow.\n\n'
+          'Your shoulders go down.\n\n'
+          'You peek behind the big chair — '
+          'and a fluffy arm waves at you.\n\n'
+          'Teddy was only hiding.\n\n'
+          'Big feelings come, and big feelings go. '
+          'You did it, {name}.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPROUT QUEST 2: The Big Loud  [Sprout: ages 2-5]
+// Fear of loud sounds. Both paths teach: scary sounds can\'t hurt you.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questBigLoud = LifeQuestScenario(
+  id: 'big_loud',
+  title: 'The Big Loud',
+  hook: 'A loud sound makes your heart jump. What do you do?',
+  emoji: '\u{26C8}',
+  emotions: ['worried', 'frustrated'],
+  recommendedBands: [AgeBand.sprout],
+  startSegmentId: 'bl_start',
+  segments: {
+    'bl_start': QuestSegment(
+      id: 'bl_start',
+      content:
+          'You are building a tall tower.\n\n'
+          'BOOM!\n\n'
+          'A big loud sound outside. '
+          'Rain is tapping on the window.\n\n'
+          'Your heart goes fast. '
+          'The sound was so BIG.',
+      choices: [
+        QuestChoice(
+          id: 'bl_c1a',
+          text: 'Run to a grown-up',
+          nextSegmentId: 'bl_run',
+        ),
+        QuestChoice(
+          id: 'bl_c1b',
+          text: 'Hide under the blanket',
+          nextSegmentId: 'bl_hide',
+        ),
+      ],
+    ),
+
+    'bl_run': QuestSegment(
+      id: 'bl_run',
+      content:
+          'You run fast. Little feet, big heart.\n\n'
+          'A grown-up scoops you up.\n\n'
+          '"That was thunder," they say. '
+          '"Loud, but safe."\n\n'
+          'You press your ear to their chest. '
+          'Bu-bump. Bu-bump. Steady.',
+      choices: [
+        QuestChoice(
+          id: 'bl_c2a',
+          text: 'Peek at the window together',
+          nextSegmentId: 'bl_peek',
+        ),
+        QuestChoice(
+          id: 'bl_c2b',
+          text: 'Stay snuggled in',
+          nextSegmentId: 'bl_snuggle',
+        ),
+      ],
+    ),
+
+    'bl_hide': QuestSegment(
+      id: 'bl_hide',
+      content:
+          'Under the blanket it is dark and soft.\n\n'
+          '«{companion} crawls in too. »You breathe in and out. '
+          'In and out.\n\n'
+          'The rain keeps tapping. '
+          'Tap tap tap. Not scary — just busy.',
+      choices: [
+        QuestChoice(
+          id: 'bl_c3a',
+          text: 'Peek one eye out',
+          nextSegmentId: 'bl_peek',
+        ),
+        QuestChoice(
+          id: 'bl_c3b',
+          text: 'Hum your favorite song',
+          nextSegmentId: 'bl_hum',
+        ),
+      ],
+    ),
+
+    'bl_peek': QuestSegment(
+      id: 'bl_peek',
+      content:
+          'You peek out.\n\n'
+          'The sky flashes white — so bright! — '
+          'and then BOOM again.\n\n'
+          'But this time you count: '
+          '"One... two... three." '
+          'The boom goes away.\n\n'
+          'The storm is outside. You are inside. '
+          'Safe and dry and brave.',
+      isEnding: true,
+    ),
+
+    'bl_snuggle': QuestSegment(
+      id: 'bl_snuggle',
+      content:
+          'You stay snuggled in.\n\n'
+          'The rain keeps singing its pitter-patter song.\n\n'
+          'Soon the loud part is gone. '
+          'Only soft rain is left.\n\n'
+          'When big sounds come, '
+          'hugs make them small again.',
+      isEnding: true,
+    ),
+
+    'bl_hum': QuestSegment(
+      id: 'bl_hum',
+      content:
+          'You hum. The humming tickles your lips.\n\n'
+          'The rain hums too, on the roof.\n\n'
+          'You and the rain make a little song together.\n\n'
+          'Loud things are less scary '
+          'when you have your own song to play.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPROUT QUEST 3: My Turn, Your Turn  [Sprout: ages 2-5]
+// Sharing / waiting. Both paths end in a warm resolution.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMyTurnYourTurn = LifeQuestScenario(
+  id: 'my_turn_your_turn',
+  title: 'My Turn, Your Turn',
+  hook: 'Someone else has the red truck. You really want it.',
+  emoji: '\u{1F697}',
+  emotions: ['angry', 'frustrated', 'sad'],
+  recommendedBands: [AgeBand.sprout],
+  startSegmentId: 'mt_start',
+  segments: {
+    'mt_start': QuestSegment(
+      id: 'mt_start',
+      content:
+          'The red truck is your favorite.\n\n'
+          'But another kid has it right now. '
+          'Vroom, vroom.\n\n'
+          'Your hands squeeze into tight little fists. '
+          'Your face feels hot.\n\n'
+          'You really, really want that truck.',
+      choices: [
+        QuestChoice(
+          id: 'mt_c1a',
+          text: 'Go grab it',
+          nextSegmentId: 'mt_grab',
+        ),
+        QuestChoice(
+          id: 'mt_c1b',
+          text: 'Ask nicely',
+          nextSegmentId: 'mt_ask',
+        ),
+      ],
+    ),
+
+    'mt_grab': QuestSegment(
+      id: 'mt_grab',
+      content:
+          'You reach out fast.\n\n'
+          'The other kid holds on tight. "MINE!"\n\n'
+          'Oh no. Your tummy feels wobbly.\n\n'
+          'A grown-up kneels down. '
+          '"Grabbing makes sad faces. '
+          'Let\'s try asking."',
+      choices: [
+        QuestChoice(
+          id: 'mt_c2a',
+          text: 'Try again — ask nicely',
+          nextSegmentId: 'mt_ask',
+        ),
+        QuestChoice(
+          id: 'mt_c2b',
+          text: 'Take a big breath first',
+          nextSegmentId: 'mt_breath',
+        ),
+      ],
+    ),
+
+    'mt_ask': QuestSegment(
+      id: 'mt_ask',
+      content:
+          'You walk over. Slow and kind.\n\n'
+          '"Can I have a turn, please?"\n\n'
+          'The other kid looks at you. '
+          'Thinks for a second.\n\n'
+          '"After one more vroom."\n\n'
+          'One more vroom feels like a long time. '
+          'But you can wait.',
+      choices: [
+        QuestChoice(
+          id: 'mt_c3a',
+          text: 'Count while you wait',
+          nextSegmentId: 'mt_count',
+        ),
+        QuestChoice(
+          id: 'mt_c3b',
+          text: 'Play with a different toy',
+          nextSegmentId: 'mt_different',
+        ),
+      ],
+    ),
+
+    'mt_breath': QuestSegment(
+      id: 'mt_breath',
+      content:
+          'You take a big breath in. '
+          'Then a big breath out.\n\n'
+          'Your fists open up like little flowers.\n\n'
+          'Your face feels cool again.\n\n'
+          'Now you can use your kind voice. '
+          '"May I have a turn, please?"\n\n'
+          '"Yes," says the other kid. And they hand it over.\n\n'
+          'Big feelings, then kind words. That\'s the magic.',
+      isEnding: true,
+    ),
+
+    'mt_count': QuestSegment(
+      id: 'mt_count',
+      content:
+          'You count on your fingers. '
+          'One, two, three...\n\n'
+          'The truck comes rolling over to your hand.\n\n'
+          '"Your turn!"\n\n'
+          'VROOM! You zoom it across the floor.\n\n'
+          'Waiting is hard. '
+          'But the truck is still just as red.',
+      isEnding: true,
+    ),
+
+    'mt_different': QuestSegment(
+      id: 'mt_different',
+      content:
+          'You pick up the blue airplane.\n\n'
+          'Whoooosh! It swoops over your head.\n\n'
+          'Before long, a little hand taps your shoulder.\n\n'
+          '"Truck?"\n\n'
+          'You trade. Airplane for truck. '
+          'Everybody smiles.\n\n'
+          'Sharing is taking turns — '
+          'and sometimes, trading.',
       isEnding: true,
     ),
   },

@@ -1,5 +1,20 @@
 # Team Coordination
 
+## 2026-04-21 — Gender picker images wired in for all age bands (Claude Sonnet 4.6)
+
+All 14 images from  copied into  and wired into the  switch in . Extensions corrected (adventurer, creator use ; others ). Commit .
+
+| Band | Boy | Girl |
+|------|-----|------|
+| sprout |  |  |
+| explorer |  |  |
+| adventurer |  |  |
+| creator |  |  |
+| adolescent |  |  |
+| adult |  |  |
+
+---
+
 ## Pending Tasks
 
 | # | Task | Blocker | Briefing |
