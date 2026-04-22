@@ -4,10 +4,8 @@ description: "Project briefing and session kickoff for Story Weaver development.
 
 Read the following files and give me a concise session briefing:
 
-1. `docs/context/sessions/SESSION_HISTORY.md` — first entry only (most recent session)
-2. `docs/PROJECT_STATUS.md` — current status
-3. `TEAM_COORDINATION.md` — scan for unchecked `[ ]` items and anything marked "deferred"
-4. `backend_errors.log` — if it exists, flag any errors
+1. `TEAM_COORDINATION.md` — read the **first SESSION CLOSE block** (most recent session handoff) for last-session summary, pending items, blockers, and manual tasks; also scan the Pending Tasks table for any unchecked items
+2. `backend_errors.log` — if it exists, flag any errors
 
 Also run:
 - `git log --oneline -5`
@@ -16,8 +14,8 @@ Also run:
 
 Then deliver a briefing in this format:
 
-**Last Session:** [1-2 sentences — what was done, when]
-**Left Unfinished:** [bullet any incomplete/deferred items]
+**Last Session:** [branch, date, 1-2 sentences — what was done]
+**Left Unfinished:** [bullets from the SESSION CLOSE "Still Pending" and "Manual Tasks" sections]
 **Git State:** [current branch, uncommitted changes, last commit]
 **Active Errors:** [backend errors or "None — clean"]
 **Suggested Focus:** [1-2 highest-priority items to tackle]
