@@ -1,5 +1,29 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — BYOK initial fix (Sonnet 4.6); Playwright testing blocked; Sprout quests committed
+
+### Accomplished
+- **BYOK Bug 1 + 2 initial fix** — applied 4 changes to `lib/screens/byok_setup_wizard.dart`: `_showKey = true` (visible by default), explicit `TextStyle(color: Colors.white)` on TextField, CORS-fallback in catch block (later superseded by `b8f8009` backend-proxy approach from a parallel session), red SnackBar on failed Finish. Committed as `62b09a6`.
+- **Sprout Life Quests + docs** committed and pushed as `9635005`: `questBigBearHug`, `questBigLoud`, `questMyTurnYourTurn` added to `allLifeQuests` in `lib/data/life_quest_data.dart`; gender-picker image wiring log prepended to TEAM_COORDINATION.md.
+- Cleared stale `CHERRY_PICK_HEAD` marker (bc4071b was already an ancestor of HEAD — leftover from a parallel session).
+
+### Still Pending / Deferred
+- **Playwright live test of BYOK wizard** — blocked. Flutter web debug mode stalls after `DDC is about to load 1/2 scripts` because DDC needs the Chrome DevTools handshake Playwright can't provide. Verify manually per M9 below.
+- **CORS-fallback vs backend-proxy** — `62b09a6` used a catch-block CORS fallback; `b8f8009` (from a parallel Opus session) replaced it with the backend proxy approach. Both are in history — backend proxy wins at runtime. No further action needed unless the backend endpoint has issues.
+
+### Blockers
+- Flutter web debug mode incompatible with Playwright MCP. Use `flutter build web` + static server if automated UI testing is needed.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M9 | **Verify BYOK key field on production web** — open BYOK wizard, paste an `AIza…` key, confirm text is visible (white on dark card), Finish saves, wizard doesn't relaunch at step 0 on next "Full illustrations" tap. | Changes in `62b09a6`; backend proxy validation in `b8f8009` (`api_key_routes.py:142`) |
+
+### Next Session: Start Here
+> M9 BYOK production verification is the highest-value unverified fix — do a real paste test on the deployed web app before any further BYOK work. After that, the open Six-Hats audit items (age-gate consolidation `welcome_screen.dart` vs `age_gate_screen.dart`, adolescent consent-cancel bug) are the next code priorities.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-003 Stripe anon guard + BUG-002 fresh-session verification
 
 ### Accomplished
