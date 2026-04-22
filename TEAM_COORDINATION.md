@@ -1,5 +1,41 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — Six-Hats Adolescent review → full P1/P2/P3 + 6 Life Quests shipped
+
+### Accomplished
+
+- **P1** (`bcd54e2`): `lib/screens/life_quest_screen.dart` — gated Fredoka chrome behind `isMature` (9 call sites → SourceSans3 for Creator/Adolescent/Adult); `_buildQuestPlayer` now shows close button always (wired to `_resetToSelector`) + rewind when history exists. `lib/screens/wizard_steps/feeling_selection_step.dart:582–586` split creator/adolescent Story Note placeholder copy.
+- **P2** (`ceee86a`): `lib/screens/wizard_steps/hero_creator_creative_brief.dart:215–219` adolescent gender portraits point at `assets/images/archetypes/adolescent/master_creator_{boy,girl}.png`. `lib/screens/bedtime_wizard_screen.dart` + `lib/screens/wizard_story_screen.dart` rebranded "Bedtime" → "Voice Story" for mature bands (dialog title, switch labels, icon `Icons.mic_none_rounded`, tooltip, timer/error voice, BYOK card). Internal class/file names unchanged.
+- **P3** (`abea63d`): `lib/settings_screen.dart` flipped arithmetic-gate condition from `band.band != AgeBand.creator` to `!band.band.isMature` — Adult no longer locked behind a puzzle to access their own account; Adolescent no longer trivially bypasses a meaningless gate. Relabelled "Parent Dashboard" → "Activity Dashboard" and "Manage Child Profiles" → "Manage Profiles" for mature bands only.
+- **Content** (`2142e98`): `lib/data/life_quest_data.dart` — 6 new adolescent Life Quests authored (`the_fight_at_home`, `after_the_breakup`, `the_screenshot`, `burning_out`, `who_am_i_becoming`, `first_paycheck`). Each: 7 segments (1 start + 2 mid + 4 endings), valid-palette emotions only, tone-matched to `thing_i_didnt_say`. Identity quest deliberately generalised (not sexuality/gender-specific). Library tripled 3 → 9.
+- **Docs**: `7efe715` (session log + `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md`), `e7424a1` (P3 update), `8c982bc` (content-shipped update). Plan at `C:\Users\darcy\.claude\plans\federated-marinating-kernighan.md`.
+- `flutter analyze` clean on every touched file (P1 + P2 + P3 + content).
+
+### Still Pending / Deferred
+
+- **Nothing deferred from the original Six-Hats plan** — every item Fix #1–#7 shipped this session.
+- Visual smoke test of all four fix batches — unverified (Playwright blocker below). In particular the new quest `who_am_i_becoming` benefits from a human read for tone before prod exposure.
+
+### Blockers
+
+- **Playwright MCP lockfile** — `Browser is already in use for ...mcp-chrome-for-testing-<hash>`. Recovery procedure in `memory/reference_playwright_mcp_lockfile.md`. Cannot be cleared from inside the session; needs Claude Code exit + PowerShell snippet + restart.
+
+### Manual Tasks (Darcy)
+
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Visual smoke-test adolescent flow** | Select age 16 → Inner Map → pick a quest → make 2 choices → confirm close button returns to selector and font is SourceSans (not Fredoka). Then Settings should NOT prompt for the arithmetic gate. Then Stories → bedtime/mic icon → dialog should say "Voice Story Settings". |
+| M2 | **Read `who_am_i_becoming` quest** | `lib/data/life_quest_data.dart` — find `const questWhoAmIBecoming`. Identity/coming-of-age scenario; check the hiding-vs-privacy framing and the two acceptance paths before it reaches real teens. |
+| M3 | **Clean 70+ untracked PNG screenshots from repo root** | `after-*.png`, `hat-*.png`, `verify-*.png`, `bug001-*.png`, `byok-*.png`, plus `test_archetypes.mjs`. All from prior QA sessions. Either delete or add to `.gitignore`. |
+| M4 | **Review parallel-session uncommitted changes** | Not from this session: `.claude/commands/close-session{,-gemini}.md` deleted, `.claude/commands/start-session.md` modified, `.claude/commands/session-close.md` new (rename), `assets/images/ui/gender/gender_adolescent_girl.jpg` deleted, `backend/middleware/auth.py` modified. Decide whether to commit, stash, or discard. |
+| M5 | **Playwright MCP lockfile recovery** | When ready to run Playwright QA again, exit Claude Code and run the PowerShell snippet in `memory/reference_playwright_mcp_lockfile.md`. Then restart. |
+
+### Next Session: Start Here
+
+> Clear the 70+ untracked PNGs and decide on the parallel-session `auth.py` change first (quick housekeeping), then spin Playwright back up to verify the four Six-Hats fix batches against the live Railway build. BUG-002/BUG-003 regression re-runs are still outstanding from the 2026-04-21 entry — bundle those into the same verification session.
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — BYOK initial fix (Sonnet 4.6); Playwright testing blocked; Sprout quests committed
 
 ### Accomplished
