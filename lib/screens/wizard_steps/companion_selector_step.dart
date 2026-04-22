@@ -878,12 +878,20 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
               )
             else
               Center(
-                child: TextButton(
+                child: OutlinedButton(
                   onPressed: widget.onNext,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.white.withAlpha(100)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 12),
+                  ),
                   child: Text(
                     band.band.isMature ? 'Skip' : 'Go Solo',
                     style: GoogleFonts.quicksand(
-                      color: Colors.white.withAlpha(150),
+                      color: Colors.white.withAlpha(210),
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),

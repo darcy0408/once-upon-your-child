@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +31,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _consentGiven = false;
   bool _allowPhotoAvatar = false; // COPPA: parent must explicitly opt in
   bool _submitting = false;
+  bool _parentTitleActive = false;
+  Timer? _titleTimer;
   final _scrollController = ScrollController();
   double _scrollProgress = 0.0;
 
@@ -39,12 +43,17 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Let the child know they need a grown-up.
+    // Child-facing: let them know to get a grown-up, then hand off to the parent.
     AppTtsService.instance.speak('Almost there! Ask a grown-up to unlock your magical adventure!');
+    // Switch to parent-facing title after the TTS phrase finishes (~5 s).
+    _titleTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _parentTitleActive = true);
+    });
   }
 
   @override
   void dispose() {
+    _titleTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -68,9 +77,13 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'Parental Consent Required',
-          style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: Text(
+            _parentTitleActive ? 'Parental Consent Required' : 'Just one sec! ✨',
+            key: ValueKey(_parentTitleActive),
+            style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: PreferredSize(
