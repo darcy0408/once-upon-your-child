@@ -1,5 +1,34 @@
 ﻿# Team Coordination
 
+## SESSION CLOSE — 2026-04-22 — Branch: main — Sprout UX audit fixes + 3 Sprout Life Quests
+
+### Accomplished
+- `115b37b` — Age 2 added to WelcomeScreen and AgeGateScreen pickers; `_step` reset on COPPA-back so `_advanceFromName` guard stops silently failing (BUG-004); `character.role` now uses `ArchetypeData.nameForAge()` so Heroes cards show "Animal Friend!" instead of "The Animal Whisperer"; same fix applied to a11y semantic labels in both archetype grid branches (`hero_creator_step.dart:1883, 1984`); backend "Story service is ready" banner gated on `_isCheckingBackend || _backendOnline == false`.
+- `9635005` — Three Sprout Life Quests authored (`questBigBearHug`, `questBigLoud`, `questMyTurnYourTurn`) with short segments, 2-choice branches, warm endings. Registered in `allLifeQuests`. Plugs the primary-audience content gap.
+- `0ebba9a` — Sprout wizard launch: gradient warmed from cold purple (`1A0533 → 3D1260 → 2E1B4E`) to twilight rose (`2D1B42 → 5F2776 → 8B3A6B`); new `_buildSproutRecap` card shows "🦸 I am / 🏰 Going to / 🐾 With" above GO!.
+- `dba8e1d`, `71b2750`, `af2ef12` — TEAM_COORDINATION updates: pending tasks 3-8 all marked complete with commit refs.
+
+### Still Pending / Deferred
+- **Mochi companion background** — code at `companion_selector_step.dart` already uses `Color(0xFF...).withAlpha(40)` per-companion background; the "black Mochi" seen in my earlier screenshot is likely a canvas rendering artifact, not a real bug. Needs a human eyeball on a real device before fully closing.
+- **Archetype name fix + banner fix** — code-verified but not Playwright-verified. Local backend was offline (no characters to load) so the Heroes card display and hidden-banner state were confirmed by reading the code, not by seeing pixels. Worth a quick re-check next time the backend is running.
+- **Sprout recap + warm gradient** — analysis-clean but **never rendered in a browser** this session. Browser closed mid-COPPA-wizard. No visual confirmation that the recap card fits above the GO! button on narrow viewports or that the warm gradient reads as "cozy" rather than "muddy".
+
+### Blockers
+- Playwright browser session died after clicking the Shape-the-stories dialog's "Maybe later" (`TypeError: Cannot read properties of undefined (reading 'url')`). Follow-up MCP calls returned `Target page, context or browser has been closed`. May just need a restart; may indicate a deeper MCP-Windows issue.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Visually verify Sprout launch screen** on web — confirm recap card (🦸/🏰/🐾 rows) fits above GO! button at mobile widths, and that the new twilight-rose gradient actually reads warmer (not muddier) than the old dark purple. `magic_review_step.dart:_buildSproutLaunchScreen`. |
+| M2 | **Visually verify Mochi companion card** — the "black background" I flagged is likely a Playwright canvas-rendering artifact (code sets per-companion colour with alpha=40). If it actually looks black on a real device, re-open the issue. `companion_selector_step.dart:1150`. |
+| M3 | **Review uncommitted files I did not touch this session** — another process modified `backend/middleware/auth.py`, `.claude/commands/start-session.md`, deleted `close-session.md`/`close-session-gemini.md`, deleted `assets/images/ui/gender/gender_adolescent_girl.jpg`, and added untracked `.claude/commands/session-close.md` + `test_archetypes.mjs`. Decide what to commit, what to revert, what to delete. |
+| M4 | **Clean up ~70 screenshot PNGs at repo root** — accumulated across sessions (`after-*.png`, `bug001-*.png`, `hat-*.png`, `verify-*.png`, `byok-*.png`). Either `.gitignore` them or move to a `debug/` subdir. Was skipped this session per skill instructions. |
+
+### Next Session: Start Here
+> Hot-reload the dev server and open the Sprout wizard end-to-end in a browser: name → age 3 → COPPA consent → pick scenario → land on GO! screen. Confirm the recap card + warm gradient look right, and that a Hero card in the library actually reads "Animal Friend!" instead of the internal archetype name. If the browser sticks, that's also the natural moment to sort out the MCP issue for future Sprout-flow verification.
+
+---
+
 ## 2026-04-21 — Gender picker images wired in for all age bands (Claude Sonnet 4.6)
 
 All 14 images from `assets/BoyGirl images/BoyGirl placeholder images/` copied into `assets/images/ui/gender/` and wired into the `_buildGenderPicker()` switch in `hero_creator_step.dart`. Extensions corrected (adventurer, creator use `.jpg`; others `.png`). Commit `bf94b8b`.
