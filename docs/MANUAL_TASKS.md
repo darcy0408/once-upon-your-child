@@ -26,6 +26,7 @@ When closing a session:
 - **MT-001** [open] Clean ~70 untracked PNG screenshots from repo root (created by a488) — `after-*.png`, `hat-*.png`, `verify-*.png`, `bug001-*.png`, `byok-*.png`, `coppa-gate.png`, `fresh-landing.png`, etc. Either `git clean -f` after backing up anything to keep, or add a glob pattern to `.gitignore` (e.g. `/*.png`) so future QA artefacts don't pollute the repo root. Confirmed across multiple session-close logs as a recurring noise source.
 - **MT-003** [open] Smoke-test BUG-012 error responses (created by 76e3) — hit `/tts/synthesize` and `/generate-story` with bad inputs; confirm JSON responses show `STORY_FAILED`/`TTS_FAILED` codes and friendly copy, not raw Python exception text (commit `d081266`).
 - **MT-004** [open] Flutter error string grep for BUG-012 follow-up (created by 76e3) — run `grep -r "Story generation failed\|Synthesis failed\|Transcription failed" lib/` and update any Flutter UI copy that pattern-matches old error strings now superseded by structured codes from `d081266`.
+- **MT-005** [open] BUG-001 browser confirm (created by c29c) — open production in incognito, select 18+ age band, enter a name, tap any archetype card, tap "Create Story". Verify it advances past Hero Creator. Code is correct (`GestureDetector` + `onTap` at `lib/screens/wizard_steps/hero_creator_creative_brief.dart:368`); this is final confirmation to formally close BUG-001.
 
 ## Closed tasks
 
