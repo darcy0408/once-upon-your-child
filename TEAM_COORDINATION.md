@@ -20,6 +20,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-22 | 12:15 | c4ea | main | BUG-003 Stripe anon guard + BUG-002 TTS backoff verification | [link](docs/sessions/2026-04-22-1215-c4ea.md) |
 | 2026-04-22 | 12:16 | 8a9d | main | Archetype image grid for mature bands (creator/adolescent/adult) | [link](docs/sessions/2026-04-22-1216-8a9d.md) |
 | 2026-04-22 | 12:16 | 269f | main | Six Hats audit closeout — consent AppBar + Go Solo | [link](docs/sessions/2026-04-22-1216-269f.md) |
+| 2026-04-22 | 12:16 | 8972 | main | Session tooling: /close-session + /start-session overhaul | [link](docs/sessions/2026-04-22-1216-8972.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---

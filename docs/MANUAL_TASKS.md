@@ -33,6 +33,10 @@ When closing a session:
 - **MT-009** [open] Verify BUG-003 fix in production (created by c4ea) — open production in incognito (no account), reach the subscription screen or trigger any subscription check. Confirm no 403 errors appear in DevTools Network tab. Fix is `StripeService.getSubscriptionStatus()` early-return for `anon_` users (`lib/services/stripe_service.dart`), deployed in commit `6d71454` / Railway deployment `b33e04b9`.
 - **MT-010** [open] Investigate stale-JWT 403 for real user (created by c4ea) — during BUG-002 TTS session, saw Stripe 403 for `user_c4b28920-cdb0-495d-ba08-db4197a09369` (non-anon). Backend returns 403 instead of 401 for expired/invalid JWT. Check auth middleware — should return 401 so Flutter can trigger re-auth rather than silently failing.
 
+- **MT-011** [open] BUG-002 TTS backoff runtime verification (created by 2571) — fresh Claude Code instance required (so --isolated in .mcp.json activates). Follow docs/briefings/TASK3_BUG002_TTS_FRESH_SESSION.md: age 8 Explorer band, network-filter /tts/, wait 60 s, verify 429 count bounded (<=4 per phrase) and retry spacing shows backoff curve (~2 s, ~4 s, ~8 s). Manual fallback: Chrome DevTools Network tab. BUG-001 browser confirm already tracked as MT-005.
+
 ## Closed tasks
 
 <!-- Sessions move tasks here when status flips to `done` or `wontfix`. Most recent at top. -->
+- **MT-005** [open] Verify gender picker images in Railway across all 6 bands (created by 247a) — after deploy, open the adult wizard (and at least one younger band) and confirm the correct Boy/Girl placeholder art shows at each age band. Sprout should show chibi characters; explorer chibi girl; adventurer silhouette kids; creator teen silhouettes; adolescent cyberpunk girl + blue teen boy; adult dark silhouettes. Commit bf94b8b.
+- **MT-011** [open] Decide fate of `test_archetypes.mjs` at repo root (created by 8972) — one-off Playwright script verifying archetype images across Adult/Adolescent/Creator bands. If reusable, move to `tools/` or `test/e2e/` and commit. Otherwise delete. Has been untracked since at least 2026-04-21.
