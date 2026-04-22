@@ -1,4 +1,60 @@
-﻿# Team Coordination
+# Team Coordination
+
+## SESSION CLOSE -- 2026-04-22 ~07:10 -- Branch: main -- Six Hats creator review triage + BUG-010 auth guard hardening
+
+### Accomplished
+- Six Hats review triage (9d47fa9) -- full 15-item creator review analysed vs current code; ~12 items already fixed in prior commits; 2 genuine gaps patched
+- Empty-name helper hint (lib/screens/welcome_screen.dart, 9d47fa9) -- AnimatedOpacity caption fades in below name field when empty, explaining why Continue is dimmed
+- Character desire placeholder (lib/screens/wizard_steps/hero_creator_creative_brief.dart, 9d47fa9) -- replaced vague Optional copy with concrete mature example
+- BUG-010 second guard (backend/middleware/auth.py:130, abbbaa3) -- require_parental_consent now uses getattr(user, is_under_13, False); closes second unguarded access that crashes with SimpleNamespace mock users
+- TEAM_COORDINATION closeout entry -- triage table added recording which Six Hats items were already fixed vs intentional design
+
+### Still Pending / Deferred
+- ~70 untracked .png screenshots at repo root -- Playwright session artifacts, need cleanup
+- test_archetypes.mjs untracked at repo root -- unknown origin, not committed
+- Age-gate consolidation (welcome_screen.dart vs age_gate_screen.dart) -- HIGH-priority open item from prior sessions
+
+### Blockers
+- None
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | Clean up untracked PNGs | git clean -n *.png to preview, then git clean -f *.png to delete ~70 review screenshots |
+| M2 | Check test_archetypes.mjs | Untracked file at repo root -- commit, move, or delete |
+
+### Next Session: Start Here
+> Age-gate consolidation is the remaining HIGH item: welcome_screen.dart and age_gate_screen.dart diverge in behavior, and 13-17 users on the welcome path may bypass COPPA consent recording. Flag for Opus -- risky COPPA refactor.
+
+---
+
+## SESSION CLOSE — 2026-04-22 — Branch: main — TASK5 BYOK wizard re-check (no-op; already shipped)
+
+### Accomplished
+- **Verified TASK5 BYOK fixes are live.** Walked `docs/briefings/TASK5_BYOK_WIZARD_FIXES.md` against `lib/screens/byok_setup_wizard.dart`. All three prescribed edits already present at HEAD:
+  - Edit 1 (`_showKey = true`) — line 430, from commit `62b09a6`.
+  - Edit 2 (white monospace + gold prefix icon + lightened label/hint `InputDecoration`) — lines 522–537, from `62b09a6`.
+  - Edit 3 (red SnackBar on `_valid == false` in Finish handler) — lines 585–593, from `62b09a6`.
+- CORS-fallback from `62b09a6` was already replaced by the backend proxy approach in `b8f8009` (`POST /api/user/settings/validate-api-key`). No action needed.
+- My Edit call applied the same InputDecoration styling the briefing prescribed; since HEAD already matched, net diff was zero and nothing was committed this session.
+
+### Still Pending / Deferred
+- No new deferrals from this session.
+- Pre-existing queue still open: BUG-002 retry cap (`lib/services/app_tts_service.dart:~147`), BUG-012 error-string sanitization, Row 26 Stripe webhook timestamp validation — see earlier session blocks below.
+
+### Blockers
+- None.
+
+### Manual Tasks (Darcy)
+| # | Task | Context |
+|---|------|---------|
+| M1 | **Production BYOK smoke test** | Duplicates prior M7 — hit the prod Netlify web build, open Parent Controls → Use Your Own API Key, paste a valid `AIza…` key, confirm Finish → wizard closes, re-open from Settings confirms "key already set". Regression check only; no code change expected. |
+| M2 | **Clean root-level `.png` screenshots** | 70+ untracked files (`hat-*.png`, `verify-*.png`, `byok-*.png`, `bug001-*.png`, `archetype_test_adult.png`, `test_archetypes.mjs`) at repo root. Safe to delete manually. Still deferred from earlier sessions. |
+
+### Next Session: Start Here
+> Pick up the real top-of-queue item: BUG-002 retry cap (`_maxPrewarmRetries = 4` in `app_tts_service.dart` `_prewarm()` ~line 147) — ~5 min fix per an earlier 2026-04-22 session. Then Row 26 Stripe webhook timestamp validation.
+
+---
 
 ## SESSION CLOSE — 2026-04-22 — Branch: main — BUG-001/002/003 status audit + CORS stale-entry cleanup
 
