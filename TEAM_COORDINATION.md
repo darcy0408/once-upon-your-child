@@ -12,6 +12,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 |-------|-------|------|--------|-------|------|
 | 2026-04-22 | 10:17 | 5a52 | main | Session-handoff overhaul (per-session files + global manual tasks) | [link](docs/sessions/2026-04-22-1017-5a52.md) |
 | 2026-04-22 | 12:14 | 76e3 | main | Six Hats adult audit + BUG-012 error copy + BUG-010 guard | [link](docs/sessions/2026-04-22-1214-76e3.md) |
+| 2026-04-22 | 12:14 | a488 | main | Session-handoff follow-ups (read-count bump + rename) | [link](docs/sessions/2026-04-22-1214-a488.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---
