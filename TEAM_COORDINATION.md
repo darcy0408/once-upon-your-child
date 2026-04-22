@@ -171,8 +171,8 @@ Manual browser test not yet re-run. Suggest: Parent Controls → Use Your Own AP
 | 3 | Creative Brief gender portraits for adolescent pointed at Adventurer (9–11 yr) assets | High | ✅ commit `ceee86a` |
 | 4 | "Bedtime" framing leaked into mature bands (dialog titles, tooltip, byok card, timer/error voice) | Medium | ✅ commit `ceee86a` |
 | 5 | Story Note placeholder undersold band depth (Creator-style copy on adolescent) | Low | ✅ commit `bcd54e2` |
-| 6 | Settings tab mixes account-level with parent-control settings from teen's POV | Medium | ⬜ P3 — deferred |
-| 7 | Only 3 Life Quests shipped for this band | Strategic | ⬜ backlog authored: `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md` |
+| 6 | Settings arithmetic gate triggered for Adult + was trivially bypassed for Adolescent | Medium | ✅ commit `abea63d` |
+| 7 | Only 3 Life Quests shipped for this band | Strategic | ✅ commit `2142e98` — 6 new quests authored (library tripled to 9) |
 
 ### Fixes shipped — commit `bcd54e2` (P1)
 
@@ -192,13 +192,13 @@ Manual browser test not yet re-run. Suggest: Parent Controls → Use Your Own AP
 - `lib/settings_screen.dart`: arithmetic-gate condition was `band.band != AgeBand.creator` — this incorrectly locked Adult account holders behind a puzzle while Adolescents passed it trivially. Flipped to `!band.band.isMature`, so young bands (sprout/explorer/adventurer) keep the gate and mature bands (creator/adolescent/adult) bypass it.
 - `lib/settings_screen.dart`: for mature bands, "Parent Dashboard" → "Activity Dashboard" and "Manage Child Profiles" → "Manage Profiles"; subtitle copy updated. Young-band labels unchanged.
 
-### Deferred — see backlog
+### Fixes shipped — commit `2142e98` (content)
 
-- **Fix 7 — Life Quest content expansion:** six candidate themes authored in `docs/briefings/ADOLESCENT_LIFEQUEST_BACKLOG.md` — romantic rupture, social-media shame, family conflict, academic burnout, identity formation, first job / money. Content-authoring task, no code changes required.
+- `lib/data/life_quest_data.dart`: authored 6 new adolescent-only Life Quests, each matching the existing structure (1 start + 2 mid + 4 endings = 7 segments). Library for this band tripled from 3 → 9 quests. Themes: `the_fight_at_home` (family conflict), `after_the_breakup` (romantic rupture), `the_screenshot` (social-media shame), `burning_out` (academic burnout), `who_am_i_becoming` (identity — generalised framing, not sexuality/gender-specific so any teen can read it their own way), `first_paycheck` (money & independence). Tone calibrated to the `thing_i_didnt_say` reference: 2nd person present, short sentences, every ending validates its path with an insight (no "correct" answer, no moralising). All emotions use only valid palette strings so feelings-badge filter surfaces them correctly.
 
 ### Verification
 
-- `flutter analyze` on all six touched files: **no issues** (P1 + P2 + P3).
+- `flutter analyze` on all seven touched files: **no issues** (P1 + P2 + P3 + content).
 - Not Playwright-verified — MCP lockfile blocker persists. User will smoke-test visually post-merge.
 - No regression risk expected on younger bands: every change is either gated on `isMature`/`_isMature` or touches files only used by mature bands. P3 specifically leaves sprout/explorer/adventurer behavior intact.
 
