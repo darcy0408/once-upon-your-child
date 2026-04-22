@@ -1,168 +1,202 @@
 ---
-description: "Close out the current work session: commit pending changes, record what was accomplished, what's still pending, and manual follow-ups in TEAM_COORDINATION.md. Use when stopping work to preserve context for a later restart."
+description: "Close out the current work session: commit pending changes, then write a per-session record file in docs/sessions/, append manual tasks to docs/MANUAL_TASKS.md with monotonic IDs, and add an index row to TEAM_COORDINATION.md. Use when stopping work."
 ---
 
-You are the **Session Close Agent**. Execute all steps below in order. Be thorough but fast — the user runs ~10 simultaneous instances and needs clean handoff notes.
+You are the **Session Close Agent**. Execute every step. Be thorough but fast — Darcy runs ~10 simultaneous instances and needs clean handoff notes.
+
+The system is **race-safe by design**: each session writes to its own file in `docs/sessions/`, so concurrent closes never collide. The shared `TEAM_COORDINATION.md` is only touched once per session (a single appended index row), and `docs/MANUAL_TASKS.md` is append-only.
 
 ---
 
-## Step 1 — Orient (run these in parallel)
+## Step 1 — Orient
+
+Run these in parallel:
 
 ```bash
 git status
 git log --oneline -8
 git diff --stat HEAD
 git branch --show-current
-date +%H:%M
+date +"%Y-%m-%d %H:%M"
+openssl rand -hex 2   # 4-char session ID, e.g. "a7f3"
 ```
 
-Note the current branch, any uncommitted or untracked files, and the last 8 commits to understand what was done this session. Capture the `HH:MM` output — you'll need it for the heading in Step 4.
+Capture the date, time, branch name, and the 4-char session ID — you need all four for the filename and heading.
 
 ---
 
 ## Step 2 — Commit pending changes (if any)
 
 1. Check `git status` for modified/untracked files.
-2. If there are uncommitted changes to tracked files, stage and commit them:
+2. If there are uncommitted changes to tracked files **owned by this session**, stage and commit them:
    - Group logically (don't lump unrelated files in one commit)
-   - Use a clear commit message that says WHAT changed and WHY
    - Format: `[type]: short description\n\nBullets if needed`
    - Types: feat, fix, docs, chore, refactor
-3. If there are untracked files (like screenshot `.png` files at repo root), do NOT commit them — note them in the manual tasks section instead.
-4. Do NOT force-push or amend published commits.
-5. If nothing is committable, skip this step and note "No commits needed."
+3. **Untracked files** (`.png` screenshots, `.env`, scratch scripts) — never commit. Note them in Manual Tasks.
+4. **Modified files that aren't from this session** (parallel-session work in flight) — leave alone, mention in the session record.
+5. Do NOT force-push, amend published commits, or use `--no-verify`.
+6. If nothing committable, note "No commits needed" in the record.
 
 ---
 
-## Step 3 — Analyze what happened this session
+## Step 3 — Analyze what happened
 
-Review the entire conversation and extract:
+Review the conversation and extract:
 
-**A. Accomplished** — concrete things completed, fixed, or shipped (with commit SHAs if applicable)
-
-**B. Still In Progress / Deferred** — work that was started but not finished; items explicitly deferred; half-done investigations. Be specific — include file names, line numbers, or error codes so future-you can pick up without re-reading the conversation.
-
-**C. Blockers** — anything that prevented completion, e.g. "Playwright MCP locked — needs Claude Code restart"
-
-**D. Manual Tasks for Darcy** — things only a human can do: production verification, browser-only tests, decisions, deletes, credential steps. Include enough context that Darcy can act without reading the full conversation.
-
-**E. Suggested First Move Next Session** — 1–2 sentences on the highest-priority thing to tackle when returning.
+- **Accomplished** — concrete things shipped (with commit SHAs)
+- **Still Pending / Deferred** — half-done work, with file:line or error code so future-you can pick up
+- **Blockers** — what stopped completion
+- **Files touched** — every path that appears in `git diff --name-only` for your commits this session
+- **Manual Tasks** — things only Darcy can do (production verification, browser-only tests, decisions, deletes, credential steps, restarts)
+- **Next session: start here** — 1–2 sentence recommendation
 
 ---
 
-## Step 4 — Write session record to TEAM_COORDINATION.md
+## Step 4 — Update `docs/MANUAL_TASKS.md` (manual-task backlog)
 
-Open `TEAM_COORDINATION.md` and **prepend** a new dated section immediately after the `# Team Coordination` heading. Do NOT replace existing content — insert above it.
+This file is the global, append-only manual-task backlog. **Read it first**, then update.
 
-### IMPORTANT: Concurrent sessions
+### 4a. Closing tasks you resolved this session
 
-Darcy runs ~10 instances simultaneously. **Multiple session-closes on the same day are expected and normal.** Your job is to add YOUR entry regardless of how many already exist for today — do not skip, merge, or defer because another `SESSION CLOSE — <today>` heading is already at the top of the file. Every session gets its own entry, every time.
-
-To make each entry unique and diffable, the heading **must include HH:MM** (24-hour, local time). Get the current time with `date +%H:%M` as part of your Step 1 orient commands.
-
-### Heading format (required)
+If your session resolved any open `MT-NNN` items, find each line under `## Open tasks` and update it in place:
 
 ```
-## SESSION CLOSE — {YYYY-MM-DD} {HH:MM} — Branch: {branch} — {1-line topic summary}
+- **MT-042** [open] Visual smoke-test adolescent flow (created by 9c11) — context.
+```
+becomes
+```
+- **MT-042** [done] Visual smoke-test adolescent flow (created by 9c11) — context. (closed by a7f3)
 ```
 
-All four fields are required. No placeholders, no skipped time. Example:
+Then **move the line** from `## Open tasks` to the top of `## Closed tasks`. Use `Edit` for in-place updates; the file is small enough that races are unlikely.
+
+### 4b. Adding new manual tasks
+
+Before adding, **scan the last ~10 entries under `## Open tasks`** for duplicates. If your task already exists (fuzzy match — same first noun and same intent), reference its existing `MT-NNN` in your session record and DO NOT add a new one.
+
+If genuinely new, **find the highest MT-NNN currently in the file** (open OR closed) and increment by 1, padded to 3 digits. Append at the top of `## Open tasks`:
+
 ```
-## SESSION CLOSE — 2026-04-22 15:47 — Branch: main — BUG-003 Stripe anon guard verified
+- **MT-NNN** [open] Short imperative task (created by <session-id>) — where to pick up / what to check.
 ```
 
-### Body structure
+If two sessions race on the same number, the second one to write will see its `Edit` fail and should retry with `MT-(N+1)`.
+
+---
+
+## Step 5 — Write the per-session record file
+
+Path: `docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md`
+
+Example: `docs/sessions/2026-04-22-1547-a7f3.md`
+
+This file is yours alone — no other session writes to it. Use a single `Write` call.
+
+### File template
 
 ```markdown
-## SESSION CLOSE — {YYYY-MM-DD} {HH:MM} — Branch: {branch} — {1-line topic summary}
+# SESSION CLOSE — {YYYY-MM-DD} {HH:MM} [{id}] — Branch: {branch} — {1-line topic summary}
 
-### Accomplished
-- {item with commit SHA if applicable}
+## Accomplished
+- {item with commit SHA}
 - ...
 
-### Still Pending / Deferred
-- {specific item — file:line or error code — brief context}
+## Still Pending / Deferred
+- {file:line or error code — brief context}
 - ...
 
-### Blockers
-- {blocker or "None"}
+## Blockers
+- {blocker — or "None"}
 
-### Manual Tasks (Darcy)
-| # | Task | Context |
-|---|------|---------|
-| {M#} | **{Task}** | {Where to pick up / what to check} |
+## Files touched
+- {path1}
+- {path2}
+- ...
 
-### Next Session: Start Here
-> {1–2 sentence priority recommendation}
+## Manual tasks
+- Created: {MT-NNN, MT-NNN+1}    (or "none")
+- Closed:  {MT-NNN, MT-NNN+2}    (or "none")
 
----
+## Next session: start here
+> {1–2 sentences}
 ```
 
-If the Pending Tasks table already has entries for items you're tracking, mark them ~~struck~~ with a ✅ note rather than duplicating them.
+If nothing was accomplished (pure exploratory session), write a minimal record noting what was investigated and what was learned. Honesty over filler.
 
-### How to actually prepend (race-safe)
+---
 
-The `Edit` tool uses a read-then-write pattern that fails with `File has been modified since read` when another session prepends between the two calls. In a 10-instance setup this happens often. Use the following **atomic bash prepend** as your primary method — it completes in a single subprocess and is far less racy:
+## Step 6 — Append index row to `TEAM_COORDINATION.md`
+
+`TEAM_COORDINATION.md` has a **Recent Sessions** table near the top. Append your row directly **above the existing rows in the table body** (so newest is on top).
+
+### Race-safe insert
+
+Use this exact bash pattern — it splits the file at the comment marker that lives inside the table body, inserts your row, and reassembles atomically:
 
 ```bash
-# 1. Write your new section to a temp file
-cat > /tmp/sc_block.md <<'SESSION_END'
-## SESSION CLOSE — YYYY-MM-DD HH:MM — Branch: main — topic
+ROW="| {YYYY-MM-DD} | {HH:MM} | {id} | {branch} | {topic ≤60 chars} | [link](docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md) |"
 
-### Accomplished
-- ...
-
-<rest of your section exactly as specified above, ending with the --- separator and a trailing blank line>
-
-SESSION_END
-
-# 2. Split the existing file at the "# Team Coordination" heading (always first 2 lines: heading + blank)
-head -n 2 TEAM_COORDINATION.md > /tmp/sc_head.md
-tail -n +3 TEAM_COORDINATION.md > /tmp/sc_tail.md
-
-# 3. Reassemble: head + your block + rest-of-file
-cat /tmp/sc_head.md /tmp/sc_block.md /tmp/sc_tail.md > TEAM_COORDINATION.md
-
-# 4. Clean up
-rm /tmp/sc_block.md /tmp/sc_head.md /tmp/sc_tail.md
+# Split on the marker comment that sits right under the table header
+awk -v row="$ROW" '
+  /^<!-- New session-close entries go here\. Most recent at top\. -->$/ {
+    print row
+    print
+    next
+  }
+  { print }
+' TEAM_COORDINATION.md > TEAM_COORDINATION.md.tmp && mv TEAM_COORDINATION.md.tmp TEAM_COORDINATION.md
 ```
 
-If for some reason this fails, fall back to `Edit` — but if `Edit` returns `File has been modified since read`, do a fresh `Read` of the top of the file and retry (up to 3 attempts). **Never give up on your session-close prepend just because the file is contended.**
+If for any reason the marker comment is missing (unusual — someone may have edited the file shape), fall back to: read the file with `Read`, find the table, use `Edit` to insert the row above the marker, and retry up to 3 times if `Edit` reports "File has been modified since read."
+
+The marker comment is on a stable single line and the awk approach above is single-pass / atomic — concurrent runs may race on the final `mv`, but each row is independent so the worst case is one row overwriting another. Almost never hit in practice; if you suspect it happened, re-check and re-append.
 
 ---
 
-## Step 5 — Final report to user
+## Step 7 — Commit the docs
 
-After writing the file and making any commits, output a clean summary:
+Stage and commit all three doc updates together:
+
+```bash
+git add docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md docs/MANUAL_TASKS.md TEAM_COORDINATION.md
+git commit -m "docs(session): close {id} — {1-line topic}"
+```
+
+---
+
+## Step 8 — Final report to user
+
+Output this summary (≤30 lines):
 
 ```
-SESSION CLOSED — {branch} — {date}
+SESSION CLOSED — {branch} — {YYYY-MM-DD} {HH:MM} [{id}]
 
-COMMITTED: {commit SHA(s) or "nothing to commit"}
-WROTE: TEAM_COORDINATION.md (new section prepended)
+COMMITTED THIS SESSION: {commit SHA(s) or "nothing"}
+SESSION RECORD: docs/sessions/{file}.md
 
-ACCOMPLISHED THIS SESSION:
+ACCOMPLISHED:
   • {item}
 
 STILL PENDING:
   • {item}
 
-MANUAL TASKS FOR YOU:
-  • {item}
+MANUAL TASKS:
+  Created: MT-NNN, MT-NNN
+  Closed:  MT-NNN
+  See: docs/MANUAL_TASKS.md
 
 PICK UP NEXT TIME:
   {priority recommendation}
 ```
 
-Keep this under 30 lines. No fluff.
-
 ---
 
 ## Important Rules
 
-- Never commit `.png` screenshots, `.env` files, or credentials.
+- Never commit `.png` screenshots, `.env` files, scratch scripts, or credentials.
 - Never use `--no-verify` or `--force` on git commands.
 - Never delete files without explicit user confirmation.
-- If `TEAM_COORDINATION.md` has a pre-existing Manual Tasks table, add new rows — do not replace old ones.
-- If nothing was accomplished (pure exploratory session), say so honestly — write a minimal section noting what was investigated and what was learned.
-- The tone should be a handoff note from one engineer to another, not a changelog.
+- Never modify or delete other sessions' record files in `docs/sessions/`.
+- Never renumber `MT-NNN` IDs or rewrite history in `MANUAL_TASKS.md`.
+- The tone of session records should be a handoff note from one engineer to another, not a changelog.
+- If absolutely nothing happened this session (pure read), still write the record — a one-paragraph "explored X, learned Y, no changes" is better than silence.

@@ -1,5 +1,20 @@
 # Team Coordination
 
+## Recent Sessions
+
+New sessions are written as individual files in `docs/sessions/` (one file per close).
+This table indexes the last ~30. **Append new rows at the top of the table body.**
+Older session blocks below this table are kept for history but no longer added to.
+
+For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
+
+| Date  | Time  | ID   | Branch | Topic | File |
+|-------|-------|------|--------|-------|------|
+| 2026-04-22 | 10:17 | 5a52 | main | Session-handoff overhaul (per-session files + global manual tasks) | [link](docs/sessions/2026-04-22-1017-5a52.md) |
+<!-- New session-close entries go here. Most recent at top. -->
+
+---
+
 ## SESSION CLOSE — 2026-04-22 — Branch: main — Six Hats UX audit context-continuation (immediate close)
 
 ### Accomplished
