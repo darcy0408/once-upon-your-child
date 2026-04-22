@@ -151,8 +151,9 @@ Manual browser test not yet re-run. Suggest: Parent Controls → Use Your Own AP
 
 ### Deferred
 - **Mochi black background** — code shows `Color(0xFFFF8F00)` (orange); likely screenshot artifact. Needs human verification on device.
-- **Sprout Life Quests** — deferred to Opus; requires creative content authoring for ages 2-5.
-- **Step 4 summary recap** — low priority; add visual recap of choices before GO! button.
+- ~~**Sprout Life Quests**~~ — ✅ Fixed `9635005` (Opus authored 3 quests).
+- ~~**Step 4 summary recap**~~ — ✅ Fixed `0ebba9a` — `_buildSproutRecap` card above GO! shows name / scenario / buddy.
+- ~~**Dark Sprout background**~~ — ✅ Fixed `0ebba9a` — gradient warmed from cold purple to twilight rose (`2D1B42 → 5F2776 → 8B3A6B`).
 
 ---
 
