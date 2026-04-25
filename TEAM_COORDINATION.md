@@ -28,6 +28,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-24 | 19:22 | 9620 | main | MT-005 BUG-001 re-verify: 18+ wizard advance PASS + DDC blocker documented | [link](docs/sessions/2026-04-24-1922-9620.md) |
 | 2026-04-24 | 21:20 | 7dba | main | MT-013 BUG-002 retry cap — _maxPrewarmRetries const + skip wasted delay | [link](docs/sessions/2026-04-24-2120-7dba.md) |
 | 2026-04-25 |  —    | 3a99 | main | MT-012 13-17 attestation gate + golden test cleanup | (no session file) |
+| 2026-04-25 | 08:28 | 5c15 | main | MT-003/MT-004: BUG-012 smoke-test + Flutter error display fix | [link](docs/sessions/2026-04-25-0828-5c15.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---
