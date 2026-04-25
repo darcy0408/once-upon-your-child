@@ -36,7 +36,7 @@ When closing a session:
 - **MT-011** [done] BUG-002 TTS backoff runtime verification (created by 2571) — backoff curve confirmed active (no storm, dedup working); retry cap >4 per phrase still hit. Retry cap fix (`_maxPrewarmRetries = 4` in `app_tts_service.dart:~147`) tracked as separate follow-up. (closed by QA-2026-04-24)
 - **MT-012** [open] Age-gate consolidation audit (created by 7df8) — `welcome_screen.dart` and `age_gate_screen.dart` diverge in behavior; users aged 13–17 on the welcome path may not record COPPA consent correctly. Assign to Opus — risky refactor touching compliance logic. Entry point: `lib/screens/welcome_screen.dart:998` (`_handleContinue`) and `lib/screens/age_gate_screen.dart`. Prior session notes flagged this as highest remaining HIGH item.
 
-- **MT-013** [open] BUG-002 retry cap code fix (created by QA-2026-04-24) — add `const _maxPrewarmRetries = 4;` guard to `_prewarm()` loop in `lib/services/app_tts_service.dart:~147`. ~5-minute change. Runtime QA confirmed backoff works but bursts hit 4–5 retries vs ≤4 target; hard cap is the missing piece.
+- **MT-013** [done] BUG-002 retry cap code fix (created by QA-2026-04-24) — added `_maxPrewarmRetries = 4` constant + early break on final attempt (no wasted delay). `dart analyze` clean. (closed by this session)
 - **MT-014** [open] MT-007 BYOK runtime verify (created by QA-2026-04-24) — code fix confirmed correct (`_showKey=true`, white text on `0xFF120226`). Darcy needs to test manually with a real `AIza…` key on a BYOK-subscribed account: paste key, tap Finish, confirm `POST /api/user/settings/validate-api-key → 200`, then trigger "Full illustrations" and confirm wizard does NOT relaunch.
 
 ## Closed tasks

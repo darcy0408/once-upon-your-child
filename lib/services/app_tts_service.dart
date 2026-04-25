@@ -138,6 +138,8 @@ class AppTtsService {
     unawaited(_authReady!.then((_) => _prewarm(warmUpPhrases)));
   }
 
+  static const int _maxPrewarmRetries = 4;
+
   Future<void> _prewarm(List<String> phrases) async {
     // Deduplicate concurrent warm-up calls within a session.
     if (_prewarming) return;
@@ -149,7 +151,7 @@ class AppTtsService {
         final key = phrase.trim();
         if (_cache.containsKey(key)) continue;
         var attempts = 0;
-        while (attempts < 4) {
+        while (attempts < _maxPrewarmRetries) {
           try {
             final ttsResult =
                 await TtsApiService.synthesize(key, voiceId: voiceId);
@@ -159,9 +161,15 @@ class AppTtsService {
             break;
           } on TtsRateLimitException {
             attempts++;
+            if (attempts >= _maxPrewarmRetries) {
+              debugPrint(
+                'TTS prewarm 429 — giving up after $_maxPrewarmRetries attempts',
+              );
+              break;
+            }
             debugPrint(
               'TTS prewarm 429 — waiting ${backoffMs}ms before retry '
-              '($attempts/4)',
+              '($attempts/$_maxPrewarmRetries)',
             );
             await Future<void>.delayed(Duration(milliseconds: backoffMs));
             backoffMs = (backoffMs * 2).clamp(2000, 30000);
