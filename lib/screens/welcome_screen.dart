@@ -1144,12 +1144,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       return;
     }
 
-    // 13–17: brief acknowledgement before recording self-attested consent.
+    // 13–17: informational notice before recording self-attested consent.
     // 18+: skip dialog and proceed directly. (MT-012)
     if (_selectedAge! < 18) {
       if (!mounted) return;
       AppTtsService.instance.stop();
-      final acknowledged = await showDialog<bool>(
+      await showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
@@ -1166,11 +1166,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             style: TextStyle(color: Colors.white70, height: 1.5),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel',
-                  style: TextStyle(color: Colors.white54)),
-            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: _goldColor,
@@ -1178,16 +1173,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('I understand'),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Got it'),
             ),
           ],
         ),
       );
-      if (acknowledged != true) {
-        if (mounted) setState(() { _submitting = false; _step = 1; });
-        return;
-      }
+      if (!mounted) return;
     }
 
     // Age 13+ — no parental consent required; persist name immediately.
