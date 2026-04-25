@@ -101,10 +101,25 @@ const List<String> kWarmUpPhrases = [
 
 class AppTtsService {
   AppTtsService._();
-  static final AppTtsService instance = AppTtsService._();
 
-  final AudioPlayer _player = AudioPlayer();
-  final FlutterTts _fallback = FlutterTts();
+  /// Subclass hook for test fakes. Production code uses [AppTtsService._].
+  @visibleForTesting
+  AppTtsService.forTesting();
+
+  static AppTtsService _instance = AppTtsService._();
+  static AppTtsService get instance => _instance;
+
+  /// Test hook: swap the singleton for a fake in widget tests. Pass `null`
+  /// to restore the real implementation. Production code never assigns here.
+  @visibleForTesting
+  static set instance(AppTtsService? value) {
+    _instance = value ?? AppTtsService._();
+  }
+
+  // Lazy so the @visibleForTesting `forTesting()` constructor can subclass
+  // without registering audioplayers / flutter_tts platform channels.
+  late final AudioPlayer _player = AudioPlayer();
+  late final FlutterTts _fallback = FlutterTts();
   final Map<String, Uint8List> _cache = {};
   bool _ready = false;
   bool _prewarming = false;

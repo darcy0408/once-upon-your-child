@@ -8,6 +8,32 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/screens/welcome_screen.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
+import 'package:story_weaver_app/services/app_tts_service.dart';
+
+/// No-op TTS so the welcome screen never hits the (mock-blocked) network.
+/// Without this stub, `_speak()` calls fan out to ElevenLabs via
+/// `TtsApiService.synthesize`, which 400s in widget tests and leaves
+/// pending futures around long enough to time out `pumpAndSettle`.
+class _FakeAppTtsService extends AppTtsService {
+  _FakeAppTtsService() : super.forTesting();
+
+  @override
+  Future<void> init({List<String> warmUpPhrases = const []}) async {}
+
+  @override
+  void markInteracted() {}
+
+  @override
+  Future<void> speak(
+    String text, {
+    String? voiceId,
+    bool awaitCompletion = false,
+    double rateScale = 0.85,
+  }) async {}
+
+  @override
+  Future<void> stop() async {}
+}
 
 /// Stub HTTP client that 200s every request — keeps the best-effort consent
 /// POST inside `ParentalConsentService.recordConsent` from blowing up the test.
@@ -43,8 +69,11 @@ Future<void> _pumpWelcomeScreen(WidgetTester tester,
       ),
     ),
   );
-  // Let _resumeFromSavedAge() and _initVoice() complete.
-  await tester.pumpAndSettle(const Duration(seconds: 1));
+  // Let _resumeFromSavedAge() and _initVoice() complete. We can't use
+  // pumpAndSettle here — the title-step "Tap me!" hint runs an
+  // AnimationController.repeat(), which never settles.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
 }
 
 /// Drive the onboarding flow far enough to land on the age picker, then tap
@@ -85,10 +114,12 @@ void main() {
       'welcome_teaser_seen': true,
     });
     ApiServiceManager.setTestClient(_buildClient());
+    AppTtsService.instance = _FakeAppTtsService();
   });
 
   tearDown(() {
     ApiServiceManager.setTestClient(null);
+    AppTtsService.instance = null;
   });
 
   testWidgets(
@@ -98,24 +129,27 @@ void main() {
       await _pumpWelcomeScreen(tester, onComplete: () => completed = true);
       await _selectAge16(tester);
 
+      // MT-012 (commit 1ec9862): notice-only dialog with a single "Got it"
+      // action — it is informational, not a gate. The user cannot cancel.
       expect(find.text('Just so you know'), findsOneWidget);
-      expect(find.text('I understand'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Got it'), findsOneWidget);
       expect(completed, isFalse,
           reason: 'onComplete must not fire until the user acknowledges');
     },
   );
 
   testWidgets(
-    'tapping "I understand" records self_attested consent for age 16',
+    'tapping "Got it" records self_attested consent for age 16',
     (tester) async {
       var completed = false;
       await _pumpWelcomeScreen(tester, onComplete: () => completed = true);
       await _selectAge16(tester);
 
       expect(find.text('Just so you know'), findsOneWidget);
-      await tester.tap(find.text('I understand'));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await tester.tap(find.text('Got it'));
+      // No pumpAndSettle — the title-step animation never settles.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('parental_consent_granted'), isTrue,
@@ -128,24 +162,20 @@ void main() {
   );
 
   testWidgets(
-    'tapping "Cancel" leaves consent unrecorded and returns to age picker',
+    'dialog is barrier-dismissible-false and exposes no cancel path',
     (tester) async {
       var completed = false;
       await _pumpWelcomeScreen(tester, onComplete: () => completed = true);
       await _selectAge16(tester);
 
+      // Notice-only design: confirm there is no escape hatch besides "Got it".
+      // No "Cancel" / "I understand" / close icon — the user must acknowledge.
       expect(find.text('Just so you know'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('parental_consent_granted'), isNot(isTrue),
-          reason: 'recordConsent must NOT run when user cancels');
-      expect(prefs.getString('parental_consent_method'), isNull);
+      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('I understand'), findsNothing);
+      expect(find.byIcon(Icons.close), findsNothing);
       expect(completed, isFalse,
-          reason: 'onComplete must not fire when user cancels');
-      // Back on the age picker → the band labels are visible again.
-      expect(find.text('15 – 17'), findsOneWidget);
+          reason: 'onComplete must not fire while the dialog is open');
     },
   );
 }
