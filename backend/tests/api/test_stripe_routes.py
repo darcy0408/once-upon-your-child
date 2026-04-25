@@ -98,7 +98,7 @@ def test_create_checkout_session_missing_json_body_returns_400(client, app):
     assert response.get_json()["error"] == "Invalid subscription tier"
 
 
-def test_create_checkout_session_stripe_failure_returns_403(client, app, mocker):
+def test_create_checkout_session_stripe_failure_returns_500(client, app, mocker):
     with app.app_context():
         _create_user("u-5")
 
@@ -114,7 +114,7 @@ def test_create_checkout_session_stripe_failure_returns_403(client, app, mocker)
         headers=_auth_headers("u-5")
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 500
     assert response.get_json()["error"] == "Failed to create checkout session. Please try again."
 
 
@@ -144,7 +144,10 @@ def test_get_subscription_status_returns_active_for_owner(client, app, mocker):
     assert body["cancel_at_period_end"] is False
 
 
-def test_get_subscription_status_denies_non_owner(client, app):
+def test_get_subscription_status_returns_own_data_regardless_of_url_user_id(client, app):
+    # @require_owner was removed: the endpoint always returns request.current_user's
+    # subscription (URL user_id is ignored).  An authenticated user calling another
+    # user's URL gets their OWN data — no data leaks, no false 403s.
     with app.app_context():
         _create_user("owner-user")
         _create_user("attacker-user")
@@ -154,8 +157,9 @@ def test_get_subscription_status_denies_non_owner(client, app):
         headers=_auth_headers("attacker-user"),
     )
 
-    assert response.status_code == 403
-    assert response.get_json()["error"] == "Access denied"
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["status"] == "inactive"  # attacker-user has no Stripe customer
 
 
 def test_get_subscription_status_requires_auth(client, app):

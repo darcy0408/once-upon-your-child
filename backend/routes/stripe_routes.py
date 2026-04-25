@@ -5,7 +5,7 @@ import stripe
 from dotenv import load_dotenv
 
 from ..models.user import User
-from ..middleware.auth import require_auth, require_owner
+from ..middleware.auth import require_auth
 
 load_dotenv()
 
@@ -73,7 +73,7 @@ def create_checkout_session():
         })
     except Exception as e:
         logger.exception("Failed to create checkout session")
-        return jsonify(error="Failed to create checkout session. Please try again."), 403
+        return jsonify(error="Failed to create checkout session. Please try again."), 500
 
 @stripe_routes.route('/create-portal-session', methods=['POST'])
 @require_auth
@@ -100,14 +100,13 @@ def create_portal_session():
 
 @stripe_routes.route('/subscription-status/<user_id>', methods=['GET'])
 @require_auth
-@require_owner('user_id')
 def get_subscription_status(user_id):
     """
     Get the current subscription status for a user.
     Returns subscription tier, status, and renewal date.
     """
     try:
-        # User already validated by @require_auth and @require_owner decorators
+        # User already validated by @require_auth decorator
         user = request.current_user
 
         # Get subscription from Stripe if customer_id exists
