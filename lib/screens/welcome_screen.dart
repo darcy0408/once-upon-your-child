@@ -1144,6 +1144,52 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       return;
     }
 
+    // 13–17: brief acknowledgement before recording self-attested consent.
+    // 18+: skip dialog and proceed directly. (MT-012)
+    if (_selectedAge! < 18) {
+      if (!mounted) return;
+      AppTtsService.instance.stop();
+      final acknowledged = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1A0533),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Just so you know',
+            style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
+          ),
+          content: const Text(
+            'Story Weaver is for ages 13 and up. If you\'re under 18, please '
+            'make sure a parent or guardian knows you\'re using this app.',
+            style: TextStyle(color: Colors.white70, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _goldColor,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('I understand'),
+            ),
+          ],
+        ),
+      );
+      if (acknowledged != true) {
+        if (mounted) setState(() { _submitting = false; _step = 1; });
+        return;
+      }
+    }
+
     // Age 13+ — no parental consent required; persist name immediately.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kUserNameKey, name);

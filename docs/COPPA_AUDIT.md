@@ -30,6 +30,7 @@ The Story Weaver app currently implements several critical features for COPPA co
 - **Current State:** `lib/screens/parental_consent_screen.dart` uses a checkbox.
 - **Issue:** Under COPPA, a checkbox is insufficient for "verifiable" consent when collecting personal information from children under 13.
 - **Fix:** Code change required. Implement a more robust verification method. For premium apps, a $0.50 credit card transaction (Stripe) is a common "verifiable" method.
+- **2026-04-25 (MT-012):** 13–17 cohort now sees a "Just so you know" parent-awareness acknowledgement dialog before `recordConsent(method: 'self_attested')` fires (`lib/screens/welcome_screen.dart:1147-1191`). Cancelling the dialog returns the user to the age picker without writing a consent record. 18+ skips the dialog entirely. Federal COPPA scope (under-13) is unaffected; this strengthens attestation evidence for the minor-but-not-COPPA-covered tier (relevant to California AADC posture).
 
 ### 2. Data Synchronization Gap
 - **Current State:** `ParentalConsentService.dart` saves to `SharedPreferences` only.

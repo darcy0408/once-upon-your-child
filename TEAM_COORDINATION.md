@@ -27,6 +27,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-24 | 18:47 | b00e | main | Consolidated Playwright re-verify — 6 MTs closed (BUG-001✅ BUG-003✅ grids✅ gender✅) | [link](docs/sessions/2026-04-24-1847-b00e.md) |
 | 2026-04-24 | 19:22 | 9620 | main | MT-005 BUG-001 re-verify: 18+ wizard advance PASS + DDC blocker documented | [link](docs/sessions/2026-04-24-1922-9620.md) |
 | 2026-04-24 | 21:20 | 7dba | main | MT-013 BUG-002 retry cap — _maxPrewarmRetries const + skip wasted delay | [link](docs/sessions/2026-04-24-2120-7dba.md) |
+| 2026-04-25 |  —    | 3a99 | main | MT-012 13-17 attestation gate + golden test cleanup | (no session file) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---

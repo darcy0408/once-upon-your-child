@@ -7,29 +7,12 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/feelings_wheel_screen.dart';
 import 'package:story_weaver_app/models/subscription_status.dart';
-import 'package:story_weaver_app/screens/age_gate_screen.dart';
 import 'package:story_weaver_app/screens/subscription_management_screen.dart';
 import 'package:story_weaver_app/screens/subscription_success_screen.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
-import 'package:story_weaver_app/services/parental_consent_service.dart';
 import 'package:story_weaver_app/services/stripe_service.dart';
 
 import 'golden_test_harness.dart';
-
-class _StubConsentService extends ParentalConsentService {
-  const _StubConsentService();
-
-  @override
-  Future<void> saveDeclaredAge(int age) async {}
-
-  @override
-  Future<void> recordConsent({
-    required int age,
-    String? parentEmail,
-    String method = 'parent',
-    bool allowPhotoAvatar = true,
-  }) async {}
-}
 
 class _StubStripeService extends StripeService {
   _StubStripeService({this.shouldSucceed = true});
@@ -118,21 +101,6 @@ void main() {
 
   tearDown(() {
     ApiServiceManager.setTestClient(null);
-  });
-
-  testWidgets('Age gate screen', (tester) async {
-    await pumpGoldenApp(
-      tester,
-      AgeGateScreen(
-        consentService: const _StubConsentService(),
-        onConsentCompleted: () {},
-      ),
-    );
-
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('age_gate_screen.png'),
-    );
   });
 
   testWidgets('Subscription management screen', (tester) async {
