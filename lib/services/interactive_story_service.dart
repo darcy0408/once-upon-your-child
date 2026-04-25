@@ -318,7 +318,7 @@ class InteractiveStoryService {
   String _parseError(http.Response response) {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['error'] ?? data['hint'] ?? 'Unknown error';
+      return data['message'] ?? data['error'] ?? data['hint'] ?? 'Unknown error';
     } catch (_) {
       return response.body;
     }
