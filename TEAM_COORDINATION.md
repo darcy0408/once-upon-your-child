@@ -24,6 +24,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-04-22 | 12:15 | 2571 | main | BUG-002 TTS backoff root-cause fix + Playwright MCP isolation | [link](docs/sessions/2026-04-22-1215-2571.md) |
 | 2026-04-22 | 12:15 | 247a | main | Gender picker placeholder images wired in — all 6 bands | [link](docs/sessions/2026-04-22-1215-247a.md) |
 | 2026-04-22 | 12:16 | 7df8 | main | Six Hats creator review triage + BUG-010 auth guard | [link](docs/sessions/2026-04-22-1216-7df8.md) |
+| 2026-04-24 | 18:47 | b00e | main | Consolidated Playwright re-verify — 6 MTs closed (BUG-001✅ BUG-003✅ grids✅ gender✅) | [link](docs/sessions/2026-04-24-1847-b00e.md) |
 <!-- New session-close entries go here. Most recent at top. -->
 
 ---
