@@ -2,12 +2,12 @@
 
 import 'package:isar/isar.dart';
 
-// part 'avatar_cache_entry.g.dart'; // Commented out for web compatibility
+part 'avatar_cache_entry.g.dart';
 
 /// Offline cache for DiceBear avatar SVG strings
 ///
 /// Enables offline-first avatar loading with cache invalidation support.
-// @collection // Commented out for web compatibility
+@collection
 class AvatarCacheEntry {
   /// Isar auto-incremented ID
   Id id = Isar.autoIncrement;
