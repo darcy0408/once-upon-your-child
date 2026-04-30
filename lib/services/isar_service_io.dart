@@ -9,7 +9,7 @@ import '../avatar_models.dart';
 import '../models/local/story_local_io.dart';
 import '../models/local/chronicle_local_io.dart';
 import '../models/local/chapter_memory_local_io.dart';
-import '../data/isar/avatar_cache_entry.dart';
+import '../data/isar/avatar_cache_entry_io.dart';
 import '../models.dart'; // Domain models
 
 class IsarService {

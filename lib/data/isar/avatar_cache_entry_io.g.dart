@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'avatar_cache_entry.dart';
+part of 'avatar_cache_entry_io.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator
