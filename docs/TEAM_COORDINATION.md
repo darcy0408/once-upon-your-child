@@ -2,6 +2,63 @@
 
 ---
 
+## Session Update — 2026-04-30 (Railway grand-light Build Fix + MCP Setup)
+
+### What was completed this session
+
+#### 1. grand-light Web Build Fixed (Railway "1 issue" warning resolved)
+The frontend service `grand-light` on Railway was failing every redeploy attempt since 2026-04-25. Latest healthy deploy was commit `d46a1241` (14:15 UTC); every push after `3b2f6273` (re-enable native AvatarCacheEntry collection) failed at the `flutter build web` step.
+
+**Root cause:** Isar codegen produced `lib/data/isar/avatar_cache_entry.g.dart:78` with a 64-bit ID literal:
+```
+id: 5885332021012296610,
+```
+That value is ~5.9e18, well above JavaScript's safe-integer ceiling (`2^53 - 1` ≈ 9.0e15). `dart compile js` refuses with: *"The integer literal 5885332021012296610 can't be represented exactly in JavaScript."* The native build is unaffected.
+
+**Fix:** Apply the same conditional-export pattern already used for `CharacterLocal`, `StoryLocal`, `ChronicleLocal`, etc.:
+- `lib/data/isar/avatar_cache_entry.dart` — now a 2-line conditional export
+- `lib/data/isar/avatar_cache_entry_io.dart` (renamed from above) — Isar-annotated class + `part 'avatar_cache_entry_io.g.dart'`
+- `lib/data/isar/avatar_cache_entry_io.g.dart` (renamed) — generated schema, `part of` updated
+- `lib/data/isar/avatar_cache_entry_stub.dart` — **new** plain Dart class for web, no Isar imports, no `part` directive, no JS-incompatible literals
+- `lib/services/isar_service_io.dart` — import switched to `avatar_cache_entry_io.dart` directly (matches how every other `_io` model is imported in this file)
+
+Verified locally with `flutter build web --release` using Railway's exact dart-defines (56s, ✓). Railway redeploy confirmed green: deployment `fea7a775`, commit `37246258`, built 18:11 UTC, live at `grand-light-production-68d9.up.railway.app`.
+
+Commit: `37246258 fix(isar): split AvatarCacheEntry into io/stub for web build`
+
+#### 2. Railway MCP — Permanent Setup
+The project `.mcp.json` had Railway pointed at `https://mcp.railway.com/mcp` (returns 404) with a `Bearer ${RAILWAY_TOKEN}` header (Railway's remote MCP doesn't use Bearer auth). Updated to:
+```jsonc
+"railway": { "type": "http", "url": "https://mcp.railway.com" }
+```
+Railway uses **OAuth in the browser** — no token to manage on disk. On first connect, Claude Code prompts for approval, then opens a browser window for the OAuth flow. Confirmed working with read tools (`list-projects`, `list-services`) and `railway-agent`.
+
+**Gotcha:** an API token (`-e8d2`) was inadvertently pasted into chat earlier in the session while debugging the broken Bearer config. It was revoked in Railway → Account Settings → Tokens before being used anywhere. The OAuth flow makes account-scoped API tokens unnecessary for Claude Code; existing CI/CD tokens (e.g. `Story Weaver CI/CD -99a2`) are still in use elsewhere and were left alone.
+
+#### 3. .mcp.json — Other Cleanup (NOT YET COMMITTED)
+Two uncommitted edits remain in `.mcp.json`:
+- Removed `fetch` server (`mcp-server-fetch` binary not on PATH; built-in `WebFetch` already covers this).
+- Added `C:/Users/Darcy/Pictures/Screenshots` to the `filesystem` MCP allowed roots so screenshots can be read directly without copying into the project.
+
+These take effect on the next Claude Code restart.
+
+### Files changed
+```
+lib/data/isar/avatar_cache_entry.dart       — converted to conditional export (2 lines)
+lib/data/isar/avatar_cache_entry_io.dart    — renamed from avatar_cache_entry.dart, part directive updated
+lib/data/isar/avatar_cache_entry_io.g.dart  — renamed from avatar_cache_entry.g.dart, part-of updated
+lib/data/isar/avatar_cache_entry_stub.dart  — NEW: plain Dart class for web
+lib/services/isar_service_io.dart           — import path → avatar_cache_entry_io.dart
+.mcp.json                                   — Railway URL + scheme fix; fetch removed; screenshots root added (uncommitted)
+```
+
+### Notes for next session
+- If Isar codegen is re-run for any model, the resulting `.g.dart` will continue to embed 64-bit ID literals. The io/stub split must be in place for any model whose data class is referenced from web code, otherwise `flutter build web` will fail again with the same error. Pattern is now applied to: `CharacterLocal`, `StoryLocal`, `ChronicleLocal`, `ChapterMemoryLocal`, `AvatarCacheEntry`.
+- Railway MCP requires Claude Code to be restarted to pick up `.mcp.json` changes; `RAILWAY_TOKEN` env var is no longer needed (OAuth) and can be removed from User-scoped Windows env vars at any time.
+- 44 of 288 flutter tests fail on `main` baseline (unrelated to today's work — `magic_review_step_test.dart` and similar wizard/welcome tests). Pre-existing.
+
+---
+
 ## Session Update — 2026-04-18c (Companion Overhaul + Asset Cleanup)
 
 ### What was completed this session
