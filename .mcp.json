@@ -2,20 +2,11 @@
   "mcpServers": {
     "railway": {
       "type": "http",
-      "url": "https://mcp.railway.com/mcp",
-      "headers": {
-        "Authorization": "Bearer $RAILWAY_TOKEN"
-      }
+      "url": "https://mcp.railway.com"
     },
     "sentry": {
       "type": "http",
       "url": "https://mcp.sentry.dev/mcp"
-    },
-    "fetch": {
-      "type": "stdio",
-      "command": "mcp-server-fetch",
-      "args": [],
-      "env": {}
     },
     "playwright": {
       "type": "stdio",
@@ -26,7 +17,7 @@
     "filesystem": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:/dev/story-weaver-app"],
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:/dev/story-weaver-app", "C:/Users/Darcy/Pictures/Screenshots"],
       "env": {}
     }
   }
