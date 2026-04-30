@@ -127,7 +127,7 @@ If nothing was accomplished (pure exploratory session), write a minimal record n
 
 ## Step 6 — Append index row to `TEAM_COORDINATION.md`
 
-`TEAM_COORDINATION.md` has a **Recent Sessions** table near the top. Append your row directly **above the existing rows in the table body** (so newest is on top).
+`TEAM_COORDINATION.md` has a **Recent Sessions** table near the top. Insert your row directly **after the marker comment that sits below the `|---|---|...|` separator row** (so newest is on top, above all existing data rows).
 
 ### Race-safe insert
 
@@ -136,18 +136,21 @@ Use this exact bash pattern — it splits the file at the comment marker that li
 ```bash
 ROW="| {YYYY-MM-DD} | {HH:MM} | {id} | {branch} | {topic ≤60 chars} | [link](docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md) |"
 
-# Split on the marker comment that sits right under the table header
+# Split on the marker comment that sits right under the table header.
+# The marker lives immediately after the |---|---|...| separator row, so we
+# print the matched marker line FIRST and then the new row — that way the new
+# row lands at the top of the table body (newest-at-top).
 awk -v row="$ROW" '
   /^<!-- New session-close entries go here\. Most recent at top\. -->$/ {
-    print row
     print
+    print row
     next
   }
   { print }
 ' TEAM_COORDINATION.md > TEAM_COORDINATION.md.tmp && mv TEAM_COORDINATION.md.tmp TEAM_COORDINATION.md
 ```
 
-If for any reason the marker comment is missing (unusual — someone may have edited the file shape), fall back to: read the file with `Read`, find the table, use `Edit` to insert the row above the marker, and retry up to 3 times if `Edit` reports "File has been modified since read."
+If for any reason the marker comment is missing (unusual — someone may have edited the file shape), fall back to: read the file with `Read`, find the table, use `Edit` to insert the row immediately below the marker (or directly under the separator row if no marker is present), and retry up to 3 times if `Edit` reports "File has been modified since read."
 
 The marker comment is on a stable single line and the awk approach above is single-pass / atomic — concurrent runs may race on the final `mv`, but each row is independent so the worst case is one row overwriting another. Almost never hit in practice; if you suspect it happened, re-check and re-append.
 
