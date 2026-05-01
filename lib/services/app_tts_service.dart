@@ -124,6 +124,12 @@ class AppTtsService {
   bool _ready = false;
   bool _prewarming = false;
 
+  // Bumped on every stop() and every speak() entry. In-flight speak() calls
+  // capture their generation and bail at the next await if it changes — this
+  // prevents an aborted play() from triggering the on-device fallback with
+  // stale text after the caller has moved on to the next screen.
+  int _speakGen = 0;
+
   /// On web, browsers block audio until the user has interacted with the page.
   /// Call [markInteracted] from the first user gesture (e.g. a tap) so that
   /// subsequent speak() calls are allowed. On non-web this flag is always true.
@@ -217,12 +223,15 @@ class AppTtsService {
     // Web browsers block audio until a user gesture has occurred. Skip silently
     // rather than letting the browser throw NotAllowedError.
     if (!_webInteracted) return;
+    final myGen = ++_speakGen;
     // Wait for auth token before hitting the backend — avoids 401 → robotic fallback.
     if (_authReady != null) await _authReady;
+    if (myGen != _speakGen) return;
     try {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
         final id = voiceId ?? (await _savedVoiceId());
+        if (myGen != _speakGen) return;
         // Pass rateScale to ElevenLabs so the actual audio is slower for young
         // children — the fallback device TTS already uses rateScale below.
         final ttsResult = await TtsApiService.synthesize(
@@ -230,9 +239,11 @@ class AppTtsService {
           voiceId: id,
           speed: rateScale.clamp(0.7, 1.2),
         );
+        if (myGen != _speakGen) return;
         mp3 = ttsResult?.audioBytes;
         if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }
+      if (myGen != _speakGen) return;
       if (mp3 != null && mp3.isNotEmpty) {
         if (kIsWeb) {
           // On web, audioplayers' BytesSource converts bytes to a data: URI and
@@ -242,6 +253,7 @@ class AppTtsService {
           await playAudioBytesOnWeb(mp3, awaitCompletion: awaitCompletion);
         } else {
           await _player.stop();
+          if (myGen != _speakGen) return;
           await _player.play(BytesSource(mp3));
           if (awaitCompletion) {
             await _player.onPlayerComplete.first
@@ -251,17 +263,24 @@ class AppTtsService {
         return;
       }
     } catch (e) {
+      // If we were superseded (stop() called or a newer speak() started), the
+      // exception is almost certainly an intentional abort — don't fall back to
+      // the on-device robotic voice with stale text.
+      if (myGen != _speakGen) return;
       debugPrint('TTS ElevenLabs failed, falling back to device: $e');
     }
+    if (myGen != _speakGen) return;
     // On-device fallback
     if (_ready) {
       if (rateScale != 1.0) await _fallback.setSpeechRate(0.42 * rateScale);
+      if (myGen != _speakGen) return;
       await _fallback.speak(text);
       if (rateScale != 1.0) await _fallback.setSpeechRate(0.42);
     }
   }
 
   Future<void> stop() async {
+    _speakGen++;
     stopWebAudio(); // no-op on non-web via stub
     await _player.stop();
     await _fallback.stop();

@@ -48,6 +48,11 @@ Future<void> playAudioBytesOnWeb(
     if (awaitCompletion) {
       await audio.onEnded.first.timeout(const Duration(seconds: 120));
     }
+  } on html.DomException catch (e) {
+    // AbortError fires when stopWebAudio() pauses us mid-play, or when a newer
+    // playAudioBytesOnWeb call preempts this one. That's intentional — swallow
+    // it so the caller doesn't trigger the on-device fallback with stale text.
+    if (e.name != 'AbortError') rethrow;
   } finally {
     // Only clean up if this element is still the active one (not replaced by a
     // subsequent call to stopWebAudio / playAudioBytesOnWeb).
