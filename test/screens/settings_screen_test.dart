@@ -18,30 +18,129 @@ class _MockHttpOverrides extends HttpOverrides {
 class _MockHttpClient extends Fake implements HttpClient {
   @override
   Future<HttpClientRequest> openUrl(String method, Uri url) async {
-    return _MockHttpClientRequest();
+    return _MockHttpClientRequest(url);
   }
 
   @override
   bool autoUncompress = true;
+
+  @override
+  void close({bool force = false}) {}
 }
 
 class _MockHttpClientRequest extends Fake implements HttpClientRequest {
+  _MockHttpClientRequest([this.url]);
+
+  final Uri? url;
+
+  @override
+  bool followRedirects = false;
+
+  @override
+  int maxRedirects = 5;
+
+  @override
+  bool persistentConnection = true;
+
+  @override
+  int contentLength = -1;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  bool bufferOutput = true;
+
+  @override
+  final HttpHeaders headers = _NoopHttpHeaders();
+
+  @override
+  void add(List<int> data) {}
+
+  @override
+  void write(Object? object) {}
+
+  @override
+  Future addStream(Stream<List<int>> stream) async {
+    await stream.drain();
+  }
+
+  @override
+  Future flush() async {}
+
   @override
   Future<HttpClientResponse> close() async {
-    return _MockHttpClientResponse();
+    return _MockHttpClientResponse(url);
   }
+
+  @override
+  Future<HttpClientResponse> get done async => _MockHttpClientResponse(url);
+}
+
+class _NoopHttpHeaders extends Fake implements HttpHeaders {
+  @override
+  void add(String name, Object value, {bool preserveHeaderCase = false}) {}
+
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {}
+
+  @override
+  void removeAll(String name) {}
+
+  @override
+  String? value(String name) => null;
+
+  @override
+  List<String>? operator [](String name) => null;
+
+  @override
+  void forEach(void Function(String name, List<String> values) action) {}
 }
 
 class _MockHttpClientResponse extends Fake implements HttpClientResponse {
+  _MockHttpClientResponse([this.url]);
+
+  final Uri? url;
+
+  bool get _isAnthropicApi {
+    final host = url?.host ?? '';
+    return host.contains('anthropic.com') || (url?.path ?? '').contains('/messages');
+  }
+
   @override
-  int get statusCode => 400;
+  int get statusCode => _isAnthropicApi ? 400 : 200;
+
+  @override
+  String get reasonPhrase => _isAnthropicApi ? 'Bad Request' : 'OK';
+
+  @override
+  int get contentLength => -1;
+
+  @override
+  bool get isRedirect => false;
+
+  @override
+  bool get persistentConnection => false;
+
+  @override
+  List<RedirectInfo> get redirects => const [];
+
+  @override
+  HttpClientResponseCompressionState get compressionState =>
+      HttpClientResponseCompressionState.notCompressed;
+
+  @override
+  HttpHeaders get headers => _NoopHttpHeaders();
+
+  @override
+  List<Cookie> get cookies => const [];
 
   @override
   StreamSubscription<List<int>> listen(void Function(List<int> event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    final body = jsonEncode({
-      'error': {'message': 'Malformed key'}
-    });
+    final body = _isAnthropicApi
+        ? jsonEncode({'error': {'message': 'Malformed key'}})
+        : '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>';
     return Stream.value(utf8.encode(body)).listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }

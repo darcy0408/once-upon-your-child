@@ -52,9 +52,9 @@ const List<(int age, AgeBand band)> kBoundaryAges = [
 // ---------------------------------------------------------------------------
 
 const Map<AgeBand, List<String>> kExpectedCompanionIds = {
-  AgeBand.sprout: ['fluffy_dragon', 'magic_bunny', 'shining_puppy', 'robin'],
-  AgeBand.explorer: ['ember_dragon', 'moon_owl', 'star_fox', 'robin'],
-  AgeBand.adventurer: ['thunder_wolf', 'shadow_panther', 'crystal_phoenix', 'robin'],
+  AgeBand.sprout: ['pebble', 'robin', 'mochi', 'sunny'],
+  AgeBand.explorer: ['ember', 'robin', 'clover', 'biscuit'],
+  AgeBand.adventurer: ['atlas', 'robin', 'nyx', 'kodiak'],
   // creator / adolescent / adult companions are validated in separate widget tests
 };
 
@@ -168,19 +168,19 @@ void main() {
     test('Sprout companions are exactly the 4 expected IDs', () {
       final ids = kExpectedCompanionIds[AgeBand.sprout]!;
       expect(ids.length, equals(4));
-      expect(ids, containsAll(['fluffy_dragon', 'magic_bunny', 'shining_puppy', 'robin']));
+      expect(ids, containsAll(['pebble', 'robin', 'mochi', 'sunny']));
     });
 
     test('Explorer companions are exactly the 4 expected IDs', () {
       final ids = kExpectedCompanionIds[AgeBand.explorer]!;
       expect(ids.length, equals(4));
-      expect(ids, containsAll(['ember_dragon', 'moon_owl', 'star_fox', 'robin']));
+      expect(ids, containsAll(['ember', 'robin', 'clover', 'biscuit']));
     });
 
     test('Adventurer companions are exactly the 4 expected IDs', () {
       final ids = kExpectedCompanionIds[AgeBand.adventurer]!;
       expect(ids.length, equals(4));
-      expect(ids, containsAll(['thunder_wolf', 'shadow_panther', 'crystal_phoenix', 'robin']));
+      expect(ids, containsAll(['atlas', 'robin', 'nyx', 'kodiak']));
     });
 
     test('Robin appears as a companion in sprout, explorer, and adventurer', () {
@@ -212,15 +212,16 @@ void main() {
       );
       await tester.pump();
 
-      // Sprout companions by name
-      expect(find.text('Fluffy Dragon'), findsOneWidget);
-      expect(find.text('Magic Bunny'), findsOneWidget);
-      expect(find.text('Shining Puppy'), findsOneWidget);
+      // Sprout companions by name (renamed in 2026-04-18c overhaul)
+      expect(find.text('Pebble'), findsOneWidget);
       expect(find.text('Robin'), findsOneWidget);
+      expect(find.text('Mochi'), findsOneWidget);
+      expect(find.text('Sunny'), findsOneWidget);
 
-      // Explorer companions must NOT be visible for a sprout
-      expect(find.text('Ember Dragon'), findsNothing);
-      expect(find.text('Moon Owl'), findsNothing);
+      // Explorer-only companions must NOT be visible for a sprout
+      expect(find.text('Ember'), findsNothing);
+      expect(find.text('Clover'), findsNothing);
+      expect(find.text('Biscuit'), findsNothing);
     });
 
     testWidgets('Explorer CompanionSelectorStep shows explorer companions',
@@ -245,12 +246,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Ember Dragon'), findsOneWidget);
-      expect(find.text('Moon Owl'), findsOneWidget);
-      expect(find.text('Star Fox'), findsOneWidget);
+      expect(find.text('Ember'), findsOneWidget);
+      expect(find.text('Clover'), findsOneWidget);
+      expect(find.text('Biscuit'), findsOneWidget);
       // Sprout-only companions must NOT be visible
-      expect(find.text('Fluffy Dragon'), findsNothing);
-      expect(find.text('Magic Bunny'), findsNothing);
+      expect(find.text('Pebble'), findsNothing);
+      expect(find.text('Mochi'), findsNothing);
+      expect(find.text('Sunny'), findsNothing);
     });
   });
 
@@ -549,10 +551,10 @@ void main() {
       );
       await tester.pump();
 
-      // Explorer-only companions must not bleed into sprout view
-      expect(find.text('Thunder Wolf'), findsNothing);
-      expect(find.text('Shadow Panther'), findsNothing);
-      expect(find.text('Ember Dragon'), findsNothing);
+      // Companions from older bands must not bleed into sprout view
+      expect(find.text('Atlas'), findsNothing);    // adventurer dragon
+      expect(find.text('Nyx'), findsNothing);      // adventurer cat
+      expect(find.text('Ember'), findsNothing);    // explorer dragon
     });
   });
 }
