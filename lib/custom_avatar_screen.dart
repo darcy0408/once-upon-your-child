@@ -87,9 +87,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   bool get _canRefine => !_isSprout && !_isExplorer;
 
   // ── Color data ──────────────────────────────────────────────────────────────
-  // Sprout: skip Gold/Teal — not intuitive crayon colors for 3-5 year-olds
+  // Sprout: large swatches (88 px, no labels) — 9 colors renders as a 3×3 grid.
+  // Omit Gold/Teal (not intuitive crayon colors). Blue/Light Blue/Dark Blue are
+  // natural kid language ("sky blue", "dark blue") and visually distinct.
   static const _sproutFavoriteColors = [
-    'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange'
+    'Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Light Blue', 'Dark Blue', 'Purple', 'Pink',
   ];
   static const _allFavoriteColors = [
     'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
@@ -149,12 +151,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   };
   static const Map<String, Color> _favoriteSwatches = {
     'Red': Color(0xFFE53935),
-    'Blue': Color(0xFF1E88E5),
-    'Green': Color(0xFF43A047),
+    'Orange': Color(0xFFFB8C00),
     'Yellow': Color(0xFFFDD835),
+    'Green': Color(0xFF43A047),
+    'Blue': Color(0xFF1E88E5),
+    'Light Blue': Color(0xFF81D4FA),
+    'Dark Blue': Color(0xFF1565C0),
     'Purple': Color(0xFF8E24AA),
     'Pink': Color(0xFFD81B60),
-    'Orange': Color(0xFFFB8C00),
     'Teal': Color(0xFF00897B),
     'Gold': Color(0xFFFFD700),
   };
@@ -171,15 +175,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
     // Build step order — skip gender step if already provided.
     final skipGender = widget.initialGender != null;
-    // For non-sprout photo avatars, the AI can detect hair color and skin
-    // tone from the photo itself. Only ask eye color (hard to tell from
-    // photos) then go straight to the camera.
+    // Sprout (3-5): the AI infers hair and eye color from the photo — we only
+    // ask gender and favorite color (outfit), then go straight to the camera.
+    // Non-Sprout: AI can detect hair from the photo but eye color is hard to
+    // read photographically, so we still ask for it.
     _stepOrder = _isSprout
         ? [
             _AvatarStep.sproutWelcome,
             if (!skipGender) _AvatarStep.gender,
-            _AvatarStep.hairColor,
-            _AvatarStep.eyeColor,
             _AvatarStep.favoriteColor,
             _AvatarStep.photo,
           ]

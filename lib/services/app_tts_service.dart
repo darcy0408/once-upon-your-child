@@ -55,6 +55,20 @@ const List<String> kWarmUpPhrases = [
   "Girl",
   "Boy",
 
+  // Avatar wizard — Sprout favorite color selection echoes
+  // Pre-warming prevents the flutter_tts robotic fallback when a child taps a swatch.
+  "Red",
+  "Orange",
+  "Yellow",
+  "Green",
+  "Blue",
+  "Light Blue",
+  "Dark Blue",
+  "Purple",
+  "Pink",
+  "Teal",
+  "Gold",
+
   // Walk tier — Magic Ear full prompts
   "What is your hero's name? You can type it or tap the microphone to say it!",
   "Pick your hero's look! Swipe through the pictures and tap the one you like.",
