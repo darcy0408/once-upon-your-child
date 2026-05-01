@@ -686,19 +686,26 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   }
 
   void _selectFeeling(String feeling) {
+    // Sprout (3-5) finishes the flow as soon as a feeling is picked. The
+    // therapeutic coping tools are already woven into the Life Quest stories
+    // themselves ("take a big breath", "find a grown-up"), so a separate
+    // coping-tool step inside the story-creation wizard breaks the kid's
+    // mental model — they think they're making a story, not doing therapy.
+    if (_isSproutBand) {
+      setState(() {
+        _feeling = feeling;
+        _trigger = null;
+        _bodySignal = null;
+      });
+      _finishFlow('');
+      return;
+    }
     setState(() {
       _feeling = feeling;
       _trigger = null;
       _bodySignal = null;
-      // Sprout band skips trigger + body signal — go straight to coping tool.
       // Adventurer band gets the quest bridge interstitial (step 5).
-      if (_isSproutBand) {
-        _step = 3;
-      } else if (_isAdventurerBand) {
-        _step = 5;
-      } else {
-        _step = 1;
-      }
+      _step = _isAdventurerBand ? 5 : 1;
     });
   }
 
