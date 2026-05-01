@@ -1041,7 +1041,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final companionTitle = band.band == AgeBand.sprout
-        ? 'Pick your buddies!'
+        ? 'Pick your buddy!'
         : band.band == AgeBand.explorer
             ? 'Pick your friends!'
             : band.band == AgeBand.adventurer
@@ -2288,7 +2288,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Cancel any in-flight audio before starting a new clip.
     await AppTtsService.instance.stop();
     if (!mounted) return;
-    unawaited(AppTtsService.instance.speak(text, rateScale: 0.8));
+    unawaited(AppTtsService.instance.speak(text, rateScale: 0.65));
   }
 
   Future<void> _speakPagePrompt(int page) async {
@@ -2299,7 +2299,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         1 => "What is your hero's name? Tap the microphone to say it!",
         2 => "Pick your hero's look! Tap Choose Look to pick one.",
         3 => "Who is your hero? Tap the one you like!",
-        4 => "Tap your buddies to bring them along!",
+        4 => "Tap your buddy to bring them along!",
         5 => "Where should we go? Tap the picture you want.",
         6 => "You are all set! Tap Make Magic!",
         _ => null,
