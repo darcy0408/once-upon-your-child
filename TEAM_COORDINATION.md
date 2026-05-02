@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-02 | 14:01 | c75e | main | Big Feelings rebrand + visual redesign + offline story fallback | [link](docs/sessions/2026-05-02-1401-c75e.md) |
 | 2026-05-02 | 14:01 | 487e | main | Sprout robotic-voice fix on photo step + Animal Friend boy image | [link](docs/sessions/2026-05-02-1401-487e.md) |
 | 2026-05-02 | 10:53 | 8ca2 | main | Big Feelings Scrollbar/ScrollController crash fix | [link](docs/sessions/2026-05-02-1053-8ca2.md) |
 | 2026-05-02 | 10:32 | dfad | main | Sprout archetype images + Gemini pet avatar key fix | [link](docs/sessions/2026-05-02-1032-dfad.md) |
