@@ -718,30 +718,3 @@ class _FaceImage extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Cloud clipper
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CloudClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final w = size.width;
-    final h = size.height;
-    final path = Path();
-    path.moveTo(w * 0.08, h);
-    path.quadraticBezierTo(0, h, 0, h * 0.72);
-    path.quadraticBezierTo(0, h * 0.52, w * 0.12, h * 0.50);
-    path.quadraticBezierTo(w * 0.08, h * 0.26, w * 0.28, h * 0.22);
-    path.quadraticBezierTo(w * 0.28, 0.0, w * 0.50, 0.0);
-    path.quadraticBezierTo(w * 0.72, 0.0, w * 0.74, h * 0.20);
-    path.quadraticBezierTo(w * 0.90, h * 0.14, w * 0.96, h * 0.36);
-    path.quadraticBezierTo(w, h * 0.50, w, h * 0.72);
-    path.quadraticBezierTo(w, h, w * 0.92, h);
-    path.lineTo(w * 0.08, h);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(_CloudClipper oldClipper) => false;
-}
