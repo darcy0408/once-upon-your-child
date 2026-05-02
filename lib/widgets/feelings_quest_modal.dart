@@ -48,11 +48,21 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
   bool get _useBadgeGrid =>
       ageBandFromAge(widget.childAge) == AgeBand.adventurer;
 
+  bool get _isSproutBand =>
+      ageBandFromAge(widget.childAge) == AgeBand.sprout;
+
   static const _titles = [
     "What's going on?",
     'Tell me more…',
     'Even more specific?',
   ];
+
+  /// Sprout (ages ≤5) only ever sees level 0 (4 core clouds, no drill-down),
+  /// and their title should mirror BigFeelingsFlowScreen: "How do you feel?".
+  String _titleForLevel(int level) {
+    if (_isSproutBand) return 'How do you feel?';
+    return _titles[level.clamp(0, 2)];
+  }
 
   void _onLevelChanged(int level) {
     if (mounted) setState(() => _level = level);
@@ -93,7 +103,7 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                     child: Text(
                       _useBadgeGrid
                           ? "What's going on?"
-                          : _titles[_level.clamp(0, 2)],
+                          : _titleForLevel(_level),
                       textAlign: TextAlign.center,
                       style: (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false)
                           ? GoogleFonts.sourceSans3(
