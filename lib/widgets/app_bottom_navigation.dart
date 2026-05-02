@@ -54,7 +54,7 @@ class AppBottomNavigationBar extends StatelessWidget {
       case AgeBand.sprout:
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
-          _TabConfig(Icons.explore_rounded, 'Life Quests'),
+          _TabConfig(Icons.cloud, 'Big Feelings'),
           _TabConfig(Icons.collections_bookmark, 'My Books'),
         ];
         break;

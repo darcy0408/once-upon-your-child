@@ -507,11 +507,16 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         ),
                       ),
                     ),
-                    // Life Quests button — labeled for young bands, icon-only for mature
+                    // Life Quests button — labeled for young bands, icon-only for mature.
+                    // Sprout band sees "Big Feelings" + cloud icon (matches bottom nav).
                     if (!band.band.isMature)
                       _LabeledNavButton(
-                        icon: Icons.explore_rounded,
-                        label: 'Life Quests',
+                        icon: band.band == AgeBand.sprout
+                            ? Icons.cloud
+                            : Icons.explore_rounded,
+                        label: band.band == AgeBand.sprout
+                            ? 'Big Feelings'
+                            : 'Life Quests',
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => LifeQuestScreen(

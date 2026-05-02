@@ -22,6 +22,16 @@ import '../theme/age_band_theme.dart' show AgeBand;
 // Data model
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Sprout-band cloud personas. Each cloud "guides" a family of feeling
+/// stories and is the entry point in the Big Feelings section. Older bands
+/// don't use clouds — they see a flat quest list.
+enum SproutCloud {
+  sunny,   // happy / excited
+  rain,    // sad
+  storm,   // mad / frustrated
+  wobbly,  // scared / worried
+}
+
 /// A complete pre-built Life Quest scenario with branching paths.
 class LifeQuestScenario {
   final String id;
@@ -36,6 +46,12 @@ class LifeQuestScenario {
   final Map<String, QuestSegment> segments;
   /// The id of the first segment.
   final String startSegmentId;
+  /// Sprout-band cloud persona this quest belongs to. Null for non-Sprout
+  /// quests — they appear in a flat list under the older-band "Life Quest" UI.
+  final SproutCloud? cloud;
+  /// One-sentence prompt for a grown-up to read aloud after the story ends.
+  /// Surfaced as a soft callout on the ending screen — not the kid's content.
+  final String? grownupTip;
 
   const LifeQuestScenario({
     required this.id,
@@ -46,6 +62,8 @@ class LifeQuestScenario {
     this.recommendedBands = const [AgeBand.adventurer, AgeBand.creator, AgeBand.adolescent],
     required this.segments,
     required this.startSegmentId,
+    this.cloud,
+    this.grownupTip,
   });
 }
 
@@ -5391,6 +5409,8 @@ const questBigBearHug = LifeQuestScenario(
   emoji: '\u{1F9F8}',
   emotions: ['sad', 'worried'],
   recommendedBands: [AgeBand.sprout],
+  cloud: SproutCloud.rain,
+  grownupTip: "Ask: 'Have you ever felt like Teddy was lost? What did we do?'",
   startSegmentId: 'bbh_start',
   segments: {
     'bbh_start': QuestSegment(
@@ -5512,6 +5532,8 @@ const questBigLoud = LifeQuestScenario(
   hook: 'A loud sound makes your heart jump. What do you do?',
   emoji: '\u{26C8}',
   emotions: ['worried', 'frustrated'],
+  cloud: SproutCloud.wobbly,
+  grownupTip: "Ask: 'What loud sounds make YOUR heart jump? What helps you feel braver?'",
   recommendedBands: [AgeBand.sprout],
   startSegmentId: 'bl_start',
   segments: {
@@ -5634,6 +5656,8 @@ const questMyTurnYourTurn = LifeQuestScenario(
   emoji: '\u{1F697}',
   emotions: ['angry', 'frustrated', 'sad'],
   recommendedBands: [AgeBand.sprout],
+  cloud: SproutCloud.storm,
+  grownupTip: "Ask: 'When was the last time it was hard to wait? What did we do together?'",
   startSegmentId: 'mt_start',
   segments: {
     'mt_start': QuestSegment(
