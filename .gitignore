@@ -1,3 +1,6 @@
+# Quality audit results (generated content, not source)
+backend/tests/quality/results/
+
 # Miscellaneous
 *.class
 *.log
