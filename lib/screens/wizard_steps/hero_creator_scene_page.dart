@@ -481,8 +481,12 @@ class HeroScenePage extends StatelessWidget {
       SceneButtonData(
         id: 'crystal_cavern',
         label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
-        normalAsset: 'assets/images/scenarios/crystal_cave_btn.png',
-        pressedAsset: 'assets/images/scenarios/crystal_cave_btn_pressed.png',
+        normalAsset: band.band == AgeBand.sprout
+            ? 'assets/images/ui/sprout/tiles/ocean.png'
+            : 'assets/images/scenarios/crystal_cave_btn.png',
+        pressedAsset: band.band == AgeBand.sprout
+            ? 'assets/images/ui/sprout/tiles/ocean.png'
+            : 'assets/images/scenarios/crystal_cave_btn_pressed.png',
         thematicQuestion: thematicQuestionFor('crystal_cavern'),
       ),
       SceneButtonData(
