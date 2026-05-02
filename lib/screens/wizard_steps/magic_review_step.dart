@@ -68,6 +68,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   int _countdownNumber = 3;
   Timer? _countdownTimer;
 
+  // Tracks the most recent text we asked TTS to speak on the launch screen,
+  // so rebuilds don't re-fire the same prompt. Speaks again only if the
+  // recap content actually changed (e.g. user edited a field and returned).
+  String? _lastSpokenLaunchPrompt;
+
   Future<String?> _resolveInteractiveUserId() async {
     final api = ApiServiceManager();
     var userId = await api.getUserId();
@@ -97,6 +102,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    AppTtsService.instance.stop();
     super.dispose();
   }
 
@@ -164,12 +170,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     }
     // Clear the wizard draft — the user has committed to launching a story.
     unawaited(clearWizardDraft());
+    // Stop any in-flight TTS (e.g. the Sprout recap narration) before the
+    // countdown or navigation — prevents the recap and countdown speaking at once.
+    unawaited(AppTtsService.instance.stop());
     // Skip countdown for reduced-motion or Sprout (Sprout has its own GO! screen).
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final reduceMotion = MotionPrefs.reduceMotion(context);
     final onboarding = OnboardingService();
     final count = await onboarding.getCountdownCount();
     if (!mounted) return;
-    if (!reduceMotion && count < 3) {
+    if (!reduceMotion && band.band != AgeBand.sprout && count < 3) {
       await onboarding.incrementCountdownCount();
       // Speak phrase asynchronously — don't await so countdown runs concurrently.
       AppTtsService.instance.speak('3... 2... 1... Let the magic begin!');
@@ -724,15 +734,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         wd.characterName.isEmpty ? 'your hero' : wd.characterName;
     final companionImg = _companionImage;
 
-    // Speak the prompt once when this screen first appears.
-    // (build may re-run; TTS is idempotent if the same text is already playing)
+    // Read the recap aloud — same content the screen shows. Only speaks once
+    // per unique recap; rebuilds with the same text are no-ops, which avoids
+    // the duplicate-speak (and the resulting fallback-to-robotic-voice race
+    // when two ElevenLabs requests overlap on web).
+    final spokenRecap = _composeSproutSpokenRecap(wd, heroName);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isGenerating) {
-        AppTtsService.instance.speak(
-          'Ready to go, $heroName? Tap GO!',
-          rateScale: 0.8,
-        );
-      }
+      if (!mounted || _isGenerating) return;
+      if (_lastSpokenLaunchPrompt == spokenRecap) return;
+      _lastSpokenLaunchPrompt = spokenRecap;
+      AppTtsService.instance.speak(spokenRecap, rateScale: 0.8);
     });
 
     // Show loading/error states via the same conditional as the full review.
@@ -880,6 +891,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         ),
       ),
     );
+  }
+
+  /// Builds the spoken version of the Sprout recap card so the TTS narration
+  /// matches what's on screen ("I am Darcy. Going to Stomp the Dinosaurs.
+  /// With Mochi.") instead of a generic "Ready to go" prompt.
+  String _composeSproutSpokenRecap(WizardData wd, String heroName) {
+    final scenarioName = wd.selectedScenario == null ? null : _scenarioLabel;
+    final buddyName = wd.companionNames.isEmpty ? null : wd.companionNames.first;
+    final parts = <String>['I am $heroName.'];
+    if (scenarioName != null) parts.add('Going to $scenarioName.');
+    if (buddyName != null) parts.add('With $buddyName.');
+    return parts.join(' ');
   }
 
   /// Small warm recap card for Sprout launch screen — shows name + scenario
