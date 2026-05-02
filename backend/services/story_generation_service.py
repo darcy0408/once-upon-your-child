@@ -88,24 +88,39 @@ def _extract_text(response) -> str | None:
 
 class StoryGenerationService:
     def __init__(self):
-        api_key = os.getenv('GEMINI_API_KEY')
-        if not api_key:
+        primary_key = os.getenv('GEMINI_API_KEY')
+        if not primary_key:
             raise ValueError("GEMINI_API_KEY not set")
 
-        self._client = genai.Client(api_key=api_key)
+        # Build a rotation list: primary key first, then up to 3 backup keys.
+        # When the primary key is rate-limited the service cycles through backups
+        # before giving up and raising ResourceExhausted to the caller.
+        backup_keys = [
+            k for k in (
+                os.getenv('GOOGLE_API_KEY_2'),
+                os.getenv('GOOGLE_API_KEY_3'),
+                os.getenv('GOOGLE_API_KEY_4'),
+            ) if k
+        ]
+        self._api_keys = [primary_key] + backup_keys
+        self._client = genai.Client(api_key=primary_key)
         # Use configured model from env (defaults to gemini-2.5-flash)
         self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
         self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '90'))
-        logger.info(f"Initializing Gemini with model: {self._model_name}")
+        logger.info(
+            f"Initializing Gemini with model: {self._model_name} "
+            f"({len(self._api_keys)} key(s) available for rotation)"
+        )
 
     def generate_story(self, prompt: str) -> str:
-        """Generate story from prompt with retry logic for rate limiting."""
+        """Generate story from prompt with retry + key-rotation logic."""
         max_retries = 5
         base_delay = 1  # seconds
+        key_index = 0  # which API key we're currently using
 
         for attempt in range(max_retries):
             try:
-                logger.info(f"Generating story with prompt: {prompt[:100]}... (Attempt {attempt + 1})")
+                logger.info(f"Generating story with prompt: {prompt[:100]}... (Attempt {attempt + 1}, key_index={key_index})")
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(
                     self._client.models.generate_content,
@@ -131,13 +146,21 @@ class StoryGenerationService:
                 return _SAFETY_FALLBACK
 
             except google_exceptions.ResourceExhausted as e:
-                if attempt < max_retries - 1:
+                next_key_index = key_index + 1
+                if next_key_index < len(self._api_keys):
+                    # Rotate to the next backup key immediately (no sleep needed).
+                    key_index = next_key_index
+                    self._client = genai.Client(api_key=self._api_keys[key_index])
+                    logger.warning(
+                        f"Key {key_index - 1} rate-limited. Rotating to backup key {key_index} "
+                        f"(attempt {attempt + 1}/{max_retries})."
+                    )
+                elif attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    logger.warning(f"Rate limit exceeded. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                    logger.warning(f"All keys rate-limited. Waiting {delay}s before retry (attempt {attempt + 1}/{max_retries}).")
                     time.sleep(delay)
                 else:
-                    logger.error(f"Story generation failed after {max_retries} retries due to rate limiting.", exc_info=True)
-                    # Re-raise the exception to be handled by the caller's error handler
+                    logger.error(f"Story generation failed after {max_retries} retries — all keys exhausted.", exc_info=True)
                     raise e
             except FuturesTimeoutError:
                 if attempt < max_retries - 1:

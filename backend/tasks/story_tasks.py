@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import time
@@ -40,19 +41,25 @@ def get_flask_app():
 
 
 def _fallback_story(theme: str, character_name: str | dict, companion: str = None) -> str:
-    """Local fallback story used when the AI generator fails."""
+    """Local fallback when all AI providers fail — returns valid JSON so tags never leak to the UI."""
     if isinstance(character_name, dict):
         name = character_name.get("name", "Hero")
     else:
         name = character_name
-        
-    story = f"[TITLE: A {theme.title()} Adventure]\n"
-    story += f"{name} embarks on a quick quest about {theme.lower()}"
-    if companion:
-        story += f" with their friend {companion}"
-    story += " and discovers that courage grows with every kind choice.\n"
-    story += "[WISDOM GEM: Always be kind.]\n"
-    return story
+
+    theme_plain = theme.rstrip("! ").lower()
+    theme_title = theme.rstrip("! ").title()
+    comp = f" with their friend {companion}" if companion else ""
+
+    return json.dumps({
+        "title": f"The {theme_title} Adventure",
+        "pages": [
+            {"text": f"One bright morning, {name}{comp} set off on a wonderful {theme_plain} adventure. The sun was warm and anything felt possible."},
+            {"text": f"{name} took a deep breath and walked forward with a brave and curious heart. Every step brought something new and exciting to discover."},
+            {"text": f"Along the way{comp}, {name} found that the best adventures happen when you are kind and brave. Challenges became fun puzzles to solve together."},
+            {"text": f"When the adventure was done, {name} came home with a happy heart. Tomorrow there would be a whole new adventure waiting — and {name} could not wait!"},
+        ],
+    })
 
 
 def _classify_provider_failure(exc: Exception | None = None, message: str | None = None) -> str:
