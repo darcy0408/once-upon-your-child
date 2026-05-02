@@ -1480,8 +1480,9 @@ class _AssetImageWithFallbackState extends State<_AssetImageWithFallback> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // _SproutFeelingCard
-// Sprout-only: animated feeling face that fills the card. Label is hidden by
-// default and spoken aloud on first tap; selection fires after the label fades.
+// Sprout-only: squircle card with per-feeling tinted gradient, soft shadow,
+// and a gentle "breathe" scale on the character. Label sits below the card
+// (always visible). Tap speaks the feeling name and auto-confirms after 300ms.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SproutFeelingCard extends StatefulWidget {
@@ -1501,32 +1502,41 @@ class _SproutFeelingCard extends StatefulWidget {
   State<_SproutFeelingCard> createState() => _SproutFeelingCardState();
 }
 
-class _SproutFeelingCardState extends State<_SproutFeelingCard> {
-  bool _showLabel = false;
+class _SproutFeelingCardState extends State<_SproutFeelingCard>
+    with SingleTickerProviderStateMixin {
   bool _tapped = false;
-  Timer? _hideTimer;
+  Timer? _confirmTimer;
+  late final AnimationController _breatheCtrl;
+  late final Animation<double> _breatheScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _breatheCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+    _breatheScale = Tween<double>(begin: 1.0, end: 1.04).animate(
+      CurvedAnimation(parent: _breatheCtrl, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
-    _hideTimer?.cancel();
+    _confirmTimer?.cancel();
+    _breatheCtrl.dispose();
     super.dispose();
   }
 
   void _handleTap() {
     if (_tapped) return; // prevent double-fire
-    // First tap: speak the name and briefly show the label.
+    _tapped = true;
+    // Speak the feeling name immediately so the audio cue lands during the
+    // tap-bounce animation; confirm after a short 300ms beat so preschoolers
+    // perceive the selection without thinking the app stalled.
     AppTtsService.instance.speak(widget.option.label, rateScale: 0.8);
-    setState(() => _showLabel = true);
-    _hideTimer = Timer(const Duration(milliseconds: 1600), () {
-      if (!mounted) return;
-      setState(() {
-        _showLabel = false;
-        _tapped = true;
-      });
-      // Confirm selection after label fades.
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) widget.onConfirm();
-      });
+    _confirmTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) widget.onConfirm();
     });
   }
 
@@ -1542,62 +1552,116 @@ class _SproutFeelingCardState extends State<_SproutFeelingCard> {
     );
   }
 
+  /// Per-feeling base tint. Inside-Out trained kids expect:
+  ///   yellow=happy, blue=sad, red=mad, purple=scared.
+  /// Other feelings fall back to a warm neutral.
+  Color _baseTint() {
+    switch (widget.option.value.toLowerCase()) {
+      case 'happy':
+        return const Color(0xFFFFD23F); // sunny yellow
+      case 'sad':
+        return const Color(0xFF4A90E2); // calm blue
+      case 'mad':
+      case 'angry':
+        return const Color(0xFFE74C3C); // warm red
+      case 'scared':
+      case 'afraid':
+        return const Color(0xFF9B59B6); // soft purple
+      default:
+        return const Color(0xFFB59B6E); // warm neutral
+    }
+  }
+
+  /// Desaturate [c] toward grey by [amount] (0=no change, 1=fully grey),
+  /// then optionally shift lightness by [lightnessDelta] in HSL space.
+  Color _toned(Color c, {double saturation = 0.4, double lightnessDelta = 0}) {
+    final hsl = HSLColor.fromColor(c);
+    final s = (hsl.saturation * saturation).clamp(0.0, 1.0);
+    final l = (hsl.lightness + lightnessDelta).clamp(0.0, 1.0);
+    return hsl.withSaturation(s).withLightness(l).toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final base = _baseTint();
+    // Subtle top-to-bottom gradient: top is slightly lighter, bottom is the
+    // tinted base. Both are pulled to ~40% saturation so the color reads as a
+    // mood cue without competing with the character art.
+    final top = _toned(base, saturation: 0.4, lightnessDelta: 0.10);
+    final bottom = _toned(base, saturation: 0.4, lightnessDelta: -0.02);
+
     return Semantics(
       button: true,
       label: widget.option.label,
       child: BounceOnTapWidget(
         onTap: _handleTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: Colors.white24, width: 2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Animated feeling face fills the card.
-                FeelingPulseWidget(
-                  feelingId: widget.option.value,
-                  child: _feelingImage(),
-                ),
-                // Label overlay — hidden until spoken aloud.
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedOpacity(
-                    opacity: _showLabel ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 250),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 6, horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(AppRadius.xl),
-                          bottomRight: Radius.circular(AppRadius.xl),
-                        ),
+        scaleTo: 0.95,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Squircle card (image only — no label inside).
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [top, bottom],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.30),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                        color: Colors.black.withAlpha(40),
                       ),
-                      child: Text(
-                        widget.option.label,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Padding(
+                      // Character occupies ~70% of card height; padding is
+                      // the remaining ~15% per side so the art breathes.
+                      padding: const EdgeInsets.all(12),
+                      child: Center(
+                        child: FractionallySizedBox(
+                          heightFactor: 0.92,
+                          widthFactor: 0.92,
+                          child: ScaleTransition(
+                            scale: _breatheScale,
+                            child: _feelingImage(),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            // Label always visible below the card.
+            SizedBox(
+              height: 24,
+              child: Text(
+                widget.option.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.fredoka(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
