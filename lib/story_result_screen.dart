@@ -544,6 +544,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (ageBandFromAge(_effectiveAge).index <= AgeBand.explorer.index) {
       _initAutoTts();
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if ((widget.characterAge ?? 99) <= 5 && !_isSaved && widget.storyId == null && mounted) {
+        _saveStory();
+      }
+    });
   }
 
   Future<void> _initAutoTts() async {
@@ -1828,7 +1833,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   borderRadius: BorderRadius.circular(band.radiusMd),
                   child: Image.memory(
                     illustration.bytes,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>
                         _buildImageErrorPlaceholder(),
                   ),
@@ -1871,7 +1876,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       showDecorations: !_highContrastMode,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final maxImageHeight = constraints.maxHeight * 0.55;
+          final maxImageHeight = constraints.maxHeight * 0.68;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1882,7 +1887,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     borderRadius: BorderRadius.circular(16),
                     child: Image.memory(
                       illustration.bytes,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
                         return _buildImageErrorPlaceholder();
@@ -2852,7 +2857,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
-                isFreeTier: widget.subscription?.isFree ?? true,
+                isFreeTier: (widget.subscription?.isFree ?? true) && !widget.usedUserApiKey,
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,

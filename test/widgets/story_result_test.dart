@@ -79,9 +79,9 @@ void main() {
 
     expect(find.text('Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a testing time'), findsOneWidget);
-    expect(find.textContaining('Be kind and curious'), findsOneWidget);
-    expect(find.byKey(const Key('wisdom_chip')), findsOneWidget);
-    });
+    // wisdom_chip removed — stories now end without a lesson overlay
+    expect(find.byKey(const Key('wisdom_chip')), findsNothing);
+  });
 
     testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
       (tester) async {

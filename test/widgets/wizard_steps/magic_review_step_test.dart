@@ -59,7 +59,7 @@ void main() {
     await tester.pumpWidget(buildSubject(wizardData));
     await tester.pump(const Duration(milliseconds: 700));
 
-    expect(find.text('Epic adventure'), findsOneWidget);
+    expect(find.text('Big adventure'), findsOneWidget);
   });
 
   testWidgets('displays custom elements in summary', (tester) async {
@@ -85,12 +85,13 @@ void main() {
     final wizardData = WizardData()
       ..characterName = 'Nova'
       ..selectedArchetypeId = 'The Bold Adventurer'
-      ..selectedScenario = 'doorway_seasons';
+      ..selectedScenario = 'doorway_seasons'
+      // age 10 (Adventurer) skips sprout/young title overrides → standard title
+      ..characterAge = 10;
 
     await tester.pumpWidget(buildSubject(wizardData));
     await tester.pump(const Duration(milliseconds: 700));
 
-    // "The Doorway Between Seasons" is the title for ID 'doorway_seasons'
     expect(find.text('The Doorway Between Seasons'), findsWidgets);
   });
 }

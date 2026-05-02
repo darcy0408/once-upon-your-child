@@ -93,6 +93,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
   // "Something Else" free-text choice state
   bool _showCustomInput = false;
+  bool _showingSessionBreak = false;
   final TextEditingController _customChoiceController = TextEditingController();
 
   @override
@@ -641,7 +642,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           ),
         ),
         actions: [
-          if (!_isLoading && _currentSegment != null)
+          if (!_isLoading && _currentSegment != null && !_showingSessionBreak)
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
@@ -716,7 +717,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
           // Choices, Continue, or completion
           if (_sessionLimitReached && _isChronicleMode)
-            _buildSessionBreakSection()
+            Builder(builder: (context) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && !_showingSessionBreak) {
+                  setState(() => _showingSessionBreak = true);
+                }
+              });
+              return _buildSessionBreakSection();
+            })
           else if (_isCompleted)
             _buildCompletionSection()
           else if (_currentSegment!.requiresChoice)
@@ -1495,6 +1503,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         AppButton.primary(
           label: isSprout ? 'All done! 🌟' : 'Save & finish for now',
           onPressed: () {
+            setState(() => _showingSessionBreak = false);
             _triggerChapterSummarization('');
             Navigator.of(context).pop('chapter_complete');
           },

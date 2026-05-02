@@ -40,6 +40,15 @@ class _ChronicleScreenState extends State<ChronicleScreen> {
     return _chronicle.title;
   }
 
+  String get _chapterCountLabel {
+    final count = _chronicle.chapterCount;
+    final age = widget.character.age;
+    if (count == 0) {
+      return age <= 5 ? 'Ready to begin! ✨' : 'No chapters yet — start your first!';
+    }
+    return '$count chapter${count == 1 ? '' : 's'} completed';
+  }
+
   String get _chapterCtaLabel {
     final age = widget.character.age;
     final next = _chronicle.chapterCount + 1;
@@ -152,7 +161,7 @@ class _ChronicleScreenState extends State<ChronicleScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '${_chronicle.chapterCount} chapter${_chronicle.chapterCount == 1 ? '' : 's'} completed',
+              _chapterCountLabel,
               style: TextStyle(color: Colors.grey[600]),
             ),
             if (_chronicle.lastChapterEnding != null) ...[

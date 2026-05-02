@@ -2295,6 +2295,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     onContinue: widget.onNext,
                     onToggleListening: _toggleListening,
                     onSpeakForSprout: _speakForSprout,
+                    illustrationsEnabled: _isPremium,
                   ),
                 ],
               ),

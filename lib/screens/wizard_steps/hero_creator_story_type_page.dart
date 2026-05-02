@@ -21,6 +21,7 @@ class HeroStoryTypePage extends StatelessWidget {
     required this.onContinue,
     required this.onToggleListening,
     this.onSpeakForSprout,
+    this.illustrationsEnabled = true,
   });
 
   final WizardData wizardData;
@@ -33,6 +34,9 @@ class HeroStoryTypePage extends StatelessWidget {
   /// Optional Sprout TTS callback — when provided, card taps speak the label
   /// aloud so non-readers get audio confirmation of their selection.
   final Future<void> Function(String text)? onSpeakForSprout;
+  /// Whether the current user can generate illustrations (premium or BYOK).
+  /// When false, story-type labels avoid promising pictures.
+  final bool illustrationsEnabled;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -377,7 +381,9 @@ class HeroStoryTypePage extends StatelessWidget {
                 _buildSproutModeCard(
                   emoji: '✨',
                   label: 'Story Quest',
-                  description: 'A story with pictures!',
+                  description: illustrationsEnabled
+                      ? 'A story with pictures!'
+                      : 'A magical adventure story!',
                   mode: 'tales',
                   isSelected: selectedMode == 'tales',
                   accentColor: const Color(0xFFAA88FF),
@@ -424,8 +430,12 @@ class HeroStoryTypePage extends StatelessWidget {
                         modeType: 'tales',
                         label: isCreator ? 'Story' : 'Story Quest',
                         subtitle: isCreator
-                            ? 'Illustrated narrative'
-                            : 'An illustrated adventure',
+                            ? (illustrationsEnabled
+                                ? 'Illustrated narrative'
+                                : 'Narrative story')
+                            : (illustrationsEnabled
+                                ? 'An illustrated adventure'
+                                : 'An epic adventure'),
                         isActive: selectedMode == 'tales',
                         onTap: () {
                           setStoryMode('tales');

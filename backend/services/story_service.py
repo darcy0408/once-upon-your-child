@@ -28,12 +28,19 @@ AGE_CONSTRAINTS = {
         'rhyme': {'short': (150, 250), 'medium': (250, 350), 'long': (350, 450)},
         'ltr': {'short': 6, 'medium': 8, 'long': 10}, # pages
         'notes': (
-            'POV: Second-person ("you find", "you reach out") or close third-person. '
             'Sentences: 5-8 words max; never more than two clauses. '
             'Vocabulary: CVC words as the base (cat, run, big); introduce 2-3 "magic words" per story (sparkle, rumble) — always explained by what happens next. '
-            'Emotion: Name one feeling simply ("you feel scared / happy / safe") — no internal monologue. '
+            'FORBIDDEN WORDS — replace with the simpler equivalent in parentheses: '
+            'wobbly(jiggly), mossy(soft), stardust(sparkles), swirling(spinning), ancient(old), '
+            'magnificent(big), momentarily(soon), enormous(very big), trembled(shook), '
+            'wondrous(wonderful), vanished(gone), instantly(right away), mysterious(strange), '
+            'brilliant(bright), extraordinary(special). '
+            'SENTENCE CHECK: Count words before writing each sentence. If it would exceed 8 words, split it in two. '
+            'Emotion: Name one feeling simply ("[name] felt scared / happy / safe") — no internal monologue, always by character name. '
             'Structure: Repetition and pattern ("and then... and then... until finally"). '
-            'AVOID: Irony, sarcasm, ambiguous morality, abstract metaphor, time jumps, unfamiliar adult relationships.'
+            'AVOID: Irony, sarcasm, ambiguous morality, abstract metaphor, time jumps, unfamiliar adult relationships, '
+            'objects that speak or giggle specifically for the child alone — magical objects may glow or react visibly '
+            'but must not produce personal sounds or sensations directed at the child.'
         ),
     },
     '5-7': {
@@ -41,7 +48,7 @@ AGE_CONSTRAINTS = {
         'rhyme': {'short': (300, 450), 'medium': (450, 550), 'long': (550, 650)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': (
-            'POV: Close third-person or second-person; stay anchored in the present action. '
+            'Stay anchored tightly in the hero\'s moment-to-moment experience — close third-person by name throughout. '
             'Sentences: 8-14 words on average; one complex clause allowed per paragraph. '
             'Vocabulary: Grade 1-2 sight words as the foundation; 3-4 new "wow words" each introduced with an immediate context clue. '
             'Emotion: Simple labeling PLUS one physical sensation (heart beating fast, warm in the chest). '
@@ -561,6 +568,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 {feelings_instruction}
 {virtue_instruction}
 **WRITING GUIDELINES**:
+- **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
 - **Tone**: {config['notes']}
 - **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}
 - **Complexity Calibration**: {complexity_instruction}
