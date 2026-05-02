@@ -97,13 +97,16 @@ class _GenderImageButtonState extends State<GenderImageButton> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17),
-                  child: _pressed
-                      ? ColorFiltered(
-                          colorFilter: const ColorFilter.mode(
-                              Color(0x44FFFFFF), BlendMode.screen),
-                          child: imageWidget,
-                        )
-                      : imageWidget,
+                  child: ColoredBox(
+                    color: const Color(0xFF1E1828),
+                    child: _pressed
+                        ? ColorFiltered(
+                            colorFilter: const ColorFilter.mode(
+                                Color(0x44FFFFFF), BlendMode.screen),
+                            child: imageWidget,
+                          )
+                        : imageWidget,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),

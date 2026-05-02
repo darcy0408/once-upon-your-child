@@ -25,6 +25,10 @@ class CreativeBriefWidget extends StatelessWidget {
     required this.briefCompanionsKey,
     required this.briefWorldKey,
     required this.briefConfigKey,
+    required this.briefCharacterController,
+    required this.briefCompanionsController,
+    required this.briefWorldController,
+    required this.briefConfigController,
     required this.nameController,
     required this.characterDesireController,
     required this.imagineItController,
@@ -45,6 +49,10 @@ class CreativeBriefWidget extends StatelessWidget {
   final GlobalKey briefCompanionsKey;
   final GlobalKey briefWorldKey;
   final GlobalKey briefConfigKey;
+  final ExpansibleController briefCharacterController;
+  final ExpansibleController briefCompanionsController;
+  final ExpansibleController briefWorldController;
+  final ExpansibleController briefConfigController;
   final TextEditingController nameController;
   final TextEditingController characterDesireController;
   final TextEditingController imagineItController;
@@ -120,11 +128,13 @@ class CreativeBriefWidget extends StatelessWidget {
     bool initiallyExpanded = false,
     bool optional = false,
     Key? sectionKey,
+    ExpansibleController? tileController,
   }) {
     return Theme(
       key: sectionKey,
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
+        controller: tileController,
         initiallyExpanded: initiallyExpanded,
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 16),
@@ -252,8 +262,8 @@ class CreativeBriefWidget extends StatelessWidget {
               gender: 'Boy',
               assetPath: boyAsset,
               isSelected: gender == 'Boy',
-              width: 110,
-              height: 140,
+              width: 96,
+              height: 120,
               onTap: () {
                 wizardData.characterGender = 'Boy';
                 onChanged();
@@ -264,8 +274,8 @@ class CreativeBriefWidget extends StatelessWidget {
               gender: 'Girl',
               assetPath: girlAsset,
               isSelected: gender == 'Girl',
-              width: 110,
-              height: 140,
+              width: 96,
+              height: 120,
               onTap: () {
                 wizardData.characterGender = 'Girl';
                 onChanged();
@@ -325,9 +335,9 @@ class CreativeBriefWidget extends StatelessWidget {
                 wizardData.characterDesire = v.trim().isEmpty ? null : v,
           ),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
         _buildBriefGenderSelector(band),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
         Text.rich(
           TextSpan(
             text: 'CORE ARCHETYPE',
@@ -886,6 +896,7 @@ class CreativeBriefWidget extends StatelessWidget {
             _buildBriefIdentityInputs(context, band),
             initiallyExpanded: true,
             sectionKey: briefCharacterKey,
+            tileController: briefCharacterController,
           ),
           _buildBriefSection(
             context,
@@ -899,6 +910,7 @@ class CreativeBriefWidget extends StatelessWidget {
             _buildBriefCompanionsInputs(),
             optional: true,
             sectionKey: briefCompanionsKey,
+            tileController: briefCompanionsController,
           ),
           _buildBriefSection(
             context,
@@ -906,6 +918,7 @@ class CreativeBriefWidget extends StatelessWidget {
             _buildBriefWorldInputs(context, band),
             optional: true,
             sectionKey: briefWorldKey,
+            tileController: briefWorldController,
           ),
           _buildBriefSection(
             context,
@@ -913,6 +926,7 @@ class CreativeBriefWidget extends StatelessWidget {
             _buildBriefConfigInputs(context, band),
             optional: true,
             sectionKey: briefConfigKey,
+            tileController: briefConfigController,
           ),
           const SizedBox(height: 48),
           Center(

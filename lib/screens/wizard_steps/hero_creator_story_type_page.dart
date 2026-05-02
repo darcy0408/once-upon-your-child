@@ -488,7 +488,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 ),
               ],
             ),
-          SizedBox(height: band.space(28)),
+          SizedBox(height: band.space(12)),
           // Genre tags — Adventurer+ only
           if (band.band == AgeBand.adventurer ||
               band.band == AgeBand.creator) ...[

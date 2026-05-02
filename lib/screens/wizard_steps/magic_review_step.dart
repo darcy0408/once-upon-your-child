@@ -770,76 +770,85 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return Container(
       decoration: BoxDecoration(gradient: band.backgroundGradient),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // ── "Ready to go?" prompt ──
-              MagicalFloat(
-                distance: 6,
-                child: Text(
-                  'Ready to go?',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: band.accent,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // ── Character + optional companion ──
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Hero avatar
-                  BreathingAvatar(
-                    minScale: 0.95,
-                    maxScale: 1.08,
-                    period: const Duration(milliseconds: 2600),
-                    glowColor: band.accent,
-                    child: SizedBox(
-                      width: 160,
-                      height: 160,
-                      child: ClipOval(
-                        child: _HeroAvatar(
-                          generatedAvatar: wd.generatedAvatar,
-                          characterName: wd.characterName,
-                          role: wd.selectedArchetypeId,
+        child: Column(
+          children: [
+            // ── Scrollable content above the button ──
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: Column(
+                  children: [
+                    // ── "Ready to go?" prompt ──
+                    MagicalFloat(
+                      distance: 6,
+                      child: Text(
+                        'Ready to go?',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: band.accent,
                         ),
                       ),
                     ),
-                  ),
-                  // Companion (if selected)
-                  if (companionImg != null) ...[
-                    const SizedBox(width: 16),
-                    BreathingAvatar(
-                      minScale: 0.96,
-                      maxScale: 1.04,
-                      period: const Duration(milliseconds: 3200),
-                      glowColor: band.primaryLight,
-                      child: SafeAssetImage(
-                        companionImg,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.contain,
-                        placeholder: const SizedBox.shrink(),
-                      ),
+                    const SizedBox(height: 24),
+
+                    // ── Character + optional companion ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Hero avatar
+                        BreathingAvatar(
+                          minScale: 0.95,
+                          maxScale: 1.08,
+                          period: const Duration(milliseconds: 2600),
+                          glowColor: band.accent,
+                          child: SizedBox(
+                            width: 160,
+                            height: 160,
+                            child: ClipOval(
+                              child: _HeroAvatar(
+                                generatedAvatar: wd.generatedAvatar,
+                                characterName: wd.characterName,
+                                role: wd.selectedArchetypeId,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Companion (if selected)
+                        if (companionImg != null) ...[
+                          const SizedBox(width: 16),
+                          BreathingAvatar(
+                            minScale: 0.96,
+                            maxScale: 1.04,
+                            period: const Duration(milliseconds: 3200),
+                            glowColor: band.primaryLight,
+                            child: SafeAssetImage(
+                              companionImg,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.contain,
+                              placeholder: const SizedBox.shrink(),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
+                    const SizedBox(height: 20),
+
+                    // ── Visual recap: who + where (and optionally buddy) ──
+                    _buildSproutRecap(band, heroName),
+                    const SizedBox(height: 16),
                   ],
-                ],
+                ),
               ),
-              const SizedBox(height: 20),
+            ),
 
-              // ── Visual recap: who + where (and optionally buddy) ──
-              _buildSproutRecap(band, heroName),
-              const SizedBox(height: 24),
-
-              // ── GO! button ──
-              _PulsingCastSpellFrame(
+            // ── GO! button pinned at the bottom ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              child: _PulsingCastSpellFrame(
                 isReady: !_isGenerating && wd.isComplete,
                 child: SizedBox(
                   width: double.infinity,
@@ -886,8 +895,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
