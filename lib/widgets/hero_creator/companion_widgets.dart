@@ -538,10 +538,12 @@ class _CompanionImageButton extends StatefulWidget {
 }
 
 class _CompanionImageButtonState extends State<_CompanionImageButton>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _pressed = false;
   late final AnimationController _floatCtrl;
   late final Animation<double> _floatAnim;
+  late final AnimationController _selectCtrl;
+  late final Animation<double> _selectScale;
 
   String get _normalImage =>
       widget.imagePath ?? 'assets/images/companions/${widget.id}_normal.jpg';
@@ -554,18 +556,37 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
     _floatCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
-    // Stagger each companion's float phase using its id hash so they don't
-    // all bob in sync.
-    _floatCtrl.forward(from: (widget.id.hashCode.abs() % 100) / 100.0);
-    _floatAnim = Tween<double>(begin: 0, end: -6).animate(
+    );
+    // Set phase offset before repeat so companions bob at different times.
+    _floatCtrl.value = (widget.id.hashCode.abs() % 100) / 100.0;
+    _floatCtrl.repeat(reverse: true);
+    _floatAnim = Tween<double>(begin: -5, end: 5).animate(
       CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
     );
+
+    _selectCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _selectScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.25), weight: 25),
+      TweenSequenceItem(tween: Tween(begin: 1.25, end: 0.92), weight: 35),
+      TweenSequenceItem(tween: Tween(begin: 0.92, end: 1.0), weight: 40),
+    ]).animate(CurvedAnimation(parent: _selectCtrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void didUpdateWidget(_CompanionImageButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected && !oldWidget.isSelected) {
+      _selectCtrl.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
     _floatCtrl.dispose();
+    _selectCtrl.dispose();
     super.dispose();
   }
 
@@ -618,7 +639,13 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
         widget.onTap();
       },
       onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
+      child: AnimatedBuilder(
+        animation: _selectScale,
+        builder: (_, child) => Transform.scale(
+          scale: _selectCtrl.isAnimating ? _selectScale.value : 1.0,
+          child: child,
+        ),
+        child: AnimatedScale(
         scale: _pressed ? 0.90 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: SizedBox(
@@ -629,7 +656,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
               AnimatedBuilder(
                 animation: _floatAnim,
                 builder: (context, child) => Transform.translate(
-                  offset: Offset(0, widget.isSelected ? 0 : _floatAnim.value),
+                  offset: Offset(0, _floatAnim.value),
                   child: child,
                 ),
                 child: AnimatedContainer(
@@ -707,6 +734,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
             ],
           ),
         ),
+      ),
       ),
     ),
     );

@@ -193,7 +193,9 @@ void main() {
     final boyBtn = find.text('Boy');
     expect(boyBtn, findsOneWidget);
     await tester.tap(boyBtn);
-    await tester.pump();
+    // _handleGenderSelection fires a 400ms timer → _heroNextPage → 850ms TTS timer.
+    // Pump 1700ms to drain all pending timers before the test ends.
+    await pumpFor(tester, const Duration(milliseconds: 1700));
     expect(wizardData.characterGender, 'Boy');
   });
 
@@ -210,7 +212,7 @@ void main() {
     final girlBtn = find.text('Girl');
     expect(girlBtn, findsOneWidget);
     await tester.tap(girlBtn);
-    await tester.pump();
+    await pumpFor(tester, const Duration(milliseconds: 1700));
     expect(wizardData.characterGender, 'Girl');
   });
 }

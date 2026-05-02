@@ -87,22 +87,23 @@ class _GenderImageButtonState extends State<GenderImageButton> {
                     width: widget.isSelected ? 3.5 : 1.5,
                   ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(17),
-                  child: Container(
-                    width: widget.width,
-                    height: widget.height,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1828),
-                      image: DecorationImage(
-                        image: AssetImage(widget.assetPath),
-                        fit: BoxFit.contain,
-                      ),
+                child: Container(
+                  width: widget.width,
+                  height: widget.height,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1828),
+                    borderRadius: BorderRadius.circular(17),
+                    image: DecorationImage(
+                      image: AssetImage(widget.assetPath),
+                      fit: BoxFit.contain,
                     ),
-                    foregroundDecoration: _pressed
-                        ? const BoxDecoration(color: Color(0x44FFFFFF))
-                        : null,
                   ),
+                  foregroundDecoration: _pressed
+                      ? const BoxDecoration(
+                          color: Color(0x44FFFFFF),
+                          borderRadius: BorderRadius.all(Radius.circular(17)),
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 10),

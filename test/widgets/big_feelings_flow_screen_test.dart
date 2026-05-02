@@ -6,11 +6,9 @@ import 'package:story_weaver_app/screens/big_feelings_flow_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Widget buildSubject({String? initialParentHiddenContext}) {
-    return MaterialApp(
-      home: BigFeelingsFlowScreen(
-        initialParentHiddenContext: initialParentHiddenContext,
-      ),
+  Widget buildSubject() {
+    return const MaterialApp(
+      home: BigFeelingsFlowScreen(),
     );
   }
 
