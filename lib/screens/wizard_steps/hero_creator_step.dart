@@ -111,6 +111,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final _briefCompanionsKey = GlobalKey();
   final _briefWorldKey = GlobalKey();
   final _briefConfigKey = GlobalKey();
+  final _briefCharacterController = ExpansibleController();
+  final _briefCompanionsController = ExpansibleController();
+  final _briefWorldController = ExpansibleController();
+  final _briefConfigController = ExpansibleController();
   // Sprout band: pet card is hidden until a grown-up reveals it
   bool _showPetCardForSprout = false;
   // Pending companion species — set by "Add a Friend" / "Add My Pet" buttons,
@@ -407,15 +411,33 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final bandData =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     if (bandData.band.isMature) {
-      // Creative Brief (accordion) — scroll to the relevant section.
+      // Creative Brief (accordion) — expand the target section and scroll to it.
       final key = switch (subStep) {
         0 => _briefCharacterKey,
         1 => _briefCompanionsKey,
         2 => _briefWorldKey,
         _ => _briefConfigKey,
       };
+      final controller = switch (subStep) {
+        0 => _briefCharacterController,
+        1 => _briefCompanionsController,
+        2 => _briefWorldController,
+        _ => _briefConfigController,
+      };
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        // Collapse non-target sections so the accordion stays focused.
+        for (final c in [
+          _briefCharacterController,
+          _briefCompanionsController,
+          _briefWorldController,
+          _briefConfigController,
+        ]) {
+          if (c != controller) {
+            try { c.collapse(); } catch (_) {}
+          }
+        }
+        try { controller.expand(); } catch (_) {}
         final ctx = key.currentContext;
         if (ctx != null) {
           Scrollable.ensureVisible(
@@ -2203,6 +2225,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 briefCompanionsKey: _briefCompanionsKey,
                 briefWorldKey: _briefWorldKey,
                 briefConfigKey: _briefConfigKey,
+                briefCharacterController: _briefCharacterController,
+                briefCompanionsController: _briefCompanionsController,
+                briefWorldController: _briefWorldController,
+                briefConfigController: _briefConfigController,
                 nameController: _nameController,
                 characterDesireController: _characterDesireController,
                 imagineItController: _imagineItController,
@@ -2304,9 +2330,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Future<void> _speakPagePrompt(int page) async {
     final age = widget.wizardData.characterAge;
     if (age <= 5) {
-      // Sprout — full guided TTS on every page
+      // Sprout — full guided TTS on every page.
+      // Page 1 reframes as a confirmation when the name is already known
+      // (from the welcome screen) — otherwise we'd ask the same question
+      // twice in a row, which a 4yo finds confusing.
+      final knownName = widget.wizardData.characterName.trim();
+      final hasKnownName = knownName.isNotEmpty;
+      final page1Prompt = hasKnownName
+          ? "Will $knownName be your hero? Tap a picture!"
+          : "What is your hero's name? Tap the microphone to say it!";
       final prompt = switch (page) {
-        1 => "What is your hero's name? Tap the microphone to say it!",
+        1 => page1Prompt,
         2 => "Pick your hero's look! Tap Choose Look to pick one.",
         3 => "Who is your hero? Tap the one you like!",
         4 => "Tap your buddy to bring them along!",

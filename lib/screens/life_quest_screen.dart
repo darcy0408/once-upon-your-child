@@ -43,12 +43,48 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   LifeQuestScenario? _activeQuest;
   QuestSegment? _currentSegment;
   final List<String> _segmentHistory = []; // for rewind
-  bool _ttsEnabled = false;
   /// Sprout-only: which cloud persona the user tapped on the entry grid.
   /// Null = entry grid is showing. Non-null = filtered quest list for that cloud.
   SproutCloud? _selectedCloud;
 
+  /// On for Sprout (3-5 can't read story prose), off otherwise (older kids
+  /// can read at their own pace and may prefer silent reading).
+  late bool _ttsEnabled;
+
   bool get _isSprout => ageBandFromAge(widget.childAge) == AgeBand.sprout;
+
+  /// Clouds that have at least one Sprout quest. Empty clouds (e.g. Sunny
+  /// while no happy stories exist) are hidden from the entry grid so a
+  /// 4-year-old doesn't tap the brightest-looking option and hit a dead end.
+  List<SproutCloud> get _activeClouds => SproutCloud.values
+      .where((cloud) => allLifeQuests.any((q) =>
+          q.cloud == cloud &&
+          q.recommendedBands.contains(AgeBand.sprout)))
+      .toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _ttsEnabled = _isSprout;
+    if (_isSprout && _activeQuest == null) {
+      // After the cloud grid is first painted, speak a welcome that names
+      // each visible cloud so non-readers know what they're choosing between.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final names = _activeClouds.map((c) => c.displayName).join(', ');
+        AppTtsService.instance.speak(
+          'Tap a cloud friend! $names.',
+          rateScale: 0.65,
+        );
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    AppTtsService.instance.stop();
+    super.dispose();
+  }
 
   // ── Fonts ─────────────────────────────────────────────────────────────────
   // Life Quest is cross-band: younger bands use Fredoka (playful, rounded);
@@ -266,8 +302,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
+                      // Sprout's empty state is rare now that we filter the
+                      // grid to active clouds, but keep a friendly message
+                      // for the edge where a story is removed at runtime.
                       _isSprout
-                          ? 'New ${_selectedCloud!.displayName} stories soon!'
+                          ? 'More stories coming soon!'
                           : isYoung
                               ? 'Check back later for stories about big feelings.'
                               : 'New scenarios are being added.',
@@ -337,7 +376,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               crossAxisCount: 2,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              children: SproutCloud.values
+              children: _activeClouds
                   .map((cloud) => _buildCloudCard(cloud, band))
                   .toList(),
             ),
@@ -348,9 +387,6 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   }
 
   Widget _buildCloudCard(SproutCloud cloud, AgeBandThemeData band) {
-    final hasStories = allLifeQuests.any((q) =>
-        q.cloud == cloud &&
-        q.recommendedBands.contains(AgeBand.sprout));
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -397,15 +433,6 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                 style: _chromeStyle(band,
                     fontSize: 16, fontWeight: FontWeight.w700),
               ),
-              if (!hasStories)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    'Soon!',
-                    style: _chromeStyle(band,
-                        color: Colors.white54, fontSize: 11),
-                  ),
-                ),
             ],
           ),
         ),
