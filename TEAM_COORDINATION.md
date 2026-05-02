@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-02 | 10:53 | 8ca2 | main | Big Feelings Scrollbar/ScrollController crash fix | [link](docs/sessions/2026-05-02-1053-8ca2.md) |
 | 2026-05-02 | 10:32 | dfad | main | Sprout archetype images + Gemini pet avatar key fix | [link](docs/sessions/2026-05-02-1032-dfad.md) |
 | 2026-05-02 | 10:18 | 599b | main | Age-band visual audit: fix 5 UI bugs | [link](docs/sessions/2026-05-02-1018-599b.md) |
 | 2026-05-02 | 10:19 | 9b2b | main | Sprout avatar simplification, ocean tile, story fallback fix | [link](docs/sessions/2026-05-02-1019-9b2b.md) |
