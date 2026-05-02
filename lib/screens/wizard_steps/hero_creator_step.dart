@@ -30,6 +30,7 @@ import '../../widgets/hero_creator/pet_card.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/hero_effects.dart';
 import '../../widgets/safe_asset_image.dart';
+import '../../services/parental_consent_service.dart';
 import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
 import 'hero_creator_creative_brief.dart';
@@ -100,6 +101,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _questController;
   late TextEditingController _wishController;
   late TextEditingController _characterDesireController;
+  bool _allowPhotoAvatar = false;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
   String _petAvatarGeneratingSpecies = 'Dog'; // tracks species being generated for display text
@@ -199,6 +201,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
       if (mounted) setState(() => _isPremium = premium);
+    });
+    const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
+      if (mounted) setState(() => _allowPhotoAvatar = allow);
     });
     if (widget.wizardData.characterId != null &&
         widget.availableCharacters.isNotEmpty) {
@@ -331,6 +336,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         }
         widget.wizardData.selectedScenario = 'big_feelings_quest';
       });
+      // Auto-advance: a 4yo expects forward motion after picking a feeling.
+      // Without this they land back on the scene picker with no visible
+      // change and assume "nothing happened."
+      _heroNextPage();
     }
   }
 
@@ -867,15 +876,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     onTap: _openAvatarGallery,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: HeroAvatarChoiceCard(
-                    icon: Icons.camera_alt_rounded,
-                    title: 'AI Avatar',
-                    subtitle: 'Create from a photo',
-                    onTap: _openCustomAvatarScreen,
+                if (_allowPhotoAvatar) ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: HeroAvatarChoiceCard(
+                      icon: Icons.camera_alt_rounded,
+                      title: 'AI Avatar',
+                      subtitle: 'Create from a photo',
+                      onTap: _openCustomAvatarScreen,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

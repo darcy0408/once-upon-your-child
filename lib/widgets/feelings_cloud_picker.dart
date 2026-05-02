@@ -480,8 +480,8 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
 
   @override
   Widget build(BuildContext context) {
-    final cardH = widget.small ? 88.0 : 120.0;
-    final faceH = widget.small ? 56.0 : 80.0;
+    // Card itself uses AspectRatio(1.0) below to render as a true square that
+    // fills its grid cell — no more hardcoded heights leaving wide rectangles.
     final fontSize = widget.small ? 14.0 : 18.0;
     final isMature =
         Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
@@ -499,13 +499,20 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
         .withLightness((softened.lightness - 0.02).clamp(0.0, 1.0))
         .toColor();
 
+    // Build the card body — the character face is sized via FractionallySizedBox
+    // so it scales with the card (which itself fills the AspectRatio cell).
     Widget cardFace = Center(
-      child: ScaleTransition(
-        scale: _breatheScale,
-        child: _FaceImage(
-          id: widget.id,
-          emoji: widget.emoji,
-          height: faceH,
+      child: FractionallySizedBox(
+        widthFactor: 0.7,
+        heightFactor: 0.7,
+        child: ScaleTransition(
+          scale: _breatheScale,
+          child: _FaceImage(
+            id: widget.id,
+            emoji: widget.emoji,
+            // Provide a generous max so it scales with parent in both modes.
+            height: widget.small ? 56.0 : 200.0,
+          ),
         ),
       ),
     );
@@ -514,7 +521,6 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
     if (isMature) {
       // Mature: flat rounded rectangle, subtle border, no cloud clip
       cardShape = Container(
-        height: cardH,
         decoration: BoxDecoration(
           color: widget.color.withAlpha(50),
           borderRadius: BorderRadius.circular(12),
@@ -533,7 +539,6 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
       // Young: clean squircle, soft tint gradient, drop shadow.
       // No cloud clip, no outer aura/glow — those read as amateur.
       cardShape = Container(
-        height: cardH,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -566,7 +571,14 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            cardShape,
+            // True square — fills the grid cell up to whichever dimension is
+            // smaller. No more wide-rectangle layouts on landscape windows.
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 1.0,
+                child: cardShape,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               widget.name,
