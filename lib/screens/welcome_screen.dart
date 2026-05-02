@@ -12,9 +12,7 @@ import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
-import '../widgets/sprout_animations.dart';
 import '../widgets/star_burst_celebration.dart';
-import '../widgets/adventurer_welcome_sequence.dart';
 import '../widgets/adventurer_unlock_celebration.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
@@ -46,12 +44,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _speechEnabled = false;
   bool _isListening = false;
 
-  /// Current step: -1 = teaser, 0 = name input, 1 = age picker, 2 = title splash.
+  /// Current step: -1 = teaser, 0 = name input, 1 = age picker.
   int _step = 0;
 
-  Timer? _titleTimer;
-
-  /// Drives the pulsing "Tap me!" hint on the title splash.
+  /// Drives the pulsing "Tap me!" hint on the teaser screen.
   late final AnimationController _tapHintCtrl;
   late final Animation<double> _tapHintOpacity;
 
@@ -61,20 +57,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool get _isCreator =>
       _selectedAge != null && ageBandFromAge(_selectedAge!) == AgeBand.creator;
 
-  /// True when the selected age maps to the Adventurer band (ages 9-11).
-  bool get _isAdventurer =>
-      _selectedAge != null &&
-      ageBandFromAge(_selectedAge!) == AgeBand.adventurer;
-
   /// True when the selected age maps to the Adolescent band (ages 15-17).
   bool get _isAdolescent =>
       _selectedAge != null &&
       ageBandFromAge(_selectedAge!) == AgeBand.adolescent;
 
-  // Ages 2-8: individual big buttons (sprout + explorer bands).
   // Ages 3-11: individual big buttons for young children (3×3 grid).
   static const _youngAgeEntries = <({String label, int value})>[
-    (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),
@@ -143,9 +132,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
     // Teaser seen, no age yet — go straight to name.
     setState(() => _step = 0);
-    unawaited(_speak(
-        'Hi!! Welcome to Story Weaver!! So... what is your name?',
-        rateScale: 0.72));
+    unawaited(_speak("What's your name?", rateScale: 0.72));
   }
 
   Future<void> _dismissTeaser() async {
@@ -155,9 +142,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await prefs.setBool(_kTeaserSeenKey, true);
     if (!mounted) return;
     setState(() => _step = 0);
-    unawaited(_speak(
-        'Hi!! Welcome to Story Weaver!! So... what is your name?',
-        rateScale: 0.72));
+    unawaited(_speak("What's your name?", rateScale: 0.72));
     unawaited(_promptNameAndListen());
   }
 
@@ -171,17 +156,35 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   /// Strips common introductory phrases so "my name is Jessica" → "Jessica".
+  /// Also strips TTS prompt phrases that bleed into the mic on web speakers
+  /// (e.g. "what is your name Darcy" → "Darcy").
   String _extractName(String raw) {
-    final cleaned = raw.trim();
-    // Patterns a child might say when asked their name
+    var cleaned = raw.trim();
     final patterns = [
-      RegExp(r"^(?:my name is|i'm|i am|they call me|call me)\s+", caseSensitive: false),
+      // TTS prompt bleed-through.
+      RegExp(
+        r"^(?:so[,\s]+)?(?:what(?:'?s| is| should)?\s+(?:your name|we call you|i call you|you'?re? called)|tell me your name|your name(?:\s+is)?)[\s,?.!]*",
+        caseSensitive: false,
+      ),
+      // What a child might actually say.
+      RegExp(
+        r"^(?:my name is|i'?m|i am|they call me|call me|it'?s)\s+",
+        caseSensitive: false,
+      ),
     ];
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(cleaned);
-      if (match != null) {
-        final remainder = cleaned.substring(match.end).trim();
-        if (remainder.isNotEmpty) return remainder;
+    // Loop so combined leads like "what is your name my name is Darcy" all strip.
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (final pattern in patterns) {
+        final match = pattern.firstMatch(cleaned);
+        if (match != null && match.end > 0) {
+          final remainder = cleaned.substring(match.end).trim();
+          if (remainder.isNotEmpty && remainder != cleaned) {
+            cleaned = remainder;
+            changed = true;
+          }
+        }
       }
     }
     return cleaned;
@@ -197,12 +200,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   Future<void> _listen() async {
     if (!_speechEnabled) return;
-    
+
     if (_isListening) {
       await _speech.stop();
       setState(() => _isListening = false);
       return;
     }
+
+    // Silence any in-flight TTS so its audio can't bleed into the mic and
+    // get transcribed alongside the user's answer (web: speakers → mic).
+    AppTtsService.instance.markInteracted();
+    await AppTtsService.instance.stop();
 
     setState(() => _isListening = true);
     await _speech.listen(
@@ -221,7 +229,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   void dispose() {
     _tapHintCtrl.dispose();
     _nameController.dispose();
-    _titleTimer?.cancel();
     _burstController.dispose();
     AppTtsService.instance.stop();
     _speech.stop();
@@ -238,44 +245,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // Persist immediately so any still-running _resumeFromSavedAge() reads the
     // correct age if it hasn't hit SharedPreferences yet.
     unawaited(const ParentalConsentService().saveDeclaredAge(age));
-    setState(() {
-      _selectedAge = age;
-      _step = 2; // advance to title splash
-    });
-    // Auto-advance from splash to complete after 5 s (tap also advances).
-    _titleTimer?.cancel();
-    _titleTimer = Timer(const Duration(milliseconds: 7000), () {
-      if (mounted && _step == 2) {
-        AppTtsService.instance.stop();
-        _handleContinue();
-      }
-    });
-    final band = ageBandFromAge(age);
-    if (band == AgeBand.adolescent || band == AgeBand.adult) {
-      unawaited(_speak('Welcome to Story Weaver.'));
-    } else if (band == AgeBand.creator) {
-      unawaited(_speak('Your story begins here.'));
-    } else if (band != AgeBand.adventurer) {
-      // Adventurer has its own welcome sequence narration — don't overlap
-      final name = _nameController.text.trim();
-      unawaited(_speak(
-        name.isNotEmpty ? 'Get ready, $name!' : 'Welcome to Story Weaver!',
-        rateScale: 0.72,
-      ));
-    }
-  }
-
-  void _advanceFromTitle() {
-    AppTtsService.instance.markInteracted();
-    AppTtsService.instance.stop();
-    _titleTimer?.cancel();
-    if (mounted && _step == 2) {
-      _handleContinue();
-    }
+    setState(() => _selectedAge = age);
+    _handleContinue();
   }
 
   void _goBack() {
-    _titleTimer?.cancel();
     AppTtsService.instance.stop();
     _speech.stop();
     setState(() => _step = _step - 1);
@@ -389,8 +363,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         return _buildNameStep();
       case 1:
         return _buildAgeStep();
-      case 2:
-        return _buildTitleStep();
       default:
         return _buildAgeStep();
     }
@@ -464,211 +436,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
       ),
-    );
-  }
-
-  // ── Step 1: Title splash ──────────────────────────────────────────────────
-
-  Widget _buildTitleStep() {
-    return Stack(
-      key: const ValueKey('title'),
-      children: [
-        GestureDetector(
-          onTap: _advanceFromTitle,
-          child: _isAdolescent
-              ? _buildAdolescentTitleStep()
-              : _isCreator
-                  ? _buildCreatorTitleStep()
-                  : _isAdventurer
-                      ? _buildAdventurerTitleStep()
-                      : _buildDefaultTitleStep(),
-        ),
-        Positioned(
-          top: 8,
-          left: 0,
-          child: TextButton.icon(
-            onPressed: _goBack,
-            icon: const Icon(Icons.chevron_left, color: Colors.white54, size: 18),
-            label: const Text(
-              'Change age',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDefaultTitleStep() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 60),
-        // Wiggling star signals "tap me!" to young children.
-        WiggleWidget(
-          repeat: true,
-          angle: 0.12,
-          duration: const Duration(milliseconds: 700),
-          child: const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Semantics(
-          header: true,
-          label: 'Story Weaver. Welcome!',
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Once Upon\n',
-                  style: GoogleFonts.cinzelDecorative(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _goldColor,
-                    height: 1.3,
-                  ),
-                ),
-                TextSpan(
-                  text: 'a Time',
-                  style: GoogleFonts.cinzelDecorative(
-                    fontSize: 38,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        // Pulsing "Tap me!" replaces static hint — much clearer for toddlers.
-        AnimatedBuilder(
-          animation: _tapHintOpacity,
-          builder: (context, _) => Opacity(
-            opacity: _tapHintOpacity.value,
-            child: Text(
-              'Tap me!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.fredoka(
-                color: _goldColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 60),
-      ],
-    );
-  }
-
-  Widget _buildCreatorTitleStep() {
-    // Minimal, editorial splash for Creator band (ages 12-14).
-    const creatorAccent = Color(0xFF7C4DFF);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 72),
-        const Icon(Icons.edit_note_rounded, color: creatorAccent, size: 48),
-        const SizedBox(height: AppSpacing.lg),
-        Semantics(
-          header: true,
-          label: 'Your story begins here.',
-          child: Text(
-            'Your story\nbegins here.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.bitter(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.25,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        AnimatedBuilder(
-          animation: _tapHintOpacity,
-          builder: (context, _) => Opacity(
-            opacity: _tapHintOpacity.value,
-            child: Text(
-              'Tap to continue',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.sourceSans3(
-                color: Colors.white38,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 72),
-      ],
-    );
-  }
-
-  Widget _buildAdventurerTitleStep() {
-    return AdventurerWelcomeSequence(
-      userName: _nameController.text.trim().isNotEmpty
-          ? _nameController.text.trim()
-          : null,
-      onComplete: _advanceFromTitle,
-    );
-  }
-
-  // ── Step 2: Name input ────────────────────────────────────────────────────
-
-  Widget _buildAdolescentTitleStep() {
-    const adolescentAccent = Color(0xFF00BCD4);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 72),
-        const Icon(Icons.menu_book_rounded, color: adolescentAccent, size: 44),
-        const SizedBox(height: AppSpacing.lg),
-        Semantics(
-          header: true,
-          label: 'Story Weaver. Your stories, your way.',
-          child: Text(
-            'Story Weaver',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.sourceSans3(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Your stories, your way.',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.sourceSans3(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: adolescentAccent.withAlpha(200),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        AnimatedBuilder(
-          animation: _tapHintOpacity,
-          builder: (context, _) => Opacity(
-            opacity: _tapHintOpacity.value,
-            child: Text(
-              'Tap to continue',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.sourceSans3(
-                color: Colors.white38,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 72),
-      ],
     );
   }
 
