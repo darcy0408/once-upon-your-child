@@ -544,6 +544,17 @@ class AdvancedStoryEngine:
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
         feelings_instruction = _build_feelings_instruction(feelings_prompt, age, theme)
 
+        # Sprout/young-band delight rules — only injected for age ≤ 7
+        young_delight_rules = ""
+        if age <= 7:
+            young_delight_rules = f"""
+**YOUNG READER DELIGHT RULES** (mandatory for this age):
+1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — they are not optional.
+2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
+3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion must express hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
+4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward.
+"""
+
         return f"""
 **PERSONA**: Master Storyteller & World-Builder. You write adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
 
@@ -570,7 +581,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
 - **Tone**: {config['notes']}
-- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}
+{young_delight_rules}- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}
 - **Complexity Calibration**: {complexity_instruction}
 - **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
