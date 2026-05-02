@@ -61,7 +61,7 @@ class HeroScenePage extends StatelessWidget {
   }
 
   Widget _buildImagineItInput(BuildContext context, AgeBandThemeData band) {
-    if (band.band == AgeBand.sprout) return _buildSproutWorldTiles();
+    final isSprout = band.band == AgeBand.sprout;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
@@ -91,16 +91,30 @@ class HeroScenePage extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Where will your adventure take place?',
+                    isSprout
+                        ? 'Where do you want to go? Tell us!'
+                        : 'Where will your adventure take place?',
                     style: GoogleFonts.fredoka(
                       color: const Color(0xFFFFD700),
-                      fontSize: 16,
+                      fontSize: isSprout ? 18 : 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
+            if (isSprout) ...[
+              const SizedBox(height: 6),
+              Text(
+                speechAvailable
+                    ? '🎤 Tap the mic and say it out loud!'
+                    : '✍️ Have a grown-up type your idea here.',
+                style: GoogleFonts.fredoka(
+                  color: Colors.white.withAlpha(220),
+                  fontSize: 14,
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -111,8 +125,9 @@ class HeroScenePage extends StatelessWidget {
                     maxLines: 3,
                     style: const TextStyle(color: Colors.white, fontSize: 15),
                     decoration: InputDecoration(
-                      hintText:
-                          'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
+                      hintText: isSprout
+                          ? 'e.g. under the sea, up in the clouds, a magic forest…'
+                          : 'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
                       hintStyle: const TextStyle(
                           color: Color(0xFFFFD700),
                           fontSize: 13,
@@ -147,6 +162,7 @@ class HeroScenePage extends StatelessWidget {
                   tooltip: speechAvailable
                       ? 'Speak your setting idea'
                       : 'Mic unavailable',
+                  iconSize: isSprout ? 32 : 24,
                   icon: Icon(
                     listeningFor == 'imagine' ? Icons.mic : Icons.mic_none,
                     color: speechAvailable
@@ -161,108 +177,28 @@ class HeroScenePage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              speechAvailable
-                  ? '🎤 Tap the mic and say your idea out loud.'
-                  : '✍️ Type your idea here. Mic is unavailable on this device.',
-              style: TextStyle(
-                color: Colors.white.withAlpha(170),
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '✦ The more you describe, the more magical your story becomes!',
-              style: TextStyle(
-                  color: const Color(0xFFFFD700).withAlpha(180),
+            if (!isSprout) ...[
+              const SizedBox(height: 6),
+              Text(
+                speechAvailable
+                    ? '🎤 Tap the mic and say your idea out loud.'
+                    : '✍️ Type your idea here. Mic is unavailable on this device.',
+                style: TextStyle(
+                  color: Colors.white.withAlpha(170),
                   fontSize: 11,
-                  fontStyle: FontStyle.italic),
-            ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '✦ The more you describe, the more magical your story becomes!',
+                style: TextStyle(
+                    color: const Color(0xFFFFD700).withAlpha(180),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic),
+              ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-
-  // Four illustrated world-choice tiles shown for Sprouts (age 3-5) instead
-  // of the free-text field — tapping a tile speaks the label and sets
-  // customElements to a rich world description the backend can use.
-  Widget _buildSproutWorldTiles() {
-    const tiles = [
-      (emoji: '🌊', label: 'Under the Sea', value: 'a magical underwater kingdom with friendly sea creatures and colorful fish'),
-      (emoji: '🌲', label: 'Magic Forest', value: 'a sparkling enchanted forest with talking animals and glowing fairy lights'),
-      (emoji: '☁️', label: 'Up in the Clouds', value: 'a fluffy cloud kingdom high in the sky with rainbow bridges and sky castles'),
-      (emoji: '🏰', label: 'Magic Castle', value: 'a glittering magical castle with a friendly dragon guardian and hidden treasure rooms'),
-    ];
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Where should your story go? ✨',
-            style: GoogleFonts.fredoka(
-                color: const Color(0xFFFFD700),
-                fontSize: 16,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.5,
-            children: tiles.map((t) {
-              final isSelected = wizardData.customElements == t.value;
-              return GestureDetector(
-                onTap: () {
-                  wizardData.customElements = t.value;
-                  onChanged();
-                  unawaited(onSpeakForSprout(t.label));
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFFFFD700)
-                          : Colors.white24,
-                      width: isSelected ? 3 : 1,
-                    ),
-                    color: isSelected
-                        ? const Color(0xFF2C1B47)
-                        : Colors.white.withAlpha(15),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(t.emoji, style: const TextStyle(fontSize: 28)),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.label,
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (isSelected) ...[
-                        const SizedBox(height: 2),
-                        const Icon(Icons.check_circle,
-                            color: Color(0xFFFFD700), size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
       ),
     );
   }

@@ -72,7 +72,7 @@ const List<String> kWarmUpPhrases = [
   // Walk tier — Magic Ear full prompts
   "What is your hero's name? You can type it or tap the microphone to say it!",
   "Pick your hero's look! Swipe through the pictures and tap the one you like.",
-  "Pick a place for your story! You can choose Rainbow World, Cave Full of Crystals, Friendly Dragons, or Make One Up!",
+  "Pick a place for your story! Tap a picture to choose, or tap Make One Up and tell us where you want to go!",
   "Pick your travel buddies! Tap a companion to bring them along. You can pick a tiny dragon, a wise owl, a shadow cat, a star dog, a magic unicorn, or a clever fox.",
   "Here is your story summary! Check everything looks right, then tap to start!",
 
@@ -266,7 +266,11 @@ class AppTtsService {
           // preparationTimeout. Use a plain blob-URL AudioElement instead.
           await playAudioBytesOnWeb(mp3, awaitCompletion: awaitCompletion);
         } else {
+          // Stop both sinks — the fallback may still be speaking if a prior
+          // ElevenLabs call failed and fell back to on-device TTS. Not stopping
+          // it here causes robotic + ElevenLabs to play simultaneously.
           await _player.stop();
+          await _fallback.stop();
           if (myGen != _speakGen) return;
           await _player.play(BytesSource(mp3));
           if (awaitCompletion) {

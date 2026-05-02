@@ -33,6 +33,13 @@ class HeroStoryTypePage extends StatelessWidget {
   // ── helpers ────────────────────────────────────────────────────────────────
 
   TextStyle _bandTitleStyle(AgeBandThemeData band, {double baseFontSize = 24}) {
+    if (band.band == AgeBand.sprout) {
+      return GoogleFonts.fredoka(
+        color: const Color(0xFFFFD700),
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+      );
+    }
     if (band.band.isMature) {
       return GoogleFonts.sourceSans3(
         color: const Color(0xFFFFD700),
@@ -50,6 +57,99 @@ class HeroStoryTypePage extends StatelessWidget {
       color: const Color(0xFFFFD700),
       fontSize: baseFontSize,
       fontWeight: FontWeight.bold,
+    );
+  }
+
+  Widget _buildSproutModeCard({
+    required String emoji,
+    required String label,
+    required String description,
+    required String mode,
+    required bool isSelected,
+    required Color accentColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isSelected ? accentColor : Colors.white24,
+            width: isSelected ? 3 : 1.5,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isSelected
+                ? [
+                    accentColor.withAlpha(70),
+                    accentColor.withAlpha(35),
+                  ]
+                : [
+                    Colors.white.withAlpha(18),
+                    Colors.white.withAlpha(10),
+                  ],
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: accentColor.withAlpha(90),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          children: [
+            AnimatedScale(
+              duration: const Duration(milliseconds: 200),
+              scale: isSelected ? 1.15 : 1.0,
+              child: Text(emoji, style: const TextStyle(fontSize: 44)),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white.withAlpha(200),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isSelected
+                  ? Icon(Icons.check_circle_rounded,
+                      key: const ValueKey('check'), color: accentColor, size: 32)
+                  : Icon(Icons.circle_outlined,
+                      key: const ValueKey('empty'),
+                      color: Colors.white30,
+                      size: 32),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -256,45 +356,54 @@ class HeroStoryTypePage extends StatelessWidget {
           SizedBox(height: band.space(24)),
           Text(
             band.band == AgeBand.sprout
-                ? 'How should we tell it?'
+                ? 'Pick the one you like! 👇'
                 : 'Pick your story style',
             style: GoogleFonts.fredoka(
               color: Colors.white.withAlpha(200),
-              fontSize: band.body(16),
+              fontSize: band.band == AgeBand.sprout ? 17 : band.body(16),
             ),
           ),
           SizedBox(height: band.space(16)),
           if (band.band == AgeBand.sprout)
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: ImageModeOrb(
-                    modeType: 'tales',
-                    label: 'Story Quest',
-                    subtitle: 'A story with pictures',
-                    isActive: selectedMode == 'tales',
-                    onTap: () {
-                      setStoryMode('tales');
-                      onChanged();
-                    },
-                    primaryColor: const Color(0xFFAA88FF),
-                    secondaryColor: const Color(0xFFE28EFF),
-                  ),
+                _buildSproutModeCard(
+                  emoji: '✨',
+                  label: 'Story Quest',
+                  description: 'A story with pictures!',
+                  mode: 'tales',
+                  isSelected: selectedMode == 'tales',
+                  accentColor: const Color(0xFFAA88FF),
+                  onTap: () {
+                    setStoryMode('tales');
+                    onChanged();
+                  },
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ImageModeOrb(
-                    modeType: 'reading',
-                    label: 'Listen & Learn',
-                    subtitle: 'Easy words to read along',
-                    isActive: selectedMode == 'reading',
-                    onTap: () {
-                      setStoryMode('reading');
-                      onChanged();
-                    },
-                    primaryColor: const Color(0xFFB88AFF),
-                    secondaryColor: const Color(0xFFFF9ECC),
-                  ),
+                const SizedBox(height: 14),
+                _buildSproutModeCard(
+                  emoji: '🎵',
+                  label: 'Rhyme Time',
+                  description: 'Silly songs and rhymes!',
+                  mode: 'rhyme',
+                  isSelected: selectedMode == 'rhyme',
+                  accentColor: const Color(0xFF00D4DD),
+                  onTap: () {
+                    setStoryMode('rhyme');
+                    onChanged();
+                  },
+                ),
+                const SizedBox(height: 14),
+                _buildSproutModeCard(
+                  emoji: '👂',
+                  label: 'Listen & Learn',
+                  description: 'Easy words to say along!',
+                  mode: 'reading',
+                  isSelected: selectedMode == 'reading',
+                  accentColor: const Color(0xFFFF9ECC),
+                  onTap: () {
+                    setStoryMode('reading');
+                    onChanged();
+                  },
                 ),
               ],
             )
