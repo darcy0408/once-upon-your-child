@@ -167,6 +167,30 @@ git commit -m "docs(session): close {id} — {1-line topic}"
 
 ---
 
+## Step 7b — Push to remote
+
+After committing, push if the working tree is clean:
+
+```bash
+git status --porcelain
+```
+
+If the output is empty (no uncommitted files), run:
+
+```bash
+git push
+```
+
+If `git push` fails due to a non-fast-forward (another session pushed first), run:
+
+```bash
+git pull --rebase && git push
+```
+
+If the working tree is not clean (parallel agent has uncommitted work), skip the push and note it in the final report: "Push skipped — parallel session has uncommitted changes. Run `git push` once they commit."
+
+---
+
 ## Step 8 — Final report to user
 
 Output this summary (≤30 lines):
@@ -201,5 +225,6 @@ PICK UP NEXT TIME:
 - Never delete files without explicit user confirmation.
 - Never modify or delete other sessions' record files in `docs/sessions/`.
 - Never renumber `MT-NNN` IDs or rewrite history in `MANUAL_TASKS.md`.
+- Push after every session close (Step 7b) unless the working tree is dirty from a parallel agent.
 - The tone of session records should be a handoff note from one engineer to another, not a changelog.
 - If absolutely nothing happened this session (pure read), still write the record — a one-paragraph "explored X, learned Y, no changes" is better than silence.
