@@ -164,6 +164,11 @@ def create_tts_blueprint(limiter, require_auth):
                 )
         except Exception as e:
             logger.error("ElevenLabs TTS synthesis error: %s", e)
+            if "quota_exceeded" in str(e):
+                return jsonify({
+                    "error": "TTS_QUOTA_EXCEEDED",
+                    "message": "ElevenLabs quota exhausted.",
+                }), 503
             return jsonify({"error": "TTS_FAILED", "message": "Narration is unavailable right now. Please try again in a moment."}), 500
 
         if not audio_bytes:

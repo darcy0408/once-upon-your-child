@@ -348,6 +348,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _openFeelingsQuest();
     } else {
       setState(() => widget.wizardData.selectedScenario = id);
+      // Auto-advance for Sprout (age ≤ 5): young children expect forward
+      // motion after a tap — a checkmark alone is too subtle to notice.
+      if (widget.wizardData.characterAge <= 5) _heroNextPage();
     }
     final label = _sceneLabel(id);
     if (label != null) unawaited(_speakForSprout(label));

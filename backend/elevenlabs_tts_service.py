@@ -219,6 +219,11 @@ def _make_silence_mp3(duration_ms: int = 600) -> bytes:
     return b""
 
 
+def _is_quota_exceeded(exc: Exception) -> bool:
+    msg = str(exc)
+    return "quota_exceeded" in msg or ("status_code: 401" in msg and "quota" in msg.lower())
+
+
 def clean_text_for_tts(text: str) -> str:
     """
     Strip markdown and normalise punctuation so ElevenLabs reads naturally.
@@ -567,6 +572,8 @@ class ElevenLabsTTSService:
             )
             return audio_bytes, word_timestamps
         except Exception as e:
+            if _is_quota_exceeded(e):
+                raise
             logger.warning("with-timestamps failed, falling back: %s", e)
             audio_bytes = self.generate_speech(
                 text=text, voice_id=voice_id,
