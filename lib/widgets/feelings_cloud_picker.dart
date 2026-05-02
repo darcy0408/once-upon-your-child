@@ -287,19 +287,34 @@ class _Breadcrumb extends StatelessWidget {
 // Grids
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _CoreGrid extends StatelessWidget {
+class _CoreGrid extends StatefulWidget {
   final int childAge;
   final void Function(CoreEmotion) onPick;
   const _CoreGrid({super.key, required this.childAge, required this.onPick});
 
   @override
+  State<_CoreGrid> createState() => _CoreGridState();
+}
+
+class _CoreGridState extends State<_CoreGrid> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cores = FeelingsWheelData.coreEmotionsForAge(childAge);
+    final cores = FeelingsWheelData.coreEmotionsForAge(widget.childAge);
     // Taller ratio (closer to 1.0) for fewer items so all cards fit on screen;
     // narrower ratio for larger lists (9+) keeps the familiar card shape.
     final aspectRatio = cores.length <= 4 ? 1.1 : cores.length <= 6 ? 1.05 : 0.88;
     return Scrollbar(
+      controller: _scrollController,
       child: GridView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
@@ -313,7 +328,7 @@ class _CoreGrid extends StatelessWidget {
           name: cores[i].name,
           emoji: cores[i].emoji,
           color: cores[i].color!,
-          onTap: () => onPick(cores[i]),
+          onTap: () => widget.onPick(cores[i]),
         ),
       ),
     );
@@ -427,43 +442,66 @@ class CloudEmotionCard extends StatefulWidget {
 }
 
 class _CloudEmotionCardState extends State<CloudEmotionCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
+    with TickerProviderStateMixin {
+  late final AnimationController _tapCtrl;
+  late final Animation<double> _tapScale;
+  late final AnimationController _breatheCtrl;
+  late final Animation<double> _breatheScale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
+    _tapCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 110));
-    _scale = Tween<double>(begin: 1.0, end: 0.91).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _tapScale = Tween<double>(begin: 1.0, end: 0.95).animate(
+        CurvedAnimation(parent: _tapCtrl, curve: Curves.easeInOut));
+    // Subtle 2.5s breathe on the character image only — replaces the noisy
+    // pulse-aura design with something gentle that still says "I'm alive."
+    _breatheCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2500))
+      ..repeat(reverse: true);
+    _breatheScale = Tween<double>(begin: 1.0, end: 1.04).animate(
+        CurvedAnimation(parent: _breatheCtrl, curve: Curves.easeInOut));
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _tapCtrl.dispose();
+    _breatheCtrl.dispose();
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails _) => _ctrl.forward();
+  void _onTapDown(TapDownDetails _) => _tapCtrl.forward();
   void _onTapUp(TapUpDetails _) {
-    _ctrl.reverse();
+    _tapCtrl.reverse();
     widget.onTap();
   }
-  void _onTapCancel() => _ctrl.reverse();
+  void _onTapCancel() => _tapCtrl.reverse();
 
   @override
   Widget build(BuildContext context) {
-    final cloudH = widget.small ? 72.0 : 100.0;
-    final faceH = widget.small ? 44.0 : 64.0;
-    final fontSize = widget.small ? 12.0 : 14.0;
+    final cardH = widget.small ? 88.0 : 120.0;
+    final faceH = widget.small ? 56.0 : 80.0;
+    final fontSize = widget.small ? 14.0 : 18.0;
     final isMature =
         Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
 
+    // Soften the per-feeling color to a ~40% saturation tint and build a
+    // gentle top-to-bottom lightness shift. Avoids the cartoony heavy fill
+    // while keeping the Inside-Out colour cue (yellow=happy, blue=sad, etc.).
+    final hsl = HSLColor.fromColor(widget.color);
+    final softened =
+        hsl.withSaturation((hsl.saturation * 0.4).clamp(0.0, 1.0));
+    final topTint = softened
+        .withLightness((softened.lightness + 0.10).clamp(0.0, 1.0))
+        .toColor();
+    final bottomTint = softened
+        .withLightness((softened.lightness - 0.02).clamp(0.0, 1.0))
+        .toColor();
+
     Widget cardFace = Center(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: cloudH * 0.05),
+      child: ScaleTransition(
+        scale: _breatheScale,
         child: _FaceImage(
           id: widget.id,
           emoji: widget.emoji,
@@ -476,7 +514,7 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
     if (isMature) {
       // Mature: flat rounded rectangle, subtle border, no cloud clip
       cardShape = Container(
-        height: cloudH,
+        height: cardH,
         decoration: BoxDecoration(
           color: widget.color.withAlpha(50),
           borderRadius: BorderRadius.circular(12),
@@ -492,34 +530,30 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
         child: cardFace,
       );
     } else {
-      // Young: cloud shape with gradient and glow
+      // Young: clean squircle, soft tint gradient, drop shadow.
+      // No cloud clip, no outer aura/glow — those read as amateur.
       cardShape = Container(
-        height: cloudH,
+        height: cardH,
         decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [topTint, bottomTint],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: Colors.white.withAlpha(76), // ~30% white inner glow border
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: widget.color.withAlpha(130),
-              blurRadius: 14,
-              spreadRadius: 2,
+              color: Colors.black.withAlpha(40),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: ClipPath(
-          clipper: _CloudClipper(),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  widget.color,
-                  widget.color.withAlpha(200),
-                ],
-              ),
-            ),
-            child: cardFace,
-          ),
-        ),
+        child: cardFace,
       );
     }
 
@@ -528,12 +562,12 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       child: ScaleTransition(
-        scale: _scale,
+        scale: _tapScale,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             cardShape,
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               widget.name,
               textAlign: TextAlign.center,
@@ -546,7 +580,7 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
                   : GoogleFonts.fredoka(
                       color: Colors.white,
                       fontSize: fontSize,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
             ),
           ],
