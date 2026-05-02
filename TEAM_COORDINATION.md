@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-01 | 23:11 | e32c | main | Sprout UX redesign + TTS dual-voice fix | [link](docs/sessions/2026-05-01-2311-e32c.md) |
 | 2026-05-01 | 23:11 | 0151 | main | Welcome voice/UX fixes + wizard back-nav + Sprout review TTS | [link](docs/sessions/2026-05-01-2311-0151.md) |
 | 2026-04-22 | 10:17 | 5a52 | main | Session-handoff overhaul (per-session files + global manual tasks) | [link](docs/sessions/2026-04-22-1017-5a52.md) |
 | 2026-04-22 | 12:14 | 76e3 | main | Six Hats adult audit + BUG-012 error copy + BUG-010 guard | [link](docs/sessions/2026-04-22-1214-76e3.md) |
