@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/age_band_theme.dart';
-import '../safe_asset_image.dart';
 
 class GenderImageButton extends StatefulWidget {
   const GenderImageButton({
@@ -37,13 +36,6 @@ class _GenderImageButtonState extends State<GenderImageButton> {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final bool useDecorative = band.band == AgeBand.explorer;
-    final imageWidget = SafeAssetImage(
-      widget.assetPath,
-      width: widget.width,
-      height: widget.height,
-      fit: BoxFit.contain,
-    );
-
     return Semantics(
       button: true,
       selected: widget.isSelected,
@@ -97,15 +89,19 @@ class _GenderImageButtonState extends State<GenderImageButton> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17),
-                  child: ColoredBox(
-                    color: const Color(0xFF1E1828),
-                    child: _pressed
-                        ? ColorFiltered(
-                            colorFilter: const ColorFilter.mode(
-                                Color(0x44FFFFFF), BlendMode.screen),
-                            child: imageWidget,
-                          )
-                        : imageWidget,
+                  child: Container(
+                    width: widget.width,
+                    height: widget.height,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1828),
+                      image: DecorationImage(
+                        image: AssetImage(widget.assetPath),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    foregroundDecoration: _pressed
+                        ? const BoxDecoration(color: Color(0x44FFFFFF))
+                        : null,
                   ),
                 ),
               ),

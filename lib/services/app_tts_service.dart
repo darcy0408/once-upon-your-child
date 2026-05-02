@@ -26,6 +26,35 @@ const List<String> kWarmUpPhrases = [
   // "How old are you?... Tap your age!" is intentionally excluded from warm-up
   // so the live speak() call synthesises it at the correct slower rateScale
   // (0.72) rather than playing a default-speed cached version.
+
+  // ── HIGH-PRIORITY: Sprout avatar wizard step prompts ────────────────────────
+  // These play in rapid succession during the Sprout (3-5) avatar flow. Listed
+  // first so they're cached before the child can tap through to the next step
+  // and trigger the robotic flutter_tts fallback.
+  "Are you a girl or a boy?",
+  "What is your favorite color?",
+  "Let's take a photo of your face with a grown-up!",
+  "Your magical hero is ready!",
+  "Girl",
+  "Boy",
+  "What color is your hair?",
+  "What color are your eyes?",
+
+  // ── HIGH-PRIORITY: Sprout favorite-color tap echoes ─────────────────────────
+  // Pre-warming prevents the flutter_tts robotic fallback when a child taps a swatch.
+  "Red",
+  "Orange",
+  "Yellow",
+  "Green",
+  "Blue",
+  "Light Blue",
+  "Dark Blue",
+  "Purple",
+  "Pink",
+  "Teal",
+  "Gold",
+
+  // ── Wizard / onboarding phrases (lower urgency: spoken once per session) ────
   "What is your hero's name? Tap the microphone to say it!",
   "Pick your hero look! Tap the picture you like.",
   "Tap your buddies to bring them along!",
@@ -44,30 +73,6 @@ const List<String> kWarmUpPhrases = [
   "Cave Full of Crystals!",
   "Friendly Dragons!",
   "Big Feelings!",
-
-  // Avatar wizard — Sprout (3-5) step prompts
-  "Are you a girl or a boy?",
-  "What color is your hair?",
-  "What color are your eyes?",
-  "What is your favorite color?",
-  "Let's take a photo of your face with a grown-up!",
-  "Your magical hero is ready!",
-  "Girl",
-  "Boy",
-
-  // Avatar wizard — Sprout favorite color selection echoes
-  // Pre-warming prevents the flutter_tts robotic fallback when a child taps a swatch.
-  "Red",
-  "Orange",
-  "Yellow",
-  "Green",
-  "Blue",
-  "Light Blue",
-  "Dark Blue",
-  "Purple",
-  "Pink",
-  "Teal",
-  "Gold",
 
   // Walk tier — Magic Ear full prompts
   "What is your hero's name? You can type it or tap the microphone to say it!",
