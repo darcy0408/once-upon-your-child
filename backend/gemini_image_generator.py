@@ -32,13 +32,41 @@ def _detect_mime_type(data: bytes) -> str:
 class GeminiImageGenerator:
     def __init__(self, api_key=None):
         """Initialize with Gemini API key"""
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self._client = None
+        primary = api_key or os.getenv("GEMINI_API_KEY")
         self._model_name = "gemini-2.5-flash-image"
         self._request_timeout_seconds = int(os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120"))
+        # Build rotation pool: primary key + GOOGLE_API_KEY_2/3/4
+        rotation_keys = [
+            os.getenv("GOOGLE_API_KEY_2"),
+            os.getenv("GOOGLE_API_KEY_3"),
+            os.getenv("GOOGLE_API_KEY_4"),
+        ]
+        self._api_keys = [k for k in ([primary] + rotation_keys) if k]
+        self._client = None
+        self.api_key = self._api_keys[0] if self._api_keys else None
         if self.api_key:
             from google import genai
             self._client = genai.Client(api_key=self.api_key)
+
+    def _client_for_key(self, api_key: str):
+        from google import genai
+        return genai.Client(api_key=api_key)
+
+    def _call_with_rotation(self, fn):
+        """Try fn(client) with each key in the rotation pool on ResourceExhausted."""
+        from google.genai import errors as genai_errors
+        last_exc = None
+        for key in self._api_keys:
+            client = self._client_for_key(key)
+            try:
+                return fn(client)
+            except genai_errors.ClientError as e:
+                if e.status_code == 429 or "ResourceExhausted" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    logger.warning(f"Gemini image key quota exhausted, rotating to next key")
+                    last_exc = e
+                    continue
+                raise
+        raise last_exc or RuntimeError("All Gemini image API keys exhausted")
 
     def _ensure_client(self):
         if not self._client:
@@ -667,23 +695,24 @@ MANDATORY REQUIREMENTS:
 
         try:
             from google.genai import types
-            
+
             logger.info(f"Generating magical pet avatar for {pet_name} ({species}) using reference photo")
-            
+
             mime_type = _detect_mime_type(photo_bytes)
             contents = [
                 prompt,
                 types.Part.from_bytes(data=photo_bytes, mime_type=mime_type)
             ]
-            
-            # Call Gemini
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
-            )
 
-            # Process response and extract images
+            def _generate(client):
+                return client.models.generate_content(
+                    model=self._model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+                )
+
+            response = self._call_with_rotation(_generate)
+
             images = self._process_image_response(response, prompt)
 
             candidate_count = len(getattr(response, "candidates", []) or [])
