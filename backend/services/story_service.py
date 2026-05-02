@@ -481,7 +481,22 @@ class AdvancedStoryEngine:
         safety_reinforcement = ""
         if age <= 7:
             safety_reinforcement = "\n- SAFETY: This is for a young child. Ensure NO scary imagery, NO monsters, NO abandonment."
-        
+
+        # Per-page word target scales with age — prevents adult band from generating
+        # too many short pages and overrunning the total word cap.
+        if age <= 8:
+            per_page_words = "approx 80–130 words"
+        elif age <= 13:
+            per_page_words = "approx 120–180 words"
+        else:
+            per_page_words = "approx 200–280 words"
+
+        # Hard upper-word ceiling added to the prompt for older bands where Gemini
+        # tends to overshoot when given high targets and complex prose instructions.
+        word_ceiling_note = ""
+        if age > 14:
+            word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. Stop the story before adding more pages if you are approaching this limit."
+
         if age >= 14:
             coping_instruction = "a clever plot twist, a moment of wonder, a scene where the hero's perspective shifts through experience — shown, never told"
 
@@ -547,7 +562,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 {virtue_instruction}
 **WRITING GUIDELINES**:
 - **Tone**: {config['notes']}
-- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
+- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}
 - **Complexity Calibration**: {complexity_instruction}
 - **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
@@ -559,7 +574,7 @@ Strictly return valid JSON with this structure:
   "title": "Story Title",
   "pages": [
     {{
-      "text": "Page text (approx 100-150 words)...",
+      "text": "Page text ({per_page_words})...",
       "image_prompt": "Visual description for illustration..."
     }}
   ]
@@ -673,7 +688,11 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         sliced_text = clean_text[json_start:json_end + 1]
 
     def _parse_story_data(json_str):
-        data = json.loads(json_str)
+        try:
+            decoder = json.JSONDecoder()
+            data, _ = decoder.raw_decode(json_str.strip())
+        except json.JSONDecodeError:
+            data = json.loads(json_str)
         raw_title = data.get("title", f"A {theme} Adventure")
         # Strip double articles: "A The X" → "The X", "An A X" → "A X", etc.
         title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', raw_title, flags=re.IGNORECASE)
