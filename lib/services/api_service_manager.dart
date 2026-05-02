@@ -17,6 +17,7 @@ import '../character_traits_data.dart';
 import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
 import 'story_complexity_service.dart';
+import 'story_scaffold_fallback.dart';
 import 'user_identity_service.dart';
 
 /// Manages API calls - routes to either local backend or direct Gemini API
@@ -612,9 +613,80 @@ class ApiServiceManager {
         currentFeeling != null ||
         (childProfileId != null && childProfileId.trim().isNotEmpty);
 
+    // Pull the bits the offline scaffold fallback needs out of the
+    // (potentially nested) characterDetails / currentFeeling maps, so we
+    // can hand them to runWithScaffoldFallback once and reuse for both
+    // the backend and BYOK code paths below. See
+    // lib/services/story_scaffold_fallback.dart for the policy.
+    final String? archetypeId = characterDetails?['archetype'] as String?;
+    final String? genderField = characterDetails?['gender'] as String?;
+    final String? feelingId = (currentFeeling?['emotion_name'] as String? ??
+            currentFeeling?['feeling_id'] as String?)
+        ?.toLowerCase();
+
     if (!useOwnKey || needsBackendForFeatures) {
       final userApiKey = useOwnKey ? await getUserApiKey() : null;
-      return await _generateStoryWithBackendRetry(
+      return await runWithScaffoldFallback(
+        scenarioId: theme,
+        age: age,
+        name: characterName,
+        companion: companion ?? '',
+        gender: genderField,
+        archetypeId: archetypeId,
+        currentFeelingId: feelingId,
+        attempt: () => _generateStoryWithBackendRetry(
+          characterName: characterName,
+          theme: theme,
+          age: age,
+          childProfileId: childProfileId,
+          companion: companion,
+          characterDetails: characterDetails,
+          additionalCharacters: additionalCharacters,
+          rhymeTimeMode: rhymeTimeMode,
+          learningToReadMode: learningToReadMode,
+          includeIllustrations: includeIllustrations,
+          subscriptionTier: normalizedTier,
+          userId: userId,
+          userApiKey: userApiKey,
+          currentFeeling: currentFeeling,
+          feelingTrigger: feelingTrigger,
+          bodySignal: bodySignal,
+          copingTool: copingTool,
+          repairGoal: repairGoal,
+          parentHiddenContext: parentHiddenContext,
+          characterEvolution: characterEvolution,
+          client: effectiveClient,
+          maxAttempts: maxAttempts,
+          initialDelay: retryInitialDelay,
+          requestTimeout: requestTimeout,
+          companionPets: companionPets,
+          companionCharacters: companionCharacters,
+          storyLength: storyLength,
+          customElements: customElements,
+          bedtimeMode: bedtimeMode,
+          bedtimeMood: bedtimeMood,
+          bedtimeDurationMinutes: bedtimeDurationMinutes,
+          onProgress: onProgress,
+          progressPhases: progressPhases,
+          therapeuticPrompt: therapeuticPrompt,
+          conflictHook: conflictHook,
+          sensoryPalette: sensoryPalette,
+          worldBible: worldBible,
+          moodPhysics: moodPhysics,
+          lifeChallenge: lifeChallenge,
+        ),
+      );
+    }
+
+    return await runWithScaffoldFallback(
+      scenarioId: theme,
+      age: age,
+      name: characterName,
+      companion: companion ?? '',
+      gender: genderField,
+      archetypeId: archetypeId,
+      currentFeelingId: feelingId,
+      attempt: () => _generateStoryWithGemini(
         characterName: characterName,
         theme: theme,
         age: age,
@@ -625,9 +697,6 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         includeIllustrations: includeIllustrations,
-        subscriptionTier: normalizedTier,
-        userId: userId,
-        userApiKey: userApiKey,
         currentFeeling: currentFeeling,
         feelingTrigger: feelingTrigger,
         bodySignal: bodySignal,
@@ -635,10 +704,6 @@ class ApiServiceManager {
         repairGoal: repairGoal,
         parentHiddenContext: parentHiddenContext,
         characterEvolution: characterEvolution,
-        client: effectiveClient,
-        maxAttempts: maxAttempts,
-        initialDelay: retryInitialDelay,
-        requestTimeout: requestTimeout,
         companionPets: companionPets,
         companionCharacters: companionCharacters,
         storyLength: storyLength,
@@ -646,42 +711,7 @@ class ApiServiceManager {
         bedtimeMode: bedtimeMode,
         bedtimeMood: bedtimeMood,
         bedtimeDurationMinutes: bedtimeDurationMinutes,
-        onProgress: onProgress,
-        progressPhases: progressPhases,
-        therapeuticPrompt: therapeuticPrompt,
-        conflictHook: conflictHook,
-        sensoryPalette: sensoryPalette,
-        worldBible: worldBible,
-        moodPhysics: moodPhysics,
-        lifeChallenge: lifeChallenge,
-      );
-    }
-
-    return await _generateStoryWithGemini(
-      characterName: characterName,
-      theme: theme,
-      age: age,
-      childProfileId: childProfileId,
-      companion: companion,
-      characterDetails: characterDetails,
-      additionalCharacters: additionalCharacters,
-      rhymeTimeMode: rhymeTimeMode,
-      learningToReadMode: learningToReadMode,
-      includeIllustrations: includeIllustrations,
-      currentFeeling: currentFeeling,
-      feelingTrigger: feelingTrigger,
-      bodySignal: bodySignal,
-      copingTool: copingTool,
-      repairGoal: repairGoal,
-      parentHiddenContext: parentHiddenContext,
-      characterEvolution: characterEvolution,
-      companionPets: companionPets,
-      companionCharacters: companionCharacters,
-      storyLength: storyLength,
-      customElements: customElements,
-      bedtimeMode: bedtimeMode,
-      bedtimeMood: bedtimeMood,
-      bedtimeDurationMinutes: bedtimeDurationMinutes,
+      ),
     );
   }
 
