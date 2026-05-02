@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-02 | 14:05 | 9a69 | main | Sprout ocean tile code fix + girl archetype images | [link](docs/sessions/2026-05-02-1405-9a69.md) |
 | 2026-05-02 | 14:00 | 7e8d | main | MT-022 verified, MT-027 checkerboard fix, MT-023 diagnosed | [link](docs/sessions/2026-05-02-1400-7e8d.md) |
 | 2026-05-02 | 14:01 | ca0d | main | Adventurer mic support + MT-017 TTS audit + close-session push | [link](docs/sessions/2026-05-02-1401-ca0d.md) |
 | 2026-05-02 | 14:01 | c75e | main | Big Feelings rebrand + visual redesign + offline story fallback | [link](docs/sessions/2026-05-02-1401-c75e.md) |
