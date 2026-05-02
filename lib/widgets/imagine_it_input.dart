@@ -131,6 +131,14 @@ class _BandAdaptiveImagineItState extends State<BandAdaptiveImagineIt> {
         ),
       AgeBand.adventurer => _AdventurerInput(
           controller: _textController,
+          isListening: _isListening,
+          onVoiceTap: () async {
+            if (_isListening) {
+              await _stopListening();
+            } else {
+              await _startListening();
+            }
+          },
           onChanged: _onTextChanged,
           band: band,
         ),
@@ -583,11 +591,15 @@ class _ExplorerInput extends StatelessWidget {
 
 class _AdventurerInput extends StatefulWidget {
   final TextEditingController controller;
+  final bool isListening;
+  final VoidCallback onVoiceTap;
   final ValueChanged<String> onChanged;
   final AgeBandThemeData band;
 
   const _AdventurerInput({
     required this.controller,
+    required this.isListening,
+    required this.onVoiceTap,
     required this.onChanged,
     required this.band,
   });
@@ -724,7 +736,17 @@ class _AdventurerInputState extends State<_AdventurerInput> {
                   filled: true,
                   fillColor: widget.band.primary.withValues(alpha: 0.05),
                   contentPadding:
-                      const EdgeInsets.fromLTRB(14, 12, 14, 36),
+                      const EdgeInsets.fromLTRB(14, 12, 52, 36),
+                  suffixIcon: Align(
+                    alignment: Alignment.topRight,
+                    widthFactor: 1.0,
+                    heightFactor: 1.0,
+                    child: _VoiceSuffixButton(
+                      isListening: widget.isListening,
+                      onTap: widget.onVoiceTap,
+                      band: widget.band,
+                    ),
+                  ),
                 ),
                 onChanged: (v) {
                   widget.onChanged(v);

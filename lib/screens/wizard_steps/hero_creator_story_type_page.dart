@@ -20,6 +20,7 @@ class HeroStoryTypePage extends StatelessWidget {
     required this.onChanged,
     required this.onContinue,
     required this.onToggleListening,
+    this.onSpeakForSprout,
   });
 
   final WizardData wizardData;
@@ -29,6 +30,9 @@ class HeroStoryTypePage extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onContinue;
   final void Function(String field) onToggleListening;
+  /// Optional Sprout TTS callback — when provided, card taps speak the label
+  /// aloud so non-readers get audio confirmation of their selection.
+  final Future<void> Function(String text)? onSpeakForSprout;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -70,7 +74,10 @@ class HeroStoryTypePage extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        onTap();
+        onSpeakForSprout?.call(label);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,

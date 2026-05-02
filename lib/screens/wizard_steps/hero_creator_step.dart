@@ -1715,7 +1715,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final nameFontSize = band.headingScale * 20;
-    final isSproutFour = widget.wizardData.characterAge <= 4;
+    // All Sprout-band children (ages 3-5) get the big mic button — not just ≤4.
+    // A 5-year-old can't type a name any better than a 4-year-old can.
+    final isSproutFour = band.band == AgeBand.sprout;
 
     if (band.band.isMature) {
       return TextField(
@@ -1885,6 +1887,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           height: 60,
           onChanged: (v) =>
               setState(() => widget.wizardData.characterName = v.trim()),
+          onMicTap: () => _toggleListening('name'),
+          isListening: _listeningFor == 'name',
         ),
       ],
     );
@@ -2276,6 +2280,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     onChanged: () => setState(() {}),
                     onContinue: widget.onNext,
                     onToggleListening: _toggleListening,
+                    onSpeakForSprout: _speakForSprout,
                   ),
                 ],
               ),
@@ -2345,7 +2350,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         3 => "Who is your hero? Tap the one you like!",
         4 => "Tap your buddy to bring them along!",
         5 => "Where should we go? Tap the picture you want.",
-        6 => "You are all set! Tap Make Magic!",
+        6 => "What kind of story do you want? Story Quest, Rhyme Time, or Listen and Learn! Then tap Make Magic!",
         _ => null,
       };
       if (prompt != null) await _speakForSprout(prompt);
