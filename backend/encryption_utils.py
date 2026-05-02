@@ -143,7 +143,7 @@ def validate_gemini_api_key_format(key: str) -> bool:
 
 def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
     """
-    Test an API key by making a minimal request to the Gemini API.
+    Test an API key by listing available models via the Gemini API.
 
     Args:
         api_key: The API key to test
@@ -154,32 +154,20 @@ def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
         If invalid: (False, "error description")
     """
     from google import genai
-    from google.genai import types
 
     try:
-        # Create client with the test key
         client = genai.Client(api_key=api_key)
 
-        # Make a minimal API call to verify the key works
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents="Respond with just the word 'OK' if you can read this.",
-            config=types.GenerateContentConfig(
-                max_output_tokens=10,
-                temperature=0.0,
-            )
-        )
-
-        # If we got here, the key is valid
-        text = getattr(response, 'text', '')
-        logger.info(f"API key test successful. Response: {text[:50]}")
+        # Listing models is the lightest possible authenticated call —
+        # no content generation, no response-parsing edge cases.
+        models = list(client.models.list())
+        logger.info(f"API key test successful. Found {len(models)} models.")
         return (True, "")
 
     except Exception as e:
         error_msg = str(e)
         logger.warning(f"API key test failed: {error_msg}")
 
-        # Provide user-friendly error messages
         if "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower():
             return (False, "Invalid API key. Please check your key and try again.")
         elif "quota" in error_msg.lower() or "429" in error_msg:

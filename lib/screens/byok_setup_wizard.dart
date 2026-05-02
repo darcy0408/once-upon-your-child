@@ -522,15 +522,15 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
             child: TextField(
               controller: _controller,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black87,
                 fontFamily: 'monospace',
               ),
               decoration: InputDecoration(
                 labelText: 'API Key',
                 hintText: 'AIza...',
                 prefixIcon: const Icon(Icons.key, color: Color(0xFFFFD54F)),
-                labelStyle: const TextStyle(color: Color(0xB3FFFFFF)),
-                hintStyle: TextStyle(color: Colors.white.withAlpha(80)),
+                labelStyle: const TextStyle(color: Colors.black54),
+                hintStyle: const TextStyle(color: Colors.black38),
               ),
               obscureText: !_showKey,
               maxLines: 1,
