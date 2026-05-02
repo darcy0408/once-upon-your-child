@@ -134,8 +134,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   void initState() {
     super.initState();
 
-    // Determine initial page
-    if (widget.availableCharacters.isNotEmpty) {
+    // Determine initial page. If the parent wizard already knows which
+    // sub-step we should land on (e.g. user just tapped Back from the review
+    // screen, or tapped an "Edit X" button), honor that — otherwise fall back
+    // to the character-selection / name+gender flow.
+    final requested = widget.requestedSubStep;
+    if (requested != null) {
+      _heroPage = _pageForSubStep(requested);
+    } else if (widget.availableCharacters.isNotEmpty) {
       _heroPage = 0;
     } else {
       // Always start at page 1 (name + character/gender carousel) for new
@@ -388,6 +394,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
+  /// Maps the wizard's high-level sub-step (0=Hero, 1=Team, 2=Place, 3=Magic)
+  /// to the corresponding hero-creator inner page index.
+  static int _pageForSubStep(int subStep) => switch (subStep) {
+        0 => 1, // Create Hero
+        1 => 4, // Pick Team
+        2 => 5, // Pick Place
+        _ => 6, // Make Magic
+      };
+
   void _jumpToSubStep(int subStep) {
     final bandData =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -414,12 +429,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       return;
     }
 
-    final targetPage = switch (subStep) {
-      0 => 1, // Create Hero
-      1 => 4, // Pick Team
-      2 => 5, // Pick Place
-      _ => 6, // Make Magic
-    };
+    final targetPage = _pageForSubStep(subStep);
     if (!_heroPageController.hasClients) return;
     final clampedTarget = targetPage.clamp(0, 6);
     _heroPageController.animateToPage(

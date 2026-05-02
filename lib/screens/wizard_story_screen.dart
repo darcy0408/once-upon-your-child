@@ -262,7 +262,18 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
 
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() => _currentStep--);
+      // Going back from MagicReviewStep: land on the last hero-creator
+      // sub-step (page 6 / "Make Magic") — that's where the user was when
+      // they advanced. Without this, HeroCreatorStep can re-init at page 0/1
+      // (the gender picker) when its state is torn down by the PageView.
+      final returningFromReview = _currentStep == 1;
+      setState(() {
+        _currentStep--;
+        if (returningFromReview) {
+          _requestedSubStep = 3;
+          _subStepRequestNonce++;
+        }
+      });
       _pageController.animateToPage(
         _currentStep,
         duration: const Duration(milliseconds: 400),
