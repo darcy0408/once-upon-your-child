@@ -11,6 +11,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-02 | 20:12 | 647b | main | Session start + Railway deploy attempt | [link](docs/sessions/2026-05-02-2012-647b.md) |
+| 2026-05-02 | 20:11 | 3b79 | main | Young-band delight rules + test suite cleanup | [link](docs/sessions/2026-05-02-2011-3b79.md) |
 | 2026-05-02 | 16:46 | d917 | main | Child-UX audit + Sprout fixes (POV, vocab, save, illus) | [link](docs/sessions/2026-05-02-1646-d917.md) |
 | 2026-05-02 | 15:57 | 5653 | main | TTS quota 503 + Sprout scene tap auto-advance | [link](docs/sessions/2026-05-02-1557-5653.md) |
 | 2026-05-02 | 15:28 | 9471 | main | Quality audit script + adult band story-gen fixes | [link](docs/sessions/2026-05-02-1528-9471.md) |
