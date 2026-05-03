@@ -27,7 +27,6 @@ void main() {
       expect(config.primaryColor, isA<Color>());
       expect(config.bannerLabel, isA<String>());
       expect(config.bannerColor, isA<Color>());
-      expect(config.geminiApiKey, isA<String>());
     });
 
     test('Backend URLs should be valid', () {

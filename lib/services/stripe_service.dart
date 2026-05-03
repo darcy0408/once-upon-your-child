@@ -19,8 +19,6 @@ class StripeService {
   static const String _tokenKey = 'story_weaver_auth_token';
 
   Future<Map<String, String>> _buildAuthHeaders() async {
-    // Ensure anonymous auth token exists via ApiServiceManager.
-    await ApiServiceManager().getUserId();
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
     return {

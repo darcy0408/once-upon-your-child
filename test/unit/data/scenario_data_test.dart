@@ -25,10 +25,11 @@ void main() {
       expect(testScenario.conflictHookForAge(5), 'Young Hook');
     });
 
-    test('returns standard content for age 8', () {
-      expect(testScenario.titleForAge(8), 'Standard Title');
-      expect(testScenario.descriptionForAge(8), 'Standard Description');
-      expect(testScenario.conflictHookForAge(8), 'Standard Hook');
+    test('returns standard content for age 9', () {
+      // Age 9 is the Adventurer band — above the young (≤8) threshold.
+      expect(testScenario.titleForAge(9), 'Standard Title');
+      expect(testScenario.descriptionForAge(9), 'Standard Description');
+      expect(testScenario.conflictHookForAge(9), 'Standard Hook');
     });
 
     test('returns mature content for age 15', () {

@@ -196,11 +196,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     }
 
-    // Jump inner HeroCreatorStep to page 3 (companion/team selection).
+    // Jump inner HeroCreatorStep to page 4 (companion/team selection).
     // Archetype cards only appear after an avatar is created, so we skip
     // avatar/archetype and go directly to the companion page.
     final innerPV = tester.widgetList<PageView>(find.byType(PageView)).last;
-    innerPV.controller!.jumpToPage(3);
+    innerPV.controller!.jumpToPage(4);
     await tester.pump(const Duration(milliseconds: 500));
 
     debugPrint('🚀 [TEST] Companion Selector Step');
@@ -254,9 +254,9 @@ void main() {
     // Name/archetype/mode are pre-filled; no TextField interaction needed.
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Jump inner HeroCreatorStep to page 3 (companion/team selection).
+    // Jump inner HeroCreatorStep to page 4 (companion/team selection).
     final innerPV2 = tester.widgetList<PageView>(find.byType(PageView)).last;
-    innerPV2.controller!.jumpToPage(3);
+    innerPV2.controller!.jumpToPage(4);
     await tester.pump(const Duration(milliseconds: 500));
 
     debugPrint('🚀 [TEST] Skipping Companions');
