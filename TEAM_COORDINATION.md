@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-02 | 20:57 | 35ec | main | GIT_MAINTENANCE: dep updates + repo audit (stripe/elevenlabs deferred) | [link](docs/sessions/2026-05-02-2057-35ec.md) |
 | 2026-05-02 | 20:23 | 0b11 | main | Test suite final push: 294/294 green (stripe, scenario, journey) | [link](docs/sessions/2026-05-02-2023-0b11.md) |
 | 2026-05-02 | 20:12 | c1ff | main | MT-027 root-cause: opaque assets + GenderImageButton hardened | [link](docs/sessions/2026-05-02-2012-c1ff.md) |
 | 2026-05-02 | 20:12 | 647b | main | Session start + Railway deploy attempt | [link](docs/sessions/2026-05-02-2012-647b.md) |
