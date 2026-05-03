@@ -84,6 +84,13 @@ def create_tts_blueprint(limiter, require_auth):
         Returns 503 if ELEVENLABS_API_KEY is missing so the client falls back
         to on-device TTS.
         """
+        import os
+        if os.environ.get("TTS_DISABLED", "").lower() in ("1", "true", "yes"):
+            return jsonify({
+                "error": "TTS service unavailable",
+                "message": "TTS is temporarily disabled.",
+            }), 503
+
         service = _get_tts_service()
         if service is None:
             return jsonify({
