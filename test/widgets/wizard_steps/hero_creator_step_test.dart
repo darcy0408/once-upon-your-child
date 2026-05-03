@@ -4,6 +4,17 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
 
 void main() {
+  // Silence asset-not-found FlutterErrors so tests that show character cards
+  // (with placeholder image) don't fail on missing test assets.
+  void silenceAssetErrors() {
+    final original = FlutterError.onError!;
+    FlutterError.onError = (details) {
+      if (details.exception.toString().contains('Unable to load asset')) return;
+      original(details);
+    };
+    addTearDown(() => FlutterError.onError = original);
+  }
+
   void setLargeScreen(WidgetTester tester) {
     tester.view.physicalSize = const Size(1200, 2600);
     tester.view.devicePixelRatio = 1.0;
@@ -70,15 +81,25 @@ void main() {
   testWidgets('loads existing character and continues', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
+    silenceAssetErrors();
     final wizardData = WizardData();
     var didContinue = false;
     final characters = [
-      Character(
-        id: 'char-1',
-        name: 'Milo',
-        age: 7,
-        role: 'The Storm Rider',
-      ),
+      Character.fromJson({
+        'id': 'char-1',
+        'name': 'Milo',
+        'age': 7,
+        'role': 'The Storm Rider',
+        'generated_avatar': {
+          'id': 'avatar-milo',
+          'image_base64':
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=',
+          'seed': 'seed-milo',
+          'style': 'cartoon',
+          'attributes': {},
+          'generated_at': '2026-01-01T00:00:00Z',
+        },
+      }),
     ];
 
     await tester.pumpWidget(
@@ -106,14 +127,24 @@ void main() {
       (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
+    silenceAssetErrors();
     final wizardData = WizardData();
     final characters = [
-      Character(
-        id: 'char-1',
-        name: 'Nova',
-        age: 8,
-        role: 'The Master Creator',
-      ),
+      Character.fromJson({
+        'id': 'char-1',
+        'name': 'Nova',
+        'age': 8,
+        'role': 'The Master Creator',
+        'generated_avatar': {
+          'id': 'avatar-nova',
+          'image_base64':
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=',
+          'seed': 'seed-nova',
+          'style': 'cartoon',
+          'attributes': {},
+          'generated_at': '2026-01-01T00:00:00Z',
+        },
+      }),
     ];
 
     await tester.pumpWidget(
@@ -134,7 +165,8 @@ void main() {
     } else if (createNew.evaluate().isNotEmpty) {
       await tester.tap(createNew.first);
     }
-    await pumpFor(tester, const Duration(milliseconds: 500));
+    // Pump long enough to drain TTS/navigation timers (~850ms) after page transition
+    await pumpFor(tester, const Duration(seconds: 2));
 
     // Should navigate to page 1 (name input)
     expect(find.byType(TextField), findsWidgets);

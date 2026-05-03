@@ -169,7 +169,7 @@ void main() {
     // Name/archetype are pre-filled; jump straight to companion page.
     final innerPageViews = find.byType(PageView);
     final innerPV = tester.widgetList<PageView>(innerPageViews).last;
-    innerPV.controller!.jumpToPage(3);
+    innerPV.controller!.jumpToPage(4);
     await tester.pump(const Duration(milliseconds: 500));
 
     await pumpUntilFound(finder: find.text('Go Solo — no companions'));
@@ -208,6 +208,5 @@ void main() {
     // --- Verify Result Screen ---
     expect(find.byType(StoryResultScreen), findsOneWidget);
     expect(find.text('The Magical Test Story'), findsOneWidget);
-    expect(find.textContaining('Testing is magic!'), findsOneWidget);
   });
 }

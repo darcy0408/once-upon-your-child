@@ -55,7 +55,7 @@ void main() {
       (tester) async {
     // Set a profile ID so the no-profile state is skipped.
     SharedPreferences.setMockInitialValues({
-      'active_child_profile_id': 'test-profile-123',
+      'active_profile_id': 'test-profile-123',
     });
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
@@ -66,7 +66,7 @@ void main() {
 
   testWidgets('wrong math answer shows error', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'active_child_profile_id': 'test-profile-123',
+      'active_profile_id': 'test-profile-123',
     });
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();

@@ -40,7 +40,7 @@ void main() {
     );
     await tester.pump();
 
-    final goSolo = find.text('Go Solo (Be Brave!)');
+    final goSolo = find.text('Go Solo');
     expect(goSolo, findsOneWidget);
     await tester.ensureVisible(goSolo);
     await tester.tap(goSolo);
@@ -63,12 +63,12 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('a tiny dragon'));
+    await tester.tap(find.text('Ember'));
     await tester.pump();
 
     expect(find.text('Gather Party!'), findsOneWidget);
-    expect(wizardData.selectedCompanions, contains('dragon'));
-    expect(wizardData.companionNames, contains('a tiny dragon'));
+    expect(wizardData.selectedCompanions, contains('ember'));
+    expect(wizardData.companionNames, contains('Ember'));
   });
 
   testWidgets('shows saved friends section excluding main hero',
@@ -123,15 +123,15 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('a tiny dragon'));
+    await tester.tap(find.text('Ember'));
     await tester.pump();
-    await tester.tap(find.text('a wise owl'));
+    await tester.tap(find.text('Robin'));
     await tester.pump();
 
-    expect(wizardData.selectedCompanions, contains('dragon'));
-    expect(wizardData.selectedCompanions, contains('owl'));
-    expect(wizardData.companionNames, contains('a tiny dragon'));
-    expect(wizardData.companionNames, contains('a wise owl'));
+    expect(wizardData.selectedCompanions, contains('ember'));
+    expect(wizardData.selectedCompanions, contains('robin'));
+    expect(wizardData.companionNames, contains('Ember'));
+    expect(wizardData.companionNames, contains('Robin'));
   });
 
   testWidgets('shows custom pets from wizard data', (tester) async {

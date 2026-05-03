@@ -50,18 +50,18 @@ void main() {
       await tester.pumpWidget(createTestWidget(6));
       await pumpFor(tester, const Duration(milliseconds: 500));
 
-      expect(find.text('How Big?'), findsOneWidget);
-      expect(find.text('Explorer'), findsOneWidget);
-      expect(find.text('Journal'), findsNothing);
+      expect(find.text('How Big Is My Feeling'), findsOneWidget);
+      expect(find.text('Feelings Explorer'), findsOneWidget);
+      expect(find.text('My Feelings Journal'), findsNothing);
     });
 
     testWidgets('shows all 3 Tabs for age 8+', (tester) async {
       await tester.pumpWidget(createTestWidget(8));
       await pumpFor(tester, const Duration(milliseconds: 500));
 
-      expect(find.text('How Big?'), findsOneWidget);
-      expect(find.text('Explorer'), findsOneWidget);
-      expect(find.text('Journal'), findsOneWidget);
+      expect(find.text('How Big Is My Feeling'), findsOneWidget);
+      expect(find.text('Feelings Explorer'), findsOneWidget);
+      expect(find.text('My Feelings Journal'), findsOneWidget);
     });
 
     testWidgets('can select a core emotion and see intensity slider', (tester) async {
@@ -85,20 +85,21 @@ void main() {
       await pumpFor(tester, const Duration(milliseconds: 500));
 
       // Switch to Explorer tab
-      await tester.tap(find.text('Explorer'));
+      await tester.tap(find.text('Feelings Explorer'));
       await pumpFor(tester, const Duration(milliseconds: 800));
 
-      // Level 0 (_CoreGrid) has no heading; verify core emotions are visible
-      expect(find.text('Happy'), findsWidgets);
+      // Level 0 (_CoreGrid): for age 8, coreEmotionsForAge returns
+      // bigFeelingsCoreEmotionsAges6To8 — first emotion is 'Excited', not 'Happy'.
+      expect(find.text('Excited'), findsWidgets);
 
-      // Tap 'Happy' core emotion card
-      await tester.ensureVisible(find.text('Happy').first);
-      await tester.tap(find.text('Happy').first);
+      // Tap 'Excited' core emotion card
+      await tester.ensureVisible(find.text('Excited').first);
+      await tester.tap(find.text('Excited').first);
       await pumpFor(tester, const Duration(milliseconds: 300));
       await tester.pump(); // allow setState to rebuild
 
-      // Level 1 (_SecondaryGrid) — secondary emotions under Happy are visible
-      expect(find.text('Playful'), findsWidgets);
+      // Level 1 (_SecondaryGrid) — secondary emotions under Excited are visible
+      expect(find.text('Bouncy'), findsWidgets);
     });
 
     testWidgets('Saving to journal shows snackbar for age 8+', (tester) async {
