@@ -246,3 +246,18 @@ fresh-landing.png
 name-typed.png
 prefs-preloaded.png
 scrolled-down.png
+
+# QA / session screenshots (do not commit) — root-anchored to avoid masking tracked assets
+/mt-*.png
+/mt0[0-9][0-9]-*.png
+/step*.png
+/back-*.png
+/avatar-*.png
+/consent-*.png
+/name-typed*.png
+/parent-clicked.png
+/post-splash.png
+/scenes-*.png
+/big-feelings-tab.png
+/home.png
+/landing.png
