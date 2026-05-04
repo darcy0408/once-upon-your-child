@@ -15,6 +15,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
+import '../services/isar_service.dart';
 import 'bedtime_wizard_screen.dart';
 import 'chronicles_list_screen.dart';
 
@@ -70,12 +71,13 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   late final WizardData _wizardData;
 
   // Loaded data
-  List<Character> _savedCharacters = [];
+  late List<Character> _savedCharacters;
 
   @override
   void initState() {
     super.initState();
 
+    _savedCharacters = List<Character>.from(widget.availableCharacters);
     _wizardData = widget.initialWizardData ?? WizardData();
     _loadOnboardingName();
     if (widget.initialCharacter != null) {
@@ -201,6 +203,14 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
           .map((data) => Character.fromJson(data as Map<String, dynamic>))
           .toList();
 
+      // Mirror to local Isar (SharedPreferences-backed on web) so a future
+      // refresh can fall back when the API is unreachable or auth is lost.
+      try {
+        await IsarService.syncCharactersFromApi(characterList);
+      } catch (e) {
+        debugPrint('⚠️ Failed to sync characters to local storage: $e');
+      }
+
       if (mounted) {
         setState(() {
           _savedCharacters = characters;
@@ -212,11 +222,22 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Error loading characters: $e');
-      if (mounted) {
+      debugPrint('⚠️ Error loading characters from backend: $e');
+      // Fall back to whatever's in local storage (last known good snapshot).
+      try {
+        final local = await IsarService.getAllCharacters();
+        if (!mounted) return;
         setState(() {
-          _savedCharacters = [];
+          _savedCharacters = local;
         });
+        debugPrint('📦 Loaded ${local.length} characters from local storage');
+      } catch (e2) {
+        debugPrint('⚠️ Local fallback also failed: $e2');
+        if (mounted) {
+          setState(() {
+            _savedCharacters = const [];
+          });
+        }
       }
     }
   }

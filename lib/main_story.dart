@@ -96,6 +96,7 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   bool _needsReConsent = false;
   int _reConsentAge = 0;
   String _savedName = '';
+  List<Character> _savedCharacters = const [];
 
   // Privacy policy was updated 2026-03-21 — any consent before this date
   // must be refreshed so parents see the updated data-transparency language.
@@ -121,13 +122,50 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
       if (reConsent) await service.clearConsent();
     }
 
+    final onboardingDone = age != null && savedName.isNotEmpty && !reConsent;
+    // Pre-load saved characters before showing the wizard so HeroCreatorStep's
+    // initState can pick the "Welcome back" page synchronously when any exist.
+    final characters = onboardingDone
+        ? await _preloadSavedCharacters()
+        : const <Character>[];
+
     if (!mounted) return;
     setState(() {
-      _onboardingDone = age != null && savedName.isNotEmpty && !reConsent;
+      _onboardingDone = onboardingDone;
       _savedName = savedName;
       _needsReConsent = reConsent;
       _reConsentAge = age ?? 0;
+      _savedCharacters = characters;
     });
+  }
+
+  /// Try the backend, fall back to local Isar (which is SharedPreferences-backed
+  /// on web). On API success, mirror the result into local storage so future
+  /// refreshes have an offline-friendly snapshot to fall back to.
+  Future<List<Character>> _preloadSavedCharacters() async {
+    try {
+      final api = ApiServiceManager();
+      final response = await api.get('/get-characters');
+      final List<dynamic> list = response['data'] is List
+          ? response['data'] as List<dynamic>
+          : (response['characters'] as List<dynamic>? ??
+              response['items'] as List<dynamic>? ??
+              const []);
+      try {
+        await IsarService.syncCharactersFromApi(list);
+      } catch (_) {
+        // Best-effort sync — ignore failures.
+      }
+      return list
+          .map((j) => Character.fromJson(j as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      try {
+        return await IsarService.getAllCharacters();
+      } catch (_) {
+        return const [];
+      }
+    }
   }
 
   @override
@@ -166,6 +204,7 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
     if (_onboardingDone!) {
       return WizardStoryScreen(
         initialWizardData: WizardData()..characterName = _savedName,
+        availableCharacters: _savedCharacters,
       );
     }
 
