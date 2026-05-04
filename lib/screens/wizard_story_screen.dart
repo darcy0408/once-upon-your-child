@@ -498,6 +498,10 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                         _progressStep = step;
                                         _subStepRequestNonce++;
                                       });
+                                    } else if (_currentStep == 1 && step < 3) {
+                                      // User tapped a previous sub-step from the review page — go back.
+                                      setState(() => _progressStep = step);
+                                      _goToSubStep(step);
                                     }
                                   },
                                 ),
