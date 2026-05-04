@@ -41,7 +41,10 @@ class StoryLocal {
       ..theme = saved.theme
       ..isFavorite = false
       ..createdAt = saved.createdAt
-      ..isSyncedToServer = true;
+      ..isSyncedToServer = true
+      ..charactersJson = saved.characters.isNotEmpty
+          ? jsonEncode(saved.characters.map((c) => c.toJson()).toList())
+          : null;
   }
 
   Map<String, dynamic> toJson() {

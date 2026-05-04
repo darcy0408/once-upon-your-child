@@ -869,6 +869,61 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return totalWords / pages.length;
   }
 
+  /// Break a page's text into one phrase per line for the Read Along reading
+  /// level (3–5 yo). Sentences are the primary break; long sentences are
+  /// further split on commas. Tiny fragments are merged forward so we don't
+  /// orphan a single word on its own line.
+  String _phrasifyForEarlyReader(String text) {
+    final source = text.trim();
+    if (source.isEmpty) return text;
+
+    final sentencePattern = RegExp(r'[^.!?\n]+[.!?]+["’”\)]*');
+    final sentences = <String>[];
+    var lastEnd = 0;
+    for (final m in sentencePattern.allMatches(source)) {
+      sentences.add(m.group(0)!.trim());
+      lastEnd = m.end;
+    }
+    if (lastEnd < source.length) {
+      final tail = source.substring(lastEnd).trim();
+      if (tail.isNotEmpty) sentences.add(tail);
+    }
+    if (sentences.isEmpty) return text;
+
+    const longSentenceThreshold = 50;
+    const minPhraseLen = 15;
+    final commaPattern = RegExp(r'[^,;:\n]+(?:[,;:]|$)');
+    final lines = <String>[];
+    for (final sentence in sentences) {
+      if (sentence.length <= longSentenceThreshold) {
+        lines.add(sentence);
+        continue;
+      }
+      final parts = <String>[];
+      var subEnd = 0;
+      for (final m in commaPattern.allMatches(sentence)) {
+        final part = sentence.substring(subEnd, m.end).trim();
+        if (part.isNotEmpty) parts.add(part);
+        subEnd = m.end;
+      }
+      if (parts.isEmpty) {
+        lines.add(sentence);
+        continue;
+      }
+      final merged = <String>[];
+      for (final part in parts) {
+        if (part.length < minPhraseLen && merged.isNotEmpty) {
+          merged[merged.length - 1] = '${merged.last} $part';
+        } else {
+          merged.add(part);
+        }
+      }
+      lines.addAll(merged);
+    }
+
+    return lines.join('\n');
+  }
+
   List<InlineSpan> _buildStorySpans(String pageText) {
     final heroName = widget.characterName;
     if (heroName == null || heroName.trim().isEmpty) {
@@ -1241,11 +1296,16 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // But usually in Wizard flow, storyId is null.
     if (widget.storyId == null) {
       try {
+        final characters = _character != null
+            ? [_character!]
+            : (widget.characterName != null && widget.characterName!.isNotEmpty)
+                ? [Character(id: widget.characterId ?? '', name: widget.characterName!, age: widget.characterAge ?? 0, role: 'Hero')]
+                : <Character>[];
         final newStory = SavedStory(
           title: widget.title,
           storyText: widget.storyText,
           theme: widget.theme ?? 'Adventure',
-          characters: _character != null ? [_character!] : [],
+          characters: characters,
           createdAt: widget.storyCreatedAt ?? DateTime.now(),
           isInteractive: widget.isInteractive ?? false,
           isRhyming: widget.isRhyming ?? false,
@@ -1732,6 +1792,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         ? Colors.white
         : (band.preferDarkMode ? const Color(0xFFE0E0E0) : const Color(0xFF2C3E50));
 
+    final pageText = widget.isLearningToReadMode
+        ? _phrasifyForEarlyReader(_storyPages[textIndex])
+        : _storyPages[textIndex];
+    final lineHeight = widget.isLearningToReadMode ? 2.1 : 1.8;
+
     return StoryBookPage(
       backgroundColor: pageBg,
       showDecorations: !_highContrastMode && !band.preferDarkMode,
@@ -1752,7 +1817,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               // Story text - MAGIC TYPEWRITER EFFECT
               if (!isRevealed)
                 MagicalTypewriterText(
-                  text: _storyPages[textIndex],
+                  text: pageText,
                   readerAge: _effectiveAge,
                   onComplete: () {
                     setState(() {
@@ -1761,7 +1826,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   },
                   style: GoogleFonts.merriweather(
                     fontSize: band.body(20) * _textScale,
-                    height: 1.8,
+                    height: lineHeight,
                     color: pageTextColor,
                   ),
                 )
@@ -1770,10 +1835,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   TextSpan(
                     style: GoogleFonts.merriweather(
                       fontSize: band.body(20) * _textScale,
-                      height: 1.8,
+                      height: lineHeight,
                       color: pageTextColor,
                     ),
-                    children: _buildStorySpans(_storyPages[textIndex]),
+                    children: _buildStorySpans(pageText),
                   ),
                 ),
               if (_ttsAutoEnabled)
@@ -1849,16 +1914,20 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             return _buildEndOfStoryPage();
           }
 
+          final pageText = widget.isLearningToReadMode
+              ? _phrasifyForEarlyReader(_storyPages[textIndex])
+              : _storyPages[textIndex];
+          final lineHeight = widget.isLearningToReadMode ? 2.1 : 1.8;
           return Padding(
             padding: EdgeInsets.only(bottom: band.space(24)),
             child: SelectableText.rich(
               TextSpan(
                 style: GoogleFonts.merriweather(
                   fontSize: band.body(20) * _textScale,
-                  height: 1.8,
+                  height: lineHeight,
                   color: textColor,
                 ),
-                children: _buildStorySpans(_storyPages[textIndex]),
+                children: _buildStorySpans(pageText),
               ),
             ),
           );
