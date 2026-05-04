@@ -122,33 +122,31 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       );
     }
 
-    // Mini-game: spawn drifting tap-targets every ~2s (max 3 on screen).
-    // Skip for Sprout band — they have the star constellation game instead.
-    if (!widget.isSproutBand) {
-      _targetSpawnTimer =
-          Timer.periodic(const Duration(milliseconds: 100), (_) {
-        if (!mounted) return;
-        setState(() {
-          // Expire old targets and spawn new ones at ~2s intervals
-          final now = DateTime.now();
-          _tapTargets.removeWhere((t) => t.isExpired);
-          final shouldSpawn = _tapTargets.isEmpty ||
-              (_tapTargets.length < 3 &&
-                  now
-                          .difference(_tapTargets.last.born)
-                          .inMilliseconds >=
-                      2000);
-          if (shouldSpawn) {
-            _tapTargets.add(_TapTarget(
-              x: 0.1 + _random.nextDouble() * 0.8,
-              y: 0.1 + _random.nextDouble() * 0.8,
-              born: now,
-              ttlMs: 2400 + _random.nextInt(1200),
-            ));
-          }
-        });
+    // Mini-game: spawn drifting tap-targets. Sprout band gets a softer
+    // cadence (slower spawn, longer-lived stars) tuned for little fingers.
+    final spawnIntervalMs = widget.isSproutBand ? 2800 : 2000;
+    final maxTargetsLive = 3;
+    final baseTtlMs = widget.isSproutBand ? 4000 : 2400;
+    _targetSpawnTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!mounted) return;
+      setState(() {
+        final now = DateTime.now();
+        _tapTargets.removeWhere((t) => t.isExpired);
+        final shouldSpawn = _tapTargets.isEmpty ||
+            (_tapTargets.length < maxTargetsLive &&
+                now.difference(_tapTargets.last.born).inMilliseconds >=
+                    spawnIntervalMs);
+        if (shouldSpawn) {
+          _tapTargets.add(_TapTarget(
+            x: 0.1 + _random.nextDouble() * 0.8,
+            y: 0.1 + _random.nextDouble() * 0.8,
+            born: now,
+            ttlMs: baseTtlMs + _random.nextInt(1200),
+          ));
+        }
       });
-    }
+    });
 
     // Rotate flavor messages independent of backend status updates.
     _messageTimer = Timer.periodic(const Duration(milliseconds: 4200), (_) {
@@ -682,11 +680,13 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   ),
                 ),
               ),
-            if (_tapCount == 0 && !widget.isSproutBand)
+            if (_tapCount == 0)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Catch the sparkles! ✨',
+                  widget.isSproutBand
+                      ? 'Tap the stars! 🌟'
+                      : 'Catch the sparkles! ✨',
                   style: TextStyle(color: Colors.purple.shade300, fontSize: 12),
                 ),
               ),
@@ -703,50 +703,163 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     );
   }
 
-  /// Sprout-specific loading UI: bouncing companion + 5-star constellation.
+  /// Sprout-specific loading UI: bouncing companion centered on a tappable
+  /// star-catcher stage, with the 5-star constellation countdown below.
   Widget _buildSproutLoadingContent() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (details) {
-        if (!mounted) return;
-        HapticFeedback.lightImpact();
-        setState(() {
-          _tapCount++;
-          _burstPositions.add(details.localPosition);
-          if (_burstPositions.length > 6) _burstPositions.removeAt(0);
-        });
-      },
-      child: Column(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final stageSize = (screenWidth * 0.62).clamp(220.0, 280.0);
+    const targetSize = 60.0;
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 8),
-        // Bouncing companion OR fallback sparkle icon — both animate with bounce controller
-        if (_bounceController != null)
-          AnimatedBuilder(
-            animation: _bounceController!,
-            builder: (context, _) {
-              final hop = -18.0 * _bounceController!.value;
-              return Transform.translate(
-                offset: Offset(0, hop),
-                child: ClipOval(
-                  child: SizedBox(
-                    width: 100,
-                    height: 100,
-                    child: widget.companionImagePath != null
-                        ? _loadCompanionImage(widget.companionImagePath!)
-                        : const ColoredBox(
-                            color: Color(0xFF3A1060),
-                            child: Icon(Icons.auto_awesome,
-                                size: 64, color: Color(0xFF9E6CFF)),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (details) {
+            if (!mounted) return;
+            HapticFeedback.lightImpact();
+            setState(() {
+              _tapCount++;
+              _burstPositions.add(details.localPosition);
+              if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+            });
+          },
+          child: SizedBox(
+            height: stageSize,
+            width: stageSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Bouncing companion — centerpiece of the stage
+                if (_bounceController != null)
+                  AnimatedBuilder(
+                    animation: _bounceController!,
+                    builder: (context, _) {
+                      final hop = -18.0 * _bounceController!.value;
+                      return Transform.translate(
+                        offset: Offset(0, hop),
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: 110,
+                            height: 110,
+                            child: widget.companionImagePath != null
+                                ? _loadCompanionImage(
+                                    widget.companionImagePath!)
+                                : const ColoredBox(
+                                    color: Color(0xFF3A1060),
+                                    child: Icon(Icons.auto_awesome,
+                                        size: 64, color: Color(0xFF9E6CFF)),
+                                  ),
                           ),
-                  ),
-                ),
-              );
-            },
-          )
-        else
-          const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)),
-        const SizedBox(height: 20),
+                        ),
+                      );
+                    },
+                  )
+                else
+                  const Icon(Icons.auto_awesome,
+                      size: 64, color: Color(0xFF9E6CFF)),
+
+                // Drifting tap targets — bigger and brighter for little fingers
+                ..._tapTargets.where((t) => !t.isExpired).map((target) {
+                  final age = target.ageMs;
+                  final ttl = target.ttlMs;
+                  final opacity = age < 300
+                      ? (age / 300.0).clamp(0.0, 1.0)
+                      : age > ttl - 400
+                          ? ((ttl - age) / 400.0).clamp(0.0, 1.0)
+                          : 1.0;
+                  return Positioned(
+                    left: target.x * stageSize - targetSize / 2,
+                    top: target.y * stageSize - targetSize / 2,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (!mounted) return;
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _tapTargets.remove(target);
+                          _tapCount++;
+                          _burstPositions.add(Offset(
+                            target.x * stageSize,
+                            target.y * stageSize,
+                          ));
+                          if (_burstPositions.length > 6) {
+                            _burstPositions.removeAt(0);
+                          }
+                        });
+                      },
+                      child: Opacity(
+                        opacity: opacity,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(target.born),
+                          tween: Tween(begin: 0.85, end: 1.15),
+                          duration: const Duration(milliseconds: 850),
+                          curve: Curves.easeInOut,
+                          builder: (_, scale, __) => Transform.scale(
+                            scale: scale,
+                            child: Container(
+                              width: targetSize,
+                              height: targetSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    AppColors.gold.withValues(alpha: 0.20),
+                                border: Border.all(
+                                  color:
+                                      AppColors.gold.withValues(alpha: 0.85),
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.gold
+                                        .withValues(alpha: 0.5),
+                                    blurRadius: 14,
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.star_rounded,
+                                  color: AppColors.gold,
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+
+                // Tap burst overlays — feedback for both free-form taps and
+                // successful star catches.
+                ..._burstPositions.map((pos) => Positioned(
+                      left: pos.dx - 25,
+                      top: pos.dy - 25,
+                      child: TweenAnimationBuilder<double>(
+                        key: ValueKey(pos),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 600),
+                        builder: (_, t, __) => Opacity(
+                          opacity: (1 - t).clamp(0.0, 1.0),
+                          child: Container(
+                            width: 50 * (1 + t),
+                            height: 50 * (1 + t),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.gold
+                                  .withValues(alpha: 0.45 * (1 - t)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         // 5-star constellation countdown
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -779,8 +892,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         ),
         const SizedBox(height: 16),
       ],
-    ), // Column
-    ); // GestureDetector
+    );
   }
 
   Widget _loadCompanionImage(String path) {
