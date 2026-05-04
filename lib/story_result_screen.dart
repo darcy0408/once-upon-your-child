@@ -1317,6 +1317,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           totalPages: widget.pages?.length ?? _storyPages.length,
         );
 
+        debugPrint('[MT-035] widget.characterName=${widget.characterName}');
+        debugPrint('[MT-035] widget.characterAge=${widget.characterAge}');
+        debugPrint('[MT-035] characters.length=${characters.length}');
+        debugPrint('[MT-035] characters.names=${characters.map((c) => c.name).toList()}');
+
         final storyLocal = StoryLocal.fromSavedStory(newStory);
         await _offlineService.saveStory(storyLocal);
         if (mounted) setState(() => _isSaved = true);
