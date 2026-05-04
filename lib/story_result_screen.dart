@@ -1743,7 +1743,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         } else {
           _currentPageIndex = (_currentPageIndex - 1).clamp(0, _totalPages - 1);
         }
+        _flipBurstTrigger++;
+        _flipBurstFromRight = isForward;
       });
+      HapticFeedback.mediumImpact();
       // Play sparkle SFX on page flip (respects mute)
       if (!_ambienceMuted) {
         unawaited(AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3'));
@@ -2445,6 +2448,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   double _flipShadowIntensity = 0.0;
   double _flipShadowAlignment = 0.0;
 
+  // Sparkle burst trigger — incremented each completed flip so the overlay
+  // re-runs its animation. Direction tracks where the page came from so the
+  // burst emanates from the trailing edge.
+  int _flipBurstTrigger = 0;
+  bool _flipBurstFromRight = true;
+
   void _onFlipStarted(PointerEvent event) {
     if (mounted) {
       setState(() {
@@ -2453,6 +2462,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             (event.localPosition.dx / MediaQuery.of(context).size.width) * 2 -
                 1;
       });
+      HapticFeedback.lightImpact();
     }
   }
 
@@ -2775,6 +2785,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                         ),
                                                       ),
                                                     ),
+                                                  // Magical sparkle burst on flip
+                                                  Positioned.fill(
+                                                    child: _FlipSparkles(
+                                                      trigger:
+                                                          _flipBurstTrigger,
+                                                      fromRight:
+                                                          _flipBurstFromRight,
+                                                    ),
+                                                  ),
                                                   // Left arrow (previous page)
                                                   if (_currentPageIndex > 0)
                                                     Positioned(
@@ -3524,6 +3543,102 @@ class ColoringGenerationDialog extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Brief golden-star burst that fans out from one edge whenever its
+/// [trigger] value changes — used to celebrate a completed page flip.
+class _FlipSparkles extends StatefulWidget {
+  const _FlipSparkles({required this.trigger, required this.fromRight});
+
+  final int trigger;
+  final bool fromRight;
+
+  @override
+  State<_FlipSparkles> createState() => _FlipSparklesState();
+}
+
+class _FlipSparklesState extends State<_FlipSparkles>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  // Hand-tuned constellation: angle (radians, 0 = horizontal outward),
+  // travel distance, icon size, color.
+  static const _sparks = <(double, double, double, Color)>[
+    (-1.1, 70, 14, Color(0xFFFFFFFF)),
+    (-0.55, 110, 22, Color(0xFFFFD700)),
+    (-0.2, 140, 26, Color(0xFFFFB300)),
+    (0.2, 145, 24, Color(0xFFFFD700)),
+    (0.55, 105, 20, Color(0xFFFFC107)),
+    (1.1, 75, 16, Color(0xFFFFFFFF)),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_FlipSparkles oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.trigger != widget.trigger && widget.trigger > 0) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final t = _controller.value;
+          if (t == 0 || _controller.isDismissed) {
+            return const SizedBox.shrink();
+          }
+          final dir = widget.fromRight ? -1.0 : 1.0;
+          final eased = Curves.easeOutCubic.transform(t);
+          final fade = (1.0 - t).clamp(0.0, 1.0);
+          return Stack(
+            children: [
+              for (final spark in _sparks)
+                Align(
+                  alignment: widget.fromRight
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Transform.translate(
+                    offset: Offset(
+                      cos(spark.$1) * spark.$2 * eased * dir,
+                      sin(spark.$1) * spark.$2 * eased,
+                    ),
+                    child: Opacity(
+                      opacity: fade,
+                      child: Transform.rotate(
+                        angle: t * pi * 1.5 * dir,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          size: spark.$3 * (0.6 + 0.4 * fade),
+                          color: spark.$4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
