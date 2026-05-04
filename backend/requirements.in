@@ -10,16 +10,16 @@ SQLAlchemy==2.0.49
 psycopg2-binary==2.9.12
 
 # Google AI (Gemini)
-google-genai==1.69.0
+google-genai==1.74.0
 google-api-core==2.30.3
 google-auth==2.50.0
 
 # Utilities
-requests==2.32.3
+requests==2.33.1
 Jinja2==3.1.6
-MarkupSafe==3.0.2
-click==8.2.1
-Werkzeug==3.1.7
+MarkupSafe==3.0.3
+click==8.3.3
+Werkzeug==3.1.8
 Pillow
 cryptography==46.0.5
 bcrypt==5.0.0
@@ -40,7 +40,7 @@ qrcode==8.2
 Flask-Limiter==4.1.1
 
 # API Documentation
-apispec==6.9.0
+apispec==6.10.0
 apispec-webframeworks==1.2.0
 marshmallow==4.3.0
 
