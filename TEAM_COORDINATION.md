@@ -11,6 +11,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-03 | 23:14 | e61a | main | Sprout loading-screen mini-game extension + early-reader UX consult | [link](docs/sessions/2026-05-03-2314-e61a.md) |
+| 2026-05-03 | 23:05 | 65b8 | main | Fix avatar tweak URL path (/avatars/ → /avatar/) | [link](docs/sessions/2026-05-03-2305-65b8.md) |
 | 2026-05-03 | 22:54 | 944e | main | Commit pre-existing: character preloading + page-flip sparkles | [link](docs/sessions/2026-05-03-2254-944e.md) |
 | 2026-05-03 | 22:23 | 7e08 | main | Wizard progress-indicator back-nav fix from review step | [link](docs/sessions/2026-05-03-2223-7e08.md) |
 | 2026-05-03 | 22:19 | d110 | main | Deploy+verify sweep — 5 MTs closed (Phase 0–3) | [link](docs/sessions/2026-05-03-2219-d110.md) |
