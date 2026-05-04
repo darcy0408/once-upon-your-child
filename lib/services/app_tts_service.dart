@@ -179,6 +179,7 @@ class AppTtsService {
   }
 
   static const int _maxPrewarmRetries = 4;
+  static const int _maxPrewarmConsecutiveNulls = 3;
 
   Future<void> _prewarm(List<String> phrases) async {
     // Deduplicate concurrent warm-up calls within a session.
@@ -187,6 +188,7 @@ class AppTtsService {
     try {
       final voiceId = await _savedVoiceId();
       var backoffMs = 2000;
+      var consecutiveNulls = 0;
       for (final phrase in phrases) {
         final key = phrase.trim();
         if (_cache.containsKey(key)) continue;
@@ -195,6 +197,11 @@ class AppTtsService {
           try {
             final ttsResult =
                 await TtsApiService.synthesize(key, voiceId: voiceId);
+            if (ttsResult == null) {
+              consecutiveNulls++;
+            } else {
+              consecutiveNulls = 0;
+            }
             final mp3 = ttsResult?.audioBytes;
             if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
             backoffMs = 2000; // reset after a successful call
@@ -217,6 +224,12 @@ class AppTtsService {
             debugPrint('TTS prewarm failed for phrase: $e');
             break;
           }
+        }
+        if (consecutiveNulls >= _maxPrewarmConsecutiveNulls) {
+          debugPrint(
+            '[TTS] warm-up aborted: $consecutiveNulls consecutive null returns — service unavailable',
+          );
+          break;
         }
       }
     } finally {
