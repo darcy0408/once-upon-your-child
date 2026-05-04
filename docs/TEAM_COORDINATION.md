@@ -2588,6 +2588,7 @@ Logged two missing sessions:
 ### Open Items
 - [ ] Shut down `grand-light` Railway service to free credit
 - [ ] Authorize Railway MCP OAuth (triggers on first MCP tool use after Claude Code restart)
+- [ ] **2026-05-04** Verify avatar tweak fix end-to-end: hot-reload app, open wizard step 1, pick a gallery avatar, customise hair + eye colour, tap "Generate my look" — should succeed now (URL was `/avatars/` but backend is `/avatar/`, fixed in `api_service_manager.dart:2237`)
 
 ### Commits This Session
 - `eabb5cb` fix(age-gate): fix pill label padding and band comment
