@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-03 | 22:19 | d110 | main | Deploy+verify sweep — 5 MTs closed (Phase 0–3) | [link](docs/sessions/2026-05-03-2219-d110.md) |
 | 2026-05-03 | 15:48 | b950 | main | Duplicate close; no new work | [link](docs/sessions/2026-05-03-1548-b950.md) |
 | 2026-05-03 | 11:46 | f5e9 | main | TTS_DISABLED toggle + ElevenLabs quota fix | [link](docs/sessions/2026-05-03-1146-f5e9.md) |
 | 2026-05-02 | 20:57 | 35ec | main | GIT_MAINTENANCE: dep updates + repo audit (stripe/elevenlabs deferred) | [link](docs/sessions/2026-05-02-2057-35ec.md) |
