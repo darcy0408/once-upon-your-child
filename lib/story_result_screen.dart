@@ -54,7 +54,7 @@ import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
 import 'settings_screen.dart';
 
-class StoryResultScreen extends StatefulWidget {
+class StoryResultScreen extends ConsumerStatefulWidget {
   final String title;
   final String storyText;
   final String? wisdomGem;
@@ -123,10 +123,10 @@ class StoryResultScreen extends StatefulWidget {
         assert(!trackStoryCreation || storyCreatedAt != null);
 
   @override
-  State<StoryResultScreen> createState() => _StoryResultScreenState();
+  ConsumerState<StoryResultScreen> createState() => _StoryResultScreenState();
 }
 
-class _StoryResultScreenState extends State<StoryResultScreen> {
+class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   late final OfflineStoryService _offlineService;
   final _illustrationService =
       GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
@@ -2857,7 +2857,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
-                isFreeTier: (widget.subscription?.isFree ?? true) && !widget.usedUserApiKey,
+                isFreeTier: (widget.subscription?.isFree ?? true) && !widget.usedUserApiKey && !ref.watch(settingsProvider).useOwnApiKey,
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,
