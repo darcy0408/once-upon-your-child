@@ -2234,7 +2234,7 @@ Do NOT wrap JSON in backticks.
       final byteData = await rootBundle.load(assetPath);
       final imageBytes = byteData.buffer.asUint8List();
 
-      final uri = Uri.parse('$_localBackendUrl/avatars/tweak-gallery-avatar');
+      final uri = Uri.parse('$_localBackendUrl/avatar/tweak-gallery-avatar');
       final headers = await authHeaders();
 
       final request = http.MultipartRequest('POST', uri)
