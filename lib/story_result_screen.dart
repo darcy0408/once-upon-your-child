@@ -53,6 +53,8 @@ import 'screens/byok_setup_wizard.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
 import 'settings_screen.dart';
+import 'services/per_page_illustration_prefetcher.dart';
+import 'widgets/per_page_illustration.dart';
 
 class StoryResultScreen extends ConsumerStatefulWidget {
   final String title;
@@ -169,6 +171,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   bool _ttsAutoEnabled = false;
 
   List<_InlineIllustration> _inlineIllustrations = [];
+
+  /// Per-page background prefetcher (BYOK only). Lazily created in initState.
+  PerPageIllustrationPrefetcher? _perPagePrefetcher;
 
   /// True when the first page is a full-bleed illustration cover.
   bool get _hasCoverIllustration => _inlineIllustrations.isNotEmpty;
@@ -561,6 +566,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     if (ageBandFromAge(_effectiveAge).index <= AgeBand.explorer.index) {
       _initAutoTts();
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeStartPerPagePrefetcher();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Auto-save Sprout-band stories. We use the age-band helper rather than
       // a raw age comparison because widget.characterAge can be the wizard
@@ -647,7 +655,77 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     _audioPlayer?.dispose();
     _pageController.dispose();
     _feedbackController.dispose();
+    _perPagePrefetcher?.dispose();
     super.dispose();
+  }
+
+  /// Start a per-page background prefetcher when the user has BYOK
+  /// configured. Safe to call multiple times — only the first call wires up.
+  void _maybeStartPerPagePrefetcher() {
+    if (!mounted || _perPagePrefetcher != null) return;
+    final settings = ref.read(settingsProvider);
+    if (!settings.useOwnApiKey && !widget.usedUserApiKey) return;
+    if (_storyPages.isEmpty) return;
+
+    final prefetcher = PerPageIllustrationPrefetcher(
+      storyId: _analyticsStoryId,
+      pageTexts: List<String>.from(_storyPages),
+      characterName: widget.characterName ?? 'the hero',
+      age: _effectiveAge,
+      theme: widget.theme,
+      characterAppearance: _characterAppearanceForBackend(),
+      companions: _illustrationCompanions(),
+      sceneRequirements:
+          (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
+    );
+    _perPagePrefetcher = prefetcher;
+    unawaited(prefetcher.initialize().then((_) {
+      if (!mounted) return;
+      // Bias work toward whatever the user is currently looking at.
+      final textIndex =
+          _hasCoverIllustration ? _currentPageIndex - 1 : _currentPageIndex;
+      if (textIndex >= 0) prefetcher.prioritize(textIndex);
+    }));
+  }
+
+  Map<String, dynamic>? _characterAppearanceForBackend() {
+    final appearance = _buildCharacterAppearance();
+    if (appearance == null) return null;
+    return {
+      'character_name': appearance.characterName,
+      'hair_color': appearance.hairColor.name,
+      'hair_length': appearance.hairLength.name,
+      'hair_style': appearance.hairStyle.name,
+      'eye_color': appearance.eyeColor.name,
+      'skin_tone': appearance.skinTone.name,
+      'clothing_style': appearance.clothingStyle.name,
+      'clothing_colors': appearance.clothingColors.name,
+    };
+  }
+
+  List<Map<String, String>> _illustrationCompanions() {
+    final companions = <Map<String, String>>[];
+    for (final pet in widget.companionPets ?? const <Map<String, dynamic>>[]) {
+      final name = pet['name']?.toString().trim();
+      if (name == null || name.isEmpty) continue;
+      final species = pet['species']?.toString().trim();
+      companions.add({
+        'name': name,
+        if (species != null && species.isNotEmpty) 'type': species,
+      });
+    }
+    for (final character in widget.companionCharacters ?? const <dynamic>[]) {
+      if (character is Map) {
+        final name = character['name']?.toString().trim();
+        if (name == null || name.isEmpty) continue;
+        companions.add({'name': name});
+      } else {
+        final name = character.toString().trim();
+        if (name.isEmpty) continue;
+        companions.add({'name': name});
+      }
+    }
+    return companions;
   }
 
   /// Track that a story was created and show celebration if features unlocked
@@ -1848,6 +1926,16 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           'direction': isForward ? 'forward' : 'backward',
         },
       );
+
+      // Bias the prefetcher toward the page the reader just landed on so
+      // its illustration (and the next one) jump the queue.
+      final prefetcher = _perPagePrefetcher;
+      if (prefetcher != null) {
+        final textIndex = _hasCoverIllustration
+            ? _currentPageIndex - 1
+            : _currentPageIndex;
+        if (textIndex >= 0) prefetcher.prioritize(textIndex);
+      }
     }
   }
 
@@ -1908,6 +1996,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Per-page illustration (BYOK background prefetch). Renders
+              // bytes when ready, a skeleton while loading, nothing otherwise.
+              if (_perPagePrefetcher != null)
+                PerPageIllustration(
+                  listenable: _perPagePrefetcher!.stateOf(textIndex),
+                ),
               // Story text - MAGIC TYPEWRITER EFFECT
               if (!isRevealed)
                 MagicalTypewriterText(
@@ -2014,15 +2108,24 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           final lineHeight = widget.isLearningToReadMode ? 2.1 : 1.8;
           return Padding(
             padding: EdgeInsets.only(bottom: band.space(24)),
-            child: SelectableText.rich(
-              TextSpan(
-                style: GoogleFonts.merriweather(
-                  fontSize: band.body(20) * _textScale,
-                  height: lineHeight,
-                  color: textColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_perPagePrefetcher != null)
+                  PerPageIllustration(
+                    listenable: _perPagePrefetcher!.stateOf(textIndex),
+                  ),
+                SelectableText.rich(
+                  TextSpan(
+                    style: GoogleFonts.merriweather(
+                      fontSize: band.body(20) * _textScale,
+                      height: lineHeight,
+                      color: textColor,
+                    ),
+                    children: _buildStorySpans(pageText),
+                  ),
                 ),
-                children: _buildStorySpans(pageText),
-              ),
+              ],
             ),
           );
         },
