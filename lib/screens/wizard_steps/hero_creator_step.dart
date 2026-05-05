@@ -117,8 +117,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final _briefCompanionsController = ExpansibleController();
   final _briefWorldController = ExpansibleController();
   final _briefConfigController = ExpansibleController();
-  // Sprout band: pet card is hidden until a grown-up reveals it
+  // Sprout + Explorer: pet card / pet-species editor is hidden behind a single
+  // "Add my pet" tap so the page doesn't open with three input fields visible.
   bool _showPetCardForSprout = false;
+  bool _showPetCardForExplorer = false;
   // Pending companion species — set by "Add a Friend" / "Add My Pet" buttons,
   // consumed by the HeroPetCard to create the entry and open the editor.
   String? _pendingCompanionSpecies;
@@ -533,7 +535,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.generatedAvatar = null;
       widget.wizardData.characterId = null;
       widget.wizardData.characterName = '';
-      widget.wizardData.characterAge = 7;
+      // Intentionally do not reset characterAge — it should inherit the value
+      // already on wizardData (e.g. user_age propagated from the entry point).
       _selectedArchetypeId = null;
       _nameController.clear();
       widget.wizardData.pets = [];
@@ -563,12 +566,33 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterAge = 5;
       }
     });
-    // Read the archetype name aloud for young children.
-    unawaited(_speakForSprout(archetype.nameForAge(widget.wizardData.characterAge)));
+    // Read the archetype name aloud for young children. Sprout (≤5) hears the
+    // name only at slow rate; Explorer (6-8) hears name + special-ability so
+    // a non-reading 7yo learns what their hero can do.
+    final age = widget.wizardData.characterAge;
+    final spokenName = archetype.nameForAge(age);
+    if (age <= 5) {
+      unawaited(_speakForSprout(spokenName));
+    } else if (age <= 8) {
+      unawaited(_speakArchetypeForExplorer(spokenName, archetype.specialAbility));
+    }
 
     // Page 3 is archetype-only — auto-advance once an archetype is chosen.
     if (_heroPage != 3) return;
     _heroNextPage();
+  }
+
+  /// Explorer (6-8) TTS readback for archetype tap. Slightly faster than
+  /// Sprout's 0.65 — early readers can keep up — but slower than default so
+  /// the special-ability sentence registers before auto-advance kicks in.
+  Future<void> _speakArchetypeForExplorer(
+    String name,
+    String specialAbility,
+  ) async {
+    await AppTtsService.instance.stop();
+    if (!mounted) return;
+    unawaited(AppTtsService.instance
+        .speak('$name. $specialAbility.', rateScale: 0.85));
   }
 
   void _maybeAdvanceFromStylePage() {
@@ -874,18 +898,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 Expanded(
                   child: HeroAvatarChoiceCard(
                     icon: Icons.auto_awesome,
-                    title: 'Gallery Avatar',
-                    subtitle: 'Pick from magical presets',
+                    title: 'Pick a magical hero!',
+                    subtitle: 'Choose from our gallery',
                     onTap: _openAvatarGallery,
                   ),
                 ),
-                if (_allowPhotoAvatar) ...[
+                // AI photo avatar is gated by both parental consent and premium —
+                // free users on younger bands don't see it, so they aren't teased
+                // with a feature that hits a paywall on tap.
+                if (_allowPhotoAvatar && _isPremium) ...[
                   const SizedBox(width: 16),
                   Expanded(
                     child: HeroAvatarChoiceCard(
                       icon: Icons.camera_alt_rounded,
-                      title: 'AI Avatar',
-                      subtitle: 'Create from a photo',
+                      title: 'Make a hero from your photo!',
+                      subtitle: 'Use a real photo',
                       onTap: _openCustomAvatarScreen,
                     ),
                   ),
@@ -1093,6 +1120,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             : band.band == AgeBand.adventurer
                 ? 'Choose your companions'
                 : 'Choose Your Companions';
+    final isYoung =
+        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
+    final hasNoCompanion = widget.wizardData.companionNames.isEmpty &&
+        widget.wizardData.selectedCompanions.isEmpty;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -1107,7 +1138,29 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildCompanionShowcase(),
           const SizedBox(height: 20),
           _buildCompanionGrid(),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
+          // "Adventure alone!" exit — only surfaced for young bands and only
+          // when no companion is selected. Without it, an empty showcase reads
+          // as "you have to fill these orbs" to a 7yo. Tapping advances the
+          // wizard the same way Next does, but the labelling makes the
+          // optional nature explicit.
+          if (isYoung && hasNoCompanion) ...[
+            TextButton.icon(
+              icon: const Icon(Icons.directions_walk_rounded,
+                  color: Colors.white70, size: 18),
+              label: Text(
+                'Adventure alone!',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: band.uiFontFamily,
+                ),
+              ),
+              onPressed: _heroNextPage,
+            ),
+            const SizedBox(height: 8),
+          ],
           _buildNextArrowButton(
               enabled: true,
               onTap: _heroNextPage,
@@ -1281,6 +1334,50 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               onChanged: () => setState(() {}),
               onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
                   _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+            ),
+        ] else if (band.band == AgeBand.explorer) ...[
+          // Explorer: pet form is hidden behind a single tap so the page
+          // doesn't open with photo + species + name fields all demanding
+          // attention. Tap reveals the full HeroPetCard.
+          if (!_showPetCardForExplorer)
+            GestureDetector(
+              onTap: () => setState(() => _showPetCardForExplorer = true),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('🐾', style: TextStyle(fontSize: 20)),
+                    SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        'Add your real pet to the adventure!',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.chevron_right, color: Colors.white38, size: 22),
+                  ],
+                ),
+              ),
+            )
+          else
+            HeroPetCard(
+              wizardData: widget.wizardData,
+              onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
+              onChanged: () => setState(() {}),
+              onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
+                  _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+              pendingNewSpecies: _pendingCompanionSpecies != null
+                  ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
+                  : null,
+              onPendingConsumed: () => setState(() => _pendingCompanionSpecies = null),
             ),
         ] else
           HeroPetCard(
@@ -2391,7 +2488,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         'vanishing_colors' => 'Rainbow World!',
         'crystal_cavern' => 'Cave Full of Crystals!',
         'volcano_dragons' => 'Friendly Dragons!',
-        'big_feelings_quest' => 'Life Quest!',
+        'big_feelings_quest' => 'Big Feelings!',
         _ => null,
       };
 }

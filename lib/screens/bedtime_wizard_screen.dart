@@ -411,7 +411,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         return 'Making a New Friend';
       }
       if (lower.contains('feel') || lower.contains('emotion')) {
-        return 'Life Quest';
+        return _ageBand == AgeBand.sprout ? 'Big Feelings' : 'Life Quest';
       }
       if (lower.contains('forest') || lower.contains('magic')) {
         return 'Magical Forest';

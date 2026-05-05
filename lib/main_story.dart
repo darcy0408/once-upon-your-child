@@ -96,6 +96,7 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   bool _needsReConsent = false;
   int _reConsentAge = 0;
   String _savedName = '';
+  int? _savedAge;
   List<Character> _savedCharacters = const [];
 
   // Privacy policy was updated 2026-03-21 — any consent before this date
@@ -133,6 +134,7 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
     setState(() {
       _onboardingDone = onboardingDone;
       _savedName = savedName;
+      _savedAge = age;
       _needsReConsent = reConsent;
       _reConsentAge = age ?? 0;
       _savedCharacters = characters;
@@ -200,10 +202,16 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
       );
     }
 
-    // Onboarding complete — launch the wizard with name pre-filled
+    // Onboarding complete — launch the wizard with name & age pre-filled.
+    // Propagating the recorded user_age into WizardData ensures the Sprout
+    // (age-band) auto-save gate on the story-result screen fires correctly.
     if (_onboardingDone!) {
+      final wizardData = WizardData()..characterName = _savedName;
+      if (_savedAge != null) {
+        wizardData.characterAge = _savedAge!;
+      }
       return WizardStoryScreen(
-        initialWizardData: WizardData()..characterName = _savedName,
+        initialWizardData: wizardData,
         availableCharacters: _savedCharacters,
       );
     }
@@ -1032,6 +1040,9 @@ class _StoryScreenState extends State<StoryScreen> {
   ];
 
   Widget _buildSELPacksSection() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isSprout = band.band == AgeBand.sprout;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1094,7 +1105,9 @@ class _StoryScreenState extends State<StoryScreen> {
                           style: const TextStyle(fontSize: 28)),
                       const SizedBox(height: 6),
                       Text(
-                        pack['title'] as String,
+                        (isSprout && pack['title'] == 'Life Quest')
+                            ? 'Big Feelings'
+                            : pack['title'] as String,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -1277,7 +1290,19 @@ class _StoryScreenState extends State<StoryScreen> {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 1.0,
-              children: _quickThemes.map((theme) {
+              children: _quickThemes
+                  .where((theme) {
+                    // Big Feelings / Life Quest belongs on the My Quests tab
+                    // for Explorer and the cloud grid for Sprout — not in the
+                    // Quick Adventure scene picker for either young band.
+                    if (theme['id'] == 'big_feelings_quest' &&
+                        (band.band == AgeBand.sprout ||
+                            band.band == AgeBand.explorer)) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((theme) {
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);

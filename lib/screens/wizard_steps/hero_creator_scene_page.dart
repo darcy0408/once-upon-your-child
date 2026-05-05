@@ -470,6 +470,12 @@ class HeroScenePage extends StatelessWidget {
       return null;
     }
 
+    // Big Feelings / Life Quest belongs on the dedicated tab (My Quests for
+    // Explorer, Big Feelings cloud grid for Sprout). Mixing emotional content
+    // into the adventure scene picker confuses the moment for younger kids.
+    final isYoungBand =
+        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
+
     final featuredButtons = [
       SceneButtonData(
         id: 'vanishing_colors',
@@ -496,14 +502,14 @@ class HeroScenePage extends StatelessWidget {
         pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
         thematicQuestion: thematicQuestionFor('volcano_dragons'),
       ),
-      SceneButtonData(
-        id: 'big_feelings_quest',
-        label: scenarioById('big_feelings_quest')?.titleForAge(age) ??
-            (band.band == AgeBand.sprout ? 'Big Feelings' : 'Life Quest'),
-        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
-        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
-        thematicQuestion: thematicQuestionFor('big_feelings_quest'),
-      ),
+      if (!isYoungBand)
+        SceneButtonData(
+          id: 'big_feelings_quest',
+          label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
+          normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
+          pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+          thematicQuestion: thematicQuestionFor('big_feelings_quest'),
+        ),
     ];
 
     final displayButtons = featuredButtons;

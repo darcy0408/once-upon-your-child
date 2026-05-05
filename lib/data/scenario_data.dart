@@ -467,6 +467,7 @@ class ScenarioData {
       sensoryPalette:
           'Swirling clouds, rumbly tummy feelings, the cool touch of a breeze.',
       category: 'Real-Life Heroes',
+      sproutTitle: 'Big Feelings',
       worldBible:
           'An inner landscape where emotions are weather and terrain. Anger is a rumbling volcano, worry is a foggy maze, sadness is a rainy valley, joy is a sunlit meadow. The hero travels through their own emotional world, learning that every feeling has a place and a purpose. The Feeling Guides are friendly creatures: a calm turtle for breathing exercises, a brave lion for facing fears, a gentle rain-cloud that shows crying is okay. The "calm centre" is a peaceful lake at the heart of the landscape where all weather is visible but none is overwhelming. The hero learns tools at each stop: belly breathing at the volcano, grounding at the maze, self-compassion at the valley. Resolution: feelings aren\'t enemies to defeat but weather to navigate.',
       youngTitle: 'Life Quest',

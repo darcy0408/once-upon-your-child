@@ -3021,9 +3021,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       left: 0,
                                                       top: 0,
                                                       bottom: 0,
-                                                      width: _isYoungUser
-                                                          ? 80
-                                                          : 56,
+                                                      width: isNarrowArea
+                                                          ? 48
+                                                          : (_isYoungUser
+                                                              ? 80
+                                                              : 56),
                                                       child: _PageArrowOverlay(
                                                         direction:
                                                             _PageArrowDirection
@@ -3032,12 +3034,16 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                             _goToPreviousStoryPage,
                                                         alwaysVisible:
                                                             _isYoungUser,
-                                                        buttonSize: _isYoungUser
-                                                            ? 64
-                                                            : 48,
-                                                        iconSize: _isYoungUser
+                                                        buttonSize: isNarrowArea
                                                             ? 44
-                                                            : 32,
+                                                            : (_isYoungUser
+                                                                ? 64
+                                                                : 48),
+                                                        iconSize: isNarrowArea
+                                                            ? 28
+                                                            : (_isYoungUser
+                                                                ? 44
+                                                                : 32),
                                                       ),
                                                     ),
                                                   // Right arrow (next page)
@@ -3047,9 +3053,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       right: 0,
                                                       top: 0,
                                                       bottom: 0,
-                                                      width: _isYoungUser
-                                                          ? 80
-                                                          : 56,
+                                                      width: isNarrowArea
+                                                          ? 48
+                                                          : (_isYoungUser
+                                                              ? 80
+                                                              : 56),
                                                       child: _PageArrowOverlay(
                                                         direction:
                                                             _PageArrowDirection
@@ -3058,12 +3066,16 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                             _goToNextStoryPage,
                                                         alwaysVisible:
                                                             _isYoungUser,
-                                                        buttonSize: _isYoungUser
-                                                            ? 64
-                                                            : 48,
-                                                        iconSize: _isYoungUser
+                                                        buttonSize: isNarrowArea
                                                             ? 44
-                                                            : 32,
+                                                            : (_isYoungUser
+                                                                ? 64
+                                                                : 48),
+                                                        iconSize: isNarrowArea
+                                                            ? 28
+                                                            : (_isYoungUser
+                                                                ? 44
+                                                                : 32),
                                                       ),
                                                     ),
                                                 ],
@@ -3445,8 +3457,10 @@ class _PostStoryActionBar extends StatelessWidget {
                 ),
               ),
             ),
-            // "Start Fresh" secondary link — only when character context is available
-            if (characterName != null && hasWizardData)
+            // "Start Fresh" secondary link — only when character context is available.
+            // Hidden for young users (Sprout/Explorer): duplicates the primary CTA's
+            // pop behavior and adds an extra string of small text the kid won't read.
+            if (characterName != null && hasWizardData && !isYoungUser)
               TextButton(
                 onPressed: onTellMeAnother,
                 child: Text(
@@ -3498,10 +3512,14 @@ class _PostStoryActionBar extends StatelessWidget {
                     color: Colors.white,
                     largeMode: true,
                   ),
+                  // Heart for young users — feelings-coded, not a filing-cabinet
+                  // bookmark icon. Once saved, the heart fills gold and the label
+                  // confirms with a child-friendly verb.
                   _ActionChip(
-                    icon:
-                        isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
-                    label: isSaved ? 'Saved ✓' : 'Save',
+                    icon: isSaved
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    label: isSaved ? 'Loved ✓' : 'Love it',
                     onTap: onSave,
                     color: isSaved ? AppColors.gold : Colors.white,
                     largeMode: true,
