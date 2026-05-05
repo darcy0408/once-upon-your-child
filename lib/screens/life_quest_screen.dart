@@ -55,6 +55,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   bool get _isSprout => ageBandFromAge(widget.childAge) == AgeBand.sprout;
   bool get _isExplorer => ageBandFromAge(widget.childAge) == AgeBand.explorer;
+  bool get _isAdventurer => ageBandFromAge(widget.childAge) == AgeBand.adventurer;
 
   /// Clouds that have at least one Sprout quest. Empty clouds (e.g. Sunny
   /// while no happy stories exist) are hidden from the entry grid so a
@@ -281,9 +282,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
         ),
-        // Coping Toolbox — Explorer only. Sprout has the cloud picker as its
-        // entry pattern; older bands get their own coping integration in story.
-        if (_isExplorer) _buildCopingToolbox(band),
+        // Coping Toolbox — Explorer + Adventurer. Sprout has the cloud picker
+        // as its entry pattern; Creator+ get reframed-language techniques in
+        // a future pass (current set is too cartoony for 12+).
+        if (_isExplorer || _isAdventurer) _buildCopingToolbox(band),
         // Quest cards or empty state
         if (quests.isEmpty)
           Expanded(

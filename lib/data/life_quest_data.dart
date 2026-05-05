@@ -199,6 +199,7 @@ const questLeftOut = LifeQuestScenario(
   segments: {
     'lo_start': QuestSegment(
       id: 'lo_start',
+      copingBreakId: 'belly_breath',
       content:
           'The cafeteria smells like Tuesday — burned pizza and cold milk. '
           'You spot your usual table by habit, the same way you always do, '
@@ -1010,6 +1011,7 @@ const questSchoolStress = LifeQuestScenario(
   segments: {
     'ss_start': QuestSegment(
       id: 'ss_start',
+      copingBreakId: 'grounding_54321',
       content:
           '8:47 PM.\n\n'
           'The test is in eleven hours and the textbook has been open '
@@ -1202,6 +1204,7 @@ const questSiblingConflict = LifeQuestScenario(
   segments: {
     'sc_start': QuestSegment(
       id: 'sc_start',
+      copingBreakId: 'volcano_breath',
       content:
           'You\'re in the middle of the good part.\n\n'
           'It doesn\'t matter what — homework, a drawing, a show '
@@ -1408,6 +1411,7 @@ const questBeingTeased = LifeQuestScenario(
   segments: {
     'bt_start': QuestSegment(
       id: 'bt_start',
+      copingBreakId: 'belly_breath',
       content:
           'The hallway between second and third period is pure noise — '
           'lockers slamming, sneakers squeaking, two hundred separate '
@@ -2550,6 +2554,7 @@ const questTryout = LifeQuestScenario(
   segments: {
     'tt_start': QuestSegment(
       id: 'tt_start',
+      copingBreakId: 'star_breath',
       content:
           'The sign-up sheet went up three weeks ago and you stared at it '
           'for four days before you wrote your name. Your handwriting looked '
@@ -5486,6 +5491,7 @@ const questBigBearHug = LifeQuestScenario(
           '«{companion} nudges your leg. »Your eyes feel hot.\n\n'
           'A small tear slips out. That\'s okay. '
           'Tears help when we feel sad.',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'bbh_c3a',
@@ -5566,6 +5572,7 @@ const questBigLoud = LifeQuestScenario(
           'Rain is tapping on the window.\n\n'
           'Your heart goes fast. '
           'The sound was so BIG.',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'bl_c1a',
@@ -5689,6 +5696,7 @@ const questMyTurnYourTurn = LifeQuestScenario(
           'Your hands squeeze into tight little fists. '
           'Your face feels hot.\n\n'
           'You really, really want that truck.',
+      copingBreakId: 'dragon_breath',
       choices: [
         QuestChoice(
           id: 'mt_c1a',
