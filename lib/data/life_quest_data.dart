@@ -2810,6 +2810,7 @@ const questThreeCrowd = LifeQuestScenario(
           '«{companion} walks up beside you. '
           '"You okay?" {companion} asks quietly. »\n\n'
           'What do you do?',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'tc_go_over',
@@ -2954,6 +2955,7 @@ const questBrokenThing = LifeQuestScenario(
           'But it\'s still broken.\n\n'
           '«{companion} freezes beside you. »\n\n'
           'What do you do?',
+      copingBreakId: 'hot_cocoa_breath',
       choices: [
         QuestChoice(
           id: 'bt_tell',
@@ -3094,6 +3096,7 @@ const questNotFair = LifeQuestScenario(
           'It\'s not fair.\n\n'
           '«{companion} glances over at you. »\n\n'
           'What do you do with all that feeling?',
+      copingBreakId: 'dragon_breath',
       choices: [
         QuestChoice(
           id: 'nf_say_it',
@@ -5839,6 +5842,7 @@ const questSiblingShine = LifeQuestScenario(
           'You sniff and nod.\n\n'
           'She sits next to you. "I noticed you got quiet outside. '
           'Are you feeling left out?"',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'ss_c2a',
@@ -5998,6 +6002,7 @@ const questLostPet = LifeQuestScenario(
           'Empty. Empty. Empty.\n\n'
           'Your eyes start to sting.\n\n'
           'You can keep looking alone. Or you can stop and get help.',
+      copingBreakId: 'grounding_54321',
       choices: [
         QuestChoice(
           id: 'lp_c3a',
@@ -6121,6 +6126,7 @@ const questMissingGrownup = LifeQuestScenario(
           'of the game with me?"\n\n'
           'You\'re not really in a game mood. But you\'re not really in an '
           'alone mood either.',
+      copingBreakId: 'hot_cocoa_breath',
       choices: [
         QuestChoice(
           id: 'mg_c2a',
