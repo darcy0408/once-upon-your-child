@@ -148,9 +148,9 @@ void main() {
       expect(find.text('You stand at the edge of the Enchanted Forest.'),
           findsOneWidget);
 
-      // Check progress indicator
-      // StorybookProgressIndicator uses 'Wake Up!' for page 1 by default
-      expect(find.textContaining('Wake Up!'), findsOneWidget);
+      // Check progress indicator falls back to neutral 'Page N' label
+      // when the segment doesn't carry a stage_label.
+      expect(find.textContaining('Page 1'), findsOneWidget);
 
       // Check choice buttons exist
       expect(find.textContaining('Choice 1'), findsOneWidget);
@@ -521,8 +521,8 @@ void main() {
 
       // Verify first segment
       expect(find.text('First segment content'), findsOneWidget);
-      // StorybookProgressIndicator uses 'Wake Up!' for page 1 by default
-      expect(find.textContaining('Wake Up!'), findsOneWidget);
+      // StorybookProgressIndicator shows neutral 'Page 1' fallback
+      expect(find.textContaining('Page 1'), findsOneWidget);
 
       // Make a choice
       final choiceButton = find.textContaining('Choice 1').first;
@@ -531,8 +531,8 @@ void main() {
 
       // Verify second segment
       expect(find.text('Second segment content'), findsOneWidget);
-      // StorybookProgressIndicator uses 'Play Time!' for page 2 by default
-      expect(find.textContaining('Play Time!'), findsOneWidget);
+      // StorybookProgressIndicator shows neutral 'Page 2' fallback
+      expect(find.textContaining('Page 2'), findsOneWidget);
       // First segment should not be visible (only current segment shown)
       expect(find.text('First segment content'), findsNothing);
     });

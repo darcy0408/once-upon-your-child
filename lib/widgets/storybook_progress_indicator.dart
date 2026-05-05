@@ -35,25 +35,15 @@ class StorybookProgressIndicator extends StatelessWidget {
   /// Whether the story is completed
   final bool isCompleted;
 
-  /// Get default stage label based on page number
+  /// Get default stage label based on page number.
+  ///
+  /// Stays genre-neutral: this widget is shared by linear and Pick-a-Path
+  /// stories, so the fallback can't imply a choice point. Callers that have
+  /// kid-friendly stage names (e.g. backend-supplied `stage_label`) should
+  /// pass them via [stageLabel].
   String get _defaultLabel {
     if (isCompleted) return 'The End!';
-
-    // Default fallback labels by page number
-    final labels = [
-      'Wake Up!',
-      'Play Time!',
-      'Pick a Path!',
-      'Follow the Glow!',
-      'Find the Star!',
-      'Big Choice!',
-    ];
-
-    if (currentPage > 0 && currentPage <= labels.length) {
-      return labels[currentPage - 1];
-    }
-
-    return 'Page $currentPage!';
+    return 'Page $currentPage';
   }
 
   @override
