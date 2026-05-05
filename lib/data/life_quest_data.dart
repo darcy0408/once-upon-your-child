@@ -143,6 +143,10 @@ const allLifeQuests = <LifeQuestScenario>[
   questNotFair,
   questSleepover,
   questMyTurnTalk,
+  questSiblingShine,
+  questLostPet,
+  questMissingGrownup,
+  questFirstHardThing,
   // Adventurer + Creator (ages 9-14)
   questTryout,
   questLeftOut,
@@ -5768,6 +5772,578 @@ const questMyTurnYourTurn = LifeQuestScenario(
           'Everybody smiles.\n\n'
           'Sharing is taking turns — '
           'and sometimes, trading.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST: When the Spotlight's Not on You  [Explorer: ages 6-8]
+// Sibling jealousy — a sibling gets the attention, the praise, the moment.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questSiblingShine = LifeQuestScenario(
+  id: 'sibling_shine',
+  title: "When the Spotlight's Not on You",
+  hook: 'Everyone is talking about your sister. You\'re right here too.',
+  emoji: '✨',
+  emotions: ['jealous', 'sad', 'angry', 'left out'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'ss_start',
+  grownupTip:
+      "Ask: 'Have you ever felt like everyone was looking at someone else? "
+      "What helped you feel seen again?'",
+  segments: {
+    'ss_start': QuestSegment(
+      id: 'ss_start',
+      content:
+          'Your little sister just learned to ride her bike.\n\n'
+          'Mom is clapping. Dad is filming on his phone. Grandma calls and '
+          'wants to hear the story three times.\n\n'
+          'You learned to ride your bike a long time ago. You learned to ride '
+          'with no hands last summer. Nobody is filming that today.\n\n'
+          '«{companion} sits next to you on the porch. {Pronoun} is quiet too.»\n\n'
+          'Your chest feels tight. Like there\'s not enough room for how big '
+          'you feel right now.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'ss_c1a',
+          text: 'Stomp inside and slam the door',
+          nextSegmentId: 'ss_storm',
+        ),
+        QuestChoice(
+          id: 'ss_c1b',
+          text: 'Tell Mom you feel left out',
+          nextSegmentId: 'ss_say',
+        ),
+      ],
+    ),
+
+    'ss_storm': QuestSegment(
+      id: 'ss_storm',
+      content:
+          'You stomp inside. The door makes a big noise behind you.\n\n'
+          'You sit on your bed. Your eyes are hot.\n\n'
+          'After a few minutes, Mom knocks.\n\n'
+          '"Hey, kiddo. Can I come in?"\n\n'
+          'You sniff and nod.\n\n'
+          'She sits next to you. "I noticed you got quiet outside. '
+          'Are you feeling left out?"',
+      choices: [
+        QuestChoice(
+          id: 'ss_c2a',
+          text: 'Nod and let her hug you',
+          nextSegmentId: 'ss_hug',
+        ),
+        QuestChoice(
+          id: 'ss_c2b',
+          text: 'Say "Why is everyone only excited about her?"',
+          nextSegmentId: 'ss_words',
+        ),
+      ],
+    ),
+
+    'ss_say': QuestSegment(
+      id: 'ss_say',
+      content:
+          'You take a big breath.\n\n'
+          '"Mom?" you say. "I feel kind of left out."\n\n'
+          'Mom looks up. Right at you. Like the whole bike thing got paused.\n\n'
+          '"Oh, honey. Tell me more."\n\n'
+          'It\'s scary to say it out loud. But she\'s listening now.',
+      choices: [
+        QuestChoice(
+          id: 'ss_c3a',
+          text: 'Tell her you wanted her to see you too',
+          nextSegmentId: 'ss_seen',
+        ),
+        QuestChoice(
+          id: 'ss_c3b',
+          text: 'Just shrug — saying it was already enough',
+          nextSegmentId: 'ss_shrug',
+        ),
+      ],
+    ),
+
+    'ss_hug': QuestSegment(
+      id: 'ss_hug',
+      content:
+          'You nod. Mom wraps her arms around you.\n\n'
+          'You don\'t say anything for a while. You don\'t have to.\n\n'
+          'Then she says, "You know what? You learned to ride with no hands. '
+          'Want to show me again? Just us?"\n\n'
+          'Maybe. In a minute.\n\n'
+          'For now, the hug is enough.',
+      isEnding: true,
+    ),
+
+    'ss_words': QuestSegment(
+      id: 'ss_words',
+      content:
+          '"Why is everyone only excited about her?" you ask.\n\n'
+          'Mom is quiet for a moment.\n\n'
+          '"Today is her big day," she says. "Tomorrow could be yours. '
+          'And last summer was yours, when you went no hands. Remember? '
+          'Grandma still talks about that."\n\n'
+          'You didn\'t know Grandma still talked about that.\n\n'
+          'There\'s enough room. You just couldn\'t see it for a minute.',
+      isEnding: true,
+    ),
+
+    'ss_seen': QuestSegment(
+      id: 'ss_seen',
+      content:
+          '"I wanted you to see me too," you say.\n\n'
+          'Your voice wobbles a little. That\'s okay.\n\n'
+          'Mom nods slowly. "I see you. I always see you. Sometimes the noise '
+          'gets loud and you can\'t tell — but I do."\n\n'
+          'She squeezes your hand.\n\n'
+          'Brave words go a long way. '
+          'Especially the wobbly ones.',
+      isEnding: true,
+    ),
+
+    'ss_shrug': QuestSegment(
+      id: 'ss_shrug',
+      content:
+          'You shrug. You\'re not sure what else to say.\n\n'
+          'Mom waits. Then she just sits with you.\n\n'
+          '"Thanks for telling me," she says. "That took courage."\n\n'
+          'You didn\'t fix anything. You didn\'t say much.\n\n'
+          'But the tight feeling in your chest got a little smaller. '
+          'Saying it out loud was the magic.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST: Where Did Buddy Go?  [Explorer: ages 6-8]
+// Lost pet — temporary, scary, happily resolved.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questLostPet = LifeQuestScenario(
+  id: 'lost_pet',
+  title: 'Where Did Buddy Go?',
+  hook: "You called and called. Your pet didn't come.",
+  emoji: '🐾',
+  emotions: ['scared', 'sad', 'worried'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'lp_start',
+  grownupTip:
+      "Ask: 'When something feels really scary, who can you tell? What helped today?'",
+  segments: {
+    'lp_start': QuestSegment(
+      id: 'lp_start',
+      content:
+          'You whistle the special whistle.\n\n'
+          'The one that always makes Pepper come running.\n\n'
+          'Nothing.\n\n'
+          'You whistle again. Louder.\n\n'
+          'The yard is just yard. The bushes are just bushes. Pepper isn\'t '
+          'under the porch. Pepper isn\'t by the back door.\n\n'
+          'Your heart starts doing that fast thing. Bump-bump-bump-bump.\n\n'
+          '«{companion} stands beside you, ears up.»\n\n'
+          'What do you do first?',
+      choices: [
+        QuestChoice(
+          id: 'lp_c1a',
+          text: 'Run inside and tell a grown-up right away',
+          nextSegmentId: 'lp_tell',
+        ),
+        QuestChoice(
+          id: 'lp_c1b',
+          text: 'Look in all your secret hiding places first',
+          nextSegmentId: 'lp_hunt',
+        ),
+      ],
+    ),
+
+    'lp_tell': QuestSegment(
+      id: 'lp_tell',
+      content:
+          'You run inside. Your shoes are still on the welcome mat behind you.\n\n'
+          '"Dad! Pepper\'s not in the yard!"\n\n'
+          'Dad puts down his coffee right away. "Okay. Okay. Let\'s think."\n\n'
+          'He grabs his shoes. "When did you last see Pepper?"',
+      choices: [
+        QuestChoice(
+          id: 'lp_c2a',
+          text: 'Try to remember calmly — by breakfast?',
+          nextSegmentId: 'lp_clue',
+        ),
+        QuestChoice(
+          id: 'lp_c2b',
+          text: 'Get teary — you can\'t remember',
+          nextSegmentId: 'lp_cry',
+        ),
+      ],
+    ),
+
+    'lp_hunt': QuestSegment(
+      id: 'lp_hunt',
+      content:
+          'You check under the porch. Behind the shed. By the recycling bin '
+          'where Pepper sometimes naps.\n\n'
+          'Empty. Empty. Empty.\n\n'
+          'Your eyes start to sting.\n\n'
+          'You can keep looking alone. Or you can stop and get help.',
+      choices: [
+        QuestChoice(
+          id: 'lp_c3a',
+          text: 'Stop and call out for a grown-up',
+          nextSegmentId: 'lp_help',
+        ),
+        QuestChoice(
+          id: 'lp_c3b',
+          text: 'Check one more spot — the front yard',
+          nextSegmentId: 'lp_front',
+        ),
+      ],
+    ),
+
+    'lp_clue': QuestSegment(
+      id: 'lp_clue',
+      content:
+          'You take a slow breath. "I think... right after breakfast. '
+          'When the gate was open for the trash."\n\n'
+          'Dad nods. "Good remembering."\n\n'
+          'Together you walk down the sidewalk, calling Pepper\'s name.\n\n'
+          'Three houses down, a tail. A wag. A guilty face full of grass.\n\n'
+          'Pepper. Pepper, Pepper, Pepper.\n\n'
+          'You hug your dog so hard. '
+          'Asking for help made everything okay again.',
+      isEnding: true,
+    ),
+
+    'lp_cry': QuestSegment(
+      id: 'lp_cry',
+      content:
+          'Tears spill over. "I — I — I can\'t remember!"\n\n'
+          'Dad kneels down. "Hey. Hey. It\'s okay to cry. We\'re going to find '
+          'Pepper. You don\'t have to be perfect to help."\n\n'
+          'He hands you a tissue. You both walk outside together.\n\n'
+          'Pepper is pawing at the gate from the OUTSIDE.\n\n'
+          'You sob and laugh at the same time.\n\n'
+          'You didn\'t have to know everything. '
+          'You just had to tell someone.',
+      isEnding: true,
+    ),
+
+    'lp_help': QuestSegment(
+      id: 'lp_help',
+      content:
+          'You stop. You wipe your eyes.\n\n'
+          '"DAAAD!" you call. "Dad, come help!"\n\n'
+          'He\'s there in seconds. "What\'s wrong?"\n\n'
+          '"Pepper. I can\'t find Pepper."\n\n'
+          'He doesn\'t panic. He says, "Good job telling me. Two of us looking '
+          'is way better than one."\n\n'
+          'You find Pepper together, behind the neighbor\'s flowerpots.\n\n'
+          'Your bravest move was knowing when to ask.',
+      isEnding: true,
+    ),
+
+    'lp_front': QuestSegment(
+      id: 'lp_front',
+      content:
+          'You jog around to the front yard.\n\n'
+          'Pepper is on the front step.\n\n'
+          'Just sitting there. Like, "Where have YOU been?"\n\n'
+          'You drop down and bury your face in Pepper\'s fur.\n\n'
+          'Your heart is still doing the fast thing — but it\'s slowing now.\n\n'
+          'Next time, you\'ll tell a grown-up first. '
+          'But this time, your dog was just one yard away the whole time.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST: Three Sleeps Until  [Explorer: ages 6-8]
+// Missing a grown-up who's away — work trip, hospital, deployment.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMissingGrownup = LifeQuestScenario(
+  id: 'missing_grownup',
+  title: 'Three Sleeps Until',
+  hook: 'Mom is away for a few days. The house feels different.',
+  emoji: '🏠',
+  emotions: ['sad', 'lonely', 'worried'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'mg_start',
+  grownupTip:
+      "Ask: 'Who do you miss the most when they\\'re far away? "
+      "What helps the missing feeling get smaller?'",
+  segments: {
+    'mg_start': QuestSegment(
+      id: 'mg_start',
+      content:
+          'Mom\'s away for work. Three more sleeps.\n\n'
+          'You knew it was happening. You helped her pack. You waved at the '
+          'window when the taxi pulled away.\n\n'
+          'But now it\'s the second night. And the house sounds different. '
+          'The kitchen is quiet. The chair where Mom reads is empty. '
+          'Even the fridge hums different.\n\n'
+          '«You squeeze {companion} a little tighter than usual.»\n\n'
+          'A big lump comes up in your throat.\n\n'
+          'What do you do with the missing feeling?',
+      choices: [
+        QuestChoice(
+          id: 'mg_c1a',
+          text: 'Curl up and hide it under the blanket',
+          nextSegmentId: 'mg_hide',
+        ),
+        QuestChoice(
+          id: 'mg_c1b',
+          text: 'Go find Dad and tell him you miss her',
+          nextSegmentId: 'mg_share',
+        ),
+      ],
+    ),
+
+    'mg_hide': QuestSegment(
+      id: 'mg_hide',
+      content:
+          'You burrow under the blanket. The missing feeling is still there. '
+          'It might even be growing.\n\n'
+          'After a while, Dad knocks softly. "Hey. Want to come watch the end '
+          'of the game with me?"\n\n'
+          'You\'re not really in a game mood. But you\'re not really in an '
+          'alone mood either.',
+      choices: [
+        QuestChoice(
+          id: 'mg_c2a',
+          text: 'Come out and sit on the couch with him',
+          nextSegmentId: 'mg_couch',
+        ),
+        QuestChoice(
+          id: 'mg_c2b',
+          text: 'Ask if you can call Mom to say goodnight',
+          nextSegmentId: 'mg_call',
+        ),
+      ],
+    ),
+
+    'mg_share': QuestSegment(
+      id: 'mg_share',
+      content:
+          'You pad into the living room. Dad looks up.\n\n'
+          '"I miss Mom," you say. Your voice is small.\n\n'
+          'Dad pats the spot next to him. "Yeah. Me too."\n\n'
+          'You didn\'t know Dad missed her. He\'s a grown-up. You thought maybe '
+          'grown-ups don\'t miss as hard.\n\n'
+          'They do. They just hide it better sometimes.',
+      choices: [
+        QuestChoice(
+          id: 'mg_c3a',
+          text: "Ask Dad to tell you a story about Mom when she was little",
+          nextSegmentId: 'mg_story',
+        ),
+        QuestChoice(
+          id: 'mg_c3b',
+          text: 'Just sit with him and watch the rain',
+          nextSegmentId: 'mg_quiet',
+        ),
+      ],
+    ),
+
+    'mg_couch': QuestSegment(
+      id: 'mg_couch',
+      content:
+          'You shuffle out and flop on the couch.\n\n'
+          'Dad doesn\'t make you talk. He just shares his blanket.\n\n'
+          'After a while, you say, "I miss Mom."\n\n'
+          'Dad nods. "I know, kiddo. Me too. Two more sleeps."\n\n'
+          'You count the sleeps on your fingers like you\'re little again.\n\n'
+          'Two isn\'t very many. Two is doable.',
+      isEnding: true,
+    ),
+
+    'mg_call': QuestSegment(
+      id: 'mg_call',
+      content:
+          'Dad nods and dials. Mom picks up on the second ring.\n\n'
+          '"Hey, baby! I was just thinking about you."\n\n'
+          'You tell her about the spelling test. About what you had for dinner. '
+          'About how the cat tried to drink your milk.\n\n'
+          'Mom laughs. You laugh.\n\n'
+          'Two sleeps from now, you\'ll see her face for real. '
+          'Tonight, you got her voice. '
+          'And her voice helps a lot.',
+      isEnding: true,
+    ),
+
+    'mg_story': QuestSegment(
+      id: 'mg_story',
+      content:
+          '"Tell me a story about Mom when she was little," you say.\n\n'
+          'Dad lights up. "Ohhh, I have GOOD ones."\n\n'
+          'He tells you about the time Mom climbed a tree and got stuck. '
+          'About her first dog. About the song she used to make up about '
+          'spaghetti.\n\n'
+          'You laugh until your stomach hurts.\n\n'
+          'Mom feels close again, even though she\'s far away.\n\n'
+          'Stories are a kind of magic for missing.',
+      isEnding: true,
+    ),
+
+    'mg_quiet': QuestSegment(
+      id: 'mg_quiet',
+      content:
+          'You don\'t say anything else for a while. Just lean against Dad. '
+          'Just watch the rain make stripes on the window.\n\n'
+          'It\'s okay to be sad.\n\n'
+          'It\'s okay to miss someone.\n\n'
+          'It\'s also okay to not need to fix the missing right away. '
+          'Sometimes you just sit with it. '
+          'Sometimes you sit with it next to someone.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST: The First Try  [Explorer: ages 6-8]
+// First-time-hard-thing — frustration with a new skill, persistence vs giving up.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questFirstHardThing = LifeQuestScenario(
+  id: 'first_hard_thing',
+  title: 'The First Try',
+  hook: 'You tried. It went bad. You want to throw it across the room.',
+  emoji: '🎈',
+  emotions: ['frustrated', 'embarrassed', 'angry', 'sad'],
+  recommendedBands: [AgeBand.explorer],
+  startSegmentId: 'fh_start',
+  grownupTip:
+      "Ask: 'Tell me about a time something was hard at first. "
+      "What made you keep trying — or what helped you take a break?'",
+  segments: {
+    'fh_start': QuestSegment(
+      id: 'fh_start',
+      content:
+          'You\'re trying to ride a skateboard for the first time.\n\n'
+          'You step on. You tip. You fall.\n\n'
+          'You step on. You tip. You fall.\n\n'
+          'Your knee stings. Your hands are red. There\'s a tiny crowd of kids '
+          'at the playground watching, not even watching, just being there, '
+          'but it FEELS like watching.\n\n'
+          '«{companion} sits on the bench, patient.»\n\n'
+          'Your eyes get hot. The skateboard feels like a dumb piece of wood '
+          'right now.\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'fh_c1a',
+          text: "Throw the skateboard down. You're done!",
+          nextSegmentId: 'fh_quit',
+        ),
+        QuestChoice(
+          id: 'fh_c1b',
+          text: 'Sit down for a minute and breathe',
+          nextSegmentId: 'fh_pause',
+        ),
+      ],
+    ),
+
+    'fh_quit': QuestSegment(
+      id: 'fh_quit',
+      content:
+          'You shove the skateboard. It clatters across the pavement.\n\n'
+          'You walk away with your fists tight.\n\n'
+          'Half a block later, you stop. Your chest feels heavy.\n\n'
+          'You\'re not less mad. You\'re just farther from your skateboard.\n\n'
+          'A grown-up\'s voice in your head says: "Big feelings are okay. '
+          'Big feelings don\'t have to drive."\n\n'
+          'What now?',
+      choices: [
+        QuestChoice(
+          id: 'fh_c2a',
+          text: 'Go back and pick up the skateboard',
+          nextSegmentId: 'fh_back',
+        ),
+        QuestChoice(
+          id: 'fh_c2b',
+          text: 'Walk home and try again tomorrow',
+          nextSegmentId: 'fh_tomorrow',
+        ),
+      ],
+    ),
+
+    'fh_pause': QuestSegment(
+      id: 'fh_pause',
+      content:
+          'You sit on the curb. Your skateboard sits next to you.\n\n'
+          'You take a big breath in. A long breath out.\n\n'
+          'Another one.\n\n'
+          'You watch a leaf skitter across the parking lot.\n\n'
+          'The mad-feeling is still there. But it\'s smaller now. Like it had '
+          'too much air before, and you let some of it out.',
+      choices: [
+        QuestChoice(
+          id: 'fh_c3a',
+          text: 'Try one more time — just one little push',
+          nextSegmentId: 'fh_one_more',
+        ),
+        QuestChoice(
+          id: 'fh_c3b',
+          text: 'Save it for tomorrow. Today was a try.',
+          nextSegmentId: 'fh_enough',
+        ),
+      ],
+    ),
+
+    'fh_back': QuestSegment(
+      id: 'fh_back',
+      content:
+          'You turn around and walk back.\n\n'
+          'The skateboard is right where you threw it. Nobody is laughing. '
+          'Nobody actually noticed.\n\n'
+          'You pick it up. You don\'t step on it. You just hold it.\n\n'
+          '"Tomorrow," you say to nobody.\n\n'
+          'And that counts. Coming back to pick it up — that\'s the brave part.',
+      isEnding: true,
+    ),
+
+    'fh_tomorrow': QuestSegment(
+      id: 'fh_tomorrow',
+      content:
+          'You walk home. Slow. The mad-feeling fades a little with every step.\n\n'
+          'When you get home, Dad sees your face. He doesn\'t ask twenty '
+          'questions. He just says, "Want a snack?"\n\n'
+          'You nod.\n\n'
+          'You eat crackers. You decide skateboards are stupid. Then later, '
+          'right before bed, you decide they\'re only kind of stupid.\n\n'
+          'Tomorrow is a new try.',
+      isEnding: true,
+    ),
+
+    'fh_one_more': QuestSegment(
+      id: 'fh_one_more',
+      content:
+          'You stand up. You step on the skateboard.\n\n'
+          'You push — just one push. You wobble.\n\n'
+          'You DON\'T fall.\n\n'
+          'You roll about three feet and step off.\n\n'
+          'Three feet! Three whole feet!\n\n'
+          'You let out a laugh you didn\'t mean to.\n\n'
+          'Sometimes the difference between "I can\'t" and "I can a little" '
+          'is one breath and one more try.',
+      isEnding: true,
+    ),
+
+    'fh_enough': QuestSegment(
+      id: 'fh_enough',
+      content:
+          'You stand up. You tuck the skateboard under your arm.\n\n'
+          '"Today was a try," you say to yourself.\n\n'
+          'You walk home. You don\'t feel great. You don\'t feel bad either. '
+          'You feel like a kid who tried something hard and stopped before '
+          'it broke you.\n\n'
+          'That is NOT giving up.\n\n'
+          'That\'s called knowing yourself. Tomorrow is another day.',
       isEnding: true,
     ),
   },
