@@ -498,7 +498,8 @@ class HeroScenePage extends StatelessWidget {
       ),
       SceneButtonData(
         id: 'big_feelings_quest',
-        label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
+        label: scenarioById('big_feelings_quest')?.titleForAge(age) ??
+            (band.band == AgeBand.sprout ? 'Big Feelings' : 'Life Quest'),
         normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
         pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
         thematicQuestion: thematicQuestionFor('big_feelings_quest'),
