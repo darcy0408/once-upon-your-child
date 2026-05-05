@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-05 | 00:02 | ebc0 | main | Fix misleading Pick a Path badge on linear stories | [link](docs/sessions/2026-05-05-0002-ebc0.md) |
 | 2026-05-03 | 23:50 | 2f3d | main | GIT_MAINTENANCE: 6 dep patches + dependabot auto-cleanup observed | [link](docs/sessions/2026-05-03-2350-2f3d.md) |
 | 2026-05-03 | 23:33 | 8580 | main | MT-035 root-cause investigation (anon UI verification blocked) | [link](docs/sessions/2026-05-03-2333-8580.md) |
 | 2026-05-03 | 23:14 | e61a | main | Sprout loading-screen mini-game extension + early-reader UX consult | [link](docs/sessions/2026-05-03-2314-e61a.md) |
