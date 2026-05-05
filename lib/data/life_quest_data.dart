@@ -3267,6 +3267,7 @@ const questSleepover = LifeQuestScenario(
           'The missing feeling gets bigger, not smaller.\n\n'
           '«{companion} whispers, "You okay?" »\n\n'
           'What do you do now?',
+      copingBreakId: 'star_breath',
       choices: [
         QuestChoice(
           id: 'gf_call',
