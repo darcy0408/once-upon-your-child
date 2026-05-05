@@ -27,152 +27,161 @@ class StoryBookPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.gold.withValues(alpha: 0.3),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Scale chrome to viewport so text actually fits on small phones.
+        // Below ~340dp the fixed 40px side padding swallowed half the page.
+        final width = constraints.maxWidth;
+        final isTiny = width < 340;
+        final isCompact = width < 480;
+        final spineWidth = isTiny ? 12.0 : (isCompact ? 20.0 : 30.0);
+        final ornamentSize = isTiny ? 24.0 : (isCompact ? 32.0 : 40.0);
+        final defaultPadding = isTiny
+            ? const EdgeInsets.fromLTRB(18, 26, 18, 22)
+            : (isCompact
+                ? const EdgeInsets.fromLTRB(26, 34, 26, 30)
+                : const EdgeInsets.fromLTRB(40, 50, 40, 40));
+        final effectiveShowDecorations = showDecorations && !isTiny;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(isCompact ? 16 : 20),
+            border: Border.all(
+              color: AppColors.gold.withValues(alpha: 0.3),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: AppColors.gold.withValues(alpha: 0.1),
+                blurRadius: 0,
+                spreadRadius: 4,
+                offset: const Offset(0, 0),
+              ),
+            ],
           ),
-          BoxShadow(
-            color: AppColors.gold.withValues(alpha: 0.1),
-            blurRadius: 0,
-            spreadRadius: 4,
-            offset: const Offset(0, 0),
+          child: Stack(
+            children: [
+              // Spine shadow on the left edge.
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: spineWidth,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.1),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Edge highlight (top/right).
+              Positioned(
+                right: 2,
+                top: 2,
+                bottom: 2,
+                width: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.transparent,
+                        Colors.white.withValues(alpha: 0.2),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Paper texture overlay.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: const PaperTexturePainter(
+                      opacity: 0.05,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Main content.
+              Padding(
+                padding: contentPadding ?? defaultPadding,
+                child: child,
+              ),
+
+              // Second pass paper texture for warmth.
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: const PaperTexturePainter(
+                      opacity: 0.04,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Corner ornaments — sized to viewport, hidden on the tiniest phones.
+              if (effectiveShowDecorations) ...[
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: CustomPaint(
+                    size: Size(ornamentSize, ornamentSize),
+                    painter: BookCornerPainter(
+                      cornerPosition: CornerPosition.topLeft,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: CustomPaint(
+                    size: Size(ornamentSize, ornamentSize),
+                    painter: BookCornerPainter(
+                      cornerPosition: CornerPosition.topRight,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: CustomPaint(
+                    size: Size(ornamentSize, ornamentSize),
+                    painter: BookCornerPainter(
+                      cornerPosition: CornerPosition.bottomLeft,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: CustomPaint(
+                    size: Size(ornamentSize, ornamentSize),
+                    painter: BookCornerPainter(
+                      cornerPosition: CornerPosition.bottomRight,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Spine shadow (Inner shadow on the left/right depending on page side)
-          // For simplicity, we add a subtle spine shadow on the left
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 30,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Edge highlight (Top/Right edge highlight)
-          Positioned(
-            right: 2,
-            top: 2,
-            bottom: 2,
-            width: 4,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Colors.transparent,
-                    Colors.white.withValues(alpha: 0.2),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Paper Texture Overlay
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: const PaperTexturePainter(
-                  opacity: 0.05,
-                ),
-              ),
-            ),
-          ),
-
-          // Main content
-          Padding(
-            padding: contentPadding ??
-                const EdgeInsets.fromLTRB(40, 50, 40, 40),
-            child: child,
-          ),
-
-          // Paper texture overlay
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: const PaperTexturePainter(
-                  opacity: 0.04,
-                ),
-              ),
-            ),
-          ),
-
-          // Corner ornaments
-          if (showDecorations) ...[
-            // Top-left corner
-            Positioned(
-              top: 0,
-              left: 0,
-              child: CustomPaint(
-                size: const Size(40, 40),
-                painter: BookCornerPainter(
-                  cornerPosition: CornerPosition.topLeft,
-                ),
-              ),
-            ),
-
-            // Top-right corner
-            Positioned(
-              top: 0,
-              right: 0,
-              child: CustomPaint(
-                size: const Size(40, 40),
-                painter: BookCornerPainter(
-                  cornerPosition: CornerPosition.topRight,
-                ),
-              ),
-            ),
-
-            // Bottom-left corner
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: CustomPaint(
-                size: const Size(40, 40),
-                painter: BookCornerPainter(
-                  cornerPosition: CornerPosition.bottomLeft,
-                ),
-              ),
-            ),
-
-            // Bottom-right corner
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: CustomPaint(
-                size: const Size(40, 40),
-                painter: BookCornerPainter(
-                  cornerPosition: CornerPosition.bottomRight,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -139,6 +139,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   bool _isFavorite = false;
   bool _isLoading = true;
   bool _isSaved = false; // tracks whether story has been saved to library
+  // Local storyId assigned by OfflineStoryService.saveStory when the wizard
+  // flow has no pre-existing widget.storyId. Used so post-save actions like
+  // toggling the heart icon can target the saved record.
+  String? _savedLocalStoryId;
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
@@ -224,11 +228,24 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return age;
   }
 
+  /// True when an illustration is actually rendered on the page (vs merely
+  /// possible based on subscription tier). The "Picture Book" badge should
+  /// only claim that label when art is truly present — otherwise, the badge
+  /// promises something the BYOK upsell is simultaneously gating.
+  bool get _hasRenderedIllustrations =>
+      _inlineIllustrations.isNotEmpty ||
+      (_cachedIllustrations?.isNotEmpty ?? false);
+
   String _readingLevelLabel(AgeBandThemeData band) {
     if (widget.isLearningToReadMode) return 'Reading Level: Read Along';
     switch (band.band) {
       case AgeBand.sprout:
-        return 'Reading Level: Picture-Book';
+        // Honest copy: only show "Picture Book" when art is actually
+        // rendered. When illustrations are gated behind BYOK, the page is
+        // really a "Read Along" experience.
+        return _hasRenderedIllustrations
+            ? 'Reading Level: Picture Book'
+            : 'Reading Level: Read Along';
       case AgeBand.explorer:
         return 'Reading Level: Early Reader';
       case AgeBand.adventurer:
@@ -544,9 +561,26 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     if (ageBandFromAge(_effectiveAge).index <= AgeBand.explorer.index) {
       _initAutoTts();
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if ((widget.characterAge ?? 99) <= 5 && !_isSaved && widget.storyId == null && mounted) {
-        _saveStory();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Auto-save Sprout-band stories. We use the age-band helper rather than
+      // a raw age comparison because widget.characterAge can be the wizard
+      // default (8) when the user is actually a Sprout — fall back to the
+      // user_age pref so the gate still fires.
+      if (!mounted || _isSaved || widget.storyId != null) return;
+      var age = widget.characterAge;
+      if (age == null || age >= 6) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final prefAge = prefs.getInt('user_age');
+          if (prefAge != null) age = prefAge;
+        } catch (_) {}
+      }
+      final resolvedAge = age ?? 99;
+      if (ageBandFromAge(resolvedAge) == AgeBand.sprout &&
+          !_isSaved &&
+          widget.storyId == null &&
+          mounted) {
+        await _saveStory();
       }
     });
   }
@@ -1324,7 +1358,17 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
         final storyLocal = StoryLocal.fromSavedStory(newStory);
         await _offlineService.saveStory(storyLocal);
-        if (mounted) setState(() => _isSaved = true);
+        // saveStory assigns a millisecond-timestamp storyId in-place when the
+        // incoming record has none — capture it so _toggleFavorite (and any
+        // other post-save action) can act on the new local row.
+        if (mounted) {
+          setState(() {
+            _isSaved = true;
+            _savedLocalStoryId = storyLocal.identifier;
+          });
+        } else {
+          _savedLocalStoryId = storyLocal.identifier;
+        }
 
         debugPrint(
             '✅ Story saved locally with Rhyme: ${widget.isRhyming}, Learn: ${widget.isLearningToReadMode}');
@@ -1582,7 +1626,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   children: _remixScenarios
                       .map((s) => _RemixTile(
                             emoji: s['emoji']!,
-                            label: s['label']!,
+                            label: (s['id'] == 'big_feelings_quest' &&
+                                    band.band == AgeBand.sprout)
+                                ? 'Big Feelings'
+                                : s['label']!,
                             band: band,
                             onTap: () {
                               Navigator.pop(context);
@@ -1721,10 +1768,46 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (widget.storyId == null) return;
+    // Wizard-generated stories have no widget.storyId. Save first so the
+    // record exists, then toggle the heart on the freshly assigned local id.
+    var targetId = widget.storyId ?? _savedLocalStoryId;
+    if (targetId == null) {
+      if (!_isSaved) {
+        await _saveStory();
+        targetId = widget.storyId ?? _savedLocalStoryId;
+      } else {
+        // Edge case: previously marked saved but we never captured the id
+        // (e.g. older session state). Fall back by looking up a record that
+        // matches this story so the heart still works.
+        try {
+          final stories = await _offlineService.getAllStories();
+          final match = stories.firstWhere(
+            (s) =>
+                s.title == widget.title && s.storyText == widget.storyText,
+            orElse: () => stories.isNotEmpty
+                ? stories.first
+                : throw StateError('no stories'),
+          );
+          targetId = match.identifier;
+          _savedLocalStoryId = targetId;
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Could not update favorite — please try saving the story first.'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      }
+    }
+    if (targetId == null) return;
 
-    await _offlineService.toggleFavorite(widget.storyId!);
-    setState(() => _isFavorite = !_isFavorite);
+    await _offlineService.toggleFavorite(targetId);
+    if (mounted) setState(() => _isFavorite = !_isFavorite);
     _trackResultAction(
       _isFavorite ? 'favorite_added' : 'favorite_removed',
     );
@@ -1819,6 +1902,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
         child: SingleChildScrollView(
+          // Per-index key forces a fresh Scrollable on page change so scroll
+          // offset from the previous page doesn't bleed onto the next.
+          key: ValueKey('story-page-scroll-$index'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -2040,6 +2126,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       showDecorations: !_highContrastMode,
       child: Center(
         child: SingleChildScrollView(
+          key: const ValueKey('story-end-of-story-scroll'),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -2668,17 +2755,38 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
-                      child: Padding(
+                      child: LayoutBuilder(
+                        builder: (context, areaConstraints) {
+                          // On narrow phones, reclaim every pixel for the page itself.
+                          final isNarrowArea = areaConstraints.maxWidth < 400;
+                          final isShortArea = areaConstraints.maxHeight < 560;
+                          final outerHorizontal = isNarrowArea
+                              ? band.space(8)
+                              : band.space(24);
+                          final titleSize = isNarrowArea
+                              ? band.heading(20)
+                              : band.heading(28);
+                          final titleSpacing = isShortArea
+                              ? band.space(8)
+                              : band.space(20);
+                          // Sprout doesn't read; the reading-level pill is for parents
+                          // and only adds clutter on the kid's reading screen. Hide it
+                          // for sprout, and on any short viewport where space is precious.
+                          final showReadingLevel =
+                              band.band != AgeBand.sprout && !isShortArea;
+                          return Padding(
                         padding:
-                            EdgeInsets.symmetric(horizontal: band.space(24)),
+                            EdgeInsets.symmetric(horizontal: outerHorizontal),
                         child: Column(
                           children: [
-                            SizedBox(height: band.space(20)),
+                            SizedBox(height: titleSpacing),
                             Text(
                               widget.title,
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.merriweather(
-                                fontSize: band.heading(28),
+                                fontSize: titleSize,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 shadows: [
@@ -2690,8 +2798,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                 ],
                               ),
                             ),
-                            SizedBox(height: band.space(8)),
-                            Container(
+                            if (showReadingLevel) ...[
+                              SizedBox(height: band.space(8)),
+                              Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: band.space(12),
                                 vertical: band.space(6),
@@ -2713,7 +2822,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: band.space(24)),
+                            ],
+                            SizedBox(
+                                height: isShortArea
+                                    ? band.space(12)
+                                    : band.space(24)),
                             Expanded(
                               child: _isLoading
                                   ? const Center(
@@ -2805,7 +2918,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       left: 0,
                                                       top: 0,
                                                       bottom: 0,
-                                                      width: 56,
+                                                      width: _isYoungUser
+                                                          ? 80
+                                                          : 56,
                                                       child: _PageArrowOverlay(
                                                         direction:
                                                             _PageArrowDirection
@@ -2814,6 +2929,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                             _goToPreviousStoryPage,
                                                         alwaysVisible:
                                                             _isYoungUser,
+                                                        buttonSize: _isYoungUser
+                                                            ? 64
+                                                            : 48,
+                                                        iconSize: _isYoungUser
+                                                            ? 44
+                                                            : 32,
                                                       ),
                                                     ),
                                                   // Right arrow (next page)
@@ -2823,7 +2944,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       right: 0,
                                                       top: 0,
                                                       bottom: 0,
-                                                      width: 56,
+                                                      width: _isYoungUser
+                                                          ? 80
+                                                          : 56,
                                                       child: _PageArrowOverlay(
                                                         direction:
                                                             _PageArrowDirection
@@ -2832,6 +2955,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                             _goToNextStoryPage,
                                                         alwaysVisible:
                                                             _isYoungUser,
+                                                        buttonSize: _isYoungUser
+                                                            ? 64
+                                                            : 48,
+                                                        iconSize: _isYoungUser
+                                                            ? 44
+                                                            : 32,
                                                       ),
                                                     ),
                                                 ],
@@ -2936,6 +3065,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                             const SizedBox(height: 24),
                           ],
                         ),
+                      );
+                        },
                       ),
                     ),
                   ),
@@ -2954,6 +3085,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,
+                isOnEndPage: _currentPageIndex >= _totalPages - 1,
                 characterName: widget.characterName,
                 hasWizardData: widget.wizardData != null,
                 hasExplicitlyRated: _hasExplicitlyRated,
@@ -2999,6 +3131,7 @@ class _PostStoryActionBar extends StatelessWidget {
   final bool isFreeTier;
   final bool hasIllustrations;
   final bool isYoungUser;
+  final bool isOnEndPage;
   final String? characterName;
   final bool hasWizardData;
   final bool hasExplicitlyRated;
@@ -3016,6 +3149,7 @@ class _PostStoryActionBar extends StatelessWidget {
     required this.isFreeTier,
     required this.hasIllustrations,
     this.isYoungUser = false,
+    this.isOnEndPage = false,
     this.characterName,
     required this.hasWizardData,
     required this.hasExplicitlyRated,
@@ -3033,10 +3167,26 @@ class _PostStoryActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    // Sprout (2-5) gets bigger CTA padding and label so the button feels
+    // friendly to small fingers and easy to spot.
+    final isSprout = band.band == AgeBand.sprout;
+    final primaryCtaVerticalPadding = isSprout ? 22.0 : (isYoungUser ? 18.0 : 14.0);
+    final primaryCtaFontSize = isSprout ? 22.0 : (isYoungUser ? 19.0 : 17.0);
+    // The mid-story upsell + quick rating clutter the screen on every page
+    // turn. Defer them to the end-of-story page where the kid is done reading
+    // and the parent might actually act on them. Sprout never sees the upsell.
+    final showUpsell =
+        isFreeTier && !hasIllustrations && isOnEndPage && !isSprout;
+    final showQuickRating = !hasExplicitlyRated && isOnEndPage && !isSprout;
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          isSprout ? 12 : 10,
+          16,
+          isSprout ? 16 : 12,
+        ),
         decoration: BoxDecoration(
           color: band.gradientEnd.withValues(alpha: 0.95),
           border: Border(
@@ -3047,7 +3197,7 @@ class _PostStoryActionBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Illustration teaser for free users who have no illustrations
-            if (isFreeTier && !hasIllustrations)
+            if (showUpsell)
               GestureDetector(
                 onTap: onUnlockIllustrations,
                 child: Container(
@@ -3133,8 +3283,8 @@ class _PostStoryActionBar extends StatelessWidget {
                   ),
                 ),
               ),
-            // Quick rating — only shown if user hasn't rated yet (e.g. scrolled past end page)
-            if (!hasExplicitlyRated) ...[
+            // Quick rating — only shown on end-of-story page (and never for Sprout)
+            if (showQuickRating) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -3170,14 +3320,14 @@ class _PostStoryActionBar extends StatelessWidget {
                 onPressed: onTellMeAnother,
                 icon: Text(
                   band.band.isMature ? '✍️' : '🪄',
-                  style: const TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: primaryCtaFontSize + 2),
                 ),
                 label: Text(
                   characterName != null && hasWizardData
                       ? 'New Story with $characterName'
                       : (band.band.isMature ? 'New Story' : 'Tell Me Another!'),
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: primaryCtaFontSize,
                     fontWeight: FontWeight.bold,
                     fontFamily: band.uiFontFamily,
                   ),
@@ -3185,7 +3335,8 @@ class _PostStoryActionBar extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: band.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(
+                      vertical: primaryCtaVerticalPadding),
                   shape: const StadiumBorder(),
                   elevation: 4,
                 ),
@@ -3279,26 +3430,34 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final isSprout = band?.band == AgeBand.sprout;
     final isDisabled = onTap == null;
     final effectiveColor = isDisabled ? color.withValues(alpha: 0.45) : color;
-    final iconSize = largeMode ? 32.0 : 24.0;
-    final fontSize = largeMode ? 13.0 : 11.0;
+    final iconSize = isSprout ? 44.0 : (largeMode ? 32.0 : 24.0);
+    final fontSize = isSprout ? 15.0 : (largeMode ? 13.0 : 11.0);
+    final hitMin = isSprout ? 64.0 : (largeMode ? 56.0 : 48.0);
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: effectiveColor, size: iconSize),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              color: effectiveColor,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w600,
+      behavior: HitTestBehavior.opaque,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: hitMin, minHeight: hitMin),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: effectiveColor, size: iconSize),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: effectiveColor,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3655,11 +3814,15 @@ class _PageArrowOverlay extends StatefulWidget {
   final _PageArrowDirection direction;
   final VoidCallback onTap;
   final bool alwaysVisible;
+  final double buttonSize;
+  final double iconSize;
 
   const _PageArrowOverlay({
     required this.direction,
     required this.onTap,
     this.alwaysVisible = false,
+    this.buttonSize = 48,
+    this.iconSize = 32,
   });
 
   @override
@@ -3715,16 +3878,19 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
         duration: const Duration(milliseconds: 500),
         child: Center(
           child: Container(
-            width: widget.alwaysVisible ? 48 : 40,
-            height: widget.alwaysVisible ? 48 : 40,
+            width: widget.alwaysVisible ? widget.buttonSize : widget.buttonSize * 0.83,
+            height: widget.alwaysVisible ? widget.buttonSize : widget.buttonSize * 0.83,
             decoration: BoxDecoration(
-              color: Colors.black.withAlpha(40),
+              color: Colors.black.withAlpha(widget.alwaysVisible ? 80 : 40),
               shape: BoxShape.circle,
+              border: widget.alwaysVisible
+                  ? Border.all(color: Colors.white.withAlpha(120), width: 2)
+                  : null,
             ),
             child: Icon(
               isLeft ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
               color: Colors.white,
-              size: widget.alwaysVisible ? 32 : 28,
+              size: widget.alwaysVisible ? widget.iconSize : widget.iconSize * 0.875,
             ),
           ),
         ),
