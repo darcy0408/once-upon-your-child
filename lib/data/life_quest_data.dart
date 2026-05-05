@@ -2280,6 +2280,7 @@ const questWobblyDay = LifeQuestScenario(
           'kids already at their desks. Some are laughing. Some look as '
           'nervous as you feel.\n\n'
           'You take a big breath. What do you do?',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'wd_c1a',
@@ -2417,6 +2418,7 @@ const questSorryStuck = LifeQuestScenario(
           '"That was pretty rough," {pronoun} says quietly.»\n\n'
           'Your face feels hot. You didn\'t mean it — or you did '
           'in that moment, but you don\'t now.',
+      copingBreakId: 'volcano_breath',
       choices: [
         QuestChoice(
           id: 'ss_c1a',
@@ -3376,6 +3378,7 @@ const questMyTurnTalk = LifeQuestScenario(
           '«{companion} gives you a quick encouraging nod. »\n\n'
           'You stand up. '
           'What do you do first?',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'mtt_back_wall',
