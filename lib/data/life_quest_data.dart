@@ -74,11 +74,20 @@ class QuestSegment {
   final List<QuestChoice> choices; // empty = ending segment
   final bool isEnding;
 
+  /// Optional coping technique to offer alongside this segment. When set,
+  /// the quest player renders a "Try it with {name}!" card between the
+  /// prose and the choices — tapping launches the animated practice sheet.
+  /// Use sparingly: at moments where the character is using a coping skill
+  /// in-narrative (e.g. a deep-breath beat), so the offer feels earned.
+  /// Value is a CopingTechnique id from coping_techniques.dart.
+  final String? copingBreakId;
+
   const QuestSegment({
     required this.id,
     required this.content,
     this.choices = const [],
     this.isEnding = false,
+    this.copingBreakId,
   });
 }
 
@@ -6281,6 +6290,7 @@ const questFirstHardThing = LifeQuestScenario(
           'You watch a leaf skitter across the parking lot.\n\n'
           'The mad-feeling is still there. But it\'s smaller now. Like it had '
           'too much air before, and you let some of it out.',
+      copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'fh_c3a',

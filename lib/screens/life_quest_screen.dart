@@ -7,9 +7,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../data/coping_techniques.dart';
 import '../data/life_quest_data.dart';
 import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
+import '../widgets/coping_practice_sheet.dart';
 
 
 /// Launch a Life Quest: shows quest selector, then plays the quest.
@@ -52,6 +54,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   late bool _ttsEnabled;
 
   bool get _isSprout => ageBandFromAge(widget.childAge) == AgeBand.sprout;
+  bool get _isExplorer => ageBandFromAge(widget.childAge) == AgeBand.explorer;
 
   /// Clouds that have at least one Sprout quest. Empty clouds (e.g. Sunny
   /// while no happy stories exist) are hidden from the entry grid so a
@@ -278,6 +281,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
         ),
+        // Coping Toolbox — Explorer only. Sprout has the cloud picker as its
+        // entry pattern; older bands get their own coping integration in story.
+        if (_isExplorer) _buildCopingToolbox(band),
         // Quest cards or empty state
         if (quests.isEmpty)
           Expanded(
@@ -440,6 +446,93 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     );
   }
 
+  // ── Coping Toolbox (Explorer) ─────────────────────────────────────────────
+  //
+  // Horizontal strip of breath/grounding techniques shown above the quest
+  // list. Always available — the kid can practice when they want, not only
+  // when they hit a story trigger. Each card opens an animated guided
+  // practice via CopingPracticeSheet.
+  Widget _buildCopingToolbox(AgeBandThemeData band) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Row(
+              children: [
+                const Text('🧰', style: TextStyle(fontSize: 16)),
+                const SizedBox(width: 6),
+                Text(
+                  'Feeling toolbox',
+                  style: _chromeStyle(band,
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '— tap to practice anytime',
+                  style: _chromeStyle(band,
+                      color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              itemCount: allCopingTechniques.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) =>
+                  _buildToolboxCard(allCopingTechniques[i], band),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolboxCard(CopingTechnique technique, AgeBandThemeData band) {
+    final color = Color(technique.colorSeed);
+    return GestureDetector(
+      onTap: () => CopingPracticeSheet.show(context, technique: technique),
+      child: Container(
+        width: 110,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withAlpha(70), color.withAlpha(25)],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withAlpha(140), width: 1.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(technique.emoji, style: const TextStyle(fontSize: 30)),
+            const SizedBox(height: 4),
+            Text(
+              technique.name,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _chromeStyle(band,
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuestCard(LifeQuestScenario quest, AgeBandThemeData band) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -555,6 +648,15 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                // Optional coping break — when the segment author wired one in,
+                // surface a "Try it with {name}!" card between the prose and
+                // the choices. Tapping opens the animated practice sheet; the
+                // story stays paused on the same segment so the kid returns
+                // to the choices when they're done.
+                if (segment.copingBreakId != null) ...[
+                  _buildCopingBreakCard(segment.copingBreakId!, band),
+                  const SizedBox(height: 18),
+                ],
                 // Choices or ending
                 if (isEnding) ...[
                   _buildEndingSection(segment, band),
@@ -567,6 +669,63 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Inline "Try it with {name}!" card rendered between prose and choices
+  /// when a segment has [QuestSegment.copingBreakId] set. Falls back to a
+  /// SizedBox if the id can't be resolved (defensive — shouldn't happen
+  /// once content authoring is in sync with the technique library).
+  Widget _buildCopingBreakCard(String techniqueId, AgeBandThemeData band) {
+    final technique = copingById(techniqueId);
+    if (technique == null) return const SizedBox.shrink();
+    final color = Color(technique.colorSeed);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => CopingPracticeSheet.show(context, technique: technique),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withAlpha(80), color.withAlpha(30)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withAlpha(160), width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Text(technique.emoji, style: const TextStyle(fontSize: 36)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Try it with ${widget.childName}!',
+                      style: _chromeStyle(band,
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${technique.name} — ${technique.tagline}',
+                      style: _chromeStyle(band,
+                          color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.play_circle_fill_rounded,
+                  color: color.withAlpha(220), size: 32),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
