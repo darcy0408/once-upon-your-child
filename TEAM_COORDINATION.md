@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-05 | 00:17 | 78ab | main | A6 raced + per-page BYOK illustration prefetcher spike | [link](docs/sessions/2026-05-05-0017-78ab.md) |
 | 2026-05-05 | 00:05 | 4af1 | main | Multi-agent Sprout sweep: TTS storm, A7 vocab, A8 audit | [link](docs/sessions/2026-05-05-0005-4af1.md) |
 | 2026-05-05 | 00:06 | b535 | main | A3 fix: page-turn no longer keeps prior page's scroll offset | [link](docs/sessions/2026-05-05-0006-b535.md) |
 | 2026-05-05 | 00:04 | 861c | main | A8 Sprout UX pass: responsive page + bigger kid taps | [link](docs/sessions/2026-05-05-0004-861c.md) |
