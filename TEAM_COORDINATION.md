@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-05 | 00:04 | 861c | main | A8 Sprout UX pass: responsive page + bigger kid taps | [link](docs/sessions/2026-05-05-0004-861c.md) |
 | 2026-05-05 | 00:03 | af96 | main | Sprout vocab rule (A7) — absorbed by parallel commit 6bccd443 | [link](docs/sessions/2026-05-05-0003-af96.md) |
 | 2026-05-05 | 00:02 | ebc0 | main | Fix misleading Pick a Path badge on linear stories | [link](docs/sessions/2026-05-05-0002-ebc0.md) |
 | 2026-05-03 | 23:50 | 2f3d | main | GIT_MAINTENANCE: 6 dep patches + dependabot auto-cleanup observed | [link](docs/sessions/2026-05-03-2350-2f3d.md) |
