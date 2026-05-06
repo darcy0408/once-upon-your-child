@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-06 | 10:10 | c910 | main | Drafted 3 Sprout quests (mad/sad/scared) — parked for integration | [link](docs/sessions/2026-05-06-1010-c910.md) |
 | 2026-05-06 | 10:07 | 0d37 | main | Sprout cloud→animal-friends rebrand + breathing buddy | [link](docs/sessions/2026-05-06-1007-0d37.md) |
 | 2026-05-06 | 10:09 | 536f | main | Fix static breathing-orb in CopingPracticeSheet | [link](docs/sessions/2026-05-06-1009-536f.md) |
 | 2026-05-06 | 08:02 | 81f6 | main | Sprout polish: per-page art + backend caps + welcome-back | [link](docs/sessions/2026-05-06-0802-81f6.md) |
