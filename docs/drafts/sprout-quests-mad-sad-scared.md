@@ -1,13 +1,16 @@
-# Three new Sprout Life Quests — draft (mad / sad / scared)
+# Four new Sprout Life Quests — draft (mad / sad / scared / grateful)
 
-**Status:** drafted in this file because a parallel session has uncommitted edits to `lib/data/life_quest_data.dart` (the `SproutCloud` → `SproutFriend` rename + new `questBigHello`). Once that session commits, paste these in just below `questBigHello` and add the three new identifiers to `allLifeQuests` near the top of the file.
+**Status:** drafted in this file because parallel sessions had uncommitted edits to `lib/data/life_quest_data.dart` at draft time (the `SproutCloud` → `SproutFriend` rebrand + new `questBigHello`). Those have now landed (`1c668c0a`); paste these in just below `questBigHello` and add the four new identifiers to `allLifeQuests` near the top of the file.
 
 **Friend personas these target:**
 - `SproutFriend.bunny` — Rainy Bunny / **sad** → `questGoodbyeHug` (separation: when a grown-up leaves)
 - `SproutFriend.lion` — Roary Lion / **mad** → `questBigNo` (anger: when someone says no)
 - `SproutFriend.mouse` — Shy Mouse / **scared** → `questFirstHi` (social wobbles: meeting new people)
+- `SproutFriend.pup` — Sunny Pup / **grateful** → `questWarmHeart` (gratitude: a handmade gift in the mail)
 
-**Coping break wiring:** Belly Breath (sad/chest-tight), Dragon's Breath (mad/roar-it-out), Star Breath (scared/discreet). All three IDs already exist in the toolbox per recent commits.
+**Coping break wiring:** Belly Breath (sad/chest-tight), Dragon's Breath (mad/roar-it-out), Star Breath (scared/discreet), Hot Cocoa Breath (gratitude/savor-the-good). All four IDs already exist in the toolbox.
+
+**Why a gratitude quest under "happy":** Sprout-age gratitude is concrete — noticing a specific kindness, feeling the warm-chest body cue, choosing how to give the love back. `questBigHello` already covers the bubbly arrival-excitement flavor of happy; this one fills the quieter "someone was kind to me, I want to say thank you with my whole heart" flavor. Together they balance Sunny Pup's range with the same 2-quest depth as the other three friends.
 
 ---
 
@@ -19,6 +22,7 @@ Right after the existing Sprout entries (`questBigBearHug`, `questBigLoud`, `que
   questGoodbyeHug,
   questBigNo,
   questFirstHi,
+  questWarmHeart,
 ```
 
 ---
@@ -454,13 +458,175 @@ const questFirstHi = LifeQuestScenario(
     ),
   },
 );
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPROUT QUEST 8: The Warm Heart  [Sprout: ages 2-5]
+// Sunny Pup — happy / grateful. A handmade gift arrives in the mail and
+// triggers the warm-chest gratitude feeling. Coping break is Hot Cocoa Breath
+// (savor the good thing — slow inhale to smell it, slow exhale to cool it
+// down). Both top-level paths return the love: say it / make something back.
+// Endings teach that thank-you done with WHY (or with your wobbly hands)
+// is the kind that travels both ways.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questWarmHeart = LifeQuestScenario(
+  id: 'warm_heart',
+  title: 'The Warm Heart',
+  hook: 'A package came in the mail. With YOUR name on it!',
+  emoji: '\u{1F49D}', // heart with ribbon
+  emotions: ['happy', 'grateful'],
+  recommendedBands: [AgeBand.sprout],
+  friend: SproutFriend.pup,
+  grownupTip:
+      "Ask: 'When someone is kind to YOU, where do you feel it in your body? '"
+      "'How can we say thank you with our whole heart?'",
+  startSegmentId: 'wh_start',
+  segments: {
+    'wh_start': QuestSegment(
+      id: 'wh_start',
+      content:
+          'DING DONG.\n\n'
+          'The mail brought a package!\n\n'
+          'A grown-up reads the tag.\n\n'
+          '"Look — it has YOUR name on it. '
+          'It is from someone who loves you so much."\n\n'
+          'You tear the paper. Rip, rip!\n\n'
+          'Inside is a soft little hat. '
+          'Made by hand. '
+          'Just your size.\n\n'
+          'Your chest gets warm. '
+          'Your smile is so big it tickles your cheeks.',
+      copingBreakId: 'hot_cocoa_breath',
+      choices: [
+        QuestChoice(
+          id: 'wh_c1a',
+          text: 'Call to say thank you',
+          nextSegmentId: 'wh_call',
+        ),
+        QuestChoice(
+          id: 'wh_c1b',
+          text: 'Draw them a picture back',
+          nextSegmentId: 'wh_draw',
+        ),
+      ],
+    ),
+
+    'wh_call': QuestSegment(
+      id: 'wh_call',
+      content:
+          'A grown-up holds the phone for you.\n\n'
+          'RING. RING.\n\n'
+          '"Hi sweet pea!"\n\n'
+          'Your voice gets a little wobbly with happy.\n\n'
+          '"I love it SO much. Thank you!"\n\n'
+          '"I made it just for you."',
+      choices: [
+        QuestChoice(
+          id: 'wh_c2a',
+          text: 'Tell them what you LOVE about it',
+          nextSegmentId: 'wh_specific',
+        ),
+        QuestChoice(
+          id: 'wh_c2b',
+          text: 'Take a hot cocoa breath together',
+          nextSegmentId: 'wh_breath',
+        ),
+      ],
+    ),
+
+    'wh_draw': QuestSegment(
+      id: 'wh_draw',
+      content:
+          'You get the crayons.\n\n'
+          'Red. Yellow. Pink.\n\n'
+          'You draw a heart. '
+          'You draw the sun. '
+          'You draw two stick people holding hands. '
+          'That is them and you.\n\n'
+          '"We can mail it tomorrow," says the grown-up.\n\n'
+          'The warm feeling stays right in your chest while you draw.',
+      choices: [
+        QuestChoice(
+          id: 'wh_c3a',
+          text: 'Sign your name in wobbly letters',
+          nextSegmentId: 'wh_sign',
+        ),
+        QuestChoice(
+          id: 'wh_c3b',
+          text: 'Add lots of sparkly stickers',
+          nextSegmentId: 'wh_sparkle',
+        ),
+      ],
+    ),
+
+    'wh_specific': QuestSegment(
+      id: 'wh_specific',
+      content:
+          '"I love the fluffy puff on top. '
+          'And it smells like home."\n\n'
+          'They go quiet for a moment. '
+          'You can hear them breathe in soft.\n\n'
+          '"You found the love I put inside it, {name}."\n\n'
+          'Saying thank you is good. '
+          'Saying WHY is even better. '
+          'It tells someone you really saw their love.',
+      isEnding: true,
+    ),
+
+    'wh_breath': QuestSegment(
+      id: 'wh_breath',
+      content:
+          '"Want to take a hot cocoa breath with me?"\n\n'
+          'Smell the cocoa... '
+          'cool it down...\n\n'
+          'Smell the cocoa... '
+          'cool it down...\n\n'
+          'You can hear them smile through the phone.\n\n'
+          'They are far away. '
+          'But the warm goes both ways. '
+          'That is the magic of a thank-you breath.',
+      isEnding: true,
+    ),
+
+    'wh_sign': QuestSegment(
+      id: 'wh_sign',
+      content:
+          'You hold the crayon tight.\n\n'
+          'You write your name. '
+          'The letters wobble like jelly.\n\n'
+          'But it is YOUR name. '
+          'In YOUR own little hand.\n\n'
+          'The grown-up tucks the picture in an envelope.\n\n'
+          'When they open it on the other side, '
+          'they will see your wobbly letters '
+          'and their chest will get warm too, {name}.',
+      isEnding: true,
+    ),
+
+    'wh_sparkle': QuestSegment(
+      id: 'wh_sparkle',
+      content:
+          'Sparkle, sparkle, sparkle!\n\n'
+          'Glitter goes everywhere. '
+          'On the paper. On your fingers. '
+          'A tiny bit on the floor.\n\n'
+          'You hold the picture up. '
+          'It catches the light.\n\n'
+          'Now your thank-you is shiny too.\n\n'
+          'When something good comes to you, '
+          'you can make something good go back. '
+          'That is what makes hearts grow.',
+      isEnding: true,
+    ),
+  },
+);
 ```
 
 ---
 
 ## Notes for the integrator
 
-- **Friend coverage check** after merging: Pup gets `questBigHello`, Bunny gets `questBigBearHug` + `questGoodbyeHug`, Lion gets `questMyTurnYourTurn` + `questBigNo`, Mouse gets `questBigLoud` + `questFirstHi`. Each persona has 2 quests except Pup which has 1 — worth a follow-up "happy bubble too big to hold" type for parity.
-- **Coping break IDs** referenced (`belly_breath`, `dragon_breath`, `star_breath`) all exist in the toolbox today — these will render in the in-story break card pattern wired in commit `9d2c5a44`.
+- **Friend coverage check** after merging: Pup gets `questBigHello` + `questWarmHeart`, Bunny gets `questBigBearHug` + `questGoodbyeHug`, Lion gets `questMyTurnYourTurn` + `questBigNo`, Mouse gets `questBigLoud` + `questFirstHi`. **All four friends now have 2 quests each** — symmetric coverage.
+- **Coping break IDs** referenced (`belly_breath`, `dragon_breath`, `star_breath`, `hot_cocoa_breath`) all exist in the toolbox today — these will render in the in-story break card pattern wired in commit `9d2c5a44`.
 - **`{name}` interpolation** used in two endings each. The rest of the prose stays generic so it reads naturally even if name fill-in misses.
 - **Vocabulary** kept inside Sprout 3-5 word policy — short sentences (most ≤8 words), repeated sound patterns, body cues over abstract feeling labels, ALL-CAPS onomatopoeia (NOOOO, ROOOOAAAARRR, STOMP, DING DONG, smooch, thump-thump).
