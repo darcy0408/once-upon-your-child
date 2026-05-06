@@ -491,7 +491,11 @@ class AdvancedStoryEngine:
 
         # Per-page word target scales with age — prevents adult band from generating
         # too many short pages and overrunning the total word cap.
-        if age <= 8:
+        # Sprout (≤5) gets a tight cap matching industry norms for picture books
+        # (10-25 words/page); previous 80-130 was overwhelming for the band.
+        if age <= 5:
+            per_page_words = "10–25 words MAX (HARD CAP — split a page if it would exceed 25 words)"
+        elif age <= 8:
             per_page_words = "approx 80–130 words"
         elif age <= 13:
             per_page_words = "approx 120–180 words"
@@ -503,6 +507,16 @@ class AdvancedStoryEngine:
         word_ceiling_note = ""
         if age > 14:
             word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. Stop the story before adding more pages if you are approaching this limit."
+
+        # Sprout (≤5) page-count floor — picture-book pacing requires more, shorter pages
+        # rather than a few dense ones. Without this, models compress 200-300 words into 2-3 pages.
+        sprout_page_rule = ""
+        if age <= 5:
+            sprout_page_rule = (
+                "\n- **PAGE COUNT (HARD MIN — Sprout band)**: Return AT LEAST 5 pages. "
+                "Each page must be 10-25 words. If one page would exceed 25 words, split it. "
+                "Picture-book pacing: more short pages, never fewer long ones."
+            )
 
         if age >= 14:
             coping_instruction = "a clever plot twist, a moment of wonder, a scene where the hero's perspective shifts through experience — shown, never told"
@@ -582,7 +596,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
 - **Tone**: {config['notes']}
-{young_delight_rules}- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}
+{young_delight_rules}- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}
 - **Complexity Calibration**: {complexity_instruction}
 - **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
@@ -801,7 +815,9 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         length_key = 'long'
     else:
         length_key = 'medium'
-    num_pages = config['ltr'][length_key]
+    # Hard floor at 5 pages — models tend to compress LTR output to as few as 2 pages
+    # when given a soft target. Floor protects the early-reader pacing experience.
+    num_pages = max(5, config['ltr'][length_key])
 
     # Graduate vocabulary and format based on age
     rhyme_scheme_instruction = "Simple rhyming couplets across pages (AABB pairs by page endings)."
@@ -921,7 +937,13 @@ Each page is exactly one limerick. Return {num_pages} pages total. No extra keys
         return f"""
 Create a LEARN TO READ story for {character_name} (age {age}) in the style of Dr. Seuss — bouncy anapestic rhythm, playful made-up sound words, joyful repetition, and clear AABB end-rhymes.
 Theme: {theme}
-Format: {num_pages} pages. {format_instruction}
+STRICT FORMAT (FOLLOW EXACTLY):
+- Return EXACTLY {num_pages} pages — no more, no fewer.
+- Each page MUST be 25 words or fewer (target 10-20).
+- If a page would exceed 25 words, SPLIT it across two pages.
+- Total story must be {num_pages * 25} words or fewer.
+- The final page MUST close the story with a clear ending beat (not just "The End").
+Page format: {format_instruction}
 Vocabulary: {vocab_instruction}
 Style: Dr. Seuss. Think "The Cat in the Hat" or "Hop on Pop" — short punchy lines, fun rhythm you can clap to, silly energy, and every page ending in a satisfying rhyme.
 Requirements: Repeating frames (e.g. "And then... and then..."), comforting rhythm, 1 moment where the hero discovers their own strength.

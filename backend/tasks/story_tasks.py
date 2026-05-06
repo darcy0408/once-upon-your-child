@@ -19,7 +19,7 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band
 
 logger = get_task_logger(__name__)
 MAX_CUSTOM_ELEMENTS = 5
@@ -524,10 +524,45 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # Rhyme validation for learning-to-read mode (easy reader).
                 # This keeps mode behavior aligned with user expectations.
                 is_rhyme_quality_ok = True
+                # LTR page-count + per-page word-count validation.
+                # Models tend to compress LTR output to 2-3 dense pages; this enforces
+                # the picture-book pacing the prompt asks for.
+                is_ltr_format_ok = True
+                ltr_format_error = ""
+                ltr_expected_pages = 0
+                ltr_pages_count = 0
+                ltr_over_word_pages: list[int] = []
                 if learning_to_read_mode:
                     is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
                     if not is_rhyme_quality_ok:
                         validation_error = "Learning-to-read story did not meet rhyme quality checks"
+
+                    # Compute expected page count for this age/length to match prompt floor.
+                    try:
+                        _ltr_band = _get_age_band(age)
+                        _ltr_cfg = AGE_CONSTRAINTS[_ltr_band]['ltr']
+                        if story_length in ('short', 'quick'):
+                            _ltr_len_key = 'short'
+                        elif story_length in ('long', 'epic'):
+                            _ltr_len_key = 'long'
+                        else:
+                            _ltr_len_key = 'medium'
+                        ltr_expected_pages = max(5, _ltr_cfg[_ltr_len_key])
+                    except Exception:  # noqa: BLE001 — defensive, never break generation
+                        ltr_expected_pages = 5
+
+                    ltr_pages_count = len(pages)
+                    ltr_over_word_pages = [
+                        i for i, p in enumerate(pages) if len(p.split()) > 30
+                    ]
+                    if ltr_pages_count < 5 or ltr_over_word_pages:
+                        is_ltr_format_ok = False
+                        ltr_format_error = (
+                            f"LTR format check failed: {ltr_pages_count} pages "
+                            f"(need ≥5, target {ltr_expected_pages}), "
+                            f"{len(ltr_over_word_pages)} pages exceed 30 words."
+                        )
+                        validation_error = ltr_format_error
 
                 # Length Validation with dynamic thresholds
                 # LTR mode is measured in pages (not words), so skip word-count check.
@@ -555,7 +590,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         is_long_enough = False
                         validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
                 
-                if is_clean and is_long_enough and is_rhyme_quality_ok:
+                if is_clean and is_long_enough and is_rhyme_quality_ok and is_ltr_format_ok:
                     logger.info("Story passed validation.")
                     break
                 else:
@@ -573,6 +608,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 "\n\nRETRY INSTRUCTION: This is LEARNING TO READ mode and MUST rhyme. "
                                 "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
                                 "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top."
+                            )
+                        if not is_ltr_format_ok:
+                            prompt += (
+                                f"\n\nRETRY INSTRUCTION: Your previous response had {ltr_pages_count} pages "
+                                f"with {len(ltr_over_word_pages)} pages exceeding 30 words. "
+                                f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page 25 words or fewer. "
+                                f"Split any long page into two shorter pages. Do not compress the story into a few dense pages."
                             )
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
