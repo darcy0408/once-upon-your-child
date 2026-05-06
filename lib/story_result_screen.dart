@@ -1441,6 +1441,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         debugPrint('[MT-035] characters.names=${characters.map((c) => c.name).toList()}');
 
         final storyLocal = StoryLocal.fromSavedStory(newStory);
+        debugPrint('[MT-035] storyLocal.charactersJson=${storyLocal.charactersJson}');
         await _offlineService.saveStory(storyLocal);
         // saveStory assigns a millisecond-timestamp storyId in-place when the
         // incoming record has none — capture it so _toggleFavorite (and any
