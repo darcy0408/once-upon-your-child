@@ -98,6 +98,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String _listeningFor = '';
   /// Debounce timer for TTS name echo (Sprout band only).
   Timer? _nameEchoTimer;
+  /// Sprout companion auto-advance timer. Re-armed on each tap so changing
+  /// minds before the delay elapses doesn't fire two advances.
+  Timer? _sproutCompanionAdvanceTimer;
   late TextEditingController _superpowerController;
   late TextEditingController _questController;
   late TextEditingController _wishController;
@@ -236,6 +239,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   @override
   void dispose() {
     _nameEchoTimer?.cancel();
+    _sproutCompanionAdvanceTimer?.cancel();
     _nameController.dispose();
     _nameFocusNode.dispose();
     _superpowerController.dispose();
@@ -409,6 +413,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _heroNextPage() {
+    // Skip Page 2 when it would only show a single button — open the gallery
+    // directly. _maybeAdvanceFromStylePage handles jumping from Page 1 → Page 3
+    // once an avatar is chosen.
+    if (_heroPage == 1 && !_shouldShowBuildHeroPage) {
+      unawaited(_openAvatarGallery());
+      return;
+    }
     if (_heroPage < 6) {
       _triggerPageCelebration();
       _heroPageController.nextPage(
@@ -452,11 +463,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   void _heroPrevPage() {
     if (_heroPage > 0) {
-      _heroPageController.previousPage(
+      // Mirror the forward-skip: when Page 2 was bypassed, going back from
+      // Page 3 should land on Page 1, not the empty single-button screen.
+      final target =
+          (_heroPage == 3 && !_shouldShowBuildHeroPage) ? 1 : _heroPage - 1;
+      _heroPageController.animateToPage(
+        target,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
-      setState(() => _heroPage--);
+      setState(() => _heroPage = target);
       _logPageView(_heroPage);
       _notifySubStep();
     }
@@ -645,11 +661,50 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         .speak('$name. $specialAbility.', rateScale: 0.85));
   }
 
+  /// Sprout-only: auto-advance from the companions page (4) to the scene page
+  /// after a companion is selected. Mirrors the auto-advance pattern already
+  /// used for scene tap and gender tap — young children expect forward motion
+  /// after a tap. The delay lets the TTS readback play and gives a beat for
+  /// second thoughts (re-armed on every tap so a quick swap doesn't fire
+  /// twice).
+  void _scheduleSproutCompanionAdvance() {
+    _sproutCompanionAdvanceTimer?.cancel();
+    _sproutCompanionAdvanceTimer = Timer(
+      const Duration(milliseconds: 1400),
+      () {
+        if (!mounted) return;
+        if (_heroPage != 4) return;
+        if (widget.wizardData.companionNames.isEmpty &&
+            widget.wizardData.selectedCompanions.isEmpty) {
+          return;
+        }
+        _heroNextPage();
+      },
+    );
+  }
+
   void _maybeAdvanceFromStylePage() {
-    // Page 2 is avatar-only — auto-advance once the avatar is chosen.
-    if (!mounted || _heroPage != 2) return;
-    if (_hasAvatar) {
+    if (!mounted || !_hasAvatar) return;
+    // Normal flow: Page 2 is avatar-only — auto-advance once the avatar is chosen.
+    if (_heroPage == 2) {
       _heroNextPage();
+      return;
+    }
+    // Skip-Page-2 flow: gallery opens straight from Page 1, so jump to Page 3
+    // (the archetype page) once an avatar lands.
+    if (_heroPage == 1 && !_shouldShowBuildHeroPage) {
+      _triggerPageCelebration();
+      _heroPageController.animateToPage(
+        3,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _heroPage = 3);
+      _logPageView(_heroPage);
+      _notifySubStep();
+      Future.delayed(const Duration(milliseconds: 850), () {
+        if (mounted) unawaited(_speakPagePrompt(_heroPage));
+      });
     }
   }
 
@@ -1280,7 +1335,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           wizardData: widget.wizardData,
           onChanged: () => setState(() {}),
           onCompanionTapped: widget.wizardData.characterAge <= 5
-              ? (name) => _speakForSprout(name)
+              ? (name) {
+                  _speakForSprout(name);
+                  _scheduleSproutCompanionAdvance();
+                }
               : null,
           maxCompanions: band.band == AgeBand.sprout ? 1 : 3,
         ),
@@ -1782,6 +1840,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   bool get _hasAvatar =>
       _generatedAvatar != null || _customAvatarFilePath != null;
+
+  // Page 2 ("How do you want to build your hero?") only offers a real choice
+  // when the photo-avatar option is unlocked (parental consent + premium).
+  // Otherwise it's a single-button screen, so we skip it and open the gallery
+  // directly from the name/gender page.
+  bool get _shouldShowBuildHeroPage => _allowPhotoAvatar && _isPremium;
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;
