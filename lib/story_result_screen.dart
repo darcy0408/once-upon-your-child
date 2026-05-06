@@ -660,11 +660,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   /// Start a per-page background prefetcher when the user has BYOK
-  /// configured. Safe to call multiple times — only the first call wires up.
+  /// configured, OR when the reader is in the Sprout band (where per-page
+  /// art is essential to comprehension and we accept the server-key cost).
+  /// Safe to call multiple times — only the first call wires up.
   void _maybeStartPerPagePrefetcher() {
     if (!mounted || _perPagePrefetcher != null) return;
     final settings = ref.read(settingsProvider);
-    if (!settings.useOwnApiKey && !widget.usedUserApiKey) return;
+    final isSproutBand = ageBandFromAge(_effectiveAge) == AgeBand.sprout;
+    final hasByok = settings.useOwnApiKey || widget.usedUserApiKey;
+    if (!hasByok && !isSproutBand) return;
     if (_storyPages.isEmpty) return;
 
     final prefetcher = PerPageIllustrationPrefetcher(
@@ -677,6 +681,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       companions: _illustrationCompanions(),
       sceneRequirements:
           (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
+      // Sprout reads use the server's Imagen key when no BYOK token exists.
+      allowServerKey: isSproutBand,
     );
     _perPagePrefetcher = prefetcher;
     unawaited(prefetcher.initialize().then((_) {
@@ -2223,6 +2229,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   Widget _buildEndOfStoryPage() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isSprout = band.band == AgeBand.sprout;
     return StoryBookPage(
       backgroundColor:
           _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
@@ -2233,20 +2240,24 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                '✨',
-                style: TextStyle(fontSize: 48 * _textScale),
-              ),
-              const SizedBox(height: 16),
+              if (isSprout) ...[
+                _buildSproutEndCelebration(band),
+                const SizedBox(height: 16),
+              ] else
+                Text(
+                  '✨',
+                  style: TextStyle(fontSize: 48 * _textScale),
+                ),
+              if (!isSprout) const SizedBox(height: 16),
               Text(
                 'The End',
                 style: GoogleFonts.quicksand(
-                  fontSize: 32 * _textScale,
+                  fontSize: (isSprout ? 40 : 32) * _textScale,
                   fontWeight: FontWeight.bold,
                   color: _highContrastMode ? Colors.white : band.primary,
                 ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: isSprout ? 16 : 28),
               Divider(
                 indent: 40,
                 endIndent: 40,
@@ -2261,12 +2272,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 Text(
                   'How was the story?',
                   style: GoogleFonts.quicksand(
-                    fontSize: 15 * _textScale,
+                    fontSize: (isSprout ? 13 : 15) * _textScale,
                     fontWeight: FontWeight.w600,
                     color: _highContrastMode ? Colors.white70 : Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isSprout ? 4 : 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -2288,13 +2299,18 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           },
                           customBorder: const CircleBorder(),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isSprout ? 8 : 12,
+                              vertical: isSprout ? 4 : 8,
+                            ),
                             child: AnimatedScale(
                               scale: _hasExplicitlyRated && _storyRating == entry.stars ? 1.3 : 1.0,
                               duration: const Duration(milliseconds: 200),
                               child: Text(
                                 entry.emoji,
-                                style: TextStyle(fontSize: 36 * _textScale),
+                                style: TextStyle(
+                                  fontSize: (isSprout ? 28 : 36) * _textScale,
+                                ),
                               ),
                             ),
                           ),
@@ -2354,65 +2370,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 ),
                 const SizedBox(height: 12),
               ],
-              if (widget.wizardData != null) ...[
-                _buildRepeatButton(
-                  label: widget.characterName != null
-                      ? 'New Story with ${widget.characterName}'
-                      : 'Same Character, New Story',
-                  icon: Icons.auto_stories_rounded,
-                  onTap: () {
-                    final clone = widget.wizardData!.clone();
-                    clone.selectedScenario = null;
-                    clone.selectedEmotionChips = [];
-                    clone.selectedFeeling = null;
-                    clone.selectedTrigger = null;
-                    clone.selectedBodySignal = null;
-                    clone.selectedCopingTool = null;
-                    clone.selectedRepairGoal = null;
-                    clone.customElements = '';
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (_) => WizardStoryScreen(
-                        initialStep: 0,
-                        initialWizardData: clone,
-                      ),
-                    ));
-                  },
-                ),
-                const SizedBox(height: 10),
-                _buildRepeatButton(
-                  label: 'Start Fresh',
-                  icon: Icons.replay_rounded,
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (_) => WizardStoryScreen(
-                        initialStep: 1,
-                        initialWizardData: widget.wizardData!.clone(),
-                      ),
-                    ));
-                  },
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (widget.characterId != null) ...[
-                _buildRepeatButton(
-                  label: 'My Chronicles',
-                  icon: Icons.menu_book_rounded,
-                  onTap: () {
-                    final stub = Character(
-                      id: widget.characterId!,
-                      name: widget.characterName ?? '',
-                      age: widget.characterAge ?? 8,
-                      role: 'Adventurer',
-                    );
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => ChroniclesListScreen(
-                        character: stub,
-                        userId: '',
-                      ),
-                    ));
-                  },
-                ),
-              ],
+              ..._buildEndOfStoryCtas(band: band, isSprout: isSprout),
             ],
           ),
         ),
@@ -2442,6 +2400,230 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Build the re-engagement CTA section for the end-of-story page.
+  ///
+  /// Sprout band: compact tile-style buttons in a horizontal Wrap, leaving
+  /// vertical room for the celebration illustration.
+  /// Other bands: keep the existing 260-wide vertical stack.
+  List<Widget> _buildEndOfStoryCtas({
+    required AgeBandThemeData band,
+    required bool isSprout,
+  }) {
+    final ctas = <_EndCta>[];
+    if (widget.wizardData != null) {
+      ctas.add(_EndCta(
+        label: widget.characterName != null
+            ? 'New Story with ${widget.characterName}'
+            : 'Same Character, New Story',
+        shortLabel: 'New Story',
+        icon: Icons.auto_stories_rounded,
+        onTap: () {
+          final clone = widget.wizardData!.clone();
+          clone.selectedScenario = null;
+          clone.selectedEmotionChips = [];
+          clone.selectedFeeling = null;
+          clone.selectedTrigger = null;
+          clone.selectedBodySignal = null;
+          clone.selectedCopingTool = null;
+          clone.selectedRepairGoal = null;
+          clone.customElements = '';
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (_) => WizardStoryScreen(
+              initialStep: 0,
+              initialWizardData: clone,
+            ),
+          ));
+        },
+      ));
+      ctas.add(_EndCta(
+        label: 'Start Fresh',
+        shortLabel: 'Start Fresh',
+        icon: Icons.replay_rounded,
+        onTap: () {
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (_) => WizardStoryScreen(
+              initialStep: 1,
+              initialWizardData: widget.wizardData!.clone(),
+            ),
+          ));
+        },
+      ));
+    }
+    if (widget.characterId != null) {
+      ctas.add(_EndCta(
+        label: 'My Chronicles',
+        shortLabel: 'Chronicles',
+        icon: Icons.menu_book_rounded,
+        onTap: () {
+          final stub = Character(
+            id: widget.characterId!,
+            name: widget.characterName ?? '',
+            age: widget.characterAge ?? 8,
+            role: 'Adventurer',
+          );
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ChroniclesListScreen(
+              character: stub,
+              userId: '',
+            ),
+          ));
+        },
+      ));
+    }
+
+    if (ctas.isEmpty) return const <Widget>[];
+
+    final widgets = <Widget>[
+      const SizedBox(height: 20),
+      Divider(
+        indent: 40,
+        endIndent: 40,
+        color: _highContrastMode
+            ? Colors.white24
+            : Colors.grey.withValues(alpha: 0.3),
+      ),
+      const SizedBox(height: 12),
+    ];
+
+    if (isSprout) {
+      widgets.add(
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final cta in ctas) _buildSproutCtaTile(band: band, cta: cta),
+          ],
+        ),
+      );
+    } else {
+      for (var i = 0; i < ctas.length; i++) {
+        final cta = ctas[i];
+        widgets.add(_buildRepeatButton(
+          label: cta.label,
+          icon: cta.icon,
+          onTap: cta.onTap,
+        ));
+        if (i < ctas.length - 1) {
+          widgets.add(const SizedBox(height: 10));
+        }
+      }
+    }
+    return widgets;
+  }
+
+  /// Compact icon-over-label tile sized for Sprout's horizontal CTA row.
+  Widget _buildSproutCtaTile({
+    required AgeBandThemeData band,
+    required _EndCta cta,
+  }) {
+    return SizedBox(
+      width: 96,
+      child: ElevatedButton(
+        onPressed: cta.onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: band.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(cta.icon, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              cta.shortLabel,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Hero celebration banner for Sprout's "The End" page. Uses the cover
+  /// illustration when available, else a sparkle constellation on a
+  /// band-tinted background so the page feels illustrated rather than blank.
+  Widget _buildSproutEndCelebration(AgeBandThemeData band) {
+    const double height = 180;
+    if (_hasCoverIllustration) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.memory(
+            _inlineIllustrations.first.bytes,
+            height: height,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                _buildSproutEndSparkleBanner(band, height),
+          ),
+        ),
+      );
+    }
+    return _buildSproutEndSparkleBanner(band, height);
+  }
+
+  Widget _buildSproutEndSparkleBanner(AgeBandThemeData band, double height) {
+    final accent = band.accent;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withValues(alpha: 0.85),
+              band.primary.withValues(alpha: 0.85),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: const [
+            Positioned(
+              top: 18,
+              left: 24,
+              child: Icon(Icons.auto_awesome,
+                  color: Colors.white70, size: 28),
+            ),
+            Positioned(
+              top: 36,
+              right: 30,
+              child: Icon(Icons.auto_awesome,
+                  color: Colors.white, size: 44),
+            ),
+            Positioned(
+              bottom: 28,
+              left: 60,
+              child: Icon(Icons.auto_awesome,
+                  color: Colors.white, size: 36),
+            ),
+            Positioned(
+              bottom: 14,
+              right: 56,
+              child: Icon(Icons.auto_awesome,
+                  color: Colors.white70, size: 22),
+            ),
+            Center(
+              child: Icon(Icons.auto_awesome,
+                  color: Colors.white, size: 64),
+            ),
+          ],
         ),
       ),
     );
@@ -3013,6 +3195,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                           _flipBurstTrigger,
                                                       fromRight:
                                                           _flipBurstFromRight,
+                                                      largeBurst: _isYoungUser,
                                                     ),
                                                   ),
                                                   // Left arrow (previous page)
@@ -3833,13 +4016,37 @@ class ColoringGenerationDialog extends StatelessWidget {
   }
 }
 
+/// Plain CTA descriptor used by the end-of-story page to render either a
+/// vertical stack of full-width buttons or a horizontal row of compact
+/// tiles (Sprout band).
+class _EndCta {
+  const _EndCta({
+    required this.label,
+    required this.shortLabel,
+    required this.icon,
+    required this.onTap,
+  });
+  final String label;
+  final String shortLabel;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
 /// Brief golden-star burst that fans out from one edge whenever its
 /// [trigger] value changes — used to celebrate a completed page flip.
 class _FlipSparkles extends StatefulWidget {
-  const _FlipSparkles({required this.trigger, required this.fromRight});
+  const _FlipSparkles({
+    required this.trigger,
+    required this.fromRight,
+    this.largeBurst = false,
+  });
 
   final int trigger;
   final bool fromRight;
+  /// When true, render a denser/bigger constellation with a longer animation
+  /// — used for the Sprout band where the page-flip celebration needs to be
+  /// more obvious to keep the toddler's attention.
+  final bool largeBurst;
 
   @override
   State<_FlipSparkles> createState() => _FlipSparklesState();
@@ -3847,7 +4054,7 @@ class _FlipSparkles extends StatefulWidget {
 
 class _FlipSparklesState extends State<_FlipSparkles>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late AnimationController _controller;
 
   // Hand-tuned constellation: angle (radians, 0 = horizontal outward),
   // travel distance, icon size, color.
@@ -3860,18 +4067,38 @@ class _FlipSparklesState extends State<_FlipSparkles>
     (1.1, 75, 16, Color(0xFFFFFFFF)),
   ];
 
+  // Sprout-band variant: 9 sparks, sizes 20-32, distances 100-180, 800ms.
+  static const _sparksLarge = <(double, double, double, Color)>[
+    (-1.2, 100, 20, Color(0xFFFFFFFF)),
+    (-0.8, 130, 26, Color(0xFFFFD700)),
+    (-0.4, 165, 30, Color(0xFFFFB300)),
+    (-0.1, 180, 32, Color(0xFFFFD700)),
+    (0.1, 175, 30, Color(0xFFFFC107)),
+    (0.4, 160, 28, Color(0xFFFFD700)),
+    (0.8, 125, 24, Color(0xFFFFB300)),
+    (1.2, 100, 22, Color(0xFFFFFFFF)),
+    (0.0, 140, 28, Color(0xFFFFFFFF)),
+  ];
+
+  List<(double, double, double, Color)> get _activeSparks =>
+      widget.largeBurst ? _sparksLarge : _sparks;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
+      duration: Duration(milliseconds: widget.largeBurst ? 800 : 650),
     );
   }
 
   @override
   void didUpdateWidget(_FlipSparkles oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.largeBurst != widget.largeBurst) {
+      _controller.duration =
+          Duration(milliseconds: widget.largeBurst ? 800 : 650);
+    }
     if (oldWidget.trigger != widget.trigger && widget.trigger > 0) {
       _controller.forward(from: 0);
     }
@@ -3898,7 +4125,7 @@ class _FlipSparklesState extends State<_FlipSparkles>
           final fade = (1.0 - t).clamp(0.0, 1.0);
           return Stack(
             children: [
-              for (final spark in _sparks)
+              for (final spark in _activeSparks)
                 Align(
                   alignment: widget.fromRight
                       ? Alignment.centerRight
@@ -3955,6 +4182,8 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
   double _opacity = 1.0;
   bool _hasInteracted = false;
   Timer? _fadeTimer;
+  Timer? _pulseTimer;
+  int _pulseTrigger = 0;
 
   @override
   void initState() {
@@ -3965,12 +4194,21 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
           setState(() => _opacity = 0.0);
         }
       });
+    } else {
+      // Sprout-band only: pulse the always-visible arrow every ~4.5s to
+      // invite a tap. Drives a one-shot TweenAnimationBuilder (in build)
+      // via a monotonically-increasing key.
+      _pulseTimer = Timer.periodic(const Duration(milliseconds: 4500), (_) {
+        if (!mounted) return;
+        setState(() => _pulseTrigger++);
+      });
     }
   }
 
   @override
   void dispose() {
     _fadeTimer?.cancel();
+    _pulseTimer?.cancel();
     super.dispose();
   }
 
@@ -3991,7 +4229,7 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
   @override
   Widget build(BuildContext context) {
     final isLeft = widget.direction == _PageArrowDirection.left;
-    return GestureDetector(
+    final tappable = GestureDetector(
       onTap: _handleTap,
       behavior: HitTestBehavior.translucent,
       child: AnimatedOpacity(
@@ -4016,6 +4254,25 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
           ),
         ),
       ),
+    );
+    if (!widget.alwaysVisible) return tappable;
+    // Each time _pulseTrigger increments, run a one-shot scale tween that
+    // peaks around 1.15 and rings back to 1.0 with an elastic feel. We
+    // tween a normalized 0..1 progress and shape it ourselves so the
+    // animation both starts AND ends at scale 1.0. The ValueKey forces
+    // the builder to restart from 0 instead of holding at 1.
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('pulse-$_pulseTrigger'),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      builder: (context, t, child) {
+        // Triangle pulse 0→1→0 fed through elasticOut for the bouncy ring.
+        final pulse = 1.0 - (2.0 * t - 1.0).abs();
+        final eased = Curves.elasticOut.transform(pulse.clamp(0.0, 1.0));
+        final scale = 1.0 + 0.15 * eased;
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: tappable,
     );
   }
 }

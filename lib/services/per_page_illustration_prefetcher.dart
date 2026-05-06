@@ -63,6 +63,7 @@ class PerPageIllustrationPrefetcher {
     this.characterAppearance,
     this.companions,
     this.sceneRequirements,
+    this.allowServerKey = false,
     Set<int>? skipPages,
     http.Client? client,
   })  : _skipPages = Set<int>.from(skipPages ?? const <int>{}),
@@ -82,6 +83,12 @@ class PerPageIllustrationPrefetcher {
   final Map<String, dynamic>? characterAppearance;
   final List<Map<String, String>>? companions;
   final String? sceneRequirements;
+  /// When true, fall through to the backend's server-managed Imagen key when
+  /// the user has no BYOK token. The backend's `/generate-illustrations`
+  /// route already supports both paths — it uses `user_api_key` if present,
+  /// otherwise the server's image generator. Used for Sprout-band reads
+  /// where per-page art is essential and we don't want to gate it on BYOK.
+  final bool allowServerKey;
 
   final Set<int> _skipPages;
   final http.Client _client;
@@ -105,8 +112,9 @@ class PerPageIllustrationPrefetcher {
     if (_disposed) return;
 
     _userApiKey = await ApiServiceManager.getUserApiKey();
-    if (_userApiKey == null || _userApiKey!.isEmpty) {
-      // BYOK not configured — leave every page idle.
+    if ((_userApiKey == null || _userApiKey!.isEmpty) && !allowServerKey) {
+      // BYOK not configured and server-key path not enabled — leave every
+      // page idle.
       return;
     }
 
@@ -181,7 +189,8 @@ class PerPageIllustrationPrefetcher {
   Future<void> _generatePage(int pageIndex) async {
     if (_disposed) return;
     final apiKey = _userApiKey;
-    if (apiKey == null || apiKey.isEmpty) return;
+    final hasUserKey = apiKey != null && apiKey.isNotEmpty;
+    if (!hasUserKey && !allowServerKey) return;
 
     _states[pageIndex].value =
         const PageIllustrationState(status: PageIllustrationStatus.loading);
@@ -189,6 +198,9 @@ class PerPageIllustrationPrefetcher {
     try {
       final scene = _sceneFromPage(pageTexts[pageIndex]);
       final headers = await ApiServiceManager.authHeaders();
+      // Backend `/generate-illustrations` uses user_api_key when present and
+      // otherwise falls back to the server's image generator, so we only
+      // include the key when we actually have one.
       final response = await _client
           .post(
             Uri.parse('${Environment.backendUrl}/generate-illustrations'),
@@ -204,7 +216,7 @@ class PerPageIllustrationPrefetcher {
                 'character_appearance': characterAppearance,
               if (companions != null && companions!.isNotEmpty)
                 'companions': companions,
-              'user_api_key': apiKey,
+              if (hasUserKey) 'user_api_key': apiKey,
             }),
           )
           .timeout(const Duration(seconds: 60));
