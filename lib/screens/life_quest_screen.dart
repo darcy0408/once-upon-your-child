@@ -45,9 +45,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   LifeQuestScenario? _activeQuest;
   QuestSegment? _currentSegment;
   final List<String> _segmentHistory = []; // for rewind
-  /// Sprout-only: which cloud persona the user tapped on the entry grid.
-  /// Null = entry grid is showing. Non-null = filtered quest list for that cloud.
-  SproutCloud? _selectedCloud;
+  /// Sprout-only: which animal friend the user tapped on the entry grid.
+  /// Null = entry grid is showing. Non-null = filtered quest list for that friend.
+  SproutFriend? _selectedFriend;
 
   /// On for Sprout (3-5 can't read story prose), off otherwise (older kids
   /// can read at their own pace and may prefer silent reading).
@@ -57,12 +57,12 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   bool get _isExplorer => ageBandFromAge(widget.childAge) == AgeBand.explorer;
   bool get _isAdventurer => ageBandFromAge(widget.childAge) == AgeBand.adventurer;
 
-  /// Clouds that have at least one Sprout quest. Empty clouds (e.g. Sunny
+  /// Friends that have at least one Sprout quest. Empty friends (e.g. Sunny Pup
   /// while no happy stories exist) are hidden from the entry grid so a
   /// 4-year-old doesn't tap the brightest-looking option and hit a dead end.
-  List<SproutCloud> get _activeClouds => SproutCloud.values
-      .where((cloud) => allLifeQuests.any((q) =>
-          q.cloud == cloud &&
+  List<SproutFriend> get _activeFriends => SproutFriend.values
+      .where((friend) => allLifeQuests.any((q) =>
+          q.friend == friend &&
           q.recommendedBands.contains(AgeBand.sprout)))
       .toList();
 
@@ -71,13 +71,13 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     super.initState();
     _ttsEnabled = _isSprout;
     if (_isSprout && _activeQuest == null) {
-      // After the cloud grid is first painted, speak a welcome that names
-      // each visible cloud so non-readers know what they're choosing between.
+      // After the friend grid is first painted, speak a welcome that names
+      // each visible friend so non-readers know what they're choosing between.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final names = _activeClouds.map((c) => c.displayName).join(', ');
+        final names = _activeFriends.map((c) => c.displayName).join(', ');
         AppTtsService.instance.speak(
-          'Tap a cloud friend! $names.',
+          'Tap a friend! $names.',
           rateScale: 0.65,
         );
       });
@@ -123,9 +123,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     if (widget.selectedEmotion != null) {
       quests = quests.where((q) => q.emotions.contains(widget.selectedEmotion)).toList();
     }
-    // Sprout: when a cloud is selected, only show quests for that cloud.
-    if (_isSprout && _selectedCloud != null) {
-      quests = quests.where((q) => q.cloud == _selectedCloud).toList();
+    // Sprout: when a friend is selected, only show quests for that friend.
+    if (_isSprout && _selectedFriend != null) {
+      quests = quests.where((q) => q.friend == _selectedFriend).toList();
     }
     return quests;
   }
@@ -228,14 +228,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   // ── Quest Selector ────────────────────────────────────────────────────────
 
   Widget _buildQuestSelector(AgeBandThemeData band) {
-    // Sprout entry: cloud-character grid first. Tap a cloud → filtered quests.
-    if (_isSprout && _selectedCloud == null) {
-      return _buildSproutCloudGrid(band);
+    // Sprout entry: animal-friend grid first. Tap a friend → filtered quests.
+    if (_isSprout && _selectedFriend == null) {
+      return _buildSproutFriendGrid(band);
     }
     final quests = _matchingQuests;
     final isYoung = widget.childAge <= 8;
     final headerTitle = _isSprout
-        ? _selectedCloud!.displayName
+        ? _selectedFriend!.displayName
         : 'Pick Your Quest';
     return Column(
       children: [
@@ -251,10 +251,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                       : Icons.close,
                   color: Colors.white60,
                 ),
-                tooltip: _isSprout ? 'Back to clouds' : null,
+                tooltip: _isSprout ? 'Back to friends' : null,
                 onPressed: () {
                   if (_isSprout) {
-                    setState(() => _selectedCloud = null);
+                    setState(() => _selectedFriend = null);
                   } else {
                     Navigator.of(context).pop();
                   }
@@ -282,7 +282,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
         ),
-        // Coping Toolbox — Explorer + Adventurer. Sprout has the cloud picker
+        // Coping Toolbox — Explorer + Adventurer. Sprout has the friend picker
         // as its entry pattern; Creator+ get reframed-language techniques in
         // a future pass (current set is too cartoony for 12+).
         if (_isExplorer || _isAdventurer) _buildCopingToolbox(band),
@@ -311,7 +311,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     const SizedBox(height: 8),
                     Text(
                       // Sprout's empty state is rare now that we filter the
-                      // grid to active clouds, but keep a friendly message
+                      // grid to active friends, but keep a friendly message
                       // for the edge where a story is removed at runtime.
                       _isSprout
                           ? 'More stories coming soon!'
@@ -339,13 +339,13 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     );
   }
 
-  // ── Sprout Cloud Grid ─────────────────────────────────────────────────────
+  // ── Sprout Friend Grid ────────────────────────────────────────────────────
 
-  /// 2×2 grid of cloud personas. Each cloud "guides" stories about one
-  /// feeling family. Sunny is shown even when empty so kids see all 4 core
-  /// feelings represented — tapping it just shows the "more stories soon"
-  /// state.
-  Widget _buildSproutCloudGrid(AgeBandThemeData band) {
+  /// 2×2 grid of animal friends. Each friend "guides" stories about one
+  /// feeling family — Sunny Pup (happy), Rainy Bunny (sad), Roary Lion (mad),
+  /// Shy Mouse (scared/shy). Friends with no Sprout quests are hidden from
+  /// the grid so a 4-year-old doesn't hit a dead end.
+  Widget _buildSproutFriendGrid(AgeBandThemeData band) {
     return Column(
       children: [
         Padding(
@@ -371,7 +371,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Text(
-            'Tap a cloud friend!',
+            'Tap a friend!',
             textAlign: TextAlign.center,
             style: _chromeStyle(band, color: Colors.white70, fontSize: 16),
           ),
@@ -384,8 +384,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               crossAxisCount: 2,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              children: _activeClouds
-                  .map((cloud) => _buildCloudCard(cloud, band))
+              children: _activeFriends
+                  .map((friend) => _buildFriendCard(friend, band))
                   .toList(),
             ),
           ),
@@ -394,14 +394,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     );
   }
 
-  Widget _buildCloudCard(SproutCloud cloud, AgeBandThemeData band) {
+  Widget _buildFriendCard(SproutFriend friend, AgeBandThemeData band) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () {
-          AppTtsService.instance.speak(cloud.displayName, rateScale: 0.65);
-          setState(() => _selectedCloud = cloud);
+          AppTtsService.instance.speak(friend.displayName, rateScale: 0.65);
+          setState(() => _selectedFriend = friend);
         },
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -410,13 +410,13 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                cloud.tintColor.withAlpha(60),
-                cloud.tintColor.withAlpha(20),
+                friend.tintColor.withAlpha(60),
+                friend.tintColor.withAlpha(20),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: cloud.tintColor.withAlpha(120),
+              color: friend.tintColor.withAlpha(120),
               width: 2,
             ),
           ),
@@ -425,11 +425,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             children: [
               Expanded(
                 child: Image.asset(
-                  'assets/images/feelings/sprout/${cloud.assetName}.png',
+                  'assets/images/feelings/sprout/${friend.assetName}.png',
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Center(
                     child: Text(
-                      cloud.fallbackEmoji,
+                      friend.fallbackEmoji,
                       style: const TextStyle(fontSize: 64),
                     ),
                   ),
@@ -437,7 +437,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                cloud.displayName,
+                friend.displayName,
                 style: _chromeStyle(band,
                     fontSize: 16, fontWeight: FontWeight.w700),
               ),
@@ -682,11 +682,18 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     final technique = copingById(techniqueId);
     if (technique == null) return const SizedBox.shrink();
     final color = Color(technique.colorSeed);
+    // Sprouts get the active quest's animal friend as a breathing buddy.
+    // Older bands keep the abstract orb (passing null here).
+    final buddy = _isSprout ? _activeQuest?.friend : null;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => CopingPracticeSheet.show(context, technique: technique),
+        onTap: () => CopingPracticeSheet.show(
+          context,
+          technique: technique,
+          buddy: buddy,
+        ),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -825,8 +832,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         ],
         // Secondary actions
         OutlinedButton.icon(
-          icon: Icon(_isSprout ? Icons.cloud : Icons.explore_rounded, size: 18),
-          label: Text(_isSprout ? 'Pick another cloud' : 'Try another quest'),
+          icon: Icon(_isSprout ? Icons.pets_rounded : Icons.explore_rounded, size: 18),
+          label: Text(_isSprout ? 'Pick another friend' : 'Try another quest'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white70,
             side: BorderSide(color: Colors.white.withAlpha(60)),
@@ -836,10 +843,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             ),
           ),
           onPressed: () {
-            // Sprout: back out of the cloud's quest list AND clear the cloud
-            // so they land back on the 4-cloud entry grid.
+            // Sprout: back out of the friend's quest list AND clear the
+            // selection so they land back on the 4-friend entry grid.
             if (_isSprout) {
-              setState(() => _selectedCloud = null);
+              setState(() => _selectedFriend = null);
             }
             _resetToSelector();
           },
@@ -860,49 +867,49 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   }
 }
 
-// ── Sprout Cloud display metadata ───────────────────────────────────────────
+// ── Sprout Friend display metadata ──────────────────────────────────────────
 //
-// UI-side mapping for the SproutCloud enum. Lives here (not in life_quest_data)
+// UI-side mapping for the SproutFriend enum. Lives here (not in life_quest_data)
 // so the data layer doesn't have to import Flutter material.
 
-extension _SproutCloudDisplay on SproutCloud {
+extension _SproutFriendDisplay on SproutFriend {
   String get displayName {
     switch (this) {
-      case SproutCloud.sunny:  return 'Sunny Cloud';
-      case SproutCloud.rain:   return 'Rain Cloud';
-      case SproutCloud.storm:  return 'Storm Cloud';
-      case SproutCloud.wobbly: return 'Wobbly Cloud';
+      case SproutFriend.pup:   return 'Sunny Pup';
+      case SproutFriend.bunny: return 'Rainy Bunny';
+      case SproutFriend.lion:  return 'Roary Lion';
+      case SproutFriend.mouse: return 'Shy Mouse';
     }
   }
 
   /// File name (no extension) under assets/images/feelings/sprout/.
-  /// Reuses the existing per-feeling face images.
+  /// Maps each friend to its emotion-keyed art asset.
   String get assetName {
     switch (this) {
-      case SproutCloud.sunny:  return 'happy';
-      case SproutCloud.rain:   return 'sad';
-      case SproutCloud.storm:  return 'mad';
-      case SproutCloud.wobbly: return 'scared';
+      case SproutFriend.pup:   return 'happy';
+      case SproutFriend.bunny: return 'sad';
+      case SproutFriend.lion:  return 'mad';
+      case SproutFriend.mouse: return 'scared';
     }
   }
 
-  /// Tint used for the cloud card's gradient + border.
+  /// Tint used for the friend card's gradient + border.
   Color get tintColor {
     switch (this) {
-      case SproutCloud.sunny:  return const Color(0xFFFFCB47); // warm yellow
-      case SproutCloud.rain:   return const Color(0xFF6FA8DC); // soft blue
-      case SproutCloud.storm:  return const Color(0xFFE57373); // dusty red
-      case SproutCloud.wobbly: return const Color(0xFFB39DDB); // pale lavender
+      case SproutFriend.pup:   return const Color(0xFFFFCB47); // warm yellow
+      case SproutFriend.bunny: return const Color(0xFF8FB8E8); // soft sky blue
+      case SproutFriend.lion:  return const Color(0xFFFFA07A); // warm coral
+      case SproutFriend.mouse: return const Color(0xFFB39DDB); // pale lavender
     }
   }
 
   /// Fallback emoji shown if the asset image fails to load.
   String get fallbackEmoji {
     switch (this) {
-      case SproutCloud.sunny:  return '☀️';
-      case SproutCloud.rain:   return '🌧️';
-      case SproutCloud.storm:  return '⛈️';
-      case SproutCloud.wobbly: return '🌫️';
+      case SproutFriend.pup:   return '🐶';
+      case SproutFriend.bunny: return '🐰';
+      case SproutFriend.lion:  return '🦁';
+      case SproutFriend.mouse: return '🐭';
     }
   }
 }

@@ -22,14 +22,14 @@ import '../theme/age_band_theme.dart' show AgeBand;
 // Data model
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Sprout-band cloud personas. Each cloud "guides" a family of feeling
+/// Sprout-band animal companions. Each friend "guides" a family of feeling
 /// stories and is the entry point in the Big Feelings section. Older bands
-/// don't use clouds — they see a flat quest list.
-enum SproutCloud {
-  sunny,   // happy / excited
-  rain,    // sad
-  storm,   // mad / frustrated
-  wobbly,  // scared / worried
+/// don't see friends — they get a flat quest list.
+enum SproutFriend {
+  pup,     // happy / excited (Sunny Pup)
+  bunny,   // sad (Rainy Bunny)
+  lion,    // mad / frustrated (Roary Lion)
+  mouse,   // scared / shy (Shy Mouse)
 }
 
 /// A complete pre-built Life Quest scenario with branching paths.
@@ -46,9 +46,9 @@ class LifeQuestScenario {
   final Map<String, QuestSegment> segments;
   /// The id of the first segment.
   final String startSegmentId;
-  /// Sprout-band cloud persona this quest belongs to. Null for non-Sprout
+  /// Sprout-band animal friend this quest belongs to. Null for non-Sprout
   /// quests — they appear in a flat list under the older-band "Life Quest" UI.
-  final SproutCloud? cloud;
+  final SproutFriend? friend;
   /// One-sentence prompt for a grown-up to read aloud after the story ends.
   /// Surfaced as a soft callout on the ending screen — not the kid's content.
   final String? grownupTip;
@@ -62,7 +62,7 @@ class LifeQuestScenario {
     this.recommendedBands = const [AgeBand.adventurer, AgeBand.creator, AgeBand.adolescent],
     required this.segments,
     required this.startSegmentId,
-    this.cloud,
+    this.friend,
     this.grownupTip,
   });
 }
@@ -144,6 +144,7 @@ const allLifeQuests = <LifeQuestScenario>[
   questBigBearHug,
   questBigLoud,
   questMyTurnYourTurn,
+  questBigHello,
   // Explorer band (ages 6-8)
   questWobblyDay,
   questSorryStuck,
@@ -5434,7 +5435,7 @@ const questBigBearHug = LifeQuestScenario(
   emoji: '\u{1F9F8}',
   emotions: ['sad', 'worried'],
   recommendedBands: [AgeBand.sprout],
-  cloud: SproutCloud.rain,
+  friend: SproutFriend.bunny,
   grownupTip: "Ask: 'Have you ever felt like Teddy was lost? What did we do?'",
   startSegmentId: 'bbh_start',
   segments: {
@@ -5558,7 +5559,7 @@ const questBigLoud = LifeQuestScenario(
   hook: 'A loud sound makes your heart jump. What do you do?',
   emoji: '\u{26C8}',
   emotions: ['worried', 'frustrated'],
-  cloud: SproutCloud.wobbly,
+  friend: SproutFriend.mouse,
   grownupTip: "Ask: 'What loud sounds make YOUR heart jump? What helps you feel braver?'",
   recommendedBands: [AgeBand.sprout],
   startSegmentId: 'bl_start',
@@ -5683,7 +5684,7 @@ const questMyTurnYourTurn = LifeQuestScenario(
   emoji: '\u{1F697}',
   emotions: ['angry', 'frustrated', 'sad'],
   recommendedBands: [AgeBand.sprout],
-  cloud: SproutCloud.storm,
+  friend: SproutFriend.lion,
   grownupTip: "Ask: 'When was the last time it was hard to wait? What did we do together?'",
   startSegmentId: 'mt_start',
   segments: {
@@ -5796,6 +5797,132 @@ const questMyTurnYourTurn = LifeQuestScenario(
           'Everybody smiles.\n\n'
           'Sharing is taking turns — '
           'and sometimes, trading.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPROUT QUEST 4: The Big Hello  [Sprout: ages 2-5]
+// Sunny Pup — happy/excited. The bubbly, can't-stand-still feeling of
+// someone you love showing up. Both paths land on warm shared joy.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questBigHello = LifeQuestScenario(
+  id: 'big_hello',
+  title: 'The Big Hello',
+  hook: 'Someone you LOVE is at the door!',
+  emoji: '\u{1F31E}',
+  emotions: ['happy', 'excited'],
+  recommendedBands: [AgeBand.sprout],
+  friend: SproutFriend.pup,
+  grownupTip:
+      "Ask: 'Who makes YOUR tummy fill up with happy bubbles when you see them?'",
+  startSegmentId: 'bh_start',
+  segments: {
+    'bh_start': QuestSegment(
+      id: 'bh_start',
+      content:
+          'You are on the rug, building a tall block tower.\n\n'
+          'DING DONG!\n\n'
+          'A grown-up smiles a HUGE smile.\n\n'
+          '"Guess who is here to see you?"\n\n'
+          'Your heart goes thumpity-thump. '
+          'Your tummy fills with happy bubbles.',
+      choices: [
+        QuestChoice(
+          id: 'bh_c1a',
+          text: 'Run to the door!',
+          nextSegmentId: 'bh_run',
+        ),
+        QuestChoice(
+          id: 'bh_c1b',
+          text: 'Peek around the corner',
+          nextSegmentId: 'bh_peek',
+        ),
+      ],
+    ),
+
+    'bh_run': QuestSegment(
+      id: 'bh_run',
+      content:
+          'You zoom! Little feet, fast as a bunny.\n\n'
+          'The door opens — and there they are!\n\n'
+          'Their arms open BIG and wide.\n\n'
+          '"There you are, my love!"',
+      choices: [
+        QuestChoice(
+          id: 'bh_c2a',
+          text: 'Jump into the biggest hug',
+          nextSegmentId: 'bh_hug',
+        ),
+        QuestChoice(
+          id: 'bh_c2b',
+          text: 'Show them your block tower',
+          nextSegmentId: 'bh_show',
+        ),
+      ],
+    ),
+
+    'bh_peek': QuestSegment(
+      id: 'bh_peek',
+      content:
+          'You peek one eye around the wall.\n\n'
+          'It IS them! The one you love so much.\n\n'
+          'You feel SO excited you wiggle. '
+          'Your toes wiggle. Your fingers wiggle.\n\n'
+          'Sometimes happy is so big it tickles!',
+      copingBreakId: 'star_breath',
+      choices: [
+        QuestChoice(
+          id: 'bh_c3a',
+          text: 'Take one big happy breath',
+          nextSegmentId: 'bh_breath',
+        ),
+        QuestChoice(
+          id: 'bh_c3b',
+          text: 'Run out and say hi!',
+          nextSegmentId: 'bh_run',
+        ),
+      ],
+    ),
+
+    'bh_hug': QuestSegment(
+      id: 'bh_hug',
+      content:
+          'You squish right in. '
+          'They smell just like you remember.\n\n'
+          'Their hug is warm. Soft. Safe.\n\n'
+          '"I missed you so much, {name}."\n\n'
+          'You hug them right back. '
+          'Big feelings can be sunny. '
+          'And sunny feels GOOD.',
+      isEnding: true,
+    ),
+
+    'bh_show': QuestSegment(
+      id: 'bh_show',
+      content:
+          '"Come see! Come see!"\n\n'
+          'You take their hand and pull. They follow.\n\n'
+          '"Whoa! Look at THAT tower!"\n\n'
+          'You stack one more block on top together. '
+          'Higher, higher!\n\n'
+          'Sharing happy makes happy bigger.',
+      isEnding: true,
+    ),
+
+    'bh_breath': QuestSegment(
+      id: 'bh_breath',
+      content:
+          'You take one big breath in...\n\n'
+          'and let it out with a giggle.\n\n'
+          'Your wiggles slow down — '
+          'just enough to walk to the door.\n\n'
+          'You step out. They scoop you up.\n\n'
+          '"My sunshine!"\n\n'
+          'Happy this big is a gift. '
+          'You did it, {name}.',
       isEnding: true,
     ),
   },

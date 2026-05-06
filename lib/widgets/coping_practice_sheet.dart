@@ -11,14 +11,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../data/coping_techniques.dart';
+import '../data/life_quest_data.dart';
 import '../services/app_tts_service.dart';
 
 /// Open the sheet modally. Resolves when the kid taps Done (or dismisses).
+///
+/// [buddy] is the Sprout-band animal friend that should "guide" the practice.
+/// When set, the breathing figure is rendered as the buddy's portrait scaling
+/// in/out instead of the abstract orb, and a per-buddy pep-talk replaces the
+/// generic intro tagline. Older bands pass null and get the original orb.
 class CopingPracticeSheet {
   static Future<void> show(
     BuildContext context, {
     required CopingTechnique technique,
     bool ttsEnabled = true,
+    SproutFriend? buddy,
   }) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder(
@@ -28,6 +35,7 @@ class CopingPracticeSheet {
         pageBuilder: (_, __, ___) => _PracticeScreen(
           technique: technique,
           ttsEnabled: ttsEnabled,
+          buddy: buddy,
         ),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
@@ -36,15 +44,53 @@ class CopingPracticeSheet {
   }
 }
 
+/// Asset path / display name / pep-talk lookup for the SproutFriend buddy.
+/// Inlined here (not shared with life_quest_screen) because the mapping is
+/// tiny and keeping it local avoids a new shared file just for 4 strings.
+String _buddyAssetPath(SproutFriend f) {
+  switch (f) {
+    case SproutFriend.pup:   return 'assets/images/feelings/sprout/happy.png';
+    case SproutFriend.bunny: return 'assets/images/feelings/sprout/sad.png';
+    case SproutFriend.lion:  return 'assets/images/feelings/sprout/mad.png';
+    case SproutFriend.mouse: return 'assets/images/feelings/sprout/scared.png';
+  }
+}
+
+String _buddyDisplayName(SproutFriend f) {
+  switch (f) {
+    case SproutFriend.pup:   return 'Sunny Pup';
+    case SproutFriend.bunny: return 'Rainy Bunny';
+    case SproutFriend.lion:  return 'Roary Lion';
+    case SproutFriend.mouse: return 'Shy Mouse';
+  }
+}
+
+/// One-line pep-talk shown on the intro frame and spoken on practice start
+/// when a buddy is present. Tone matches each animal's emotional family.
+String _buddyPepTalk(SproutFriend f) {
+  switch (f) {
+    case SproutFriend.pup:
+      return 'Sunny Pup wants to breathe with you!';
+    case SproutFriend.bunny:
+      return 'Rainy Bunny will breathe through the sad with you.';
+    case SproutFriend.lion:
+      return 'Roary Lion will huff the angries out with you!';
+    case SproutFriend.mouse:
+      return 'Shy Mouse will breathe brave-breaths with you.';
+  }
+}
+
 enum _Frame { intro, practice, done }
 
 class _PracticeScreen extends StatefulWidget {
   final CopingTechnique technique;
   final bool ttsEnabled;
+  final SproutFriend? buddy;
 
   const _PracticeScreen({
     required this.technique,
     required this.ttsEnabled,
+    this.buddy,
   });
 
   @override
@@ -184,14 +230,39 @@ class _PracticeScreenState extends State<_PracticeScreen> {
   }
 
   Widget _buildIntro() {
+    final buddy = widget.buddy;
     return Column(
       children: [
         _topBar(label: 'Try this', showClose: true),
         const SizedBox(height: 20),
-        Text(_t.emoji, style: const TextStyle(fontSize: 80)),
+        if (buddy != null)
+          // Buddy portrait — clipped to a soft circle with an accent halo so
+          // the rectangular cartoon background blends into the practice sheet.
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _accent.withAlpha(140),
+                  blurRadius: 30,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                _buddyAssetPath(buddy),
+                fit: BoxFit.cover,
+              ),
+            ),
+          )
+        else
+          Text(_t.emoji, style: const TextStyle(fontSize: 80)),
         const SizedBox(height: 12),
         Text(
-          _t.name,
+          buddy != null ? _buddyDisplayName(buddy) : _t.name,
           style: GoogleFonts.fredoka(
             color: _accent,
             fontSize: 32,
@@ -200,7 +271,8 @@ class _PracticeScreenState extends State<_PracticeScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          _t.tagline,
+          buddy != null ? _buddyPepTalk(buddy) : _t.tagline,
+          textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: Colors.white70,
             fontSize: 16,
@@ -268,6 +340,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
           builder: (_, scale, __) {
             // Map scale [0.45..1.0] → glow blur for a subtle "breath aura."
             final glow = 60.0 + ((scale - 0.45) / 0.55) * 90.0;
+            final buddy = widget.buddy;
             return SizedBox(
               width: 220,
               height: 220,
@@ -277,12 +350,14 @@ class _PracticeScreenState extends State<_PracticeScreen> {
                   height: 200 * scale,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _accent.withAlpha(220),
-                        _accent.withAlpha(90),
-                      ],
-                    ),
+                    gradient: buddy == null
+                        ? RadialGradient(
+                            colors: [
+                              _accent.withAlpha(220),
+                              _accent.withAlpha(90),
+                            ],
+                          )
+                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: _accent.withAlpha(140),
@@ -291,12 +366,19 @@ class _PracticeScreenState extends State<_PracticeScreen> {
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      _t.emoji,
-                      style: TextStyle(fontSize: 64 * scale),
-                    ),
-                  ),
+                  child: buddy != null
+                      ? ClipOval(
+                          child: Image.asset(
+                            _buddyAssetPath(buddy),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            _t.emoji,
+                            style: TextStyle(fontSize: 64 * scale),
+                          ),
+                        ),
                 ),
               ),
             );
