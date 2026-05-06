@@ -51,13 +51,11 @@ class _PracticeScreen extends StatefulWidget {
   State<_PracticeScreen> createState() => _PracticeScreenState();
 }
 
-class _PracticeScreenState extends State<_PracticeScreen>
-    with SingleTickerProviderStateMixin {
+class _PracticeScreenState extends State<_PracticeScreen> {
   _Frame _frame = _Frame.intro;
   int _stepIndex = 0;
   int _cycle = 1;
   Timer? _stepTimer;
-  late final AnimationController _orbController;
 
   CopingTechnique get _t => widget.technique;
   CopingStep get _currentStep => _t.steps[_stepIndex];
@@ -65,20 +63,39 @@ class _PracticeScreenState extends State<_PracticeScreen>
   Color get _accent => Color(_t.colorSeed);
 
   @override
-  void initState() {
-    super.initState();
-    _orbController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    );
-  }
-
-  @override
   void dispose() {
     _stepTimer?.cancel();
-    _orbController.dispose();
     AppTtsService.instance.stop();
     super.dispose();
+  }
+
+  // Scale targets per action. The TweenAnimationBuilder in _buildPractice
+  // reads these to drive the orb size from begin → end across the step's
+  // duration. Picked for visible breath: ~0.45 (small) ↔ 1.0 (full).
+  double _beginScaleFor(CopingAction action) {
+    switch (action) {
+      case CopingAction.breatheIn:
+        return 0.45;
+      case CopingAction.breatheOut:
+        return 1.0;
+      case CopingAction.hold:
+        return 1.0;
+      case CopingAction.prompt:
+        return 0.55;
+    }
+  }
+
+  double _endScaleFor(CopingAction action) {
+    switch (action) {
+      case CopingAction.breatheIn:
+        return 1.0;
+      case CopingAction.breatheOut:
+        return 0.45;
+      case CopingAction.hold:
+        return 1.0;
+      case CopingAction.prompt:
+        return 0.55;
+    }
   }
 
   void _start() {
@@ -87,36 +104,20 @@ class _PracticeScreenState extends State<_PracticeScreen>
       _stepIndex = 0;
       _cycle = 1;
     });
-    _runStep();
+    _scheduleAdvance();
+    _maybeSpeakStep();
   }
 
-  void _runStep() {
+  void _maybeSpeakStep() {
+    if (!widget.ttsEnabled) return;
     final step = _currentStep;
-    // Drive the orb animation per action.
-    _orbController.duration = step.duration;
-    switch (step.action) {
-      case CopingAction.breatheIn:
-        _orbController.forward(from: 0);
-        break;
-      case CopingAction.breatheOut:
-        _orbController.reverse(from: 1);
-        break;
-      case CopingAction.hold:
-        // Pause animation at full size to suggest "hold the breath."
-        _orbController.value = 1;
-        break;
-      case CopingAction.prompt:
-        // Grounding step — orb stays gently visible at half scale.
-        _orbController.value = 0.55;
-        break;
-    }
-    // Speak the step label so non-readers can follow along.
-    if (widget.ttsEnabled) {
-      final spoken = step.cue == null ? step.label : '${step.label}. ${step.cue}';
-      AppTtsService.instance.speak(spoken, rateScale: 0.85);
-    }
+    final spoken = step.cue == null ? step.label : '${step.label}. ${step.cue}';
+    AppTtsService.instance.speak(spoken, rateScale: 0.85);
+  }
+
+  void _scheduleAdvance() {
     _stepTimer?.cancel();
-    _stepTimer = Timer(step.duration, _advance);
+    _stepTimer = Timer(_currentStep.duration, _advance);
   }
 
   void _advance() {
@@ -124,7 +125,8 @@ class _PracticeScreenState extends State<_PracticeScreen>
     final isLastStep = _stepIndex == _t.steps.length - 1;
     if (!isLastStep) {
       setState(() => _stepIndex++);
-      _runStep();
+      _scheduleAdvance();
+      _maybeSpeakStep();
       return;
     }
     // Finished the cycle — repeat or finish.
@@ -133,7 +135,8 @@ class _PracticeScreenState extends State<_PracticeScreen>
         _cycle++;
         _stepIndex = 0;
       });
-      _runStep();
+      _scheduleAdvance();
+      _maybeSpeakStep();
       return;
     }
     setState(() => _frame = _Frame.done);
@@ -244,6 +247,8 @@ class _PracticeScreenState extends State<_PracticeScreen>
 
   Widget _buildPractice() {
     final step = _currentStep;
+    final beginScale = _beginScaleFor(step.action);
+    final endScale = _endScaleFor(step.action);
     return Column(
       children: [
         _topBar(
@@ -251,40 +256,46 @@ class _PracticeScreenState extends State<_PracticeScreen>
           showClose: true,
         ),
         const Spacer(),
-        // Animated orb — scales with the breath.
-        AnimatedBuilder(
-          animation: _orbController,
-          builder: (_, __) {
-            // Map controller [0..1] → scale [0.45..1.0] for visible breath.
-            final scale = 0.45 + (_orbController.value * 0.55);
-            final glow = (60 + _orbController.value * 90).toDouble();
-            return Container(
+        // Animated orb — scales with the breath. The ValueKey forces a fresh
+        // TweenAnimationBuilder mount whenever the step (or cycle) changes,
+        // so the tween restarts at `beginScale` and animates to `endScale`
+        // over the step's full duration.
+        TweenAnimationBuilder<double>(
+          key: ValueKey('orb-c$_cycle-s$_stepIndex'),
+          tween: Tween<double>(begin: beginScale, end: endScale),
+          duration: step.duration,
+          curve: Curves.easeInOut,
+          builder: (_, scale, __) {
+            // Map scale [0.45..1.0] → glow blur for a subtle "breath aura."
+            final glow = 60.0 + ((scale - 0.45) / 0.55) * 90.0;
+            return SizedBox(
               width: 220,
               height: 220,
-              alignment: Alignment.center,
-              child: Container(
-                width: 200 * scale,
-                height: 200 * scale,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      _accent.withAlpha(220),
-                      _accent.withAlpha(90),
+              child: Center(
+                child: Container(
+                  width: 200 * scale,
+                  height: 200 * scale,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        _accent.withAlpha(220),
+                        _accent.withAlpha(90),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _accent.withAlpha(140),
+                        blurRadius: glow,
+                        spreadRadius: 6,
+                      ),
                     ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _accent.withAlpha(140),
-                      blurRadius: glow,
-                      spreadRadius: 6,
+                  child: Center(
+                    child: Text(
+                      _t.emoji,
+                      style: TextStyle(fontSize: 64 * scale),
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    _t.emoji,
-                    style: TextStyle(fontSize: 64 * scale),
                   ),
                 ),
               ),
