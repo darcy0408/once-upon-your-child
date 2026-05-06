@@ -1290,19 +1290,7 @@ class _StoryScreenState extends State<StoryScreen> {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 1.0,
-              children: _quickThemes
-                  .where((theme) {
-                    // Big Feelings / Life Quest belongs on the My Quests tab
-                    // for Explorer and the cloud grid for Sprout — not in the
-                    // Quick Adventure scene picker for either young band.
-                    if (theme['id'] == 'big_feelings_quest' &&
-                        (band.band == AgeBand.sprout ||
-                            band.band == AgeBand.explorer)) {
-                      return false;
-                    }
-                    return true;
-                  })
-                  .map((theme) {
+              children: _quickThemes.map((theme) {
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);

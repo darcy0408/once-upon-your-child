@@ -470,12 +470,6 @@ class HeroScenePage extends StatelessWidget {
       return null;
     }
 
-    // Big Feelings / Life Quest belongs on the dedicated tab (My Quests for
-    // Explorer, Big Feelings cloud grid for Sprout). Mixing emotional content
-    // into the adventure scene picker confuses the moment for younger kids.
-    final isYoungBand =
-        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
-
     final featuredButtons = [
       SceneButtonData(
         id: 'vanishing_colors',
@@ -502,14 +496,19 @@ class HeroScenePage extends StatelessWidget {
         pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
         thematicQuestion: thematicQuestionFor('volcano_dragons'),
       ),
-      if (!isYoungBand)
-        SceneButtonData(
-          id: 'big_feelings_quest',
-          label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
-          normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
-          pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
-          thematicQuestion: thematicQuestionFor('big_feelings_quest'),
-        ),
+      // Big Feelings tile is shown for ALL bands. Tapping it opens the cloud
+      // picker for younger bands / badge grid for adventurer+, then runs an
+      // emotion-focused story. The dedicated My Quests / Big Feelings bottom-
+      // nav tab is the *practice* surface (toolbox + standalone quests with
+      // coping breaks) — the scene-picker tile is the *story-from-feeling*
+      // entry. Different paths, both useful.
+      SceneButtonData(
+        id: 'big_feelings_quest',
+        label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
+        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
+        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+        thematicQuestion: thematicQuestionFor('big_feelings_quest'),
+      ),
     ];
 
     final displayButtons = featuredButtons;
