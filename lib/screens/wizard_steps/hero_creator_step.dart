@@ -34,6 +34,7 @@ import '../../services/parental_consent_service.dart';
 import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
 import 'hero_creator_creative_brief.dart';
+import '../life_quest_screen.dart';
 
 // ---------------------------------------------------------------------------
 class _PetAvatarGenerationResult {
@@ -328,6 +329,58 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final age = widget.wizardData.characterAge <= 0
         ? 8
         : widget.wizardData.characterAge;
+    final band = ageBandFromAge(age);
+
+    // Sprout / Explorer / Adventurer: route the Big Feelings tile straight
+    // into the rich LifeQuestScreen — same surface as the bottom-nav tab,
+    // so the kid sees the Coping Toolbox, the cloud picker, and quests
+    // with in-story coping breaks. This is the *practice and play* path.
+    // After they exit, they land back on the scene picker (no auto-advance);
+    // they can pick a different scene for an AI story or just close the
+    // wizard. Older bands keep the modal-based "feeling → wizard story"
+    // flow until the toolbox is reframed for them.
+    if (band == AgeBand.sprout ||
+        band == AgeBand.explorer ||
+        band == AgeBand.adventurer) {
+      final name = widget.wizardData.characterName.trim().isEmpty
+          ? 'Hero'
+          : widget.wizardData.characterName.trim();
+      final companion = widget.wizardData.companionNames.isNotEmpty
+          ? widget.wizardData.companionNames.first
+          : '';
+      final gender = widget.wizardData.characterGender;
+      final pronoun = gender == 'Girl'
+          ? 'she'
+          : gender == 'Boy'
+              ? 'he'
+              : 'they';
+      final pronounCap = gender == 'Girl'
+          ? 'She'
+          : gender == 'Boy'
+              ? 'He'
+              : 'They';
+      final possessive = gender == 'Girl'
+          ? 'her'
+          : gender == 'Boy'
+              ? 'his'
+              : 'their';
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LifeQuestScreen(
+            childAge: age,
+            childName: name,
+            companionName: companion,
+            pronoun: pronoun,
+            pronounCap: pronounCap,
+            possessive: possessive,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Older bands (creator+, adolescent, adult): existing modal flow that
+    // captures a feeling result and advances the wizard into AI generation.
     final usesAges6To8Vocabulary = age >= 6 && age <= 8;
     final result = await FeelingsQuestModal.show(context, childAge: age);
     if (result != null && mounted) {
@@ -338,9 +391,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         }
         widget.wizardData.selectedScenario = 'big_feelings_quest';
       });
-      // Auto-advance: a 4yo expects forward motion after picking a feeling.
-      // Without this they land back on the scene picker with no visible
-      // change and assume "nothing happened."
       _heroNextPage();
     }
   }
