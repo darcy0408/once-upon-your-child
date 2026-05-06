@@ -777,12 +777,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           textAlign: TextAlign.center,
           style: _bandTitleStyle(band, baseFontSize: 28),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
-          "Tap your character to continue.",
-          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
+          "Tap your character to start a story!",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.fredoka(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 24),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -801,39 +806,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
           child: _buildCreateNewHeroButton(),
         ),
       ],
     );
   }
 
+  // Demoted to a secondary text-style button so the character tile above
+  // reads as the primary "tap me" affordance for kids.
   Widget _buildCreateNewHeroButton() {
-    final band =
-        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final ageBand = band.band;
-    return ElevatedButton(
+    return TextButton.icon(
       onPressed: _switchToNewCharacter,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF9B3FD8),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        elevation: 8,
-        shadowColor: const Color(0xFFFFD700).withAlpha(100),
+      icon: const Icon(Icons.add_circle_outline,
+          size: 18, color: Colors.white70),
+      label: Text(
+        "Or create someone new",
+        style: GoogleFonts.fredoka(
+          color: Colors.white70,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.white38,
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.add_circle_outline, size: 24),
-          const SizedBox(width: 12),
-          Text(
-            ageBand == AgeBand.creator
-                ? "Create a New Hero"
-                : "Create a New Hero!",
-            style: _bandTitleStyle(band, baseFontSize: 18),
-          ),
-        ],
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       ),
     );
   }
