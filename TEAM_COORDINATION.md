@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-06 | 10:09 | 536f | main | Fix static breathing-orb in CopingPracticeSheet | [link](docs/sessions/2026-05-06-1009-536f.md) |
 | 2026-05-06 | 08:02 | 81f6 | main | Sprout polish: per-page art + backend caps + welcome-back | [link](docs/sessions/2026-05-06-0802-81f6.md) |
 | 2026-05-05 | 20:35 | d046 | main | Push 7-commit backlog: coping toolbox + Big Feelings wizard routing | [link](docs/sessions/2026-05-05-2035-d046.md) |
 | 2026-05-05 | 00:17 | 78ab | main | A6 raced + per-page BYOK illustration prefetcher spike | [link](docs/sessions/2026-05-05-0017-78ab.md) |
