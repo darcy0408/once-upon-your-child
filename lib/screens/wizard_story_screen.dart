@@ -15,9 +15,12 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
+import '../services/caregiver_service.dart';
+import '../services/child_profile_service.dart';
 import '../services/isar_service.dart';
 import 'bedtime_wizard_screen.dart';
 import 'chronicles_list_screen.dart';
+import 'parent_controls_screen.dart';
 
 // ── Wizard draft persistence helpers (top-level so magic_review_step can call them) ──
 
@@ -72,6 +75,41 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
 
   // Loaded data
   late List<Character> _savedCharacters;
+
+  /// Loads the active profile's primary caregiver label and pushes the Life
+  /// Quest screen with `grownup` interpolated. Falls back to "your grown-up".
+  Future<void> _openLifeQuests() async {
+    final activeId = await ChildProfileService().getActiveProfileId();
+    final grownup = await CaregiverService().grownupLabelOrDefault(activeId);
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => LifeQuestScreen(
+        childAge: _wizardData.characterAge <= 0 ? 8 : _wizardData.characterAge,
+        childName: _wizardData.characterName.isNotEmpty
+            ? _wizardData.characterName
+            : 'You',
+        companionName: _wizardData.companionNames.isNotEmpty
+            ? _wizardData.companionNames.first
+            : '',
+        pronoun: _wizardData.characterGender == 'Girl'
+            ? 'she'
+            : _wizardData.characterGender == 'Boy'
+                ? 'he'
+                : 'they',
+        pronounCap: _wizardData.characterGender == 'Girl'
+            ? 'She'
+            : _wizardData.characterGender == 'Boy'
+                ? 'He'
+                : 'They',
+        possessive: _wizardData.characterGender == 'Girl'
+            ? 'her'
+            : _wizardData.characterGender == 'Boy'
+                ? 'his'
+                : 'their',
+        grownup: grownup,
+      ),
+    ));
+  }
 
   @override
   void initState() {
@@ -542,55 +580,12 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         label: band.band == AgeBand.sprout
                             ? 'Big Feelings'
                             : 'Life Quests',
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => LifeQuestScreen(
-                              childAge: _wizardData.characterAge <= 0
-                                  ? 8
-                                  : _wizardData.characterAge,
-                              childName: _wizardData.characterName.isNotEmpty
-                                  ? _wizardData.characterName
-                                  : 'You',
-                              companionName: _wizardData.companionNames.isNotEmpty
-                                  ? _wizardData.companionNames.first
-                                  : '',
-                              pronoun: _wizardData.characterGender == 'Girl'
-                                  ? 'she'
-                                  : _wizardData.characterGender == 'Boy'
-                                      ? 'he'
-                                      : 'they',
-                              pronounCap: _wizardData.characterGender == 'Girl'
-                                  ? 'She'
-                                  : _wizardData.characterGender == 'Boy'
-                                      ? 'He'
-                                      : 'They',
-                              possessive: _wizardData.characterGender == 'Girl'
-                                  ? 'her'
-                                  : _wizardData.characterGender == 'Boy'
-                                      ? 'his'
-                                      : 'their',
-                            ),
-                          ),
-                        ),
+                        onPressed: _openLifeQuests,
                       )
                     else
                       IconButton(
                         icon: const Icon(Icons.explore_rounded, color: Colors.white),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => LifeQuestScreen(
-                              childAge: _wizardData.characterAge <= 0
-                                  ? 8
-                                  : _wizardData.characterAge,
-                              childName: _wizardData.characterName.isNotEmpty
-                                  ? _wizardData.characterName
-                                  : 'You',
-                              companionName: _wizardData.companionNames.isNotEmpty
-                                  ? _wizardData.companionNames.first
-                                  : '',
-                            ),
-                          ),
-                        ),
+                        onPressed: _openLifeQuests,
                         tooltip: 'Life Quests',
                       ),
                     // Character Library button — labeled for young bands, icon-only for mature
@@ -665,6 +660,24 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           tooltip: 'Voice Story Mode',
                         ),
                       ),
+                    // Parent settings — small icon-only button so kids ignore
+                    // it but parents can find it from anywhere in the wizard.
+                    Semantics(
+                      button: true,
+                      label: 'Parent controls',
+                      child: IconButton(
+                        icon: const Icon(Icons.shield_outlined,
+                            color: Colors.white70, size: 22),
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ParentControlsScreen(),
+                            ),
+                          );
+                        },
+                        tooltip: 'Parent',
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -24,6 +24,7 @@ class LifeQuestScreen extends StatefulWidget {
     this.pronoun = 'they',
     this.pronounCap = 'They',
     this.possessive = 'their',
+    this.grownup = 'your grown-up',
     this.selectedEmotion,
   });
 
@@ -33,6 +34,9 @@ class LifeQuestScreen extends StatefulWidget {
   final String pronoun;
   final String pronounCap;
   final String possessive;
+  /// Primary caregiver label (e.g. "Mommy", "Grandma"). Defaults to
+  /// "your grown-up" when no Family info has been set in Parent Controls.
+  final String grownup;
   /// Pre-filter quests by emotion (from the feelings badge grid).
   final String? selectedEmotion;
 
@@ -138,6 +142,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
       pronoun: widget.pronoun,
       pronounCap: widget.pronounCap,
       possessive: widget.possessive,
+      grownup: widget.grownup,
     );
   }
 

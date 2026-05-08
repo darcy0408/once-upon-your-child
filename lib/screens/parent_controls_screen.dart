@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service_manager.dart';
+import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
 import '../services/screen_time_service.dart';
@@ -131,6 +132,12 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   String? _activeProfileId;
   String? _activeProfileName;
 
+  // Family / Caregivers
+  final _caregiverService = CaregiverService();
+  CaregiverInfo _caregivers = CaregiverInfo.empty;
+  bool _familyExpanded = false;
+  final _customCaregiverController = TextEditingController();
+
   // Big Feelings
   bool _bigFeelingsExpanded = false;
   bool _mathGateUnlocked = false;
@@ -157,6 +164,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   void dispose() {
     _autoSaveTimer?.cancel();
     _mathController.dispose();
+    _customCaregiverController.dispose();
     super.dispose();
   }
 
@@ -210,6 +218,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       }
     }
 
+    final caregivers = await _caregiverService.load(activeProfileId);
+
     setState(() {
       _hasApiKey = hasKey;
       _allowPhotoAvatar = allowPhoto;
@@ -223,8 +233,32 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _selectedTriggers = savedTriggers;
       _copingSelections = copingSelections;
       _repairSelections = repairSelections;
+      _caregivers = caregivers;
       _loading = false;
     });
+  }
+
+  // ── Family / Caregivers ────────────────────────────────────────────────────
+
+  /// The chip presets shown on the Family panel. "Other..." opens a free-text
+  /// field so culturally-specific labels (Tata, Abuela, Yia Yia, etc.) work.
+  static const _caregiverPresets = <String>[
+    'Mommy', 'Mama', 'Mom', 'Mum',
+    'Daddy', 'Dada', 'Papa', 'Pa', 'Dad',
+    'Grandma', 'Nana', 'Granny',
+    'Grandpa', 'Granddad', 'Pop-Pop',
+    'Auntie', 'Uncle',
+  ];
+
+  Future<void> _setPrimaryCaregiver(String? value) async {
+    final id = _activeProfileId;
+    if (id == null) return;
+    final next = (value == null || value.trim().isEmpty)
+        ? _caregivers.copyWith(clearPrimary: true)
+        : _caregivers.copyWith(primary: value.trim());
+    await _caregiverService.save(id, next);
+    if (!mounted) return;
+    setState(() => _caregivers = next);
   }
 
   Set<String> _splitSaved(dynamic raw) {
@@ -525,6 +559,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                       ),
                     ),
                   const SizedBox(height: AppSpacing.lg),
+                  _buildFamilySection(),
+                  const SizedBox(height: AppSpacing.lg),
                   _buildBigFeelingsSection(),
                   const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Data & Privacy'),
@@ -669,6 +705,193 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   }
 
   // ── Life Quests section (parent-facing trigger config) ──────────────────────
+
+  Widget _buildFamilySection() {
+    final hasProfile = _activeProfileId != null;
+    final primary = _caregivers.primary;
+    final isCustom = primary != null &&
+        primary.isNotEmpty &&
+        !_caregiverPresets.contains(primary);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header row
+        GestureDetector(
+          onTap: () =>
+              setState(() => _familyExpanded = !_familyExpanded),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.family_restroom_rounded,
+                    color: Color(0xFFFFD700)),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Family',
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        hasProfile
+                            ? (primary == null || primary.isEmpty
+                                ? 'Stories say "your grown-up". Tap to personalise.'
+                                : 'Stories will say "$primary".')
+                            : 'Create a character first to enable this.',
+                        style: GoogleFonts.fredoka(
+                            color: Colors.white54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _familyExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  color: Colors.white70,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_familyExpanded) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pick the name your child uses for their main grown-up. '
+                  'Stories will say it instead of "your grown-up". '
+                  'Stays on this device — never uploaded.',
+                  style: GoogleFonts.fredoka(
+                      color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (!hasProfile)
+                  Text(
+                    'Make a character first.',
+                    style: GoogleFonts.fredoka(
+                        color: Colors.white54, fontSize: 13),
+                  )
+                else ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final preset in _caregiverPresets)
+                        _CaregiverChip(
+                          label: preset,
+                          selected: primary == preset,
+                          onTap: () => _setPrimaryCaregiver(preset),
+                        ),
+                      _CaregiverChip(
+                        label: 'Other…',
+                        selected: isCustom,
+                        onTap: () async {
+                          final value = await _promptCustomCaregiver(
+                            initial: isCustom ? primary : null,
+                          );
+                          if (value != null) {
+                            await _setPrimaryCaregiver(value);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  if (isCustom)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        'Using "$primary".',
+                        style: GoogleFonts.fredoka(
+                            color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  if (primary != null && primary.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: TextButton.icon(
+                        onPressed: () => _setPrimaryCaregiver(null),
+                        icon: const Icon(Icons.close,
+                            size: 16, color: Colors.white54),
+                        label: Text(
+                          'Clear (use "your grown-up")',
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white54, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<String?> _promptCustomCaregiver({String? initial}) async {
+    _customCaregiverController.text = initial ?? '';
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E0A3C),
+        title: Text(
+          'Custom name',
+          style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18),
+        ),
+        content: TextField(
+          controller: _customCaregiverController,
+          autofocus: true,
+          maxLength: 24,
+          style: GoogleFonts.fredoka(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'e.g. Tata, Abuela, Yia Yia',
+            hintStyle: GoogleFonts.fredoka(color: Colors.white38),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFFFFD700)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.fredoka(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final value = _customCaregiverController.text.trim();
+              Navigator.of(ctx).pop(value.isEmpty ? null : value);
+            },
+            child: Text(
+              'Use this',
+              style: GoogleFonts.fredoka(color: const Color(0xFFFFD700)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildBigFeelingsSection() {
     return Column(
@@ -1245,6 +1468,46 @@ class _ActionTile extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right, color: Colors.white54),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CaregiverChip extends StatelessWidget {
+  const _CaregiverChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFFFD700).withAlpha(38)
+              : Colors.white.withAlpha(20),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? const Color(0xFFFFD700) : Colors.white24,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.fredoka(
+            color: selected ? const Color(0xFFFFD700) : Colors.white,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );

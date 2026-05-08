@@ -17,6 +17,8 @@ import '../../widgets/archetype_card.dart';
 import '../../widgets/magic_star_cursor.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
+import '../../services/caregiver_service.dart';
+import '../../services/child_profile_service.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
 import '../../config/environment.dart';
@@ -368,6 +370,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           : gender == 'Boy'
               ? 'his'
               : 'their';
+      final activeId = await ChildProfileService().getActiveProfileId();
+      final grownup =
+          await CaregiverService().grownupLabelOrDefault(activeId);
+      if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => LifeQuestScreen(
@@ -377,6 +383,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             pronoun: pronoun,
             pronounCap: pronounCap,
             possessive: possessive,
+            grownup: grownup,
           ),
         ),
       );
@@ -2487,12 +2494,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     wizardData: widget.wizardData,
                     imagineItController: _imagineItController,
                     wishController: _wishController,
-                    listeningFor: _listeningFor,
-                    speechAvailable: _speechAvailable,
                     onChanged: () => setState(() {}),
                     onContinue: _heroNextPage,
                     onSceneTap: _onSceneTap,
-                    onToggleListening: _toggleListening,
                     onSpeakForSprout: _speakForSprout,
                   ),
                   HeroStoryTypePage(

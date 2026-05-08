@@ -107,6 +107,10 @@ class QuestChoice {
 /// Applies string interpolation to quest text.
 /// Companion-conditional blocks «...» are removed when companion is empty,
 /// or unwrapped (markers stripped) when companion is present.
+///
+/// `grownup` defaults to "your grown-up" — Sprout quests use `{grownup}` where
+/// a primary caregiver name reads more personally than the generic placeholder.
+/// `{Grownup}` capitalises the first character (sentence-start positions).
 String interpolateQuest(
   String text, {
   required String name,
@@ -114,12 +118,20 @@ String interpolateQuest(
   String pronoun = 'they',
   String pronounCap = 'They',
   String possessive = 'their',
+  String grownup = 'your grown-up',
 }) {
+  // Capitalise first character for sentence-start positions.
+  final grownupCap = grownup.isEmpty
+      ? grownup
+      : grownup[0].toUpperCase() + grownup.substring(1);
+
   var result = text
       .replaceAll('{name}', name)
       .replaceAll('{Pronoun}', pronounCap)
       .replaceAll('{pronoun}', pronoun)
-      .replaceAll('{possessive}', possessive);
+      .replaceAll('{possessive}', possessive)
+      .replaceAll('{Grownup}', grownupCap)
+      .replaceAll('{grownup}', grownup);
 
   if (companion.isEmpty) {
     // Strip companion-conditional blocks entirely
@@ -5955,7 +5967,7 @@ const questGoodbyeHug = LifeQuestScenario(
       id: 'gb_start',
       content:
           'It is morning. You are eating toast.\n\n'
-          'Your grown-up puts on their shoes.\n\n'
+          '{Grownup} puts on their shoes.\n\n'
           '"I have to go to work, sweet pea. '
           'I will be back at snack time."\n\n'
           'Your tummy goes drop. '
@@ -6100,7 +6112,7 @@ const questBigNo = LifeQuestScenario(
       content:
           'You see the cookies on the counter.\n\n'
           '"Cookie, please?"\n\n'
-          'Grown-up shakes their head.\n\n'
+          '{Grownup} shakes their head.\n\n'
           '"Not before lunch, love."\n\n'
           'NOOOO! '
           'Your hands go tight. '
@@ -6126,7 +6138,7 @@ const questBigNo = LifeQuestScenario(
       content:
           'STOMP STOMP STOMP!\n\n'
           'Your feet go thump on the floor.\n\n'
-          'Grown-up sits down on the rug.\n\n'
+          '{Grownup} sits down on the rug.\n\n'
           '"I see your big mad. '
           'Mad is okay. Stomping is okay too — '
           'as long as nobody gets hurt."',
@@ -6151,7 +6163,7 @@ const questBigNo = LifeQuestScenario(
           'ROOOOAAAARRR!\n\n'
           'The hot in your face starts to come out '
           'with the sound.\n\n'
-          'Grown-up roars back. '
+          '{Grownup} roars back. '
           'A little quieter. '
           'A little funnier.\n\n'
           'You both laugh — just a small laugh.\n\n'
@@ -6177,7 +6189,7 @@ const questBigNo = LifeQuestScenario(
           'Stomp. Stomp. Stomp.\n\n'
           'Each stomp is a little softer.\n\n'
           'Soon your feet just want to walk.\n\n'
-          'You sit down next to grown-up.\n\n'
+          'You sit down next to {grownup}.\n\n'
           '"That was a big mad," they say. '
           '"You let it out. You did good, {name}."\n\n'
           'Mad lions get tired too.',
@@ -6240,7 +6252,7 @@ const questFirstHi = LifeQuestScenario(
           'You walk in. So many people!\n\n'
           'Big people you don\'t know. '
           'Little people you don\'t know.\n\n'
-          'You hide behind your grown-up\'s leg. '
+          'You hide behind {grownup}\'s leg. '
           'Your heart goes fast like a tiny mouse.',
       copingBreakId: 'star_breath',
       choices: [
@@ -6389,7 +6401,7 @@ const questWarmHeart = LifeQuestScenario(
       content:
           'DING DONG.\n\n'
           'The mail brought a package!\n\n'
-          'A grown-up reads the tag.\n\n'
+          '{Grownup} reads the tag.\n\n'
           '"Look — it has YOUR name on it. '
           'It is from someone who loves you so much."\n\n'
           'You tear the paper. Rip, rip!\n\n'
@@ -6416,7 +6428,7 @@ const questWarmHeart = LifeQuestScenario(
     'wh_call': QuestSegment(
       id: 'wh_call',
       content:
-          'A grown-up holds the phone for you.\n\n'
+          '{Grownup} holds the phone for you.\n\n'
           'RING. RING.\n\n'
           '"Hi sweet pea!"\n\n'
           'Your voice gets a little wobbly with happy.\n\n'
@@ -6445,7 +6457,7 @@ const questWarmHeart = LifeQuestScenario(
           'You draw the sun. '
           'You draw two stick people holding hands. '
           'That is them and you.\n\n'
-          '"We can mail it tomorrow," says the grown-up.\n\n'
+          '"We can mail it tomorrow," says {grownup}.\n\n'
           'The warm feeling stays right in your chest while you draw.',
       choices: [
         QuestChoice(
@@ -6498,7 +6510,7 @@ const questWarmHeart = LifeQuestScenario(
           'The letters wobble like jelly.\n\n'
           'But it is YOUR name. '
           'In YOUR own little hand.\n\n'
-          'The grown-up tucks the picture in an envelope.\n\n'
+          '{Grownup} tucks the picture in an envelope.\n\n'
           'When they open it on the other side, '
           'they will see your wobbly letters '
           'and their chest will get warm too, {name}.',

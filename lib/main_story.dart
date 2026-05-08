@@ -37,6 +37,7 @@ import 'services/grace_period_analytics.dart';
 import 'subscription_models.dart';
 import 'subscription_service.dart';
 import 'widgets/app_bottom_navigation.dart';
+import 'services/caregiver_service.dart';
 import 'services/child_profile_service.dart';
 import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
@@ -297,29 +298,36 @@ class _StoryScreenState extends State<StoryScreen> {
       } else {
         final charName = _selectedCharacter?.name ?? 'You';
         final charGender = _selectedCharacter?.gender ?? '';
-        Navigator.of(context)
-            .push(MaterialPageRoute(
-              builder: (_) => LifeQuestScreen(
-                childAge: age,
-                childName: charName,
-                pronoun: charGender == 'Girl'
-                    ? 'she'
-                    : charGender == 'Boy'
-                        ? 'he'
-                        : 'they',
-                pronounCap: charGender == 'Girl'
-                    ? 'She'
-                    : charGender == 'Boy'
-                        ? 'He'
-                        : 'They',
-                possessive: charGender == 'Girl'
-                    ? 'her'
-                    : charGender == 'Boy'
-                        ? 'his'
-                        : 'their',
-              ),
-            ))
-            .then((_) => setState(() => _selectedTabIndex = 0));
+        () async {
+          final activeId = await ChildProfileService().getActiveProfileId();
+          final grownup =
+              await CaregiverService().grownupLabelOrDefault(activeId);
+          if (!mounted) return;
+          Navigator.of(context)
+              .push(MaterialPageRoute(
+                builder: (_) => LifeQuestScreen(
+                  childAge: age,
+                  childName: charName,
+                  pronoun: charGender == 'Girl'
+                      ? 'she'
+                      : charGender == 'Boy'
+                          ? 'he'
+                          : 'they',
+                  pronounCap: charGender == 'Girl'
+                      ? 'She'
+                      : charGender == 'Boy'
+                          ? 'He'
+                          : 'They',
+                  possessive: charGender == 'Girl'
+                      ? 'her'
+                      : charGender == 'Boy'
+                          ? 'his'
+                          : 'their',
+                  grownup: grownup,
+                ),
+              ))
+              .then((_) => setState(() => _selectedTabIndex = 0));
+        }();
       }
     } else if (index == libraryIdx) {
       Navigator.of(context)
