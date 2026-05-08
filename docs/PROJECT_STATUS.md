@@ -125,7 +125,7 @@ Sprout-first redesign (avatar simplification, scene auto-advance, full-width sto
 
 ## Known Issues
 
-1. **MT-035 — Sprout Chronicles save bug** ⚠️ — `charactersJson` reported null on freshly saved Sprout stories despite the deployed fix in `378d4aa0`. View-side verification is structurally blocked for anon users (no UI route to `ChroniclesListScreen` without a populated character record). Needs either populated-account session or temporary `debugPrint` instrumentation in `_saveStory()` (`lib/story_result_screen.dart:1294`).
+1. ~~**MT-035 — Sprout Chronicles save bug**~~ ✅ **CLOSED 2026-05-07** — Verified via Playwright: `[MT-035] storyLocal.charactersJson=[{"id":"...","name":"Tester","age":4,"role":"Hero",...}]` non-null on a freshly saved Sprout LTR story. Bug is dead. The original null reading was likely stale browser cache pre-`a7f641b2`. `[MT-035]` debugPrints can now be removed (tracked separately as MT-048).
 2. **ElevenLabs monthly quota exhausted until ~2026-05-05** — production emits clean 503s for `/tts/synthesize`; Flutter falls back silently to on-device TTS. `TTS_DISABLED=true` set locally. Blocks runtime verification of MT-016 / MT-019 / MT-032 audio component until quota reset.
 3. **Manual-tasks backlog: 14 open items**, all browser/device verification:
    - BYOK trio: MT-014, MT-020 (real `AIza…` key on a BYOK-subscribed account)
@@ -134,7 +134,7 @@ Sprout-first redesign (avatar simplification, scene auto-advance, full-width sto
    - Recently shipped, awaiting verify: MT-036 (wizard back-nav), MT-037 (welcome-back sync), MT-038 (page-flip sparkles), MT-039 (avatar tweak URL), MT-040 (phrase-per-line), MT-041 (sprout mini-game)
    - Offline: MT-030 (DevTools throttle scaffold-fallback test)
 4. **Dependabot deferred majors** — stripe 14.4.1 → 15.1.0, elevenlabs floor → 2.45.0, cryptography 46 → 47, protobuf 6 → 7. All blocked on manual smoke-test of payment / TTS / crypto paths. Dead `slack-github-action` PR can be closed on GitHub (workflows directory removed from main).
-5. **~55 untracked Playwright screenshots in repo root** — `mt-*.png`, `step*.png`, etc. `.gitignore` patterns from MT-001 don't catch these naming variants; needs either pattern extension or `git clean -f *.png` after spot-check.
+5. ~~**~55 untracked Playwright screenshots in repo root**~~ ✅ **STALE 2026-05-07** — `.gitignore` already covers all the patterns (`mt-*.png`, `step*.png`, `back-*.png`, etc.). Currently 0 untracked PNGs in repo root.
 
 ## Planned (v1.1+)
 
