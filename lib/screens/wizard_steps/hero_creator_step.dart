@@ -209,9 +209,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         .addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
-    ApiServiceManager.hasPremiumAccess().then((premium) {
-      if (mounted) setState(() => _isPremium = premium);
-    });
+    _refreshPremiumStatus();
     const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
       if (mounted) setState(() => _allowPhotoAvatar = allow);
     });
@@ -1805,6 +1803,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return PressableArrowButton(enabled: enabled, onTap: onTap, hint: hint);
   }
 
+  Future<void> _refreshPremiumStatus() async {
+    final premium = await ApiServiceManager.hasPremiumAccess();
+    if (!mounted) return;
+    if (premium != _isPremium) {
+      setState(() => _isPremium = premium);
+    }
+  }
+
   Future<void> _openAvatarGallery() async {
     if (!mounted) return;
     await showDialog<void>(
@@ -1824,6 +1830,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         },
       ),
     );
+    // Gallery may have completed BYOK setup (via its own CTA or the tweak panel).
+    // Re-check premium so downstream gates (build-hero page, illustrations) update.
+    await _refreshPremiumStatus();
   }
 
   Future<void> _openCustomAvatarScreen() async {
@@ -2604,7 +2613,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         3 => "Who is your hero? Tap the one you like!",
         4 => "Tap your buddy to bring them along!",
         5 => "Where should we go? Tap the picture you want.",
-        6 => "What kind of story do you want? Story Quest, Rhyme Time, or Listen and Learn! Then tap Make Magic!",
+        6 => "What kind of story do you want? Story Quest, Rhyme Time, or Learning to Read! Then tap Make Magic!",
         _ => null,
       };
       if (prompt != null) await _speakForSprout(prompt);
