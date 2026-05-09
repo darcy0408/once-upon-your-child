@@ -411,21 +411,60 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return ClothingColors.bright;
   }
 
+  // The `imageBase64` field on a GeneratedAvatar is overloaded — depending on
+  // the avatar pipeline that produced it, the value can be a real base64 blob
+  // (optionally `data:image/...;base64,` prefixed), an asset path
+  // (`assets/avatars/midjourney/avatar_NNN.webp`), or an http(s) URL. Blindly
+  // base64-decoding an asset path crashes the result screen mid-build.
+  Widget _avatarImage({
+    required String raw,
+    required double size,
+    required Widget Function() fallback,
+  }) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return fallback();
+    if (trimmed.startsWith('assets/')) {
+      return Image.asset(
+        trimmed,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback(),
+      );
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return Image.network(
+        trimmed,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback(),
+      );
+    }
+    try {
+      return Image.memory(
+        base64Decode(trimmed.split(',').last),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback(),
+      );
+    } on FormatException {
+      return fallback();
+    }
+  }
+
   Widget _buildBreathingHeroAvatar({required double size}) {
     final character = _character;
     if (character == null) return const SizedBox.shrink();
 
-    Widget content;
+    final Widget content;
     final generated = character.generatedAvatar;
     if (generated != null && generated.imageBase64.trim().isNotEmpty) {
-      content = Image.memory(
-        base64Decode(generated.imageBase64.split(',').last),
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return character.buildAvatar(size: size);
-        },
+      content = _avatarImage(
+        raw: generated.imageBase64,
+        size: size,
+        fallback: () => character.buildAvatar(size: size),
       );
     } else {
       content = character.buildAvatar(size: size);
@@ -472,12 +511,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 ),
               ),
               child: ClipOval(
-                child: Image.memory(
-                  base64Decode(avatar.imageBase64.split(',').last),
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                child: _avatarImage(
+                  raw: avatar.imageBase64,
+                  size: size,
+                  fallback: () => Container(
                     color: AppColors.primary.withValues(alpha: 0.3),
                     child:
                         const Icon(Icons.pets, color: Colors.white, size: 18),
