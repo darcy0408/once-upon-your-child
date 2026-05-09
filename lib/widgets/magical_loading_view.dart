@@ -140,7 +140,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         if (shouldSpawn) {
           _tapTargets.add(_TapTarget(
             x: 0.1 + _random.nextDouble() * 0.8,
-            y: 0.1 + _random.nextDouble() * 0.8,
+            y: 0.05 + _random.nextDouble() * 0.75,
             born: now,
             ttlMs: baseTtlMs + _random.nextInt(1200),
           ));
@@ -708,7 +708,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   Widget _buildSproutLoadingContent() {
     final screenWidth = MediaQuery.of(context).size.width;
     final stageSize = (screenWidth * 0.62).clamp(220.0, 280.0);
-    const targetSize = 60.0;
+    const targetSize = 80.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

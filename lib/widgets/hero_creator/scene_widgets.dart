@@ -129,7 +129,8 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
                             gradient: LinearGradient(
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
-                              colors: [Color(0xEE0D0020), Color(0x00000000)],
+                              colors: [Color(0xFF1A0E36), Color(0x00000000)],
+                              stops: [0.0, 0.5],
                             ),
                           ),
                           child: Column(
