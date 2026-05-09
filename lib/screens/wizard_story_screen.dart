@@ -351,7 +351,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     });
     _pageController.animateToPage(
       0,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }

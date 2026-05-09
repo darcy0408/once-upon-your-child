@@ -42,6 +42,7 @@ import '../../widgets/safe_asset_image.dart';
 class MagicReviewStep extends ConsumerStatefulWidget {
   final WizardData wizardData;
   final VoidCallback? onGoBack;
+
   /// Navigate back AND jump to a specific HeroCreatorStep sub-step.
   /// 0=Hero, 1=Team, 2=Place, 3=Story type (Make Magic)
   final void Function(int subStep)? onGoToSubStep;
@@ -73,6 +74,32 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   // recap content actually changed (e.g. user edited a field and returned).
   String? _lastSpokenLaunchPrompt;
 
+  void _jumpToHero() => widget.onGoToSubStep?.call(0);
+  void _jumpToCompanions() => widget.onGoToSubStep?.call(1);
+  void _jumpToScene() => widget.onGoToSubStep?.call(2);
+  void _jumpToStoryType() => widget.onGoToSubStep?.call(3);
+
+  Widget _buildPickSomethingNewButton({Color color = Colors.white70}) {
+    return TextButton.icon(
+      onPressed: _jumpToCompanions,
+      icon: Icon(Icons.refresh_rounded, size: 16, color: color),
+      label: Text(
+        'Pick something new',
+        style: GoogleFonts.nunito(
+          color: color,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          decoration: TextDecoration.none,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+
   Future<String?> _resolveInteractiveUserId() async {
     final api = ApiServiceManager();
     var userId = await api.getUserId();
@@ -84,6 +111,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     userId = await api.getUserId();
     return userId != null && userId.isNotEmpty ? userId : null;
   }
+
   @override
   void initState() {
     super.initState();
@@ -123,7 +151,15 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (widget.wizardData.selectedCompanions.isNotEmpty) {
       final firstComp = widget.wizardData.selectedCompanions.first;
       // Legacy global companion IDs that use the _normal.jpg naming scheme.
-      const legacyIds = {'dragon', 'owl', 'cat', 'dog', 'unicorn', 'fox', 'robin'};
+      const legacyIds = {
+        'dragon',
+        'owl',
+        'cat',
+        'dog',
+        'unicorn',
+        'fox',
+        'robin'
+      };
       if (legacyIds.contains(firstComp)) {
         return 'assets/images/companions/${firstComp}_normal.jpg';
       }
@@ -174,7 +210,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // countdown or navigation — prevents the recap and countdown speaking at once.
     unawaited(AppTtsService.instance.stop());
     // Skip countdown for reduced-motion or Sprout (Sprout has its own GO! screen).
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final reduceMotion = MotionPrefs.reduceMotion(context);
     final onboarding = OnboardingService();
     final count = await onboarding.getCountdownCount();
@@ -231,7 +268,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       isActive: subState.status == 'active',
     );
     final isUsingOwnKey = await ApiServiceManager.isUsingOwnApiKey();
-    final canGetIllustrations = isPremium || isUsingOwnKey || widget.wizardData.learningToReadMode;
+    final canGetIllustrations =
+        isPremium || isUsingOwnKey || widget.wizardData.learningToReadMode;
 
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -369,17 +407,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 setState(() => _loadingStatus = status);
               }
             },
-            progressPhases: ageBandFromAge(
-                        requestData['age'] as int? ?? 5)
-                    .isMature
-                ? const [
-                    'Setting the scene...',
-                    'Developing your character...',
-                    'Writing your story...',
-                    'Adding depth and detail...',
-                    'Almost ready...',
-                  ]
-                : null);
+            progressPhases:
+                ageBandFromAge(requestData['age'] as int? ?? 5).isMature
+                    ? const [
+                        'Setting the scene...',
+                        'Developing your character...',
+                        'Writing your story...',
+                        'Adding depth and detail...',
+                        'Almost ready...',
+                      ]
+                    : null);
 
         if (widget.wizardData.customAvatarPath != null && !kIsWeb) {
           try {
@@ -409,7 +446,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             final assetBase64 = base64Encode(byteData.buffer.asUint8List());
             charDetails['custom_avatar_base64'] = assetBase64;
           } catch (e) {
-            debugPrint('⚠️ Could not load preset character asset for illustration: $e');
+            debugPrint(
+                '⚠️ Could not load preset character asset for illustration: $e');
           }
         }
 
@@ -420,15 +458,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             _illustrationPreference != IllustrationPreference.none &&
             inlineIllustrations.isEmpty) {
           if (mounted) {
-            setState(
-                () {
-                  final age = widget.wizardData.characterAge;
-                  _loadingStatus = ageBandFromAge(age).isMature
-                      ? 'Generating illustrations...'
-                      : age >= 10
-                          ? 'Creating illustrations...'
-                          : 'Painting magical illustrations...';
-                });
+            setState(() {
+              final age = widget.wizardData.characterAge;
+              _loadingStatus = ageBandFromAge(age).isMature
+                  ? 'Generating illustrations...'
+                  : age >= 10
+                      ? 'Creating illustrations...'
+                      : 'Painting magical illustrations...';
+            });
           }
           inlineIllustrations = await _generateInlineIllustrations(
               storyText: result.storyText,
@@ -444,8 +481,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   storyText: result.storyText,
                   characterName: widget.wizardData.characterName,
                   theme: widget.wizardData.selectedScenario != null
-                      ? ScenarioData.getById(
-                              widget.wizardData.selectedScenario!)
+                      ? ScenarioData.getById(widget.wizardData.selectedScenario!)
                           ?.title
                       : 'Adventure',
                   characterAge:
@@ -727,11 +763,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
   /// For Sprout (ages 2-5): replaces the full review with a single celebration
   /// screen. Character bounces, companion floats alongside, one giant GO! button.
-  Widget _buildSproutLaunchScreen(
-      BuildContext context, AgeBandThemeData band) {
+  Widget _buildSproutLaunchScreen(BuildContext context, AgeBandThemeData band) {
     final wd = widget.wizardData;
-    final heroName =
-        wd.characterName.isEmpty ? 'your hero' : wd.characterName;
+    final heroName = wd.characterName.isEmpty ? 'your hero' : wd.characterName;
     final companionImg = _companionImage;
 
     // Read the recap aloud — same content the screen shows. Only speaks once
@@ -848,52 +882,60 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             // ── GO! button pinned at the bottom ──
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              child: _PulsingCastSpellFrame(
-                isReady: !_isGenerating && wd.isComplete,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 120,
-                  child: ElevatedButton(
-                    onPressed:
-                        (!_isGenerating && wd.isComplete) ? _launchStoryCreation : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [band.primary, band.primaryLight],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: band.primary.withValues(alpha: 0.55),
-                            blurRadius: 24,
-                            spreadRadius: 4,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _PulsingCastSpellFrame(
+                    isReady: !_isGenerating && wd.isComplete,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 120,
+                      child: ElevatedButton(
+                        onPressed: (!_isGenerating && wd.isComplete)
+                            ? _launchStoryCreation
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          'GO!',
-                          style: GoogleFonts.nunito(
-                            fontSize: 52,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 2,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                        ),
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [band.primary, band.primaryLight],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: band.primary.withValues(alpha: 0.55),
+                                blurRadius: 24,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'GO!',
+                              style: GoogleFonts.nunito(
+                                fontSize: 52,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 2,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  _buildPickSomethingNewButton(),
+                ],
               ),
             ),
           ],
@@ -907,7 +949,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   /// With Mochi.") instead of a generic "Ready to go" prompt.
   String _composeSproutSpokenRecap(WizardData wd, String heroName) {
     final scenarioName = wd.selectedScenario == null ? null : _scenarioLabel;
-    final buddyName = wd.companionNames.isEmpty ? null : wd.companionNames.first;
+    final buddyName =
+        wd.companionNames.isEmpty ? null : wd.companionNames.first;
     final parts = <String>['I am $heroName.'];
     if (scenarioName != null) parts.add('Going to $scenarioName.');
     if (buddyName != null) parts.add('With $buddyName.');
@@ -919,38 +962,54 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   Widget _buildSproutRecap(AgeBandThemeData band, String heroName) {
     final wd = widget.wizardData;
     final scenarioName = wd.selectedScenario == null ? null : _scenarioLabel;
-    final buddyName = wd.companionNames.isEmpty ? null : wd.companionNames.first;
+    final buddyName =
+        wd.companionNames.isEmpty ? null : wd.companionNames.first;
 
     Widget row(String emoji, String label, String value) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: GoogleFonts.nunito(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                value,
-                style: GoogleFonts.nunito(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: band.accent,
+      final onTap = switch (label) {
+        'I am' => _jumpToHero,
+        'Going to' => _jumpToScene,
+        'With' => _jumpToCompanions,
+        _ => _jumpToCompanions,
+      };
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white70,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: GoogleFonts.nunito(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: band.accent,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.refresh, color: Colors.white54, size: 14),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }
@@ -960,7 +1019,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: band.accent.withValues(alpha: 0.35), width: 1.5),
+        border:
+            Border.all(color: band.accent.withValues(alpha: 0.35), width: 1.5),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1047,7 +1107,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   icon: Icons.auto_stories,
                   label: _storyTypeLabel(data, band),
                   band: band,
-                  onTap: () => widget.onGoToSubStep?.call(3),
+                  onTap: _jumpToStoryType,
                   colorAccent: const Color(0xFF9C4DCC),
                   isShimmering: true, // MR-2
                 ),
@@ -1065,8 +1125,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       _LengthChip(
                         label: _lengthLabelForBand('quick', band),
                         isSelected: data.storyLength == 'quick',
-                        onTap: () =>
-                            setState(() => data.storyLength = 'quick'),
+                        onTap: () => setState(() => data.storyLength = 'quick'),
                         band: band,
                       ),
                       _LengthChip(
@@ -1079,8 +1138,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       _LengthChip(
                         label: _lengthLabelForBand('epic', band),
                         isSelected: data.storyLength == 'epic',
-                        onTap: () =>
-                            setState(() => data.storyLength = 'epic'),
+                        onTap: () => setState(() => data.storyLength = 'epic'),
                         band: band,
                       ),
                     ],
@@ -1095,7 +1153,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.auto_awesome,
                     band: band,
                     label: '"${data.customElements}"',
-                    onTap: () => widget.onGoToSubStep?.call(2),
+                    onTap: _jumpToScene,
                     colorAccent: const Color(0xFFFFD54F),
                     isShimmering: true,
                   ),
@@ -1109,6 +1167,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 onTap: _launchStoryCreation,
                 isEnabled: !_isGenerating && data.isComplete,
               ),
+              const SizedBox(height: 8),
+              _buildPickSomethingNewButton(),
               const SizedBox(height: 24),
             ],
           ),
@@ -1134,12 +1194,29 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final scenarioCard = data.selectedScenario != null
         ? ScenarioData.getById(data.selectedScenario!)
         : null;
-    final scenarioLabel =
-        scenarioCard?.titleForBand(band.band) ?? (data.selectedScenario != null ? 'Your Story' : 'Your own adventure');
+    final scenarioLabel = scenarioCard?.titleForBand(band.band) ??
+        (data.selectedScenario != null ? 'Your Story' : 'Your own adventure');
     final scenarioDesc = scenarioCard?.descriptionForAge(data.characterAge);
-    final companionLine = data.companionNames.isEmpty
-        ? 'Solo'
-        : data.companionNames.join(', ');
+    final companionLine =
+        data.companionNames.isEmpty ? 'Solo' : data.companionNames.join(', ');
+
+    Widget editableLine({
+      required String text,
+      required TextStyle style,
+      required VoidCallback onTap,
+    }) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Row(
+          children: [
+            Expanded(child: Text(text, style: style)),
+            const SizedBox(width: 6),
+            const Icon(Icons.refresh, color: Colors.white54, size: 14),
+          ],
+        ),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -1180,8 +1257,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Protagonist name
-                Text(
-                  heroName,
+                editableLine(
+                  text: heroName,
+                  onTap: _jumpToHero,
                   style: GoogleFonts.sourceSans3(
                     color: band.accent,
                     fontSize: 22,
@@ -1201,8 +1279,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ],
                 const SizedBox(height: 4),
                 // Setting
-                Text(
-                  scenarioLabel,
+                editableLine(
+                  text: scenarioLabel,
+                  onTap: _jumpToScene,
                   style: GoogleFonts.sourceSans3(
                     color: band.textOnDark.withValues(alpha: 0.8),
                     fontSize: 16,
@@ -1222,8 +1301,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ],
                 if (data.companionNames.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    companionLine,
+                  editableLine(
+                    text: companionLine,
+                    onTap: _jumpToCompanions,
                     style: GoogleFonts.sourceSans3(
                       color: band.textOnDark.withValues(alpha: 0.55),
                       fontSize: 14,
@@ -1293,6 +1373,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ),
               ),
             ),
+          const SizedBox(height: 8),
+          _buildPickSomethingNewButton(
+            color: band.textOnDark.withValues(alpha: 0.7),
+          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -1311,7 +1395,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
         : wd.companionNames.join(' and ');
-    final launchLabel = band.band == AgeBand.creator ? 'Start Writing' : band.launchStoryLabel;
+    final launchLabel =
+        band.band == AgeBand.creator ? 'Start Writing' : band.launchStoryLabel;
     if (band.band == AgeBand.creator) {
       return 'Your story pitch. Character: $hero. Setting: $scenario. Cast: $companions. When you\'re ready, tap $launchLabel.';
     }
@@ -1322,7 +1407,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   Widget _buildCreatorPitchDocument(
       BuildContext context, AgeBandThemeData band, WizardData data) {
     const creatorAccent = Color(0xFF7C4DFF);
-    final heroName = data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
+    final heroName =
+        data.characterName.isNotEmpty ? data.characterName : 'Unnamed';
     final scenarioLabel = data.selectedScenario != null
         ? (ScenarioData.getById(data.selectedScenario!)
                 ?.titleForBand(band.band) ??
@@ -1376,49 +1462,63 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Character row (inline avatar + name)
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: _HeroAvatar(
-                          generatedAvatar: data.generatedAvatar,
-                          characterName: data.characterName,
-                          role: data.selectedArchetypeId,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            heroName,
-                            style: GoogleFonts.sourceSans3(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                InkWell(
+                  onTap: _jumpToHero,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _HeroAvatar(
+                              generatedAvatar: data.generatedAvatar,
+                              characterName: data.characterName,
+                              role: data.selectedArchetypeId,
                             ),
                           ),
-                          if (data.selectedArchetypeId != null)
-                            Text(
-                              data.selectedArchetypeId!,
-                              style: GoogleFonts.sourceSans3(
-                                  color: creatorAccent, fontSize: 12),
-                            ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                heroName,
+                                style: GoogleFonts.sourceSans3(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (data.selectedArchetypeId != null)
+                                Text(
+                                  data.selectedArchetypeId!,
+                                  style: GoogleFonts.sourceSans3(
+                                      color: creatorAccent, fontSize: 12),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.refresh,
+                            color: Colors.white54, size: 14),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Divider(color: Colors.white12),
                 const SizedBox(height: 12),
                 // Setting
-                _PitchRow(icon: Icons.place_outlined, label: 'Setting', value: scenarioLabel),
+                _PitchRow(
+                  icon: Icons.place_outlined,
+                  label: 'Setting',
+                  value: scenarioLabel,
+                  onTap: _jumpToScene,
+                ),
                 const SizedBox(height: 10),
                 // Companions — MR-4: show first companion thumbnail inline
                 _PitchRow(
@@ -1433,11 +1533,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child:
-                                _CompanionAvatar(companionImage: _companionImage),
+                            child: _CompanionAvatar(
+                                companionImage: _companionImage),
                           ),
                         )
                       : null,
+                  onTap: _jumpToCompanions,
                 ),
                 const SizedBox(height: 10),
                 // Story type
@@ -1445,6 +1546,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   icon: Icons.auto_stories_outlined,
                   label: 'Format',
                   value: _storyTypeLabel(data, band),
+                  onTap: _jumpToStoryType,
                 ),
                 if (data.customElements.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -1452,6 +1554,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.edit_note_rounded,
                     label: 'Premise',
                     value: data.customElements,
+                    onTap: _jumpToScene,
                   ),
                 ],
               ],
@@ -1531,6 +1634,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            _buildPickSomethingNewButton(),
           ],
           const SizedBox(height: 24),
         ],
@@ -1600,7 +1705,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // Adventurer band (9-11) gets a mission briefing layout instead of the
     // standard orb-centric review.
     if (band.band == AgeBand.adventurer) {
-      return wrapCountdown(_buildAdventurerMissionBriefing(context, band, data));
+      return wrapCountdown(
+          _buildAdventurerMissionBriefing(context, band, data));
     }
 
     // Creator band (12-14) gets a story pitch document layout — no orb, clean card.
@@ -1668,66 +1774,84 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             _PopInReveal(
               index: 0,
               child: SizedBox(
-              height: orbSize + 50,
-              child: Stack(alignment: Alignment.center, children: [
-                Container(
-                  width: orbSize + 50,
-                  height: orbSize + 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [
-                      const Color(0xFFFFEEA8).withValues(alpha: 0.45),
-                      const Color(0xFFE985FF).withValues(alpha: 0.3),
-                      const Color(0xFFB5F7FF).withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ], stops: const [
-                      0.0,
-                      0.4,
-                      0.7,
-                      1.0
-                    ]),
+                height: orbSize + 50,
+                child: Stack(alignment: Alignment.center, children: [
+                  Container(
+                    width: orbSize + 50,
+                    height: orbSize + 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [
+                        const Color(0xFFFFEEA8).withValues(alpha: 0.45),
+                        const Color(0xFFE985FF).withValues(alpha: 0.3),
+                        const Color(0xFFB5F7FF).withValues(alpha: 0.2),
+                        Colors.transparent,
+                      ], stops: const [
+                        0.0,
+                        0.4,
+                        0.7,
+                        1.0
+                      ]),
+                    ),
                   ),
-                ),
-                MagicOrbWidget(
-                  imagePath: _scenarioImage,
-                  size: orbSize * 0.95,
-                  glowColor: AppColors.gold,
-                  topLabel: _scenarioLabel,
-                  label: data.characterName.isNotEmpty
-                      ? data.characterName
-                      : heroFallback,
-                  childScale: 0.92,
-                  child: _HeroAvatar(
-                    generatedAvatar: data.generatedAvatar,
-                    characterName: data.characterName,
-                    role: data.selectedArchetypeId,
+                  MagicOrbWidget(
+                    imagePath: _scenarioImage,
+                    size: orbSize * 0.95,
+                    glowColor: AppColors.gold,
+                    topLabel: _scenarioLabel,
+                    label: data.characterName.isNotEmpty
+                        ? data.characterName
+                        : heroFallback,
+                    childScale: 0.92,
+                    child: _HeroAvatar(
+                      generatedAvatar: data.generatedAvatar,
+                      characterName: data.characterName,
+                      role: data.selectedArchetypeId,
+                    ),
                   ),
-                ),
-              ]),
-            ),
+                ]),
+              ),
             ), // end _PopInReveal index 0
             SizedBox(height: band.space(8)),
             if (data.characterName.isNotEmpty) ...[
-              Text(
-                data.characterName,
-                style: (band.band.isMature)
-                    ? GoogleFonts.sourceSans3(
-                        color: const Color(0xFFFFD700),
-                        fontSize: band.heading(16),
-                        fontWeight: FontWeight.bold,
-                      )
-                    : (band.band == AgeBand.adventurer)
-                        ? GoogleFonts.bitter(
-                            color: const Color(0xFFFFD700),
-                            fontSize: band.heading(16),
-                            fontWeight: FontWeight.bold,
-                          )
-                        : GoogleFonts.cinzelDecorative(
-                            color: const Color(0xFFFFD700),
-                            fontSize: band.heading(16),
-                            fontWeight: FontWeight.bold,
-                          ),
-                textAlign: TextAlign.center,
+              InkWell(
+                onTap: _jumpToHero,
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        data.characterName,
+                        style: (band.band.isMature)
+                            ? GoogleFonts.sourceSans3(
+                                color: const Color(0xFFFFD700),
+                                fontSize: band.heading(16),
+                                fontWeight: FontWeight.bold,
+                              )
+                            : (band.band == AgeBand.adventurer)
+                                ? GoogleFonts.bitter(
+                                    color: const Color(0xFFFFD700),
+                                    fontSize: band.heading(16),
+                                    fontWeight: FontWeight.bold,
+                                  )
+                                : GoogleFonts.cinzelDecorative(
+                                    color: const Color(0xFFFFD700),
+                                    fontSize: band.heading(16),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.refresh,
+                          color: Colors.white54, size: 14),
+                    ],
+                  ),
+                ),
               ),
               SizedBox(height: band.space(12)),
             ],
@@ -1735,93 +1859,122 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             _PopInReveal(
               index: 1,
               child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Setting
-                Flexible(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    MagicalFloat(
-                      distance: 6.0,
-                      duration: const Duration(seconds: 4),
-                      delay: 100,
-                      child: _AuraCircle(
-                        size: sideCircleSize,
-                        auraColor: const Color(0xFFFFD9A6),
-                        child: ClipOval(
-                            child: SafeAssetImage(
-                          _scenarioImage,
-                          fit: BoxFit.cover,
-                          placeholder: Container(
-                            color: const Color(0xFF3B1F6A),
-                            child: const Icon(Icons.landscape,
-                                color: Colors.white54, size: 40),
-                          ),
-                        )),
-                      ),
-                    ),
-                    SizedBox(height: band.space(6)),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: band.space(10), vertical: band.space(4)),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1),
-                      ),
-                      child: Text(_scenarioLabel,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: band.body(11),
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ]),
-                ),
-                // Companion (only if selected)
-                if (data.selectedCompanions.isNotEmpty) ...[
-                  SizedBox(width: band.space(24)),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Setting
                   Flexible(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       MagicalFloat(
                         distance: 6.0,
                         duration: const Duration(seconds: 4),
-                        delay: 500,
+                        delay: 100,
                         child: _AuraCircle(
                           size: sideCircleSize,
-                          auraColor: const Color(0xFFF3AEFF),
-                          child:
-                              _CompanionAvatar(companionImage: _companionImage),
+                          auraColor: const Color(0xFFFFD9A6),
+                          child: ClipOval(
+                              child: SafeAssetImage(
+                            _scenarioImage,
+                            fit: BoxFit.cover,
+                            placeholder: Container(
+                              color: const Color(0xFF3B1F6A),
+                              child: const Icon(Icons.landscape,
+                                  color: Colors.white54, size: 40),
+                            ),
+                          )),
                         ),
                       ),
                       SizedBox(height: band.space(6)),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: band.space(10),
-                            vertical: band.space(4)),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          data.companionNames.isNotEmpty
-                              ? data.companionNames.first
-                              : 'Companion',
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: band.body(12),
-                              fontWeight: FontWeight.bold),
+                      InkWell(
+                        onTap: _jumpToScene,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: band.space(10),
+                              vertical: band.space(4)),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(_scenarioLabel,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: band.body(11),
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.refresh,
+                                  color: Colors.white54, size: 14),
+                            ],
+                          ),
                         ),
                       ),
                     ]),
                   ),
+                  // Companion (only if selected)
+                  if (data.selectedCompanions.isNotEmpty) ...[
+                    SizedBox(width: band.space(24)),
+                    Flexible(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        MagicalFloat(
+                          distance: 6.0,
+                          duration: const Duration(seconds: 4),
+                          delay: 500,
+                          child: _AuraCircle(
+                            size: sideCircleSize,
+                            auraColor: const Color(0xFFF3AEFF),
+                            child: _CompanionAvatar(
+                                companionImage: _companionImage),
+                          ),
+                        ),
+                        SizedBox(height: band.space(6)),
+                        InkWell(
+                          onTap: _jumpToCompanions,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: band.space(10),
+                                vertical: band.space(4)),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    data.companionNames.isNotEmpty
+                                        ? data.companionNames.first
+                                        : 'Companion',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: band.body(12),
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.refresh,
+                                    color: Colors.white54, size: 14),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ],
                 ],
-              ],
               ), // end Row
             ), // end _PopInReveal index 1
             SizedBox(height: band.space(24)),
@@ -1832,7 +1985,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.auto_stories,
                     label: _storyTypeLabel(data, band),
                     band: band,
-                    onTap: () => widget.onGoToSubStep?.call(3),
+                    onTap: _jumpToStoryType,
                     colorAccent: const Color(0xFF9C4DCC),
                     isShimmering: true)), // MR-2: shimmer on primary row
             SizedBox(height: band.space(8)),
@@ -1855,7 +2008,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       _LengthChip(
                         label: _lengthLabelForBand('standard', band),
                         isSelected: data.storyLength == 'standard',
-                        onTap: () => setState(() => data.storyLength = 'standard'),
+                        onTap: () =>
+                            setState(() => data.storyLength = 'standard'),
                         band: band,
                       ),
                       _LengthChip(
@@ -1876,7 +2030,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       icon: Icons.auto_awesome,
                       band: band,
                       label: '"${data.customElements}"',
-                      onTap: () => widget.onGoToSubStep?.call(2),
+                      onTap: _jumpToScene,
                       colorAccent: const Color(0xFFFFD54F),
                       isShimmering: true)),
             ],
@@ -1888,7 +2042,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.favorite,
                     band: band,
                     label: data.companionNames.join(', '),
-                    onTap: () => widget.onGoToSubStep?.call(1),
+                    onTap: _jumpToCompanions,
                     colorAccent: const Color(0xFFF06292),
                     leadingAvatar:
                         _CompanionAvatar(companionImage: _companionImage),
@@ -1955,17 +2109,21 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     : _isGenerating
                         ? MagicalLoadingView(
                             status: _loadingStatus,
-                            onCancel: () => setState(() => _isGenerating = false),
+                            onCancel: () =>
+                                setState(() => _isGenerating = false),
                             isSproutBand: band.band == AgeBand.sprout,
                             companionImagePath: band.band == AgeBand.sprout
                                 ? _companionImage
-                                : null,)
+                                : null,
+                          )
                         : _PulsingCastSpellFrame(
                             isReady: !_isGenerating && data.isComplete,
                             child: ImageMakeMagicButton(
                                 onTap: _launchStoryCreation,
                                 isEnabled: !_isGenerating && data.isComplete,
                                 label: band.launchStoryLabel))),
+            const SizedBox(height: 8),
+            _buildPickSomethingNewButton(),
             SizedBox(height: band.space(AppSpacing.xl)),
           ],
         ),
@@ -1982,15 +2140,17 @@ class _PitchRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.leadingWidget, // MR-4: optional avatar thumbnail before the value
+    this.onTap,
   });
   final IconData icon;
   final String label;
   final String value;
   final Widget? leadingWidget;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Icon(icon, color: Colors.white38, size: 16),
@@ -2012,7 +2172,20 @@ class _PitchRow extends StatelessWidget {
             maxLines: 2,
           ),
         ),
+        if (onTap != null) ...[
+          const SizedBox(width: 6),
+          const Icon(Icons.refresh, color: Colors.white54, size: 14),
+        ],
       ],
+    );
+    if (onTap == null) return row;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: row,
+      ),
     );
   }
 }
@@ -2179,7 +2352,9 @@ class _HeroFallbackIdentity extends StatelessWidget {
         const SizedBox(height: 1),
         Text(name.isNotEmpty ? name[0].toUpperCase() : 'H',
             style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12)),
       ],
     );
   }
@@ -2385,8 +2560,7 @@ class _SummaryRow extends StatelessWidget {
                   ),
                   if (onTap != null) ...[
                     SizedBox(width: band.space(8)),
-                    Icon(Icons.edit_outlined,
-                        color: const Color(0xFFD4A0FF), size: band.body(18)),
+                    const Icon(Icons.refresh, color: Colors.white54, size: 14),
                   ],
                 ],
               ),
@@ -2519,8 +2693,8 @@ class _PopInRevealState extends State<_PopInReveal>
     super.initState();
     _anim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
-    _scale = Tween<double>(begin: 0.55, end: 1.0).animate(
-        CurvedAnimation(parent: _anim, curve: Curves.elasticOut));
+    _scale = Tween<double>(begin: 0.55, end: 1.0)
+        .animate(CurvedAnimation(parent: _anim, curve: Curves.elasticOut));
     _opacity = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
     _timer = Timer(Duration(milliseconds: 80 + widget.index * 200), () {
       if (mounted) _anim.forward();
@@ -2595,8 +2769,8 @@ class _GenerationErrorWidget extends StatelessWidget {
               icon: const Icon(Icons.auto_awesome, size: 22),
               label: Text(
                 isSprout ? 'Try Again! ✨' : 'Try Again',
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF9C4DCC),

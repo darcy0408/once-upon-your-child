@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 
 void main() {
@@ -10,10 +11,18 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
   }
 
-  Widget buildSubject(WizardData wizardData) {
+  Widget buildSubject(
+    WizardData wizardData, {
+    void Function(int subStep)? onGoToSubStep,
+    AgeBandThemeData? band,
+  }) {
     return MaterialApp(
+      theme: ThemeData(extensions: [band ?? explorerTheme]),
       home: Scaffold(
-        body: MagicReviewStep(wizardData: wizardData),
+        body: MagicReviewStep(
+          wizardData: wizardData,
+          onGoToSubStep: onGoToSubStep,
+        ),
       ),
     );
   }
@@ -93,5 +102,39 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('The Doorway Between Seasons'), findsWidgets);
+  });
+
+  testWidgets('sprout review tiles and pick-new button jump to substeps',
+      (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final tappedSubSteps = <int>[];
+    final wizardData = WizardData()
+      ..characterName = 'Tester'
+      ..selectedArchetypeId = 'The Bold Adventurer'
+      ..selectedScenario = 'vanishing_colors'
+      ..selectedCompanions = ['pebble']
+      ..companionNames = ['Pebble']
+      ..characterAge = 3;
+
+    await tester.pumpWidget(
+      buildSubject(
+        wizardData,
+        onGoToSubStep: tappedSubSteps.add,
+        band: sproutTheme,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 700));
+
+    await tester.tap(find.text('Tester').last);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.textContaining('Rainbow').first);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('Pebble'));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('Pick something new'));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(tappedSubSteps, [0, 2, 1, 1]);
   });
 }
