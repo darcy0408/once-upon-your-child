@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-08 | 18:34 | 8015 | main | Imagine It card UX rework: full-screen route + visual press effect | [link](docs/sessions/2026-05-08-1834-8015.md) |
 | 2026-05-06 | 12:22 | 39bf | main | 4th Sprout quest draft: gratitude (Sunny Pup / Hot Cocoa Breath) | [link](docs/sessions/2026-05-06-1222-39bf.md) |
 | 2026-05-06 | 10:10 | c910 | main | Drafted 3 Sprout quests (mad/sad/scared) — parked for integration | [link](docs/sessions/2026-05-06-1010-c910.md) |
 | 2026-05-06 | 10:07 | 0d37 | main | Sprout cloud→animal-friends rebrand + breathing buddy | [link](docs/sessions/2026-05-06-1007-0d37.md) |
