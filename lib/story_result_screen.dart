@@ -19,6 +19,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/elevenlabs_voice.dart';
+import 'services/api_service_manager.dart';
 import 'services/tts_api_service.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
@@ -798,10 +799,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     if (widget.characterId == null) return;
 
     try {
+      final headers = await ApiServiceManager.authHeaders();
       final response = await http
           .get(
             Uri.parse(
                 '${Environment.backendUrl}/characters/${widget.characterId}'),
+            headers: headers,
           )
           .timeout(const Duration(seconds: 15));
 
@@ -864,9 +867,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     setState(() => _isLoadingQuality = true);
 
     try {
+      final qualityHeaders = await ApiServiceManager.authHeaders();
       final response = await http.post(
         Uri.parse('${Environment.backendUrl}/quality/score-story'),
-        headers: {'Content-Type': 'application/json'},
+        headers: qualityHeaders,
         body: jsonEncode({
           'story_text': widget.storyText,
           'age': widget.characterAge ?? 7,
