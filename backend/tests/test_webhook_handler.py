@@ -180,7 +180,7 @@ def test_payment_failed_marks_past_due(client, monkeypatch):
 
 def test_invalid_signature_returns_401(client, monkeypatch):
     def _raise_signature_error(payload, sig_header, secret):
-        raise stripe.error.SignatureVerificationError("bad signature", sig_header)
+        raise stripe.SignatureVerificationError("bad signature", sig_header)
 
     monkeypatch.setattr(stripe.Webhook, "construct_event", _raise_signature_error)
 

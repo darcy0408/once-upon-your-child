@@ -34,7 +34,7 @@ def handle_webhook():
     except ValueError:
         current_app.logger.warning("Stripe webhook payload could not be parsed")
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError:
+    except stripe.SignatureVerificationError:
         current_app.logger.warning("Stripe webhook signature verification failed")
         return jsonify({"error": "Invalid signature"}), 401
 
@@ -48,7 +48,9 @@ def handle_webhook():
     return jsonify({"status": "success"}), 200
 
 
-def _dispatch_event(event: Dict[str, Any]) -> None:
+def _dispatch_event(event: Any) -> None:
+    if hasattr(event, "to_dict"):
+        event = event.to_dict()
     event_type = event.get("type")
     data_object = (event.get("data") or {}).get("object") or {}
 
