@@ -504,8 +504,13 @@ class AdvancedStoryEngine:
 
         # Hard upper-word ceiling added to the prompt for older bands where Gemini
         # tends to overshoot when given high targets and complex prose instructions.
+        # Sprout (≤5) gets a flat 300-word ceiling regardless of length tier — the
+        # ≥5-pages × 10-25-words/page rule already implies ~125-300 words total, and
+        # 3-year-olds were getting 600+ word stories under "long" before this cap.
         word_ceiling_note = ""
-        if age > 14:
+        if age <= 5:
+            word_ceiling_note = " HARD LIMIT: do not exceed 300 words total. Sprout is picture-book pacing — short pages, complete arc, no filler."
+        elif age > 14:
             word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. Stop the story before adding more pages if you are approaching this limit."
 
         # Sprout (≤5) page-count floor — picture-book pacing requires more, shorter pages

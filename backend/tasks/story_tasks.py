@@ -553,14 +553,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
                     ltr_pages_count = len(pages)
                     ltr_over_word_pages = [
-                        i for i, p in enumerate(pages) if len(p.split()) > 30
+                        i for i, p in enumerate(pages) if len(p.split()) > 25
                     ]
                     if ltr_pages_count < 5 or ltr_over_word_pages:
                         is_ltr_format_ok = False
                         ltr_format_error = (
                             f"LTR format check failed: {ltr_pages_count} pages "
                             f"(need ≥5, target {ltr_expected_pages}), "
-                            f"{len(ltr_over_word_pages)} pages exceed 30 words."
+                            f"{len(ltr_over_word_pages)} pages exceed 25 words."
                         )
                         validation_error = ltr_format_error
 
