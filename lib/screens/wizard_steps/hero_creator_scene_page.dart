@@ -6,6 +6,7 @@ import '../../theme/age_band_theme.dart';
 import '../../data/scenario_data.dart';
 import '../../widgets/hero_creator/scene_widgets.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
+import 'imagine_it_screen.dart';
 
 /// Page 5 of the Hero Creator wizard — scene / setting selection.
 ///
@@ -17,24 +18,18 @@ class HeroScenePage extends StatelessWidget {
     required this.wizardData,
     required this.imagineItController,
     required this.wishController,
-    required this.listeningFor,
-    required this.speechAvailable,
     required this.onChanged,
     required this.onContinue,
     required this.onSceneTap,
-    required this.onToggleListening,
     required this.onSpeakForSprout,
   });
 
   final WizardData wizardData;
   final TextEditingController imagineItController;
   final TextEditingController wishController;
-  final String listeningFor;
-  final bool speechAvailable;
   final VoidCallback onChanged;
   final VoidCallback onContinue;
   final void Function(String id) onSceneTap;
-  final void Function(String field) onToggleListening;
   final Future<void> Function(String text) onSpeakForSprout;
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -57,382 +52,6 @@ class HeroScenePage extends StatelessWidget {
       color: const Color(0xFFFFD700),
       fontSize: baseFontSize,
       fontWeight: FontWeight.bold,
-    );
-  }
-
-  Widget _buildImagineItInput(BuildContext context, AgeBandThemeData band) {
-    if (band.band == AgeBand.sprout) return _buildSproutImagineItInput();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFD700), width: 2),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2C1B47), Color(0xFF1A0E36)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFD700).withAlpha(50),
-              blurRadius: 18,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text('✨', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Where will your adventure take place?',
-                    style: GoogleFonts.fredoka(
-                      color: const Color(0xFFFFD700),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: imagineItController,
-                    maxLines: 3,
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText:
-                          'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
-                      hintStyle: const TextStyle(
-                          color: Color(0xFFFFD700),
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic),
-                      filled: true,
-                      fillColor: Colors.white.withAlpha(18),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                            color: const Color(0xFFFFD700).withAlpha(100)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                            color: Color(0xFFFFD700), width: 2),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                            color: const Color(0xFFFFD700).withAlpha(120)),
-                      ),
-                      contentPadding: const EdgeInsets.all(14),
-                    ),
-                    onChanged: (value) {
-                      wizardData.customElements = value;
-                      wishController.text = value;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: speechAvailable
-                      ? 'Speak your setting idea'
-                      : 'Mic unavailable',
-                  icon: Icon(
-                    listeningFor == 'imagine' ? Icons.mic : Icons.mic_none,
-                    color: speechAvailable
-                        ? (listeningFor == 'imagine'
-                            ? Colors.yellow
-                            : Colors.white)
-                        : Colors.white38,
-                  ),
-                  onPressed: speechAvailable
-                      ? () => onToggleListening('imagine')
-                      : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              speechAvailable
-                  ? '🎤 Tap the mic and say your idea out loud.'
-                  : '✍️ Type your idea here. Mic is unavailable on this device.',
-              style: TextStyle(
-                color: Colors.white.withAlpha(170),
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '✦ The more you describe, the more magical your story becomes!',
-              style: TextStyle(
-                  color: const Color(0xFFFFD700).withAlpha(180),
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Sprout-specific "Make One Up" panel.
-  //
-  // Design rationale (ages 3-5):
-  //  • Big centered mic button is the primary CTA — children must see ONE clear
-  //    thing to tap; burying the mic in a text-field row causes them to tap the
-  //    text box instead, which opens a keyboard and causes frustration.
-  //  • Listening animation (pulsing gold glow) gives visceral feedback that
-  //    something is happening so they don't tap again mid-recording.
-  //  • Three "idea spark" chips remove blank-slate anxiety without forcing a
-  //    choice — they pre-fill the text but the child (or parent) can still say
-  //    anything. Three is the right count: enough choice, not overwhelming.
-  //  • Green confirmation banner replaces idea chips once input is received so
-  //    the child gets positive feedback and knows they're done.
-  //  • Text field is shrunk to 1 line and re-labelled as a grown-up fallback,
-  //    visually secondary to the mic.
-  Widget _buildSproutImagineItInput() {
-    const gold = Color(0xFFFFD700);
-    const ideaStarters = [
-      (emoji: '🌊', label: 'Ocean', fill: 'under the sea'),
-      (emoji: '🌲', label: 'Forest', fill: 'a magic forest'),
-      (emoji: '🚀', label: 'Space', fill: 'outer space'),
-    ];
-
-    final isListening = listeningFor == 'imagine';
-    final hasInput = wizardData.customElements.trim().isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 22, 16, 20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: gold, width: 2),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2C1B47), Color(0xFF1A0E36)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: gold.withAlpha(55),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ── Header ────────────────────────────────────────────────────
-            Text(
-              '✨ Where do you want to go?',
-              style: GoogleFonts.fredoka(
-                color: gold,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              speechAvailable
-                  ? 'Tap the big button and say your idea!'
-                  : 'Ask a grown-up to type your idea below!',
-              style: GoogleFonts.fredoka(
-                color: Colors.white.withAlpha(210),
-                fontSize: 15,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            // ── Big mic button ─────────────────────────────────────────────
-            if (speechAvailable) ...[
-              const SizedBox(height: 22),
-              GestureDetector(
-                onTap: () => onToggleListening('imagine'),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isListening
-                        ? gold
-                        : const Color(0xFF7C3FFF),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isListening ? gold : const Color(0xFF7C3FFF))
-                            .withAlpha(isListening ? 200 : 110),
-                        blurRadius: isListening ? 28 : 16,
-                        spreadRadius: isListening ? 8 : 3,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    isListening ? Icons.mic : Icons.mic_none,
-                    color: isListening ? Colors.black87 : Colors.white,
-                    size: 42,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  isListening ? '🎧  Listening…' : '🎤  Tap to talk!',
-                  key: ValueKey(isListening),
-                  style: GoogleFonts.fredoka(
-                    color: isListening ? gold : Colors.white.withAlpha(210),
-                    fontSize: 17,
-                    fontWeight:
-                        isListening ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
-
-            // ── Idea sparks (shown until input is received) ────────────────
-            if (!hasInput) ...[
-              const SizedBox(height: 22),
-              Text(
-                'Need an idea? Tap one!',
-                style: GoogleFonts.fredoka(
-                  color: Colors.white.withAlpha(160),
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: ideaStarters.map((idea) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: GestureDetector(
-                      onTap: () {
-                        imagineItController.text = idea.fill;
-                        wizardData.customElements = idea.fill;
-                        wishController.text = idea.fill;
-                        onChanged();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(20),
-                          borderRadius: BorderRadius.circular(20),
-                          border:
-                              Border.all(color: Colors.white38, width: 1.5),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(idea.emoji,
-                                style: const TextStyle(fontSize: 26)),
-                            const SizedBox(height: 3),
-                            Text(
-                              idea.label,
-                              style: GoogleFonts.fredoka(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-
-            // ── Confirmation banner (replaces sparks once input is set) ───
-            if (hasInput) ...[
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2ECC71).withAlpha(30),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: const Color(0xFF2ECC71).withAlpha(160),
-                      width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    const Text('✅', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        wizardData.customElements.trim(),
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // ── Text field (grown-up fallback) ────────────────────────────
-            const SizedBox(height: 16),
-            TextField(
-              controller: imagineItController,
-              maxLines: 1,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: hasInput
-                    ? 'Tap to change the idea…'
-                    : '✍️  Grown-ups: type an idea here',
-                hintStyle: TextStyle(
-                  color: Colors.white.withAlpha(100),
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                ),
-                filled: true,
-                fillColor: Colors.white.withAlpha(12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: gold.withAlpha(70)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: gold.withAlpha(160), width: 1.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white24),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
-              ),
-              onChanged: (value) {
-                wizardData.customElements = value;
-                wishController.text = value;
-                onChanged(); // triggers rebuild so confirmation/sparks toggle
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -546,21 +165,20 @@ class HeroScenePage extends StatelessWidget {
           if (isCreator) ...[
             ImagineItHeroCard(
               isSelected: isImagineItSelected,
-              onTap: () {
-                wizardData.selectedScenario =
-                    isImagineItSelected ? null : 'safe_space';
-                if (isImagineItSelected) wizardData.customElements = '';
-                onChanged();
-              },
+              onTap: () => _openImagineIt(context),
             ),
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 280),
-              crossFadeState: isImagineItSelected
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              firstChild: _buildImagineItInput(context, band),
-              secondChild: const SizedBox.shrink(),
-            ),
+            if (isImagineItSelected)
+              _ImagineItSelectionPreview(
+                description: wizardData.customElements,
+                onEdit: () => _openImagineIt(context),
+                onClear: () {
+                  wizardData.selectedScenario = null;
+                  wizardData.customElements = '';
+                  imagineItController.clear();
+                  wishController.clear();
+                  onChanged();
+                },
+              ),
             const SizedBox(height: 14),
           ],
 
@@ -641,24 +259,20 @@ class HeroScenePage extends StatelessWidget {
           if (!isCreator) ...[
             ImagineItHeroCard(
               isSelected: isImagineItSelected,
-              onTap: () {
-                wizardData.selectedScenario =
-                    isImagineItSelected ? null : 'safe_space';
-                if (isImagineItSelected) wizardData.customElements = '';
-                onChanged();
-                if (band.band == AgeBand.sprout && !isImagineItSelected) {
-                  unawaited(onSpeakForSprout('Tap a picture to pick your world!'));
-                }
-              },
+              onTap: () => _openImagineIt(context),
             ),
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 280),
-              crossFadeState: isImagineItSelected
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              firstChild: _buildImagineItInput(context, band),
-              secondChild: const SizedBox.shrink(),
-            ),
+            if (isImagineItSelected)
+              _ImagineItSelectionPreview(
+                description: wizardData.customElements,
+                onEdit: () => _openImagineIt(context),
+                onClear: () {
+                  wizardData.selectedScenario = null;
+                  wizardData.customElements = '';
+                  imagineItController.clear();
+                  wishController.clear();
+                  onChanged();
+                },
+              ),
           ],
 
           const SizedBox(height: 24),
@@ -666,6 +280,88 @@ class HeroScenePage extends StatelessWidget {
               enabled: true, onTap: onContinue, hint: 'Next: Story Style'),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openImagineIt(BuildContext context) async {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => Theme(
+          data: Theme.of(context),
+          child: ImagineItScreen(
+            wizardData: wizardData,
+            imagineItController: imagineItController,
+            wishController: wishController,
+          ),
+        ),
+      ),
+    );
+    if (saved == true && band?.band == AgeBand.sprout) {
+      unawaited(onSpeakForSprout('Great idea! Tap next when you are ready.'));
+    }
+    onChanged();
+  }
+}
+
+/// Compact preview shown in the scene picker once the user has saved an
+/// "Imagine It" world. Replaces the old inline form.
+class _ImagineItSelectionPreview extends StatelessWidget {
+  final String description;
+  final VoidCallback onEdit;
+  final VoidCallback onClear;
+
+  const _ImagineItSelectionPreview({
+    required this.description,
+    required this.onEdit,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFFFD700);
+    final text = description.trim().isEmpty
+        ? 'Tap to describe your world'
+        : description.trim();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: gold.withAlpha(140), width: 1.5),
+          color: Colors.white.withAlpha(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text('✨', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: GoogleFonts.fredoka(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Edit',
+              icon: const Icon(Icons.edit, color: gold, size: 20),
+              onPressed: onEdit,
+            ),
+            IconButton(
+              tooltip: 'Clear',
+              icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+              onPressed: onClear,
+            ),
+          ],
+        ),
       ),
     );
   }

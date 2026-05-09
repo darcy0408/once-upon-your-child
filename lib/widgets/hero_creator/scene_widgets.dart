@@ -42,19 +42,17 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
-    final asset = _pressed
-        ? 'assets/images/scenarios/imagine_it_btn_pressed.png'
-        : 'assets/images/scenarios/imagine_it_btn.png';
+    const asset = 'assets/images/scenarios/imagine_it_btn_pressed.png';
 
     return Semantics(
       button: true,
       selected: widget.isSelected,
       label: isSprout ? 'Make one up' : 'Imagine It — create your own world',
       hint: widget.isSelected
-          ? 'Currently selected. Double tap to close the text field.'
+          ? 'Currently selected. Double tap to change your idea.'
           : isSprout
               ? 'Double tap to tell us your own place.'
-              : 'Double tap to open a text box and type your own scene idea.',
+              : 'Double tap to open the imagine-it screen and describe your scene.',
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.mediumImpact();
@@ -97,17 +95,25 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
                     children: [
                       AspectRatio(
                         aspectRatio: 360 / 220,
-                        child: SafeAssetImage(
-                          asset,
-                          fit: BoxFit.cover,
-                          placeholder: Container(
-                            color: const Color(0xFF2C1B47),
-                            child: Center(
-                              child: Text(
-                                isSprout ? 'Make One Up! ✨' : 'Imagine It ✨',
-                                style: GoogleFonts.fredoka(
-                                    color: const Color(0xFFFFD700),
-                                    fontSize: 22),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 80),
+                          foregroundDecoration: BoxDecoration(
+                            color: _pressed
+                                ? Colors.black.withAlpha(70)
+                                : Colors.transparent,
+                          ),
+                          child: SafeAssetImage(
+                            asset,
+                            fit: BoxFit.cover,
+                            placeholder: Container(
+                              color: const Color(0xFF2C1B47),
+                              child: Center(
+                                child: Text(
+                                  isSprout ? 'Make One Up! ✨' : 'Imagine It ✨',
+                                  style: GoogleFonts.fredoka(
+                                      color: const Color(0xFFFFD700),
+                                      fontSize: 22),
+                                ),
                               ),
                             ),
                           ),
