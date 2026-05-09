@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Wraps any widget with a magical star cursor overlay on web.
 /// On non-web platforms the child is returned unchanged.
@@ -10,41 +10,72 @@ class MagicStarCursor extends StatefulWidget {
 
   final Widget child;
 
+  /// Global kill-switch. Tests/headless runs flip this to `false` to skip the
+  /// overlay entirely. The auto-detect in [_runtimeDisabled] also catches
+  /// `flutter test` automatically — without that, dartdevc + headless Chrome
+  /// asserts during paint and floods Sentry (~1000 events/run).
+  static bool enabled = true;
+
+  static bool get _runtimeDisabled =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
   @override
   State<MagicStarCursor> createState() => _MagicStarCursorState();
 }
 
-class _MagicStarCursorState extends State<MagicStarCursor> {
+class _MagicStarCursorState extends State<MagicStarCursor>
+    with SingleTickerProviderStateMixin {
+  final ValueNotifier<_OverlayFrame> _frame =
+      ValueNotifier(const _OverlayFrame.empty());
   final List<_Sparkle> _sparkles = [];
-  Offset _cursor = Offset.zero;
-  Timer? _cleanupTimer;
   final _rand = Random();
+  Offset _cursor = Offset.zero;
+  late final Ticker _ticker;
+  Duration _lastTick = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick)..start();
+  }
 
   void _onHover(PointerEvent event) {
-    if (!mounted) return;
-    setState(() {
-      _cursor = event.localPosition;
-      // Add 2-3 sparkles at the cursor position
-      for (int i = 0; i < 2 + _rand.nextInt(2); i++) {
-        _sparkles.add(_Sparkle(
-          position: _cursor + Offset(
-            (_rand.nextDouble() - 0.5) * 18,
-            (_rand.nextDouble() - 0.5) * 18,
-          ),
-          createdAt: DateTime.now(),
-          color: _sparkleColor(),
-          size: 4 + _rand.nextDouble() * 7,
-          angle: _rand.nextDouble() * pi * 2,
-        ));
-      }
-      // Remove sparkles older than 600ms
-      final cutoff = DateTime.now().subtract(const Duration(milliseconds: 600));
-      _sparkles.removeWhere((s) => s.createdAt.isBefore(cutoff));
-    });
-    _cleanupTimer?.cancel();
-    _cleanupTimer = Timer(const Duration(milliseconds: 700), () {
-      if (mounted) setState(() => _sparkles.clear());
-    });
+    _cursor = event.localPosition;
+    final now = _lastTick;
+    final n = 2 + _rand.nextInt(2);
+    for (var i = 0; i < n; i++) {
+      _sparkles.add(_Sparkle(
+        position: _cursor +
+            Offset(
+              (_rand.nextDouble() - 0.5) * 18,
+              (_rand.nextDouble() - 0.5) * 18,
+            ),
+        bornAt: now,
+        color: _sparkleColor(),
+        size: 4 + _rand.nextDouble() * 7,
+        angle: _rand.nextDouble() * pi * 2,
+      ));
+    }
+  }
+
+  void _onTick(Duration elapsed) {
+    _lastTick = elapsed;
+    // Drop sparkles older than 600ms.
+    final cutoff = elapsed - const Duration(milliseconds: 600);
+    _sparkles.removeWhere((s) => s.bornAt < cutoff);
+
+    // 0.85..1.15 pulse on a 700ms triangle wave.
+    final phase = (elapsed.inMicroseconds % 1400000) / 1400000.0;
+    final tri = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+    final eased = Curves.easeInOut.transform(tri);
+    final pulse = 0.85 + eased * 0.30;
+
+    _frame.value = _OverlayFrame(
+      cursor: _cursor,
+      pulse: pulse,
+      sparkles: List.of(_sparkles),
+      now: elapsed,
+    );
   }
 
   Color _sparkleColor() {
@@ -60,45 +91,37 @@ class _MagicStarCursorState extends State<MagicStarCursor> {
 
   @override
   void dispose() {
-    _cleanupTimer?.cancel();
+    _ticker.dispose();
+    _frame.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Only apply on web
-    if (!kIsWeb) return widget.child;
+    if (!kIsWeb ||
+        !MagicStarCursor.enabled ||
+        MagicStarCursor._runtimeDisabled) {
+      return widget.child;
+    }
 
     return MouseRegion(
       cursor: SystemMouseCursors.none,
       onHover: _onHover,
       child: Stack(
+        fit: StackFit.passthrough,
         children: [
           widget.child,
-          // Sparkle trail
-          ..._sparkles.map((s) {
-            final age = DateTime.now().difference(s.createdAt).inMilliseconds;
-            final opacity = (1.0 - age / 600.0).clamp(0.0, 1.0);
-            return Positioned(
-              left: s.position.dx - s.size / 2,
-              top: s.position.dy - s.size / 2,
-              child: IgnorePointer(
-                child: Opacity(
-                  opacity: opacity,
-                  child: Transform.rotate(
-                    angle: s.angle,
-                    child: _StarShape(size: s.size, color: s.color),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: ValueListenableBuilder<_OverlayFrame>(
+                  valueListenable: _frame,
+                  builder: (_, frame, __) => CustomPaint(
+                    painter: _OverlayPainter(frame),
+                    size: Size.infinite,
                   ),
                 ),
               ),
-            );
-          }),
-          // Main star cursor
-          Positioned(
-            left: _cursor.dx - 16,
-            top: _cursor.dy - 16,
-            child: IgnorePointer(
-              child: _AnimatedStar(size: 32),
             ),
           ),
         ],
@@ -109,119 +132,103 @@ class _MagicStarCursorState extends State<MagicStarCursor> {
 
 class _Sparkle {
   final Offset position;
-  final DateTime createdAt;
+  final Duration bornAt;
   final Color color;
   final double size;
   final double angle;
 
   const _Sparkle({
     required this.position,
-    required this.createdAt,
+    required this.bornAt,
     required this.color,
     required this.size,
     required this.angle,
   });
 }
 
-/// Animated glowing star that pulses
-class _AnimatedStar extends StatefulWidget {
-  const _AnimatedStar({required this.size});
-  final double size;
+@immutable
+class _OverlayFrame {
+  final Offset cursor;
+  final double pulse;
+  final List<_Sparkle> sparkles;
+  final Duration now;
 
-  @override
-  State<_AnimatedStar> createState() => _AnimatedStarState();
+  const _OverlayFrame({
+    required this.cursor,
+    required this.pulse,
+    required this.sparkles,
+    required this.now,
+  });
+
+  const _OverlayFrame.empty()
+      : cursor = Offset.zero,
+        pulse = 1.0,
+        sparkles = const [],
+        now = Duration.zero;
 }
 
-class _AnimatedStarState extends State<_AnimatedStar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _pulse;
+class _OverlayPainter extends CustomPainter {
+  _OverlayPainter(this.frame);
+  final _OverlayFrame frame;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat(reverse: true);
-    _pulse = Tween(begin: 0.85, end: 1.15).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (_, __) => Transform.scale(
-        scale: _pulse.value,
-        child: _StarShape(
-          size: widget.size,
-          color: const Color(0xFFFFE066),
-          glowing: true,
-        ),
-      ),
-    );
-  }
-}
-
-/// A 4-pointed star shape painted via CustomPainter
-class _StarShape extends StatelessWidget {
-  const _StarShape({required this.size, required this.color, this.glowing = false});
-  final double size;
-  final Color color;
-  final bool glowing;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _StarPainter(color: color, glowing: glowing),
-    );
-  }
-}
-
-class _StarPainter extends CustomPainter {
-  const _StarPainter({required this.color, required this.glowing});
-  final Color color;
-  final bool glowing;
+  static const _cursorColor = Color(0xFFFFE066);
+  static const _glowColor = Color(0x66FFE066);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    if (glowing) {
-      paint.maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.35);
+    // Sparkles
+    for (final s in frame.sparkles) {
+      final age = (frame.now - s.bornAt).inMilliseconds;
+      final opacity = (1.0 - age / 600.0).clamp(0.0, 1.0);
+      if (opacity <= 0) continue;
+      canvas.save();
+      canvas.translate(s.position.dx, s.position.dy);
+      canvas.rotate(s.angle);
+      _drawStar(
+        canvas,
+        radius: s.size / 2,
+        color: s.color.withValues(alpha: opacity),
+        glow: false,
+      );
+      canvas.restore();
     }
 
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final outer = size.width / 2;
+    // Main cursor star
+    final r = 16.0 * frame.pulse;
+    canvas.save();
+    canvas.translate(frame.cursor.dx, frame.cursor.dy);
+    _drawStar(canvas, radius: r, color: _cursorColor, glow: true);
+    canvas.restore();
+  }
+
+  void _drawStar(Canvas canvas,
+      {required double radius, required Color color, required bool glow}) {
+    final outer = radius;
     final inner = outer * 0.25;
     const points = 4;
-
     final path = Path();
-    for (int i = 0; i < points * 2; i++) {
+    for (var i = 0; i < points * 2; i++) {
       final r = i.isEven ? outer : inner;
       final angle = (i * pi / points) - pi / 2;
-      final x = cx + r * cos(angle);
-      final y = cy + r * sin(angle);
+      final x = r * cos(angle);
+      final y = r * sin(angle);
       i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
     }
     path.close();
-    canvas.drawPath(path, paint);
 
-    // Solid core on top of glow
-    if (glowing) {
-      canvas.drawPath(path, Paint()..color = color);
+    if (glow) {
+      // Cheap glow: radial gradient circle behind the solid star. Avoids
+      // MaskFilter.blur, which destabilizes CanvasKit when redrawn every frame.
+      final glowPaint = Paint()
+        ..shader = const RadialGradient(
+          colors: [_glowColor, Color(0x00FFE066)],
+        ).createShader(Rect.fromCircle(center: Offset.zero, radius: outer * 1.6));
+      canvas.drawCircle(Offset.zero, outer * 1.6, glowPaint);
     }
+
+    canvas.drawPath(path, Paint()..color = color);
   }
 
   @override
-  bool shouldRepaint(_StarPainter old) => old.color != color || old.glowing != glowing;
+  bool shouldRepaint(_OverlayPainter old) => !identical(old.frame, frame);
 }
