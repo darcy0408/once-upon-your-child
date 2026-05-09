@@ -47,11 +47,69 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   final Random _random = Random();
 
   int _tapCount = 0;
-  final List<Offset> _burstPositions = [];
+  final List<_Firework> _fireworks = [];
 
   // Mini-game: drifting tap-targets that earn points when caught.
   final List<_TapTarget> _tapTargets = [];
   Timer? _targetSpawnTimer;
+
+  static const List<List<Color>> _fireworkPalettes = <List<Color>>[
+    [Color(0xFFFFD700), Color(0xFFFFAB00), Color(0xFFFFFFFF)], // sunburst
+    [Color(0xFFFF4081), Color(0xFFFF80AB), Color(0xFFFFFFFF)], // pink pop
+    [Color(0xFF40E0FF), Color(0xFF80DEEA), Color(0xFFFFFFFF)], // aqua wish
+    [Color(0xFFB388FF), Color(0xFFE1BEE7), Color(0xFFFFD700)], // royal sparkle
+    [
+      Color(0xFFFFD700),
+      Color(0xFFFF4081),
+      Color(0xFF40E0FF),
+      Color(0xFF7CFC00),
+    ], // rainbow mix
+  ];
+
+  void _spawnFirework(Offset position, {bool reduced = false}) {
+    final palette =
+        _fireworkPalettes[_random.nextInt(_fireworkPalettes.length)];
+    final particleCount = reduced ? 5 : (10 + _random.nextInt(4));
+    final particles = List<_FireworkParticle>.generate(particleCount, (i) {
+      final base = (i / particleCount) * 2 * pi;
+      final jitter = (_random.nextDouble() - 0.5) * 0.45;
+      return _FireworkParticle(
+        angle: base + jitter,
+        distance: (reduced ? 32.0 : 58.0) + _random.nextDouble() * 38.0,
+        color: palette[_random.nextInt(palette.length)],
+        size: 5.0 + _random.nextDouble() * 4.5,
+      );
+    });
+    _fireworks.add(_Firework(
+      position: position,
+      born: DateTime.now(),
+      particles: particles,
+    ));
+    if (_fireworks.length > 5) _fireworks.removeAt(0);
+  }
+
+  Widget _buildFirework(_Firework fw) {
+    const stageSize = 220.0;
+    return Positioned(
+      left: fw.position.dx - stageSize / 2,
+      top: fw.position.dy - stageSize / 2,
+      child: IgnorePointer(
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey(fw.born),
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: _Firework.lifetimeMs),
+          curve: Curves.linear,
+          builder: (_, t, __) => CustomPaint(
+            size: const Size(stageSize, stageSize),
+            painter: _FireworkPainter(
+              progress: t,
+              particles: fw.particles,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   int _elapsedSeconds = 0;
   Timer? _elapsedTimer;
@@ -133,6 +191,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       setState(() {
         final now = DateTime.now();
         _tapTargets.removeWhere((t) => t.isExpired);
+        _fireworks.removeWhere((fw) => fw.isExpired);
         final shouldSpawn = _tapTargets.isEmpty ||
             (_tapTargets.length < maxTargetsLive &&
                 now.difference(_tapTargets.last.born).inMilliseconds >=
@@ -143,6 +202,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
             y: 0.05 + _random.nextDouble() * 0.75,
             born: now,
             ttlMs: baseTtlMs + _random.nextInt(1200),
+            spawnRotation: _random.nextDouble() * 2 * pi,
           ));
         }
       });
@@ -250,8 +310,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   HapticFeedback.lightImpact();
                   setState(() {
                     _tapCount++;
-                    _burstPositions.add(details.localPosition);
-                    if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+                    _spawnFirework(details.localPosition, reduced: true);
                   });
                 },
                 child: SizedBox(
@@ -276,27 +335,9 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                           ],
                         ),
                       ),
-                      ..._burstPositions.map((pos) => Positioned(
-                            left: pos.dx - 20,
-                            top: pos.dy - 20,
-                            child: TweenAnimationBuilder<double>(
-                              key: ValueKey(pos),
-                              tween: Tween(begin: 0.0, end: 1.0),
-                              duration: const Duration(milliseconds: 600),
-                              builder: (_, t, __) => Opacity(
-                                opacity: (1 - t).clamp(0.0, 1.0),
-                                child: Container(
-                                  width: 40 * (1 + t),
-                                  height: 40 * (1 + t),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.gold
-                                        .withValues(alpha: 0.4 * (1 - t)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )),
+                      ..._fireworks
+                          .where((fw) => !fw.isExpired)
+                          .map(_buildFirework),
                     ],
                   ),
                 ),
@@ -309,8 +350,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   HapticFeedback.lightImpact();
                   setState(() {
                     _tapCount++;
-                    _burstPositions.add(details.localPosition);
-                    if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+                    _spawnFirework(details.localPosition);
                   });
                   _pulseController.forward(from: 0.0);
                 },
@@ -448,13 +488,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                               setState(() {
                                 _tapTargets.remove(target);
                                 _tapCount++;
-                                _burstPositions.add(Offset(
+                                _spawnFirework(Offset(
                                   target.x * stageSize,
                                   target.y * stageSize,
                                 ));
-                                if (_burstPositions.length > 6) {
-                                  _burstPositions.removeAt(0);
-                                }
                               });
                             },
                             child: Opacity(
@@ -501,28 +538,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                         );
                       }),
 
-                      // Tap burst overlays
-                      ..._burstPositions.map((pos) => Positioned(
-                            left: pos.dx - 20,
-                            top: pos.dy - 20,
-                            child: TweenAnimationBuilder<double>(
-                              key: ValueKey(pos),
-                              tween: Tween(begin: 0.0, end: 1.0),
-                              duration: const Duration(milliseconds: 600),
-                              builder: (_, t, __) => Opacity(
-                                opacity: (1 - t).clamp(0.0, 1.0),
-                                child: Container(
-                                  width: 40 * (1 + t),
-                                  height: 40 * (1 + t),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.gold
-                                        .withValues(alpha: 0.4 * (1 - t)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )),
+                      // Firework bursts (rendered on top so they read clearly)
+                      ..._fireworks
+                          .where((fw) => !fw.isExpired)
+                          .map(_buildFirework),
                     ],
                   ),
                 ),
@@ -721,8 +740,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
             HapticFeedback.lightImpact();
             setState(() {
               _tapCount++;
-              _burstPositions.add(details.localPosition);
-              if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+              _spawnFirework(details.localPosition);
             });
           },
           child: SizedBox(
@@ -760,7 +778,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   const Icon(Icons.auto_awesome,
                       size: 64, color: Color(0xFF9E6CFF)),
 
-                // Drifting tap targets — bigger and brighter for little fingers
+                // Drifting tap targets — visibly star-shaped, with a soft
+                // pulsing halo behind them so they read as "tap me" rather
+                // than as decorative orbs. Slow rotation adds life without
+                // making them hard to track for little fingers.
                 ..._tapTargets.where((t) => !t.isExpired).map((target) {
                   final age = target.ageMs;
                   final ttl = target.ttlMs;
@@ -779,13 +800,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                         setState(() {
                           _tapTargets.remove(target);
                           _tapCount++;
-                          _burstPositions.add(Offset(
+                          _spawnFirework(Offset(
                             target.x * stageSize,
                             target.y * stageSize,
                           ));
-                          if (_burstPositions.length > 6) {
-                            _burstPositions.removeAt(0);
-                          }
                         });
                       },
                       child: Opacity(
@@ -797,33 +815,67 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                           curve: Curves.easeInOut,
                           builder: (_, scale, __) => Transform.scale(
                             scale: scale,
-                            child: Container(
-                              width: targetSize,
-                              height: targetSize,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    AppColors.gold.withValues(alpha: 0.20),
-                                border: Border.all(
-                                  color:
-                                      AppColors.gold.withValues(alpha: 0.85),
-                                  width: 2.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.gold
-                                        .withValues(alpha: 0.5),
-                                    blurRadius: 14,
+                            child: AnimatedBuilder(
+                              animation: Listenable.merge(
+                                  [_pulseController, _rotationController]),
+                              builder: (context, _) {
+                                final pulse = _pulseController.value;
+                                final rotation =
+                                    _rotationController.value * 2 * pi * 0.25 +
+                                        target.spawnRotation;
+                                final haloSize =
+                                    targetSize * (0.95 + 0.20 * pulse);
+                                return SizedBox(
+                                  width: targetSize,
+                                  height: targetSize,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(
+                                        width: haloSize,
+                                        height: haloSize,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              AppColors.gold.withValues(
+                                                  alpha: 0.22 + 0.20 * pulse),
+                                              AppColors.gold
+                                                  .withValues(alpha: 0.0),
+                                            ],
+                                            stops: const [0.0, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                      Transform.rotate(
+                                        angle: rotation,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.star_rounded,
+                                              size: targetSize * 0.95,
+                                              color: AppColors.gold
+                                                  .withValues(alpha: 0.40),
+                                            ),
+                                            const Icon(
+                                              Icons.star_rounded,
+                                              size: 56,
+                                              color: AppColors.gold,
+                                            ),
+                                            Icon(
+                                              Icons.star_rounded,
+                                              size: 28,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.92),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.star_rounded,
-                                  color: AppColors.gold,
-                                  size: 32,
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ),
@@ -832,29 +884,12 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   );
                 }),
 
-                // Tap burst overlays — feedback for both free-form taps and
-                // successful star catches.
-                ..._burstPositions.map((pos) => Positioned(
-                      left: pos.dx - 25,
-                      top: pos.dy - 25,
-                      child: TweenAnimationBuilder<double>(
-                        key: ValueKey(pos),
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 600),
-                        builder: (_, t, __) => Opacity(
-                          opacity: (1 - t).clamp(0.0, 1.0),
-                          child: Container(
-                            width: 50 * (1 + t),
-                            height: 50 * (1 + t),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.gold
-                                  .withValues(alpha: 0.45 * (1 - t)),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )),
+                // Firework bursts — sparkle particles radiate outward, clearly
+                // distinct from the idle star shape so kids never confuse a
+                // celebration for a new tappable target.
+                ..._fireworks
+                    .where((fw) => !fw.isExpired)
+                    .map(_buildFirework),
               ],
             ),
           ),
@@ -1195,14 +1230,125 @@ class _TapTarget {
   final double y;
   final DateTime born;
   final int ttlMs; // How long before auto-expiry (ms)
+  final double spawnRotation; // 0..2π — varies the idle-star starting angle
 
   _TapTarget({
     required this.x,
     required this.y,
     required this.born,
     required this.ttlMs,
+    required this.spawnRotation,
   });
 
   int get ageMs => DateTime.now().difference(born).inMilliseconds;
   bool get isExpired => ageMs >= ttlMs;
+}
+
+/// A celebration burst spawned at a tap point. Holds pre-randomized particle
+/// trajectories so each firework is shaped consistently across rebuilds.
+class _Firework {
+  final Offset position;
+  final DateTime born;
+  final List<_FireworkParticle> particles;
+
+  static const int lifetimeMs = 800;
+
+  _Firework({
+    required this.position,
+    required this.born,
+    required this.particles,
+  });
+
+  int get ageMs => DateTime.now().difference(born).inMilliseconds;
+  bool get isExpired => ageMs >= lifetimeMs;
+}
+
+class _FireworkParticle {
+  final double angle;    // radians, direction of travel
+  final double distance; // peak travel distance in px
+  final Color color;
+  final double size;     // sparkle radius at peak
+
+  _FireworkParticle({
+    required this.angle,
+    required this.distance,
+    required this.color,
+    required this.size,
+  });
+}
+
+class _FireworkPainter extends CustomPainter {
+  final double progress; // 0..1
+  final List<_FireworkParticle> particles;
+
+  _FireworkPainter({required this.progress, required this.particles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eased = Curves.easeOutCubic.transform(progress);
+    const fadeStart = 0.55;
+    final opacity = progress < fadeStart
+        ? 1.0
+        : (1.0 - (progress - fadeStart) / (1.0 - fadeStart)).clamp(0.0, 1.0);
+
+    for (final p in particles) {
+      final gravity = progress * progress * 14.0;
+      final dx = cos(p.angle) * p.distance * eased;
+      final dy = sin(p.angle) * p.distance * eased + gravity;
+      final pos = center + Offset(dx, dy);
+
+      // Streak from ~55% behind current pos to current pos so each spark
+      // reads as a moving sparkle, not a static dot.
+      const tailFrac = 0.55;
+      final tailEased = eased * tailFrac;
+      final tailGravity = gravity * tailFrac * tailFrac;
+      final tail = center +
+          Offset(
+            cos(p.angle) * p.distance * tailEased,
+            sin(p.angle) * p.distance * tailEased + tailGravity,
+          );
+      canvas.drawLine(
+        tail,
+        pos,
+        Paint()
+          ..color = p.color.withValues(alpha: 0.45 * opacity)
+          ..strokeWidth = 2.4
+          ..strokeCap = StrokeCap.round,
+      );
+
+      _drawSparkle(canvas, pos, p.size * (1.0 - 0.35 * progress), p.color,
+          opacity);
+    }
+  }
+
+  /// Four-point sparkle (rounded diamond cross) — visually distinct from the
+  /// solid star icon used for tap targets.
+  void _drawSparkle(
+      Canvas canvas, Offset c, double r, Color color, double alpha) {
+    if (r <= 0) return;
+    final r2 = r * 0.32;
+    final path = Path()
+      ..moveTo(c.dx, c.dy - r)
+      ..lineTo(c.dx + r2, c.dy - r2)
+      ..lineTo(c.dx + r, c.dy)
+      ..lineTo(c.dx + r2, c.dy + r2)
+      ..lineTo(c.dx, c.dy + r)
+      ..lineTo(c.dx - r2, c.dy + r2)
+      ..lineTo(c.dx - r, c.dy)
+      ..lineTo(c.dx - r2, c.dy - r2)
+      ..close();
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color.withValues(alpha: alpha * 0.55)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawPath(path, Paint()..color = color.withValues(alpha: alpha));
+  }
+
+  @override
+  bool shouldRepaint(covariant _FireworkPainter old) =>
+      old.progress != progress || old.particles != particles;
 }
