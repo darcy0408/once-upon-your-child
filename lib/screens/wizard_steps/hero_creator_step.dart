@@ -16,6 +16,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/magic_star_cursor.dart';
 import '../../services/api_service_manager.dart';
+import '../../services/isar_service.dart';
+import '../../models/local/character_local.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/caregiver_service.dart';
 import '../../services/child_profile_service.dart';
@@ -717,6 +719,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Future<bool> _saveCharacterDraft() async {
     if (!_isCreatingNew) return true;
+    bool backendOk = true;
+    bool isLocalBackendDown = false;
+    Object? caughtError;
     try {
       final body = {
         'name': widget.wizardData.characterName,
@@ -743,19 +748,40 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           widget.wizardData.characterId = response['id']?.toString();
         }
       }
-      return true;
     } catch (e) {
       debugPrint('⚠️ Character save failed: $e');
-      final isLocal = e.toString().contains('Cannot reach the local backend');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(isLocal
-              ? 'Avatar selected. Could not sync right now.'
-              : 'Could not save character: $e'),
-          backgroundColor: isLocal ? AppColors.gold : AppColors.error,
-        ));
-      }
-      return isLocal;
+      backendOk = false;
+      caughtError = e;
+      isLocalBackendDown = e.toString().contains('Cannot reach the local backend');
+    }
+    // Mirror to local Isar so a backend outage doesn't lose the character.
+    await _persistLocalCharacter(synced: backendOk);
+    if (!backendOk && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isLocalBackendDown
+            ? 'Avatar selected. Could not sync right now.'
+            : 'Could not save character: $caughtError'),
+        backgroundColor: isLocalBackendDown ? AppColors.gold : AppColors.error,
+      ));
+    }
+    return backendOk || isLocalBackendDown;
+  }
+
+  Future<void> _persistLocalCharacter({required bool synced}) async {
+    try {
+      widget.wizardData.characterId ??=
+          'local_${DateTime.now().millisecondsSinceEpoch}';
+      final avatar = widget.wizardData.generatedAvatar;
+      final localChar = CharacterLocal()
+        ..characterId = widget.wizardData.characterId!
+        ..name = widget.wizardData.characterName
+        ..age = widget.wizardData.characterAge
+        ..avatarUrl = avatar?.imageBase64
+        ..isSyncedToServer = synced
+        ..createdAt = DateTime.now();
+      await IsarService.saveCharacter(localChar);
+    } catch (e) {
+      debugPrint('⚠️ Local character save failed: $e');
     }
   }
 
