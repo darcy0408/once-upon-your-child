@@ -643,3 +643,78 @@ This is also defensible economically: ElevenLabs is the highest-cost feature ($0
 2. Free tier custom-avatar exposure — show with clear "Premium feature, see what it looks like" framing rather than hide. Curiosity-driven conversion beats frustration avoidance, but only with honest framing.
 
 **For the next agent:** the immediate code task is Q2's `is_paid_premium` fix per [b7e2] path (1) + my refinements (`past_due` inclusion, `_emit` location). I'm tagging it as my responsibility for the next Stripe session, but if you pick it up first, ping the handoff log so we don't dual-commit.
+
+### [7366 2026-05-10 update] Aligning the matrix with Darcy's stated priorities
+
+Darcy reframed: **(1) don't lose money, (2) don't charge more than people will pay, (3) easy + cheap + value-rich for the user, (4) make a profit.** Reading [3240]'s and [b7e2]'s analyses through that lens, here's where I land.
+
+#### Validating [3240]'s compute model
+
+Sanity-checked the assumptions independently:
+
+- **Stripe fees** ($0.59 on $9.99, $0.88 on $19.99): correct (2.9% + $0.30).
+- **`gemini-2.5-flash-image` at $0.039/image**: matches Google's published pricing as of early 2026, BUT image-gen prices have only gone *up* since 2024. [3240] correctly flagged this as the biggest single risk. **I'd treat $0.05–$0.06 as the planning number, not $0.039**, because if Google bumps prices Darcy can't easily push that cost to users mid-subscription. Re-running Premium worst-case at $0.05/image: cost $7.73, margin +$1.67 / 17%. Still positive but thin. **Recommend Darcy lower the Premium illustration cap from 100 → 80 pages/mo before launch** — protects margin headroom against the most likely cost shift, and 80 pages is still 16 stories at 5 pages each which is well above any normal usage pattern.
+- **ElevenLabs $0.22/1k chars retail**: correct for Creator plan. Darcy's Year-1 free credits are the relevant rate ($0). When credits exhaust, Pro plan is $0.198/1k — slightly *better* than retail. Math holds.
+- **1,800-char average story**: probably low. A 5-page bedtime story typically renders 2,500–3,500 chars including dialogue. If true average is 2,500, then Premium 10k cap = ~4 narrated stories/mo, not 5. **Recommend [b7e2] re-baseline the per-story-char number against actual generated stories before locking the 10k cap** — could need to bump to 12.5k–15k for Premium to feel honest, which would reduce margin to ~$1–2/user worst-case.
+
+These are tightening recommendations, not blockers. The model is fundamentally sound.
+
+#### On Darcy's "people won't pay $19.99" instinct — strongly endorse [3240] D1 with a twist
+
+[3240]'s D1 (Family $14.99 + lower caps) is the right call for priorities (1)+(2)+(3). It:
+- Lands at a market-comp price (Lingokids $14.99 ceiling)
+- Preserves +30% margin
+- Keeps the cap-then-BYOK overage-valve design
+- Easier to explain ("Premium + 50% more" vs "different tier with different cap math")
+
+**The twist: don't launch Family at all in v1. Launch Premium $9.99 alone.**
+
+Reasons aligned with Darcy's priorities:
+- **Priority 1 (don't lose money):** Family caps are tighter (25% vs 28% margin); a single pricing-shift like the Imagen bump above flips Family negative before Premium. Less cap surface = less risk while you're learning real usage.
+- **Priority 2 (don't overcharge):** You don't actually know yet what parents will pay above $9.99. Launching one tier and watching demand teaches you the price point empirically — you can't get that data from intuition.
+- **Priority 3 (easy/cheap/value):** Two tiers at launch creates choice friction ("which do I need?"). One tier is simpler. Parents who want more can ask, which is real signal.
+- **Priority 4 (profit):** A Premium subscriber at +50% typical margin × 50 users beats a Family subscriber at +30% margin × 5 users. Volume on the right product matters more than tier-count breadth at this stage.
+
+When to launch Family (decision rule, not a date):
+- ≥20% of active Premium users hit at least 2 of 3 caps in a single month → demand exists, ship Family.
+- Multi-child request ratio: count "I have 2+ kids, can I…" support tickets / cohort. ≥10% of active subs asking → ship Family.
+- Until *both* signals fire, Premium-only.
+
+This single recommendation also resolves [3240]'s D2 vs D3 indecision — if Family doesn't ship in v1, you don't have to pick yet.
+
+#### Three risks not yet on the matrix that affect Priority 1 (don't lose money)
+
+1. **Chargebacks.** Kids' apps have above-average chargeback rates ("my kid bought this without permission"). Each chargeback costs Stripe's $15 dispute fee + lost revenue + potential card-network penalties if rate >1%. Mitigation that costs nothing: enable Stripe **Smart Retries** (auto-retries failed payments) and **Trial Reminder Email** (Stripe sends "your trial ends in 3 days" automatically — this alone cuts dispute rates significantly). Both toggles in Stripe Dashboard → Billing → Settings.
+
+2. **Free-tier bleed at scale.** 3 stories/mo on free × ~$0.10 cost/story = ~$0.30/free-user/mo. At 1,000 free users that's $300/mo. **Acceptable as customer acquisition cost iff conversion to Premium ≥3%.** Below that, the freemium funnel is net-negative. Add a row to `cost_tracker.py` for "free-tier monthly compute spend" and watch the ratio. **If conversion stays below 3% after 60 days, cap free at 1 story/mo** (cheaper top-of-funnel) **or move to a 7-day free trial with no permanent free tier** (sharper conversion incentive).
+
+3. **Trial-to-paid conversion is the unmeasured unknown.** 14-day trial is generous (industry typical 2-7 days). Long trials lose to forgetting; short trials lose to under-evaluation. For a bedtime-story app where engagement is 2-3 nights/week, 14 days catches ~4-6 sessions which is fair. **But you must instrument it.** Stripe Dashboard → Reports → Subscriptions has trial conversion natively — check it weekly for the first 90 days. **Industry benchmark: 40-60% trial→paid for content/learning apps.** Below 30% means the trial isn't selling Premium; the upgrade screen needs work, not the price.
+
+#### "Easy to use" UX checklist (Priority 3)
+
+The dual-action upgrade card [b7e2] shipped in Phase 1.5 is the right pattern. To compound it:
+
+- **Upgrade-screen headline must lead with trial, not price.** "Try free for 14 days, then $9.99/mo. Cancel anytime." beats "$9.99/mo (free trial)" on conversion psychology — the offer is the trial; the price is the small print.
+- **One CTA above the fold, not two.** Premium primary + "or paste a Gemini key" should be ONE primary button + a small text link, not two equally-weighted buttons. Decision paralysis kills conversion.
+- **Cancellation must be 2 taps.** Settings → Manage subscription → Cancel. If parents have to dig, your refund-request rate goes up. Stripe billing portal handles this automatically — make sure the link to it is visible in Settings (Q4 from earlier audit).
+- **Receipt emails on every charge.** Stripe sends these by default; verify it's enabled. Critical for chargeback defense ("you had a $9.99 charge clearly labeled — here's the receipt from the day of trial conversion").
+
+#### One small thing on the cap-then-BYOK model
+
+The strategy assumes BYOK catches heavy users via the overage valve. **In consumer apps, BYOK adoption is typically 1-3% of users** (developer-friendly parents are rare). So the "wall + door" works only if the door is well-marketed.
+
+**Recommendation:** when a Premium user hits 80% of any cap, in-app message offers two paths: "(1) upgrade to Family for more, or (2) connect your own free Google API key for unlimited stories." Today the 100% cap message [b7e2] built (`TtsCapExceededException`) only offers fallback to flutter_tts. Adding the BYOK CTA at 80% gets engaged users to self-route before they feel constrained. This is a Phase 2 polish item, not v1 critical.
+
+#### My recommendation summary for Darcy's decision pass
+
+| Decision | Vote | Why |
+|---|---|---|
+| Launch tier mix | **Premium $9.99 only for v1; gate Family on real demand signal** | Reduces risk surface, gathers real pricing data, simpler UX |
+| Premium illustration cap | **Drop 100 → 80 pages/mo** | Margin headroom against likely Imagen price increase |
+| Premium TTS char cap | **Re-baseline against real story-char counts before locking 10k** | 1,800-char assumption may be 30% low |
+| Display name | **"Premium" for marketing, "Adventurer" for in-app post-upgrade badge** | Marketing clarity + kid-facing flair |
+| Free tier exposure of paid features | **Show with honest "Premium feature" framing** | Curiosity converts; hiding loses upsell signal |
+| Stripe Smart Retries + Trial Reminder Emails | **Enable both immediately** | Free, cuts chargebacks, no code |
+| Cancellation friction | **2-tap max via Stripe Billing Portal link in Settings** | Refund-rate management, regulatory-friendly |
+
+For the next agent: the implementation backlog is already well-defined by [b7e2]'s Phase 1 + my Q2 fix. The above are *configuration decisions* Darcy can make in the Stripe Dashboard + a few number tweaks in `subscription_models.dart` / `ai_quota.py` — no architecture changes needed. Once Darcy picks, those edits are <30 min of work.
