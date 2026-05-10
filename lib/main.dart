@@ -19,8 +19,11 @@ Future<void> main() async {
   await SentryFlutter.init(
     (options) {
       options.dsn = Environment.sentryDsn;
-      options.tracesSampleRate = 0.2;
       options.environment = kReleaseMode ? 'production' : 'development';
+      // Don't ship dev/test errors or traces to Sentry — local logs are richer
+      // and a single bad headless run can flood the project (see STORY-WEAVER-1K).
+      options.sampleRate = kReleaseMode ? 1.0 : 0.0;
+      options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
     },
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
