@@ -210,6 +210,98 @@ The reason this works (vs. selling "unlimited"): **the BYOK overlay catches heav
 
 ## Open questions — for cross-agent discussion
 
+### [open] Family $19.99 may be priced above market — Darcy concerned about conversion
+
+#### [3240 2026-05-10] Reopening the Family price decision
+
+Darcy: "I don't think people will pay $19.99." Concur — that price is at the upper edge of the kids' content market and may suppress conversion below break-even volume regardless of per-user margin.
+
+**Market benchmarks (kids' content/learning apps, 2025-2026):**
+
+| Service | Monthly | Notes |
+|---|---|---|
+| Disney+ | ~$10.99 | Streaming benchmark, huge content library |
+| Epic for Kids | $11.99 | Direct comp — kids' books/stories |
+| ABCmouse | ~$12.99 | Educational |
+| Vooks | $8.99 | Animated kids' books |
+| Lingokids | $14.99 | Educational, family-positioned |
+| Reading Eggs | ~$10.99 | Educational reading |
+| Khan Kids | $0 | Free benchmark |
+
+The market signal is **$8-15/mo for kids' content**, with $14.99 being the ceiling for an established brand. $19.99 lands above the entire comp set. Family plans usually justify ~2x individual *only after* a parent has already committed to the individual tier — cold conversion to $19.99 is the friction point.
+
+#### Why simply dropping the price doesn't work
+
+Re-running the worst-case math from "Compute-cost model" above against lower Family prices:
+
+| Family price | Net revenue (after Stripe) | Worst-case cost (200 ill / 25k TTS) | Margin |
+|---|---|---|---|
+| $19.99 (decided) | $19.11 | $14.33 | +$4.78 / 25% ✅ |
+| $16.99 | $16.20 | $14.33 | +$1.87 / 11% 😬 |
+| $14.99 | $14.25 | $14.33 | **−$0.08 / LOSS** ❌ |
+| $13.99 | $13.28 | $14.33 | **−$1.05 / LOSS** ❌ |
+
+The illustration cap (200 pages × $0.039) plus TTS cap (25k × $0.22) eats most of the revenue at $14.99. **You can't drop the Family price without also dropping the caps.**
+
+#### Three viable options for Darcy + parallel agents to choose between
+
+##### Option D1 — Lower price + lower caps (recommended)
+
+| Tier | Price | Stories/mo | Illustrations | TTS chars/mo |
+|---|---|---|---|---|
+| Premium | $9.99 (unchanged) | 20 | 100 pages | 10,000 |
+| **Family** | **$14.99** | **75** | **150 pages** | **15,000** |
+
+Family caps drop 25% (150 vs 200 pages, 15k vs 25k TTS chars), but they're still 50% larger than Premium's caps — meaningful upgrade for $5 more/mo.
+
+Worst-case Family math at $14.99 / 150 pages / 15k TTS:
+- Illustrations: 150 × $0.039 = $5.85
+- TTS: 15 × $0.22 = $3.30
+- Text: $0.15
+- Stripe: $0.74
+- Cost: $10.04
+- Net revenue: $14.25
+- **Margin: +$4.21 / 30%** ✅
+
+**Pros:** lands on a market-comp price ($14.99 = Lingokids); preserves margin; preserves cap-then-BYOK design (heavy users self-route to BYOK overlay). **Cons:** Family value prop is a smaller delta over Premium, so parents may not see why to upgrade beyond "more usage."
+
+##### Option D2 — Keep $19.99 but reposition around organizational value
+
+Don't lower the price; sell Family on **multi-child management** rather than usage caps.
+
+- 5 child profiles with separate progress, saved characters, age bands
+- Per-kid TTS voice preference
+- Parent dashboard ("what stories did each kid finish this week")
+- Cross-device sync ("read on tablet at home, finish on phone in the car")
+
+Many parents who'd balk at $19.99 for "more stories" will pay for "manage bedtime stories for all 4 kids" because that's a quality-of-life improvement, not a quantity upgrade. This requires shipping the multi-profile feature, which doesn't exist today.
+
+**Pros:** highest margin per converted user; clearest differentiator from Premium; defensible against discount competition. **Cons:** requires significant new feature work (multi-profile, parent dashboard) before the $19.99 message lands honestly. Conversion still depends on whether multi-profile is *actually* what parents want enough to pay for.
+
+##### Option D3 — Annual discount tier as the conversion lever
+
+Keep monthly Family at $19.99 but make the annual price the headline:
+
+- Family monthly: $19.99/mo
+- Family annual: **$11.99/mo billed yearly** ($143.88/yr) — 40% off, advertised as the primary option
+- 14-day trial → defaults to annual on conversion
+
+The monthly price stays for revenue protection on transient users; the annual price is the cold-conversion offer. Lingokids and Disney+ both use this pattern.
+
+**Pros:** doesn't require lowering any caps; annual commitment improves LTV; "$11.99/mo" is a market-comp number. **Cons:** annual conversion friction is higher than monthly; refund/cancellation policy is more complex; backend currently has annual SKUs but UI may not surface annual-as-default.
+
+#### Recommendation
+
+**D1 (lower price + lower caps) for v1 launch**, with **D3 (annual discount)** layered on top once the analytics show monthly conversion. D2 is a 6-month feature roadmap item, not a v1 lever.
+
+Specifically: launch with **Family $14.99 monthly / $119.88 annual ($9.99/mo)**, caps at 75 stories / 150 illustrations / 15k TTS chars. Frame Family as "all of Premium plus 50% more stories and illustrations for the whole household." The $9.99/mo annual price matches the Premium monthly price — psychologically powerful framing ("get Family for the price of Premium").
+
+#### Open coordination questions for the next agent to address
+
+1. Does the Stripe wiring (`03669c85`) currently hardcode the $19.99 SKU? If yes, what's the migration path — new Stripe Product, or update existing?
+2. Are there existing annual SKUs in Stripe? `subscription_models.dart:367-369` shows `yearlyPrice: 159.99` (= $13.33/mo) for Family. That's between D1 and D3 prices. Pick one and align.
+3. Any user research on willingness-to-pay that should inform this? [b7e2] flagged Q4 ("validation with real parents") as still unanswered.
+
 ### [open] Stripe success → `is_paid_premium` SharedPref is never written
 
 Identified by parallel agent in `stripe_subscription_audit.md` and unresolved by `03669c85`. `api_service_manager.dart:560` and `progression_service.dart:111` BOTH read `prefs.getBool('is_paid_premium')` but no code path sets it. So even after a successful Stripe payment + webhook + DB tier update, every frontend gate using `hasPremiumAccess()` will still return false unless BYOK is also on. **`03669c85` added `SubscriptionSyncService.syncSubscriptionStatus()` on the success page**, but does that service write the SharedPref or just update a Riverpod provider? Audit `lib/services/subscription_sync_service.dart` and confirm. If it doesn't write the pref, that's a launch-blocker that needs a follow-up commit.
@@ -457,6 +549,21 @@ After Darcy asked, found commit `03669c85` (Stripe wiring fixes) and memory file
 3. Specific paid-Premium feature recommendations beyond custom avatars.
 4. Whether any hypotheses have been validated with real parents.
 5. Any related code changes — link commits here.
+
+### [3240 2026-05-10 update 3] Family $19.99 pricing reconsideration
+
+Darcy raised concern that families won't pay $19.99. Added an Open Question reopening the Family price decision — framed as a coordination question for the parallel agents rather than a unilateral override of the [Darcy + b7e2] decided structure.
+
+**Three options laid out:**
+- **D1**: lower price + lower caps ($14.99 / 150 illustrations / 15k TTS) — math checks out at +30% margin. Recommended for v1.
+- **D2**: keep $19.99 but reposition around multi-child management (requires new feature work).
+- **D3**: keep $19.99 monthly + $11.99/mo annual as headline offer.
+
+Math: cannot drop Family below ~$14.99 without also dropping caps — the $19.99 → $14.99 worst-case at current caps (200 ill / 25k TTS) is a $0.08 LOSS.
+
+**Recommended for v1:** D1 with annual discount overlay (Family $14.99/mo OR $119.88/yr = $9.99/mo). Also flagged a possible existing annual SKU mismatch — `subscription_models.dart:367-369` already lists Family yearly = $159.99 ($13.33/mo). If we go with the $14.99 plan, the existing yearly may need to drop accordingly.
+
+Coordination questions for the parallel agents: confirm Stripe SKU migration path; confirm annual SKUs exist; whether [b7e2]'s Q4 ("validate with real parents") has any data to inform this.
 
 ### [3240 2026-05-10 update 2] Compute-cost validation of the [Darcy + b7e2] decided caps
 
