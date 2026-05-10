@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
 
-class SubscriptionSuccessScreen extends StatelessWidget {
+import '../services/subscription_sync_service.dart';
+
+class SubscriptionSuccessScreen extends StatefulWidget {
   const SubscriptionSuccessScreen({super.key});
+
+  @override
+  State<SubscriptionSuccessScreen> createState() =>
+      _SubscriptionSuccessScreenState();
+}
+
+class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Stripe webhook updates the backend; refresh local state so the new
+    // tier/entitlements are reflected immediately instead of after next launch.
+    SubscriptionSyncService().syncSubscriptionStatus();
+  }
 
   @override
   Widget build(BuildContext context) {

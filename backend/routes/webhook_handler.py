@@ -67,10 +67,14 @@ def _dispatch_event(event: Any) -> None:
 
 
 def _handle_checkout_completed(session: Dict[str, Any]) -> None:
-    user = _find_user(session.get("client_reference_id"))
+    user = _find_user(_extract_user_id(session))
     if not user:
         current_app.logger.warning("Checkout completed for unknown user")
         return
+
+    customer_id = session.get("customer")
+    if customer_id and not user.stripe_customer_id:
+        user.stripe_customer_id = customer_id
 
     subscription_info = session.get("subscription")
     if isinstance(subscription_info, dict):

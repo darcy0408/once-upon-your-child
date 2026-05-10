@@ -55,15 +55,24 @@ def create_checkout_session():
 
     try:
         trial_days = get_trial_days()
+        user = request.current_user
         session_params = dict(
             payment_method_types=['card'],
             line_items=[{'price': PRICE_IDS[tier], 'quantity': 1}],
             mode='subscription',
             success_url='https://grand-light-production-68d9.up.railway.app/#/subscription-success',
             cancel_url='https://grand-light-production-68d9.up.railway.app/#/subscription-canceled',
+            client_reference_id=user_id,
+            customer_email=user.email,
+            metadata={'user_id': user_id, 'subscription_tier': tier},
+            subscription_data={'metadata': {'user_id': user_id, 'subscription_tier': tier}},
         )
+        if user.stripe_customer_id:
+            session_params['customer'] = user.stripe_customer_id
+        else:
+            session_params['customer_creation'] = 'always'
         if trial_days:
-            session_params['subscription_data'] = {'trial_period_days': trial_days}
+            session_params['subscription_data']['trial_period_days'] = trial_days
             logger.info(f"Trial enabled: {trial_days} days for tier '{tier}'")
 
         checkout_session = stripe.checkout.Session.create(**session_params)
@@ -135,3 +144,42 @@ def get_subscription_status(user_id):
     except Exception as e:
         logger.exception("Failed to get subscription status")
         return jsonify({'error': 'Failed to retrieve subscription status'}), 500
+
+
+@stripe_routes.route('/cancel-subscription', methods=['POST'])
+@require_auth
+def cancel_subscription():
+    """
+    Cancel the authenticated user's active subscription at period end.
+    The user keeps access until current_period_end, then is downgraded to free.
+    """
+    user = request.current_user
+
+    if not user.stripe_customer_id:
+        return jsonify({'error': 'No active subscription found'}), 404
+
+    try:
+        subscriptions = stripe.Subscription.list(
+            customer=user.stripe_customer_id,
+            status='active',
+            limit=1,
+        )
+        if not subscriptions.data:
+            return jsonify({'error': 'No active subscription found'}), 404
+
+        sub = subscriptions.data[0]
+        updated = stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
+
+        user.cancel_at_period_end = True
+        from ..database import db
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({
+            'status': 'canceled',
+            'cancel_at_period_end': True,
+            'current_period_end': updated.current_period_end,
+        })
+    except Exception:
+        logger.exception("Failed to cancel subscription")
+        return jsonify({'error': 'Failed to cancel subscription. Please try again.'}), 500
