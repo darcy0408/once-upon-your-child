@@ -1,0 +1,4 @@
+# Generated PNG outputs are regenerable from the harness — don't bloat the repo.
+# manifest.json and prompts.json ARE committed: small, useful as fixtures.
+results/*/
+!results/.gitkeep

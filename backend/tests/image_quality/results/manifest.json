@@ -1,0 +1,489 @@
+{
+  "started_at": "2026-05-10T10:02:35.641392",
+  "providers": [
+    "gemini",
+    "sdxl",
+    "flux_schnell"
+  ],
+  "bands": [
+    "sprout",
+    "explorer",
+    "adventurer",
+    "creator",
+    "adolescent"
+  ],
+  "pages_per_band": 3,
+  "results": [
+    {
+      "provider": "gemini",
+      "band": "sprout",
+      "age": 3,
+      "page": 1,
+      "path": "gemini\\sprout_p1.png",
+      "status": "ok",
+      "bytes": 1423630,
+      "latency_s": 7.38,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "sprout",
+      "age": 3,
+      "page": 2,
+      "path": "gemini\\sprout_p2.png",
+      "status": "ok",
+      "bytes": 1424732,
+      "latency_s": 6.42,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "sprout",
+      "age": 3,
+      "page": 3,
+      "path": "gemini\\sprout_p3.png",
+      "status": "ok",
+      "bytes": 1471994,
+      "latency_s": 9.72,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "explorer",
+      "age": 7,
+      "page": 1,
+      "path": "gemini\\explorer_p1.png",
+      "status": "ok",
+      "bytes": 1783136,
+      "latency_s": 7.27,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "explorer",
+      "age": 7,
+      "page": 2,
+      "path": "gemini\\explorer_p2.png",
+      "status": "ok",
+      "bytes": 1905891,
+      "latency_s": 6.96,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "explorer",
+      "age": 7,
+      "page": 3,
+      "path": "gemini\\explorer_p3.png",
+      "status": "ok",
+      "bytes": 1901146,
+      "latency_s": 6.81,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adventurer",
+      "age": 10,
+      "page": 1,
+      "path": "gemini\\adventurer_p1.png",
+      "status": "ok",
+      "bytes": 1814884,
+      "latency_s": 6.82,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adventurer",
+      "age": 10,
+      "page": 2,
+      "path": "gemini\\adventurer_p2.png",
+      "status": "ok",
+      "bytes": 1874884,
+      "latency_s": 7.47,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adventurer",
+      "age": 10,
+      "page": 3,
+      "path": "gemini\\adventurer_p3.png",
+      "status": "ok",
+      "bytes": 1887800,
+      "latency_s": 6.9,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "creator",
+      "age": 13,
+      "page": 1,
+      "path": "gemini\\creator_p1.png",
+      "status": "ok",
+      "bytes": 1462654,
+      "latency_s": 14.8,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "creator",
+      "age": 13,
+      "page": 2,
+      "path": "gemini\\creator_p2.png",
+      "status": "ok",
+      "bytes": 1808483,
+      "latency_s": 7.43,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "creator",
+      "age": 13,
+      "page": 3,
+      "path": "gemini\\creator_p3.png",
+      "status": "ok",
+      "bytes": 2150999,
+      "latency_s": 9.28,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adolescent",
+      "age": 16,
+      "page": 1,
+      "path": "gemini\\adolescent_p1.png",
+      "status": "ok",
+      "bytes": 1707533,
+      "latency_s": 6.34,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adolescent",
+      "age": 16,
+      "page": 2,
+      "path": "gemini\\adolescent_p2.png",
+      "status": "ok",
+      "bytes": 1723900,
+      "latency_s": 8.95,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "gemini",
+      "band": "adolescent",
+      "age": 16,
+      "page": 3,
+      "path": "gemini\\adolescent_p3.png",
+      "status": "ok",
+      "bytes": 1807292,
+      "latency_s": 8.35,
+      "est_cost_usd": 0.039
+    },
+    {
+      "provider": "sdxl",
+      "band": "sprout",
+      "age": 3,
+      "page": 1,
+      "path": "sdxl\\sprout_p1.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.4
+    },
+    {
+      "provider": "sdxl",
+      "band": "sprout",
+      "age": 3,
+      "page": 2,
+      "path": "sdxl\\sprout_p2.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.4
+    },
+    {
+      "provider": "sdxl",
+      "band": "sprout",
+      "age": 3,
+      "page": 3,
+      "path": "sdxl\\sprout_p3.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.36
+    },
+    {
+      "provider": "sdxl",
+      "band": "explorer",
+      "age": 7,
+      "page": 1,
+      "path": "sdxl\\explorer_p1.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.34
+    },
+    {
+      "provider": "sdxl",
+      "band": "explorer",
+      "age": 7,
+      "page": 2,
+      "path": "sdxl\\explorer_p2.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.3
+    },
+    {
+      "provider": "sdxl",
+      "band": "explorer",
+      "age": 7,
+      "page": 3,
+      "path": "sdxl\\explorer_p3.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.33
+    },
+    {
+      "provider": "sdxl",
+      "band": "adventurer",
+      "age": 10,
+      "page": 1,
+      "path": "sdxl\\adventurer_p1.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.32
+    },
+    {
+      "provider": "sdxl",
+      "band": "adventurer",
+      "age": 10,
+      "page": 2,
+      "path": "sdxl\\adventurer_p2.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.34
+    },
+    {
+      "provider": "sdxl",
+      "band": "adventurer",
+      "age": 10,
+      "page": 3,
+      "path": "sdxl\\adventurer_p3.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.36
+    },
+    {
+      "provider": "sdxl",
+      "band": "creator",
+      "age": 13,
+      "page": 1,
+      "path": "sdxl\\creator_p1.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.34
+    },
+    {
+      "provider": "sdxl",
+      "band": "creator",
+      "age": 13,
+      "page": 2,
+      "path": "sdxl\\creator_p2.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.32
+    },
+    {
+      "provider": "sdxl",
+      "band": "creator",
+      "age": 13,
+      "page": 3,
+      "path": "sdxl\\creator_p3.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.33
+    },
+    {
+      "provider": "sdxl",
+      "band": "adolescent",
+      "age": 16,
+      "page": 1,
+      "path": "sdxl\\adolescent_p1.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.33
+    },
+    {
+      "provider": "sdxl",
+      "band": "adolescent",
+      "age": 16,
+      "page": 2,
+      "path": "sdxl\\adolescent_p2.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.31
+    },
+    {
+      "provider": "sdxl",
+      "band": "adolescent",
+      "age": 16,
+      "page": 3,
+      "path": "sdxl\\adolescent_p3.png",
+      "status": "error",
+      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.35
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "sprout",
+      "age": 3,
+      "page": 1,
+      "path": "flux_schnell\\sprout_p1.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.38
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "sprout",
+      "age": 3,
+      "page": 2,
+      "path": "flux_schnell\\sprout_p2.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.36
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "sprout",
+      "age": 3,
+      "page": 3,
+      "path": "flux_schnell\\sprout_p3.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.33
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "explorer",
+      "age": 7,
+      "page": 1,
+      "path": "flux_schnell\\explorer_p1.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.35
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "explorer",
+      "age": 7,
+      "page": 2,
+      "path": "flux_schnell\\explorer_p2.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.31
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "explorer",
+      "age": 7,
+      "page": 3,
+      "path": "flux_schnell\\explorer_p3.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.31
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adventurer",
+      "age": 10,
+      "page": 1,
+      "path": "flux_schnell\\adventurer_p1.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.33
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adventurer",
+      "age": 10,
+      "page": 2,
+      "path": "flux_schnell\\adventurer_p2.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.35
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adventurer",
+      "age": 10,
+      "page": 3,
+      "path": "flux_schnell\\adventurer_p3.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.32
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "creator",
+      "age": 13,
+      "page": 1,
+      "path": "flux_schnell\\creator_p1.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.32
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "creator",
+      "age": 13,
+      "page": 2,
+      "path": "flux_schnell\\creator_p2.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.32
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "creator",
+      "age": 13,
+      "page": 3,
+      "path": "flux_schnell\\creator_p3.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.38
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adolescent",
+      "age": 16,
+      "page": 1,
+      "path": "flux_schnell\\adolescent_p1.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.39
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adolescent",
+      "age": 16,
+      "page": 2,
+      "path": "flux_schnell\\adolescent_p2.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.34
+    },
+    {
+      "provider": "flux_schnell",
+      "band": "adolescent",
+      "age": 16,
+      "page": 3,
+      "path": "flux_schnell\\adolescent_p3.png",
+      "status": "error",
+      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "latency_s": 0.35
+    }
+  ],
+  "finished_at": "2026-05-10T10:10:16.850992",
+  "summary": {
+    "total_attempts": 45,
+    "successful": 15,
+    "actual_cost_usd_est": 0.585
+  }
+}
