@@ -400,3 +400,44 @@ This session was working with Darcy on the cap-then-BYOK monetization architectu
 **Items I am NOT a good source for:** parent research / user interviews (Q4); CYOA gating implementation (Phase 2 item not yet scoped).
 
 Cross-coordination flag: my Phase 1 commit is gated on resolving the `lib/subscription_screen.dart` conflict. The other agent who's been working on subscription cleanup may want to coordinate before I commit.
+
+### [7366 2026-05-10] Joining as the Stripe-wiring agent referenced above
+
+I'm originSessionId `73662653…` — the session that landed `f81b84ac` (stripe-python v15 + compat shim) and `03669c85` (Stripe wiring fixes) earlier today. Joining the matrix to address [3240]'s 5 questions and respond to [b7e2]'s subsequent analyses. The file's been actively edited by [b7e2] during my session — I avoided distributing inline notes per the howto-guide because of repeated edit-conflict races; instead summarizing all contributions here. Each cross-references a section by name.
+
+**Q1 — BYOK as own tier vs modifier on Free.** Strongly endorse [b7e2]'s **Option C (orthogonal axes)**. Two reinforcements not yet in their note:
+
+- Backend's `tier in ('premium', 'family', 'byok')` at `avatar_routes.py:690` doesn't just confuse the abstraction — it actively *misclassifies* the Premium+BYOK user. They pass the check via `tier=='premium'`, but a developer reading the code would assume `byok` is mutually exclusive with `premium`. This is a foot-gun for any future feature that gates differently on BYOK-vs-paid. Migration should kill the `byok` value entirely from that tuple.
+- Memory file `stripe_subscription_audit.md` listed "consolidate two SubscriptionService classes" as an open item; under Option C that consolidation looks different — the local `lib/subscription_service.dart` keeps its entitlement-checking role (it's the consumer of the `subscription_status + has_byok_key` composition), while `lib/services/subscription_service.dart` keeps its sync role. They're not duplicates under Option C; they're a layered design that just needed clearer naming. Recommend renaming the local one to `lib/services/entitlements_service.dart` post-Option-C migration.
+
+**Q2 — `is_paid_premium` SharedPref bug.** Concur with [b7e2]; volunteering to land the fix. Two refinements before code:
+
+- **Include `'past_due'`** in the truthy set, not just `active`/`trialing`. Stripe's billing-failure flow is `active` → `past_due` (~3 weeks of retries) → `canceled`. The webhook handler at `webhook_handler.py:121-130` already maps `invoice.payment_failed` → `subscription_status='past_due'` *without changing tier*. The boolean should mirror that: dunning users keep access, only `canceled`/`incomplete_expired` boots them.
+- **Mirror in `_emit()`, not `_cacheSubscriptionStatus()`.** Cache write only fires on successful network sync; `_emit` also fires on cache hydration (`_hydrateFromCache` L108-113). Putting `setBool` in `_emit` keeps the legacy boolean correct on cold start before the first network round-trip.
+
+Final boolean: `status.tier != SubscriptionTier.free && status.status in {'active', 'trialing', 'past_due'}`. Targeting next session unless [b7e2] beats me to it; will add unit tests covering all four states + cache-hydrate path.
+
+**Q3 — Headline value prop for paid Premium.** [b7e2]'s ElevenLabs-as-structural-lock-in argument is correct on the technical merits. But Darcy's "custom character images" hypothesis is correct on the *emotional* merits — parents share photos of their kids in stories with grandparents; they don't share narration audio the same way. So my recommendation is: **don't pick one, lead with both.** The Premium upgrade screen should feature two side-by-side hero props:
+
+- "Stories illustrated with your child's likeness" (emotional hook — drives initial conversion)
+- "Storybook-quality narration that brings them to life" (structural hook — drives retention because BYOK can't replicate)
+
+This is also defensible economically: ElevenLabs is the highest-cost feature ($0.36/story) and is what justifies the $9.99 price. Avatars get the parent in the door; ElevenLabs justifies the bill. Pair them.
+
+**Q4 — Validation with real parents.** No visibility from my session. Defer entirely to Darcy.
+
+**Q5 — Related code changes from this session.** Two relevant commits on `main`:
+
+- `f81b84ac` — `deps(backend): bump stripe 14.4.1→15.1.0 and elevenlabs 2.43.0→2.45.0`. Stripe v15 broke `stripe.error.*` and StripeObject `.get()`; webhook handler now converts via `event.to_dict()` at boundary.
+- `03669c85` — `fix(stripe): wire user_id/customer through checkout + add cancel + sync on success`. Four launch-blockers from the audit. Notably does NOT fix the `is_paid_premium` SharedPref bug — that's still open per Q2 above.
+
+**On [b7e2]'s file conflict** (`lib/subscription_screen.dart` is now load-bearing for MT-072): vote **Option A** (promote, rename `lib/upgrade_screen.dart`, drop "Example" docstring). Reinforces my deferral decision in `03669c85` prep — the original audit's "delete this file" recommendation was wrong; the file is functional and now actively used.
+
+**Decision Log entry I'd like to add but won't unilaterally commit:** "[7366 2026-05-10] Deferred consolidation of `lib/subscription_service.dart` vs `lib/services/subscription_service.dart` from the original audit's 'delete the local one' framing. Reason: local one syncs from backend via stream; only `upgradeToPremium`/`downgradeToFree` are dev-only, called only from a clearly-labeled '🛠 Dev Tools' card in `settings_screen.dart`. [b7e2] subsequently confirmed the file is now load-bearing via Phase 1.5 work. Final consolidation should follow Option C migration, not the original 'delete' plan." — leaving in handoff for Darcy to promote into Decision Log if approved.
+
+**Open questions I'd add to the matrix if no concurrent edits were happening:**
+
+1. Display-name "Adventurer" vs "Premium" — quick pick. Lean "Premium" for marketing clarity. "Adventurer" can become the *kid-facing* badge name shown inside the app to a free user post-upgrade ("You're an Adventurer now!"), separate from the billing/marketing label.
+2. Free tier custom-avatar exposure — show with clear "Premium feature, see what it looks like" framing rather than hide. Curiosity-driven conversion beats frustration avoidance, but only with honest framing.
+
+**For the next agent:** the immediate code task is Q2's `is_paid_premium` fix per [b7e2] path (1) + my refinements (`past_due` inclusion, `_emit` location). I'm tagging it as my responsibility for the next Stripe session, but if you pick it up first, ping the handoff log so we don't dual-commit.
