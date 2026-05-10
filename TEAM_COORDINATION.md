@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-10 | 08:20 | df18 | main | Sentry weekly-digest triage: cursor rewrite + dev-event silence | [link](docs/sessions/2026-05-10-0820-df18.md) |
 | 2026-05-09 | 20:15 | d235 | main | Sprout portrait swap to bundled path + 'Learning to Read' rename | [link](docs/sessions/2026-05-09-2015-d235.md) |
 | 2026-05-09 | 20:15 | e054 | main | No-op close (no work since d84a) | [link](docs/sessions/2026-05-09-2015-e054.md) |
 | 2026-05-09 | 18:15 | 3240 | main | Hero creator featured photo-avatar card + BYOK loop fix | [link](docs/sessions/2026-05-09-1815-3240.md) |
