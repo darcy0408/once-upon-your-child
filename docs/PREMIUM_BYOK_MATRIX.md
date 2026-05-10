@@ -210,6 +210,96 @@ The reason this works (vs. selling "unlimited"): **the BYOK overlay catches heav
 
 ## Open questions — for cross-agent discussion
 
+### [3240 2026-05-10 update 4] Decision summary for Darcy — single-pass triage table
+
+Darcy stated priorities (2026-05-10): **(1) don't lose money, (2) don't charge more than people will pay, (3) easy + cheap + most-value-for-user, (4) profit.** This table maps every open decision against agent positions so Darcy can converge them in one pass. ✅ = converged, ⚠ = soft converge, ❌ = open.
+
+| # | Decision | Status | [3240] | [b7e2] | [7366] | Action for Darcy |
+|---|---|---|---|---|---|---|
+| 1 | **Tier mix at v1 launch** | ❌ | D1: Premium $9.99 + Family $14.99 | $19.99 Family with caps | **Premium-only $9.99**; gate Family on demand | **Pick: 1-tier or 2-tier launch** |
+| 2 | Family pricing (if shipping) | ❌ | D1: $14.99 + lower caps | Decided $19.99 | Wait until demand signal | **Pick: $14.99, $19.99, or defer** |
+| 3 | Premium illustration cap | ⚠ | 100 pages/mo (matches [decided]) | 100 (decided) | **Lower to 80** | **Pick: 80 or 100** |
+| 4 | Imagen-cost planning rate | ⚠ | $0.039 (today's rate) | $0.039 | **Plan at $0.05** for headroom | **Approve $0.05 planning rate** |
+| 5 | TTS cap re-baseline (1800 vs 2500 chars/story) | ⚠ | Used 1800 | 1800 baseline | **Verify against real stories before locking** | **Approve verification step** |
+| 6 | BYOK as tier vs orthogonal axis | ✅ | Defers | Option C (orthogonal) | Strongly endorses Option C | **Approve Option C** |
+| 7 | `is_paid_premium` SharedPref bug | ✅ | Confirms | Fix path 1 (`setBool`) | Volunteers + adds `past_due` to truthy set | **Approve, [7366] ships** |
+| 8 | Premium headline value prop | ✅ | "Custom avatars" | "ElevenLabs" | **Lead with both side-by-side** | **Approve dual-hook** |
+| 9 | `lib/subscription_screen.dart` cleanup | ✅ | (no opinion) | Vote A (promote) | Vote A | **Approve, do the rename** |
+| 10 | Display name "Adventurer" vs "Premium" | ✅ | (defer) | (defer) | "Premium" billing + "Adventurer" badge | **Approve split** |
+| 11 | Free-tier custom-avatar exposure | ⚠ | Vote: show with framing | (no opinion) | Vote: show with framing | **Approve show-with-framing** |
+| 12 | ElevenLabs BYOK path | ✅ | Vote: don't pursue | Flagged as legal lift | (no opinion) | **Approve: Family-as-ceiling for v1** |
+| 13 | BYOK Imagen quota tracking | ✅ | Vote: graceful-fail | Vote: don't track | (no opinion) | **Approve graceful-fail** |
+| 14 | **Free Sprout illustrations carve-out** | ❌ NEW | See new question below | (not addressed) | (not addressed) | **Pick: keep, revoke, or cap** |
+| 15 | **Trial-end soft landing UX** | ❌ NEW | See new question below | (not addressed) | Mentioned in trial-conversion section | **Pick: graduated or hard cliff** |
+| 16 | **Free→Paid conversion funnel** | ❌ NEW | See new question below | (Phase 1.5 partial) | UX checklist (4 items) | **Approve funnel + first-taste illustration** |
+| 17 | Stripe Smart Retries + Trial Reminder | ✅ | (no opinion) | (no opinion) | Enable both | **Approve, enable in Stripe Dashboard** |
+| 18 | Free-tier conversion-floor metric | ⚠ | (no opinion) | (no opinion) | 3% conversion threshold or change model | **Approve metric, schedule 60-day check** |
+
+**Recommended decision order** (zero-risk first → strategic last):
+- **Round 1 — ratify converged items (10 minutes):** #6, #7, #8, #9, #10, #11, #12, #13, #17
+- **Round 2 — number tweaks (20 minutes):** #3 (cap), #4 (planning rate), #5 (TTS verify), #18 (metric)
+- **Round 3 — strategic picks (30+ minutes):** #1 (tier mix), #2 (Family price), #14 (Sprout carve-out), #15 (soft landing), #16 (funnel)
+
+Round 1 + Round 2 unblock all Phase 1 implementation work. Round 3 needs Darcy's judgment on tradeoffs.
+
+### [3240 2026-05-10 update 4] Three new open questions [7366] didn't cover
+
+#### #14 NEW — Free Sprout illustrations are a hidden carve-out vs. the [decided] table
+
+**Factual gap.** The [Decided] cap-then-BYOK table says Free tier gets "0 illustrations (no per-page)." But `story_result_screen.dart:724` enables `allowServerKey: isSproutBand` — meaning **Sprout-band (3-5yo) Free users currently get per-page illustrations from Darcy's server key.** This is a deliberate decision from MT-054 (Phase 1 work earlier this year), trading server cost for the strategic priority of nailing the Sprout experience.
+
+**Cost impact (worst case):** active Sprout Free family generates 3 stories/mo × ~10 pages = 30 illustrations × $0.039 = **$1.17/mo cost per Free Sprout user**. At zero revenue. At 100 Free Sprout users that's ~$117/mo of pure cost.
+
+**Three resolution paths:**
+- **R1 — Keep + document.** Free Sprout = "loss leader" intentionally. Update [decided] table to "0 illustrations EXCEPT Sprout band (server-key per-page enabled)." Pros: nails the Sprout pitch. Cons: scales linearly with Sprout user count.
+- **R2 — Revoke.** Free Sprout gets cover image only, no per-page. Saves ~$1/mo per user. Cons: Sprout free experience drops noticeably.
+- **R3 — Cap it.** Free Sprout gets up to **1 illustrated story/mo** (10 illustrations × $0.039 = $0.39 per Free Sprout user/mo). Additional stories text-only. Compromise that lets a parent SEE the magic once before the upsell hits.
+
+**Recommend R3** — preserves the "wow moment" that drives conversion without unbounded Free cost. Aligns with priorities 1 (don't lose money) and 3 (give the user value at lowest cost).
+
+#### #15 NEW — Trial-end soft landing (priority 3: easy for the user)
+
+What happens at day 14 if a trialing user doesn't convert? Currently undefined. Two failure modes if hard-cliff:
+- Premium → Free overnight. Parent loses 4 illustrated stories of muscle memory and watches the next bedtime story produce no images. Likely churn + frustrated review.
+- Same as above but no notification — worse churn.
+
+**Proposal — graduated soft landing:**
+- Day 12: in-app banner + email "your trial ends in 2 days."
+- Day 14: trial converts to **"trial-ended grace tier"** for 7 more days — Premium feature access continues but illustration cap reduced to 30 pages/mo (vs Premium's 80–100). Banner explains "Want unlimited? Upgrade now."
+- Day 21: drop to true Free tier.
+
+Cost: ~$1.17 per non-converting user (30 illustrations). But a trialing user has demonstrated intent — cost-per-rescued-conversion is small. Subscription industry data on grace-period soft landings: 5-15% recovery of expiring trials. At $9.99/mo LTV, every recovered conversion pays for ~8 wasted grace periods.
+
+**Decision:** approve graduated soft landing or accept hard-cliff trial-end?
+
+#### #16 NEW — Free→Paid conversion funnel needs an end-to-end design
+
+Matrix has discoverability bullets scattered across [b7e2]'s Phase 1.5 work + [7366]'s UX checklist, but no end-to-end funnel sketch. Darcy's priority 3 (easy for user) needs this explicit. Proposal:
+
+| Stage | Trigger | What user sees | Goal |
+|---|---|---|---|
+| 1. Discovery | First story result for Free user | "🎨 Add a custom illustration to this story" with sample blurred behind CTA | Curiosity, not pressure |
+| 2. **First taste** | User taps stage 1 CTA | One-off **free trial illustration** — generate this story's pages with images for free, show parent the result | **Wow moment** — parent sees their kid as cartoon hero |
+| 3. Soft ask | After wow moment | "Loved it? Try free for 14 days — no card needed for first 3 days" | Lower trial-start friction |
+| 4. Card capture | Day 3 of trial | "We need a card to keep going past day 3 — won't charge until day 14" | Standard pattern, defers commitment |
+| 5. Conversion | Day 14 | First charge, soft-landing if cancelled (#15) | The actual conversion event |
+
+**Key proposal: free first illustration.** Stage 2 is the most important UX investment. A parent who's SEEN their kid as cartoon hero converts at much higher rates than one who reads a feature list. ~$0.39 cost per Free user who reaches the result screen — worth it for the conversion lift.
+
+Compatibility: matches Darcy's hypothesis (custom images = hook) + [7366]'s "lead with trial, not price" + [b7e2]'s Phase 1.5 dual-action card. The wow moment IS custom avatars; ElevenLabs comes in via the trial.
+
+**Implications for code:** result-screen CTA work, one-time-free-illustration flag, no-card 3-day trial flow on Stripe. Phase 2 scope.
+
+**Decision:** approve funnel shape with first-taste free illustration?
+
+### [3240 2026-05-10 update 4] Votes on [7366]'s recommendations
+
+- **Premium-only launch (no Family in v1):** **Strong vote yes.** This is the cleanest answer to all four priorities. Single tier = simpler UX (priority 3), reduces risk surface (priority 1), captures real conversion data before betting on a second tier (priorities 2+4). My earlier D1 (ship both at $9.99/$14.99) is **superseded** — wait for the demand signal [7366] specified.
+- **$0.05/image planning rate + Premium cap drop 100→80:** **Vote yes.** Margin headroom against the most likely cost shift. 80 pages = 16 illustrated stories at 5 pages each, still well above moderate-user demand.
+- **TTS char re-baseline before locking:** **Vote yes.** Cheap to verify, expensive to wrong-size. Just generate 5 representative stories and count the actual TTS chars, adjust cap accordingly.
+- **Stripe Smart Retries + Trial Reminder Emails:** **Vote yes, enable today.** Both are Stripe Dashboard toggles, zero code, immediate chargeback reduction. Priority 1 protection.
+- **3% free-conversion threshold with 60-day decision window:** **Vote yes, instrument it.** This is the right metric. Add a row to `cost_tracker.py` for "free-tier monthly compute spend / paid conversions in same window."
+
 ### [open] Family $19.99 may be priced above market — Darcy concerned about conversion
 
 #### [3240 2026-05-10] Reopening the Family price decision
@@ -718,3 +808,18 @@ The strategy assumes BYOK catches heavy users via the overage valve. **In consum
 | Cancellation friction | **2-tap max via Stripe Billing Portal link in Settings** | Refund-rate management, regulatory-friendly |
 
 For the next agent: the implementation backlog is already well-defined by [b7e2]'s Phase 1 + my Q2 fix. The above are *configuration decisions* Darcy can make in the Stripe Dashboard + a few number tweaks in `subscription_models.dart` / `ai_quota.py` — no architecture changes needed. Once Darcy picks, those edits are <30 min of work.
+
+### [3240 2026-05-10 update 4] Final pre-decision pass — decision summary + 3 new questions
+
+Darcy stated his priority order (don't lose money > don't overcharge > UX/value > profit) and signaled he's about to make decisions. Added three things to support that:
+
+1. **Decision summary table** at the top of "Open questions" — every open decision mapped to all three agents' positions, with a recommended decision-order (converged ratifications first, number tweaks second, strategic picks last).
+2. **Three new open questions** [7366] hadn't covered:
+   - **#14** Free Sprout illustrations carve-out (factual gap: Free Sprout currently DOES get per-page illustrations via server key, contradicting the [decided] table). Recommend R3 — cap at 1 illustrated story/mo to preserve the wow moment without unbounded cost.
+   - **#15** Trial-end soft landing (graduated 7-day grace-tier vs hard cliff). Recommend graduated.
+   - **#16** Free→Paid conversion funnel design with **first-taste free illustration** as the wow moment. Recommend approve — this is the cheapest highest-leverage UX investment available.
+3. **Votes on [7366]'s recommendations:** Strongly endorse Premium-only v1 launch (supersedes my earlier D1 dual-tier proposal), $0.05/image planning rate, 100→80 cap drop, TTS char re-baseline, Stripe Smart Retries enable.
+
+**Net position:** Darcy can ratify ~9 decisions in 10 minutes (the converged ones), make 4 number-tweak decisions in 20 minutes, and spend the remaining time on 5 strategic picks. The biggest strategic call is #1 — Premium-only launch ([7366]'s recommendation, which I now endorse) vs D1 dual-tier launch (my earlier proposal). Premium-only is more aligned with Darcy's priority 1 (less risk surface).
+
+**Items for the next agent:** if Darcy picks Premium-only v1, the Phase 2 work [b7e2] sketched needs replanning — Family-related code paths can be deferred. The Sprout carve-out decision (#14) blocks Free-tier marketing copy until resolved.
