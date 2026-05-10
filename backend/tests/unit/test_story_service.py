@@ -708,6 +708,94 @@ class TestLearningToReadPrompt:
         assert "AABBA rhyme scheme" in prompt
         assert '"rhyme_scheme"' in prompt
 
+    def test_ltr_prompt_for_age_4_includes_worked_example(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Luna",
+            theme="Magic",
+            age=4,
+            character_details={},
+            story_length="short",
+        )
+        assert "WORKED EXAMPLE" in prompt
+        assert "Page 1" in prompt and "Page 5" in prompt
+
+
+class TestStripTheEndPages:
+    """Trailing 'The End' marker pages are removed; embedded 'The End' is kept."""
+
+    def test_strips_simple_the_end(self):
+        from backend.services.story_service import _strip_the_end_pages
+        pages = ["Body content goes here.", "The End"]
+        assert _strip_the_end_pages(pages) == ["Body content goes here."]
+
+    def test_strips_variations(self):
+        from backend.services.story_service import _strip_the_end_pages
+        for marker in ["the end", "THE END", "The End.", "The End!", "Fin", "Finale.", "  The End  "]:
+            assert _strip_the_end_pages(["Body.", marker]) == ["Body."], f"failed: {marker!r}"
+
+    def test_keeps_embedded_the_end(self):
+        from backend.services.story_service import _strip_the_end_pages
+        pages = ["Body.", "And so the adventure came to an end. The End."]
+        result = _strip_the_end_pages(pages)
+        assert len(result) == 2
+        assert "adventure came to an end" in result[1]
+
+    def test_never_returns_empty(self):
+        from backend.services.story_service import _strip_the_end_pages
+        assert _strip_the_end_pages(["The End"]) == ["The End"]
+
+    def test_passthrough_no_marker(self):
+        from backend.services.story_service import _strip_the_end_pages
+        pages = ["Page one.", "Page two with real ending content here."]
+        assert _strip_the_end_pages(pages) == pages
+
+
+class TestPostProcessLtrPages:
+    """The deterministic fallthrough split applied after Gemini exhausts LTR retries."""
+
+    def test_splits_dense_2page_output_into_5plus_pages_under_cap(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        page1 = (
+            "Jack and Mochi, hop, hop, hop! To the big sea, go, go, stop! "
+            "Jack saw a fin, a red, red fin. It can go dip, and then hid in! "
+            "And then Mochi saw a big, big log. It did not move, like a fat, wet dog! "
+            'Mochi said, "Jack, go, run, run, run!" Go pat the log, oh what fun!'
+        )
+        result = _post_process_ltr_pages([page1, "The End"], target_pages=5, max_words=25)
+        assert len(result) >= 5
+        assert all(len(p.split()) <= 25 for p in result)
+
+    def test_preserves_already_compliant_5short_pages(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        good = [
+            "Sam and Pip went out to play.",
+            "It was a bright sunny day.",
+            "They saw a frog hop on a log.",
+            "It hopped right up to the dog.",
+            "What a fun day, hooray!",
+        ]
+        result = _post_process_ltr_pages(good, target_pages=5, max_words=25)
+        assert len(result) == 5
+        assert all(len(p.split()) <= 25 for p in result)
+
+    def test_handles_empty_input(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        assert _post_process_ltr_pages([]) == []
+        assert _post_process_ltr_pages([""]) == [""]
+
+    def test_splits_oversize_sentence_on_commas(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        long_sent = (
+            "She ran, she jumped, she spun, she laughed, she sang, "
+            "she twirled, she waved, she danced, she leapt, she beamed."
+        )
+        result = _post_process_ltr_pages([long_sent], target_pages=5, max_words=25)
+        assert all(len(p.split()) <= 25 for p in result)
+
 
 class TestParentContextTransformation:
     def test_transform_parent_context_abstracts_raw_language(self):

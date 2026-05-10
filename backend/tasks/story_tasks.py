@@ -292,6 +292,98 @@ def _is_ltr_rhyme_quality_ok(pages: list[str], min_pair_ratio: float = 0.6) -> b
     in_page_ok = in_page_checks > 0 and (in_page_hits / in_page_checks) >= min_pair_ratio
     return cross_page_ok or in_page_ok
 
+
+def _post_process_ltr_pages(
+    pages: list[str],
+    target_pages: int = 5,
+    max_words: int = 25,
+    sentences_per_page: int = 2,
+) -> list[str]:
+    """Programmatically split LTR output into ≥target_pages × ≤max_words/page.
+
+    Used as a deterministic fallthrough after the validation+retry loop exhausts
+    on Sprout LTR mode (Gemini-flash routinely compresses LTR output to 2-3 dense
+    pages even after explicit retry feedback). Splits on sentence boundaries
+    first (preserves AABB couplet pairing), falls back to comma boundaries for
+    sentences that exceed max_words on their own.
+    """
+    if not pages:
+        return pages
+
+    body = " ".join(p.strip() for p in pages if p and p.strip())
+    if not body:
+        return pages
+
+    sentence_parts = re.split(
+        r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body
+    )
+    sentences = [s.strip() for s in sentence_parts if s.strip()]
+    if not sentences:
+        return pages
+
+    def _split_oversize_sentence(sent: str) -> list[str]:
+        """Split a single >max_words sentence on commas, then word boundaries."""
+        chunks = [c.strip() for c in sent.split(",") if c.strip()]
+        out: list[str] = []
+        buf: list[str] = []
+        buf_words = 0
+        for chunk in chunks:
+            cw = len(chunk.split())
+            if cw > max_words:
+                if buf:
+                    out.append(", ".join(buf))
+                    buf, buf_words = [], 0
+                words = chunk.split()
+                for i in range(0, len(words), max_words):
+                    out.append(" ".join(words[i : i + max_words]))
+                continue
+            if buf and buf_words + cw > max_words:
+                out.append(", ".join(buf))
+                buf, buf_words = [chunk], cw
+            else:
+                buf.append(chunk)
+                buf_words += cw
+        if buf:
+            out.append(", ".join(buf))
+        return out
+
+    for spp in (sentences_per_page, 1):
+        grouped = [
+            " ".join(sentences[i : i + spp]).strip()
+            for i in range(0, len(sentences), spp)
+        ]
+        if (
+            len(grouped) >= target_pages
+            and all(len(g.split()) <= max_words for g in grouped)
+        ):
+            return grouped
+
+    new_pages: list[str] = []
+    current: list[str] = []
+    current_words = 0
+
+    def _flush_current() -> None:
+        nonlocal current, current_words
+        if current:
+            new_pages.append(" ".join(current))
+            current = []
+            current_words = 0
+
+    for sent in sentences:
+        sent_words = len(sent.split())
+        if sent_words > max_words:
+            _flush_current()
+            new_pages.extend(_split_oversize_sentence(sent))
+            continue
+        if current and current_words + sent_words > max_words:
+            _flush_current()
+        current.append(sent)
+        current_words += sent_words
+    _flush_current()
+
+    return new_pages or pages
+
+
 @celery.task(bind=True, name="tasks.generate_story")
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -622,6 +714,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             validation_ms = max(validation_loop_ms - ai_call_ms, 0.0)
             logger.debug("perf phase=validation ms=%.1f", validation_ms)
 
+            if learning_to_read_mode and not is_ltr_format_ok:
+                _ltr_target = ltr_expected_pages or 5
+                pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
+                pages = _post_process_ltr_pages(
+                    pages, target_pages=_ltr_target, max_words=25
+                )
+                story_body = "\n\n".join(pages)
+                post_split = [(i, len(p.split())) for i, p in enumerate(pages)]
+                logger.warning(
+                    "LTR post-process split applied: pages %s → %s",
+                    pre_split,
+                    post_split,
+                )
+
             # --- Output content moderation ---
             # Two-layer safety check on the generated story before it reaches the child.
             # Layer 1: fast age-band-aware keyword filter.
@@ -689,9 +795,19 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Get configuration
                     config = DurationConfig.get_config(story_duration, age)
 
-                    # Use pages from LLM if valid, otherwise split legacy style
-                    if not pages or len(pages) < 2:
+                    # Use pages from LLM if it returned at least min_pages; otherwise re-split.
+                    # Models routinely under-paginate (3 dense pages instead of 5-8), leaving a
+                    # tiny tail page or unbalanced pacing — PageSplitter rebalances on word counts.
+                    _min_pages = max(2, int(config.get('min_pages', 2)))
+                    if not pages or len(pages) < _min_pages:
                         from backend.services.story_duration_service import PageSplitter
+                        if pages:
+                            logger.info(
+                                "Under-paginated: model returned %d pages, "
+                                "min %d expected — re-splitting body.",
+                                len(pages),
+                                _min_pages,
+                            )
                         pages = PageSplitter.split_into_pages(
                             story_body,
                             target_words_per_page=config['words_per_page'],

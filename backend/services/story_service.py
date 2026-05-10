@@ -702,6 +702,31 @@ def _strip_lesson_endings(pages: list) -> list:
     return pages
 
 
+_THE_END_PATTERN = re.compile(
+    r"^[\s\"'*_~`]*(the\s+end|fin|finis|finale)[\s\"'*_~`!.…]*$",
+    re.IGNORECASE,
+)
+
+
+def _strip_the_end_pages(pages: list) -> list:
+    """Drop trailing pages that are essentially just 'The End' markers.
+
+    Frontend renders an ending celebration UI after the last content page, so a
+    standalone 'The End' page wastes a slot and creates an awkward thin page.
+    Removed only when the page contains nothing else — embedded 'The End' inside
+    a longer closing beat is preserved.
+    """
+    if not pages:
+        return pages
+    filtered = list(pages)
+    while filtered and _THE_END_PATTERN.match(filtered[-1].strip()):
+        logger.warning(
+            "Stripped trailing 'The End' marker page: %r", filtered[-1][:60]
+        )
+        filtered.pop()
+    return filtered or pages
+
+
 
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title and pages from LLM JSON response.  wisdom_gem removed; slot kept as None for backward compat."""
@@ -804,6 +829,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 
     pages = _strip_meta_leakage(pages)
     pages = _strip_lesson_endings(pages)
+    pages = _strip_the_end_pages(pages)
     story_body = "\n\n".join(pages)
     return title, wisdom_gem, story_body, pages, post_story
 
@@ -948,6 +974,15 @@ STRICT FORMAT (FOLLOW EXACTLY):
 - If a page would exceed 25 words, SPLIT it across two pages.
 - Total story must be {num_pages * 25} words or fewer.
 - The final page MUST close the story with a clear ending beat (not just "The End").
+
+WORKED EXAMPLE — for a 5-page story about Sam and a frog (this is the EXACT shape you must emit; copy the page-count and per-page brevity, not the words):
+  Page 1 (8 words):  "Sam and Pip went out to play today."
+  Page 2 (8 words):  "The sun was warm, the sky was gray."
+  Page 3 (9 words):  "They saw a frog hop onto a big log."
+  Page 4 (9 words):  "It hopped right up and sat with the dog."
+  Page 5 (10 words): "What a fun, fun day to laugh and play, hooray!"
+Notice: 5 separate pages, NEVER more than ~10 words each, AABB couplets across page pairs, last page closes the story with energy. Do NOT pack multiple sentences onto one page — one short bouncy line per page.
+
 Page format: {format_instruction}
 Vocabulary: {vocab_instruction}
 Style: Dr. Seuss. Think "The Cat in the Hat" or "Hop on Pop" — short punchy lines, fun rhythm you can clap to, silly energy, and every page ending in a satisfying rhyme.

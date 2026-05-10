@@ -184,32 +184,44 @@ class PageSplitter:
         min_pages: int,
         max_pages: int
     ) -> List[str]:
-        """Split by grouping sentences into pages"""
-        # Split into sentences
+        """Split by grouping sentences into pages, balanced across desired page count.
+
+        Computes a desired page count from the total body length, clamped to
+        [min_pages, max_pages], then derives a per-page word target from that.
+        Avoids the lopsided-tail bug where naive greedy packing leaves a final
+        page with only a sentence or two.
+        """
         sentences = cls._split_into_sentences(text)
 
         if not sentences:
             return [text]
 
-        pages = []
-        current_page_sentences = []
-        current_word_count = 0
+        total_words = sum(len(s.split()) for s in sentences)
+        natural_pages = max(1, total_words // max(1, target_words_per_page))
+        desired_pages = max(min_pages, min(max_pages, natural_pages))
+        adjusted_target = max(15, total_words // max(1, desired_pages))
+
+        pages: List[str] = []
+        current: List[str] = []
+        current_words = 0
 
         for sentence in sentences:
             sentence_words = len(sentence.split())
-
-            # If adding this sentence would significantly exceed target, start new page
-            if current_page_sentences and current_word_count + sentence_words > target_words_per_page * 1.3:
-                pages.append(" ".join(current_page_sentences))
-                current_page_sentences = [sentence]
-                current_word_count = sentence_words
+            # Start a new page if adding would overshoot the per-page target by >15%,
+            # but only when we still have room before hitting desired_pages-1
+            # (so the final page has at least one sentence).
+            would_overshoot = current_words + sentence_words > adjusted_target * 1.15
+            has_room_for_more_pages = len(pages) + 1 < desired_pages
+            if current and would_overshoot and has_room_for_more_pages:
+                pages.append(" ".join(current))
+                current = [sentence]
+                current_words = sentence_words
             else:
-                current_page_sentences.append(sentence)
-                current_word_count += sentence_words
+                current.append(sentence)
+                current_words += sentence_words
 
-        # Add remaining sentences as final page
-        if current_page_sentences:
-            pages.append(" ".join(current_page_sentences))
+        if current:
+            pages.append(" ".join(current))
 
         return pages
 
