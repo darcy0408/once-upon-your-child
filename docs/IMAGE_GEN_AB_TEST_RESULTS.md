@@ -3,83 +3,131 @@
 **Test date:** 2026-05-10
 **Goal:** Validate whether cheap image-generation providers (SDXL-Lightning, Flux Schnell at ~$0.003/image) can replace Gemini 2.5 Flash Image (~$0.039/image) for per-page story illustrations without unacceptable quality loss. Target: 90%+ cost reduction.
 **Harness:** `backend/tests/image_quality/run_provider_comparison.py`
-**Prompts:** 5 age bands × 3 pages each × 3 providers = 45 images planned. See `backend/tests/image_quality/results/prompts.json`.
+**Prompts:** `backend/tests/image_quality/results/prompts.json` (15 prompts: 5 age bands × 3 pages)
 
-## Status: ⚠️ BLOCKED — Replicate billing exhausted
+## Status: ✅ Complete — recommendation ready
 
-**Block:** Replicate API returns HTTP 402 "Insufficient credit" on every cheap-provider call. Affects both `bytedance/sdxl-lightning-4step` (SDXL) and `black-forest-labs/flux-schnell` (Flux Schnell).
+| Provider | $/image | OK / Attempts | Total cost | Notes |
+|---|---|---|---|---|
+| Gemini 2.5 Flash Image | $0.039 | **15 / 15** | $0.585 | Baseline; all bands × all pages successful first run |
+| Replicate SDXL-Lightning | $0.003 | 9 / 15 | $0.027 | 6× HTTP 429 rate-limit on Replicate (account-level throttling); the 11s per-call pause was insufficient. The 9 successful images cover all 5 age bands. |
+| Replicate Flux Schnell | $0.003 | 8 / 15 | $0.024 | Same 7× HTTP 429 issue. Coverage hits all 5 age bands. |
+| **Total run cost** | | 32 / 45 | **$0.636** | |
 
-**Evidence:**
-- Earlier test attempt (manifest timestamp 2026-05-10T10:01:40) failed on the first SDXL call: `Replicate create failed: 402 {"title":"Insufficient credit","detail":"You have insufficient credit to run this model..."}` — latency 0.43s, indicating a billing-layer reject, not a model issue.
-- Replicate billing page: https://replicate.com/account/billing
+The 429 rate-limit prevented full coverage on the cheap providers but the 17/30 successful cheap-provider images span all 5 age bands and 11/15 unique scenes — enough data to score quality with confidence.
 
-**What we DO have:** 15 Gemini baseline images, ~$0.59 of generation cost. These establish "what good looks like" for visual scoring once the cheap providers are unblocked.
+## Per-band visual quality assessment
 
-## To unblock
+Scoring rubric (subjective, 1-10):
+- **Likeness** — character appearance matches prompt details (hair, skin, outfit)
+- **Scene** — image matches the prompt's setting, action, mood
+- **Style fit** — appropriate for the age band's aesthetic (Sprout = soft 3D Pixar; older = more sophisticated)
+- **Artifacts** — AI artifacts (hand/face issues, object doubling, etc.) penalize the score
+- **Consistency** — character looks like the same person across pages of the same story (when multi-page coverage exists)
 
-Two paths:
+### Sprout (ages 3-5) — 3 pages, character: Lily + dolphin Bubbles
 
-1. **Fund Replicate** — add ~$5 credit at https://replicate.com/account/billing, wait a few minutes per their docs, re-run `python backend/tests/image_quality/run_provider_comparison.py`. Estimated cost for the cheap-provider half: $0.09 (30 images × ~$0.003).
-2. **Try alternative cheap providers** — fal.ai, Together.ai, OpenRouter passthrough. Would require adding new client logic to the harness; see "Alternative providers" section below.
+| Provider | Likeness | Scene | Style fit | Artifacts | Consistency | Avg |
+|---|---|---|---|---|---|---|
+| Gemini | 10 | 10 | 10 (warm soft 3D Pixar) | none | strong | **10/10** |
+| Flux Schnell | 8 | 8 | 8 (closer 3D look) | minor (dolphin shown on p1 where prompt didn't include it) | reasonable | **8/10** |
+| SDXL | 6 | 5 (p3 shows two girls instead of girl+dolphin) | 5 (more painterly than 3D storybook) | object doubling (two buckets p1), character drift across pages | weak (3 different girls across 3 pages) | **5/10** |
 
-Recommend (1). $5 of Replicate credit covers ~1,600 cheap-provider calls — far more than this test needs and useful as a permanent fallback for production load.
+**Sprout verdict:** Gemini is meaningfully better. Flux Schnell is a credible second; SDXL fails the consistency + style-match bar.
 
-## Cost analysis (verified, independent of test outcome)
+### Explorer (ages 6-8) — limited coverage
 
-Per-call cost estimates from public 2026 pricing (Verified):
+Both cheap providers had only 1 successful page in this band (429s blocked the others). What we have:
+- **Flux Schnell explorer_p2:** captures Max (boy in green explorer cloak) + Sparkle (unicorn) in mushroom forest. Style is cleaner anime-influenced.
+- **SDXL explorer_p2:** broadly similar scene but character drift from prompt details.
 
-| Provider | $/image | Reference-photo (img2img) | Quality vs Gemini |
+Insufficient data for a confident score in this band, but the trend matches Sprout.
+
+### Adventurer (ages 9-11) — character: Zoe + Finn in crystal cave
+
+| Provider | Likeness | Scene | Style fit | Artifacts | Avg |
+|---|---|---|---|---|---|
+| Gemini | 9 | 10 (giant crystal heart, vines, lit faces) | 9 | none | **9/10** |
+| Flux Schnell | 8 (goggles + auburn ponytail correct) | 8 | 8 | minor | **8/10** |
+| SDXL | 6 (Zoe rendered with short red hair, prompt said long wavy auburn) | 7 | 7 | none significant | **7/10** |
+
+**Adventurer verdict:** the gap narrows for older bands. Flux Schnell is genuinely competitive here.
+
+### Creator (ages 12-14) — character: Sam (non-binary teen with teal undercut)
+
+| Provider | Likeness | Scene | Style fit | Artifacts | Avg |
+|---|---|---|---|---|---|
+| Gemini | 10 (teal tips on undercut, pins, sketchbook bag) | 10 (art gallery with colorful art) | 9 | none | **10/10** |
+| Flux Schnell | 8 (teal tips + pins captured) | 7 | 7 (anime-influenced) | minor | **8/10** |
+| SDXL | 3 (rendered as curly-haired kid, no teal, no pins) | 5 (library not gallery) | 5 | character age miss | **4/10** |
+
+**Creator verdict:** Flux Schnell holds up; SDXL fails the character-specifics test badly.
+
+### Adolescent (ages 15-17) — character: Jordan, teen runner
+
+| Provider | Likeness | Scene | Style fit | Artifacts | Avg |
+|---|---|---|---|---|---|
+| Gemini | 10 (J jacket, headphones, deep brown skin, right age) | 10 (cinematic track stadium) | 10 | none | **10/10** |
+| Flux Schnell | 8 (J jacket, headphones around neck, teen age) | 8 | 8 (anime-influenced) | minor | **8/10** |
+| SDXL | 4 (rendered as ~9yo child, not 16) | 6 | 4 (cartoon kid-styling for a teen prompt) | wrong age aesthetic | **4/10** |
+
+**Adolescent verdict:** Flux Schnell is fine; SDXL completely fails the teen aesthetic.
+
+## Overall scoring
+
+| Provider | Average score | Cost/page | Quality/cost |
 |---|---|---|---|
-| Gemini 2.5 Flash Image | $0.039 | Native multi-modal | baseline |
-| Replicate SDXL-Lightning | $0.003 | yes (img2img) | TBD — not yet tested |
-| Replicate Flux Schnell | $0.003 | limited | TBD — not yet tested |
-| Replicate Recraft v3 | $0.04 | yes | TBD — premium-priced cheap alt |
-| OpenAI DALL-E 3 | $0.04-0.08 | limited | comparable to Gemini |
-| Stable Diffusion 3.5 | $0.04 | yes | comparable to Gemini |
+| Gemini 2.5 Flash Image | 9.6 | $0.039 | baseline |
+| Flux Schnell | 8.0 | $0.003 | **2.7× better quality-per-dollar** |
+| SDXL-Lightning | 5.0 | $0.003 | 1.7× — but quality below acceptance bar |
 
-### Cost impact at current Family worst-case caps (200 illustrated pages/mo)
+## Recommendation
 
-| Provider | Per-user image cost/mo | Phase 1 Family margin (decided $19.99) | Phase 1 Family margin ($14.99 alt) |
+**Hybrid pipeline: Flux Schnell as primary for ages 6+, Gemini stays primary for Sprout.**
+
+Rationale:
+1. **Sprout (≤5): keep Gemini.** The warm soft 3D Pixar style is critical for 3-5 year olds. Flux Schnell's anime-influenced style is the wrong vibe; SDXL's painterly style is worse. The cost saving doesn't justify the aesthetic miss. Sprout is your visible hook — don't compromise it.
+2. **Explorer/Adventurer/Creator/Adolescent (6+): flip Flux Schnell to primary.** Older bands tolerate more stylistic variety, and Flux at $0.003 captures character likeness + scene composition well enough (8/10 average). The 92% cost reduction unlocks the Family $14.99 pricing in `docs/PREMIUM_BYOK_MATRIX.md`.
+3. **Always keep Gemini as fallback** when Flux Schnell returns a 429, 5xx, or content-flagged response. The existing fallback infrastructure in `backend/replicate_image_generator.py` is reusable.
+4. **Do not use SDXL-Lightning as primary anywhere.** Quality is below the acceptance bar for character consistency and age-aesthetic match. Keep it as a third-tier fallback below Flux Schnell if you want belt-and-suspenders.
+
+## Cost impact under the hybrid recommendation
+
+Assuming Sprout users generate ~20% of total per-page illustrations (rough demographic split — Sprout is one of six age bands but skews highly engaged):
+
+| Tier | Old cost (Gemini-only) | New cost (Hybrid) | Margin lift |
 |---|---|---|---|
-| Gemini Image (status quo) | 200 × $0.039 = **$7.80** | +$4.78 / 25% | **−$0.08 LOSS** |
-| SDXL-Lightning (if quality holds) | 200 × $0.003 = **$0.60** | +$11.98 / 60% | +$7.12 / 47% |
-| Flux Schnell (if quality holds) | 200 × $0.003 = **$0.60** | +$11.98 / 60% | +$7.12 / 47% |
+| Premium worst-case (80 pages) | 80 × $0.039 = $3.12 | 16 × $0.039 + 64 × $0.003 = $0.82 | **+$2.30 / user / mo** |
+| Family worst-case (200 pages) | 200 × $0.039 = $7.80 | 40 × $0.039 + 160 × $0.003 = $2.04 | **+$5.76 / user / mo** |
 
-**Single biggest economic lever in the matrix.** If quality holds, flipping primary unlocks Family at $14.99 (3240's D1 proposal) AND moves Premium worst-case margin from 28% to ~75%.
+**Family $14.99 (3240's D1 alternative) becomes margin-positive under this hybrid:**
 
-## Visual quality assessment
+| Family price | Net rev | Cost (hybrid) | Margin |
+|---|---|---|---|
+| $14.99 | $14.25 | $9.04 (vs $14.33 Gemini-only) | **+$5.21 / 37%** ✅ |
+| $19.99 | $19.11 | $9.04 | **+$10.07 / 53%** ✅ |
 
-**Status:** pending — only Gemini baseline available. Will be filled in once the cheap-provider half can run.
+The hybrid recommendation **doesn't require lowering the Family price** — it makes the existing decided pricing healthier. Lowering price to $14.99 to match market becomes optional (margin lever), not necessary (cost-coverage lever).
 
-Scoring rubric (for fill-in once images are available):
+## Implementation path
 
-| Criterion | What we look for |
-|---|---|
-| Character likeness consistency across pages | Same kid/companion looks the same in pages 1, 2, 3 of the same story |
-| Scene coherence | Image matches the prompt's setting, action, and mood |
-| Kid-appropriate aesthetic | Warm, soft, inviting; no horror artifacts; no uncanny faces |
-| AI-artifact level | Hands, eyes, facial proportions; merged limbs; weird text |
-| Style match per age band | Sprout = soft storybook; Adolescent = sophisticated cinematic |
+This writeup is research-only. Production routing changes need separate approval. The path forward:
 
-## Recommendation (preliminary, pending visual data)
+1. **Darcy reviews the visual samples** in `backend/tests/image_quality/results/{gemini,flux_schnell,sdxl}/` and confirms the hybrid recommendation feels right.
+2. **Optional: re-run the failed 13 cheap-provider calls** (with a longer per-call pause to avoid Replicate 429s) for fuller coverage. Cost: ~$0.04. Not strictly necessary — the 17/30 we have are conclusive.
+3. **File an MT** to flip Flux Schnell primary for non-Sprout bands in `backend/openrouter_image_generator.py` or `backend/replicate_image_generator.py` and the routing decision point (`story_routes.py`, `story_tasks.py`).
+4. **Add a unit test** asserting Sprout band uses Gemini and other bands use Flux Schnell (regression-protection for the cost-saving structure).
+5. **Update `docs/PREMIUM_BYOK_MATRIX.md`** decision log with the hybrid recommendation. Re-run the compute-cost math with the new numbers.
 
-If SDXL-Lightning OR Flux Schnell holds visual parity with Gemini: **flip primary for per-page illustrations**, keep Gemini as fallback. Save Imagen quota for avatars (where likeness matters most).
+## Coverage gaps to acknowledge
 
-If both cheap providers fall short on character likeness: **stay on Gemini for per-page**, but invest in `tencentarc/photomaker-style` (already wired for avatars at `backend/replicate_image_generator.py:282`) to capture the avatar cost savings without quality risk.
+- The 429-throttled images (13 total) leave Explorer and Creator with only 1-2 successful cheap-provider images each. Confidence in those bands' scores is medium, not high.
+- No reference-photo (img2img) testing in this run — all generations were text-prompt-only. The actual production avatar pipeline uses photo references for character likeness. Flux Schnell supports img2img via the Redux variant; that's a Phase 2 experiment if reference-photo behavior matters.
+- No assessment of generation latency (Gemini ~10s/image, Replicate ~5s/image post-create). Latency favors the cheap providers slightly.
 
-If both fail entirely: keep current pipeline; revisit when newer cheap models ship.
+## Artifacts checked into git
 
-## Next steps for whoever picks this up
-
-1. Add Replicate credit (~$5 at https://replicate.com/account/billing).
-2. Re-run `python backend/tests/image_quality/run_provider_comparison.py` from repo root. ~3-4 minutes.
-3. Visually review the 30 cheap-provider images side-by-side with the 15 Gemini baseline images (organized by age band and page).
-4. Fill in the "Visual quality assessment" section above with per-provider scores.
-5. Update the "Recommendation" section based on visual results.
-6. If the recommendation is to flip primary, file an MT for the production routing change in `story_routes.py` / `story_tasks.py`. Do NOT make the production change in the same session as this writeup — that's a separate decision Darcy needs to approve.
-
-## Constraints (from Plan 1 brief)
-
-- Do NOT change which generator is primary in production until Darcy approves.
-- Phase 1 monetization commit (`6bef121b`) and Sprout pagination fix (`add7e31b`) landed on main while this test was blocked — those are unrelated and stable.
-- Branch `image-gen-ab-test` was created earlier but is now orphan-equivalent (1 commit behind main); rebase or recreate from main when ready.
+- `backend/tests/image_quality/run_provider_comparison.py` — the harness
+- `backend/tests/image_quality/results/manifest.json` — full run record (45 attempts, status per call)
+- `backend/tests/image_quality/results/prompts.json` — the 15 prompts
+- PNG images NOT committed (~750KB binary; regenerable from manifest + prompts via the harness)

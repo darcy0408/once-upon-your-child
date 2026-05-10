@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-05-10T10:02:35.641392",
+  "started_at": "2026-05-10T15:28:37.551109",
   "providers": [
     "gemini",
     "sdxl",
@@ -21,8 +21,8 @@
       "page": 1,
       "path": "gemini\\sprout_p1.png",
       "status": "ok",
-      "bytes": 1423630,
-      "latency_s": 7.38,
+      "bytes": 1427765,
+      "latency_s": 7.22,
       "est_cost_usd": 0.039
     },
     {
@@ -32,8 +32,8 @@
       "page": 2,
       "path": "gemini\\sprout_p2.png",
       "status": "ok",
-      "bytes": 1424732,
-      "latency_s": 6.42,
+      "bytes": 1505599,
+      "latency_s": 6.23,
       "est_cost_usd": 0.039
     },
     {
@@ -43,8 +43,8 @@
       "page": 3,
       "path": "gemini\\sprout_p3.png",
       "status": "ok",
-      "bytes": 1471994,
-      "latency_s": 9.72,
+      "bytes": 1502765,
+      "latency_s": 6.28,
       "est_cost_usd": 0.039
     },
     {
@@ -54,8 +54,8 @@
       "page": 1,
       "path": "gemini\\explorer_p1.png",
       "status": "ok",
-      "bytes": 1783136,
-      "latency_s": 7.27,
+      "bytes": 1783470,
+      "latency_s": 7.63,
       "est_cost_usd": 0.039
     },
     {
@@ -65,8 +65,8 @@
       "page": 2,
       "path": "gemini\\explorer_p2.png",
       "status": "ok",
-      "bytes": 1905891,
-      "latency_s": 6.96,
+      "bytes": 1834280,
+      "latency_s": 6.69,
       "est_cost_usd": 0.039
     },
     {
@@ -76,7 +76,7 @@
       "page": 3,
       "path": "gemini\\explorer_p3.png",
       "status": "ok",
-      "bytes": 1901146,
+      "bytes": 1967185,
       "latency_s": 6.81,
       "est_cost_usd": 0.039
     },
@@ -87,8 +87,8 @@
       "page": 1,
       "path": "gemini\\adventurer_p1.png",
       "status": "ok",
-      "bytes": 1814884,
-      "latency_s": 6.82,
+      "bytes": 1757414,
+      "latency_s": 7.32,
       "est_cost_usd": 0.039
     },
     {
@@ -98,8 +98,8 @@
       "page": 2,
       "path": "gemini\\adventurer_p2.png",
       "status": "ok",
-      "bytes": 1874884,
-      "latency_s": 7.47,
+      "bytes": 1709177,
+      "latency_s": 7.79,
       "est_cost_usd": 0.039
     },
     {
@@ -109,8 +109,8 @@
       "page": 3,
       "path": "gemini\\adventurer_p3.png",
       "status": "ok",
-      "bytes": 1887800,
-      "latency_s": 6.9,
+      "bytes": 1792109,
+      "latency_s": 7.12,
       "est_cost_usd": 0.039
     },
     {
@@ -120,8 +120,8 @@
       "page": 1,
       "path": "gemini\\creator_p1.png",
       "status": "ok",
-      "bytes": 1462654,
-      "latency_s": 14.8,
+      "bytes": 1444573,
+      "latency_s": 6.91,
       "est_cost_usd": 0.039
     },
     {
@@ -131,8 +131,8 @@
       "page": 2,
       "path": "gemini\\creator_p2.png",
       "status": "ok",
-      "bytes": 1808483,
-      "latency_s": 7.43,
+      "bytes": 1777737,
+      "latency_s": 6.6,
       "est_cost_usd": 0.039
     },
     {
@@ -142,8 +142,8 @@
       "page": 3,
       "path": "gemini\\creator_p3.png",
       "status": "ok",
-      "bytes": 2150999,
-      "latency_s": 9.28,
+      "bytes": 2071984,
+      "latency_s": 6.54,
       "est_cost_usd": 0.039
     },
     {
@@ -153,8 +153,8 @@
       "page": 1,
       "path": "gemini\\adolescent_p1.png",
       "status": "ok",
-      "bytes": 1707533,
-      "latency_s": 6.34,
+      "bytes": 1714838,
+      "latency_s": 5.67,
       "est_cost_usd": 0.039
     },
     {
@@ -164,8 +164,8 @@
       "page": 2,
       "path": "gemini\\adolescent_p2.png",
       "status": "ok",
-      "bytes": 1723900,
-      "latency_s": 8.95,
+      "bytes": 1734510,
+      "latency_s": 7.02,
       "est_cost_usd": 0.039
     },
     {
@@ -175,8 +175,8 @@
       "page": 3,
       "path": "gemini\\adolescent_p3.png",
       "status": "ok",
-      "bytes": 1807292,
-      "latency_s": 8.35,
+      "bytes": 1794303,
+      "latency_s": 8.63,
       "est_cost_usd": 0.039
     },
     {
@@ -186,8 +186,8 @@
       "page": 1,
       "path": "sdxl\\sprout_p1.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.4
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~10s.\",\"status\":429,\"retry_after\":10}\n",
+      "latency_s": 0.29
     },
     {
       "provider": "sdxl",
@@ -195,9 +195,10 @@
       "age": 3,
       "page": 2,
       "path": "sdxl\\sprout_p2.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.4
+      "status": "ok",
+      "bytes": 1512108,
+      "latency_s": 2.9,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -206,8 +207,8 @@
       "page": 3,
       "path": "sdxl\\sprout_p3.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.36
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~10s.\",\"status\":429,\"retry_after\":10}\n",
+      "latency_s": 0.3
     },
     {
       "provider": "sdxl",
@@ -215,9 +216,10 @@
       "age": 7,
       "page": 1,
       "path": "sdxl\\explorer_p1.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.34
+      "status": "ok",
+      "bytes": 1593765,
+      "latency_s": 2.85,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -225,9 +227,10 @@
       "age": 7,
       "page": 2,
       "path": "sdxl\\explorer_p2.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.3
+      "status": "ok",
+      "bytes": 1518140,
+      "latency_s": 12.01,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -236,8 +239,8 @@
       "page": 3,
       "path": "sdxl\\explorer_p3.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.33
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~4s.\",\"status\":429,\"retry_after\":4}\n",
+      "latency_s": 0.29
     },
     {
       "provider": "sdxl",
@@ -246,7 +249,7 @@
       "page": 1,
       "path": "sdxl\\adventurer_p1.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~6s.\",\"status\":429,\"retry_after\":6}\n",
       "latency_s": 0.32
     },
     {
@@ -255,9 +258,10 @@
       "age": 10,
       "page": 2,
       "path": "sdxl\\adventurer_p2.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.34
+      "status": "ok",
+      "bytes": 1439840,
+      "latency_s": 2.78,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -266,8 +270,8 @@
       "page": 3,
       "path": "sdxl\\adventurer_p3.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.36
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~8s.\",\"status\":429,\"retry_after\":8}\n",
+      "latency_s": 0.31
     },
     {
       "provider": "sdxl",
@@ -275,9 +279,10 @@
       "age": 13,
       "page": 1,
       "path": "sdxl\\creator_p1.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.34
+      "status": "ok",
+      "bytes": 1411781,
+      "latency_s": 10.16,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -286,8 +291,8 @@
       "page": 2,
       "path": "sdxl\\creator_p2.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.32
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~1s.\",\"status\":429,\"retry_after\":1}\n",
+      "latency_s": 0.29
     },
     {
       "provider": "sdxl",
@@ -296,8 +301,8 @@
       "page": 3,
       "path": "sdxl\\creator_p3.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.33
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~5s.\",\"status\":429,\"retry_after\":5}\n",
+      "latency_s": 0.31
     },
     {
       "provider": "sdxl",
@@ -305,9 +310,10 @@
       "age": 16,
       "page": 1,
       "path": "sdxl\\adolescent_p1.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.33
+      "status": "ok",
+      "bytes": 1259765,
+      "latency_s": 6.54,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "sdxl",
@@ -316,8 +322,8 @@
       "page": 2,
       "path": "sdxl\\adolescent_p2.png",
       "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.31
+      "error": "Replicate create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~7s.\",\"status\":429,\"retry_after\":7}\n",
+      "latency_s": 0.59
     },
     {
       "provider": "sdxl",
@@ -325,9 +331,10 @@
       "age": 16,
       "page": 3,
       "path": "sdxl\\adolescent_p3.png",
-      "status": "error",
-      "error": "Replicate create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.35
+      "status": "ok",
+      "bytes": 1441039,
+      "latency_s": 2.79,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -336,8 +343,8 @@
       "page": 1,
       "path": "flux_schnell\\sprout_p1.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.38
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~9s.\",\"status\":429,\"retry_after\":9}\n",
+      "latency_s": 0.3
     },
     {
       "provider": "flux_schnell",
@@ -345,9 +352,10 @@
       "age": 3,
       "page": 2,
       "path": "flux_schnell\\sprout_p2.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.36
+      "status": "ok",
+      "bytes": 941434,
+      "latency_s": 2.02,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -356,7 +364,7 @@
       "page": 3,
       "path": "flux_schnell\\sprout_p3.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~9s.\",\"status\":429,\"retry_after\":9}\n",
       "latency_s": 0.33
     },
     {
@@ -365,9 +373,10 @@
       "age": 7,
       "page": 1,
       "path": "flux_schnell\\explorer_p1.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.35
+      "status": "ok",
+      "bytes": 1640593,
+      "latency_s": 2.06,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -376,7 +385,7 @@
       "page": 2,
       "path": "flux_schnell\\explorer_p2.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~9s.\",\"status\":429,\"retry_after\":9}\n",
       "latency_s": 0.31
     },
     {
@@ -385,9 +394,10 @@
       "age": 7,
       "page": 3,
       "path": "flux_schnell\\explorer_p3.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.31
+      "status": "ok",
+      "bytes": 1406531,
+      "latency_s": 2.3,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -396,8 +406,8 @@
       "page": 1,
       "path": "flux_schnell\\adventurer_p1.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.33
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~9s.\",\"status\":429,\"retry_after\":9}\n",
+      "latency_s": 0.34
     },
     {
       "provider": "flux_schnell",
@@ -405,9 +415,10 @@
       "age": 10,
       "page": 2,
       "path": "flux_schnell\\adventurer_p2.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.35
+      "status": "ok",
+      "bytes": 1272377,
+      "latency_s": 2.63,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -416,8 +427,8 @@
       "page": 3,
       "path": "flux_schnell\\adventurer_p3.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.32
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~8s.\",\"status\":429,\"retry_after\":8}\n",
+      "latency_s": 0.28
     },
     {
       "provider": "flux_schnell",
@@ -426,8 +437,8 @@
       "page": 1,
       "path": "flux_schnell\\creator_p1.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.32
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~10s.\",\"status\":429,\"retry_after\":10}\n",
+      "latency_s": 0.31
     },
     {
       "provider": "flux_schnell",
@@ -435,9 +446,10 @@
       "age": 13,
       "page": 2,
       "path": "flux_schnell\\creator_p2.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.32
+      "status": "ok",
+      "bytes": 1471636,
+      "latency_s": 2.66,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -446,8 +458,8 @@
       "page": 3,
       "path": "flux_schnell\\creator_p3.png",
       "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.38
+      "error": "Flux create failed: 429 {\"detail\":\"Request was throttled. Your rate limit for creating predictions is reduced to 6 requests per minute with a burst of 1 requests while you have less than $5.0 in credit. Your rate limit resets in ~10s.\",\"status\":429,\"retry_after\":10}\n",
+      "latency_s": 0.29
     },
     {
       "provider": "flux_schnell",
@@ -455,9 +467,10 @@
       "age": 16,
       "page": 1,
       "path": "flux_schnell\\adolescent_p1.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.39
+      "status": "ok",
+      "bytes": 1061241,
+      "latency_s": 2.12,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -465,9 +478,10 @@
       "age": 16,
       "page": 2,
       "path": "flux_schnell\\adolescent_p2.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.34
+      "status": "ok",
+      "bytes": 918160,
+      "latency_s": 1.97,
+      "est_cost_usd": 0.003
     },
     {
       "provider": "flux_schnell",
@@ -475,15 +489,16 @@
       "age": 16,
       "page": 3,
       "path": "flux_schnell\\adolescent_p3.png",
-      "status": "error",
-      "error": "Flux create failed: 402 {\"title\":\"Insufficient credit\",\"detail\":\"You have insufficient credit to run this model. Go to https://replicate.com/account/billing#billing to purchase credit. Once you purchase credit, please wait a few minutes before trying again.\",\"status\":402}\n",
-      "latency_s": 0.35
+      "status": "ok",
+      "bytes": 1030597,
+      "latency_s": 1.99,
+      "est_cost_usd": 0.003
     }
   ],
-  "finished_at": "2026-05-10T10:10:16.850992",
+  "finished_at": "2026-05-10T15:36:54.695341",
   "summary": {
     "total_attempts": 45,
-    "successful": 15,
-    "actual_cost_usd_est": 0.585
+    "successful": 30,
+    "actual_cost_usd_est": 0.63
   }
 }
