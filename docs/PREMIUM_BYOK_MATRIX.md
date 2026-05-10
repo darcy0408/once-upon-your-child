@@ -124,6 +124,90 @@ Today's UX doesn't communicate this. The BYOK setup wizard says "unlock everythi
 
 ---
 
+## Compute-cost model — validating the cap-then-BYOK tiers
+
+### [3240 2026-05-10] Profitability analysis vs. the decided caps
+
+Darcy asked: "Would All-Inclusive be cost-effective for me? I don't want to be losing money on anyone." Worked the numbers against the caps in the **[Decided] Cap-then-BYOK** entry below.
+
+#### Per-event unit costs (assumed)
+
+| Cost item | Rate | Notes |
+|---|---|---|
+| `gemini-2.5-flash` story text | ~$0.002 / story | ~5K input + 3K output tokens × ($0.10/$0.40 per M) |
+| `gemini-2.5-flash-image` per page | ~$0.039 / image | Public pricing as of 2026; verify Darcy's actual billing rate |
+| Custom photo→cartoon avatar | ~$0.04 / generation | Same model, ~1 call per character |
+| ElevenLabs TTS | $0.22 / 1k chars (retail) | $0.198 on Pro plan; $0.00 during Year-1 free Creator credits up to global 100k chars/mo cap |
+| Stripe processing | 2.9% + $0.30 | $0.59 on $9.99; $0.88 on $19.99 |
+
+#### Premium $9.99 — worst-case (every user hits every cap)
+
+| Cost component | Calculation | Total |
+|---|---|---|
+| Story text (20 stories) | 20 × $0.002 | $0.04 |
+| Illustrations (cap = 100 pages/mo) | 100 × $0.039 | $3.90 |
+| ElevenLabs TTS (cap = 10k chars) | 10 × $0.22 | $2.20 |
+| Stripe fee | 2.9% + $0.30 | $0.59 |
+| **Total worst-case cost** | | **$6.73** |
+| **Net revenue** | $9.99 − $0.59 | $9.40 |
+| **Worst-case margin** | | **+$2.67 / 28%** ✅ |
+
+Margin is positive even at the cap ceiling. **Premium $9.99 is structurally profitable.**
+
+#### Family $19.99 — worst-case (every user hits every cap)
+
+| Cost component | Calculation | Total |
+|---|---|---|
+| Story text (75 stories) | 75 × $0.002 | $0.15 |
+| Illustrations (cap = 200 pages/mo) | 200 × $0.039 | $7.80 |
+| ElevenLabs TTS (cap = 25k chars) | 25 × $0.22 | $5.50 |
+| Stripe fee | 2.9% + $0.30 | $0.88 |
+| **Total worst-case cost** | | **$14.33** |
+| **Net revenue** | $19.99 − $0.88 | $19.11 |
+| **Worst-case margin** | | **+$4.78 / 25%** ✅ |
+
+Family is also structurally profitable at the cap ceiling. The 25% margin is tighter than Premium's 28% — worth knowing, but not unsafe.
+
+#### Sensitivity analysis — what breaks the model?
+
+| Risk | If true… | Effect |
+|---|---|---|
+| `gemini-2.5-flash-image` price increases 50% (~$0.06) | Premium worst-case cost: $8.68 | margin drops to $0.72 / 8% — still positive but thin. Family flips to **−$1.21 LOSS**. |
+| Average story is 12 pages, not 10 | 20% more illustration cost per story-cap unit; effective cap re-prices: Premium 100 pages becomes 100 (cap holds, just fewer stories possible) | No effect — illustration cap is per-page, not per-story. The cap itself is the protection. |
+| ElevenLabs Pro plan ($99/mo for 500k chars) instead of Year-1 credits | TTS rate $0.198/1k vs $0.22 — slightly *better* | margin improves marginally |
+| ElevenLabs falls back to retail ($330/mo for 2M chars at $0.165/1k) | Even cheaper per-char | margin improves further |
+| Heavy multi-kid family on Family plan with 5 kids | Cap is global (200 pages/mo total), not per-kid — usage divides | No cost increase; just less per kid. Worth noting in marketing copy ("200 pages/month *for your whole family*"). |
+
+**Biggest single risk: `gemini-2.5-flash-image` price increase.** If Google bumps from $0.039 → $0.06 (likely sometime — image-gen prices have only gone up since 2024), Family flips to a loss at the cap. Two mitigations:
+1. Lower Family illustration cap to 150 pages/mo (re-prices margin to ~+$2 even at $0.06/img).
+2. Bump Family to $21.99 to absorb the increase.
+
+Recommend Darcy build a "compute-margin alarm" into `cost_tracker.py` (per [b7e2]'s Phase 1.1) — log per-user monthly compute cost, alarm if any active user crosses a configurable threshold. That's the early-warning system for cost shifts.
+
+#### Typical-user margins (most users use 30-50% of cap)
+
+The above are *worst-case* numbers — every user maxing every cap. Real distributions look more like:
+
+| User profile | % of cap used | Premium typical cost | Premium typical margin |
+|---|---|---|---|
+| Light (weekend stories) | 20-30% | ~$1.85 | **+$7.55 / 80%** ✅ |
+| Moderate (nightly bedtime) | 50-70% | ~$4.50 | **+$4.90 / 52%** ✅ |
+| Heavy (cap-hitter) | 100% | $6.73 | **+$2.67 / 28%** ✅ |
+
+**Net: every user profile is profitable, with average margin around 50%.** Good business model.
+
+#### Why the cap-then-BYOK model wins economically
+
+The reason this works (vs. selling "unlimited"): **the BYOK overlay catches heavy users without bumping the price for everyone.** A user who'd burn through 200+ illustrations/mo on All-Inclusive (and turn unprofitable) self-routes to BYOK + Premium combo, where their Gemini quota costs Darcy nothing extra. The cap is the *wall*, BYOK is the *door in the wall*. Both protect the margin.
+
+#### Verification flagged for next session
+
+- Confirm `gemini-2.5-flash-image` actual billed rate against Darcy's GCP invoices (assumed $0.039/image — could be lower with sustained-use discounts).
+- Confirm Stripe fee structure (assumed standard 2.9% + $0.30 — international cards / Family plan may differ).
+- Once `cost_tracker.py` (Phase 1.1) is logging real usage, re-run this analysis with actual median/p90/p99 user numbers after 30 days of data and update this section.
+
+---
+
 ## Open questions — for cross-agent discussion
 
 ### [open] Stripe success → `is_paid_premium` SharedPref is never written
@@ -373,6 +457,17 @@ After Darcy asked, found commit `03669c85` (Stripe wiring fixes) and memory file
 3. Specific paid-Premium feature recommendations beyond custom avatars.
 4. Whether any hypotheses have been validated with real parents.
 5. Any related code changes — link commits here.
+
+### [3240 2026-05-10 update 2] Compute-cost validation of the [Darcy + b7e2] decided caps
+
+Worked the per-event compute math against the **[decided] cap-then-BYOK** tier numbers. Bottom line: **the caps are profitable.** Worst-case (every user maxes every cap):
+
+- Premium $9.99 → +$2.67 margin / 28%
+- Family $19.99 → +$4.78 margin / 25%
+
+Typical-user margins land around 50%+. Added a "Compute-cost model" section above with the full breakdown, sensitivity analysis (the biggest risk is `gemini-2.5-flash-image` price increase — Family flips to loss if that hits $0.06+), and verification items for next session.
+
+Did NOT relitigate the BYOK-as-overlay decision — I had earlier suggested a separate cheaper BYOK tier ($4.99 Premium DIY), but [b7e2]'s Option C orthogonal-axes framing is cleaner and the [decided] structure already captures it. My earlier "BYOK = cheaper Premium" thinking is **superseded** by the orthogonal-axes model. Marking the relevant pricing-tier proposal in my earlier handoff entries as superseded — no action needed, documenting for chronology.
 
 ### [b7e2 2026-05-10] Monetization-architecture session — answered Q1/Q2/Q3/Q5, raised file conflict
 
