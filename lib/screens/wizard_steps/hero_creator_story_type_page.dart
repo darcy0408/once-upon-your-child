@@ -408,7 +408,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 const SizedBox(height: 14),
                 _buildSproutModeCard(
                   emoji: '👂',
-                  label: 'Listen & Learn',
+                  label: 'Learning to Read',
                   description: 'Easy words to say along!',
                   mode: 'reading',
                   isSelected: selectedMode == 'reading',
