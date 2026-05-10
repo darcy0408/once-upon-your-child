@@ -566,14 +566,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             
             logger.info(f"Mandatory names for validation: {mandatory_names}")
 
-            # Story generation with validation and retry logic
-            max_attempts = 3
+            # Tier-aware retry cap: free tier gets 2 attempts (not 3) to bound
+            # Gemini cost on validation failures. Premium/Family/BYOK keep 3.
+            user_tier = 'free'
+            if user_id and user_id != 'anonymous':
+                try:
+                    _u = User.query.filter_by(id=user_id).first()
+                    if _u and _u.subscription_tier:
+                        user_tier = _u.subscription_tier.lower()
+                except Exception:
+                    logger.debug("could not resolve user tier", exc_info=True)
+            max_attempts = 2 if user_tier == 'free' else 3
             attempt = 0
             validation_loop_start = time.perf_counter()
             while attempt < max_attempts:
                 attempt += 1
                 validation_attempts = attempt
-                logger.info(f"Generation attempt {attempt}/{max_attempts}")
+                logger.info(f"Generation attempt {attempt}/{max_attempts} (tier={user_tier})")
 
                 ai_call_start = time.perf_counter()
                 story_text, provider_name, provider_sequence = _generate_story_text_with_metadata(

@@ -157,7 +157,8 @@ class GeminiImageGenerator:
         age: int = 7,
         therapeutic_focus: str | None = None,
         character_appearance: dict | None = None,
-        companions: list | None = None
+        companions: list | None = None,
+        user_id: str | None = None,
     ) -> list:
         """
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
@@ -287,12 +288,38 @@ Style: {style}, optimized for {age_descriptor}
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
+            try:
+                from backend.services.cost_tracker import gemini_image_cost, log_api_cost
+                log_api_cost(
+                    provider='gemini_image',
+                    feature='story_illustration',
+                    cost_usd=gemini_image_cost(len(images)),
+                    user_id=user_id,
+                    units=len(images),
+                    unit_kind='images',
+                    success=len(images) > 0,
+                    extra={'model': self._model_name, 'age': age},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return images
         except FuturesTimeoutError:
             logger.warning(
                 "Gemini image generation timed out after %ss",
                 self._request_timeout_seconds,
             )
+            try:
+                from backend.services.cost_tracker import log_api_cost
+                log_api_cost(
+                    provider='gemini_image',
+                    feature='story_illustration',
+                    cost_usd=0.0,
+                    user_id=user_id,
+                    success=False,
+                    extra={'error': 'timeout', 'model': self._model_name},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return []
         except Exception as e:
             # Check for quota errors
@@ -304,6 +331,18 @@ Style: {style}, optimized for {age_descriptor}
                 logger.warning("Gemini API rate limit reached. Requests are being throttled.")
             else:
                 logger.exception("Error generating image with Gemini")
+            try:
+                from backend.services.cost_tracker import log_api_cost
+                log_api_cost(
+                    provider='gemini_image',
+                    feature='story_illustration',
+                    cost_usd=0.0,
+                    user_id=user_id,
+                    success=False,
+                    extra={'error': str(e)[:120], 'model': self._model_name},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return []
 
     def generate_coloring_page(
@@ -584,7 +623,8 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         character_name: str,
         age: int,
         style: str = "pixar",
-        num_images: int = 1
+        num_images: int = 1,
+        user_id: str | None = None,
     ) -> list:
         """
         Generate a magical, non-photorealistic character avatar for children.
@@ -636,6 +676,20 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             if not images:
                 logger.warning(f"No images generated for avatar: {character_name}")
 
+            try:
+                from backend.services.cost_tracker import gemini_image_cost, log_api_cost
+                log_api_cost(
+                    provider='gemini_image',
+                    feature='character_avatar',
+                    cost_usd=gemini_image_cost(len(images)),
+                    user_id=user_id,
+                    units=len(images),
+                    unit_kind='images',
+                    success=len(images) > 0,
+                    extra={'model': self._model_name, 'style': style, 'age': age},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return images
 
         except FuturesTimeoutError:
@@ -644,9 +698,27 @@ CRITICAL REMINDER FOR IMAGE MODEL:
                 self._request_timeout_seconds,
                 character_name,
             )
+            try:
+                from backend.services.cost_tracker import log_api_cost
+                log_api_cost(
+                    provider='gemini_image', feature='character_avatar', cost_usd=0.0,
+                    user_id=user_id, success=False,
+                    extra={'error': 'timeout', 'model': self._model_name},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return []
         except Exception as e:
             logger.exception(f"Error generating character avatar with Gemini: {e}")
+            try:
+                from backend.services.cost_tracker import log_api_cost
+                log_api_cost(
+                    provider='gemini_image', feature='character_avatar', cost_usd=0.0,
+                    user_id=user_id, success=False,
+                    extra={'error': str(e)[:120], 'model': self._model_name},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
             return []
 
     def generate_pet_avatar(

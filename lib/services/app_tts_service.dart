@@ -118,8 +118,33 @@ const List<String> kWarmUpPhrases = [
   "Robin",
 ];
 
+/// Notice surfaced when the backend reports the user (or global) ElevenLabs
+/// budget is depleted for the month. UI can listen on
+/// [AppTtsService.capNoticeBus] and show a one-time-per-month upgrade toast.
+class TtsCapNotice {
+  /// 'user_cap_exceeded' or 'global_cap_exceeded'.
+  final String reason;
+  final String message;
+  final DateTime timestamp;
+  const TtsCapNotice({
+    required this.reason,
+    required this.message,
+    required this.timestamp,
+  });
+  bool get isUserCap => reason == 'user_cap_exceeded';
+  bool get isGlobalCap => reason == 'global_cap_exceeded';
+}
+
 class AppTtsService {
   AppTtsService._();
+
+  /// Surfaces TTS cap-exceeded notices to the UI. The result screen (or any
+  /// listener) reads this to show an upgrade toast and consume by setting
+  /// `value = null`. One notice value can cover the whole session — the
+  /// "show only once per month" debounce is the listener's responsibility
+  /// (typically via SharedPreferences with a YYYY-MM key).
+  static final ValueNotifier<TtsCapNotice?> capNoticeBus =
+      ValueNotifier<TtsCapNotice?>(null);
 
   /// Subclass hook for test fakes. Production code uses [AppTtsService._].
   @visibleForTesting
@@ -298,6 +323,18 @@ class AppTtsService {
         }
         return;
       }
+    } on TtsCapExceededException catch (e) {
+      // Premium voice budget exhausted — fall through to flutter_tts and
+      // surface a notice the UI can present as an upgrade toast.
+      if (myGen != _speakGen) return;
+      AppTtsService.capNoticeBus.value = TtsCapNotice(
+        reason: e.reason,
+        message: e.message.isNotEmpty
+            ? e.message
+            : "You've used your premium voice for this month — Read Aloud will continue with the in-app voice.",
+        timestamp: DateTime.now(),
+      );
+      debugPrint('TTS cap exceeded (${e.reason}); using device voice');
     } catch (e) {
       // If we were superseded (stop() called or a newer speak() started), the
       // exception is almost certainly an intentional abort — don't fall back to

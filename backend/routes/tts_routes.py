@@ -101,10 +101,20 @@ def create_tts_blueprint(limiter, require_auth):
 
         # Per-user daily TTS quota check
         try:
-            from backend.utils.ai_quota import check_tts_quota, increment_tts_quota
+            from backend.utils.ai_quota import (
+                check_tts_quota,
+                increment_tts_quota,
+                check_tts_chars_quota,
+                increment_tts_chars,
+            )
             from backend.utils.audit import audit_log
         except ImportError:
-            from utils.ai_quota import check_tts_quota, increment_tts_quota
+            from utils.ai_quota import (
+                check_tts_quota,
+                increment_tts_quota,
+                check_tts_chars_quota,
+                increment_tts_chars,
+            )
             from utils.audit import audit_log
 
         user_id = request.current_user.id if hasattr(request, 'current_user') and request.current_user else None
@@ -124,6 +134,40 @@ def create_tts_blueprint(limiter, require_auth):
         text = (data.get("text") or "").strip()
         if not text:
             return jsonify({"error": "text is required"}), 400
+
+        # Monthly char-budget check (per-user + global). Returns 503 with a
+        # `reason` field so the client can show an appropriate toast and
+        # fall back to flutter_tts. 503 (not 429) keeps the existing client
+        # fallback path that triggers on TTS service unavailability.
+        if user_id:
+            chars_req = len(text)
+            ok, cap_reason, used, limit = check_tts_chars_quota(user_id, user_tier, chars_req)
+            if not ok:
+                audit_log(
+                    'tts_chars_cap_exceeded',
+                    user_id=user_id,
+                    data={
+                        'tier': user_tier,
+                        'reason': cap_reason,
+                        'used': used,
+                        'limit': limit,
+                        'requested': chars_req,
+                    },
+                )
+                return jsonify({
+                    "error": "TTS service unavailable",
+                    "code": "TTS_CAP_EXCEEDED",
+                    "reason": cap_reason,
+                    "chars_used": used,
+                    "chars_limit": limit,
+                    "message": (
+                        "You've used your premium voice for this month. "
+                        "Read Aloud will continue with the in-app voice."
+                    ) if cap_reason == 'user_cap_exceeded' else (
+                        "Premium voice is temporarily at capacity. "
+                        "Read Aloud will continue with the in-app voice."
+                    ),
+                }), 503
 
         # Strip markdown/formatting before sending so we don't waste
         # the per-chunk budget on asterisks and pound signs.
@@ -183,6 +227,21 @@ def create_tts_blueprint(limiter, require_auth):
 
         if user_id:
             increment_tts_quota(user_id, user_tier)
+            increment_tts_chars(user_id, user_tier, len(text))
+            try:
+                from backend.services.cost_tracker import elevenlabs_tts_cost, log_api_cost
+                log_api_cost(
+                    provider='elevenlabs',
+                    feature='tts',
+                    cost_usd=elevenlabs_tts_cost(len(text)),
+                    user_id=user_id,
+                    units=len(text),
+                    unit_kind='chars',
+                    success=True,
+                    extra={'voice_id': voice_id, 'tier': user_tier},
+                )
+            except Exception:
+                logger.debug("cost_tracker logging failed", exc_info=True)
 
         return jsonify({
             "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),

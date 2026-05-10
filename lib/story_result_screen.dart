@@ -54,6 +54,7 @@ import 'screens/byok_setup_wizard.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
 import 'settings_screen.dart';
+import 'subscription_screen.dart';
 import 'services/per_page_illustration_prefetcher.dart';
 import 'widgets/per_page_illustration.dart';
 
@@ -567,7 +568,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           );
       // If pages are too sparse (common with fragmented model output),
       // rebuild into fuller reading pages for smoother read-aloud flow.
-      if (_averageWordsPerPage(_storyPages) < 50) {
+      // EXCEPT: LTR / Rhyme Time / Sprout-band stories are *deliberately*
+      // short-paged (10-25 words/page picture-book pacing). Repaginating
+      // those collapses the whole story onto page 1.
+      final _deliberatelyShortPages = widget.isLearningToReadMode ||
+          (widget.isRhyming ?? false) ||
+          ((widget.characterAge ?? 99) <= 5);
+      if (!_deliberatelyShortPages &&
+          _averageWordsPerPage(_storyPages) < 50) {
         final source = normalizedStoryText.trim().isNotEmpty
             ? normalizedStoryText
             : _storyPages.join('\n\n');
@@ -1592,7 +1600,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Unlock AI-generated illustrations for every scene in your story.',
+              'Unlock AI illustrations and premium narration for every scene.',
               style:
                   TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
               textAlign: TextAlign.center,
@@ -1608,24 +1616,19 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('✅ Free with your own Google AI key:',
+                  const Text('Premium unlocks:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   for (final f in [
-                    '🖼️  Illustrations for every story scene',
-                    '🎨  Custom avatar that looks like your child',
-                    '📖  Unlimited stories every day',
+                    '🖼️  AI illustrations for every story scene',
+                    '🎙️  Premium ElevenLabs narration',
                     '🎭  Interactive choose-your-own-adventure',
+                    '📖  20 stories per month',
                   ])
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(f, style: const TextStyle(fontSize: 13)),
                     ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Most families pay \$0.10–0.50/month total.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
                 ],
               ),
             ),
@@ -1633,22 +1636,18 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  final container = ProviderScope.containerOf(ctx);
+                onPressed: () {
                   Navigator.pop(ctx);
-                  final result = await Navigator.of(ctx).push<String>(
+                  Navigator.of(ctx).push(
                     MaterialPageRoute(
-                      builder: (_) => const ByokSetupWizardScreen(),
+                      builder: (_) => const SubscriptionScreen(),
                       fullscreenDialog: true,
                     ),
                   );
-                  if (result != null && result.isNotEmpty) {
-                    await container.read(settingsProvider.notifier).reload();
-                  }
                 },
-                icon: const Icon(Icons.key, size: 18),
+                icon: const Icon(Icons.star_rounded, size: 20),
                 label: const Text(
-                  'Set Up Free Premium →',
+                  'Upgrade to Premium',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -1659,7 +1658,34 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            // Secondary: BYOK link for users who'd rather supply their own
+            // Gemini key (free, but ~5 minutes of parent setup). Premium is
+            // the recommended path because it also unlocks ElevenLabs voice
+            // — which BYOK cannot replace.
+            TextButton.icon(
+              onPressed: () async {
+                final container = ProviderScope.containerOf(ctx);
+                Navigator.pop(ctx);
+                final result = await Navigator.of(ctx).push<String>(
+                  MaterialPageRoute(
+                    builder: (_) => const ByokSetupWizardScreen(),
+                    fullscreenDialog: true,
+                  ),
+                );
+                if (result != null && result.isNotEmpty) {
+                  await container.read(settingsProvider.notifier).reload();
+                }
+              },
+              icon: const Icon(Icons.key, size: 16),
+              label: const Text(
+                'Or paste a free Gemini key',
+                style: TextStyle(fontSize: 13),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF7E57C2),
+              ),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('Maybe later',

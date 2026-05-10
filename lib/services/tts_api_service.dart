@@ -20,6 +20,32 @@ class TtsRateLimitException implements Exception {
   String toString() => 'TtsRateLimitException: ElevenLabs rate limit exceeded';
 }
 
+/// Thrown when the backend returns HTTP 503 with `code: TTS_CAP_EXCEEDED` —
+/// the user has used their monthly premium-voice budget OR the global TTS
+/// budget is depleted. Callers should fall back to on-device flutter_tts and
+/// surface a one-time-per-month toast inviting upgrade.
+class TtsCapExceededException implements Exception {
+  /// 'user_cap_exceeded' or 'global_cap_exceeded'.
+  final String reason;
+  final int charsUsed;
+  final int charsLimit;
+  final String message;
+
+  TtsCapExceededException({
+    required this.reason,
+    required this.charsUsed,
+    required this.charsLimit,
+    required this.message,
+  });
+
+  bool get isUserCap => reason == 'user_cap_exceeded';
+  bool get isGlobalCap => reason == 'global_cap_exceeded';
+
+  @override
+  String toString() =>
+      'TtsCapExceededException($reason, $charsUsed/$charsLimit chars)';
+}
+
 /// Result from the TTS synthesize endpoint.
 /// [wordTimestamps] is empty when the backend could not return timing data
 /// (long/chunked stories, dialogue mode, or older backend). The caller should
@@ -115,14 +141,33 @@ class TtsApiService {
       if (response.statusCode == 429) {
         throw TtsRateLimitException();
       }
-      // 503 = API key not configured → expected graceful fallback
-      if (response.statusCode != 503) {
+      // 503 = API key not configured (silent fallback) OR cap exceeded
+      // (caller-visible fallback with toast). Distinguish via response body.
+      if (response.statusCode == 503) {
+        try {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          if (body['code'] == 'TTS_CAP_EXCEEDED') {
+            throw TtsCapExceededException(
+              reason: (body['reason'] as String?) ?? 'user_cap_exceeded',
+              charsUsed: (body['chars_used'] as num?)?.toInt() ?? 0,
+              charsLimit: (body['chars_limit'] as num?)?.toInt() ?? 0,
+              message: (body['message'] as String?) ?? '',
+            );
+          }
+        } on TtsCapExceededException {
+          rethrow;
+        } catch (_) {
+          // Body wasn't JSON or didn't match — silent fallback.
+        }
+      } else {
         debugPrint(
           '⚠️ TTS API returned ${response.statusCode}: ${response.body}',
         );
       }
       return null;
     } on TtsRateLimitException {
+      rethrow;
+    } on TtsCapExceededException {
       rethrow;
     } catch (e) {
       debugPrint('⚠️ TTS API unavailable, using on-device TTS: $e');

@@ -209,3 +209,133 @@ def increment_tts_quota(user_id: str, user_tier: str) -> None:
         pipe.execute()
     except Exception as exc:
         logger.warning("tts_quota: Redis error during increment (%s)", exc)
+
+
+# ---------------------------------------------------------------------------
+# TTS monthly character quota (per-user + global budget protection)
+#
+# The daily call quota above protects against burst abuse. The monthly char
+# quota below maps directly to ElevenLabs spend (Creator-tier billed per
+# character) so the team can budget against the 100k/mo free Year-1 credits
+# without surprise overages.
+# ---------------------------------------------------------------------------
+
+# Monthly TTS character limits per tier. 0 = TTS locked, fall back to flutter_tts.
+_TTS_MONTHLY_CHAR_LIMITS: dict[str, int] = {
+    "free": 0,        # flutter_tts only
+    "premium": 10_000,
+    "family": 25_000,
+    "byok": 0,        # BYOK doesn't unlock TTS (no per-user ElevenLabs voice rights)
+}
+
+_ENV_TTS_CHAR_OVERRIDES = {
+    "free": "TTS_CHARS_FREE",
+    "premium": "TTS_CHARS_PREMIUM",
+    "family": "TTS_CHARS_FAMILY",
+    "byok": "TTS_CHARS_BYOK",
+}
+
+# Global monthly cap protecting the ElevenLabs free-credit budget.
+_GLOBAL_TTS_BUDGET_ENV = "ELEVENLABS_GLOBAL_BUDGET_CHARS"
+_GLOBAL_TTS_BUDGET_DEFAULT = 100_000
+
+
+def _get_tts_char_limit(tier: str) -> int:
+    env_key = _ENV_TTS_CHAR_OVERRIDES.get(tier)
+    if env_key and os.getenv(env_key):
+        try:
+            return int(os.getenv(env_key))
+        except ValueError:
+            pass
+    return _TTS_MONTHLY_CHAR_LIMITS.get(tier, _TTS_MONTHLY_CHAR_LIMITS["free"])
+
+
+def _get_global_tts_budget() -> int:
+    raw = os.getenv(_GLOBAL_TTS_BUDGET_ENV)
+    if raw:
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+    return _GLOBAL_TTS_BUDGET_DEFAULT
+
+
+def _tts_chars_user_key(user_id: str) -> str:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return f"tts:chars:{user_id}:{month}"
+
+
+def _tts_chars_global_key() -> str:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return f"tts:chars:global:{month}"
+
+
+def check_tts_chars_quota(
+    user_id: str, user_tier: str, chars_requested: int
+) -> tuple[bool, str | None, int, int]:
+    """
+    Check whether a TTS request of *chars_requested* characters is allowed.
+
+    Returns (allowed, reason, current_chars, limit) where reason is one of:
+      None                 — allowed
+      'user_cap_exceeded'  — this user has used their monthly char budget
+      'global_cap_exceeded' — overall ElevenLabs budget for the month is spent
+      'tier_locked'        — tier doesn't include TTS (limit=0); use flutter_tts
+
+    Never raises; degrades open on Redis errors except the tier=0 path which
+    is a code-only check (no Redis needed).
+    """
+    user_limit = _get_tts_char_limit(user_tier)
+    if user_limit <= 0:
+        return False, 'tier_locked', 0, 0
+
+    r = _get_redis()
+    if r is None:
+        # Redis missing — allow the call so a Redis outage doesn't break TTS
+        return True, None, 0, user_limit
+
+    try:
+        user_key = _tts_chars_user_key(user_id)
+        user_used = int(r.get(user_key) or 0)
+        if user_used + chars_requested > user_limit:
+            logger.warning(
+                "tts_chars: user=%s tier=%s used=%d req=%d limit=%d — user cap",
+                user_id, user_tier, user_used, chars_requested, user_limit,
+            )
+            return False, 'user_cap_exceeded', user_used, user_limit
+
+        global_budget = _get_global_tts_budget()
+        global_key = _tts_chars_global_key()
+        global_used = int(r.get(global_key) or 0)
+        if global_used + chars_requested > global_budget:
+            logger.warning(
+                "tts_chars: GLOBAL used=%d req=%d budget=%d — global cap",
+                global_used, chars_requested, global_budget,
+            )
+            return False, 'global_cap_exceeded', global_used, global_budget
+
+        return True, None, user_used, user_limit
+    except Exception as exc:
+        logger.warning("tts_chars: Redis error during check (%s) — allowing", exc)
+        return True, None, 0, user_limit
+
+
+def increment_tts_chars(user_id: str, user_tier: str, chars: int) -> None:
+    """Increment per-user and global monthly char counters after success.
+
+    35-day TTL covers month boundaries without orphan keys. No-op on Redis error.
+    """
+    if chars <= 0:
+        return
+    r = _get_redis()
+    if r is None:
+        return
+    try:
+        pipe = r.pipeline()
+        pipe.incrby(_tts_chars_user_key(user_id), chars)
+        pipe.expire(_tts_chars_user_key(user_id), 60 * 60 * 24 * 35)
+        pipe.incrby(_tts_chars_global_key(), chars)
+        pipe.expire(_tts_chars_global_key(), 60 * 60 * 24 * 35)
+        pipe.execute()
+    except Exception as exc:
+        logger.warning("tts_chars: Redis error during increment (%s)", exc)
