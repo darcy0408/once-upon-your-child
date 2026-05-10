@@ -5,6 +5,8 @@
 **Last updated:** 2026-05-10 by session 3240
 **Status:** Draft — initial audit + framing. Awaiting input from parallel agent on monetization strategy.
 
+**Parallel agent context found (3240, 2026-05-10):** memory file `stripe_subscription_audit.md` (originSessionId `73662653-9a7c-4fbf-8333-5eeef82bf3b6`) and commit `03669c85` "fix(stripe): wire user_id/customer through checkout + add cancel + sync on success" landed earlier today. Pricing is **decided**: Free / Premium $9.99 / Family $19.99 / 14-day trial. Stripe wiring is now functional (4 launch-blockers fixed) but `is_paid_premium` SharedPref **is still never written** anywhere in the frontend — see Open Question on Stripe success → SharedPref propagation.
+
 ---
 
 ## How to use this doc
@@ -28,6 +30,18 @@ So the working hypothesis is:
 - **Free tier = sampler** (3-5 stories total or limited per month, gallery-only avatars, no per-page illustrations).
 
 This needs validation. The questions below break it apart.
+
+## Pricing — DECIDED (per parallel agent audit, 2026-05-10)
+
+Source: `memory/stripe_subscription_audit.md` (session 73662653…). Confirm with Darcy if you see this disagreed elsewhere.
+
+| Tier | Monthly | Yearly | Trial |
+|---|---|---|---|
+| Free | $0 | $0 | n/a |
+| Premium | $9.99 | $79.99 ($39.89 savings) | 14 days |
+| Family | $19.99 | $159.99 ($79.89 savings) | 14 days |
+
+**Display-name nit (unresolved):** the `SubscriptionTier.premium` enum's `displayName` returns "Adventurer" (`subscription_models.dart:16`) but pricing/marketing copy uses "Premium". Pick one and align — open question below.
 
 ---
 
@@ -109,6 +123,22 @@ Today's UX doesn't communicate this. The BYOK setup wizard says "unlock everythi
 
 ## Open questions — for cross-agent discussion
 
+### [open] Stripe success → `is_paid_premium` SharedPref is never written
+
+Identified by parallel agent in `stripe_subscription_audit.md` and unresolved by `03669c85`. `api_service_manager.dart:560` and `progression_service.dart:111` BOTH read `prefs.getBool('is_paid_premium')` but no code path sets it. So even after a successful Stripe payment + webhook + DB tier update, every frontend gate using `hasPremiumAccess()` will still return false unless BYOK is also on. **`03669c85` added `SubscriptionSyncService.syncSubscriptionStatus()` on the success page**, but does that service write the SharedPref or just update a Riverpod provider? Audit `lib/services/subscription_sync_service.dart` and confirm. If it doesn't write the pref, that's a launch-blocker that needs a follow-up commit.
+
+### [open] Two competing SubscriptionService classes
+
+Per parallel agent audit:
+- `lib/services/subscription_service.dart` — backend-aware, **keep**
+- `lib/subscription_service.dart` — local-only SharedPref, `upgradeToPremium()` fakes a subscription, **delete after migrating `settings_screen.dart:680` import**
+
+Plus dead files to delete: `lib/subscription_example_screen.dart`, `lib/subscription_screen.dart`. Both labeled "Example screen", no app-wide imports.
+
+### [open] Display-name mismatch: "Adventurer" vs "Premium"
+
+`SubscriptionTier.premium.displayName` returns "Adventurer" (`subscription_models.dart:16`) but `TierPricing.premiumTier.features` and the subscription/upgrade screens say "Premium". Inconsistent for a paid tier — pick one. (Possibly "Adventurer" was an attempt to age-band-theme the tier name; if so, decide whether to also rename "Family" to something themed.)
+
 ### [open] Should BYOK be its own tier or a modifier on Free?
 
 Two cleanups:
@@ -179,9 +209,17 @@ _None yet._
 
 Audited current code, drafted strategic framing per Darcy's "custom character images = paid hook" hypothesis. Did NOT make any decisions or change code. Open questions ready for the parallel agent who's been working with Darcy on premium/BYOK strategy.
 
-**Specifically I'd like the parallel agent to weigh in on:**
+### [3240 2026-05-10 update] Located parallel agent's work
 
-1. The "should BYOK be its own tier" question (Option A vs B above). What were you discussing with Darcy on this?
-2. Whether you have specific paid-Premium feature recommendations beyond custom avatars.
-3. Whether you've already validated any of these hypotheses with parent users.
-4. If you've committed any related code changes I should know about, link them here.
+After Darcy asked, found commit `03669c85` (Stripe wiring fixes) and memory file `stripe_subscription_audit.md` from session originSessionId `73662653-9a7c-4fbf-8333-5eeef82bf3b6`. Ingested findings into matrix:
+- Pricing decision moved out of "Open questions" → confirmed Free / $9.99 / $19.99 / 14-day trial.
+- Added new open questions: `is_paid_premium` SharedPref never-written bug, two-SubscriptionService cleanup, display-name "Adventurer" vs "Premium" mismatch.
+- Parallel agent had not yet seen the BYOK strategy framing — they were focused on Stripe wiring. So the strategic matrix work (custom avatars as paid hook, BYOK feature cap question) is still original to this session.
+
+**Specifically I'd like the parallel agent (or any next agent) to weigh in on:**
+
+1. The "should BYOK be its own tier" question (Option A vs B above).
+2. Whether `SubscriptionSyncService.syncSubscriptionStatus()` (called on the success page in `03669c85`) actually writes `is_paid_premium` SharedPref, or only updates a Riverpod provider — see new Open Question.
+3. Specific paid-Premium feature recommendations beyond custom avatars.
+4. Whether any hypotheses have been validated with real parents.
+5. Any related code changes — link commits here.
