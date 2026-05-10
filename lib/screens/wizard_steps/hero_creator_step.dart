@@ -1026,31 +1026,43 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const Spacer(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: HeroAvatarChoiceCard(
-                    icon: Icons.auto_awesome,
-                    title: 'Pick a magical hero!',
-                    subtitle: 'Choose from our gallery',
-                    onTap: _openAvatarGallery,
-                  ),
-                ),
                 // AI photo avatar is gated by both parental consent and premium —
                 // free users on younger bands don't see it, so they aren't teased
-                // with a feature that hits a paywall on tap.
+                // with a feature that hits a paywall on tap. When unlocked, it's
+                // surfaced as the featured option so kids can immediately see
+                // they can turn a real photo into a cartoon hero.
                 if (_allowPhotoAvatar && _isPremium) ...[
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: HeroAvatarChoiceCard(
-                      icon: Icons.camera_alt_rounded,
-                      title: 'Make a hero from your photo!',
-                      subtitle: 'Use a real photo',
-                      onTap: _openCustomAvatarScreen,
-                    ),
+                  HeroAvatarChoiceCard(
+                    featured: true,
+                    icon: Icons.camera_alt_rounded,
+                    title: 'Turn YOU into a cartoon hero!',
+                    subtitle: 'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
+                    onTap: _openCustomAvatarScreen,
                   ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: const [
+                      Expanded(child: Divider(color: Colors.white24)),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or',
+                            style: TextStyle(
+                                color: Colors.white60, fontSize: 12)),
+                      ),
+                      Expanded(child: Divider(color: Colors.white24)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                 ],
+                HeroAvatarChoiceCard(
+                  icon: Icons.auto_awesome,
+                  title: 'Pick a magical hero',
+                  subtitle: 'Choose from our gallery',
+                  onTap: _openAvatarGallery,
+                ),
               ],
             ),
           ),
@@ -1827,6 +1839,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           });
           Navigator.of(ctx).pop();
           _maybeAdvanceFromStylePage();
+        },
+        // When a premium user taps the gallery's "Create a custom avatar
+        // that looks like me!" banner, close the gallery and route into
+        // the custom-avatar wizard. Without this the banner would re-show
+        // the BYOK setup upsell even for users who already have a key.
+        onCreateCustomAvatar: () {
+          Navigator.of(ctx).pop();
+          _openCustomAvatarScreen();
         },
       ),
     );

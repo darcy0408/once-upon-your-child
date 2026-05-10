@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/generated_avatar.dart';
 import '../screens/byok_setup_wizard.dart';
+import '../services/api_service_manager.dart';
 import '../services/avatar_service.dart';
 import '../settings_screen.dart';
 import '../theme/age_band_theme.dart';
@@ -21,11 +22,19 @@ class AvatarGallerySelector extends StatefulWidget {
   /// Whether the current user has premium access (enables hair/eye tweak).
   final bool isPremium;
 
+  /// Called when the user taps the "Create a custom avatar that looks like
+  /// me!" banner AND they already have premium access. The parent should
+  /// dismiss the gallery and route to the custom-avatar wizard. When null
+  /// (or when the user is not yet premium), tapping the banner shows the
+  /// BYOK setup upsell instead.
+  final VoidCallback? onCreateCustomAvatar;
+
   const AvatarGallerySelector({
     super.key,
     required this.onAvatarSelected,
     required this.onCancel,
     this.isPremium = false,
+    this.onCreateCustomAvatar,
   });
 
   @override
@@ -46,10 +55,22 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   bool _isLoading = true;
   String? _selectedAvatarPath;
 
+  /// Mirrors widget.isPremium initially, but is refreshed live after the
+  /// BYOK setup wizard completes so the "Create a custom avatar that looks
+  /// like me!" banner can route the user straight into the custom-avatar
+  /// flow on their next tap instead of bouncing them back to setup.
+  late bool _isPremium = widget.isPremium;
+
   @override
   void initState() {
     super.initState();
     _initializeService();
+  }
+
+  Future<void> _refreshPremiumStatus() async {
+    final premium = await ApiServiceManager.hasPremiumAccess();
+    if (!mounted) return;
+    if (premium != _isPremium) setState(() => _isPremium = premium);
   }
 
   Future<void> _initializeService() async {
@@ -319,9 +340,12 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
             ],
           ),
           const SizedBox(height: 10),
-          // Custom avatar upsell — shown to all users as a teaser
+          // Custom avatar upsell — shown to all users as a teaser.
+          // When premium is already unlocked, tapping routes straight into
+          // the custom-avatar flow (if the parent provided a callback)
+          // instead of re-showing the BYOK setup upsell.
           GestureDetector(
-            onTap: () => _showCustomAvatarGate(context),
+            onTap: () => _handleCustomAvatarTap(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -361,6 +385,15 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
         ],
       ),
     );
+  }
+
+  void _handleCustomAvatarTap(BuildContext context) {
+    // Already premium and parent gave us a route → skip the upsell entirely.
+    if (_isPremium && widget.onCreateCustomAvatar != null) {
+      widget.onCreateCustomAvatar!();
+      return;
+    }
+    _showCustomAvatarGate(context);
   }
 
   void _showCustomAvatarGate(BuildContext context) {
@@ -433,6 +466,17 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               );
               if (result != null && result.isNotEmpty) {
                 await container.read(settingsProvider.notifier).reload();
+                // Pick up is_premium_byok=true that the wizard just saved,
+                // so the next banner tap recognises the user as premium.
+                await _refreshPremiumStatus();
+                // The user came here intending to make a custom avatar.
+                // Now that they have premium, jump straight into that flow
+                // rather than making them tap the banner again.
+                if (mounted &&
+                    _isPremium &&
+                    widget.onCreateCustomAvatar != null) {
+                  widget.onCreateCustomAvatar!();
+                }
               }
             },
             icon: const Icon(Icons.key, size: 16),
