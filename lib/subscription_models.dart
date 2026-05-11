@@ -95,7 +95,9 @@ class TierLimits {
 
       case SubscriptionTier.premium:
         return const TierLimits(
-          maxCharacters: 3,
+          // Premium is the "whole family" tier — 6 slots so siblings, an adult
+          // relative, a pet, and a magical companion can all coexist.
+          maxCharacters: 6,
           maxStoriesPerDay: 10,
           maxStoriesPerMonth: 150,
           unlimitedStories: false,
@@ -349,12 +351,14 @@ class TierPricing {
     yearlySavings: 39.89,
     badge: 'Most Popular',
     features: [
-      'Up to 5 characters',
-      '20 stories per day',
+      'Story Weaver for the whole family',
+      '6 characters — every kid, plus mom, dad, even grandma',
+      '20 stories per month, 80–100 illustrated pages',
+      '"Whose turn is it?" rotating hero between siblings',
       'All 8 themes unlocked',
       'Interactive choose-your-own-adventure',
-      'Multi-character stories',
       'Adventure map progression',
+      'Premium voice narration (10,000 chars/mo)',
       'Export & share stories',
       'Ad-free experience',
       'All companions unlocked',

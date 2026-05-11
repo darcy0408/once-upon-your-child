@@ -45,7 +45,7 @@ class SubscriptionScreen extends StatelessWidget {
                         Icon(Icons.star, color: Colors.deepPurple),
                         const SizedBox(width: 8),
                         Text(
-                          'Premium',
+                          'Premium — for the whole family',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -57,7 +57,19 @@ class SubscriptionScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     const Text('\$9.99/month'),
                     const SizedBox(height: 8),
-                    const Text('• Up to 5 characters\n• 20 stories per day\n• All themes unlocked\n• Ad-free experience'),
+                    const Text(
+                      'Story Weaver for the whole family. Every kid, plus mom, dad, even grandma can be in the story together.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '• 6 characters — siblings, an adult relative, a pet, a magical companion\n'
+                      '• 20 stories per month, 80–100 illustrated pages\n'
+                      '• "Whose turn is it?" rotating hero between siblings\n'
+                      '• 10,000 chars/mo of premium voice narration\n'
+                      '• All 8 themes unlocked\n'
+                      '• Ad-free experience',
+                    ),
                     const SizedBox(height: 16),
                     SubscribeButton(
                       tier: SubscriptionTier.premium,

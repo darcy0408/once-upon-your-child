@@ -91,6 +91,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
+  /// Premium "Whose turn is it?" feature — character_id of the last hero,
+  /// loaded from SharedPreferences. Null when there's no prior story or only
+  /// one kid character is saved.
+  String? _lastHeroId;
   // ─── Animation ──────────────────────────────────────────────────────────────
   late AnimationController _sparkleCtrl;
 
@@ -210,6 +214,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     _refreshPremiumStatus();
+    _loadLastHeroId();
     const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
       if (mounted) setState(() => _allowPhotoAvatar = allow);
     });
@@ -551,9 +556,57 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _notifySubStep();
   }
 
+  // ─── Rotating hero (Premium "Whose turn is it?") ────────────────────────────
+  static const _kLastHeroIdKey = 'last_hero_id';
+  static const _kLastHeroAtKey = 'last_hero_at';
+
+  Future<void> _loadLastHeroId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString(_kLastHeroIdKey);
+      if (mounted) setState(() => _lastHeroId = id);
+    } catch (_) {
+      // SharedPreferences unavailable — silently skip the rotating-hero hint.
+    }
+  }
+
+  Future<void> _saveLastHero(String characterId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kLastHeroIdKey, characterId);
+      await prefs.setString(
+        _kLastHeroAtKey,
+        DateTime.now().toIso8601String(),
+      );
+    } catch (_) {}
+  }
+
+  /// Returns the character whose turn it is *next* — the saved character that
+  /// was NOT the last hero. Returns null when there are fewer than 2 kids
+  /// saved or no last-hero record exists.
+  Character? _suggestedNextHero() {
+    if (_lastHeroId == null) return null;
+    if (widget.availableCharacters.length < 2) return null;
+    for (final c in widget.availableCharacters) {
+      if (c.id != _lastHeroId) return c;
+    }
+    return null;
+  }
+
+  Character? _lastHero() {
+    if (_lastHeroId == null) return null;
+    for (final c in widget.availableCharacters) {
+      if (c.id == _lastHeroId) return c;
+    }
+    return null;
+  }
+
   // ─── Character helpers ────────────────────────────────────────────────────────
   void _loadExistingCharacter(Character character) {
     try {
+      // Persist the rotating-hero pointer so next session can default the
+      // suggestion to a different sibling.
+      _saveLastHero(character.id);
       FirebaseAnalyticsService.logEvent('hero_creator_select_character', {
         'character_id': character.id,
         'character_role': character.role,
@@ -855,17 +908,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final ageBand = band.band;
+    final lastHero = _lastHero();
+    final suggested = _suggestedNextHero();
+    // Reorder so the suggested next hero appears at the top — last hero
+    // moves to the bottom but is never hidden, so the user can still pick them.
+    final orderedChars = (lastHero != null && suggested != null)
+        ? <Character>[
+            ...widget.availableCharacters.where((c) => c.id != lastHero.id),
+            lastHero,
+          ]
+        : widget.availableCharacters;
+    final showRotatingBanner = lastHero != null && suggested != null;
     return Column(
       children: [
         const SizedBox(height: 20),
         Text(
-          ageBand == AgeBand.creator ? "Welcome back" : "Welcome back!",
+          showRotatingBanner
+              ? "Whose turn is it?"
+              : (ageBand == AgeBand.creator ? "Welcome back" : "Welcome back!"),
           textAlign: TextAlign.center,
           style: _bandTitleStyle(band, baseFontSize: 28),
         ),
         const SizedBox(height: 8),
         Text(
-          "Tap your character to start a story!",
+          showRotatingBanner
+              ? "${lastHero.name} was the hero last time. Whose turn now?"
+              : "Tap your character to start a story!",
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: Colors.white,
@@ -873,24 +941,77 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: widget.availableCharacters.length,
+            itemCount: orderedChars.length,
             itemBuilder: (context, index) {
-              final char = widget.availableCharacters[index];
-              return HeroCharacterChoiceCard(
-                character: char,
-                getAvatarProvider: _getAvatarProvider,
-                onTap: () {
-                  _loadExistingCharacter(char);
-                  _handleContinue();
-                },
+              final char = orderedChars[index];
+              final isSuggested = showRotatingBanner && char.id == suggested.id;
+              return Stack(
+                children: [
+                  HeroCharacterChoiceCard(
+                    character: char,
+                    getAvatarProvider: _getAvatarProvider,
+                    onTap: () {
+                      _loadExistingCharacter(char);
+                      _handleContinue();
+                    },
+                  ),
+                  if (isSuggested)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          '🌟 Your turn!',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
         ),
+        if (showRotatingBanner)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+            child: TextButton(
+              onPressed: () {
+                _loadExistingCharacter(lastHero);
+                _handleContinue();
+              },
+              child: Text(
+                'Actually, let ${lastHero.name} go again',
+                style: GoogleFonts.fredoka(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Colors.white38,
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
           child: _buildCreateNewHeroButton(),
@@ -1443,6 +1564,38 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Premium "whole family" tier: invite an adult relative into the story.
+          OutlinedButton.icon(
+            onPressed: _showAdultRelativePicker,
+            icon: const Icon(Icons.family_restroom_rounded, size: 18),
+            label: const Text('Add a Grown-up'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFFE0AAFF)),
+              minimumSize: const Size(double.infinity, 0),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          if (widget.wizardData.adultRelatives.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < widget.wizardData.adultRelatives.length; i++)
+                  _AdultRelativeChip(
+                    relative: widget.wizardData.adultRelatives[i],
+                    onRemove: () => setState(() {
+                      widget.wizardData.adultRelatives.removeAt(i);
+                    }),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
         ],
         // ── Pet card (photo + name/species/color) ──────────────────────────────
@@ -1593,6 +1746,37 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     setState(() {
       widget.wizardData.additionalCharacters.add(name);
       _friendNameController.clear();
+    });
+  }
+
+  /// Premium "whole family" tier — invite an adult relative into the story.
+  /// Adults are stored separately from peer characters so the prompt builder
+  /// can frame them as supportive presence.
+  Future<void> _showAdultRelativePicker() async {
+    final result = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1230),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => _AdultRelativePickerSheet(),
+    );
+    if (!mounted || result == null) return;
+    final name = (result['name'] ?? '').trim();
+    final relation = (result['relation'] ?? '').trim();
+    if (name.isEmpty || relation.isEmpty) return;
+    final exists = widget.wizardData.adultRelatives.any(
+      (r) =>
+          (r['name'] ?? '').toLowerCase() == name.toLowerCase() &&
+          r['relation'] == relation,
+    );
+    if (exists) return;
+    setState(() {
+      widget.wizardData.adultRelatives.add({
+        'name': name,
+        'relation': relation,
+      });
     });
   }
 
@@ -2664,3 +2848,191 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       };
 }
 
+/// Chip showing a saved adult relative with a remove button.
+class _AdultRelativeChip extends StatelessWidget {
+  final Map<String, String> relative;
+  final VoidCallback onRemove;
+
+  const _AdultRelativeChip({required this.relative, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final relation = relative['relation'] ?? '';
+    final label = relation.isEmpty
+        ? ''
+        : relation[0].toUpperCase() + relation.substring(1);
+    final name = relative['name'] ?? '';
+    final icon = CharacterArchetypes.adultArchetypes
+        .firstWhere(
+          (a) => a.relation == relation,
+          orElse: () => CharacterArchetypes.adultArchetypes.first,
+        )
+        .icon;
+    return Chip(
+      avatar: Text(icon, style: const TextStyle(fontSize: 18)),
+      label: Text(
+        label.isEmpty ? name : '$label $name',
+        style: const TextStyle(color: Colors.white),
+      ),
+      backgroundColor: const Color(0xFF3B2860),
+      side: const BorderSide(color: Color(0xFFE0AAFF)),
+      deleteIcon: const Icon(Icons.close_rounded, size: 18, color: Colors.white70),
+      onDeleted: onRemove,
+    );
+  }
+}
+
+/// Bottom-sheet picker for adult relatives — pick relation, type a name.
+class _AdultRelativePickerSheet extends StatefulWidget {
+  @override
+  State<_AdultRelativePickerSheet> createState() =>
+      _AdultRelativePickerSheetState();
+}
+
+class _AdultRelativePickerSheetState extends State<_AdultRelativePickerSheet> {
+  String? _selectedRelation;
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Add a grown-up to the story',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'They\'ll show up as a supportive presence — not the hero, never a villain.',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final a in CharacterArchetypes.adultArchetypes)
+                ChoiceChip(
+                  label: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(a.icon, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 6),
+                        Text(a.label),
+                      ],
+                    ),
+                  ),
+                  selected: _selectedRelation == a.relation,
+                  onSelected: (_) =>
+                      setState(() => _selectedRelation = a.relation),
+                  backgroundColor: const Color(0xFF2A1F45),
+                  selectedColor: const Color(0xFFE0AAFF),
+                  labelStyle: TextStyle(
+                    color: _selectedRelation == a.relation
+                        ? Colors.black
+                        : Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          if (_selectedRelation != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              CharacterArchetypes.adultArchetypes
+                  .firstWhere((a) => a.relation == _selectedRelation)
+                  .tagline,
+              style: const TextStyle(
+                color: Color(0xFFE0AAFF),
+                fontStyle: FontStyle.italic,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            autofocus: false,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Their name (optional)',
+              labelStyle: const TextStyle(color: Colors.white70),
+              hintText: 'e.g. Sarah, Joe, Nana',
+              hintStyle: const TextStyle(color: Colors.white38),
+              filled: true,
+              fillColor: const Color(0xFF2A1F45),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _selectedRelation == null
+                      ? null
+                      : () {
+                          final relation = _selectedRelation!;
+                          final typedName = _nameController.text.trim();
+                          // Default the name to the relation label so the
+                          // prompt always has something workable.
+                          final fallbackLabel = CharacterArchetypes
+                              .adultArchetypes
+                              .firstWhere((a) => a.relation == relation)
+                              .label;
+                          final name =
+                              typedName.isEmpty ? fallbackLabel : typedName;
+                          Navigator.of(context)
+                              .pop({'name': name, 'relation': relation});
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0AAFF),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add to story',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

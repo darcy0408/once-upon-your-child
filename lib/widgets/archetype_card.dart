@@ -383,6 +383,74 @@ class CharacterArchetypes {
   /// Returns a filtered list per age band.
   /// All bands show the same 4 archetypes — fits a clean 2×2 grid.
   static List<ArchetypeData> forBand(AgeBand band) => all;
+
+  /// Adult relative archetypes for the Premium "whole family" tier.
+  /// These are picked when adding a non-hero adult to the story (Mom, Dad,
+  /// Grandma, Grandpa, Aunt/Uncle). They're stored separately from the kid
+  /// archetypes so the wizard never accidentally casts a parent as the hero.
+  /// Art assets are TBD — placeholder portraits resolve via [imagePath].
+  static const adultArchetypes = <AdultRelativeArchetype>[
+    AdultRelativeArchetype(
+      relation: 'mom',
+      label: 'Mom',
+      icon: '🧑‍🦰',
+      tagline: 'The voice that calms the storm',
+    ),
+    AdultRelativeArchetype(
+      relation: 'dad',
+      label: 'Dad',
+      icon: '🧑‍🦱',
+      tagline: 'The shoulder that lifts you up',
+    ),
+    AdultRelativeArchetype(
+      relation: 'grandma',
+      label: 'Grandma',
+      icon: '👵',
+      tagline: 'Wise smiles and warm cookies',
+    ),
+    AdultRelativeArchetype(
+      relation: 'grandpa',
+      label: 'Grandpa',
+      icon: '👴',
+      tagline: 'Stories from a hundred adventures ago',
+    ),
+    AdultRelativeArchetype(
+      relation: 'aunt',
+      label: 'Aunt',
+      icon: '🧑‍🦳',
+      tagline: 'The grown-up who really listens',
+    ),
+    AdultRelativeArchetype(
+      relation: 'uncle',
+      label: 'Uncle',
+      icon: '🧑',
+      tagline: 'The grown-up who makes you laugh',
+    ),
+  ];
+}
+
+/// Lightweight archetype for adult relatives in the Premium family tier.
+/// Adults are supportive presence, not peer characters — they don't get
+/// personality sliders or specialAbility fields like the kid archetypes do.
+class AdultRelativeArchetype {
+  /// Lowercase identifier used in the prompt and stored in WizardData.
+  final String relation;
+  /// Display label shown to users (e.g. "Mom", "Grandpa").
+  final String label;
+  /// Emoji fallback when no portrait is available.
+  final String icon;
+  /// Short kid-friendly tagline shown on the picker card.
+  final String tagline;
+  /// Optional path to a portrait asset; null means use [icon].
+  final String? imagePath;
+
+  const AdultRelativeArchetype({
+    required this.relation,
+    required this.label,
+    required this.icon,
+    required this.tagline,
+    this.imagePath,
+  });
 }
 
 class ArchetypeData {

@@ -230,7 +230,30 @@ class WizardDataMapper {
       // Send structured companion data
       'companion_pets': companionsPets,
       'companion_characters': companionsOther,
-      'additionalCharacters': data.additionalCharacters,
+      // Adult relatives get the relation prepended to the name so the LLM
+      // treats them as supportive adult presence (e.g. "Mom Sarah", "Grandpa
+      // Joe") without requiring a backend prompt change.
+      'additionalCharacters': [
+        ...data.additionalCharacters,
+        ...data.adultRelatives
+            .where((r) => (r['name'] ?? '').trim().isNotEmpty)
+            .map((r) {
+              final n = r['name']!.trim();
+              final rel = (r['relation'] ?? '').trim();
+              if (rel.isEmpty) return n;
+              final relTitle = rel[0].toUpperCase() + rel.substring(1);
+              return '$relTitle $n';
+            }),
+      ],
+      // Structured copy for future backend-prompt support without churning
+      // the main payload key. Backend may read this when ready.
+      'adultRelatives': data.adultRelatives
+          .where((r) => (r['name'] ?? '').trim().isNotEmpty)
+          .map((r) => {
+                'name': r['name']!.trim(),
+                'relation': r['relation'] ?? 'relative',
+              })
+          .toList(),
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
       'moodPhysics': moodPhysics,

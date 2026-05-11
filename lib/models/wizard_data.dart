@@ -38,6 +38,11 @@ class WizardData {
   Map<String, String> petPhotos = {}; // Real pet photos: name → base64 jpeg
   List<String> additionalCharacters = [];
 
+  /// Adult relatives in the story — Premium "whole family" tier.
+  /// Each entry: {'name': 'Sarah', 'relation': 'mom'|'dad'|'grandma'|...}.
+  /// Treated as supportive adult presence in the prompt — not peers, not villains.
+  List<Map<String, String>> adultRelatives = [];
+
   // Step 2: Feeling Selection
   String? selectedScenario;
   List<String> selectedEmotionChips = [];
@@ -104,6 +109,7 @@ class WizardData {
     c.petAvatars = Map.from(petAvatars);
     c.petPhotos = Map<String, String>.from(petPhotos);
     c.additionalCharacters = List<String>.from(additionalCharacters);
+    c.adultRelatives = adultRelatives.map((r) => Map<String, String>.from(r)).toList();
     c.selectedScenario = selectedScenario;
     c.selectedEmotionChips = List<String>.from(selectedEmotionChips);
     c.selectedFeeling = selectedFeeling;
@@ -170,6 +176,7 @@ class WizardData {
       'petAvatars':
           petAvatars.map((key, value) => MapEntry(key, value.toJson())),
       'additionalCharacters': additionalCharacters,
+      'adultRelatives': adultRelatives,
       'scenario': selectedScenario,
       'emotions': selectedEmotionChips,
       'selectedFeeling': selectedFeeling,
@@ -234,6 +241,9 @@ class WizardData {
         .toList();
     d.additionalCharacters =
         List<String>.from((json['additionalCharacters'] as List?) ?? []);
+    d.adultRelatives = ((json['adultRelatives'] as List?) ?? [])
+        .map((r) => Map<String, String>.from(r as Map))
+        .toList();
     d.selectedScenario = json['scenario'] as String?;
     d.selectedEmotionChips =
         List<String>.from((json['emotions'] as List?) ?? []);

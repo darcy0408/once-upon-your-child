@@ -167,12 +167,21 @@ class _CharacterManagementScreenV2State
             children: [
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'You have ${characters.length}/5 characters',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: characters.length >= 5 ? Colors.red : Colors.grey[700],
-                  ),
+                child: FutureBuilder<int>(
+                  future: _subscriptionService.getMaxCharacters(),
+                  builder: (context, maxSnapshot) {
+                    final maxChars = maxSnapshot.data;
+                    final atLimit = maxChars != null && characters.length >= maxChars;
+                    return Text(
+                      maxChars == null
+                          ? 'You have ${characters.length} characters'
+                          : 'You have ${characters.length}/$maxChars characters',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: atLimit ? Colors.red : Colors.grey[700],
+                      ),
+                    );
+                  },
                 ),
               ),
               Expanded(
