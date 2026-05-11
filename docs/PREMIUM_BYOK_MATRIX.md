@@ -575,6 +575,28 @@ When the matrix is decided, these are the spots that need updating:
 
 (Append decisions here as they're made. Format: `### [decided] YYYY-MM-DD — Title` with rationale + who decided.)
 
+### [decided] 2026-05-11 — Four ratifications: display name split, narration ceiling, BYOK Imagen quota, Stripe chargebacks [Darcy + b7e2]
+
+Four converged matrix items ratified together. Three are pure decisions (no code); one is a Stripe Dashboard checklist for Darcy.
+
+**#10 — Display name split.** Marketing/billing copy uses **"Premium"**; in-app kid-facing badge uses **"Adventurer"**. `SubscriptionTier.premium.displayName` already returns "Adventurer" (`lib/subscription_models.dart:16`) and the Plan 2 `TierPricing.premiumTier.features` copy uses "Premium" framing — split is de facto in place, no code change required. If future copy work touches subscription screens, use "Premium" for marketing/Stripe surfaces and reserve "Adventurer" for in-app post-upgrade celebrations only.
+
+**#12 — Family tier is the narration ceiling for v1. No ElevenLabs BYOK.** Reason: ElevenLabs voice cloning rights are not per-user transferable; the legal/contract effort to support per-customer BYOK is months of work, not Phase 1 scope. A heavy Premium user who exhausts the 10k char/mo TTS budget upgrades to Family (25k/mo). A Family user who exhausts 25k/mo falls back to flutter_tts. Revisit only if user research shows real friction at the Family ceiling.
+
+**#13 — BYOK Imagen quota tracking: graceful-fail, do not track.** Reason: Google's Imagen free tier naturally caps avatar/illustration generation (~5-20/mo on a fresh account). Adding our own counter on top would (a) require new per-user state we don't have, (b) confuse the BYOK value prop, (c) duplicate Google's own quota signal. When a BYOK user hits Google's 429, surface the upgrade CTA gracefully ("your key is at quota — Premium has a managed Imagen budget"). The 429-handling already lives in the per-page illustration prefetcher.
+
+**#17 — Enable Stripe Smart Retries + Trial Reminder Emails.** Both are free Stripe Dashboard toggles, no code. Cut chargeback rates significantly on the kids-app category, which has above-average dispute rates ("my kid bought this without permission"). Action checklist for Darcy:
+
+1. https://dashboard.stripe.com → Billing → **Subscriptions and emails**
+2. Toggle on **"Smart Retries"** (auto-retries failed payments on optimal schedule)
+3. Under **"Email customers about..."**, enable:
+   - "Trial ending" (sends 3 days before trial converts)
+   - "Failed payments" (sends on each retry)
+   - "Receipts" (verify already on — critical for chargeback defense)
+4. Save. Effective immediately, no code deploy.
+
+**Implementation status:** zero code changes. Decision log entry is the artifact. Items #7 (`is_paid_premium` SharedPref bug fix), #9 (`subscription_screen.dart` rename), and #11 (free-tier custom-avatar framing) intentionally not bundled — they touch files that other sessions are actively in.
+
 ### [decided] 2026-05-11 — Free-tier illustrations with monthly cap [Darcy + b7e2]
 
 Free non-BYOK users get per-page illustrations for the first time, gated by a server-side monthly image quota. Made affordable by the Flux Schnell routing decision below (the same day).
