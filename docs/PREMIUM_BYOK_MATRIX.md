@@ -575,6 +575,87 @@ When the matrix is decided, these are the spots that need updating:
 
 (Append decisions here as they're made. Format: `### [decided] YYYY-MM-DD — Title` with rationale + who decided.)
 
+### [decided] 2026-05-11 — Tier mix for v1 launch: Premium-only, defer Family to Phase 2 [Darcy + b7e2 + 3240 + 7366]
+
+Locks matrix items #1 (tier mix at v1 launch) and #2 (Family pricing). All three agents converged on this independently before formal ratification:
+
+- **[7366]** (matrix addendum 2, 2026-05-10): "Premium $9.99 only for v1; gate Family on real demand signal (≥20% of Premium users hitting 2+ caps OR ≥10% asking for multi-kid)."
+- **[3240]** (decision summary update 4, 2026-05-10): "Strongly endorse Premium-only v1 launch (supersedes my earlier D1 dual-tier proposal)."
+- **[b7e2 + Darcy]** (this conversation, 2026-05-10 then ratified 2026-05-11): market research confirmed $19.99 is above the kids' app industry ceiling ($14.99 = Lingokids; Epic Family $7.99; ABCmouse includes 3 kids in $14.99 base; AI-storytelling competitors don't ship Family tiers at all). Premium $9.99 with 6 character slots IS the family product for v1.
+
+**v1 launch tier list:**
+
+| Tier | Price | Notes |
+|---|---|---|
+| Free | $0 | 3 stories/mo cap; flutter_tts only; 10 free Flux Schnell illustrations/mo (Sprout unmetered) |
+| **Premium** | **$9.99/mo** | **The only paid tier at v1.** 6 character slots (the family fits here), 20 stories/mo, 100 illustrations/mo (10k or 15k TTS chars/mo pending #5 decision); 14-day trial |
+| Family | — | **Deferred to Phase 2.** Will ship with the character-family-photo differentiator (one photo → multiple kid avatars in one Imagen call) at $12.99–$14.99/mo. |
+| BYOK overlay | $0 | Works on any tier; removes Gemini caps; can stack with Premium |
+
+**Why Family is deferred, not killed:**
+- Premium with 6 character slots already covers families with 1-3 kids and the new "rotating hero" wizard. This is the market norm for kids' apps (Epic Family is the entry tier at $7.99; Family-as-2x-Premium is unusual outside of Duolingo).
+- Shipping Family at v1 with "more usage" framing would burn the marketing window. Save the launch for when it has a real differentiator (the family-group-photo feature, MT-not-yet-filed).
+- The Phase 2 trigger conditions per [7366]: ≥20% of Premium hitting 2+ caps in a single month, OR ≥10% of users asking for multi-child support in tickets/feedback. Both signal real demand vs. our intuition.
+
+**When Family does ship (Phase 2 or later):**
+- Price: $12.99-$14.99/mo (market-comp with Lingokids/ABCmouse, not $19.99)
+- Differentiator: character-family-photo upload (your D4 idea) — upload one photo of all your kids together, system extracts 4-6 kid avatars from one Imagen call. Multi-child without 20 individual character slots. Cost-neutral vs current Premium (1 Imagen call regardless of how many kids in the photo).
+- Caps: 75 stories/mo, ~200 illustrations/mo, 35k TTS chars/mo (or whatever survives the #5 cap re-baseline).
+- Annual option layered on top per [3240]'s D3: $11.99/mo billed yearly ($143.88/yr) as the headline conversion offer.
+
+**Implementation status:** zero code changes in this commit. The "Premium = the family tier" implementation already shipped in commit `94ff8bd3` (fa4d session, Plan 2 work) — 6 character slots, rotating hero, adult-relative character type. This decision log entry just formally locks the framing.
+
+**Items now resolved by this decision:**
+- Matrix item #1 (tier mix at v1 launch) → ✅ Premium-only
+- Matrix item #2 (Family pricing) → ✅ deferred to Phase 2 with character-family-photo feature
+- Matrix item #14 (Free Sprout illustrations carve-out) → already addressed by the MT-086 cap structure (Sprout server-key remains unmetered, ages 6+ get the 10-image free cap)
+
+### [decided] 2026-05-11 — TTS char-baseline verification: 1,800 char/story assumption is Sprout-class only; bump Premium cap recommended [b7e2]
+
+Verification of matrix item #5 ("re-baseline 1,800-char/story assumption against actual generated stories before locking 10k Premium cap").
+
+**Source:** `backend/services/story_service.py::AGE_CONSTRAINTS` word ranges × 5.5 chars/word (typical English prose with spaces and punctuation) = authoritative char counts. Sprout capped at 300 words by the hard ceiling I shipped in `add7e31b`.
+
+**Real-world char counts per band × length (5.5 chars/word):**
+
+| Band | Length | Words | Chars | % of 10k cap |
+|---|---|---|---|---|
+| Sprout (3-5) | any (capped) | 200-300 | 1,100-1,650 | 11-17% |
+| Explorer (5-7) | medium | 650-900 | 3,575-4,950 | 36-50% |
+| Explorer (5-7) | long | 900-1,200 | 4,950-6,600 | 50-66% |
+| Adventurer (8-10) | medium | 1,200-1,800 | 6,600-9,900 | 66-99% |
+| Adventurer (8-10) | long | 1,800-2,400 | 9,900-13,200 | **99-132%** ⚠ |
+| Creator (11-13) | medium | 1,800-2,600 | 9,900-14,300 | **99-143%** ⚠ |
+| Adolescent (15-18) | medium | 3,000-4,200 | 16,500-23,100 | **165-231%** ⚠⚠ |
+
+**Stories per 10k Premium cap at medium length per band:**
+
+| Band | Chars/story (midpoint) | Stories per 10k | Stories per 15k |
+|---|---|---|---|
+| Sprout | 1,375 | 7.3 | 10.9 |
+| Explorer | 4,262 | 2.3 | 3.5 |
+| Adventurer | 8,250 | 1.2 | 1.8 |
+| Creator | 12,100 | 0.8 (< 1!) | 1.2 |
+| Adolescent | 19,800 | 0.5 | 0.8 |
+
+**Conclusion:** the 1,800-char baseline was Sprout-class. The 10k Premium cap works fine for Sprout/Explorer-dominant families (7-3 stories/mo) but **single Creator/Adolescent stories can exceed the entire monthly cap**.
+
+**Recommendation: bump Premium 10k → 15,000 chars, Family 25k → 35,000 chars.**
+
+Cost impact at ElevenLabs Pro-plan rate ($0.198/1k after free credits expire):
+- Premium 15k worst-case: $2.97 cost → margin $9.40 net rev − $2.97 = **+$6.43 / 64%** (still excellent)
+- Family 35k worst-case: $6.93 cost → $19.11 net − $6.93 = **+$12.18 / 64%**
+
+Year-1 free-credit capacity (100k chars/mo budget):
+- At 10k/Premium: ~10 Premium users supported
+- At 15k/Premium: ~6.7 Premium users supported worst-case; ~15-20 at typical 30-50% utilization
+
+Pro plan upgrade ($99/mo for 500k chars) becomes justified at ~10 Premium subscribers anyway, so the slightly tighter Year-1 budget under 15k caps doesn't change the upgrade trigger meaningfully.
+
+**Implementation status:** ZERO code changes in this commit. The bump itself is a follow-up decision (`_TTS_MONTHLY_CHAR_LIMITS` in `backend/utils/ai_quota.py`). Awaiting Darcy's ratification of the new numbers before code change.
+
+**Alternative considered:** keep 10k cap, frame as "10,000 characters of premium narration (about 7 stories for 3-5 year olds, 1-2 stories for older readers)." This is honest but the UX implication is that older-band Premium subscribers will rapidly feel constrained. The bump is the better answer.
+
 ### [decided] 2026-05-11 — Four ratifications: display name split, narration ceiling, BYOK Imagen quota, Stripe chargebacks [Darcy + b7e2]
 
 Four converged matrix items ratified together. Three are pure decisions (no code); one is a Stripe Dashboard checklist for Darcy.
