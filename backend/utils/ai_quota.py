@@ -223,8 +223,8 @@ def increment_tts_quota(user_id: str, user_tier: str) -> None:
 # Monthly TTS character limits per tier. 0 = TTS locked, fall back to flutter_tts.
 _TTS_MONTHLY_CHAR_LIMITS: dict[str, int] = {
     "free": 0,        # flutter_tts only
-    "premium": 10_000,
-    "family": 25_000,
+    "premium": 15_000,  # bumped from 10k 2026-05-11 after #5 char-baseline verification
+    "family": 35_000,   # bumped from 25k 2026-05-11
     "byok": 0,        # BYOK doesn't unlock TTS (no per-user ElevenLabs voice rights)
 }
 
