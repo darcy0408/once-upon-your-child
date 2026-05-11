@@ -615,6 +615,42 @@ Following the cap-then-BYOK decision, session b7e2 shipped Phase 1 of the implem
 
 Phase 1 is gated on commit message `feat(monetize): Phase 1 ...` — not yet committed pending coordination with parallel agents on the file-conflict for `lib/subscription_screen.dart`.
 
+### [decided] 2026-05-10 — Premium = the family tier (no separate Family at v1) [fa4d]
+
+Decision: ship a single paid tier at $9.99/mo and frame it as the "whole family" tier so siblings, an adult relative, a pet, and a magical companion all fit. This skips the separate $19.99 Family tier at v1 launch — Family stays in the codebase but is not surfaced. We'll re-evaluate after seeing Premium adoption signal (per MT-079 recommendation: gate Family on ≥20% of Premium users hitting 2+ caps, OR ≥10% asking for multi-child support).
+
+| Field | Value |
+|---|---|
+| Character slots | **6** (up from 3) — kids, adult relative, pet, magical companion all coexist |
+| Character types | Hero (kid), Sibling (kid), Adult relative, Pet, Magical companion |
+| Rotating hero | "Whose turn is it?" wizard step on story start (when 2+ kid characters saved) |
+| Family group photo | **Phase 2 — deferred** (do not build at v1) |
+| Stories per month | 20 |
+| Illustrated pages per month | 80–100 |
+| ElevenLabs TTS | 10,000 chars/mo |
+| Price | $9.99/mo |
+
+Implementation shipped this session:
+- `lib/subscription_models.dart::TierLimits.forTier(premium)` — `maxCharacters: 3 → 6`; updated `TierPricing.premiumTier.features` list with new "whole family" copy.
+- `lib/character_management_screen_v2.dart` — replaced hardcoded `/5` count display with a `FutureBuilder<int>` that reads from `getMaxCharacters()`.
+- `lib/widgets/archetype_card.dart` — added `CharacterArchetypes.adultArchetypes` (Mom/Dad/Grandma/Grandpa/Aunt/Uncle) plus a new `AdultRelativeArchetype` data class. Adults are non-hero, no personality sliders or specialAbility — they're supportive presence only. Art assets TBD (placeholder emoji icons).
+- `lib/models/wizard_data.dart` — new field `adultRelatives: List<Map<String, String>>` plumbed through `clone()` / `toJson` / `fromJson`.
+- `lib/screens/wizard_steps/hero_creator_step.dart` — added `_showAdultRelativePicker()` modal sheet, `_AdultRelativeChip` display chips, and rotating-hero logic (`_lastHeroId` SharedPref key `last_hero_id` written on every character selection; `_buildPage0` reorders so the suggested-next sibling appears first with a 🌟 "Your turn!" badge and a "Actually, let X go again" override button).
+- `lib/screens/wizard_steps/wizard_data_mapper.dart` — adult relatives flow into `additionalCharacters` with the relation prepended ("Mom Sarah", "Grandpa Joe") so the existing backend prompt builder treats them as adults *without* needing changes to `backend/services/story_service.py` (which is part of the Phase 1 monetization work stream and was off-limits this session). A structured `adultRelatives: [{name, relation}]` payload key is also sent for future backend-prompt support.
+- `lib/subscription_screen.dart` — Premium card now headlines "Premium — for the whole family" with the new feature bullet list.
+
+Deliberately NOT touched (per plan constraints):
+- Phase 1 monetization files in working tree (`backend/services/cost_tracker.py`, `gemini_image_generator.py`, `ai_quota.py`, `tts_routes.py`, `story_tasks.py`, `story_duration_service.py`, `story_service.py`, `test_story_service.py`, `tts_api_service.dart`, `app_tts_service.dart`, `story_result_screen.dart`).
+- `lib/services/subscription_service.dart` / `lib/subscription_service.dart` consolidation (separate matrix item).
+- Stripe Product config — Premium stays $9.99, no Stripe-side change required.
+- Family-tier code path or pricing — left as-is in `subscription_models.dart`.
+
+**Open follow-ups** (filed as MTs this session):
+- Browser-verify the rotating-hero step appears only when 2+ kid characters exist.
+- Browser-verify "Add a Grown-up" picker → adult relative chip → story includes them with adult framing.
+- Backend prompt update to render an `ADULT FAMILY (supportive adult presence — not peer characters, never villains)` section from the structured `adultRelatives` payload key — deferred until Phase 1 monetization commits land.
+- Commission art for the 6 adult-relative archetypes (currently emoji icons).
+
 ---
 
 ## Cross-agent handoff log
