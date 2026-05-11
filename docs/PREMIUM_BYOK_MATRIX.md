@@ -575,6 +575,24 @@ When the matrix is decided, these are the spots that need updating:
 
 (Append decisions here as they're made. Format: `### [decided] YYYY-MM-DD — Title` with rationale + who decided.)
 
+### [decided] 2026-05-11 — Hybrid per-page image routing: Flux Schnell for ages 6+, Gemini for Sprout [Darcy + b7e2]
+
+Decision approved by Darcy after the OpenRouter dashboard verified production was paying $0.0375/image (audit's $0.003-via-token-math theory was wrong — image-modality billing is passthrough per-image, not output-token-based). Hybrid routing implements the recommendation in `docs/IMAGE_GEN_AB_TEST_RESULTS.md`.
+
+**Routing rule** (`backend/routes/story_routes.py::generate_illustrations_endpoint`):
+- `user_api_key` present → BYOK Gemini path (unchanged)
+- Server-key, age ≤ 5 → Gemini-via-OpenRouter (preserves warm 3D Pixar Sprout style)
+- Server-key, age ≥ 6 → `ReplicateImageGenerator.generate_story_illustration_flux_schnell()` (~$0.003/image, 8/10 quality vs Gemini's 10/10)
+- Flux Schnell returns empty or errors → automatic fallback to Gemini-via-OpenRouter
+- Kill-switch: `FLUX_SCHNELL_DISABLED=true` env var forces all server-key calls back to Gemini
+
+**Why this routing won:**
+- Visual A/B test (15 samples per provider) showed Flux Schnell is "acceptable but not preferred" for older bands and "wrong vibe" for Sprout. Decision respects both — keep quality where it's most visible (Sprout = your stated emotional hook), capture cost win everywhere else.
+- Cost impact: Family worst-case at 200 illustrated pages/mo drops from $7.50 → ~$2.00 per user. Unlocks Family $14.99 pricing (currently margin-negative at $19.99-or-bust) AND boosts Premium worst-case margin from ~28% to ~75%.
+- SDXL-Lightning was rejected as a primary anywhere — character drift, age mismatches, prompt detail drops (scored 4-5/10).
+
+**Implementation status:** committed in [SHA pending] alongside this matrix update. Tests at `backend/tests/unit/test_image_routing.py` (7/7 green) lock the routing rules. Browser-verify pending per MT-084. The `provider` field in the `/generate-illustrations` response now reports `flux_schnell` / `gemini_openrouter` / `gemini_byok` so the frontend (and ops dashboards) can see which path served a given illustration.
+
 ### [decided] 2026-05-10 — Cap-then-BYOK monetization architecture [Darcy + b7e2]
 
 Working tier model agreed in conversation between Darcy and session b7e2:

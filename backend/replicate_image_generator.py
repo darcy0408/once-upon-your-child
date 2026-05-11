@@ -223,6 +223,154 @@ class ReplicateImageGenerator:
 
         return images
 
+    def generate_story_illustration_flux_schnell(
+        self,
+        scene_description: str,
+        character_name: str = "the hero",
+        style: str = "children's book illustration",
+        num_images: int = 1,
+        age: int = 7,
+        therapeutic_focus: str | None = None,
+        character_appearance: dict | None = None,
+        companions: list | None = None,
+        user_id: str | None = None,
+    ) -> list:
+        """Per-page story illustration via Replicate Flux Schnell (~$0.003/image).
+
+        Used as the primary illustration provider for ages 6+ per the hybrid
+        recommendation in docs/IMAGE_GEN_AB_TEST_RESULTS.md. Quality 8/10 vs
+        Gemini's 10/10, but 12.5× cheaper, unlocking Family $14.99 pricing.
+
+        Returns the same {id, prompt, image_data, format, generated_at} dict
+        shape as generate_story_illustration() so callers can swap providers
+        without touching response handling. Returns [] on any error so the
+        endpoint's existing fallback path takes over.
+        """
+        if self.mock_mode:
+            logger.info("MOCK_TESTING_MODE enabled - skipping Flux Schnell")
+            return []
+        if not self.api_key:
+            logger.warning("Replicate API token not set; Flux Schnell skipped")
+            return []
+
+        prompt = self._build_prompt(
+            scene_description, character_name, style, age,
+            therapeutic_focus, character_appearance, companions,
+        )
+        import time
+        t0 = time.time()
+
+        try:
+            create = requests.post(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                    "Prefer": "wait",
+                },
+                json={
+                    "input": {
+                        "prompt": prompt,
+                        "num_outputs": max(1, min(num_images, 4)),
+                        "aspect_ratio": "1:1",
+                        "output_format": "png",
+                        "output_quality": 90,
+                    }
+                },
+                timeout=70,
+            )
+            if create.status_code not in (200, 201):
+                logger.warning(
+                    "Flux Schnell create failed: %d %s",
+                    create.status_code, create.text[:200],
+                )
+                self._log_cost_event(False, num_images, user_id, age,
+                                     error=f"create {create.status_code}")
+                return []
+
+            body = create.json()
+            if body.get("status") != "succeeded":
+                pid = body.get("id")
+                deadline = time.time() + 90
+                while time.time() < deadline:
+                    time.sleep(1.5)
+                    poll = requests.get(
+                        f"https://api.replicate.com/v1/predictions/{pid}",
+                        headers={"Authorization": f"Bearer {self.api_key}"},
+                        timeout=15,
+                    )
+                    if poll.status_code != 200:
+                        logger.warning("Flux Schnell poll failed: %d", poll.status_code)
+                        self._log_cost_event(False, num_images, user_id, age,
+                                             error=f"poll {poll.status_code}")
+                        return []
+                    body = poll.json()
+                    if body.get("status") == "succeeded":
+                        break
+                    if body.get("status") in ("failed", "canceled"):
+                        logger.warning(
+                            "Flux Schnell %s: %s",
+                            body.get("status"), body.get("error"),
+                        )
+                        self._log_cost_event(False, num_images, user_id, age,
+                                             error=str(body.get("status")))
+                        return []
+                else:
+                    logger.warning("Flux Schnell prediction timed out")
+                    self._log_cost_event(False, num_images, user_id, age,
+                                         error="timeout")
+                    return []
+
+            output = body.get("output") or []
+            urls = output if isinstance(output, list) else [output] if isinstance(output, str) else []
+            urls = [u for u in urls if u]
+            if not urls:
+                logger.warning("Flux Schnell returned no output URLs")
+                self._log_cost_event(False, num_images, user_id, age,
+                                     error="no_output")
+                return []
+
+            images = self._download_images(urls, prompt)
+            self._log_cost_event(len(images) > 0, len(images), user_id, age)
+            logger.info(
+                "Flux Schnell %d image(s) in %.1fs",
+                len(images), time.time() - t0,
+            )
+            return images
+
+        except Exception as e:
+            logger.exception("Flux Schnell error: %s", e)
+            self._log_cost_event(False, num_images, user_id, age, error=str(e)[:120])
+            return []
+
+    def _log_cost_event(
+        self,
+        success: bool,
+        num_images: int,
+        user_id: str | None,
+        age: int,
+        error: str | None = None,
+    ) -> None:
+        """Forward a Flux Schnell call to cost_tracker. Never raises."""
+        try:
+            from backend.services.cost_tracker import log_api_cost
+            log_api_cost(
+                provider='replicate',
+                feature='story_illustration',
+                cost_usd=0.003 * num_images if success else 0.0,
+                user_id=user_id,
+                units=num_images if success else 0,
+                unit_kind='images',
+                success=success,
+                extra={
+                    'model': 'flux-schnell',
+                    'age': age,
+                    **({'error': error} if error else {}),
+                },
+            )
+        except Exception:
+            logger.debug("cost_tracker logging failed", exc_info=True)
+
     def generate_coloring_page(
         self,
         scene_description: str,

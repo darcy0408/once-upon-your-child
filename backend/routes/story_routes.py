@@ -1062,40 +1062,87 @@ def create_story_blueprint(
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
 
-            # Use user's API key if provided, otherwise use server's
+            # Use user's API key if provided, otherwise use the hybrid pipeline.
+            # MT-084 hybrid routing for per-page illustrations:
+            #   - Sprout (age <=5):  Gemini-via-OpenRouter (preserves warm 3D Pixar style)
+            #   - Ages 6+:           Flux Schnell ($0.003/img) primary, Gemini fallback
+            # BYOK users always use their own Gemini key regardless of age.
+            # See docs/IMAGE_GEN_AB_TEST_RESULTS.md for the visual scoring + cost math.
             generator = None
             using_user_key = False
+            using_flux_schnell = False
+            current_user = getattr(request, 'current_user', None)
+            current_user_id = getattr(current_user, 'id', None) if current_user else None
 
             if user_api_key and not disable_gemini_image:
                 generator = GeminiImageGenerator(api_key=user_api_key)
                 using_user_key = True
             elif user_api_key and disable_gemini_image:
                 logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations.")
-            elif image_generator is not None:
-                generator = image_generator
-            else:
-                return (
-                    jsonify(
-                        {
-                            "error": "Image generation temporarily unavailable",
-                            "hint": "OpenRouter image service is currently unavailable. Please try again later.",
-                            "illustrations": [],
-                            "count": 0,
-                        }
-                    ),
-                    200,
-                )
 
-            illustrations = generator.generate_story_illustration(
-                scene_description=scene_description,
-                character_name=character_name,
-                style=style,
-                num_images=num_images,
-                age=age,
-                therapeutic_focus=therapeutic_focus,
-                character_appearance=character_appearance,
-                companions=companions,
-            )
+            illustrations = []
+            if generator is not None:
+                # BYOK path — direct Gemini with the user's key
+                illustrations = generator.generate_story_illustration(
+                    scene_description=scene_description,
+                    character_name=character_name,
+                    style=style,
+                    num_images=num_images,
+                    age=age,
+                    therapeutic_focus=therapeutic_focus,
+                    character_appearance=character_appearance,
+                    companions=companions,
+                )
+            else:
+                # Server-key path — hybrid routing by age band.
+                if age >= 6 and os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in ("1", "true", "yes"):
+                    try:
+                        from ..replicate_image_generator import ReplicateImageGenerator
+                    except ImportError:
+                        from replicate_image_generator import ReplicateImageGenerator
+                    flux = ReplicateImageGenerator()
+                    illustrations = flux.generate_story_illustration_flux_schnell(
+                        scene_description=scene_description,
+                        character_name=character_name,
+                        style=style,
+                        num_images=num_images,
+                        age=age,
+                        therapeutic_focus=therapeutic_focus,
+                        character_appearance=character_appearance,
+                        companions=companions,
+                        user_id=current_user_id,
+                    )
+                    using_flux_schnell = bool(illustrations)
+                    if not illustrations:
+                        logger.info(
+                            "Flux Schnell returned empty for age %d; falling back to Gemini-via-OpenRouter",
+                            age,
+                        )
+
+                # Fallback (or Sprout path): Gemini via OpenRouter.
+                if not illustrations:
+                    if image_generator is None:
+                        return (
+                            jsonify(
+                                {
+                                    "error": "Image generation temporarily unavailable",
+                                    "hint": "OpenRouter image service is currently unavailable. Please try again later.",
+                                    "illustrations": [],
+                                    "count": 0,
+                                }
+                            ),
+                            200,
+                        )
+                    illustrations = image_generator.generate_story_illustration(
+                        scene_description=scene_description,
+                        character_name=character_name,
+                        style=style,
+                        num_images=num_images,
+                        age=age,
+                        therapeutic_focus=therapeutic_focus,
+                        character_appearance=character_appearance,
+                        companions=companions,
+                    )
 
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
@@ -1213,6 +1260,9 @@ def create_story_blueprint(
                         "illustrations": transformed_illustrations,
                         "count": len(transformed_illustrations),
                         "used_user_key": using_user_key,
+                        "provider": "flux_schnell" if using_flux_schnell else (
+                            "gemini_byok" if using_user_key else "gemini_openrouter"
+                        ),
                         "debug_info": {
                         },
                     }
