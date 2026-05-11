@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/flavor_config.dart';
 import 'api_service_manager.dart';
@@ -16,16 +15,9 @@ class StripeService {
   final String _baseUrl;
 
   static const Duration _defaultTimeout = Duration(seconds: 20);
-  static const String _tokenKey = 'story_weaver_auth_token';
 
-  Future<Map<String, String>> _buildAuthHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenKey);
-    return {
-      'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
-  }
+  Future<Map<String, String>> _buildAuthHeaders() =>
+      ApiServiceManager.authHeaders();
 
   /// Create a Stripe Checkout session and return the response payload.
   Future<Map<String, dynamic>> createCheckoutSession({
