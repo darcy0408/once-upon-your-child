@@ -652,8 +652,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
-  void _switchToNewCharacter() {
+  void _switchToNewCharacter() async {
     FirebaseAnalyticsService.logEvent('hero_creator_create_new', {});
+    // Ask which age band the new character should be — without this the wizard
+    // sticks to whatever age band the previous character used, which makes it
+    // impossible to e.g. make an Explorer hero after a Sprout one (the Sprout
+    // name input even hides the keyboard behind a big mic).
+    final newAge = await _promptNewCharacterAge();
+    if (!mounted || newAge == null) return;
+    final ageChanged = newAge != widget.wizardData.characterAge;
     setState(() {
       _isCreatingNew = true;
       _selectedExistingCharacter = null;
@@ -661,8 +668,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.generatedAvatar = null;
       widget.wizardData.characterId = null;
       widget.wizardData.characterName = '';
-      // Intentionally do not reset characterAge — it should inherit the value
-      // already on wizardData (e.g. user_age propagated from the entry point).
+      widget.wizardData.characterAge = newAge;
       _selectedArchetypeId = null;
       _nameController.clear();
       widget.wizardData.pets = [];
@@ -677,7 +683,100 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         'adventurousness': 50,
       };
     });
+    if (ageChanged) widget.onAgeChanged?.call(newAge);
     _heroNextPage();
+  }
+
+  /// Modal age picker shown when the user taps "Or create someone new".
+  /// Returns the picked age (a representative age per band) or null on cancel.
+  Future<int?> _promptNewCharacterAge() async {
+    const options = <({String label, String sublabel, int age})>[
+      (label: 'Little Sprout', sublabel: 'Ages 3–5', age: 4),
+      (label: 'Explorer', sublabel: 'Ages 6–8', age: 7),
+      (label: 'Adventurer', sublabel: 'Ages 9–11', age: 10),
+      (label: 'Creator', sublabel: 'Ages 12–14', age: 13),
+      (label: 'Adolescent', sublabel: 'Ages 15–17', age: 16),
+      (label: 'Adult', sublabel: '18+', age: 21),
+    ];
+    final currentAge = widget.wizardData.characterAge;
+    return showDialog<int>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF2C1B47),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD700), width: 1.5),
+        ),
+        title: Text(
+          'How old is your new hero?',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.fredoka(
+            color: const Color(0xFFFFD700),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final o in options)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: o.age == currentAge
+                            ? const Color(0xFF7C4DFF)
+                            : Colors.white.withAlpha(20),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: o.age == currentAge
+                                ? const Color(0xFFFFD700)
+                                : Colors.white24,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(dialogCtx).pop(o.age),
+                      child: Column(
+                        children: [
+                          Text(
+                            o.label,
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            o.sublabel,
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel',
+                style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _selectArchetype(ArchetypeData archetype) {
@@ -2183,7 +2282,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   void _handleGenderSelection(String gender) {
     setState(() => widget.wizardData.characterGender = gender);
     Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) _heroNextPage();
+      if (!mounted) return;
+      // Only auto-advance from Page 1 (name + gender). Without a name the
+      // wizard's final-step Make-Magic button stays disabled (isComplete
+      // requires a non-empty name) and the bug looks like "the GO button
+      // doesn't work." Gate the advance instead and prompt for a name.
+      if (_heroPage == 1 &&
+          widget.wizardData.characterName.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('What\'s your hero\'s name?'),
+          backgroundColor: const Color(0xFFFF6B6B),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ));
+        _nameFocusNode.requestFocus();
+        return;
+      }
+      _heroNextPage();
     });
   }
 

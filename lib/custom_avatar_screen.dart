@@ -410,6 +410,24 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       return;
     }
 
+    // Backend requires character_name. If we land here with no name (e.g. the
+    // wizard advanced past the name step without one), surface a clear UI
+    // error instead of the cryptic "All fields required" 400 response.
+    if (_name.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Go back and give your hero a name first!',
+            ),
+            backgroundColor: Color(0xFFFF6B6B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isGenerating = true);
 
     try {
