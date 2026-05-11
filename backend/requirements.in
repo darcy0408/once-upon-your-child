@@ -21,7 +21,8 @@ MarkupSafe==3.0.3
 click==8.3.3
 Werkzeug==3.1.8
 Pillow
-cryptography==46.0.5
+cryptography==46.0.7  # 46.0.5: CVE-2026-34073 (DNS name constraint bypass), CVE-2026-39892 (Hash.update buffer overflow)
+urllib3>=2.7.0  # 2.6.3: CVE-2026-44431 (cross-origin redirect header leak), CVE-2026-44432 (streaming API)
 bcrypt==5.0.0
 psutil>=5.9.0
 

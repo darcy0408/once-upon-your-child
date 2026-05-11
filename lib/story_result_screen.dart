@@ -578,31 +578,17 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         (i) => 'Page ${i + 1}',
       );
     } else if (normalizedIncomingPages.isNotEmpty) {
+      // Trust the backend's page splits. Mode + age band already pick the
+      // right per-page word target (Sprout/LTR/Rhyme = 10-25 words/page;
+      // Explorer = ~80-130; older = denser). Repaginating client-side
+      // collapses Sprout/LTR picture-book pacing onto page 1 — see the bug
+      // where the wizard-default characterAge=8 made an age-gate unreliable.
       _storyPages = normalizedIncomingPages;
       _adventureSteps = widget.adventureSteps ??
           List.generate(
             _storyPages.length,
             (i) => 'Step ${i + 1}',
           );
-      // If pages are too sparse (common with fragmented model output),
-      // rebuild into fuller reading pages for smoother read-aloud flow.
-      // EXCEPT: LTR / Rhyme Time / Sprout-band stories are *deliberately*
-      // short-paged (10-25 words/page picture-book pacing). Repaginating
-      // those collapses the whole story onto page 1.
-      final _deliberatelyShortPages = widget.isLearningToReadMode ||
-          (widget.isRhyming ?? false) ||
-          ((widget.characterAge ?? 99) <= 5);
-      if (!_deliberatelyShortPages &&
-          _averageWordsPerPage(_storyPages) < 50) {
-        final source = normalizedStoryText.trim().isNotEmpty
-            ? normalizedStoryText
-            : _storyPages.join('\n\n');
-        _storyPages = _paginateStory(source, wordsPerPage: 120);
-        _adventureSteps = List.generate(
-          _storyPages.length,
-          (i) => 'Page ${i + 1}',
-        );
-      }
     } else {
       _storyPages = _paginateStory(normalizedStoryText);
       _adventureSteps = List.generate(

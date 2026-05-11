@@ -86,7 +86,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     }
     setState(() => _isListening = true);
     unawaited(AppTtsService.instance
-        .speak('Tell me where your adventure takes place.'));
+        .speak('Tell me your big story idea!'));
     await _speech.listen(
       listenFor: const Duration(seconds: 15),
       pauseFor: const Duration(seconds: 3),
@@ -113,8 +113,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     if (value.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content:
-                Text('Tell us where your story should happen first!')),
+            content: Text('Tell us your story idea first!')),
       );
       return;
     }
@@ -209,7 +208,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Where will your adventure take place?',
+                  'What\'s your adventure about?',
                   style: GoogleFonts.fredoka(
                     color: _gold,
                     fontSize: 18,
@@ -231,7 +230,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                   decoration: InputDecoration(
                     hintText:
-                        'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
+                        'e.g. ride a magic carpet, trick a witch, swim like a fish, visit Mexico…',
                     hintStyle: const TextStyle(
                         color: _gold,
                         fontSize: 14,
@@ -310,7 +309,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
               onPressed: _save,
               child: Text(
-                'Use this world',
+                'Use this idea!',
                 style: GoogleFonts.fredoka(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -327,9 +326,14 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
 
   Widget _buildSproutInput() {
     const ideaStarters = [
-      (emoji: '🌊', label: 'Ocean', fill: 'under the sea'),
-      (emoji: '🌲', label: 'Forest', fill: 'a magic forest'),
-      (emoji: '🚀', label: 'Space', fill: 'outer space'),
+      (emoji: '🪄', label: 'Magic carpet', fill: 'riding a magic carpet'),
+      (emoji: '🌙', label: 'To the moon', fill: 'going to the moon'),
+      (emoji: '🐠', label: 'Be a fish', fill: 'swimming like a fish'),
+      (emoji: '🦅', label: 'Learn to fly', fill: 'learning to fly'),
+      (emoji: '🦄', label: 'Meet a unicorn', fill: 'meeting a unicorn'),
+      (emoji: '🦖', label: 'Meet a dinosaur', fill: 'meeting a dinosaur'),
+      (emoji: '🐉', label: 'Dragon friend', fill: 'making friends with a dragon'),
+      (emoji: '🦸', label: 'Be a superhero', fill: 'being a superhero'),
     ];
     final hasInput = widget.wizardData.customElements.trim().isNotEmpty;
 
@@ -355,7 +359,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            '✨ Where do you want to go?',
+            '✨ What\'s your big idea?',
             style: GoogleFonts.fredoka(
               color: _gold,
               fontSize: 24,
@@ -366,8 +370,8 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
           const SizedBox(height: 6),
           Text(
             _speechAvailable
-                ? 'Tap the big button and say your idea!'
-                : 'Ask a grown-up to type your idea below!',
+                ? 'It can be ANYTHING! Tap the button and tell me!'
+                : 'It can be ANYTHING! Ask a grown-up to type it below.',
             style: GoogleFonts.fredoka(
               color: Colors.white.withAlpha(210),
               fontSize: 16,
@@ -418,49 +422,51 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
           if (!hasInput) ...[
             const SizedBox(height: 22),
             Text(
-              'Need an idea? Tap one!',
+              'Or tap an idea to get started!',
               style: GoogleFonts.fredoka(
                 color: Colors.white.withAlpha(160),
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
               children: ideaStarters.map((idea) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        widget.imagineItController.text = idea.fill;
-                        widget.wizardData.customElements = idea.fill;
-                        widget.wishController.text = idea.fill;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white38, width: 1.5),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(idea.emoji,
-                              style: const TextStyle(fontSize: 28)),
-                          const SizedBox(height: 3),
-                          Text(
-                            idea.label,
-                            style: GoogleFonts.fredoka(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      widget.imagineItController.text = idea.fill;
+                      widget.wizardData.customElements = idea.fill;
+                      widget.wishController.text = idea.fill;
+                    });
+                  },
+                  child: Container(
+                    width: 100,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white38, width: 1.5),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(idea.emoji,
+                            style: const TextStyle(fontSize: 32)),
+                        const SizedBox(height: 4),
+                        Text(
+                          idea.label,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 );
