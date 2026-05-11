@@ -165,21 +165,23 @@ Maintain the character's facial features while converting them into the target a
 
 **Core Capabilities**
 * Character Stylist: translating reference features into {art_style_directive} character designs.
-* Feature Preservation: maintains eye shape, smile lines, hair texture in illustrated style.
+* Feature Preservation: maintains eye shape, smile lines, AND hair (length, style, color, and texture) in illustrated style.
 * {age_profile}
 {photo_context}
 
 **Technical Configuration**
 * Style: {art_style_directive}. NOT a photograph. NOT hyper-realistic.
-* Use the reference image for head shape, skin tone, and facial structure only.
+* Use the reference image for head shape, skin tone, facial structure, AND hair (length, style, color).
 * Lighting Direction: {lighting_style}
 
 **Character Design**
 1. Likeness Synthesis: Use reference image for structural likeness. Eye Color: {eye_color} for iris tint.
-2. Wardrobe: {wardrobe}
+   Hair: REPLICATE the hair length, style, and color from the reference photo exactly. Do not lengthen, restyle, or feminize/masculinize the hair — keep it true to the reference.
+2. Gender Presentation: This character is a {gender}. Render hair, face, and silhouette consistent with a {gender} of this age. Do NOT default to long flowing hair unless the reference photo clearly shows long hair.
+3. Wardrobe: {wardrobe}
    Silhouette: {gender_tailoring}
-3. Environment: {environment_style}
-4. Final Render: Chest-up portrait, center-aligned, 1024x1024 square.
+4. Environment: {environment_style}
+5. Final Render: Chest-up portrait, center-aligned, 1024x1024 square.
 
 **Output**: {art_style_directive}, soft lighting, fully illustrated, NOT photographic.
 **Fallback**: If reference is low quality, use Eye Color: {eye_color} and Favorite Color: {favorite_color}.
@@ -191,6 +193,7 @@ Maintain the character's facial features while converting them into the target a
             art_style_directive=band_style['art_style'],
             eye_color=eye_color,
             favorite_color=favorite_color,
+            gender=gender.lower(),
             gender_tailoring=gender_tailoring,
             wardrobe=band_style['wardrobe'].format(favorite_color=favorite_color),
             environment_style=band_style['environment'],
@@ -482,11 +485,13 @@ Maintain the character's facial features while converting them into the target a
                 "Use visually neutral terms only. No racial, ethnic, or nationality descriptors."
             )
 
+            from backend.gemini_image_generator import _detect_mime_type
+            mime_type = _detect_mime_type(photo_bytes)
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=[
                     analysis_prompt,
-                    types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg"),
+                    types.Part.from_bytes(data=photo_bytes, mime_type=mime_type),
                 ],
             )
 

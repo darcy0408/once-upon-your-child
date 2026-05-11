@@ -530,11 +530,11 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             from google.genai import types
             
             logger.info(f"Generating custom avatar for {character_name} using reference photo")
-            
-            # Create the content parts: prompt + image
+
+            mime_type = _detect_mime_type(base_image_bytes)
             contents = [
                 prompt,
-                types.Part.from_bytes(data=base_image_bytes, mime_type="image/jpeg")
+                types.Part.from_bytes(data=base_image_bytes, mime_type=mime_type)
             ]
             
             # Call Gemini
