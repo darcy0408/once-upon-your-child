@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 10:53 | 5b5b | main | Prefetcher circuit-breaker + page-flip SFX polish | [link](docs/sessions/2026-05-11-1053-5b5b.md) |
 | 2026-05-11 | 10:53 | 3514 | main | No-op close (post-/clear, in-flight files left to parallel session) | [link](docs/sessions/2026-05-11-1053-3514.md) |
 | 2026-05-11 | 10:19 | 3614 | main | Free-tier illustration cap upsell UI (MT-087) | [link](docs/sessions/2026-05-11-1019-3614.md) |
 | 2026-05-11 | 10:19 | 6ce1 | main | Custom-avatar hair-length fix + MIME-detect on reference photo | [link](docs/sessions/2026-05-11-1019-6ce1.md) |
