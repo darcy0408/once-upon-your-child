@@ -23,11 +23,23 @@ def init_stripe_api(app):
     else:
         logger.info("✓ Stripe API configured via init_stripe_api")
 
+_PLACEHOLDER_PRICE_IDS = {'price_PLACEHOLDER_PREMIUM', 'price_PLACEHOLDER_FAMILY'}
+
+
 def get_price_ids():
-    """Get Stripe Price IDs from environment variables (loaded dynamically)"""
+    """Get Stripe Price IDs from environment variables (loaded dynamically).
+
+    If a real price ID isn't set in the environment, return None for that tier
+    so the checkout route returns a clean 400 instead of silently asking Stripe
+    to charge for a non-existent product.
+    """
+    raw = {
+        'premium': os.getenv('STRIPE_PRICE_ID_PREMIUM', ''),
+        'family': os.getenv('STRIPE_PRICE_ID_FAMILY', ''),
+    }
     return {
-        'premium': os.getenv('STRIPE_PRICE_ID_PREMIUM', 'price_PLACEHOLDER_PREMIUM'),
-        'family': os.getenv('STRIPE_PRICE_ID_FAMILY', 'price_PLACEHOLDER_FAMILY'),
+        tier: pid if pid and pid not in _PLACEHOLDER_PRICE_IDS else None
+        for tier, pid in raw.items()
     }
 
 def get_trial_days():
@@ -52,6 +64,11 @@ def create_checkout_session():
 
     if not tier or tier not in PRICE_IDS:
         return jsonify({'error': 'Invalid subscription tier'}), 400
+    if PRICE_IDS[tier] is None:
+        logger.error(
+            f"STRIPE_PRICE_ID_{tier.upper()} env var not configured — refusing checkout"
+        )
+        return jsonify({'error': 'Subscription tier temporarily unavailable'}), 503
 
     try:
         trial_days = get_trial_days()
