@@ -23,7 +23,7 @@ import 'package:path_provider/path_provider.dart';
 import '../config/environment.dart';
 import 'api_service_manager.dart';
 
-enum PageIllustrationStatus { idle, queued, loading, ready, failed }
+enum PageIllustrationStatus { idle, queued, loading, ready, failed, quotaExceeded }
 
 @immutable
 class PageIllustrationState {
@@ -100,6 +100,24 @@ class PerPageIllustrationPrefetcher {
   bool _disposed = false;
   String? _userApiKey;
 
+  /// Latest quota usage reported by the backend (`quota_used`/`quota_limit`).
+  /// Null when no metered response has come back yet, or when BYOK is in use
+  /// (BYOK responses don't carry quota numbers).
+  int? _quotaUsed;
+  int? _quotaLimit;
+  final ValueNotifier<bool> _quotaExceeded = ValueNotifier<bool>(false);
+
+  /// True once any page in this story has come back with
+  /// `code: ILLUSTRATION_QUOTA_EXCEEDED`. Subsequent fetches short-circuit.
+  bool get hasQuotaExceeded => _quotaExceeded.value;
+
+  /// Listenable form of [hasQuotaExceeded] so screens can rebuild banners
+  /// when the cap is hit mid-story.
+  ValueListenable<bool> get quotaExceededListenable => _quotaExceeded;
+
+  int? get quotaUsed => _quotaUsed;
+  int? get quotaLimit => _quotaLimit;
+
   ValueListenable<PageIllustrationState> stateOf(int pageIndex) {
     if (pageIndex < 0 || pageIndex >= _states.length) {
       return ValueNotifier<PageIllustrationState>(PageIllustrationState.idle);
@@ -175,6 +193,17 @@ class PerPageIllustrationPrefetcher {
     _running = true;
     try {
       while (_queue.isNotEmpty && !_disposed) {
+        // Once the monthly free-tier cap is hit, every subsequent
+        // /generate-illustrations call returns the same error — short-circuit
+        // locally so we don't burn round-trips for the rest of the story.
+        if (_quotaExceeded.value) {
+          while (_queue.isNotEmpty) {
+            final idx = _queue.removeFirst();
+            _enqueued.remove(idx);
+            _markPageQuotaExceeded(idx);
+          }
+          break;
+        }
         final pageIndex = _queue.removeFirst();
         _enqueued.remove(pageIndex);
         await _generatePage(pageIndex);
@@ -186,8 +215,18 @@ class PerPageIllustrationPrefetcher {
     }
   }
 
+  void _markPageQuotaExceeded(int pageIndex) {
+    if (pageIndex < 0 || pageIndex >= _states.length) return;
+    _states[pageIndex].value =
+        const PageIllustrationState(status: PageIllustrationStatus.quotaExceeded);
+  }
+
   Future<void> _generatePage(int pageIndex) async {
     if (_disposed) return;
+    if (_quotaExceeded.value) {
+      _markPageQuotaExceeded(pageIndex);
+      return;
+    }
     final apiKey = _userApiKey;
     final hasUserKey = apiKey != null && apiKey.isNotEmpty;
     if (!hasUserKey && !allowServerKey) return;
@@ -232,6 +271,23 @@ class PerPageIllustrationPrefetcher {
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      // Capture quota numbers when present (backend includes them on both
+      // success and the quota-exceeded path; BYOK responses omit them).
+      final quotaUsed = data['quota_used'];
+      final quotaLimit = data['quota_limit'];
+      if (quotaUsed is int) _quotaUsed = quotaUsed;
+      if (quotaLimit is int) _quotaLimit = quotaLimit;
+
+      // Free-tier monthly cap hit. Backend always returns code:
+      // ILLUSTRATION_QUOTA_EXCEEDED for this case — distinct from the
+      // transient-failure path (which has no code but also an empty list).
+      if (data['code'] == 'ILLUSTRATION_QUOTA_EXCEEDED') {
+        _quotaExceeded.value = true;
+        _markPageQuotaExceeded(pageIndex);
+        return;
+      }
+
       final illustrations = (data['illustrations'] as List?) ?? const [];
       if (illustrations.isEmpty) {
         _states[pageIndex].value = const PageIllustrationState(
@@ -310,6 +366,7 @@ class PerPageIllustrationPrefetcher {
     for (final notifier in _states) {
       notifier.dispose();
     }
+    _quotaExceeded.dispose();
     _client.close();
   }
 }

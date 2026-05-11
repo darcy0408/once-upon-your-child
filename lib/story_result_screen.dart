@@ -177,6 +177,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// Per-page background prefetcher (BYOK only). Lazily created in initState.
   PerPageIllustrationPrefetcher? _perPagePrefetcher;
 
+  /// Once the reader dismisses the "out of free illustrations" banner for
+  /// this story, don't show it again. Per-page upsell cards (older bands)
+  /// are not affected.
+  bool _quotaBannerDismissed = false;
+
   /// True when the first page is a full-bleed illustration cover.
   bool get _hasCoverIllustration => _inlineIllustrations.isNotEmpty;
 
@@ -194,6 +199,19 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     final band = Theme.of(context).extension<AgeBandThemeData>();
     return band != null &&
         (band.band == AgeBand.sprout || band.band == AgeBand.explorer);
+  }
+
+  /// Bands that get the per-page illustration-quota upsell card. Younger
+  /// readers (explorer / adventurer) get a single dismissible banner above
+  /// the pages instead, to stay less ad-heavy. Sprout never trips quota.
+  bool get _useInlineQuotaUpsell {
+    final band = Theme.of(context)
+        .extension<AgeBandThemeData>()
+        ?.band;
+    if (band == null) return false;
+    return band == AgeBand.creator ||
+        band == AgeBand.adolescent ||
+        band == AgeBand.adult;
   }
 
   bool get _isReaderLayout => _effectiveAge >= 11;
@@ -1577,6 +1595,103 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     {'id': 'interactive', 'emoji': '🎮', 'label': 'Adventure'},
   ];
 
+  /// One-shot banner for younger bands (explorer/adventurer) when the
+  /// free-tier illustration quota is exhausted. Tap → unlock sheet.
+  /// Dismissible; remembers dismissal within the screen's lifetime.
+  Widget _buildQuotaBanner() {
+    final prefetcher = _perPagePrefetcher;
+    if (prefetcher == null) return const SizedBox.shrink();
+    return ValueListenableBuilder<bool>(
+      valueListenable: prefetcher.quotaExceededListenable,
+      builder: (context, exceeded, _) {
+        if (!exceeded || _quotaBannerDismissed) {
+          return const SizedBox.shrink();
+        }
+        const lavender = Color(0xFF7E57C2);
+        final limit = prefetcher.quotaLimit ?? 10;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _showIllustrationUnlockSheet(context),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3EEFB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: lavender.withValues(alpha: 0.4),
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    const Text('🎨', style: TextStyle(fontSize: 22)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'You\'ve used your $limit free illustrations '
+                            'this month.',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: lavender,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Story Weaver Premium unlocks 100/mo.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: lavender.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => _showIllustrationUnlockSheet(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: lavender,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text(
+                        'Upgrade',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Dismiss',
+                      icon: Icon(Icons.close,
+                          size: 18,
+                          color: lavender.withValues(alpha: 0.6)),
+                      onPressed: () => setState(() {
+                        _quotaBannerDismissed = true;
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showIllustrationUnlockSheet(BuildContext ctx) {
     showModalBottomSheet(
       context: ctx,
@@ -2080,10 +2195,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Per-page illustration (BYOK background prefetch). Renders
-              // bytes when ready, a skeleton while loading, nothing otherwise.
+              // bytes when ready, a skeleton while loading, an upsell card
+              // when the free-tier monthly cap is hit (older bands only),
+              // and nothing otherwise.
               if (_perPagePrefetcher != null)
                 PerPageIllustration(
                   listenable: _perPagePrefetcher!.stateOf(textIndex),
+                  onTapUpgrade: _useInlineQuotaUpsell
+                      ? () => _showIllustrationUnlockSheet(context)
+                      : null,
                 ),
               // Story text - MAGIC TYPEWRITER EFFECT
               if (!isRevealed)
@@ -2197,6 +2317,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 if (_perPagePrefetcher != null)
                   PerPageIllustration(
                     listenable: _perPagePrefetcher!.stateOf(textIndex),
+                    onTapUpgrade: _useInlineQuotaUpsell
+                        ? () => _showIllustrationUnlockSheet(context)
+                        : null,
                   ),
                 SelectableText.rich(
                   TextSpan(
@@ -3196,6 +3319,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                           color: Colors.white))
                                   : Column(
                                       children: [
+                                        // Free-tier illustration cap banner.
+                                        // Shown once per story for younger
+                                        // bands (per-page cards cover older
+                                        // bands). BYOK + Sprout never trip.
+                                        if (_perPagePrefetcher != null &&
+                                            !_useInlineQuotaUpsell)
+                                          _buildQuotaBanner(),
                                         // Story Content - ENHANCED PAGE FLIP OR READER VIEW
                                         Expanded(
                                           child: RepaintBoundary(

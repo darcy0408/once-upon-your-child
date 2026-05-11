@@ -6,19 +6,26 @@ import 'package:flutter/material.dart';
 import '../services/per_page_illustration_prefetcher.dart';
 
 /// Renders the prefetcher's state for a single page: the image when ready,
-/// a soft skeleton when the reader arrived before generation finished, or
-/// nothing when the page isn't being prefetched.
+/// a soft skeleton when the reader arrived before generation finished, an
+/// upsell card when the free-tier monthly cap is hit, or nothing otherwise.
 class PerPageIllustration extends StatelessWidget {
   const PerPageIllustration({
     super.key,
     required this.listenable,
     this.borderRadius = 16,
     this.aspectRatio = 4 / 3,
+    this.onTapUpgrade,
   });
 
   final ValueListenable<PageIllustrationState> listenable;
   final double borderRadius;
   final double aspectRatio;
+
+  /// When provided, [PageIllustrationStatus.quotaExceeded] renders a soft
+  /// per-page upsell card and tapping it runs this callback. When null, the
+  /// quota-exceeded state is invisible (the screen is expected to surface
+  /// the upsell elsewhere, e.g. a single top-of-story banner).
+  final VoidCallback? onTapUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -52,11 +59,93 @@ class PerPageIllustration extends StatelessWidget {
                 aspectRatio: aspectRatio,
               ),
             );
+          case PageIllustrationStatus.quotaExceeded:
+            final onTap = onTapUpgrade;
+            if (onTap == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _IllustrationUpsellCard(
+                borderRadius: borderRadius,
+                aspectRatio: aspectRatio,
+                onTap: onTap,
+              ),
+            );
           case PageIllustrationStatus.idle:
           case PageIllustrationStatus.failed:
             return const SizedBox.shrink();
         }
       },
+    );
+  }
+}
+
+class _IllustrationUpsellCard extends StatelessWidget {
+  const _IllustrationUpsellCard({
+    required this.borderRadius,
+    required this.aspectRatio,
+    required this.onTap,
+  });
+
+  final double borderRadius;
+  final double aspectRatio;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Lavender matches the existing premium-hook convention used in
+    // story_result_screen.dart::_showIllustrationUnlockSheet (0xFF7E57C2).
+    const lavender = Color(0xFF7E57C2);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Material(
+          color: const Color(0xFFF3EEFB),
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFEFE7FF), Color(0xFFE6E0F8)],
+                ),
+                border: Border.all(
+                  color: lavender.withValues(alpha: 0.35),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('🎨', style: TextStyle(fontSize: 32)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Out of free illustrations',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: lavender,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to upgrade and see this scene come alive.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: lavender.withValues(alpha: 0.85),
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
