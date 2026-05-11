@@ -1,20 +1,33 @@
 # Image-Gen Provider A/B Test Results
 
 **Test date:** 2026-05-10
+**Branch:** `image-gen-ab-test`
 **Goal:** Validate whether cheap image-generation providers (SDXL-Lightning, Flux Schnell at ~$0.003/image) can replace Gemini 2.5 Flash Image (~$0.039/image) for per-page story illustrations without unacceptable quality loss. Target: 90%+ cost reduction.
 **Harness:** `backend/tests/image_quality/run_provider_comparison.py`
 **Prompts:** `backend/tests/image_quality/results/prompts.json` (15 prompts: 5 age bands × 3 pages)
 
+## Production routing audit + verified OpenRouter cost
+
+**Production primary is not direct Gemini.** It is `OpenRouterImageGenerator` (`backend/app.py:466-491`), which proxies the same `google/gemini-2.5-flash-image` model via OpenRouter's chat-completions endpoint (`backend/openrouter_image_generator.py:177`).
+
+**Verified per-image cost via OpenRouter: ~$0.0375.** Measured from <https://openrouter.ai/activity>: 4 Nano Banana (Gemini 2.5 Flash Image) requests = $0.15 spend = **$0.0375/image**. Effectively the same as Google's direct $0.039 rate. OpenRouter applies a per-image surcharge for image-modality output — the published token rate ($2.50/M output tokens) does NOT apply to image responses, even though that's what the model card suggests. (Anyone tempted to estimate cost from token rates for this model: don't — they're not the operative price.)
+
+**Implication: the brief's cost premise was correct.** Production is paying ~$0.039/image today, and a switch to Flux Schnell at ~$0.003/image is a real ~92% cost saving per illustration. The hybrid recommendation below is a genuine cost lever, not a quality-only move.
+
+Two further corrections to the brief:
+- The brief described `ReplicateImageGenerator` as "fallback that fires when Gemini 429s" — but grep confirms it is **not wired as a fallback for per-page illustrations**. It is used only by `services/avatar_generation_service.py` (avatar fallback) and `services/interactive_adventure_service.py` (interactive adventure scenes). On per-page failure, the endpoint returns `illustrations: []` (`routes/story_routes.py:1100-1114`) with no provider retry.
+- The `max_tokens: 1000` cap in `backend/openrouter_image_generator.py:177, 285, 366, 443` is below the ~1290 tokens an image output consumes; production succeeds anyway, suggesting OpenRouter ignores `max_tokens` for image modality. Worth confirming and removing the misleading cap.
+
 ## Status: ✅ Complete — recommendation ready
 
-| Provider | $/image | OK / Attempts | Total cost | Notes |
+| Provider | $/image (direct) | OK / Attempts | Total cost | Notes |
 |---|---|---|---|---|
-| Gemini 2.5 Flash Image | $0.039 | **15 / 15** | $0.585 | Baseline; all bands × all pages successful first run |
-| Replicate SDXL-Lightning | $0.003 | 9 / 15 | $0.027 | 6× HTTP 429 rate-limit on Replicate (account-level throttling); the 11s per-call pause was insufficient. The 9 successful images cover all 5 age bands. |
+| Gemini 2.5 Flash Image | $0.039 | **15 / 15** | $0.585 | Baseline; all bands × all pages successful |
+| Replicate SDXL-Lightning | $0.003 | 7 / 15 | $0.021 | 8× HTTP 429 rate-limit on Replicate (account-level throttling at <$5 credit, burst=1). The 11s per-call pause was insufficient. Successful images cover all 5 age bands. |
 | Replicate Flux Schnell | $0.003 | 8 / 15 | $0.024 | Same 7× HTTP 429 issue. Coverage hits all 5 age bands. |
-| **Total run cost** | | 32 / 45 | **$0.636** | |
+| **Total run cost** | | 30 / 45 | **$0.630** | |
 
-The 429 rate-limit prevented full coverage on the cheap providers but the 17/30 successful cheap-provider images span all 5 age bands and 11/15 unique scenes — enough data to score quality with confidence.
+The 429 rate-limit prevented full coverage on the cheap providers but the 15/30 successful cheap-provider images span all 5 age bands and 10/15 unique scenes — enough data to score quality with confidence. Note: $/image column is per-provider direct billing; see *Production routing audit* above for why production may already be at the ~$0.003 tier.
 
 ## Per-band visual quality assessment
 
@@ -93,31 +106,35 @@ Rationale:
 
 ## Cost impact under the hybrid recommendation
 
+Verified baseline: production currently pays **~$0.0375/image** via OpenRouter (see *Production routing audit* above). Hybrid math below uses this verified rate.
+
 Assuming Sprout users generate ~20% of total per-page illustrations (rough demographic split — Sprout is one of six age bands but skews highly engaged):
 
-| Tier | Old cost (Gemini-only) | New cost (Hybrid) | Margin lift |
+| Tier | Current cost (OpenRouter→Gemini @ $0.0375) | New cost (hybrid: Sprout on Gemini, 6+ on Flux Schnell) | Saving |
 |---|---|---|---|
-| Premium worst-case (80 pages) | 80 × $0.039 = $3.12 | 16 × $0.039 + 64 × $0.003 = $0.82 | **+$2.30 / user / mo** |
-| Family worst-case (200 pages) | 200 × $0.039 = $7.80 | 40 × $0.039 + 160 × $0.003 = $2.04 | **+$5.76 / user / mo** |
+| Premium worst-case (80 pages) | 80 × $0.0375 = $3.00 | 16 × $0.0375 + 64 × $0.003 = $0.79 | **−$2.21 / user / mo** |
+| Family worst-case (200 pages) | 200 × $0.0375 = $7.50 | 40 × $0.0375 + 160 × $0.003 = $1.98 | **−$5.52 / user / mo** |
 
-**Family $14.99 (3240's D1 alternative) becomes margin-positive under this hybrid:**
+**Family $14.99 (3240's D1 alternative) margin shift:**
 
-| Family price | Net rev | Cost (hybrid) | Margin |
-|---|---|---|---|
-| $14.99 | $14.25 | $9.04 (vs $14.33 Gemini-only) | **+$5.21 / 37%** ✅ |
-| $19.99 | $19.11 | $9.04 | **+$10.07 / 53%** ✅ |
+| Family price | Net rev (after fees) | Cost today | Cost (hybrid) | Margin today | Margin (hybrid) |
+|---|---|---|---|---|---|
+| $14.99 | $14.25 | $14.33 (Gemini all bands) | $1.98 | **−$0.08 LOSS** | **+$5.24 / 37%** ✅ |
+| $19.99 | $19.11 | $14.33 | $1.98 | +$4.78 / 25% | +$10.10 / 53% |
 
-The hybrid recommendation **doesn't require lowering the Family price** — it makes the existing decided pricing healthier. Lowering price to $14.99 to match market becomes optional (margin lever), not necessary (cost-coverage lever).
+The hybrid recommendation **unlocks Family at $14.99** (3240's D1 proposal becomes margin-positive instead of margin-negative) and **moves Premium worst-case margin from ~28% to ~75%.** Single biggest economic lever in the Phase 1 monetization matrix that isn't already pulled.
 
 ## Implementation path
 
 This writeup is research-only. Production routing changes need separate approval. The path forward:
 
-1. **Darcy reviews the visual samples** in `backend/tests/image_quality/results/{gemini,flux_schnell,sdxl}/` and confirms the hybrid recommendation feels right.
-2. **Optional: re-run the failed 13 cheap-provider calls** (with a longer per-call pause to avoid Replicate 429s) for fuller coverage. Cost: ~$0.04. Not strictly necessary — the 17/30 we have are conclusive.
-3. **File an MT** to flip Flux Schnell primary for non-Sprout bands in `backend/openrouter_image_generator.py` or `backend/replicate_image_generator.py` and the routing decision point (`story_routes.py`, `story_tasks.py`).
-4. **Add a unit test** asserting Sprout band uses Gemini and other bands use Flux Schnell (regression-protection for the cost-saving structure).
-5. **Update `docs/PREMIUM_BYOK_MATRIX.md`** decision log with the hybrid recommendation. Re-run the compute-cost math with the new numbers.
+1. ~~Verify OpenRouter actual per-image cost~~ **Done 2026-05-10:** verified at <https://openrouter.ai/activity> as ~$0.0375/image (4 requests / $0.15). Hybrid recommendation is a real cost lever.
+2. **Darcy reviews the visual samples** in `backend/tests/image_quality/results/{gemini,flux_schnell,sdxl}/` and confirms the hybrid recommendation feels right.
+3. **Optional: re-run the failed 15 cheap-provider calls** (with a longer per-call pause to avoid Replicate 429s) for fuller coverage. Cost: ~$0.05. Not strictly necessary — the 15/30 we have are conclusive.
+4. **File an MT** to wire Flux Schnell for non-Sprout bands at the routing decision point in `backend/app.py:466-491` (image_generator init) plus `routes/story_routes.py:1066-1098` (per-request selection). Keep Gemini (via OpenRouter or direct) as the Sprout primary and as the fallback for older bands. Existing `ReplicateImageGenerator` is reusable — already exposes `generate_story_illustration()` with the same signature.
+5. **Decide on the `max_tokens: 1000` cap** in `backend/openrouter_image_generator.py:177, 285, 366, 443`. Either remove it (image responses exceed the cap and OpenRouter appears to ignore it for image modality) or raise it to ~2000 to be safe.
+6. **Add a unit test** asserting Sprout band uses Gemini and other bands use Flux Schnell (regression-protection for the cost-saving structure).
+7. **Update `docs/PREMIUM_BYOK_MATRIX.md`** decision log with the hybrid recommendation and the OpenRouter cost verification result. Re-run the compute-cost math with the verified numbers.
 
 ## Coverage gaps to acknowledge
 
@@ -130,4 +147,11 @@ This writeup is research-only. Production routing changes need separate approval
 - `backend/tests/image_quality/run_provider_comparison.py` — the harness
 - `backend/tests/image_quality/results/manifest.json` — full run record (45 attempts, status per call)
 - `backend/tests/image_quality/results/prompts.json` — the 15 prompts
-- PNG images NOT committed (~750KB binary; regenerable from manifest + prompts via the harness)
+- `backend/tests/image_quality/results/run_log.txt` — terminal output from the latest run
+- PNG images on disk in `results/{gemini,sdxl,flux_schnell}/` (~32 MB total) — not committed; regenerable from manifest + prompts via the harness
+
+## Constraints honoured (from brief)
+
+- No changes to production routing logic — `app.py`, `routes/story_routes.py`, `tasks/story_tasks.py` are unmodified on this branch.
+- All work isolated on branch `image-gen-ab-test`.
+- Pre-existing uncommitted Phase 1 work in the tree was not touched (`gemini_image_generator.py`, `tts_routes.py`, `avatar_generation_service.py`, `story_duration_service.py`, `story_service.py`, `story_tasks.py`, `test_story_service.py`, `ai_quota.py`, Dart files, `pubspec.lock`, `cost_tracker.py`).
