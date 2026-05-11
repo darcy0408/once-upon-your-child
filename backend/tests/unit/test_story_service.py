@@ -798,7 +798,16 @@ class TestPostProcessLtrPages:
 
 
 class TestParentContextTransformation:
-    def test_transform_parent_context_abstracts_raw_language(self):
+    def test_transform_parent_context_wraps_raw_input_in_delimiters(self):
+        """
+        Per commit 61b87a32 (security: injection hardening), the function
+        switched from semantic abstraction to delimiter-wrapping. Raw parent
+        text is preserved verbatim INSIDE [user_input field="..."]...[/user_input]
+        delimiters so the LLM treats it as data, not instructions. The test
+        used to assert abstraction (e.g. 'hitting sister' replaced by
+        'quick impulses'); the new contract is delimiter wrapping plus a
+        kid-safe meta-instruction line.
+        """
         guidance = transform_parent_context_to_story_guidance({
             'feeling': 'Angry',
             'trigger': 'hitting sister after hearing no',
@@ -810,12 +819,19 @@ class TestParentContextTransformation:
 
         story_guidance = guidance['story_guidance'].lower()
         assert guidance['feeling'] == 'Angry'
-        assert 'hitting sister' not in story_guidance
+        # New contract: every parent-supplied value is wrapped in delimiters.
+        assert '[user_input field="feeling"]angry[/user_input]' in story_guidance
+        assert '[user_input field="trigger"]hitting sister after hearing no[/user_input]' in story_guidance
+        assert '[user_input field="body_signal"]hot face[/user_input]' in story_guidance
+        assert '[user_input field="coping_tool"]dragon breaths[/user_input]' in story_guidance
+        assert '[user_input field="repair_goal"]help fix what happened[/user_input]' in story_guidance
+        # Meta-instruction line that frames the wrapped input for the LLM.
+        assert 'never retell an exact real-life incident' in story_guidance
+        assert 'noticing, calming, and making things better without shame' in story_guidance
+        # parent_hidden_context is NOT propagated through this function (it
+        # was deliberately removed in commit 96770649 chore(security): remove
+        # parent_hidden_context free-text note field).
         assert 'yelling at brother' not in story_guidance
-        assert 'quick impulses' in story_guidance
-        assert 'loud words when feelings spill over' in story_guidance
-        assert 'dragon breaths' in story_guidance
-        assert 'help fix what happened' in story_guidance
 
     def test_transform_parent_context_returns_empty_for_missing_data(self):
         assert transform_parent_context_to_story_guidance(None) == {}

@@ -601,7 +601,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
 - **Tone**: {config['notes']}
-{young_delight_rules}- **Word Count**: Approximately {word_range[0]}–{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}
+{young_delight_rules}- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}
 - **Complexity Calibration**: {complexity_instruction}
 - **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
