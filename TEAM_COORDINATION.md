@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 10:19 | 3614 | main | Free-tier illustration cap upsell UI (MT-087) | [link](docs/sessions/2026-05-11-1019-3614.md) |
 | 2026-05-11 | 10:19 | 6ce1 | main | Custom-avatar hair-length fix + MIME-detect on reference photo | [link](docs/sessions/2026-05-11-1019-6ce1.md) |
 | 2026-05-11 | 08:17 | abb3 | main | Image-gen A/B: production routing audit + verified OpenRouter $0.0375/img | [link](docs/sessions/2026-05-11-0817-abb3.md) |
 | 2026-05-11 | 08:16 | fa4d | main | Premium = family tier (6 slots, adult relatives, rotating hero) | [link](docs/sessions/2026-05-11-0816-fa4d.md) |
