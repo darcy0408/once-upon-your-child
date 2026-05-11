@@ -575,6 +575,26 @@ When the matrix is decided, these are the spots that need updating:
 
 (Append decisions here as they're made. Format: `### [decided] YYYY-MM-DD — Title` with rationale + who decided.)
 
+### [decided] 2026-05-11 — Free-tier illustrations with monthly cap [Darcy + b7e2]
+
+Free non-BYOK users get per-page illustrations for the first time, gated by a server-side monthly image quota. Made affordable by the Flux Schnell routing decision below (the same day).
+
+**Per-tier illustration caps** (`backend/utils/ai_quota.py::_ILLUSTRATION_MONTHLY_LIMITS`):
+
+| Tier | Images/mo | Approx illustrated stories at 5 pages each |
+|---|---|---|
+| Free | 10 | 2 stories |
+| Premium | 100 | 20 stories |
+| Family | 200 | 40 stories |
+| BYOK | unmetered | unlimited (user's Google quota) |
+| Sprout (any tier) | unmetered | unlimited (existing behavior; preserved) |
+
+**Why this works economically:** at Flux Schnell pricing, 10 images = $0.03 per free user/month. Margin-positive at any conversion rate >0.3% (3 of 1,000 free users converting to Premium $9.99 nets +$26/mo). The cap converts "endless free generation" into a natural upsell moment.
+
+**Rationale Darcy gave:** initial concern was "free illustrations = loss." Math showed it's a $0.03/free-user/mo advertisement that drives the "wow moment" parents need to convert. Standard freemium economics; the matrix's earlier "first-taste free illustration" idea from [3240] applies, now at 13× cheaper unit cost.
+
+**Implementation status:** committed in [SHA pending]. Tests at `backend/tests/unit/test_image_routing.py` (14/14 green including the new quota tests). Browser-verify pending per MT-086. Response now reports `quota_used` and `quota_limit` so frontend can surface "X of 10 free illustrations used this month" hints in a future polish pass.
+
 ### [decided] 2026-05-11 — Hybrid per-page image routing: Flux Schnell for ages 6+, Gemini for Sprout [Darcy + b7e2]
 
 Decision approved by Darcy after the OpenRouter dashboard verified production was paying $0.0375/image (audit's $0.003-via-token-math theory was wrong — image-modality billing is passthrough per-image, not output-token-based). Hybrid routing implements the recommendation in `docs/IMAGE_GEN_AB_TEST_RESULTS.md`.

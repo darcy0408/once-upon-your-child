@@ -136,6 +136,51 @@ class TestHybridImageDispatch:
             )
 
 
+class TestIllustrationQuota:
+    """Monthly illustration cap for ages-6+ non-BYOK users (MT-085)."""
+
+    def test_free_tier_has_10_image_cap(self):
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("free") == 10
+
+    def test_premium_tier_has_100_image_cap(self):
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("premium") == 100
+
+    def test_family_tier_has_200_image_cap(self):
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("family") == 200
+
+    def test_byok_tier_returns_zero_sentinel(self):
+        """BYOK returns 0 so callers must skip the quota check (user pays Google)."""
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("byok") == 0
+
+    def test_check_quota_blocks_byok_via_zero_limit(self):
+        """Calling check_illustration_quota with byok tier must NOT allow.
+        The route is expected to bypass the call entirely for BYOK users —
+        this just documents the safe behavior if it's called anyway.
+        """
+        from backend.utils.ai_quota import check_illustration_quota
+        allowed, _, limit = check_illustration_quota("user-x", "byok", 1)
+        assert allowed is False
+        assert limit == 0
+
+    def test_check_quota_no_redis_degrades_open(self, monkeypatch):
+        """Redis unavailable → allow the request (don't break image gen)."""
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        from backend.utils.ai_quota import check_illustration_quota
+        allowed, _, limit = check_illustration_quota("user-x", "free", 1)
+        assert allowed is True
+        assert limit == 10
+
+    def test_env_override_changes_free_limit(self, monkeypatch):
+        monkeypatch.setenv("ILLUSTRATIONS_FREE", "25")
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("free") == 25
+
+
 class TestFluxSchnellGenerator:
     """The new generate_story_illustration_flux_schnell method on ReplicateImageGenerator."""
 

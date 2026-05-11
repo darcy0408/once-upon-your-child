@@ -1081,8 +1081,12 @@ def create_story_blueprint(
                 logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations.")
 
             illustrations = []
+            quota_exhausted = False
+            quota_used = 0
+            quota_limit = 0
             if generator is not None:
-                # BYOK path — direct Gemini with the user's key
+                # BYOK path — direct Gemini with the user's key.
+                # BYOK is not server-cost-metered (user pays Google).
                 illustrations = generator.generate_story_illustration(
                     scene_description=scene_description,
                     character_name=character_name,
@@ -1094,7 +1098,43 @@ def create_story_blueprint(
                     companions=companions,
                 )
             else:
-                # Server-key path — hybrid routing by age band.
+                # Server-key path — ages 6+ non-BYOK is metered against the
+                # monthly illustration quota (Sprout remains unmetered since
+                # per-page art is essential to that band's UX and the cost is
+                # capped naturally by Sprout's small page counts).
+                if age >= 6 and current_user_id:
+                    try:
+                        from ..utils.ai_quota import check_illustration_quota
+                    except ImportError:
+                        from utils.ai_quota import check_illustration_quota
+                    user_tier = getattr(current_user, 'subscription_tier', 'free') or 'free'
+                    allowed, quota_used, quota_limit = check_illustration_quota(
+                        current_user_id, user_tier.lower(), num_images,
+                    )
+                    if not allowed:
+                        quota_exhausted = True
+                        logger.info(
+                            "Illustration quota exhausted for user=%s tier=%s used=%d/%d",
+                            current_user_id, user_tier, quota_used, quota_limit,
+                        )
+
+                if quota_exhausted:
+                    return (
+                        jsonify({
+                            "illustrations": [],
+                            "count": 0,
+                            "code": "ILLUSTRATION_QUOTA_EXCEEDED",
+                            "quota_used": quota_used,
+                            "quota_limit": quota_limit,
+                            "message": (
+                                "You've used all your free illustrations this month. "
+                                "Upgrade for more, or wait until next month."
+                            ),
+                        }),
+                        200,
+                    )
+
+                # Hybrid routing by age band.
                 if age >= 6 and os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in ("1", "true", "yes"):
                     try:
                         from ..replicate_image_generator import ReplicateImageGenerator
@@ -1254,6 +1294,26 @@ def create_story_blueprint(
                 logger.error(f"Error in illustration transformation: {str(e)}")
                 transformed_illustrations = illustrations  # Fallback to original
 
+            # Increment monthly quota for ages-6+ non-BYOK only.
+            # BYOK and Sprout intentionally not counted (see route comments above).
+            if (
+                len(transformed_illustrations) > 0
+                and not using_user_key
+                and age >= 6
+                and current_user_id
+            ):
+                try:
+                    from ..utils.ai_quota import increment_illustration_quota
+                except ImportError:
+                    from utils.ai_quota import increment_illustration_quota
+                user_tier_for_increment = (
+                    getattr(current_user, 'subscription_tier', 'free') or 'free'
+                ).lower()
+                increment_illustration_quota(
+                    current_user_id, user_tier_for_increment,
+                    len(transformed_illustrations),
+                )
+
             return (
                 jsonify(
                     {
@@ -1263,6 +1323,8 @@ def create_story_blueprint(
                         "provider": "flux_schnell" if using_flux_schnell else (
                             "gemini_byok" if using_user_key else "gemini_openrouter"
                         ),
+                        "quota_used": quota_used + len(transformed_illustrations) if (not using_user_key and age >= 6) else None,
+                        "quota_limit": quota_limit if (not using_user_key and age >= 6) else None,
                         "debug_info": {
                         },
                     }

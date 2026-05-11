@@ -339,3 +339,97 @@ def increment_tts_chars(user_id: str, user_tier: str, chars: int) -> None:
         pipe.execute()
     except Exception as exc:
         logger.warning("tts_chars: Redis error during increment (%s)", exc)
+
+
+# ---------------------------------------------------------------------------
+# Illustration monthly quota (per-image, used by ages-6+ non-BYOK path)
+#
+# Flux Schnell ($0.003/image) makes free-tier illustrations economical at small
+# caps. Sprout and BYOK paths are intentionally NOT counted here:
+#   - Sprout free non-BYOK uses Gemini-via-OpenRouter (existing behavior, kept
+#     unlimited because per-page art is essential to the 3-5 picture-book
+#     experience and the server-side budget is small).
+#   - BYOK users pay Google directly, no server-side cost to meter.
+# Only the ages-6+ non-BYOK path consumes from this counter (route enforces).
+# ---------------------------------------------------------------------------
+
+_ILLUSTRATION_MONTHLY_LIMITS: dict[str, int] = {
+    "free": 10,       # ~2 illustrated stories at 5 pages each
+    "premium": 100,   # ~20 illustrated stories at 5 pages each
+    "family": 200,    # ~40 illustrated stories at 5 pages each
+    "byok": 0,        # BYOK uses user's Google key (Sentinel; route should
+                      # bypass the quota check entirely for BYOK)
+}
+
+_ENV_ILLUSTRATION_OVERRIDES = {
+    "free": "ILLUSTRATIONS_FREE",
+    "premium": "ILLUSTRATIONS_PREMIUM",
+    "family": "ILLUSTRATIONS_FAMILY",
+}
+
+
+def _get_illustration_limit(tier: str) -> int:
+    env_key = _ENV_ILLUSTRATION_OVERRIDES.get(tier)
+    if env_key and os.getenv(env_key):
+        try:
+            return int(os.getenv(env_key))
+        except ValueError:
+            pass
+    return _ILLUSTRATION_MONTHLY_LIMITS.get(tier, _ILLUSTRATION_MONTHLY_LIMITS["free"])
+
+
+def _illustration_user_key(user_id: str) -> str:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return f"illust:{user_id}:{month}"
+
+
+def check_illustration_quota(
+    user_id: str, user_tier: str, num_images: int = 1
+) -> tuple[bool, int, int]:
+    """Check whether *user_id* is within their monthly illustration quota.
+
+    Returns (allowed, current_used, limit).
+    - allowed=True  → the requested num_images all fit under the cap
+    - allowed=False → at least one would push over; caller should return [] /
+                      surface the upgrade CTA
+    - Returns allowed=True on Redis error (degrade open).
+    """
+    limit = _get_illustration_limit(user_tier)
+    if limit <= 0:
+        return False, 0, 0
+
+    r = _get_redis()
+    if r is None:
+        return True, 0, limit
+
+    try:
+        used = int(r.get(_illustration_user_key(user_id)) or 0)
+        if used + max(1, num_images) > limit:
+            logger.warning(
+                "illustration_quota: user=%s tier=%s used=%d req=%d limit=%d — capped",
+                user_id, user_tier, used, num_images, limit,
+            )
+            return False, used, limit
+        return True, used, limit
+    except Exception as exc:
+        logger.warning("illustration_quota: Redis error during check (%s)", exc)
+        return True, 0, limit
+
+
+def increment_illustration_quota(user_id: str, user_tier: str, num_images: int = 1) -> None:
+    """Bump per-user monthly illustration counter after success. 35-day TTL.
+
+    No-op when Redis unavailable or num_images <= 0.
+    """
+    if num_images <= 0:
+        return
+    r = _get_redis()
+    if r is None:
+        return
+    try:
+        pipe = r.pipeline()
+        pipe.incrby(_illustration_user_key(user_id), num_images)
+        pipe.expire(_illustration_user_key(user_id), 60 * 60 * 24 * 35)
+        pipe.execute()
+    except Exception as exc:
+        logger.warning("illustration_quota: Redis error during increment (%s)", exc)

@@ -705,17 +705,26 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     super.dispose();
   }
 
-  /// Start a per-page background prefetcher when the user has BYOK
-  /// configured, OR when the reader is in the Sprout band (where per-page
-  /// art is essential to comprehension and we accept the server-key cost).
+  /// Start a per-page background prefetcher. Eligibility:
+  ///   - BYOK on:    uses the user's own Gemini key (no server cost)
+  ///   - Sprout band: uses server Gemini-via-OpenRouter (per-page art is
+  ///                  essential to the 3-5 picture-book experience)
+  ///   - Ages 6+ non-BYOK: NEW — uses Flux Schnell at $0.003/image, server
+  ///                       enforces a monthly quota (Free 10, Premium 100,
+  ///                       Family 200) and returns ILLUSTRATION_QUOTA_EXCEEDED
+  ///                       past the cap. The prefetcher will start; individual
+  ///                       page fetches will return empty once capped.
   /// Safe to call multiple times — only the first call wires up.
   void _maybeStartPerPagePrefetcher() {
     if (!mounted || _perPagePrefetcher != null) return;
+    if (_storyPages.isEmpty) return;
     final settings = ref.read(settingsProvider);
     final isSproutBand = ageBandFromAge(_effectiveAge) == AgeBand.sprout;
     final hasByok = settings.useOwnApiKey || widget.usedUserApiKey;
-    if (!hasByok && !isSproutBand) return;
-    if (_storyPages.isEmpty) return;
+    // All age bands are eligible now; backend's illustration quota gates the
+    // ages-6+ non-BYOK path.
+    final allowServerKey = isSproutBand || (!hasByok && _effectiveAge >= 6);
+    if (!hasByok && !allowServerKey) return;
 
     final prefetcher = PerPageIllustrationPrefetcher(
       storyId: _analyticsStoryId,
@@ -727,8 +736,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       companions: _illustrationCompanions(),
       sceneRequirements:
           (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
-      // Sprout reads use the server's Imagen key when no BYOK token exists.
-      allowServerKey: isSproutBand,
+      // Server key is used for Sprout AND ages-6+ non-BYOK (Flux Schnell route).
+      allowServerKey: allowServerKey,
     );
     _perPagePrefetcher = prefetcher;
     unawaited(prefetcher.initialize().then((_) {
