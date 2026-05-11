@@ -134,6 +134,28 @@ class SubscriptionSyncService {
   void _emit(SubscriptionStatus status) {
     _currentStatus = status;
     _subscriptionController.add(status);
+    // Mirror the tier/status into the legacy `is_paid_premium` SharedPref bool
+    // so the two readers (`ApiServiceManager.hasPremiumAccess`,
+    // `ProgressionService.hasPaidPremium`) reflect the real subscription state.
+    // Truthy when tier is paid AND status is in any "has access" state:
+    //   active    → fully paid
+    //   trialing  → 14-day free trial (Premium features active)
+    //   past_due  → Stripe dunning window (~3 weeks of retries; keep access)
+    // Anything else (canceled, incomplete_expired, etc.) → false.
+    unawaited(_writePaidPremiumPref(status));
+  }
+
+  static Future<void> _writePaidPremiumPref(SubscriptionStatus status) async {
+    try {
+      final isPaid = status.tier != SubscriptionTier.free &&
+          (status.status == 'active' ||
+              status.status == 'trialing' ||
+              status.status == 'past_due');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_paid_premium', isPaid);
+    } catch (_) {
+      // Pref write failures are non-fatal — readers fall back to false.
+    }
   }
 
   void dispose() {
