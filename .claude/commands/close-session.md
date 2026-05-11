@@ -169,13 +169,7 @@ git commit -m "docs(session): close {id} — {1-line topic}"
 
 ## Step 7b — Push to remote
 
-After committing, push if the working tree is clean:
-
-```bash
-git status --porcelain
-```
-
-If the output is empty (no uncommitted files), run:
+Push your committed work, regardless of what's in the working tree. `git push` only sends commits — uncommitted parallel-session files on disk are not affected:
 
 ```bash
 git push
@@ -187,7 +181,7 @@ If `git push` fails due to a non-fast-forward (another session pushed first), ru
 git pull --rebase && git push
 ```
 
-If the working tree is not clean (parallel agent has uncommitted work), skip the push and note it in the final report: "Push skipped — parallel session has uncommitted changes. Run `git push` once they commit."
+Do NOT use `--force` or `--force-with-lease` to resolve a non-fast-forward — always rebase. The only time to skip the push is if your own commits include something you don't want on origin yet (rare; you'd know).
 
 ---
 
@@ -225,6 +219,6 @@ PICK UP NEXT TIME:
 - Never delete files without explicit user confirmation.
 - Never modify or delete other sessions' record files in `docs/sessions/`.
 - Never renumber `MT-NNN` IDs or rewrite history in `MANUAL_TASKS.md`.
-- Push after every session close (Step 7b) unless the working tree is dirty from a parallel agent.
+- Push after every session close (Step 7b). A dirty working tree from a parallel agent is NOT a reason to skip — push only sends commits.
 - The tone of session records should be a handoff note from one engineer to another, not a changelog.
 - If absolutely nothing happened this session (pure read), still write the record — a one-paragraph "explored X, learned Y, no changes" is better than silence.
