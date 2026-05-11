@@ -750,9 +750,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _heroNextPage();
       return;
     }
-    // Skip-Page-2 flow: gallery opens straight from Page 1, so jump to Page 3
-    // (the archetype page) once an avatar lands.
-    if (_heroPage == 1 && !_shouldShowBuildHeroPage) {
+    // Page 1 → Page 3 once an avatar lands. Two entry points hit this:
+    //   1. Gallery opens directly from Page 1 (when !_shouldShowBuildHeroPage),
+    //      so Page 2 is skipped entirely.
+    //   2. BYOK upgrade mid-flow: a non-premium user on Page 1 taps Next →
+    //      gallery → "Create custom avatar" → BYOK wizard. The wizard flips
+    //      _isPremium → true (and thus _shouldShowBuildHeroPage → true), then
+    //      drops the user straight into CustomAvatarScreen. Without dropping
+    //      the !_shouldShowBuildHeroPage guard, the avatar lands but no
+    //      advance fires — the user is stranded on the name/gender page.
+    if (_heroPage == 1) {
       _triggerPageCelebration();
       _heroPageController.animateToPage(
         3,
