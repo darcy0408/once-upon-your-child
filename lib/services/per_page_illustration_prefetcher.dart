@@ -107,6 +107,14 @@ class PerPageIllustrationPrefetcher {
   int? _quotaLimit;
   final ValueNotifier<bool> _quotaExceeded = ValueNotifier<bool>(false);
 
+  /// Consecutive non-quota failures. Once this hits [_failureCircuitBreaker]
+  /// we stop firing requests and mark every remaining page as failed — both
+  /// to save round-trips and to stop the loading-skeleton flicker on each
+  /// page when generation can't possibly succeed (revoked BYOK key, server
+  /// Imagen quota exhausted, OpenRouter down, etc).
+  int _consecutiveFailures = 0;
+  static const int _failureCircuitBreaker = 2;
+
   /// True once any page in this story has come back with
   /// `code: ILLUSTRATION_QUOTA_EXCEEDED`. Subsequent fetches short-circuit.
   bool get hasQuotaExceeded => _quotaExceeded.value;
@@ -130,6 +138,11 @@ class PerPageIllustrationPrefetcher {
     if (_disposed) return;
 
     _userApiKey = await ApiServiceManager.getUserApiKey();
+    final keyLen = _userApiKey?.length ?? 0;
+    debugPrint(
+      'PerPagePrefetcher: BYOK key ${keyLen > 0 ? "present (len=$keyLen)" : "ABSENT"}; '
+      'allowServerKey=$allowServerKey; pages=${pageTexts.length}',
+    );
     if ((_userApiKey == null || _userApiKey!.isEmpty) && !allowServerKey) {
       // BYOK not configured and server-key path not enabled — leave every
       // page idle.
@@ -204,6 +217,19 @@ class PerPageIllustrationPrefetcher {
           }
           break;
         }
+        // Generic failure circuit breaker. Stops the loading-skeleton flicker
+        // on every page when illustration generation is hopeless this session.
+        if (_consecutiveFailures >= _failureCircuitBreaker) {
+          while (_queue.isNotEmpty) {
+            final idx = _queue.removeFirst();
+            _enqueued.remove(idx);
+            _states[idx].value = const PageIllustrationState(
+              status: PageIllustrationStatus.failed,
+              error: 'circuit-breaker',
+            );
+          }
+          break;
+        }
         final pageIndex = _queue.removeFirst();
         _enqueued.remove(pageIndex);
         await _generatePage(pageIndex);
@@ -263,6 +289,7 @@ class PerPageIllustrationPrefetcher {
       if (_disposed) return;
 
       if (response.statusCode != 200) {
+        _consecutiveFailures++;
         _states[pageIndex].value = PageIllustrationState(
           status: PageIllustrationStatus.failed,
           error: 'HTTP ${response.statusCode}',
@@ -290,6 +317,7 @@ class PerPageIllustrationPrefetcher {
 
       final illustrations = (data['illustrations'] as List?) ?? const [];
       if (illustrations.isEmpty) {
+        _consecutiveFailures++;
         _states[pageIndex].value = const PageIllustrationState(
           status: PageIllustrationStatus.failed,
           error: 'empty response',
@@ -300,6 +328,7 @@ class PerPageIllustrationPrefetcher {
       final first = illustrations.first as Map<String, dynamic>;
       final imageData = first['image_data'] as String?;
       if (imageData == null || imageData.isEmpty) {
+        _consecutiveFailures++;
         _states[pageIndex].value = const PageIllustrationState(
           status: PageIllustrationStatus.failed,
           error: 'missing image_data',
@@ -322,12 +351,14 @@ class PerPageIllustrationPrefetcher {
       }
 
       if (_disposed) return;
+      _consecutiveFailures = 0;
       _states[pageIndex].value = PageIllustrationState(
         status: PageIllustrationStatus.ready,
         bytes: bytes,
       );
     } catch (e) {
       if (_disposed) return;
+      _consecutiveFailures++;
       _states[pageIndex].value = PageIllustrationState(
         status: PageIllustrationStatus.failed,
         error: e.toString(),
