@@ -27,6 +27,9 @@ To enable sound effects, add the following audio files to this directory:
 - `success.mp3` - Success action
 - `transition.mp3` - Screen transition
 - `gem.mp3` - Gem/coin collected
+- `page_turn.mp3` - Paper page-rustle for the story reader's page flip
+  (target: short 300–800ms "shhhk"/"fwip" of a real paperback page turning;
+  freesound.org search: "page turn book", "paper turn", "book flip")
 
 ### Educational Sounds
 - `word_learned.mp3` - New word learned

@@ -2111,9 +2111,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         _flipBurstFromRight = isForward;
       });
       HapticFeedback.mediumImpact();
-      // Play sparkle SFX on page flip (respects mute)
+      // Paper page-rustle SFX on page flip (respects mute). If the asset is
+      // missing, playSfx silently no-ops — haptic still fires.
       if (!_ambienceMuted) {
-        unawaited(AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3'));
+        unawaited(AudioAmbienceService().playSfx('sounds/page_turn.mp3'));
       }
 
       _trackResultAction(
