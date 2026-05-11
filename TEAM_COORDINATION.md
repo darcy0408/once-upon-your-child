@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 08:16 | fa4d | main | Premium = family tier (6 slots, adult relatives, rotating hero) | [link](docs/sessions/2026-05-11-0816-fa4d.md) |
 | 2026-05-10 | 09:39 | cd7d | main | Stripe v15 + wiring + premium matrix coordination | [link](docs/sessions/2026-05-10-0939-cd7d.md) |
 | 2026-05-10 | 09:39 | ba9c | main | PREMIUM_BYOK_MATRIX coordination doc — multi-agent buildout | [link](docs/sessions/2026-05-10-0939-ba9c.md) |
 | 2026-05-10 | 09:39 | c8f0 | main | MT-077 Sentry sweep verified + closed (cursor auto-close confirmed) | [link](docs/sessions/2026-05-10-0939-c8f0.md) |
