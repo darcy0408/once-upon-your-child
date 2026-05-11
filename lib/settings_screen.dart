@@ -13,6 +13,7 @@ import 'config/environment.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/theme_provider.dart';
 import 'subscription_models.dart';
+import 'subscription_screen.dart';
 import 'subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
@@ -715,6 +716,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7E57C2),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SubscriptionScreen(),
+                    fullscreenDialog: true,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.credit_card),
+              label: const Text('💳 Real Stripe Checkout (test card 4242…)'),
+            ),
           ),
           const SizedBox(height: 8),
           ElevatedButton(
