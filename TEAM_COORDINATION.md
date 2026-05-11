@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 15:57 | 08f3 | main | Sentry triage — 1 dev-noise issue, Seer over budget | [link](docs/sessions/2026-05-11-1557-08f3.md) |
 | 2026-05-11 | 12:28 | d6a5 | main | BYOK mid-flow photo-avatar advance fix (MT-090) | [link](docs/sessions/2026-05-11-1228-d6a5.md) |
 | 2026-05-11 | 11:00 | 4698 | main | No-op re-close after 6ce1 (no new work) | [link](docs/sessions/2026-05-11-1100-4698.md) |
 | 2026-05-11 | 10:53 | 5b5b | main | Prefetcher circuit-breaker + page-flip SFX polish | [link](docs/sessions/2026-05-11-1053-5b5b.md) |
