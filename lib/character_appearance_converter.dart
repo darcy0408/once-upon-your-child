@@ -318,7 +318,8 @@ STYLE: Classic children's coloring book, clean line art
         ? '''
 - No weapons, no fighting, no blood, no scary faces, no realistic photo-style imagery
 - Villain (if shown) is depicted as silly and friendly-cartoon, never threatening
-- Resolution shows kindness or cleverness, never violence'''
+- Resolution shows kindness or cleverness, never violence
+- No embedded text, banners, signs, or readable words anywhere in the image.'''
         : '- No scary or inappropriate elements';
 
     return '''
@@ -374,6 +375,15 @@ STYLE: ${style.displayName} illustration
     final outfitSentence = '${outfitParts.join(', ')}.';
 
     final buffer = StringBuffer();
+    // CRITICAL: no-text directive lands first so it has maximum weight.
+    // Gemini's image gen is notoriously fond of embedding text in superhero
+    // scenes (POW!, BAM!, hero name banners). Be emphatic and repetitive.
+    buffer.writeln(
+        'ABSOLUTELY NO TEXT in the image. No banners, no signs, no labels, '
+        'no logos with words, no letters, no readable writing of any kind. '
+        'The illustration must be 100% wordless — pure visual storytelling '
+        'only. Do NOT render any text, name banners, speech bubbles, sound '
+        'effects (no POW, BAM, ZOOM), or readable characters of any kind.');
     buffer.writeln(
         'The main character is dressed as a friendly child superhero. '
         '$outfitSentence');
@@ -386,7 +396,8 @@ STYLE: ${style.displayName} illustration
     buffer.writeln(
         'Style notes: bright, friendly, cartoon, kid-friendly. No weapons. '
         'No scary elements. The villain (if shown) is silly and cartoonish, '
-        'never threatening.');
+        'never threatening. Remember: 100% wordless — no embedded text of '
+        'any kind anywhere in the picture.');
     return buffer.toString().trim();
   }
 

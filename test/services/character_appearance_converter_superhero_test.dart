@@ -191,5 +191,63 @@ void main() {
       expect(preamble, contains('bright blue'));
       expect(preamble, contains('IDENTICAL in every illustration'));
     });
+
+    // FIX #3 — Forbid embedded text in superhero illustrations.
+    // Gemini was rendering banners like "No-Share Mia!" (mashing the
+    // villain name + hero name) inside the picture. For ages 3-5 who
+    // can't read, any embedded text is bad UX — and wrong text is
+    // actively misleading.
+    test('superhero preamble forbids embedded text', () {
+      final preamble = CharacterAppearanceConverter.buildSuperheroPreamble(
+        heroCostumeColor: 'blue',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'star',
+        heroPower: 'super_hugs',
+      );
+      // Be emphatic — assert both an "ABSOLUTELY NO TEXT" and a
+      // "wordless" phrasing are present (repetition is the point).
+      expect(preamble, contains('NO TEXT'));
+      expect(preamble.toLowerCase(), contains('wordless'));
+      expect(preamble.toLowerCase(), contains('no banners'));
+    });
+  });
+
+  group('FIX #3 — no-text directive in superhero illustrations', () {
+    test('superhero prompt includes no-embedded-text rule in REQUIREMENTS', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(),
+        'Mia helps her friend.',
+        theme: 'superhero',
+        heroCostumeColor: 'blue',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'star',
+        heroPower: 'super_hugs',
+      );
+      // The REQUIREMENTS bullet must explicitly forbid embedded text.
+      expect(
+        prompt,
+        contains(
+            '- No embedded text, banners, signs, or readable words anywhere in the image.'),
+      );
+    });
+
+    test(
+        'non-superhero prompt does NOT include the no-text rule '
+        '(non-superhero scenes may legitimately have signage)', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(),
+        'Mia visits the fantasy market.',
+        theme: 'adventure',
+      );
+      // Non-superhero scenes might want a shop sign, a labeled book, etc.
+      // We only suppress text in the superhero branch.
+      expect(
+        prompt,
+        isNot(contains(
+            '- No embedded text, banners, signs, or readable words anywhere in the image.')),
+      );
+      expect(prompt.toLowerCase(), isNot(contains('wordless')));
+      expect(prompt, isNot(contains('ABSOLUTELY NO TEXT')));
+    });
   });
 }
