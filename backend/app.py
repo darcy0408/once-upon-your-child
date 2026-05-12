@@ -492,7 +492,18 @@ def create_app(config_name):
 
     logger.info("Creating database tables")
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as _create_err:
+            # Gunicorn forks 2+ workers in parallel and each calls create_all().
+            # SQLAlchemy's existence-check + CREATE isn't atomic, so a worker can
+            # lose the race and get "table already exists". The table is there;
+            # safe to continue. Without this guard the loser exits, gunicorn
+            # restarts, and Sentry gets paged on every deploy.
+            if 'already exists' in str(_create_err):
+                logger.info("Tables already exist; skipping create_all (worker boot race)")
+            else:
+                raise
 
         # Auto-migrate: add columns that may be missing from databases created
         # before these fields were introduced (avoids needing manual admin endpoint).
