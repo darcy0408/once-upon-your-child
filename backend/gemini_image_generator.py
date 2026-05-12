@@ -238,10 +238,31 @@ class GeminiImageGenerator:
             if companion_descriptions:
                 companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
 
+        # Strip text-rendering cues from the scene description. The story narration
+        # uses ALL-CAPS onomatopoeia ("TINKLE TINKLE", "STOMP-STOMP") and *asterisk
+        # emphasis* per the story prompt — but Imagen interprets those as "render
+        # this as visible text in the image" and outputs gibberish like
+        # "Willihrs litte leokied" or "Playbinbe". Lowercase loud words and remove
+        # asterisk emphasis before substituting into the visual prompt.
+        import re as _re_visual
+        visual_scene = scene_description
+        visual_scene = _re_visual.sub(r"\*+([^*]+)\*+", r"\1", visual_scene)
+        visual_scene = _re_visual.sub(
+            r"\b([A-Z]{3,}(?:[-\s]+[A-Z]{3,})*)\b",
+            lambda m: m.group(1).lower(),
+            visual_scene,
+        )
+
         prompt = f"""
 Create {num_images} vibrant, engaging {style} that depicts this exact scene from the story.
 
-SCENE (must be depicted literally): {scene_description}
+ABSOLUTE RULE: This is a pure illustration with ZERO readable text. No letters, no words, no captions,
+no speech bubbles, no signs with writing, no scrolls, no labels, no banners, no scribbles that resemble
+text. If the scene description below contains words in quotes or capitals, those represent SOUNDS the
+characters make — depict them through facial expression, motion lines, or sparkle effects, never as
+visible writing in the image.
+
+SCENE (depict the action/setting, never the words): {visual_scene}
 {character_description}
 Target audience: {age_descriptor} (person is {age} years old)
 Detail level: {detail_level}{therapeutic_context}{companions_text}
