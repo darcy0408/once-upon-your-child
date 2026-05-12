@@ -11,6 +11,7 @@ import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
 import '../services/screen_time_service.dart';
 import '../settings_screen.dart';
+import '../subscription_screen.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
 import 'wizard_story_screen.dart';
@@ -562,6 +563,61 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   _buildFamilySection(),
                   const SizedBox(height: AppSpacing.lg),
                   _buildBigFeelingsSection(),
+                  const SizedBox(height: AppSpacing.lg),
+                  const _SectionHeader(title: 'Subscription'),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7E57C2).withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF7E57C2).withAlpha(80)),
+                    ),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Manage Subscription',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Upgrade to Premium for unlimited stories, premium narration, and AI illustrations.',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7E57C2),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const SubscriptionScreen(),
+                                  fullscreenDialog: true,
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.credit_card),
+                            label: const Text(
+                              'Manage Subscription',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Data & Privacy'),
                   Container(
