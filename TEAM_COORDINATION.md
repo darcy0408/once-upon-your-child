@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-12 | 09:30 | 6298 | main | Superhero Mode extended to Explorer band (ages 6-8) | [link](docs/sessions/2026-05-12-0930-6298.md) |
 | 2026-05-11 | 23:41 | 6e04 | main | In-flight triage + Sentry triage reports (both blocked by MT-095) | [link](docs/sessions/2026-05-11-2341-6e04.md) |
 | 2026-05-11 | 23:38 | b5ad | main | No-op re-close after 0a90 | [link](docs/sessions/2026-05-11-2338-b5ad.md) |
 | 2026-05-11 | 23:23 | 66ef | main | Stripe race + price-id fixes via Playwright; multi-agent farm-out | [link](docs/sessions/2026-05-11-2323-66ef.md) |
