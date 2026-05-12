@@ -6,6 +6,7 @@ try:
         PROBLEMS as _SH_PROBLEMS,
         POWERS as _SH_POWERS,
         pick_pairing as _sh_pick_pairing,
+        get_band_tables as _sh_get_band_tables,
     )
 except ImportError:
     from services.emotion_service import EmotionService
@@ -15,6 +16,7 @@ except ImportError:
         PROBLEMS as _SH_PROBLEMS,
         POWERS as _SH_POWERS,
         pick_pairing as _sh_pick_pairing,
+        get_band_tables as _sh_get_band_tables,
     )
 
 class PromptService:
@@ -41,24 +43,44 @@ class PromptService:
     ) -> str:
         """Build complete story generation prompt.
 
-        Superhero Mode (ages 3-5) branches out to ``_build_superhero_prompt`` when
-        ``theme == 'superhero'``. The villain/problem IDs are normally chosen
-        server-side via :func:`backend.data.superhero_matrix.pick_pairing` and
-        passed in via ``superhero_villain_id`` / ``superhero_problem_id``.
+        Superhero Mode branches by age band:
+          - ages 6-8 (Explorer) -> ``_build_superhero_prompt_explorer``
+          - everything else (default Sprout, ages 3-5) -> ``_build_superhero_prompt``
+
+        The villain/problem IDs are normally chosen server-side via
+        :func:`backend.data.superhero_matrix.pick_pairing` and passed in via
+        ``superhero_villain_id`` / ``superhero_problem_id``.
         """
 
-        # ----- Superhero Mode short-circuit (ages 3-5) ------------------
+        # ----- Superhero Mode short-circuit (band-aware) ----------------
         if isinstance(theme, str) and theme.strip().lower() == "superhero":
-            return PromptService._build_superhero_prompt(
-                character=character,
-                age=age,
-                hero_costume_color=hero_costume_color,
-                hero_cape_style=hero_cape_style,
-                hero_emblem=hero_emblem,
-                hero_power=hero_power,
-                villain_id=superhero_villain_id,
-                problem_id=superhero_problem_id,
-            )
+            # Explorer band routing: ages 6-8 inclusive.
+            try:
+                _age_int = int(age) if age is not None else 0
+            except (TypeError, ValueError):
+                _age_int = 0
+            if _age_int >= 6 and _age_int <= 8:
+                return PromptService._build_superhero_prompt_explorer(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
+                    hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                )
+            else:
+                return PromptService._build_superhero_prompt(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
+                    hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                )
 
         sections = []
 
@@ -368,5 +390,141 @@ Return the story as plain prose (no JSON, no markdown headers, no "PAGE X" label
 The story should read as one continuous picture-book story.
 
 Begin now. Stop at 130 words.
+"""
+
+    # ------------------------------------------------------------------
+    # Superhero Mode (ages 6-8 — Explorer band) — 5-paragraph hero arc.
+    #
+    # Vs Sprout: longer (250-350 words), Grade 1-3 vocab (vs ages-3-5
+    # vocabulary), one beat of cleverness/observation before the power
+    # moment, and a vivid one-line piece of hero dialogue at resolution.
+    # Same hard-rules spine: empathy/cleverness-only resolutions, the
+    # villain is mischievous-not-evil, no weapons, no fighting.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_superhero_prompt_explorer(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_cape_style: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+    ) -> str:
+        """Build the 5-paragraph Superhero Mode prompt for Explorer-band readers.
+
+        ``villain_id`` and ``problem_id`` should be pre-picked by the caller
+        via :func:`backend.data.superhero_matrix.pick_pairing` with
+        ``band='explorer'``. If either is missing or invalid, the function
+        derives a sensible pair from the hero's power so a malformed request
+        still produces a coherent story rather than a 500. Unknown powers
+        (including the Sprout-only fallback case) fall back to ``super_smile``,
+        a power ID both bands share.
+        """
+        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables("explorer")
+
+        # --- Resolve power (with safe fallback to super_smile) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in powers_t:
+            power_id = "super_smile"
+        power_spec = powers_t[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked, fallback if missing) ---
+        if (
+            not villain_id
+            or villain_id not in villains_t
+            or not problem_id
+            or problem_id not in problems_t
+        ):
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="explorer")
+        villain = villains_t[villain_id]
+        problem = problems_t[problem_id]
+
+        # --- Costume description (each field optional; "none" cape allowed) ---
+        color = (hero_costume_color or "bright").strip().lower() or "bright"
+        cape = (hero_cape_style or "matching").strip().lower() or "matching"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+
+        if cape == "none":
+            cape_phrase = "no cape"
+        elif cape == "rainbow":
+            cape_phrase = "rainbow cape"
+        else:
+            cape_phrase = f"{color} cape"
+
+        identity_tag = f"{power_name} {character}"
+
+        # --- Section markers in plain language (the model fills in the prose) ---
+        beat1_seed = (
+            f"{character} pulled on the {color} suit and felt the fabric settle "
+            f"like a second skin. Today {character} is {identity_tag}."
+        )
+        beat2_seed = (
+            f"Then {villain['name']} arrived to {villain['action']}. "
+            f"Something in town wasn't right."
+        )
+        beat3_seed = (
+            f"{identity_tag} tried first — but the first try only half-worked. "
+            f"That's when {character} noticed something the others had missed."
+        )
+        beat4_seed = (
+            f"{character} used {power_name} ({power_verb}) to {problem['verb']} "
+            f"({problem['summary']})."
+        )
+        beat5_seed = (
+            f"{villain['name']} {villain['softens']}. Everyone — even "
+            f"{villain['name']} — left a little wiser."
+        )
+
+        # --- Prompt assembly ---
+        return f"""SUPERHERO MODE STORY (Ages 6-8 — Explorer band)
+
+You are writing a short-chapter superhero story for a {age}-year-old early reader.
+
+HERO IDENTITY (use the hero's name at least THREE times and the identity tag at least TWICE):
+- Hero name: {character}
+- Identity tag: "{identity_tag}"
+- Costume: {color} suit with {cape_phrase} and a {emblem} emblem
+- Signature power: {power_name} ({power_verb})
+
+VILLAIN (mischievous, lonely, or misunderstood — NEVER frightening):
+- Name: {villain['name']}
+- What they do: {villain['action']}
+- How they soften: {villain['softens']}
+
+PROBLEM TO SOLVE:
+- Goal: {problem['name']} — {problem['summary']}
+- Hero's resolution verb: {problem['verb']}
+
+STORY MUST FOLLOW THESE 5 PARAGRAPHS IN ORDER (output is plain prose — DO NOT label paragraphs):
+
+1. HERO INTRO — The child puts on the costume and becomes "{identity_tag}". Reference at least TWO sensory details (a sight, a sound, OR a texture/touch). Seed idea (rewrite naturally): "{beat1_seed}"
+2. TROUBLE APPEARS — {villain['name']} shows up and starts to {villain['action']}. Include ONE short rhythmic phrase that an early reader will catch and could repeat (a refrain — e.g. a sound effect or a short repeated line). Seed idea: "{beat2_seed}"
+3. FIRST TRY, DOESN'T QUITE WORK — {character} tries to help and the first attempt only half-works, OR {character} realizes they need to UNDERSTAND {villain['name']} before solving anything. This is a beat of cleverness or observation — a moment of noticing, not just kindness. Seed idea: "{beat3_seed}"
+4. POWER MOMENT — One vivid action sentence where {character} uses {power_name} ({power_verb}) to {problem['verb']} the situation. Reference this beat naturally: "{beat4_seed}" (do NOT use the bracketed summary in the prose).
+5. RESOLUTION VIA EMPATHY OR CLEVERNESS — {villain['name']} {villain['softens']}. Everyone — including the villain — leaves a little wiser. The hero speaks ONE line of dialogue (in quotation marks). Seed idea: "{beat5_seed}"
+
+HARD RULES — these are non-negotiable:
+- LENGTH: 250-350 words TOTAL. Count carefully and STOP at 350. Anything under 250 is too short.
+- READING LEVEL: Grade 1-3. A 6-8 year old should be able to read most of the story aloud without help.
+- FLESCH-KINCAID READING EASE target: 60-80. Keep words short and concrete.
+- SENTENCES: 12 words or fewer on average. Mix short, punchy sentences with a few longer ones for rhythm.
+- Use the hero's name {character} AT LEAST THREE times.
+- Use the identity tag "{identity_tag}" AT LEAST TWICE.
+- Include ONE repeated rhythmic phrase in paragraph 2 (a refrain, sound, or short repeated line for the early reader to notice).
+- Include at least TWO sensory details (sight, sound, OR touch) in paragraph 1.
+- The hero MUST speak ONE line of dialogue at the resolution.
+- The villain is mischievous, lonely, or misunderstood — NEVER evil, NEVER frightening.
+- NO weapons. NO fighting. NO scary or dark content. NO chasing, biting, or threats.
+- Resolution must come through empathy, cleverness, sharing, listening, or noticing — NEVER through force or punishment.
+
+OUTPUT FORMAT:
+Return the story as plain prose (no JSON, no markdown headers, no "Chapter X", no "PAGE X", no beat numbers, no paragraph labels).
+The story should read as one continuous five-paragraph chapter.
+
+Begin now. Stop at 350 words.
 """
 

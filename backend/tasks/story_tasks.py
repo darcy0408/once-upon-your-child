@@ -651,24 +651,41 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 hero_power = kwargs.get("hero_power")
                 recent_villains = kwargs.get("recent_villains") or []
                 recent_problems = kwargs.get("recent_problems") or []
+                # Derive band from age: 3-5 -> sprout, 6-8 -> explorer.
+                # Default to sprout for anything outside the band ranges so
+                # legacy callers continue to work unchanged.
+                try:
+                    _sh_age_int = int(age) if age is not None else 5
+                except (TypeError, ValueError):
+                    _sh_age_int = 5
+                if _sh_age_int >= 6 and _sh_age_int <= 8:
+                    sh_band = "explorer"
+                else:
+                    sh_band = "sprout"
                 try:
                     sh_villain_id, sh_problem_id = _superhero_pick_pairing(
                         hero_power or "super_smile",
                         recent_villains=recent_villains,
                         recent_problems=recent_problems,
+                        band=sh_band,
                     )
                 except ValueError:
                     # Unknown power id — pick_pairing raises; fall back to a
                     # universally-safe default rather than 500ing the request.
-                    sh_villain_id, sh_problem_id = _superhero_pick_pairing("super_smile")
+                    # super_smile exists in both Sprout and Explorer tables.
+                    sh_villain_id, sh_problem_id = _superhero_pick_pairing(
+                        "super_smile", band=sh_band,
+                    )
 
                 superhero_meta = {
                     "villain_id": sh_villain_id,
                     "problem_id": sh_problem_id,
                     "hero_power": hero_power or "super_smile",
+                    "band": sh_band,
                 }
                 logger.info(
-                    "Superhero Mode: hero_power=%s villain=%s problem=%s",
+                    "Superhero Mode: band=%s hero_power=%s villain=%s problem=%s",
+                    sh_band,
                     hero_power,
                     sh_villain_id,
                     sh_problem_id,

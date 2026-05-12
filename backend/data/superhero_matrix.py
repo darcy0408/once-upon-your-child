@@ -222,13 +222,219 @@ VILLAIN_PROBLEMS: dict[str, list[str]] = {
 }
 
 
-def _power_villains(power_id: str) -> list[str]:
+# ---------------------------------------------------------------------------
+# Explorer-band (ages 6-8) matrix — parallel to the Sprout tables above.
+# Villains are mischief-makers with motives a 6-8-year-old can decode
+# (lonely, curious, misunderstood); never frightening. Problems include
+# actual puzzle/agency verbs (decode, see-through, bridge) on top of the
+# kindness-based ones. All resolutions still come through empathy,
+# cleverness, sharing, or inviting in — never force.
+# ---------------------------------------------------------------------------
+EXPLORER_VILLAINS: dict[str, dict] = {
+    "shadow_trickster": {
+        "name": "the Shadow Trickster",
+        "action": "copy everyone's moves to confuse them",
+        "softens": "stopped hiding once someone finally noticed them — they were just lonely",
+    },
+    "forgetting_fog": {
+        "name": "the Forgetting Fog",
+        "action": "drift through town making important things slip from memory",
+        "softens": "thinned out once it understood what it was doing and rolled away gently",
+    },
+    "tangle_knot_twins": {
+        "name": "the Tangle-Knot Twins",
+        "action": "twist ropes, laces, and headphones into giggly knots",
+        "softens": "untied everything and asked to learn a new game instead",
+    },
+    "echo_bandit": {
+        "name": "the Echo Bandit",
+        "action": "snatch important sounds — the school bell, a friend's laugh — into a bottle",
+        "softens": "uncorked the bottle and gave every sound back",
+    },
+    "the_grumblestorm": {
+        "name": "the Grumblestorm",
+        "action": "follow one person around like a tiny cranky thundercloud",
+        "softens": "turned soft pink once someone helped it name what was bothering it",
+    },
+    "glitchworm": {
+        "name": "the Glitchworm",
+        "action": "wriggle into screens and scramble pictures and words",
+        "softens": "blinked, said sorry, and slithered off to learn how things work",
+    },
+    "wishing_thief": {
+        "name": "the Wishing Thief",
+        "action": "scoop up wishes from fountains without asking",
+        "softens": "poured every wish back and asked permission next time",
+    },
+    "captain_boast": {
+        "name": "Captain Boast",
+        "action": "puff up so big that everyone else feels small",
+        "softens": "got a little quieter and admitted they just wanted to be seen too",
+    },
+}
+
+EXPLORER_PROBLEMS: dict[str, dict] = {
+    "find_missing_piece": {
+        "name": "Find the missing piece",
+        "verb": "search for and recover",
+        "summary": "track down what's gone missing",
+    },
+    "decode_signal": {
+        "name": "Decode the signal",
+        "verb": "figure out",
+        "summary": "read a clue or message",
+    },
+    "calm_the_storm": {
+        "name": "Calm the storm",
+        "verb": "settle",
+        "summary": "help a big feeling cool down",
+    },
+    "restore_what_taken": {
+        "name": "Restore what was taken",
+        "verb": "return and mend",
+        "summary": "give back what was taken and patch what broke",
+    },
+    "bridge_the_divide": {
+        "name": "Bridge the divide",
+        "verb": "bring together",
+        "summary": "help two sides understand each other",
+    },
+    "see_through_trick": {
+        "name": "See through the trick",
+        "verb": "notice",
+        "summary": "spot what's really going on",
+    },
+    "light_the_way": {
+        "name": "Light the way",
+        "verb": "guide",
+        "summary": "help someone find their courage or direction",
+    },
+    "trade_fair": {
+        "name": "Make a fair trade",
+        "verb": "swap fairly",
+        "summary": "find a deal where everyone wins",
+    },
+}
+
+# Explorer powers reuse the 8 Sprout IDs (so existing frontend pickers keep
+# working) but with Explorer-tier display names and verbs, plus 2 Explorer-
+# only powers (feeling_sense, invisibility).
+EXPLORER_POWERS: dict[str, dict] = {
+    "super_speed": {
+        "name": "Lightning Speed",
+        "verb": "dash",
+        "ideal": "tangle_knot_twins",
+        "also": ["forgetting_fog", "echo_bandit", "glitchworm", "captain_boast"],
+        "primary_problem": "restore_what_taken",
+    },
+    "flying": {
+        "name": "Sky Glide",
+        "verb": "glide up",
+        "ideal": "the_grumblestorm",
+        "also": ["echo_bandit", "forgetting_fog", "shadow_trickster", "wishing_thief"],
+        "primary_problem": "calm_the_storm",
+    },
+    "super_strength": {
+        "name": "Strong Lift",
+        "verb": "lift gently",
+        "ideal": "tangle_knot_twins",
+        "also": ["wishing_thief", "echo_bandit", "glitchworm", "captain_boast"],
+        "primary_problem": "restore_what_taken",
+    },
+    "super_hearing": {
+        "name": "Keen Ears",
+        "verb": "listen close",
+        "ideal": "echo_bandit",
+        "also": ["glitchworm", "shadow_trickster", "forgetting_fog", "the_grumblestorm"],
+        "primary_problem": "decode_signal",
+    },
+    "super_smile": {
+        "name": "Bright Smile",
+        "verb": "beam bright",
+        "ideal": "the_grumblestorm",
+        "also": ["captain_boast", "shadow_trickster", "wishing_thief", "forgetting_fog"],
+        "primary_problem": "calm_the_storm",
+    },
+    "super_hugs": {
+        "name": "Big Heart Hug",
+        "verb": "hug warmly",
+        "ideal": "captain_boast",
+        "also": ["the_grumblestorm", "shadow_trickster", "forgetting_fog", "wishing_thief"],
+        "primary_problem": "bridge_the_divide",
+    },
+    "super_whisper": {
+        "name": "Quiet Voice",
+        "verb": "speak quietly",
+        "ideal": "the_grumblestorm",
+        "also": ["captain_boast", "glitchworm", "shadow_trickster", "echo_bandit"],
+        "primary_problem": "calm_the_storm",
+    },
+    "super_sharing": {
+        "name": "Fair Share",
+        "verb": "share fairly",
+        "ideal": "wishing_thief",
+        "also": ["captain_boast", "tangle_knot_twins", "echo_bandit", "glitchworm"],
+        "primary_problem": "trade_fair",
+    },
+    # Explorer-only powers — frontend exposes these only when band==explorer.
+    "feeling_sense": {
+        "name": "Feeling Sense",
+        "verb": "sense what they feel",
+        "ideal": "shadow_trickster",
+        "also": ["captain_boast", "the_grumblestorm", "echo_bandit", "wishing_thief"],
+        "primary_problem": "see_through_trick",
+    },
+    "invisibility": {
+        "name": "Soft Step",
+        "verb": "move unseen",
+        "ideal": "captain_boast",
+        "also": ["shadow_trickster", "glitchworm", "forgetting_fog", "echo_bandit"],
+        "primary_problem": "see_through_trick",
+    },
+}
+
+EXPLORER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
+    "shadow_trickster": ["see_through_trick", "light_the_way", "find_missing_piece"],
+    "forgetting_fog": ["find_missing_piece", "decode_signal", "light_the_way"],
+    "tangle_knot_twins": ["restore_what_taken", "trade_fair", "bridge_the_divide"],
+    "echo_bandit": ["restore_what_taken", "decode_signal", "find_missing_piece"],
+    "the_grumblestorm": ["calm_the_storm", "bridge_the_divide", "light_the_way"],
+    "glitchworm": ["decode_signal", "see_through_trick", "restore_what_taken"],
+    "wishing_thief": ["restore_what_taken", "trade_fair", "light_the_way"],
+    "captain_boast": ["bridge_the_divide", "see_through_trick", "light_the_way"],
+}
+
+
+_BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
+    "sprout": (VILLAINS, PROBLEMS, POWERS, VILLAIN_PROBLEMS),
+    "explorer": (
+        EXPLORER_VILLAINS,
+        EXPLORER_PROBLEMS,
+        EXPLORER_POWERS,
+        EXPLORER_VILLAIN_PROBLEMS,
+    ),
+}
+
+
+def _band_tables(band: str) -> tuple[dict, dict, dict, dict]:
+    """Return (villains, problems, powers, villain_problems) for ``band``.
+
+    Defaults to Sprout if an unknown band is passed — keeps legacy callers
+    that don't know about bands working unchanged.
+    """
+    key = (band or "sprout").strip().lower()
+    return _BAND_TABLES.get(key, _BAND_TABLES["sprout"])
+
+
+def _power_villains(power_id: str, band: str = "sprout") -> list[str]:
     """Ordered list (ideal first) of villains compatible with ``power_id``."""
-    if power_id not in POWERS:
+    _, _, powers_t, _ = _band_tables(band)
+    if power_id not in powers_t:
         raise ValueError(
-            f"Unknown power '{power_id}'. Valid powers: {sorted(POWERS.keys())}"
+            f"Unknown power '{power_id}' for band '{band}'. "
+            f"Valid powers: {sorted(powers_t.keys())}"
         )
-    spec = POWERS[power_id]
+    spec = powers_t[power_id]
     return [spec["ideal"]] + list(spec.get("also", []))
 
 
@@ -251,43 +457,59 @@ def pick_pairing(
     seed: int | None = None,
     recent_villains: Iterable[str] | None = None,
     recent_problems: Iterable[str] | None = None,
+    *,
+    band: str = "sprout",
 ) -> tuple[str, str]:
     """Return a (villain_id, problem_id) pair that fits the hero's ``power``.
 
     Selection is biased — but not locked — to the power's ideal villain:
     when the ideal is allowed, it's weighted 2x the others. The chosen
-    problem is intersected with ``VILLAIN_PROBLEMS[villain]`` so the pair
-    is always narratively sensible.
+    problem is intersected with the band's villain-problem table so the
+    pair is always narratively sensible.
 
     Args:
-        power: One of the 8 power IDs in :data:`POWERS`.
+        power: A power ID valid for ``band`` (see :data:`POWERS` /
+            :data:`EXPLORER_POWERS`).
         seed: Optional deterministic seed (for tests / reproducibility).
         recent_villains: Villain IDs to avoid (last-1 or last-N history).
         recent_problems: Problem IDs to avoid in the same way.
+        band: 'sprout' (default, ages 3-5) or 'explorer' (ages 6-8).
+            Unknown bands fall back to sprout so legacy callers keep
+            working.
 
     Returns:
         Tuple of (villain_id, problem_id), both valid keys into the
-        :data:`VILLAINS` / :data:`PROBLEMS` dicts.
+        band's villain/problem tables.
     """
+    _villains_t, _problems_t, powers_t, villain_problems_t = _band_tables(band)
     rng = random.Random(seed) if seed is not None else random
-    candidates = _power_villains(power)
+    candidates = _power_villains(power, band=band)
     candidates = _filter_recents(candidates, recent_villains)
 
     # Weighted choice: ideal gets weight 2 (only if still present after the
     # recent-villain filter), every other candidate gets weight 1.
-    ideal = POWERS[power]["ideal"]
+    ideal = powers_t[power]["ideal"]
     weights = [2 if c == ideal else 1 for c in candidates]
     villain_id = rng.choices(candidates, weights=weights, k=1)[0]
 
-    problem_pool = VILLAIN_PROBLEMS.get(villain_id, [])
+    problem_pool = villain_problems_t.get(villain_id, [])
     if not problem_pool:
         # Defensive: fall back to the power's primary problem so we never
         # return an invalid pair, even if a future villain row is missing.
-        problem_pool = [POWERS[power]["primary_problem"]]
+        problem_pool = [powers_t[power]["primary_problem"]]
 
     problem_pool = _filter_recents(problem_pool, recent_problems)
     problem_id = rng.choice(problem_pool)
     return villain_id, problem_id
+
+
+def get_band_tables(band: str) -> tuple[dict, dict, dict, dict]:
+    """Public accessor for a band's (villains, problems, powers, villain_problems).
+
+    Used by the prompt service to render the band-specific story without
+    importing the private helper.
+    """
+    return _band_tables(band)
 
 
 __all__ = [
@@ -295,5 +517,10 @@ __all__ = [
     "PROBLEMS",
     "POWERS",
     "VILLAIN_PROBLEMS",
+    "EXPLORER_VILLAINS",
+    "EXPLORER_PROBLEMS",
+    "EXPLORER_POWERS",
+    "EXPLORER_VILLAIN_PROBLEMS",
     "pick_pairing",
+    "get_band_tables",
 ]
