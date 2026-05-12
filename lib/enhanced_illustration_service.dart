@@ -16,7 +16,12 @@ class EnhancedIllustrationService {
 
   EnhancedIllustrationService({this.openAiApiKey});
 
-  /// Generate story illustrations using the character's actual appearance
+  /// Generate story illustrations using the character's actual appearance.
+  ///
+  /// When [theme] is `'superhero'` (or [isSuperheroMode] is `true`), the
+  /// hero costume + cape + emblem + power fields are injected into every
+  /// scene prompt so the child-character renders identically across all
+  /// illustrations in the story.
   Future<List<StoryIllustration>> generateStoryIllustrations({
     required String storyText,
     required String storyTitle,
@@ -24,6 +29,11 @@ class EnhancedIllustrationService {
     String? theme,
     IllustrationStyle style = IllustrationStyle.childrenBook,
     int numberOfImages = 3,
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+    bool? isSuperheroMode,
   }) async {
     if (openAiApiKey == null || openAiApiKey!.isEmpty) {
       throw Exception('OpenAI API key not configured');
@@ -41,6 +51,11 @@ class EnhancedIllustrationService {
           scenes[i],
           theme: theme,
           style: style,
+          heroCostumeColor: heroCostumeColor,
+          heroCapeStyle: heroCapeStyle,
+          heroEmblem: heroEmblem,
+          heroPower: heroPower,
+          isSuperheroMode: isSuperheroMode,
         );
 
         final imageUrl = await _callDallE(prompt);

@@ -283,16 +283,46 @@ STYLE: Classic children's coloring book, clean line art
   }
 
   /// Create a prompt for story illustrations
+  ///
+  /// When [isSuperheroMode] is true (or [theme] == 'superhero'), and any of
+  /// [heroCostumeColor] / [heroCapeStyle] / [heroEmblem] / [heroPower] are
+  /// provided, a superhero costume + power-signature paragraph is prepended
+  /// so the same costume, cape, and emblem appear in EVERY illustration.
+  /// This is the visual-consistency anchor for Sprout-age superhero stories.
   static String createStoryIllustrationPrompt(
     Character character,
     String scene, {
     String? theme,
     IllustrationStyle style = IllustrationStyle.childrenBook,
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+    bool? isSuperheroMode,
   }) {
     final detailedCharacter = createDetailedPrompt(character);
 
+    final bool superheroMode = isSuperheroMode ??
+        (theme != null && theme.toLowerCase().trim() == 'superhero');
+
+    final String superheroPreamble = superheroMode
+        ? '${buildSuperheroPreamble(
+            heroCostumeColor: heroCostumeColor,
+            heroCapeStyle: heroCapeStyle,
+            heroEmblem: heroEmblem,
+            heroPower: heroPower,
+          )}\n\n'
+        : '';
+
+    final String safetyClause = superheroMode
+        ? '''
+- No weapons, no fighting, no blood, no scary faces, no realistic photo-style imagery
+- Villain (if shown) is depicted as silly and friendly-cartoon, never threatening
+- Resolution shows kindness or cleverness, never violence'''
+        : '- No scary or inappropriate elements';
+
     return '''
-Create a beautiful children's story illustration ${style.promptModifier}.
+${superheroPreamble}Create a beautiful children's story illustration ${style.promptModifier}.
 
 CHARACTER:
 $detailedCharacter
@@ -307,11 +337,139 @@ REQUIREMENTS:
 - Express emotion and action
 - Beautiful composition
 - Professional quality
-- No scary or inappropriate elements
+$safetyClause
 
 STYLE: ${style.displayName} illustration
 '''
         .trim();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Superhero-mode prompt helpers
+  //
+  // These build the costume + power-signature preamble injected into the
+  // illustration prompt so every scene in a single story renders the same
+  // costume, cape, and emblem. The "IDENTICAL in every illustration"
+  // sentence is the consistency anchor — do not remove.
+  // ---------------------------------------------------------------------------
+
+  /// Public for tests + Sub-agent 5 safety audit.
+  /// Builds the superhero preamble paragraph for an illustration prompt.
+  static String buildSuperheroPreamble({
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+  }) {
+    final colorDesc = _costumeColorDescriptor(heroCostumeColor);
+    final capeClause = _capeClause(heroCapeStyle, heroCostumeColor);
+    final emblemClause = _emblemClause(heroEmblem);
+    final powerSignature = _powerSignature(heroPower);
+
+    // Build a single sentence describing the costume.
+    final outfitParts = <String>[];
+    outfitParts.add('They wear a $colorDesc superhero suit');
+    if (capeClause != null) outfitParts.add(capeClause);
+    if (emblemClause != null) outfitParts.add('with $emblemClause');
+    final outfitSentence = '${outfitParts.join(', ')}.';
+
+    final buffer = StringBuffer();
+    buffer.writeln(
+        'The main character is dressed as a friendly child superhero. '
+        '$outfitSentence');
+    if (powerSignature != null) {
+      buffer.writeln('$powerSignature.');
+    }
+    buffer.writeln(
+        'The costume, cape, and emblem must be IDENTICAL in every '
+        'illustration of this story — same color, same emblem, same style.');
+    buffer.writeln(
+        'Style notes: bright, friendly, cartoon, kid-friendly. No weapons. '
+        'No scary elements. The villain (if shown) is silly and cartoonish, '
+        'never threatening.');
+    return buffer.toString().trim();
+  }
+
+  static String _costumeColorDescriptor(String? color) {
+    switch ((color ?? '').toLowerCase().trim()) {
+      case 'red':
+        return 'bright red';
+      case 'blue':
+        return 'deep blue';
+      case 'green':
+        return 'bright green';
+      case 'yellow':
+        return 'sunny yellow';
+      case 'purple':
+        return 'royal purple';
+      case 'pink':
+        return 'bright pink';
+      default:
+        return 'bright blue'; // safe fallback
+    }
+  }
+
+  static String? _capeClause(String? capeStyle, String? costumeColor) {
+    switch ((capeStyle ?? '').toLowerCase().trim()) {
+      case 'none':
+      case '':
+        return null;
+      case 'matching':
+        final color = _costumeColorDescriptor(costumeColor);
+        return 'a flowing $color cape that matches the suit';
+      case 'rainbow':
+        return 'a flowing rainbow cape with red, orange, yellow, green, '
+            'blue, and purple stripes';
+      default:
+        return null;
+    }
+  }
+
+  static String? _emblemClause(String? emblem) {
+    switch ((emblem ?? '').toLowerCase().trim()) {
+      case 'star':
+        return 'a bright golden star emblem on the chest';
+      case 'lightning':
+        return 'a bright yellow lightning bolt emblem on the chest';
+      case 'heart':
+        return 'a glowing red heart emblem on the chest';
+      case 'moon':
+        return 'a silver crescent moon emblem on the chest';
+      case 'paw':
+        return 'a friendly brown paw-print emblem on the chest';
+      case 'rainbow':
+        return 'a multicolored rainbow arc emblem on the chest';
+      default:
+        return null;
+    }
+  }
+
+  static String? _powerSignature(String? power) {
+    switch ((power ?? '').toLowerCase().trim()) {
+      case 'super_speed':
+        return 'subtle motion lines or speed streaks around the figure';
+      case 'flying':
+        return 'the figure is floating slightly or soaring through the air '
+            'with arms outstretched';
+      case 'super_strength':
+        return 'the figure stands in a confident, planted stance with hands '
+            'ready to help-lift';
+      case 'super_hearing':
+        return 'the figure\'s ears glow softly, with subtle sound-wave '
+            'swirls nearby';
+      case 'super_smile':
+        return 'a warm, bright smile and tiny sparkle accents around the face';
+      case 'super_hugs':
+        return 'the figure has open, welcoming arms and a soft warm glow';
+      case 'super_whisper':
+        return 'the figure has a gentle finger to lips and soft hushing '
+            'motion';
+      case 'super_sharing':
+        return 'the figure has open palms with small floating tokens or '
+            'shared objects';
+      default:
+        return null;
+    }
   }
 
   /// Create a prompt for character portrait
