@@ -24,6 +24,17 @@ Future<void> main() async {
       // and a single bad headless run can flood the project (see STORY-WEAVER-1K).
       options.sampleRate = kReleaseMode ? 1.0 : 0.0;
       options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
+      options.beforeSend = (event, hint) {
+        final isDwds = event.exceptions?.any((ex) =>
+                ex.stackTrace?.frames.any((f) =>
+                    (f.fileName?.contains('dwds/src/injected/client.js') ??
+                        false) ||
+                    (f.absPath?.contains('dwds/src/injected/client.js') ??
+                        false)) ??
+                false) ??
+            false;
+        return isDwds ? null : event;
+      };
     },
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
