@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 23:41 | 6e04 | main | In-flight triage + Sentry triage reports (both blocked by MT-095) | [link](docs/sessions/2026-05-11-2341-6e04.md) |
 | 2026-05-11 | 23:38 | b5ad | main | No-op re-close after 0a90 | [link](docs/sessions/2026-05-11-2338-b5ad.md) |
 | 2026-05-11 | 23:23 | 66ef | main | Stripe race + price-id fixes via Playwright; multi-agent farm-out | [link](docs/sessions/2026-05-11-2323-66ef.md) |
 | 2026-05-11 | 23:21 | f8c1 | main | Phase 1 monetization: Stripe wiring + Flux Schnell routing + matrix ratifications | [link](docs/sessions/2026-05-11-2321-f8c1.md) |
