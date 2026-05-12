@@ -91,14 +91,18 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
   // ── Per-band flavor messages ─────────────────────────────────────────────
   static const Map<AgeBand, List<String>> _flavorMessages = {
     AgeBand.sprout: [
-      'Your hero is getting dressed!',
-      'Picking the perfect colors...',
-      'Almost ready for adventure!',
-      'Adding a sprinkle of magic!',
-      'Drawing your smile...',
-      'Mixing the magic paints...',
-      'Tying their shoes...',
-      'One more sparkle...',
+      'Tap the egg to help it hatch!',
+      'Egg-cellent! Something magical is inside...',
+      'Yolks! Your hero is almost ready!',
+      'Shhh... the egg is wiggling!',
+      'Crack, crack, crack — keep tapping!',
+      'This egg is egg-stra special!',
+      'What\'s inside? A surprise hero!',
+      'Sunny side up — almost hatched!',
+      'Don\'t be a chicken, give it a tap!',
+      'Egg-straordinary things take time...',
+      'Shell we keep going? Yes!',
+      'The egg says: tap me some more!',
     ],
     AgeBand.explorer: [
       'Casting the avatar spell...',
@@ -188,6 +192,21 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
 
   void _onBandTap() {
     setState(() => _tapCount++);
+  }
+
+  String _tapCounterText() {
+    if (widget.ageBand == AgeBand.sprout) {
+      if (_tapCount == 1) return '1 crack!';
+      if (_tapCount < 5) return '$_tapCount cracks!';
+      if (_tapCount < 10) return '$_tapCount cracks! Keep tapping!';
+      if (_tapCount < 20) return '$_tapCount cracks! Almost hatched!';
+      return '$_tapCount cracks! Egg-stra magic!';
+    }
+    if (_tapCount == 1) return '1 sparkle!';
+    if (_tapCount < 5) return '$_tapCount sparkles!';
+    if (_tapCount < 10) return '$_tapCount sparkles! Keep going!';
+    if (_tapCount < 20) return '$_tapCount sparkles! You\'re magic!';
+    return '$_tapCount sparkles! You ARE the magic!';
   }
 
   @override
@@ -351,15 +370,7 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Text(
-                      _tapCount == 1
-                          ? '1 sparkle!'
-                          : _tapCount < 5
-                              ? '$_tapCount sparkles!'
-                              : _tapCount < 10
-                                  ? '$_tapCount sparkles! Keep going!'
-                                  : _tapCount < 20
-                                      ? '$_tapCount sparkles! You\'re magic!'
-                                      : '$_tapCount sparkles! You ARE the magic!',
+                      _tapCounterText(),
                       key: ValueKey(_tapCount),
                       style: GoogleFonts.getFont(
                         bt.uiFontFamily,
