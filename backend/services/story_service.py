@@ -513,14 +513,17 @@ class AdvancedStoryEngine:
         elif age > 14:
             word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. Stop the story before adding more pages if you are approaching this limit."
 
-        # Sprout (≤5) page-count floor — picture-book pacing requires more, shorter pages
-        # rather than a few dense ones. Without this, models compress 200-300 words into 2-3 pages.
+        # Sprout (≤5) page-count band — picture-book pacing requires more, shorter pages
+        # rather than a few dense ones. Without a floor, models compress 200-300 words into
+        # 2-3 pages. Without a ceiling, models pad to 15+ pages which is too long for a 3yo's
+        # attention span. Target traditional picture-book pacing: 8-12 pages.
         sprout_page_rule = ""
         if age <= 5:
             sprout_page_rule = (
-                "\n- **PAGE COUNT (HARD MIN — Sprout band)**: Return AT LEAST 5 pages. "
-                "Each page must be 10-25 words. If one page would exceed 25 words, split it. "
-                "Picture-book pacing: more short pages, never fewer long ones."
+                "\n- **PAGE COUNT (Sprout band)**: Return between 8 and 12 pages (HARD MIN 8, HARD MAX 12). "
+                "Each page must be 10-25 words. If one page would exceed 25 words, split it — but "
+                "do not exceed 12 pages total. Traditional picture-book pacing: short pages, complete arc, "
+                "no padding. A 3-4 year old cannot sit through 15+ page-turns."
             )
 
         if age >= 14:
@@ -810,9 +813,43 @@ def _safe_extract_title_and_gem(text: str, theme: str):
              else:
                 raise # Already tried candidate (as sliced)
         except json.JSONDecodeError as e:
-            # 3. Fallback to prose
-            # Use candidate_text (stripped of markdown) as the story
-            # Log the parsing error for debugging but don't fail
+            # 3. Regex salvage — when the model produces JSON with bad brackets
+            # or stray fields, the strict parser bails. Rather than dumping the
+            # entire raw response (with field names, image_prompt blobs, etc.)
+            # to the reader as one giant "page", pull `"text": "..."` strings
+            # out by pattern. Each match is independently json-decoded so escape
+            # sequences (\", \n) and unicode are restored properly.
+            salvaged: list[str] = []
+            for raw_text in re.findall(
+                r'"text"\s*:\s*"((?:[^"\\]|\\.)*)"', candidate_text, flags=re.DOTALL
+            ):
+                try:
+                    decoded = json.loads(f'"{raw_text}"')
+                except json.JSONDecodeError:
+                    decoded = raw_text
+                if decoded.strip():
+                    salvaged.append(decoded.strip())
+            if len(salvaged) >= 2:
+                logger.warning(
+                    f"Story JSON malformed ({e}); salvaged {len(salvaged)} pages via regex."
+                )
+                title_match = re.search(
+                    r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', candidate_text
+                )
+                if title_match:
+                    try:
+                        salvaged_title = json.loads(f'"{title_match.group(1)}"')
+                    except json.JSONDecodeError:
+                        salvaged_title = title_match.group(1)
+                else:
+                    salvaged_title = f"A {theme} Adventure"
+                salvaged_title = re.sub(
+                    r'^(A|An)\s+(The|A|An)\s+', r'\2 ', salvaged_title, flags=re.IGNORECASE
+                )
+                story_body = "\n\n".join(salvaged)
+                return salvaged_title, None, story_body, salvaged, {}
+
+            # 4. Final fallback — show the raw text as a single page.
             logger.warning(f"Failed to parse story JSON: {e}. Falling back to raw text.")
             fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
             return fallback_title, None, candidate_text, [candidate_text], {}
