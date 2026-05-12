@@ -8,6 +8,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../models.dart';
 import '../../services/app_tts_service.dart';
 import '../../theme/age_band_theme.dart';
+import 'superhero_entry_screen.dart';
 
 /// Full-screen "Imagine It / Make One Up" entry point.
 ///
@@ -435,7 +436,31 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               runSpacing: 10,
               children: ideaStarters.map((idea) {
                 return GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    if (idea.label == 'Be a superhero') {
+                      // Superhero Mode entry point — push the dispatcher
+                      // which routes to welcome-back or costume picker.
+                      final result =
+                          await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => SuperheroEntryScreen(
+                              wizardData: widget.wizardData),
+                        ),
+                      );
+                      if (!mounted) return;
+                      if (result == true) {
+                        // SuperheroPowerScreen has already set scenario,
+                        // customElements, and saved the profile. Commit
+                        // by popping the ImagineIt screen too.
+                        widget.imagineItController.text =
+                            widget.wizardData.customElements;
+                        widget.wishController.text =
+                            widget.wizardData.customElements;
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop(true);
+                      }
+                      return;
+                    }
                     setState(() {
                       widget.imagineItController.text = idea.fill;
                       widget.wizardData.customElements = idea.fill;

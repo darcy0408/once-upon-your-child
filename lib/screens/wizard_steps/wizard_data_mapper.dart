@@ -91,9 +91,19 @@ class WizardDataMapper {
     String worldBible = '';
 
     if (data.selectedScenario != null) {
+      // Superhero Mode (ages 3-5) is a backend routing key, not a story
+      // title — pass the literal 'superhero' so backend/main.py picks up
+      // the dedicated prompt chain.
+      if (data.selectedScenario == 'superhero') {
+        theme = 'superhero';
+      }
       final scenarioCard = ScenarioData.getById(data.selectedScenario!);
       if (scenarioCard != null) {
-        theme = scenarioCard.titleForAge(age);
+        // Don't overwrite the literal 'superhero' theme key — the backend
+        // dispatches on it. The other fields are still useful context.
+        if (data.selectedScenario != 'superhero') {
+          theme = scenarioCard.titleForAge(age);
+        }
         conflictHook = scenarioCard.conflictHookForAge(age);
         sensoryPalette = scenarioCard.sensoryPalette;
         worldBible = scenarioCard.worldBibleForAge(age);
@@ -287,6 +297,15 @@ class WizardDataMapper {
               : null),
       // Story DNA: parent-authored therapeutic context (Feature 4)
       if (therapeuticPrompt != null) 'therapeutic_prompt': therapeuticPrompt,
+      // Superhero Mode (ages 3-5). Only emitted when theme == 'superhero';
+      // ApiServiceManager.generateStory ignores them otherwise. These keys
+      // mirror the named-parameter API on the manager.
+      if (data.selectedScenario == 'superhero') ...{
+        'heroCostumeColor': data.heroCostumeColor,
+        'heroCapeStyle': data.heroCapeStyle,
+        'heroEmblem': data.heroEmblem,
+        'heroPower': data.heroPower,
+      },
     };
   }
 

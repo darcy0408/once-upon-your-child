@@ -27,7 +27,9 @@ import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/providers/subscription_provider.dart';
+import 'package:story_weaver_app/providers/hero_profile_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
+import 'superhero_entry_screen.dart';
 import 'wizard_data_mapper.dart';
 import '../../widgets/magic_ear_button.dart';
 import '../../widgets/adventurer_character_sheet.dart';
@@ -372,6 +374,25 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         final shouldRequestIllustrations =
             widget.wizardData.includeIllustrations && canGetIllustrations;
 
+        // Superhero Mode (ages 3-5): pull the rolling no-repeat villain/
+        // problem lists from the hero profile so the backend can avoid
+        // repeating itself across stories.
+        List<String>? recentVillains;
+        List<String>? recentProblems;
+        if (widget.wizardData.selectedScenario == 'superhero') {
+          try {
+            final heroCharacterId =
+                SuperheroEntryScreen.resolveCharacterId(widget.wizardData);
+            final profile =
+                await ref.read(heroProfileProvider(heroCharacterId).future);
+            recentVillains = profile?.recentVillains;
+            recentProblems = profile?.recentProblems;
+          } catch (_) {
+            // Profile load failure is non-fatal — backend will pick any
+            // villain/problem when these lists are absent.
+          }
+        }
+
         final result = await ApiServiceManager.generateStory(
             characterName: requestData['character'] ?? 'Hero',
             age: requestData['age'] ?? 5,
@@ -402,6 +423,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ? requestData['moodPhysics'] as Map<String, dynamic>
                 : null,
             lifeChallenge: requestData['lifeChallenge']?.toString(),
+            heroCostumeColor: requestData['heroCostumeColor']?.toString(),
+            heroCapeStyle: requestData['heroCapeStyle']?.toString(),
+            heroEmblem: requestData['heroEmblem']?.toString(),
+            heroPower: requestData['heroPower']?.toString(),
+            recentVillains: recentVillains,
+            recentProblems: recentProblems,
             onProgress: (status) {
               if (mounted) {
                 setState(() => _loadingStatus = status);
@@ -417,6 +444,31 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         'Almost ready...',
                       ]
                     : null);
+
+        // Superhero Mode: persist the villain/problem the backend chose
+        // so the next story avoids them.
+        if (widget.wizardData.selectedScenario == 'superhero' &&
+            result.superheroMeta != null) {
+          final meta = result.superheroMeta!;
+          final villainId = meta['villain_id']?.toString();
+          final problemId = meta['problem_id']?.toString();
+          final heroCharacterId =
+              SuperheroEntryScreen.resolveCharacterId(widget.wizardData);
+          final controller =
+              ref.read(heroProfileControllerProvider.notifier);
+          try {
+            if (villainId != null && villainId.isNotEmpty) {
+              await controller.pushRecentVillain(
+                  heroCharacterId, villainId);
+            }
+            if (problemId != null && problemId.isNotEmpty) {
+              await controller.pushRecentProblem(
+                  heroCharacterId, problemId);
+            }
+          } catch (_) {
+            // Persistence failure is non-fatal.
+          }
+        }
 
         if (widget.wizardData.customAvatarPath != null && !kIsWeb) {
           try {

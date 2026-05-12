@@ -609,6 +609,28 @@ class ScenarioData {
       creatorThematicQuestion: "What do you do when there's no one left to help you?",
       adultTitle: 'Only What You Carry',
     ),
+    // --- SUPERHERO MODE (ages 3-5 / Sprout band) ---
+    // Registered so [WizardDataMapper] doesn't choke when wizardData.selectedScenario
+    // == 'superhero'. The backend recognizes theme=='superhero' as the special
+    // routing key (see backend/main.py /generate-story); the prompt itself is
+    // constructed server-side from the costume + power + villain matrix.
+    ScenarioCard(
+      id: 'superhero',
+      emoji: '🦸',
+      title: 'Superhero Story',
+      illustration: 'images/scenarios/my_big_feelings_btn.png',
+      description:
+          'A superhero adventure where the child is the hero.',
+      conflictHook:
+          'A silly villain causes mischief; the hero solves it with kindness.',
+      sensoryPalette:
+          'Bright primary colors, the swoosh of a cape, the warm glow of the hero emblem.',
+      category: 'Magical Worlds',
+      worldBible:
+          'A child-sized superhero adventure for ages 3-5. The hero wears a colorful costume with their chosen emblem and may have a cape. The villain is a "silly" mischief-maker — never scary, never violent — who creates a small, solvable problem (mixed-up colors, stuck zippers, missing socks, grumpy clouds). The hero uses their chosen super-power along with kindness, sharing, and gentle words to resolve it. Every story ends with everyone happy and friends.',
+      sproutTitle: 'Be a Superhero!',
+      sproutDescription: 'Save the day with your superpower!',
+    ),
   ];
 
   static ScenarioCard? getById(String id) {
