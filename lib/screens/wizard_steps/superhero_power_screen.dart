@@ -18,6 +18,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
 import '../../models/local/hero_profile_local.dart';
 import '../../providers/hero_profile_provider.dart';
+import 'superhero_entry_screen.dart';
 
 class SuperheroPowerScreen extends ConsumerStatefulWidget {
   final WizardData wizardData;
@@ -89,16 +90,6 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   String? _selectedPowerId;
   bool _saving = false;
 
-  static String _resolveCharacterId(WizardData wd) {
-    final raw = wd.characterId?.trim();
-    if (raw != null && raw.isNotEmpty) return raw;
-    final name = wd.characterName.trim();
-    if (name.isNotEmpty) {
-      return 'temp_${name.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}';
-    }
-    return 'temp_hero';
-  }
-
   Future<void> _confirm() async {
     if (_selectedPowerId == null || _saving) return;
     setState(() => _saving = true);
@@ -116,7 +107,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     wd.selectedScenario = 'superhero';
     wd.customElements = 'being a superhero';
 
-    final characterId = _resolveCharacterId(wd);
+    final characterId = SuperheroEntryScreen.resolveCharacterId(wd);
     final profile = HeroProfileLocal()
       ..characterId = characterId
       ..costumeColor = wd.heroCostumeColor

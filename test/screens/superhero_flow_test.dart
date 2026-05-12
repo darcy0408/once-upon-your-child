@@ -37,6 +37,40 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  group('SuperheroEntryScreen.resolveCharacterId (regression for welcome-back bug)', () {
+    test('uses name-based key when only name is set', () {
+      final wd = WizardData()..characterName = 'Mia';
+      expect(SuperheroEntryScreen.resolveCharacterId(wd), 'name_mia');
+    });
+
+    test('uses name-based key EVEN WHEN characterId is also set', () {
+      // This is the bug fix: previously, when wd.characterId existed (set by
+      // magic_review_step.dart AFTER first story generates), the lookup key
+      // would change on the 2nd run, missing the saved profile.
+      final wd = WizardData()
+        ..characterName = 'Mia'
+        ..characterId = 'char_abc123-uuid';
+      expect(SuperheroEntryScreen.resolveCharacterId(wd), 'name_mia');
+    });
+
+    test('normalizes name to lowercase + underscores', () {
+      final wd = WizardData()..characterName = 'Mia Grace';
+      expect(SuperheroEntryScreen.resolveCharacterId(wd), 'name_mia_grace');
+    });
+
+    test('falls back to characterId when name is empty', () {
+      final wd = WizardData()
+        ..characterName = ''
+        ..characterId = 'char_abc123';
+      expect(SuperheroEntryScreen.resolveCharacterId(wd), 'char_abc123');
+    });
+
+    test('returns temp_hero when both are empty', () {
+      final wd = WizardData();
+      expect(SuperheroEntryScreen.resolveCharacterId(wd), 'temp_hero');
+    });
+  });
+
   testWidgets('first run shows costume picker', (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -47,7 +81,7 @@ void main() {
     await tester.pumpWidget(_bootstrap(
       wd,
       overrides: [
-        heroProfileProvider('char_mia').overrideWith((_) async => null),
+        heroProfileProvider('name_mia').overrideWith((_) async => null),
       ],
     ));
     await tester.pumpAndSettle();
@@ -76,7 +110,7 @@ void main() {
     await tester.pumpWidget(_bootstrap(
       wd,
       overrides: [
-        heroProfileProvider('char_mia').overrideWith((_) async => profile),
+        heroProfileProvider('name_mia').overrideWith((_) async => profile),
       ],
     ));
     await tester.pumpAndSettle();
@@ -109,7 +143,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(
       overrides: [
-        heroProfileProvider('char_mia').overrideWith((_) async => profile),
+        heroProfileProvider('name_mia').overrideWith((_) async => profile),
       ],
       child: MaterialApp(
         home: Builder(

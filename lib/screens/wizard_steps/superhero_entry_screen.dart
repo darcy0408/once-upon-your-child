@@ -23,13 +23,17 @@ class SuperheroEntryScreen extends ConsumerWidget {
     required this.wizardData,
   });
 
+  /// Resolves a STABLE per-child key for the HeroProfile SharedPreferences
+  /// record. Uses the child's name first (which is set in wizard step 1 and
+  /// preserved across "New Story" pops), not `wd.characterId`, because the
+  /// latter is only assigned by [magic_review_step.dart] AFTER the first story
+  /// generates — so the same kid would have a null id on run 1's save and a
+  /// real UUID on run 2's load, missing the welcome-back screen entirely.
   static String resolveCharacterId(WizardData wd) {
+    final name = wd.characterName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    if (name.isNotEmpty) return 'name_$name';
     final raw = wd.characterId?.trim();
     if (raw != null && raw.isNotEmpty) return raw;
-    final name = wd.characterName.trim();
-    if (name.isNotEmpty) {
-      return 'temp_${name.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}';
-    }
     return 'temp_hero';
   }
 
