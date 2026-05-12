@@ -420,84 +420,106 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
             ),
           ],
-          if (!hasInput) ...[
-            const SizedBox(height: 22),
-            Text(
-              'Or tap an idea to get started!',
-              style: GoogleFonts.fredoka(
-                color: Colors.white.withAlpha(160),
-                fontSize: 14,
-              ),
+          // ── Idea tiles ──────────────────────────────────────────────────
+          // Always rendered (even when an idea is already picked) so the kid
+          // can switch picks. The matching tile is highlighted in gold to
+          // confirm the current selection — and tapping it again re-enters
+          // the same flow (e.g. Superhero → welcome-back for returning hero).
+          const SizedBox(height: 22),
+          Text(
+            hasInput
+                ? 'Tap a different idea to change it!'
+                : 'Or tap an idea to get started!',
+            style: GoogleFonts.fredoka(
+              color: Colors.white.withAlpha(160),
+              fontSize: 14,
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
-              children: ideaStarters.map((idea) {
-                return GestureDetector(
-                  onTap: () async {
-                    if (idea.label == 'Be a superhero') {
-                      // Superhero Mode entry point — push the dispatcher
-                      // which routes to welcome-back or costume picker.
-                      final result =
-                          await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => SuperheroEntryScreen(
-                              wizardData: widget.wizardData),
-                        ),
-                      );
-                      if (!mounted) return;
-                      if (result == true) {
-                        // SuperheroPowerScreen has already set scenario,
-                        // customElements, and saved the profile. Commit
-                        // by popping the ImagineIt screen too.
-                        widget.imagineItController.text =
-                            widget.wizardData.customElements;
-                        widget.wishController.text =
-                            widget.wizardData.customElements;
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).pop(true);
-                      }
-                      return;
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: ideaStarters.map((idea) {
+              final selected =
+                  widget.wizardData.customElements.trim() == idea.fill;
+              return GestureDetector(
+                onTap: () async {
+                  if (idea.label == 'Be a superhero') {
+                    // Superhero Mode entry point — push the dispatcher
+                    // which routes to welcome-back or costume picker.
+                    final result =
+                        await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => SuperheroEntryScreen(
+                            wizardData: widget.wizardData),
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (result == true) {
+                      // SuperheroPowerScreen has already set scenario,
+                      // customElements, and saved the profile. Commit
+                      // by popping the ImagineIt screen too.
+                      widget.imagineItController.text =
+                          widget.wizardData.customElements;
+                      widget.wishController.text =
+                          widget.wizardData.customElements;
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).pop(true);
                     }
-                    setState(() {
-                      widget.imagineItController.text = idea.fill;
-                      widget.wizardData.customElements = idea.fill;
-                      widget.wishController.text = idea.fill;
-                    });
-                  },
-                  child: Container(
-                    width: 100,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white38, width: 1.5),
+                    return;
+                  }
+                  setState(() {
+                    widget.imagineItController.text = idea.fill;
+                    widget.wizardData.customElements = idea.fill;
+                    widget.wishController.text = idea.fill;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 100,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? _gold.withAlpha(50)
+                        : Colors.white.withAlpha(20),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected ? _gold : Colors.white38,
+                      width: selected ? 3 : 1.5,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(idea.emoji,
-                            style: const TextStyle(fontSize: 32)),
-                        const SizedBox(height: 4),
-                        Text(
-                          idea.label,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.fredoka(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: _gold.withAlpha(140),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null,
                   ),
-                );
-              }).toList(),
-            ),
-          ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(idea.emoji,
+                          style: const TextStyle(fontSize: 32)),
+                      const SizedBox(height: 4),
+                      Text(
+                        idea.label,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
           if (hasInput) ...[
             const SizedBox(height: 20),
             Container(
