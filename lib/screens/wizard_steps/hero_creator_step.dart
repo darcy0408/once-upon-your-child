@@ -1385,9 +1385,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final allKnownCompanions = allCompanionEntries();
 
     // Collect selected named companions in order — use ID as source of truth.
-    final selectedNamed = allKnownCompanions
-        .where((c) => widget.wizardData.selectedCompanions.contains(c.id))
-        .toList();
+    // Companion IDs are NOT unique across bands (e.g. 'robin' is reused for
+    // Explorer/Adventurer/Creator/Adolescent/Adult), so the same selected ID
+    // would match in every band and render a duplicate orb per band. Keep
+    // only the first match per id, preferring the active band's image.
+    final activeBand =
+        Theme.of(context).extension<AgeBandThemeData>()?.band ??
+            AgeBand.explorer;
+    final preferredById = <String, CompanionData>{};
+    for (final c in allKnownCompanions) {
+      if (!widget.wizardData.selectedCompanions.contains(c.id)) continue;
+      final existing = preferredById[c.id];
+      if (existing == null) {
+        preferredById[c.id] = c;
+      } else if (c.imagePath.contains('/${activeBand.name}/') &&
+          !existing.imagePath.contains('/${activeBand.name}/')) {
+        preferredById[c.id] = c;
+      }
+    }
+    final selectedNamed = [
+      for (final id in widget.wizardData.selectedCompanions)
+        if (preferredById[id] != null) preferredById[id]!,
+    ];
 
     // Collect selected saved-character friends (not magic companions, not pets)
     final magicAndPetNames = {
