@@ -20,6 +20,13 @@ from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
 from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band
+from backend.services.prompt_service import PromptService
+from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
+
+
+def _is_superhero_theme(theme: str | None) -> bool:
+    """True when the request is for the ages-3-5 Superhero Mode chain."""
+    return isinstance(theme, str) and theme.strip().lower() == "superhero"
 
 logger = get_task_logger(__name__)
 MAX_CUSTOM_ELEMENTS = 5
@@ -470,8 +477,54 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             prompt_build_start = time.perf_counter()
 
+            # Superhero Mode (ages 3-5) short-circuit. Picks a sensible
+            # (villain, problem) pair from the compatibility matrix, then
+            # hands the 6-beat prompt to the same model pipeline. The
+            # chosen IDs are surfaced back in the response payload so the
+            # frontend can store recent_villains/recent_problems history
+            # and avoid repeats on the next call.
+            superhero_meta: dict | None = None
+            if _is_superhero_theme(theme):
+                hero_power = kwargs.get("hero_power")
+                recent_villains = kwargs.get("recent_villains") or []
+                recent_problems = kwargs.get("recent_problems") or []
+                try:
+                    sh_villain_id, sh_problem_id = _superhero_pick_pairing(
+                        hero_power or "super_smile",
+                        recent_villains=recent_villains,
+                        recent_problems=recent_problems,
+                    )
+                except ValueError:
+                    # Unknown power id — pick_pairing raises; fall back to a
+                    # universally-safe default rather than 500ing the request.
+                    sh_villain_id, sh_problem_id = _superhero_pick_pairing("super_smile")
+
+                superhero_meta = {
+                    "villain_id": sh_villain_id,
+                    "problem_id": sh_problem_id,
+                    "hero_power": hero_power or "super_smile",
+                }
+                logger.info(
+                    "Superhero Mode: hero_power=%s villain=%s problem=%s",
+                    hero_power,
+                    sh_villain_id,
+                    sh_problem_id,
+                )
+
+                prompt = PromptService.build_story_prompt(
+                    character=character_name,
+                    theme="superhero",
+                    age=age,
+                    hero_costume_color=kwargs.get("hero_costume_color"),
+                    hero_cape_style=kwargs.get("hero_cape_style"),
+                    hero_emblem=kwargs.get("hero_emblem"),
+                    hero_power=hero_power,
+                    superhero_villain_id=sh_villain_id,
+                    superhero_problem_id=sh_problem_id,
+                )
+                # (prompt_build_ms is computed after the if/elif chain below)
             # Use specialized prompts based on story mode flags
-            if bedtime_mode:
+            elif bedtime_mode:
                 logger.info(f"Using Bedtime prompt (length: {story_length})")
                 extra_chars = kwargs.get("additional_characters") or char_details.get("additionalCharacters")
                 prompt = _build_bedtime_prompt(
@@ -880,25 +933,33 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             total_ms = (time.perf_counter() - total_task_start) * 1000.0
             logger.debug("perf phase=total_task ms=%.1f", total_ms)
 
+            story_payload = {
+                "id": story_id,
+                "title": title,
+                "story_text": story_body,
+                "theme": theme,
+                "wisdom_gem": None,  # Removed: no longer generated
+                "include_illustrations": include_illustrations,
+                "illustrations": illustrations,
+                "rhyme_time_mode": rhyme_time_mode,
+                "learning_to_read_mode": learning_to_read_mode,
+                "pages": pages,
+                "adventure_steps": adventure_steps,
+                "total_words": total_words,
+                "total_pages": len(pages),
+                "validation_issues": validation_issues,
+                "story_duration": story_duration,
+                "adventure_report": post_story.get("adventure_report", {}),
+            }
+            if superhero_meta is not None:
+                # Frontend uses these IDs to track recent_villains/recent_problems
+                # and avoid back-to-back duplicates on the next /generate-story call.
+                story_payload["superhero_meta"] = superhero_meta
+
             return {
                 "status": "complete",
                 "story": {
-                    "id": story_id,
-                    "title": title,
-                    "story_text": story_body,
-                    "theme": theme,
-                    "wisdom_gem": None,  # Removed: no longer generated
-                    "include_illustrations": include_illustrations,
-                    "illustrations": illustrations,
-                    "rhyme_time_mode": rhyme_time_mode,
-                    "learning_to_read_mode": learning_to_read_mode,
-                    "pages": pages,
-                    "adventure_steps": adventure_steps,
-                    "total_words": total_words,
-                    "total_pages": len(pages),
-                    "validation_issues": validation_issues,
-                    "story_duration": story_duration,
-                    "adventure_report": post_story.get("adventure_report", {}),
+                    **story_payload,
                     "_perf": {
                         "prompt_build_ms": round(prompt_build_ms, 1),
                         "ai_call_ms": round(ai_call_ms, 1),

@@ -493,6 +493,14 @@ def create_story_blueprint(
             "story_length": payload.get("story_length", "standard"),
             "bedtime_duration_minutes": payload.get("bedtime_duration_minutes"),
             "age": resolved_age,
+            # Superhero Mode (ages 3-5) fields — only meaningful when
+            # theme == 'superhero'. Other modes ignore them.
+            "hero_costume_color": payload.get("hero_costume_color"),
+            "hero_cape_style": payload.get("hero_cape_style"),
+            "hero_emblem": payload.get("hero_emblem"),
+            "hero_power": payload.get("hero_power"),
+            "recent_villains": payload.get("recent_villains") or [],
+            "recent_problems": payload.get("recent_problems") or [],
         }
 
         # If async mode is requested, disable inline illustrations but pass the flag

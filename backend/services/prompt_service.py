@@ -1,9 +1,21 @@
 try:
     from .emotion_service import EmotionService
     from ..config import config_by_name
+    from ..data.superhero_matrix import (
+        VILLAINS as _SH_VILLAINS,
+        PROBLEMS as _SH_PROBLEMS,
+        POWERS as _SH_POWERS,
+        pick_pairing as _sh_pick_pairing,
+    )
 except ImportError:
     from services.emotion_service import EmotionService
     from config import config_by_name
+    from data.superhero_matrix import (  # type: ignore[no-redef]
+        VILLAINS as _SH_VILLAINS,
+        PROBLEMS as _SH_PROBLEMS,
+        POWERS as _SH_POWERS,
+        pick_pairing as _sh_pick_pairing,
+    )
 
 class PromptService:
     @staticmethod
@@ -20,8 +32,33 @@ class PromptService:
         learning_to_read_mode: bool = False,
         character_details: dict = None,
         character_evolution: dict = None,
+        hero_costume_color: str | None = None,
+        hero_cape_style: str | None = None,
+        hero_emblem: str | None = None,
+        hero_power: str | None = None,
+        superhero_villain_id: str | None = None,
+        superhero_problem_id: str | None = None,
     ) -> str:
-        """Build complete story generation prompt"""
+        """Build complete story generation prompt.
+
+        Superhero Mode (ages 3-5) branches out to ``_build_superhero_prompt`` when
+        ``theme == 'superhero'``. The villain/problem IDs are normally chosen
+        server-side via :func:`backend.data.superhero_matrix.pick_pairing` and
+        passed in via ``superhero_villain_id`` / ``superhero_problem_id``.
+        """
+
+        # ----- Superhero Mode short-circuit (ages 3-5) ------------------
+        if isinstance(theme, str) and theme.strip().lower() == "superhero":
+            return PromptService._build_superhero_prompt(
+                character=character,
+                age=age,
+                hero_costume_color=hero_costume_color,
+                hero_cape_style=hero_cape_style,
+                hero_emblem=hero_emblem,
+                hero_power=hero_power,
+                villain_id=superhero_villain_id,
+                problem_id=superhero_problem_id,
+            )
 
         sections = []
 
@@ -211,3 +248,125 @@ Create the rhyming learning-to-read story about {character_name} now:
         """Build character evolution context for prompt"""
         # This would be more complex, extracting development stage, therapeutic progress, etc.
         return ""
+
+    # ------------------------------------------------------------------
+    # Superhero Mode (ages 3-5) — 6-beat hero chain.
+    #
+    # The prompt is deliberately rigid: the model gets the exact 6 beats,
+    # the hero's identity tag, the villain action phrase, and a 150-word
+    # hard cap. Tone is calibrated against the two reference samples
+    # documented in docs/SUPERHERO_MODE_SPEC.md (Mia/Super Hugs vs Cranky
+    # Crab; Leo/Super Speed vs Sock Goblin).
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_superhero_prompt(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_cape_style: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+    ) -> str:
+        """Build the 6-beat Superhero Mode prompt for Sprout-band readers.
+
+        ``villain_id`` and ``problem_id`` should be pre-picked by the caller
+        via :func:`backend.data.superhero_matrix.pick_pairing`. If either is
+        missing or invalid, the function falls back to a sensible default
+        derived from the hero's power so a malformed request still produces
+        a coherent story rather than a 500.
+        """
+        # --- Resolve power (with safe fallback) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in _SH_POWERS:
+            power_id = "super_smile"
+        power_spec = _SH_POWERS[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked, fallback if missing) ---
+        if not villain_id or villain_id not in _SH_VILLAINS \
+                or not problem_id or problem_id not in _SH_PROBLEMS:
+            villain_id, problem_id = _sh_pick_pairing(power_id)
+        villain = _SH_VILLAINS[villain_id]
+        problem = _SH_PROBLEMS[problem_id]
+
+        # --- Costume description (each field optional; "none" cape allowed) ---
+        color = (hero_costume_color or "bright").strip().lower() or "bright"
+        cape = (hero_cape_style or "matching").strip().lower() or "matching"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+
+        if cape == "none":
+            cape_phrase = "no cape"
+        elif cape == "rainbow":
+            cape_phrase = "rainbow cape"
+        else:
+            cape_phrase = f"{color} cape"
+
+        identity_tag = f"{power_name} {character}"
+
+        # --- The 6 beats in plain language (the model fills in the prose) ---
+        beat1 = (
+            f"{character} put on the {color} suit. Today, {character} "
+            f"is {identity_tag}!"
+        )
+        beat2 = f"Oh no! {villain['name']} came to {villain['action']}."
+        beat3 = f"{character} said, 'I can help!'"
+        beat4 = (
+            f"{character} used {power_verb} to {problem['verb']} "
+            f"({problem['summary']})."
+        )
+        beat5 = f"{villain['name']} {villain['softens']}."
+        beat6 = f"Everyone cheered. {character} saved the day!"
+
+        # --- Prompt assembly ---
+        # Use a tagged, structured format so the validator in story_tasks.py
+        # can still strip the meta if it leaks. The model is told repeatedly:
+        # 150 words MAX, sentences 3-7 words, no scary content.
+        return f"""SUPERHERO MODE STORY (Ages 3-5 — Sprout band)
+
+You are writing a short, picture-book-style superhero story for a {age}-year-old.
+
+HERO IDENTITY (use the name and identity tag at least TWICE):
+- Hero name: {character}
+- Identity tag: "{identity_tag}"
+- Costume: {color} suit with {cape_phrase} and a {emblem} emblem
+- Signature power: {power_name} ({power_verb})
+
+VILLAIN (silly, never frightening):
+- Name: {villain['name']}
+- What they do: {villain['action']}
+- How they soften: {villain['softens']}
+
+PROBLEM TO SOLVE:
+- Goal: {problem['name']} — {problem['summary']}
+- Hero's resolution verb: {problem['verb']}
+
+STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
+
+1. HERO INTRO  — Open with: "{beat1}"
+2. TROUBLE     — Then: "{beat2}"
+3. HERO RESPONDS — Then: "{beat3}"
+4. POWER USED  — Show {character} using {power_name} to {problem['verb']} the situation. Reference beat 4 idea: "{beat4}" (rewrite naturally; do NOT use the bracketed summary in the prose).
+5. RESOLUTION  — End the conflict like this: "{beat5}"
+6. CHEER       — Close with: "{beat6}"
+
+HARD RULES — these are non-negotiable:
+- MAXIMUM 150 words TOTAL. Count and STOP at 150.
+- TARGET 120–150 words. Anything under 100 is too short.
+- Sentences: 3–7 words each. Short and punchy.
+- Vocabulary: ONLY very simple words a 3–5 year old knows.
+- Use the hero's name AT LEAST TWICE and the identity tag "{identity_tag}" AT LEAST TWICE.
+- Include ONE repeated sensory phrase (a sound, a color, or a texture) for early-reader memorability — repeat it once for rhythm.
+- NO violence, NO weapons, NO scary descriptions, NO monsters chasing.
+- The villain is SILLY, never frightening. They soften, say sorry, or join in — they are NEVER defeated by force.
+- Resolution must come through kindness, cleverness, sharing, comforting, or inviting in. NEVER through force or punishment.
+
+OUTPUT FORMAT:
+Return the story as plain prose (no JSON, no markdown headers, no "PAGE X" labels, no beat numbers).
+The story should read as one continuous picture-book story.
+
+Begin now. Stop at 150 words.
+"""
+
