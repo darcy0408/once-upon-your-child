@@ -391,6 +391,169 @@ def _post_process_ltr_pages(
     return new_pages or pages
 
 
+# --- Sprout word-cap enforcement (post-generation safety belt) ----------------
+# The Sprout prompt (ages 3-5) tells Gemini to stop at 130 words (lowered from
+# 150 to leave headroom). Models still overshoot. This safety belt counts words
+# AFTER generation and, if a Sprout story exceeds 150 words, tries one stricter
+# regeneration, then falls back to a sentence-boundary truncation that always
+# preserves the cheer-beat ending. Applies to BOTH the superhero theme path AND
+# every other Sprout story path.
+
+SPROUT_WORD_CAP = 150
+# Detect existing cheer-beat ending so we don't double-append.
+_CHEER_BEAT_RE = re.compile(
+    r"Everyone\s+cheered\.\s*[A-Z][\w'\- ]*?\s+saved\s+the\s+day!?",
+    re.IGNORECASE,
+)
+
+
+def _count_words(text: str) -> int:
+    """Whitespace-token word count, matching how the rest of the pipeline counts."""
+    if not text:
+        return 0
+    return len(text.split())
+
+
+def _has_cheer_beat(text: str) -> bool:
+    if not text:
+        return False
+    return bool(_CHEER_BEAT_RE.search(text))
+
+
+def _truncate_to_word_cap(text: str, cap: int, hero_name: str) -> str:
+    """Truncate `text` at the last sentence boundary that keeps the body at or
+    under `cap` words. Always preserves a cheer-beat ending — if truncation
+    drops the original cheer, append a generic "Everyone cheered. {hero_name}
+    saved the day!" so the story still resolves.
+    """
+    if cap <= 0:
+        return ""
+    body = (text or "").strip()
+    if not body:
+        return body
+
+    original_had_cheer = _has_cheer_beat(body)
+
+    # Split into sentences while preserving the terminators.
+    sentence_parts = re.findall(r"[^.!?]+[.!?]+|\S[^.!?]*$", body, flags=re.DOTALL)
+    sentences = [s.strip() for s in sentence_parts if s and s.strip()]
+
+    cheer_suffix = f"Everyone cheered. {hero_name} saved the day!"
+    # Reserve words for the cheer beat if we need to re-append it.
+    reserved_for_cheer = _count_words(cheer_suffix) if original_had_cheer else 0
+    effective_cap = max(0, cap - reserved_for_cheer)
+
+    kept: list[str] = []
+    running = 0
+    for sent in sentences:
+        sw = _count_words(sent)
+        if running + sw > effective_cap:
+            break
+        kept.append(sent)
+        running += sw
+
+    truncated = " ".join(kept).strip()
+    if not truncated:
+        # Fallback: hard word slice + period if no sentence fits at all.
+        words = body.split()[:max(1, effective_cap)]
+        truncated = " ".join(words).rstrip(",;:") + "."
+
+    # Re-append cheer beat if the original had one and it was cut off.
+    if original_had_cheer and not _has_cheer_beat(truncated):
+        truncated = (truncated + " " + cheer_suffix).strip()
+
+    return truncated
+
+
+def _enforce_sprout_word_cap(
+    *,
+    age: int,
+    theme: str,
+    pages: list[str],
+    story_body: str,
+    title: str,
+    post_story: dict,
+    character_name: str,
+    base_prompt: str,
+    regen_fn,
+) -> tuple[str, list[str], dict]:
+    """Two-stage Sprout word-cap safety belt.
+
+    Stage 1: if word_count > 150, regenerate ONCE with a stricter prompt prefix.
+    Stage 2: if regen still > 150, truncate at last sentence boundary that fits,
+             preserving the cheer beat.
+
+    Returns the (possibly updated) (story_body, pages, info_dict). `info_dict`
+    is logged by the caller; it carries `original_words`, `regen_used`,
+    `truncated`, `final_words`.
+    """
+    info = {
+        "original_words": 0,
+        "regen_used": False,
+        "truncated": False,
+        "final_words": 0,
+        "theme": theme,
+    }
+    if age is None or age > 5:
+        info["final_words"] = sum(_count_words(p) for p in (pages or []))
+        return story_body, pages, info
+
+    total_words = sum(_count_words(p) for p in (pages or []))
+    info["original_words"] = total_words
+    info["final_words"] = total_words
+
+    if total_words <= SPROUT_WORD_CAP:
+        return story_body, pages, info
+
+    # --- Stage 1: one stricter regen attempt ---
+    stricter_prefix = (
+        f"STRICT CONSTRAINT: Your previous attempt was {total_words} words. "
+        f"The MAXIMUM is {SPROUT_WORD_CAP}. Write the same story but UNDER "
+        f"{SPROUT_WORD_CAP} words. Count carefully. Cut anything non-essential.\n\n"
+    )
+    regen_prompt = stricter_prefix + (base_prompt or "")
+    try:
+        regen_text = regen_fn(regen_prompt)
+    except Exception:  # noqa: BLE001 — never crash the user-visible path
+        logger.exception("Sprout word-cap regen call failed; falling back to truncate.")
+        regen_text = None
+
+    if regen_text:
+        info["regen_used"] = True
+        try:
+            r_title, _, r_body, r_pages, r_post = _safe_extract_title_and_gem(regen_text, theme)
+        except Exception:  # noqa: BLE001
+            logger.exception("Sprout word-cap regen parse failed; ignoring regen.")
+            r_body, r_pages, r_title, r_post = None, None, None, None
+
+        if r_body and r_pages:
+            regen_words = sum(_count_words(p) for p in r_pages)
+            if regen_words <= SPROUT_WORD_CAP:
+                logger.info(
+                    "Sprout word-cap regen succeeded: theme=%s %s→%s words.",
+                    theme, total_words, regen_words,
+                )
+                info["final_words"] = regen_words
+                return r_body, r_pages, info
+            # Regen still over — use the regen pages as input to truncation.
+            pages = r_pages
+            story_body = r_body
+            title = r_title or title
+            post_story = r_post or post_story
+            total_words = regen_words
+
+    # --- Stage 2: truncate at sentence boundary ---
+    truncated_body = _truncate_to_word_cap(story_body, SPROUT_WORD_CAP, character_name)
+    truncated_pages = [truncated_body] if truncated_body else pages
+    info["truncated"] = True
+    info["final_words"] = _count_words(truncated_body)
+    logger.warning(
+        "Sprout word-cap truncation applied: theme=%s original=%s regen_used=%s final=%s words.",
+        theme, info["original_words"], info["regen_used"], info["final_words"],
+    )
+    return truncated_body, truncated_pages, info
+
+
 @celery.task(bind=True, name="tasks.generate_story")
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -789,6 +952,37 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     pre_split,
                     post_split,
                 )
+
+            # --- Sprout (ages 3-5) 150-word post-generation cap ---
+            # Two-stage safety belt: one stricter regen attempt, then sentence-
+            # boundary truncation that preserves the cheer beat. Applies to
+            # superhero theme AND every other Sprout story path.
+            try:
+                _sprout_age = int(age) if age is not None else 5
+            except (TypeError, ValueError):
+                _sprout_age = 5
+            if _sprout_age <= 5:
+                story_body, pages, _sprout_info = _enforce_sprout_word_cap(
+                    age=_sprout_age,
+                    theme=theme,
+                    pages=pages,
+                    story_body=story_body,
+                    title=title,
+                    post_story=post_story,
+                    character_name=character_name,
+                    base_prompt=prompt,
+                    regen_fn=lambda p: _generate_story_text(p, theme, character_name, companion),
+                )
+                if _sprout_info.get("original_words", 0) > SPROUT_WORD_CAP:
+                    logger.info(
+                        "sprout_word_cap event=enforced theme=%s original=%s regen=%s "
+                        "truncated=%s final=%s",
+                        _sprout_info.get("theme"),
+                        _sprout_info.get("original_words"),
+                        _sprout_info.get("regen_used"),
+                        _sprout_info.get("truncated"),
+                        _sprout_info.get("final_words"),
+                    )
 
             # --- Output content moderation ---
             # Two-layer safety check on the generated story before it reaches the child.

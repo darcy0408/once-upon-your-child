@@ -353,8 +353,8 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 6. CHEER       — Close with: "{beat6}"
 
 HARD RULES — these are non-negotiable:
-- MAXIMUM 150 words TOTAL. Count and STOP at 150.
-- TARGET 120–150 words. Anything under 100 is too short.
+- MAXIMUM 130 words TOTAL. Count and STOP at 130.
+- TARGET 100–130 words. Anything under 90 is too short.
 - Sentences: 3–7 words each. Short and punchy.
 - Vocabulary: ONLY very simple words a 3–5 year old knows.
 - Use the hero's name AT LEAST TWICE and the identity tag "{identity_tag}" AT LEAST TWICE.
@@ -367,6 +367,6 @@ OUTPUT FORMAT:
 Return the story as plain prose (no JSON, no markdown headers, no "PAGE X" labels, no beat numbers).
 The story should read as one continuous picture-book story.
 
-Begin now. Stop at 150 words.
+Begin now. Stop at 130 words.
 """
 
