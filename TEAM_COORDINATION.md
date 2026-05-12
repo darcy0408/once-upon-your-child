@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 23:21 | f8c1 | main | Phase 1 monetization: Stripe wiring + Flux Schnell routing + matrix ratifications | [link](docs/sessions/2026-05-11-2321-f8c1.md) |
 | 2026-05-11 | 23:22 | e33d | main | BYOK validation diagnosis (backend off) + post-hoc verify | [link](docs/sessions/2026-05-11-2322-e33d.md) |
 | 2026-05-11 | 23:22 | cbe9 | main | Wizard create-new: age picker, name gate, companion-orb dedupe | [link](docs/sessions/2026-05-11-2322-cbe9.md) |
 | 2026-05-11 | 23:23 | 953a | main | Close-session push policy + MT-087 cap UI widget tests | [link](docs/sessions/2026-05-11-2323-953a.md) |
