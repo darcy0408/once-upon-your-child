@@ -318,6 +318,68 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
             ),
           ),
+          // Explorer-band superhero entry. Backend prompt routing currently
+          // recognizes age 6-8 only, so we don't expose this on Adventurer+.
+          if (Theme.of(context).extension<AgeBandThemeData>()?.band ==
+              AgeBand.explorer) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                    child: Divider(color: _gold.withAlpha(60), thickness: 1)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'or',
+                    style: GoogleFonts.fredoka(
+                      color: _gold.withAlpha(160),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                    child: Divider(color: _gold.withAlpha(60), thickness: 1)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: _gold, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                icon: const Text('🦸', style: TextStyle(fontSize: 22)),
+                label: Text(
+                  'Be a superhero!',
+                  style: GoogleFonts.fredoka(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _gold,
+                  ),
+                ),
+                onPressed: () async {
+                  final result = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => SuperheroEntryScreen(
+                          wizardData: widget.wizardData),
+                    ),
+                  );
+                  if (!mounted) return;
+                  if (result == true) {
+                    widget.imagineItController.text =
+                        widget.wizardData.customElements;
+                    widget.wishController.text =
+                        widget.wizardData.customElements;
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop(true);
+                  }
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
