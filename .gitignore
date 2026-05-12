@@ -121,6 +121,8 @@ backend/tests/artifacts/*T*.md
 # Test reports and lint outputs
 reports/
 backend/reports/
+# Exception: agent-brief reports are intentionally tracked
+!docs/agent-briefs/reports/
 lint_report*.txt
 story_output.txt
 story_request.json
