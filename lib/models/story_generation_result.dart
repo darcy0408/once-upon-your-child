@@ -8,6 +8,12 @@ class StoryGenerationResult {
   final List<String> pages;
   final List<String> adventureSteps;
 
+  /// Superhero Mode metadata returned by the backend.
+  /// Shape: `{villain_id, problem_id, hero_power}`. Null when theme != 'superhero'.
+  /// Callers should feed `villain_id`/`problem_id` into the hero-profile
+  /// recents lists so the backend can avoid repeats on the next story.
+  final Map<String, dynamic>? superheroMeta;
+
   const StoryGenerationResult({
     required this.storyText,
     this.title,
@@ -17,6 +23,7 @@ class StoryGenerationResult {
     this.asyncIllustrations = false,
     this.pages = const [],
     this.adventureSteps = const [],
+    this.superheroMeta,
   });
 
   factory StoryGenerationResult.fromBackend(Map<String, dynamic> json) {
@@ -40,6 +47,10 @@ class StoryGenerationResult {
     final rawSteps = (storyData['adventure_steps'] as List?)?.whereType<String>().toList() ?? 
                      (json['adventure_steps'] as List?)?.whereType<String>().toList() ?? [];
 
+    final dynamic rawMeta = storyData['superhero_meta'] ?? json['superhero_meta'];
+    final Map<String, dynamic>? superheroMeta =
+        rawMeta is Map<String, dynamic> ? rawMeta : null;
+
     return StoryGenerationResult(
       storyText: storyText,
       title: (storyData['title'] ?? json['title']) as String?,
@@ -49,6 +60,7 @@ class StoryGenerationResult {
       asyncIllustrations: json['async_illustrations'] as bool? ?? false,
       pages: rawPages,
       adventureSteps: rawSteps,
+      superheroMeta: superheroMeta,
     );
   }
 }

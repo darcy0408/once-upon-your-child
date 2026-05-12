@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-part 'chapter_memory_local.g.dart';
+part 'chapter_memory_local_io.g.dart';
 
 @collection
 class ChapterMemoryLocal {

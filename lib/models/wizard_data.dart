@@ -83,6 +83,14 @@ class WizardData {
   String?
       heroQuest; // e.g. "Making new friends" — maps silently to lifeChallenge
 
+  // Superhero Mode (ages 3-5) — costume customization + selected power.
+  // Backend keys: hero_costume_color, hero_cape_style, hero_emblem, hero_power.
+  String? heroCostumeColor; // 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'pink'
+  String? heroCapeStyle;    // 'none' | 'matching' | 'rainbow'
+  String? heroEmblem;       // 'star' | 'lightning' | 'heart' | 'moon' | 'paw' | 'rainbow'
+  String? heroPower;        // one of 8 IDs: super_speed | flying | super_strength |
+                            // super_hearing | super_smile | super_hugs | super_whisper | super_sharing
+
   // Creator band (12-14): optional reflection prompt from character creation
   String? characterDesire; // e.g. "What does your character want more than anything?"
 
@@ -136,6 +144,10 @@ class WizardData {
     c.storyDnaAvoid = storyDnaAvoid;
     c.heroSuperpower = heroSuperpower;
     c.heroQuest = heroQuest;
+    c.heroCostumeColor = heroCostumeColor;
+    c.heroCapeStyle = heroCapeStyle;
+    c.heroEmblem = heroEmblem;
+    c.heroPower = heroPower;
     c.characterDesire = characterDesire;
     return c;
   }
@@ -203,6 +215,11 @@ class WizardData {
       'storyDnaAvoid': storyDnaAvoid,
       'heroSuperpower': heroSuperpower,
       'heroQuest': heroQuest,
+      // Superhero Mode — snake_case keys to match backend payload.
+      'hero_costume_color': heroCostumeColor,
+      'hero_cape_style': heroCapeStyle,
+      'hero_emblem': heroEmblem,
+      'hero_power': heroPower,
       'characterDesire': characterDesire,
     };
   }
@@ -276,6 +293,14 @@ class WizardData {
     d.storyDnaAvoid = json['storyDnaAvoid'] as String?;
     d.heroSuperpower = json['heroSuperpower'] as String?;
     d.heroQuest = json['heroQuest'] as String?;
+    // Superhero Mode — accept both snake_case (preferred, backend-aligned) and
+    // legacy camelCase, in case an older snapshot exists.
+    d.heroCostumeColor =
+        (json['hero_costume_color'] ?? json['heroCostumeColor']) as String?;
+    d.heroCapeStyle =
+        (json['hero_cape_style'] ?? json['heroCapeStyle']) as String?;
+    d.heroEmblem = (json['hero_emblem'] ?? json['heroEmblem']) as String?;
+    d.heroPower = (json['hero_power'] ?? json['heroPower']) as String?;
     d.characterDesire = json['characterDesire'] as String?;
     return d;
   }

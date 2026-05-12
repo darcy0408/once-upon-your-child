@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-part 'chronicle_local.g.dart';
+part 'chronicle_local_io.g.dart';
 
 @collection
 class ChronicleLocal {

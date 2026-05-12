@@ -601,6 +601,14 @@ class ApiServiceManager {
     String? worldBible,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
+    // Superhero Mode (ages 3-5). All four costume/power fields are required
+    // when theme == 'superhero'; otherwise they are ignored.
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+    List<String>? recentVillains,
+    List<String>? recentProblems,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -674,6 +682,12 @@ class ApiServiceManager {
           worldBible: worldBible,
           moodPhysics: moodPhysics,
           lifeChallenge: lifeChallenge,
+          heroCostumeColor: heroCostumeColor,
+          heroCapeStyle: heroCapeStyle,
+          heroEmblem: heroEmblem,
+          heroPower: heroPower,
+          recentVillains: recentVillains,
+          recentProblems: recentProblems,
         ),
       );
     }
@@ -936,6 +950,12 @@ class ApiServiceManager {
     String? worldBible,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+    List<String>? recentVillains,
+    List<String>? recentProblems,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -980,6 +1000,12 @@ class ApiServiceManager {
           worldBible: worldBible,
           moodPhysics: moodPhysics,
           lifeChallenge: lifeChallenge,
+          heroCostumeColor: heroCostumeColor,
+          heroCapeStyle: heroCapeStyle,
+          heroEmblem: heroEmblem,
+          heroPower: heroPower,
+          recentVillains: recentVillains,
+          recentProblems: recentProblems,
         );
       } catch (error, stackTrace) {
         attempts++;
@@ -1039,6 +1065,12 @@ class ApiServiceManager {
     String? worldBible,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
+    String? heroCostumeColor,
+    String? heroCapeStyle,
+    String? heroEmblem,
+    String? heroPower,
+    List<String>? recentVillains,
+    List<String>? recentProblems,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -1085,6 +1117,21 @@ class ApiServiceManager {
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
+    }
+
+    // Superhero Mode — only attach the costume/power + no-repeat hints when
+    // the wizard selected that scenario. Backend route is gated on theme.
+    if (theme == 'superhero') {
+      if (heroCostumeColor != null) body['hero_costume_color'] = heroCostumeColor;
+      if (heroCapeStyle != null) body['hero_cape_style'] = heroCapeStyle;
+      if (heroEmblem != null) body['hero_emblem'] = heroEmblem;
+      if (heroPower != null) body['hero_power'] = heroPower;
+      if (recentVillains != null && recentVillains.isNotEmpty) {
+        body['recent_villains'] = recentVillains;
+      }
+      if (recentProblems != null && recentProblems.isNotEmpty) {
+        body['recent_problems'] = recentProblems;
+      }
     }
 
     try {
