@@ -13,14 +13,20 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models.dart';
+import '../../theme/age_band_theme.dart';
 import 'superhero_power_screen.dart';
 
 class SuperheroCostumeScreen extends StatefulWidget {
   final WizardData wizardData;
 
+  /// Visual band (drives palette + which emblems show). Defaults to sprout
+  /// so existing callers that don't pass a band keep the original behavior.
+  final AgeBand band;
+
   const SuperheroCostumeScreen({
     super.key,
     required this.wizardData,
+    this.band = AgeBand.sprout,
   });
 
   @override
@@ -49,7 +55,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _CapeOption(id: 'rainbow', label: 'Rainbow cape', emoji: '🌈'),
   ];
 
-  static const _emblems = <_EmblemOption>[
+  // Shared emblem set (Sprout band shows these 6).
+  static const _baseEmblems = <_EmblemOption>[
     _EmblemOption(id: 'star', label: 'Star', emoji: '⭐'),
     _EmblemOption(id: 'lightning', label: 'Lightning', emoji: '⚡'),
     _EmblemOption(id: 'heart', label: 'Heart', emoji: '❤️'),
@@ -57,6 +64,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _EmblemOption(id: 'paw', label: 'Paw', emoji: '🐾'),
     _EmblemOption(id: 'rainbow', label: 'Rainbow', emoji: '🌈'),
   ];
+
+  // Explorer-only emblems (appended after the base 6 → 8 total for Explorer).
+  static const _explorerExtraEmblems = <_EmblemOption>[
+    _EmblemOption(id: 'bolt', label: 'Bolt', emoji: '🔱'),
+    _EmblemOption(id: 'comet', label: 'Comet', emoji: '☄️'),
+  ];
+
+  List<_EmblemOption> get _emblems => widget.band == AgeBand.explorer
+      ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
+      : _baseEmblems;
 
   @override
   void dispose() {
@@ -74,8 +91,10 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
       // Final page — go to power picker.
       Navigator.of(context).push(
         MaterialPageRoute<bool>(
-          builder: (_) =>
-              SuperheroPowerScreen(wizardData: widget.wizardData),
+          builder: (_) => SuperheroPowerScreen(
+            wizardData: widget.wizardData,
+            band: widget.band,
+          ),
         ),
       ).then((result) {
         if (!mounted) return;
@@ -98,6 +117,10 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isExplorer = widget.band == AgeBand.explorer;
+    // Pull the canonical band gradient instead of hardcoding a new palette.
+    final gradient = themeForBand(widget.band).backgroundGradient;
+    final appBarTitle = isExplorer ? 'Design Your Hero!' : 'Make Your Hero!';
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -106,7 +129,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'Make Your Hero!',
+          appBarTitle,
           style: GoogleFonts.fredoka(
             color: _gold,
             fontSize: 22,
@@ -120,18 +143,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2D1B42),
-              Color(0xFF5F2776),
-              Color(0xFF8B3A6B),
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: gradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -186,11 +198,18 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 1: color ──────────────────────────────────────────────────────────
 
   Widget _buildColorPage() {
+    final isExplorer = widget.band == AgeBand.explorer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
         children: [
-          _pageHeader('🎨', 'Pick your hero color!', 'Tap a color to choose'),
+          _pageHeader(
+            '🎨',
+            isExplorer ? 'Choose your hero color' : 'Pick your hero color!',
+            isExplorer
+                ? 'Tap the color that matches your hero'
+                : 'Tap a color to choose',
+          ),
           const SizedBox(height: 22),
           GridView.count(
             crossAxisCount: 2,
@@ -253,11 +272,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 2: cape ───────────────────────────────────────────────────────────
 
   Widget _buildCapePage() {
+    final isExplorer = widget.band == AgeBand.explorer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
         children: [
-          _pageHeader('🦸', 'Pick your cape!', 'A cape makes you fly!'),
+          _pageHeader(
+            '🦸',
+            isExplorer ? 'Choose your cape' : 'Pick your cape!',
+            isExplorer ? 'Every hero needs a signature cape' : 'A cape makes you fly!',
+          ),
           const SizedBox(height: 22),
           ..._capes.map((cape) {
             final selected = widget.wizardData.heroCapeStyle == cape.id;
@@ -339,11 +363,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 3: emblem ─────────────────────────────────────────────────────────
 
   Widget _buildEmblemPage() {
+    final isExplorer = widget.band == AgeBand.explorer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
         children: [
-          _pageHeader('✨', 'Pick your symbol!', 'Tap your hero emblem'),
+          _pageHeader(
+            '✨',
+            isExplorer ? 'Choose your emblem' : 'Pick your symbol!',
+            isExplorer ? 'Your hero\'s signature mark' : 'Tap your hero emblem',
+          ),
           const SizedBox(height: 22),
           GridView.count(
             crossAxisCount: 2,

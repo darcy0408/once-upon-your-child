@@ -18,14 +18,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
 import '../../models/local/hero_profile_local.dart';
 import '../../providers/hero_profile_provider.dart';
+import '../../theme/age_band_theme.dart';
 import 'superhero_entry_screen.dart';
 
 class SuperheroPowerScreen extends ConsumerStatefulWidget {
   final WizardData wizardData;
 
+  /// Visual band — controls which power options are shown, how they're
+  /// labeled, and the screen palette. Defaults to sprout for back-compat.
+  final AgeBand band;
+
   const SuperheroPowerScreen({
     super.key,
     required this.wizardData,
+    this.band = AgeBand.sprout,
   });
 
   @override
@@ -36,7 +42,9 @@ class SuperheroPowerScreen extends ConsumerStatefulWidget {
 class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   static const _gold = Color(0xFFFFD700);
 
-  static const List<_PowerOption> powers = [
+  // Sprout power set — preserved exactly. Explorer reuses these 8 IDs but
+  // overrides the display labels (see `_explorerNameOverrides`).
+  static const List<_PowerOption> _sproutPowers = [
     _PowerOption(
       id: 'super_speed',
       emoji: '⚡',
@@ -87,6 +95,56 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     ),
   ];
 
+  // Explorer adds two extra power IDs (locked-in spec, must match backend
+  // EXPLORER_POWERS matrix). Shown only when band == AgeBand.explorer.
+  static const List<_PowerOption> _explorerExtraPowers = [
+    _PowerOption(
+      id: 'feeling_sense',
+      emoji: '💗',
+      name: 'Feeling Sense',
+      description: 'Read the room.',
+    ),
+    _PowerOption(
+      id: 'invisibility',
+      emoji: '👣',
+      name: 'Soft Step',
+      description: 'Move unseen.',
+    ),
+  ];
+
+  // Explorer-tier display label overrides for the shared 8 power IDs.
+  // Order/keys must stay aligned with the backend `EXPLORER_POWERS` map.
+  static const Map<String, _ExplorerCopy> _explorerNameOverrides = {
+    'super_speed': _ExplorerCopy('Lightning Speed', 'Run faster than thought.'),
+    'flying': _ExplorerCopy('Sky Glide', 'Ride the air currents.'),
+    'super_strength': _ExplorerCopy('Strong Lift', 'Move what others can\'t.'),
+    'super_hearing': _ExplorerCopy('Keen Ears', 'Hear what others miss.'),
+    'super_smile': _ExplorerCopy('Bright Smile', 'Brighten any room.'),
+    'super_hugs': _ExplorerCopy('Big Heart Hug', 'Comfort with kindness.'),
+    'super_whisper': _ExplorerCopy('Quiet Voice', 'Calm the chaos.'),
+    'super_sharing': _ExplorerCopy('Fair Share', 'Make sure everyone gets some.'),
+  };
+
+  /// Returns the band-appropriate power list, with Explorer renames applied.
+  List<_PowerOption> get powers {
+    final isExplorer = widget.band == AgeBand.explorer;
+    final base = _sproutPowers.map((p) {
+      if (!isExplorer) return p;
+      final override = _explorerNameOverrides[p.id];
+      if (override == null) return p;
+      return _PowerOption(
+        id: p.id,
+        emoji: p.emoji,
+        name: override.name,
+        description: override.description,
+      );
+    }).toList();
+    if (isExplorer) {
+      base.addAll(_explorerExtraPowers);
+    }
+    return base;
+  }
+
   String? _selectedPowerId;
   bool _saving = false;
 
@@ -136,6 +194,16 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   @override
   Widget build(BuildContext context) {
     final hasSelection = _selectedPowerId != null;
+    final isExplorer = widget.band == AgeBand.explorer;
+    final gradient = themeForBand(widget.band).backgroundGradient;
+    final appBarTitle = isExplorer ? 'Choose your power' : 'Pick your power!';
+    final heading = isExplorer
+        ? 'What is your hero power?'
+        : 'What is your superpower?';
+    final ctaIdle =
+        isExplorer ? 'Choose this power' : 'Pick this power!';
+    final ctaEmpty =
+        isExplorer ? 'Tap a power above' : 'Tap a power above';
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -144,7 +212,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          'Pick your power!',
+          appBarTitle,
           style: GoogleFonts.fredoka(
             color: _gold,
             fontSize: 22,
@@ -153,18 +221,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2D1B42),
-              Color(0xFF5F2776),
-              Color(0xFF8B3A6B),
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: gradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -181,7 +238,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'What is your superpower?',
+                        heading,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.fredoka(
                           color: _gold,
@@ -287,9 +344,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                             ),
                           )
                         : Text(
-                            hasSelection
-                                ? 'Pick this power!'
-                                : 'Tap a power above',
+                            hasSelection ? ctaIdle : ctaEmpty,
                             style: GoogleFonts.fredoka(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -351,4 +406,11 @@ class _PowerOption {
     required this.name,
     required this.description,
   });
+}
+
+/// Explorer-band display copy for a shared power id.
+class _ExplorerCopy {
+  final String name;
+  final String description;
+  const _ExplorerCopy(this.name, this.description);
 }

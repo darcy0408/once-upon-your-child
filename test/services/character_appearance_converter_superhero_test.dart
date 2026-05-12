@@ -212,6 +212,127 @@ void main() {
     });
   });
 
+  group('Explorer band (ages 6-8) — age-aware framing + new powers', () {
+    test('age=7 produces Explorer framing string', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 7),
+        'Mia helps her friend solve a tricky puzzle.',
+        theme: 'superhero',
+        heroCostumeColor: 'blue',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'star',
+        heroPower: 'super_smile',
+      );
+
+      // Explorer framing markers — any of these must be present.
+      expect(
+        prompt,
+        anyOf(
+          contains('6-to-8-year-old'),
+          contains('action stance'),
+          contains('comic-book-meets-storybook'),
+        ),
+      );
+      // Anchor still present
+      expect(prompt, contains('IDENTICAL in every illustration'));
+    });
+
+    test('age=7, heroPower="feeling_sense" injects empathy-glow visual cue',
+        () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 7),
+        'Mia notices her friend is sad.',
+        theme: 'superhero',
+        heroCostumeColor: 'pink',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'heart',
+        heroPower: 'feeling_sense',
+      );
+
+      // Either "glow" or "empathy" must appear (visual cue language).
+      expect(prompt, anyOf(contains('glow'), contains('empathy')));
+      expect(prompt, contains('IDENTICAL in every illustration'));
+    });
+
+    test('age=7, heroPower="invisibility" injects translucent/wisp visual cue',
+        () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 7),
+        'Mia sneaks past the silly grumble-monster.',
+        theme: 'superhero',
+        heroCostumeColor: 'purple',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'moon',
+        heroPower: 'invisibility',
+      );
+
+      expect(prompt, anyOf(contains('translucent'), contains('wisp')));
+      expect(prompt, contains('IDENTICAL in every illustration'));
+    });
+
+    test(
+        'age=7 with shared power "super_speed" still renders the speed-lines '
+        'visual cue (no Sprout-power regression at Explorer band)', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 7),
+        'Mia zooms across the playground.',
+        theme: 'superhero',
+        heroCostumeColor: 'red',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'lightning',
+        heroPower: 'super_speed',
+      );
+
+      expect(prompt, contains('speed streaks'));
+      expect(prompt, contains('IDENTICAL in every illustration'));
+    });
+
+    test(
+        'age=4 still produces Sprout framing — regression guard for the '
+        'original Sprout band', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 4),
+        'Mia hugs her teddy bear.',
+        theme: 'superhero',
+        heroCostumeColor: 'blue',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'heart',
+        heroPower: 'super_hugs',
+      );
+
+      // Sprout framing markers — picture-book / soft cartoon.
+      expect(
+        prompt,
+        anyOf(
+          contains('picture-book child hero'),
+          contains('soft cartoon'),
+        ),
+      );
+      // And must NOT contain the Explorer-specific framing strings.
+      expect(prompt, isNot(contains('6-to-8-year-old')));
+      expect(prompt, isNot(contains('comic-book-meets-storybook')));
+      // Anchor still present
+      expect(prompt, contains('IDENTICAL in every illustration'));
+    });
+
+    test(
+        'safety clause for superhero includes both "kindness" and '
+        '"cleverness" resolution language', () {
+      final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(
+        _hero(age: 7),
+        'Mia outsmarts the silly grumble.',
+        theme: 'superhero',
+        heroCostumeColor: 'green',
+        heroCapeStyle: 'matching',
+        heroEmblem: 'star',
+        heroPower: 'feeling_sense',
+      );
+
+      expect(prompt.toLowerCase(), contains('kindness'));
+      expect(prompt.toLowerCase(), contains('cleverness'));
+    });
+  });
+
   group('FIX #3 — no-text directive in superhero illustrations', () {
     test('superhero prompt includes no-embedded-text rule in REQUIREMENTS', () {
       final prompt = CharacterAppearanceConverter.createStoryIllustrationPrompt(

@@ -12,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models.dart';
 import '../../providers/hero_profile_provider.dart';
+import '../../theme/age_band_theme.dart';
 import 'superhero_costume_screen.dart';
 import 'superhero_welcome_back_screen.dart';
 
@@ -41,18 +42,24 @@ class SuperheroEntryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final characterId = resolveCharacterId(wizardData);
     final async = ref.watch(heroProfileProvider(characterId));
+    // Derive band from the character's age. The Superhero flow is currently
+    // designed for sprout (3-5) and explorer (6-8); older bands fall through
+    // to whatever the helper returns but the screens default to sprout styling.
+    final band = ageBandFromAge(wizardData.characterAge);
 
     return async.when(
       loading: _loadingScaffold,
-      error: (_, __) => SuperheroCostumeScreen(wizardData: wizardData),
+      error: (_, __) =>
+          SuperheroCostumeScreen(wizardData: wizardData, band: band),
       data: (profile) {
         if (profile != null && profile.power != null) {
           return SuperheroWelcomeBackScreen(
             wizardData: wizardData,
             profile: profile,
+            band: band,
           );
         }
-        return SuperheroCostumeScreen(wizardData: wizardData);
+        return SuperheroCostumeScreen(wizardData: wizardData, band: band);
       },
     );
   }

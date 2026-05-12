@@ -15,6 +15,8 @@ import 'package:story_weaver_app/providers/hero_profile_provider.dart';
 import 'package:story_weaver_app/screens/wizard_steps/superhero_entry_screen.dart';
 import 'package:story_weaver_app/screens/wizard_steps/superhero_welcome_back_screen.dart';
 import 'package:story_weaver_app/screens/wizard_steps/superhero_costume_screen.dart';
+import 'package:story_weaver_app/screens/wizard_steps/superhero_power_screen.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 
 WizardData _makeWizardData() {
   return WizardData()
@@ -120,6 +122,145 @@ void main() {
     expect(find.text('Super Hugs Mia!'), findsOneWidget);
     expect(find.text('Yes! Start adventure'), findsOneWidget);
     expect(find.text('Edit my hero'), findsOneWidget);
+  });
+
+  // ── Explorer band — emblems + power renames ──────────────────────────────
+
+  Future<void> advanceToEmblemPage(WidgetTester tester) async {
+    // Costume screen starts at the color page. Tap the first color, which
+    // auto-advances after ~300ms; then tap the first cape to advance again.
+    await tester.tap(find.text('Red'));
+    await tester.pump(); // start the 300ms timer
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('No cape'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('Explorer costume screen shows Bolt + Comet emblems',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Sam'
+      ..characterAge = 7; // Explorer band
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroCostumeScreen(
+          wizardData: wd,
+          band: AgeBand.explorer,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await advanceToEmblemPage(tester);
+
+    // Sprout six + Explorer two.
+    expect(find.text('Star'), findsOneWidget);
+    expect(find.text('Lightning'), findsOneWidget);
+    expect(find.text('Heart'), findsOneWidget);
+    expect(find.text('Moon'), findsOneWidget);
+    expect(find.text('Paw'), findsOneWidget);
+    expect(find.text('Rainbow'), findsOneWidget);
+    expect(find.text('Bolt'), findsOneWidget);
+    expect(find.text('Comet'), findsOneWidget);
+  });
+
+  testWidgets('Sprout costume screen does NOT show Bolt or Comet emblems',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Mia'
+      ..characterAge = 4; // Sprout band
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroCostumeScreen(
+          wizardData: wd,
+          band: AgeBand.sprout,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await advanceToEmblemPage(tester);
+
+    // Sprout six present.
+    expect(find.text('Star'), findsOneWidget);
+    expect(find.text('Rainbow'), findsOneWidget);
+    // Explorer-only emblems absent.
+    expect(find.text('Bolt'), findsNothing);
+    expect(find.text('Comet'), findsNothing);
+  });
+
+  testWidgets('Explorer power screen shows Feeling Sense + Soft Step',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Sam'
+      ..characterAge = 7;
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroPowerScreen(
+          wizardData: wd,
+          band: AgeBand.explorer,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Explorer-only powers.
+    expect(find.text('Feeling Sense'), findsOneWidget);
+    expect(find.text('Soft Step'), findsOneWidget);
+    // Explorer renames present.
+    expect(find.text('Lightning Speed'), findsOneWidget);
+    expect(find.text('Sky Glide'), findsOneWidget);
+    expect(find.text('Bright Smile'), findsOneWidget);
+    // Sprout labels should NOT appear in the Explorer view.
+    expect(find.text('Super Speed'), findsNothing);
+    expect(find.text('Flying'), findsNothing);
+  });
+
+  testWidgets('Sprout power screen does NOT show Explorer-only powers',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Mia'
+      ..characterAge = 4;
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroPowerScreen(
+          wizardData: wd,
+          band: AgeBand.sprout,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Sprout labels present.
+    expect(find.text('Super Speed'), findsOneWidget);
+    expect(find.text('Super Hugs'), findsOneWidget);
+    // Explorer-only labels absent.
+    expect(find.text('Feeling Sense'), findsNothing);
+    expect(find.text('Soft Step'), findsNothing);
+    // Explorer-renamed labels also absent.
+    expect(find.text('Lightning Speed'), findsNothing);
+    expect(find.text('Sky Glide'), findsNothing);
   });
 
   testWidgets('tapping Start adventure pops with true and sets scenario',

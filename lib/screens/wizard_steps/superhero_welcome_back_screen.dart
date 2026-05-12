@@ -12,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models.dart';
 import '../../models/local/hero_profile_local.dart';
+import '../../theme/age_band_theme.dart';
 import 'superhero_costume_screen.dart';
 
 class SuperheroWelcomeBackScreen extends StatelessWidget {
@@ -20,10 +21,15 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
   final WizardData wizardData;
   final HeroProfileLocal profile;
 
+  /// Visual band — drives the gradient + greeting copy. Defaults to sprout
+  /// so existing callers without a band keep current behavior.
+  final AgeBand band;
+
   const SuperheroWelcomeBackScreen({
     super.key,
     required this.wizardData,
     required this.profile,
+    this.band = AgeBand.sprout,
   });
 
   static const _emblemEmoji = <String, String>{
@@ -33,6 +39,9 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     'moon': '🌙',
     'paw': '🐾',
     'rainbow': '🌈',
+    // Explorer-only emblems.
+    'bolt': '🔱',
+    'comet': '☄️',
   };
 
   static const _colorHex = <String, Color>{
@@ -60,7 +69,8 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     HapticFeedback.lightImpact();
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => SuperheroCostumeScreen(wizardData: wizardData),
+        builder: (_) =>
+            SuperheroCostumeScreen(wizardData: wizardData, band: band),
       ),
     );
     if (saved == true && context.mounted) {
@@ -77,6 +87,15 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     final heroName = profile.heroName?.trim().isNotEmpty == true
         ? profile.heroName!.trim()
         : 'Super Hero';
+    final isExplorer = band == AgeBand.explorer;
+    final gradient = themeForBand(band).backgroundGradient;
+    final greetingLine = isExplorer ? 'Welcome back,' : 'Welcome back,';
+    final invitation = isExplorer
+        ? 'Ready for your next mission?'
+        : 'Ready for another adventure?';
+    final startCta =
+        isExplorer ? 'Start the mission!' : 'Yes! Start adventure';
+    final editCta = isExplorer ? 'Redesign my hero' : 'Edit my hero';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -92,18 +111,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2D1B42),
-              Color(0xFF5F2776),
-              Color(0xFF8B3A6B),
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: gradient),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -182,7 +190,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Welcome back,',
+                  greetingLine,
                   style: GoogleFonts.fredoka(
                     color: Colors.white.withAlpha(220),
                     fontSize: 20,
@@ -206,7 +214,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ready for another adventure?',
+                  invitation,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.fredoka(
                     color: Colors.white.withAlpha(220),
@@ -227,7 +235,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     ),
                     onPressed: () => _startAdventure(context),
                     child: Text(
-                      'Yes! Start adventure',
+                      startCta,
                       style: GoogleFonts.fredoka(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -249,7 +257,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     ),
                     onPressed: () => _editHero(context),
                     child: Text(
-                      'Edit my hero',
+                      editCta,
                       style: GoogleFonts.fredoka(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

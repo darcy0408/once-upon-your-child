@@ -299,11 +299,15 @@ STYLE: Classic children's coloring book, clean line art
     String? heroEmblem,
     String? heroPower,
     bool? isSuperheroMode,
+    int? age,
   }) {
     final detailedCharacter = createDetailedPrompt(character);
 
     final bool superheroMode = isSuperheroMode ??
         (theme != null && theme.toLowerCase().trim() == 'superhero');
+
+    // Effective age: explicit override wins, else use character.age.
+    final int effectiveAge = age ?? character.age;
 
     final String superheroPreamble = superheroMode
         ? '${buildSuperheroPreamble(
@@ -311,6 +315,7 @@ STYLE: Classic children's coloring book, clean line art
             heroCapeStyle: heroCapeStyle,
             heroEmblem: heroEmblem,
             heroPower: heroPower,
+            age: effectiveAge,
           )}\n\n'
         : '';
 
@@ -356,11 +361,18 @@ STYLE: ${style.displayName} illustration
 
   /// Public for tests + Sub-agent 5 safety audit.
   /// Builds the superhero preamble paragraph for an illustration prompt.
+  ///
+  /// [age] tunes the visual framing: ages 3-5 (Sprout) get the small
+  /// picture-book child-hero framing; ages 6-8 (Explorer) get a more
+  /// confident action-stance, comic-book-meets-storybook framing. When
+  /// [age] is null or outside both bands, falls back to Sprout framing
+  /// (safe default for the original behavior).
   static String buildSuperheroPreamble({
     String? heroCostumeColor,
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    int? age,
   }) {
     final colorDesc = _costumeColorDescriptor(heroCostumeColor);
     final capeClause = _capeClause(heroCapeStyle, heroCostumeColor);
@@ -374,6 +386,19 @@ STYLE: ${style.displayName} illustration
     if (emblemClause != null) outfitParts.add('with $emblemClause');
     final outfitSentence = '${outfitParts.join(', ')}.';
 
+    // Age-band framing: Explorer (6-8) gets a more confident, dynamic
+    // action-stance line; Sprout (3-5, or unspecified) keeps the original
+    // small picture-book child-hero framing.
+    final bool isExplorer = age != null && age >= 6 && age <= 8;
+    final String framingSentence = isExplorer
+        ? 'The main character is a confident 6-to-8-year-old child hero in a '
+            'dynamic action stance, illustrated in a vibrant '
+            'comic-book-meets-storybook style — more detailed than '
+            'picture-book but still child-friendly.'
+        : 'The main character is a small picture-book child hero, drawn in a '
+            'soft cartoon style with gentle rounded shapes — a friendly '
+            'child superhero.';
+
     final buffer = StringBuffer();
     // CRITICAL: no-text directive lands first so it has maximum weight.
     // Gemini's image gen is notoriously fond of embedding text in superhero
@@ -384,9 +409,7 @@ STYLE: ${style.displayName} illustration
         'The illustration must be 100% wordless — pure visual storytelling '
         'only. Do NOT render any text, name banners, speech bubbles, sound '
         'effects (no POW, BAM, ZOOM), or readable characters of any kind.');
-    buffer.writeln(
-        'The main character is dressed as a friendly child superhero. '
-        '$outfitSentence');
+    buffer.writeln('$framingSentence $outfitSentence');
     if (powerSignature != null) {
       buffer.writeln('$powerSignature.');
     }
@@ -396,7 +419,8 @@ STYLE: ${style.displayName} illustration
     buffer.writeln(
         'Style notes: bright, friendly, cartoon, kid-friendly. No weapons. '
         'No scary elements. The villain (if shown) is silly and cartoonish, '
-        'never threatening. Remember: 100% wordless — no embedded text of '
+        'never threatening. Resolution comes through kindness or cleverness, '
+        'never violence. Remember: 100% wordless — no embedded text of '
         'any kind anywhere in the picture.');
     return buffer.toString().trim();
   }
@@ -478,6 +502,14 @@ STYLE: ${style.displayName} illustration
       case 'super_sharing':
         return 'the figure has open palms with small floating tokens or '
             'shared objects';
+      // Explorer-band (ages 6-8) powers
+      case 'feeling_sense':
+        return 'a soft warm glow around the hero\'s head, like gentle waves '
+            'of empathy radiating outward';
+      case 'invisibility':
+        return 'the hero\'s outline is soft and slightly translucent at the '
+            'edges, faintly fading like a wisp — but still clearly visible '
+            'as the main character';
       default:
         return null;
     }
