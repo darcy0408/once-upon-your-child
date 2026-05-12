@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-11 | 23:23 | 953a | main | Close-session push policy + MT-087 cap UI widget tests | [link](docs/sessions/2026-05-11-2323-953a.md) |
 | 2026-05-11 | 22:53 | 0a90 | main | Sprout reader: page cap 8-12, JSON salvage, image text scrub | [link](docs/sessions/2026-05-11-2253-0a90.md) |
 | 2026-05-11 | 22:52 | b36c | main | Egg jokes + crack counter for Sprout avatar generation | [link](docs/sessions/2026-05-11-2252-b36c.md) |
 | 2026-05-11 | 15:57 | 08f3 | main | Sentry triage — 1 dev-noise issue, Seer over budget | [link](docs/sessions/2026-05-11-1557-08f3.md) |
