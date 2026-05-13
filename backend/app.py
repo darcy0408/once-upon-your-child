@@ -547,8 +547,11 @@ def create_app(config_name):
             else:
                 logger.info("Anonymous user already exists")
         except Exception as e:
-            logger.error(f"Failed to create anonymous user: {e}")
             db.session.rollback()
+            if 'UNIQUE constraint' in str(e) or 'already exists' in str(e):
+                logger.info("Anonymous user already exists (worker boot race)")
+            else:
+                logger.error(f"Failed to create anonymous user: {e}")
     logger.info("Database tables created")
 
     # JWT setup - SECURITY: Require proper secret in production
