@@ -730,6 +730,25 @@ def _strip_the_end_pages(pages: list) -> list:
     return filtered or pages
 
 
+def _split_prose_into_pages(text: str) -> list:
+    """Split plain-prose model output into one page per paragraph.
+
+    Used when the model returns prose instead of structured JSON (e.g.
+    Superhero Mode prompts that explicitly request "plain prose, no JSON").
+    Splits on blank-line paragraph breaks (one or more newlines surrounded
+    by optional whitespace). Falls back to a single-page list when there
+    are no paragraph breaks so callers always get a non-empty list.
+
+    Each returned page is stripped; empty fragments are dropped.
+    """
+    if not text:
+        return [""]
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p and p.strip()]
+    if not paragraphs:
+        stripped = text.strip()
+        return [stripped] if stripped else [""]
+    return paragraphs
+
 
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title and pages from LLM JSON response.  wisdom_gem removed; slot kept as None for backward compat."""
@@ -849,14 +868,23 @@ def _safe_extract_title_and_gem(text: str, theme: str):
                 story_body = "\n\n".join(salvaged)
                 return salvaged_title, None, story_body, salvaged, {}
 
-            # 4. Final fallback — show the raw text as a single page.
+            # 4. Final fallback — plain-prose response (e.g. Superhero Mode
+            # prompts that explicitly ask for "plain prose, no JSON"). Split
+            # on blank-line paragraph breaks so the page-based UI sees one
+            # rendered page per paragraph instead of a single mega-blob.
+            # MT-111: Explorer's 5-paragraph arc was collapsing to one page,
+            # making the rendered story look truncated.
             logger.warning(f"Failed to parse story JSON: {e}. Falling back to raw text.")
             fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
-            return fallback_title, None, candidate_text, [candidate_text], {}
+            prose_pages = _split_prose_into_pages(candidate_text)
+            story_body = "\n\n".join(prose_pages)
+            return fallback_title, None, story_body, prose_pages, {}
     except Exception as e:
         logger.warning(f"Unexpected error parsing story: {e}. Falling back to raw text.")
         fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
-        return fallback_title, None, candidate_text, [candidate_text], {}
+        prose_pages = _split_prose_into_pages(candidate_text)
+        story_body = "\n\n".join(prose_pages)
+        return fallback_title, None, story_body, prose_pages, {}
 
     # If we parsed successfully but got no pages, verify content length
     if not pages:

@@ -797,6 +797,77 @@ class TestPostProcessLtrPages:
         assert all(len(p.split()) <= 25 for p in result)
 
 
+class TestSplitProseIntoPages:
+    """MT-111: when the model returns plain prose (no JSON), the parser must
+    split on blank-line paragraph breaks instead of returning a single
+    mega-page that the UI then renders as one cut-off blob."""
+
+    def test_splits_five_paragraphs(self):
+        from backend.services.story_service import _split_prose_into_pages
+        text = (
+            "Paragraph one sets the scene.\n\n"
+            "Paragraph two introduces the villain.\n\n"
+            "Paragraph three tries the power.\n\n"
+            "Paragraph four shows empathy.\n\n"
+            "Paragraph five resolves the story."
+        )
+        result = _split_prose_into_pages(text)
+        assert len(result) == 5
+        assert result[0].startswith("Paragraph one")
+        assert result[-1].startswith("Paragraph five")
+
+    def test_handles_extra_blank_lines_between_paragraphs(self):
+        from backend.services.story_service import _split_prose_into_pages
+        text = "First.\n\n\n\nSecond.\n\n   \n\nThird."
+        result = _split_prose_into_pages(text)
+        assert result == ["First.", "Second.", "Third."]
+
+    def test_strips_per_page_whitespace(self):
+        from backend.services.story_service import _split_prose_into_pages
+        result = _split_prose_into_pages("  leading.\n\n  middle.  \n\ntrailing.  ")
+        assert result == ["leading.", "middle.", "trailing."]
+
+    def test_single_paragraph_falls_back_to_one_page(self):
+        from backend.services.story_service import _split_prose_into_pages
+        text = "One long unbroken sentence with no paragraph breaks at all."
+        result = _split_prose_into_pages(text)
+        assert result == [text]
+
+    def test_empty_string_returns_one_empty_page(self):
+        from backend.services.story_service import _split_prose_into_pages
+        # Callers expect a non-empty list so downstream `pages[0]` etc. don't IndexError.
+        assert _split_prose_into_pages("") == [""]
+        assert _split_prose_into_pages(None) == [""]
+
+    def test_whitespace_only_returns_one_empty_page(self):
+        from backend.services.story_service import _split_prose_into_pages
+        assert _split_prose_into_pages("   \n\n\t  \n\n  ") == [""]
+
+    def test_safe_extract_uses_prose_split_when_json_fails(self):
+        """End-to-end: feed _safe_extract_title_and_gem a plain-prose Explorer
+        superhero response. Pre-MT-111 the entire blob came back as a single
+        page; post-fix it should split into the original paragraph count."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+        prose = (
+            "Maya pulled her blue cape tight and listened. The Grumblestorm "
+            "rumbled low at the edge of the park.\n\n"
+            "She crept closer. Grumble, grumble, rumble low.\n\n"
+            "She tried Feeling Sense. At first, nothing — just static and noise.\n\n"
+            "Then she felt it: the Grumblestorm wasn't angry; it was lonely.\n\n"
+            "Maya stepped forward and offered a hand. The rumble faded into a smile."
+        )
+        title, wisdom_gem, story_body, pages, post_story = (
+            _safe_extract_title_and_gem(prose, theme="superhero")
+        )
+        assert wisdom_gem is None
+        assert post_story == {}
+        assert len(pages) == 5
+        assert pages[0].startswith("Maya pulled")
+        assert pages[-1].endswith("smile.")
+        # Title is the generic fallback when no JSON title was present.
+        assert "superhero" in title.lower() or "Adventure" in title
+
+
 class TestParentContextTransformation:
     def test_transform_parent_context_wraps_raw_input_in_delimiters(self):
         """

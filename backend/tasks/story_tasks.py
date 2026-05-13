@@ -1144,6 +1144,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             total_ms = (time.perf_counter() - total_task_start) * 1000.0
             logger.debug("perf phase=total_task ms=%.1f", total_ms)
 
+            # MT-111 diagnostic: log final page shape before handoff to the
+            # frontend. If a Superhero/age-band-locked story renders with a
+            # different page count than expected, this is the boundary log
+            # to compare against the rendered output.
+            try:
+                _page_word_counts = [len(p.split()) for p in (pages or [])]
+                logger.info(
+                    "story_handoff: theme=%s age=%s pages=%d page_word_counts=%s total_words=%s",
+                    theme,
+                    age,
+                    len(pages or []),
+                    _page_word_counts,
+                    sum(_page_word_counts),
+                )
+            except Exception:  # noqa: BLE001 — never break the response on logging
+                logger.debug("story_handoff diagnostic log failed", exc_info=True)
+
             story_payload = {
                 "id": story_id,
                 "title": title,
