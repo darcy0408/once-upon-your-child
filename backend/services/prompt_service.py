@@ -386,10 +386,20 @@ HARD RULES — these are non-negotiable:
 - Resolution must come through kindness, cleverness, sharing, comforting, or inviting in. NEVER through force or punishment.
 
 OUTPUT FORMAT:
-Return the story as plain prose (no JSON, no markdown headers, no "PAGE X" labels, no beat numbers).
-The story should read as one continuous picture-book story.
+Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise (e.g. 'dragons', 'sibling-bond', 'overcoming-fear'); avoid generic tags like 'adventure', 'magic', 'story'"],
+  "characters_featured": ["named characters who actually appear in the story"],
+  "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
+  "pages": [
+    {{
+      "text": "The full story as one continuous picture-book passage (no 'PAGE X' labels, no beat numbers)."
+    }}
+  ]
+}}
 
-Begin now. Stop at 130 words.
+Begin now. Stop at 130 words inside the page text.
 """
 
     # ------------------------------------------------------------------
@@ -522,9 +532,31 @@ HARD RULES — these are non-negotiable:
 - Resolution must come through empathy, cleverness, sharing, listening, or noticing — NEVER through force or punishment.
 
 OUTPUT FORMAT:
-Return the story as plain prose (no JSON, no markdown headers, no "Chapter X", no "PAGE X", no beat numbers, no paragraph labels).
-The story should read as one continuous five-paragraph chapter.
+Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise (e.g. 'dragons', 'sibling-bond', 'overcoming-fear'); avoid generic tags like 'adventure', 'magic', 'story'"],
+  "characters_featured": ["named characters who actually appear in the story"],
+  "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
+  "pages": [
+    {{
+      "text": "Paragraph 1 — the HERO INTRO paragraph (no 'Chapter X', no 'PAGE X', no beat numbers, no paragraph labels)."
+    }},
+    {{
+      "text": "Paragraph 2 — the TROUBLE APPEARS paragraph."
+    }},
+    {{
+      "text": "Paragraph 3 — the FIRST TRY, DOESN'T QUITE WORK paragraph."
+    }},
+    {{
+      "text": "Paragraph 4 — the POWER MOMENT paragraph."
+    }},
+    {{
+      "text": "Paragraph 5 — the RESOLUTION VIA EMPATHY OR CLEVERNESS paragraph (with one line of hero dialogue)."
+    }}
+  ]
+}}
 
-Begin now. Stop at 350 words.
+Begin now. Stop at 350 words across all pages combined.
 """
 

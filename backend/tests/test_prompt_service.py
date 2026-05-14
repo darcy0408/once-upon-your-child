@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from backend.services.prompt_service import PromptService
 from backend.tasks.story_tasks import (
     SPROUT_WORD_CAP,
     _count_words,
@@ -249,3 +250,39 @@ class TestTruncateHelper:
         out = _truncate_to_word_cap(body, 150, "Mia")
         # We never invent a cheer beat for stories that didn't have one.
         assert not _has_cheer_beat(out)
+
+
+# ---------------------------------------------------------------------------
+# Superhero prompts must emit the same metadata schema as the standard prompt
+# (themes / characters_featured / emotional_arc) so Superhero stories don't
+# silently persist _EMPTY_METADATA. Regression for the gap left by 2706b347
+# which only patched the 5 templates inside story_service.py.
+# ---------------------------------------------------------------------------
+class TestSuperheroPromptEmitsMetadataSchema:
+    def test_sprout_superhero_prompt_includes_metadata_keys(self):
+        prompt = PromptService.build_story_prompt(
+            character="Mia",
+            theme="superhero",
+            age=4,
+            hero_costume_color="purple",
+            hero_cape_style="matching",
+            hero_emblem="star",
+            hero_power="super_smile",
+        )
+        assert '"themes":' in prompt
+        assert '"characters_featured":' in prompt
+        assert '"emotional_arc":' in prompt
+
+    def test_explorer_superhero_prompt_includes_metadata_keys(self):
+        prompt = PromptService.build_story_prompt(
+            character="Leo",
+            theme="superhero",
+            age=7,
+            hero_costume_color="blue",
+            hero_cape_style="matching",
+            hero_emblem="lightning",
+            hero_power="super_speed",
+        )
+        assert '"themes":' in prompt
+        assert '"characters_featured":' in prompt
+        assert '"emotional_arc":' in prompt
