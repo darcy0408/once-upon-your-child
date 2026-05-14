@@ -60,22 +60,30 @@ class TestKeywordFilter:
             _, flagged = fn(story, age)
             assert flagged, f"Sexual content not flagged for age {age}"
 
-    def test_kill_flagged_for_young_children(self):
-        """'Kill' is flagged for age <= 7 but not for older children."""
+    def test_kill_flagged_for_sprout_only(self):
+        """MT-114: 'Kill' is flagged only for Sprout (age <= 5). Explorer
+        (6-8) and Adventurer (9-12) get age-appropriate mild violence;
+        the LLM safety layer catches egregious cases."""
         fn = self._make_filter()
         story = "The dragon tried to kill the knight in battle."
-        _, flagged_young = fn(story, age=6)
-        _, flagged_older = fn(story, age=11)
-        assert flagged_young, "Violence not flagged for young child (age 6)"
-        assert not flagged_older, "Age-appropriate conflict incorrectly flagged for age 11"
+        _, flagged_sprout = fn(story, age=5)
+        _, flagged_explorer = fn(story, age=7)
+        _, flagged_adventurer = fn(story, age=11)
+        assert flagged_sprout, "Violence not flagged for Sprout (age 5)"
+        assert not flagged_explorer, "Mild violence incorrectly flagged for Explorer (age 7)"
+        assert not flagged_adventurer, "Age-appropriate conflict incorrectly flagged for age 11"
 
-    def test_monster_flagged_only_for_youngest(self):
-        """'Monster' triggers only for the youngest band (age <= 7)."""
+    def test_monster_flagged_only_for_sprout(self):
+        """MT-114: 'Monster' triggers only for Sprout (age <= 5). Explorer
+        prompts explicitly authorize named villains and 'monster' is normal
+        Explorer vocabulary."""
         fn = self._make_filter()
         story = "The friendly monster helped the children cross the river."
-        _, flagged_young = fn(story, age=5)
+        _, flagged_sprout = fn(story, age=5)
+        _, flagged_explorer = fn(story, age=7)
         _, flagged_adventurer = fn(story, age=10)
-        assert flagged_young, "Monster not flagged for Sprout/Explorer band"
+        assert flagged_sprout, "Monster not flagged for Sprout band"
+        assert not flagged_explorer, "Monster incorrectly flagged for Explorer band"
         assert not flagged_adventurer, "Monster incorrectly flagged for Adventurer band"
 
     def test_empty_story_not_flagged(self):

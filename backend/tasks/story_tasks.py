@@ -400,6 +400,10 @@ def _post_process_ltr_pages(
 # every other Sprout story path.
 
 SPROUT_WORD_CAP = 150
+# MT-108: Explorer (6-8) Superhero stories target 250-350 words. The post-gen
+# cap (upper bound) is enforced via the same regen+truncate helper as Sprout;
+# the lower bound is already covered by the existing length-validation loop.
+EXPLORER_SUPERHERO_WORD_CAP = 350
 # Detect existing cheer-beat ending so we don't double-append.
 _CHEER_BEAT_RE = re.compile(
     r"Everyone\s+cheered\.\s*[A-Z][\w'\- ]*?\s+saved\s+the\s+day!?",
@@ -476,12 +480,19 @@ def _enforce_sprout_word_cap(
     character_name: str,
     base_prompt: str,
     regen_fn,
+    cap: int = SPROUT_WORD_CAP,
+    band_label: str = "Sprout",
+    age_max: int = 5,
 ) -> tuple[str, list[str], dict]:
-    """Two-stage Sprout word-cap safety belt.
+    """Two-stage word-cap safety belt (default = Sprout, ages 3-5, cap 150).
 
-    Stage 1: if word_count > 150, regenerate ONCE with a stricter prompt prefix.
-    Stage 2: if regen still > 150, truncate at last sentence boundary that fits,
-             preserving the cheer beat.
+    Stage 1: if word_count > cap, regenerate ONCE with a stricter prompt prefix.
+    Stage 2: if regen still > cap, truncate at last sentence boundary that fits,
+             preserving the cheer beat (when present in the original).
+
+    Reused by Explorer Superhero (MT-108) with cap=350 and band_label="Explorer";
+    the sentence splitter and truncation helper are shared, only the cap and
+    log labels differ.
 
     Returns the (possibly updated) (story_body, pages, info_dict). `info_dict`
     is logged by the caller; it carries `original_words`, `regen_used`,
@@ -494,7 +505,7 @@ def _enforce_sprout_word_cap(
         "final_words": 0,
         "theme": theme,
     }
-    if age is None or age > 5:
+    if age is None or age > age_max:
         info["final_words"] = sum(_count_words(p) for p in (pages or []))
         return story_body, pages, info
 
@@ -502,20 +513,20 @@ def _enforce_sprout_word_cap(
     info["original_words"] = total_words
     info["final_words"] = total_words
 
-    if total_words <= SPROUT_WORD_CAP:
+    if total_words <= cap:
         return story_body, pages, info
 
     # --- Stage 1: one stricter regen attempt ---
     stricter_prefix = (
         f"STRICT CONSTRAINT: Your previous attempt was {total_words} words. "
-        f"The MAXIMUM is {SPROUT_WORD_CAP}. Write the same story but UNDER "
-        f"{SPROUT_WORD_CAP} words. Count carefully. Cut anything non-essential.\n\n"
+        f"The MAXIMUM is {cap}. Write the same story but UNDER "
+        f"{cap} words. Count carefully. Cut anything non-essential.\n\n"
     )
     regen_prompt = stricter_prefix + (base_prompt or "")
     try:
         regen_text = regen_fn(regen_prompt)
     except Exception:  # noqa: BLE001 — never crash the user-visible path
-        logger.exception("Sprout word-cap regen call failed; falling back to truncate.")
+        logger.exception("%s word-cap regen call failed; falling back to truncate.", band_label)
         regen_text = None
 
     if regen_text:
@@ -523,15 +534,15 @@ def _enforce_sprout_word_cap(
         try:
             r_title, _, r_body, r_pages, r_post, _ = _safe_extract_title_and_gem(regen_text, theme)
         except Exception:  # noqa: BLE001
-            logger.exception("Sprout word-cap regen parse failed; ignoring regen.")
+            logger.exception("%s word-cap regen parse failed; ignoring regen.", band_label)
             r_body, r_pages, r_title, r_post = None, None, None, None
 
         if r_body and r_pages:
             regen_words = sum(_count_words(p) for p in r_pages)
-            if regen_words <= SPROUT_WORD_CAP:
+            if regen_words <= cap:
                 logger.info(
-                    "Sprout word-cap regen succeeded: theme=%s %s→%s words.",
-                    theme, total_words, regen_words,
+                    "%s word-cap regen succeeded: theme=%s %s→%s words.",
+                    band_label, theme, total_words, regen_words,
                 )
                 info["final_words"] = regen_words
                 return r_body, r_pages, info
@@ -543,13 +554,13 @@ def _enforce_sprout_word_cap(
             total_words = regen_words
 
     # --- Stage 2: truncate at sentence boundary ---
-    truncated_body = _truncate_to_word_cap(story_body, SPROUT_WORD_CAP, character_name)
+    truncated_body = _truncate_to_word_cap(story_body, cap, character_name)
     truncated_pages = [truncated_body] if truncated_body else pages
     info["truncated"] = True
     info["final_words"] = _count_words(truncated_body)
     logger.warning(
-        "Sprout word-cap truncation applied: theme=%s original=%s regen_used=%s final=%s words.",
-        theme, info["original_words"], info["regen_used"], info["final_words"],
+        "%s word-cap truncation applied: theme=%s original=%s regen_used=%s final=%s words.",
+        band_label, theme, info["original_words"], info["regen_used"], info["final_words"],
     )
     return truncated_body, truncated_pages, info
 
@@ -999,6 +1010,41 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         _sprout_info.get("regen_used"),
                         _sprout_info.get("truncated"),
                         _sprout_info.get("final_words"),
+                    )
+
+            # --- MT-108: Explorer (ages 6-8) Superhero 350-word post-gen cap ---
+            # Mirrors the Sprout safety belt above, reusing the same retry+truncate
+            # helper with cap=350. Only fires for the Superhero theme on Explorer
+            # ages, where the prompt targets 250-350 words and the model still
+            # occasionally overshoots.
+            elif (
+                _sprout_age >= 6
+                and _sprout_age <= 8
+                and _is_superhero_theme(theme)
+            ):
+                story_body, pages, _explorer_info = _enforce_sprout_word_cap(
+                    age=_sprout_age,
+                    theme=theme,
+                    pages=pages,
+                    story_body=story_body,
+                    title=title,
+                    post_story=post_story,
+                    character_name=character_name,
+                    base_prompt=prompt,
+                    regen_fn=lambda p: _generate_story_text(p, theme, character_name, companion),
+                    cap=EXPLORER_SUPERHERO_WORD_CAP,
+                    band_label="Explorer",
+                    age_max=8,
+                )
+                if _explorer_info.get("original_words", 0) > EXPLORER_SUPERHERO_WORD_CAP:
+                    logger.info(
+                        "explorer_superhero_word_cap event=enforced theme=%s original=%s regen=%s "
+                        "truncated=%s final=%s",
+                        _explorer_info.get("theme"),
+                        _explorer_info.get("original_words"),
+                        _explorer_info.get("regen_used"),
+                        _explorer_info.get("truncated"),
+                        _explorer_info.get("final_words"),
                     )
 
             # --- Output content moderation ---
