@@ -56,10 +56,18 @@ def _dispatch_event(event: Any) -> None:
 
     if event_type == "checkout.session.completed":
         _handle_checkout_completed(data_object)
+    elif event_type == "customer.subscription.created":
+        # Non-checkout creation paths (Stripe-side recovery, manual creation in
+        # dashboard, etc.). Same downstream sync as `subscription.updated`.
+        _handle_subscription_updated(data_object)
     elif event_type == "customer.subscription.updated":
         _handle_subscription_updated(data_object)
     elif event_type == "customer.subscription.deleted":
         _handle_subscription_deleted(data_object)
+    elif event_type == "invoice.payment_succeeded":
+        # Renewal confirmation — recurring charge cleared. Refresh tier so a
+        # previously past_due account is restored to active.
+        _handle_payment_succeeded(data_object)
     elif event_type == "invoice.payment_failed":
         _handle_payment_failed(data_object)
     else:
@@ -133,6 +141,19 @@ def _handle_payment_failed(invoice: Dict[str, Any]) -> None:
     _apply_subscription_updates(
         user,
         status="past_due",
+    )
+
+
+def _handle_payment_succeeded(invoice: Dict[str, Any]) -> None:
+    user = _find_user(_extract_user_id(invoice))
+    if not user:
+        current_app.logger.warning("Payment succeeded for unknown user")
+        return
+
+    _apply_subscription_updates(
+        user,
+        status="active",
+        period_end=_parse_timestamp(invoice.get("period_end")),
     )
 
 

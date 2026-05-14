@@ -198,7 +198,7 @@ class UpgradePromptDialog extends StatelessWidget {
             context,
             'Feature',
             'Free',
-            'Adventurer',
+            'Premium',
             'Family',
             isHeader: true,
           ),
