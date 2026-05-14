@@ -998,3 +998,132 @@ class TestParentContextTransformation:
 
     def test_transform_parent_context_returns_empty_for_missing_data(self):
         assert transform_parent_context_to_story_guidance(None) == {}
+
+
+class TestPriorAdventuresRecall:
+    """Cover the recall-loop helper: when a character has prior stories with
+    non-empty themes, those themes are surfaced to the next prompt so the model
+    varies/builds on past adventures. First-time characters and anonymous calls
+    get an empty block and the prompt is untouched.
+
+    These tests exercise the real DB lookup against the in-memory SQLite test
+    DB so the SQLAlchemy filter, ordering, and JSON column behaviour are all
+    covered together — the value of the feature lives in that integration."""
+
+    def _make_user(self, app, user_id="recall_user_1"):
+        from backend.database import db
+        from backend.models import User
+        user = User(
+            id=user_id,
+            username=f"u_{user_id}",
+            email=f"{user_id}@example.com",
+            password_hash="x",
+            subscription_tier="free",
+            role="user",
+        )
+        db.session.add(user)
+        db.session.commit()
+        return user
+
+    def _make_character(self, app, user_id, char_id, name="Luna"):
+        from backend.database import db
+        from backend.models import Character
+        char = Character(id=char_id, user_id=user_id, name=name, age=7)
+        db.session.add(char)
+        db.session.commit()
+        return char
+
+    def _add_story(self, app, user_id, character_id, themes, characters_featured=None, days_ago=0):
+        from backend.database import db
+        from backend.models.story import Story
+        from datetime import datetime, timezone, timedelta
+        story = Story(
+            id=f"story_{character_id}_{days_ago}_{len(themes)}",
+            user_id=user_id,
+            character_id=character_id,
+            title="X",
+            theme="Adventure",
+            themes=themes,
+            characters_featured=characters_featured or [],
+            emotional_arc=None,
+            created_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
+        )
+        db.session.add(story)
+        db.session.commit()
+        return story
+
+    def test_block_empty_for_no_character_id(self):
+        """Anonymous / character-less calls bypass the lookup entirely."""
+        from backend.services.story_service import _build_prior_adventures_block
+        assert _build_prior_adventures_block(None) == ""
+        assert _build_prior_adventures_block("") == ""
+
+    def test_block_empty_when_character_has_no_prior_stories(self, app):
+        from backend.services.story_service import _build_prior_adventures_block
+        with app.app_context():
+            user = self._make_user(app, user_id="recall_user_empty")
+            self._make_character(app, user.id, "char_empty")
+            assert _build_prior_adventures_block("char_empty") == ""
+
+    def test_block_lists_distinct_themes_when_prior_stories_exist(self, app):
+        from backend.services.story_service import _build_prior_adventures_block
+        with app.app_context():
+            user = self._make_user(app, user_id="recall_user_with_history")
+            self._make_character(app, user.id, "char_history")
+            self._add_story(app, user.id, "char_history",
+                            themes=["dragons", "courage"],
+                            characters_featured=["Mama Dragon"],
+                            days_ago=3)
+            self._add_story(app, user.id, "char_history",
+                            themes=["kindness", "dragons"],   # dragons dup; should dedupe
+                            characters_featured=["Captain Nova"],
+                            days_ago=1)
+
+            block = _build_prior_adventures_block("char_history")
+            assert "PRIOR ADVENTURES" in block
+            # Newer first: most recent story's themes appear before older ones.
+            assert block.index("kindness") < block.index("courage")
+            # Deduped (dragons only once).
+            assert block.count("dragons") == 1
+            assert "Mama Dragon" in block
+            assert "Captain Nova" in block
+            # Instruction line nudges the model to vary, not repeat.
+            assert "Vary or build on these" in block
+
+    def test_block_caps_themes_at_max_and_preserves_newer_first(self, app):
+        """Cap defends prompt size when a character has a long history."""
+        from backend.services.story_service import (
+            _build_prior_adventures_block,
+            _PRIOR_ADVENTURES_MAX_THEMES,
+        )
+        with app.app_context():
+            user = self._make_user(app, user_id="recall_user_long_history")
+            self._make_character(app, user.id, "char_long")
+            # 5 prior stories, 4 distinct themes each = 20 candidate themes
+            # (all unique). Newer first: theme_0_*, then theme_1_*, ...
+            for i in range(5):
+                self._add_story(
+                    app, user.id, "char_long",
+                    themes=[f"theme_{i}_{j}" for j in range(4)],
+                    days_ago=i,  # i=0 is newest
+                )
+            block = _build_prior_adventures_block("char_long")
+            # Count appearances of "theme_" tokens inside the themes list portion.
+            assert block.count("theme_") == _PRIOR_ADVENTURES_MAX_THEMES
+            # The very newest theme must be present.
+            assert "theme_0_0" in block
+            # A theme from the oldest in-window story should be DROPPED by the cap
+            # (4 stories × 4 themes = 16 themes precede the oldest story's first theme).
+            assert "theme_4_3" not in block
+
+    def test_block_skipped_when_prior_stories_have_no_themes(self, app):
+        """Legacy rows persisted before 2706b347 carry empty themes. The
+        recall block must skip the injection rather than emit a meaningless
+        'explored themes — []' line."""
+        from backend.services.story_service import _build_prior_adventures_block
+        with app.app_context():
+            user = self._make_user(app, user_id="recall_user_legacy")
+            self._make_character(app, user.id, "char_legacy")
+            self._add_story(app, user.id, "char_legacy", themes=[], days_ago=1)
+            self._add_story(app, user.id, "char_legacy", themes=[], days_ago=2)
+            assert _build_prior_adventures_block("char_legacy") == ""

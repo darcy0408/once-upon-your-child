@@ -19,7 +19,7 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band, _build_prior_adventures_block
 from backend.services.prompt_service import PromptService
 from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 
@@ -774,6 +774,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_duration=story_duration,  # NEW: Duration-based generation
                     age=age,   # NEW: Pass age for calibration
                 )
+            # Recall loop: inject this character's prior themes / supporting cast so
+            # the model varies or builds on past adventures instead of looping the
+            # same plot. Anonymous + first-time characters get an empty block and
+            # the prompt is untouched. See _build_prior_adventures_block.
+            prior_block = _build_prior_adventures_block(character_id)
+            if prior_block:
+                prompt = prior_block + prompt
+                logger.info(
+                    "prior_adventures injected for character_id=%s (block_len=%d)",
+                    character_id, len(prior_block),
+                )
+
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
             logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
 
@@ -1207,6 +1219,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     db.session.add(Story(
                         id=story_id,
                         user_id=str(user_id),
+                        character_id=character_id if character_id else None,
                         title=title[:200] if title else None,
                         theme=theme[:100] if theme else None,
                         themes=_themes,
@@ -1215,8 +1228,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     ))
                     db.session.commit()
                     logger.info(
-                        "story_persisted id=%s themes=%s chars=%s arc=%s",
-                        story_id, _themes, _characters, _arc,
+                        "story_persisted id=%s character_id=%s themes=%s chars=%s arc=%s",
+                        story_id, character_id, _themes, _characters, _arc,
                     )
                 except Exception:  # noqa: BLE001
                     db.session.rollback()

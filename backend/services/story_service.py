@@ -344,6 +344,121 @@ def _get_age_band(age: int) -> str:
     if age <= 18: return '15-18'
     return 'adult'
 
+
+# ============================================================================
+# Prior-adventures recall
+# ============================================================================
+# How many recent stories to scan when assembling a character's prior-themes
+# block. Small enough to keep the prompt focused; large enough to surface
+# repetition. Tunable here in one place.
+_PRIOR_ADVENTURES_LOOKBACK = 5
+# Cap on distinct themes injected. Newer-first ordering preserved.
+_PRIOR_ADVENTURES_MAX_THEMES = 10
+# Cap on distinct named characters injected (besides the hero).
+_PRIOR_ADVENTURES_MAX_CHARS = 10
+
+
+def _build_prior_adventures_block(character_id: str | None) -> str:
+    """Return a short prompt block describing this character's prior themes
+    and supporting characters, so the LLM varies/builds on past adventures
+    instead of looping the same plot.
+
+    Returns an empty string when:
+      - character_id is falsy (anonymous / character-less call), OR
+      - the character has no prior stories with non-empty themes, OR
+      - the DB lookup fails for any reason (we never break generation over recall).
+
+    Newer stories first. Themes are deduped (preserving first-seen order)
+    and capped at ``_PRIOR_ADVENTURES_MAX_THEMES``. Supporting characters
+    are deduped + capped at ``_PRIOR_ADVENTURES_MAX_CHARS``.
+    """
+    if not character_id:
+        return ""
+
+    # Lazy imports to avoid a hard model dependency at module import time
+    # (story_service is imported by tests that don't always have a DB ready).
+    try:
+        from ..models.story import Story
+        from ..database import db
+    except ImportError:
+        try:
+            from models.story import Story  # type: ignore[no-redef]
+            from database import db  # type: ignore[no-redef]
+        except ImportError:
+            return ""
+
+    try:
+        rows = (
+            db.session.query(Story)
+            .filter(Story.character_id == character_id)
+            .order_by(Story.created_at.desc())
+            .limit(_PRIOR_ADVENTURES_LOOKBACK)
+            .all()
+        )
+    except Exception:  # noqa: BLE001 — recall is best-effort
+        logger.warning("prior_adventures lookup failed for character_id=%s", character_id, exc_info=True)
+        return ""
+
+    if not rows:
+        return ""
+
+    seen_themes: set[str] = set()
+    themes_ordered: list[str] = []
+    seen_chars: set[str] = set()
+    chars_ordered: list[str] = []
+
+    for row in rows:
+        if len(themes_ordered) < _PRIOR_ADVENTURES_MAX_THEMES:
+            for t in (row.themes or []):
+                if not isinstance(t, str):
+                    continue
+                tag = t.strip().lower()
+                if not tag or tag in seen_themes:
+                    continue
+                seen_themes.add(tag)
+                themes_ordered.append(tag)
+                if len(themes_ordered) >= _PRIOR_ADVENTURES_MAX_THEMES:
+                    break
+        if len(chars_ordered) < _PRIOR_ADVENTURES_MAX_CHARS:
+            for c in (row.characters_featured or []):
+                if not isinstance(c, str):
+                    continue
+                name = c.strip()
+                if not name:
+                    continue
+                key = name.lower()
+                if key in seen_chars:
+                    continue
+                seen_chars.add(key)
+                chars_ordered.append(name)
+                if len(chars_ordered) >= _PRIOR_ADVENTURES_MAX_CHARS:
+                    break
+        # Once both caps are hit, no need to scan further rows.
+        if (len(themes_ordered) >= _PRIOR_ADVENTURES_MAX_THEMES
+                and len(chars_ordered) >= _PRIOR_ADVENTURES_MAX_CHARS):
+            break
+
+    # If the character has stories but they all lack themes (e.g. pre-2706b347
+    # legacy rows), skip the injection rather than emit a content-free block.
+    if not themes_ordered:
+        return ""
+
+    themes_str = ", ".join(themes_ordered)
+    if chars_ordered:
+        chars_str = ", ".join(chars_ordered)
+        return (
+            "\nPRIOR ADVENTURES (for this character): "
+            f"explored themes — [{themes_str}]; featured characters — [{chars_str}]. "
+            "Vary or build on these — don't tell the same story narrowly. "
+            "Pick a fresh angle, problem type, or supporting cast where it serves the new story.\n"
+        )
+    return (
+        "\nPRIOR ADVENTURES (for this character): "
+        f"explored themes — [{themes_str}]. "
+        "Vary or build on these — don't tell the same story narrowly. "
+        "Pick a fresh angle, problem type, or supporting cast where it serves the new story.\n"
+    )
+
 class AdvancedStoryEngine:
     def generate_enhanced_prompt(
         self,
