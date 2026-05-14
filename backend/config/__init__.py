@@ -98,7 +98,7 @@ class Config:
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.5-flash'
 
     # Stripe
-    STRIPE_API_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_API_KEY = os.environ.get('STRIPE_SECRET_KEY') or os.environ.get('STRIPE_API_KEY')
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
     # Celery Configuration (Celery 5.x+)
