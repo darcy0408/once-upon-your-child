@@ -856,7 +856,7 @@ class TestSplitProseIntoPages:
             "Then she felt it: the Grumblestorm wasn't angry; it was lonely.\n\n"
             "Maya stepped forward and offered a hand. The rumble faded into a smile."
         )
-        title, wisdom_gem, story_body, pages, post_story = (
+        title, wisdom_gem, story_body, pages, post_story, metadata = (
             _safe_extract_title_and_gem(prose, theme="superhero")
         )
         assert wisdom_gem is None
@@ -866,6 +866,98 @@ class TestSplitProseIntoPages:
         assert pages[-1].endswith("smile.")
         # Title is the generic fallback when no JSON title was present.
         assert "superhero" in title.lower() or "Adventure" in title
+        # Prose-fallback path has no JSON to extract metadata from.
+        assert metadata == {"themes": [], "characters_featured": [], "emotional_arc": None}
+
+
+class TestStoryMetadataExtraction:
+    """Cover the themes / characters_featured / emotional_arc extraction added
+    so future stories can recall what a child has explored before, without
+    needing embeddings. The shape is set by the OUTPUT FORMAT blocks in
+    story_service.py."""
+
+    def _build_json(self, extra: dict | None = None) -> str:
+        import json as _json
+        base = {
+            "title": "The Brave Little Dragon",
+            "pages": [
+                {"text": "Once there was a dragon named Pip."},
+                {"text": "Pip was scared of the dark cave."},
+                {"text": "But Pip went in anyway and found friends."},
+            ],
+        }
+        if extra:
+            base.update(extra)
+        return _json.dumps(base)
+
+    def test_metadata_populated_from_well_formed_json(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+        payload = self._build_json({
+            "themes": ["dragons", "courage", "friendship"],
+            "characters_featured": ["Pip", "Luna"],
+            "emotional_arc": "scared → brave",
+        })
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert metadata["themes"] == ["dragons", "courage", "friendship"]
+        assert metadata["characters_featured"] == ["Pip", "Luna"]
+        assert metadata["emotional_arc"] == "scared → brave"
+
+    def test_metadata_missing_keys_default_to_empty(self):
+        """Backward compat: stories generated before the prompt change must
+        still parse without errors and return the empty metadata shape."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+        payload = self._build_json()  # no themes/characters/arc keys
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert metadata == {"themes": [], "characters_featured": [], "emotional_arc": None}
+
+    def test_metadata_normalises_themes_to_lowercase_dedup_capped(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+        payload = self._build_json({
+            "themes": ["Dragons", "DRAGONS", "Courage", "  ", 123, "", "friendship", "kindness", "joy", "hope", "love"],
+        })
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        # Lowercased + deduped + non-strings dropped + capped at 6
+        assert metadata["themes"] == ["dragons", "courage", "friendship", "kindness", "joy", "hope"]
+
+    def test_metadata_themes_wrong_type_returns_empty_list(self):
+        """If the model returns a string instead of a list, don't crash."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+        payload = self._build_json({"themes": "dragons, courage, friendship"})
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert metadata["themes"] == []
+
+    def test_metadata_emotional_arc_truncated_at_120_chars(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+        long_arc = "a" * 200
+        payload = self._build_json({"emotional_arc": long_arc})
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert len(metadata["emotional_arc"]) == 120
+
+    def test_metadata_emotional_arc_whitespace_only_becomes_none(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+        payload = self._build_json({"emotional_arc": "   "})
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert metadata["emotional_arc"] is None
+
+    def test_metadata_characters_featured_capped_at_ten(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+        many = [f"Char{i}" for i in range(20)]
+        payload = self._build_json({"characters_featured": many})
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(payload, theme="dragons")
+        assert metadata["characters_featured"] == many[:10]
+
+    def test_metadata_salvage_path_returns_empty(self):
+        """When JSON is malformed enough that the salvage regex kicks in, we
+        do not attempt to recover themes — the empty shape is returned and
+        the caller can regenerate if recall matters."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+        # Two text fields but broken outer JSON (missing closing brace).
+        malformed = (
+            '{"title": "Broken", "themes": ["dragons"], '
+            '"pages": [{"text": "First page."}, {"text": "Second page."}'
+        )
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(malformed, theme="dragons")
+        assert metadata == {"themes": [], "characters_featured": [], "emotional_arc": None}
 
 
 class TestParentContextTransformation:

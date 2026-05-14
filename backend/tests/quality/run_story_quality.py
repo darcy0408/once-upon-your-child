@@ -300,7 +300,7 @@ def main():
             if not raw or "wasn't able" in raw[:80] or raw.startswith("Sorry"):
                 raise ValueError(f"AI returned non-story response: {raw[:100]}")
 
-            title, _, story_text, pages, _ = _safe_extract_title_and_gem(raw, tc["theme"])
+            title, _, story_text, pages, _, _ = _safe_extract_title_and_gem(raw, tc["theme"])
             if not story_text and pages:
                 story_text = "\n\n".join(pages)
 

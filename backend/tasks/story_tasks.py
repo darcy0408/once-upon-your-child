@@ -521,7 +521,7 @@ def _enforce_sprout_word_cap(
     if regen_text:
         info["regen_used"] = True
         try:
-            r_title, _, r_body, r_pages, r_post = _safe_extract_title_and_gem(regen_text, theme)
+            r_title, _, r_body, r_pages, r_post, _ = _safe_extract_title_and_gem(regen_text, theme)
         except Exception:  # noqa: BLE001
             logger.exception("Sprout word-cap regen parse failed; ignoring regen.")
             r_body, r_pages, r_title, r_post = None, None, None, None
@@ -831,7 +831,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     provider_name,
                     attempt_ai_call_ms,
                 )
-                title, _, story_body, pages, post_story = _safe_extract_title_and_gem(story_text, theme)
+                title, _, story_body, pages, post_story, story_metadata = _safe_extract_title_and_gem(story_text, theme)
                 
                 # Validation Logic (Content Sanitizer)
                 is_clean = True
@@ -1042,7 +1042,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     age=age,
                 )
                 fallback_text = _generate_story_text(fallback_prompt, theme, character_name, companion)
-                fallback_title, _, fallback_body, fallback_pages, fallback_post = _safe_extract_title_and_gem(
+                fallback_title, _, fallback_body, fallback_pages, fallback_post, fallback_metadata = _safe_extract_title_and_gem(
                     fallback_text, theme
                 )
                 if fallback_body:
@@ -1050,6 +1050,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_body = fallback_body
                     pages = fallback_pages
                     post_story = fallback_post
+                    # Fallback path replaces story body; metadata must follow or
+                    # we'd be tagging the new story with the flagged story's themes.
+                    story_metadata = fallback_metadata
 
             # --- End output content moderation ---
 
@@ -1161,11 +1164,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:  # noqa: BLE001 — never break the response on logging
                 logger.debug("story_handoff diagnostic log failed", exc_info=True)
 
+            # Metadata may not exist if all generation paths bailed before reaching
+            # the extractor (very rare); default to empty shape so downstream is safe.
+            try:
+                _themes = list(story_metadata.get("themes") or [])
+                _characters = list(story_metadata.get("characters_featured") or [])
+                _arc = story_metadata.get("emotional_arc")
+            except NameError:
+                _themes, _characters, _arc = [], [], None
+
             story_payload = {
                 "id": story_id,
                 "title": title,
                 "story_text": story_body,
                 "theme": theme,
+                "themes": _themes,
+                "characters_featured": _characters,
+                "emotional_arc": _arc,
                 "wisdom_gem": None,  # Removed: no longer generated
                 "include_illustrations": include_illustrations,
                 "illustrations": illustrations,
@@ -1183,6 +1198,29 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # Frontend uses these IDs to track recent_villains/recent_problems
                 # and avoid back-to-back duplicates on the next /generate-story call.
                 story_payload["superhero_meta"] = superhero_meta
+
+            # Persist Story row (skipped for anonymous — Story.user_id is NOT NULL
+            # and references user.id). Failure must not break the response — the
+            # story is already generated and the client expects it.
+            if user_id and user_id != 'anonymous':
+                try:
+                    db.session.add(Story(
+                        id=story_id,
+                        user_id=str(user_id),
+                        title=title[:200] if title else None,
+                        theme=theme[:100] if theme else None,
+                        themes=_themes,
+                        characters_featured=_characters,
+                        emotional_arc=_arc,
+                    ))
+                    db.session.commit()
+                    logger.info(
+                        "story_persisted id=%s themes=%s chars=%s arc=%s",
+                        story_id, _themes, _characters, _arc,
+                    )
+                except Exception:  # noqa: BLE001
+                    db.session.rollback()
+                    logger.exception("Failed to persist Story row (story still returned to caller).")
 
             return {
                 "status": "complete",

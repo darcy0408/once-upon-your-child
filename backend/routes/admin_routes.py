@@ -129,6 +129,33 @@ def create_admin_blueprint(logger, limiter=None):
                         END IF;
                     END $$;
                     """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='story' AND column_name='themes') THEN
+                            ALTER TABLE story ADD COLUMN themes JSONB DEFAULT '[]'::jsonb;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='story' AND column_name='characters_featured') THEN
+                            ALTER TABLE story ADD COLUMN characters_featured JSONB DEFAULT '[]'::jsonb;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='story' AND column_name='emotional_arc') THEN
+                            ALTER TABLE story ADD COLUMN emotional_arc VARCHAR(120);
+                        END IF;
+                    END $$;
+                    """,
                 ]
             else:
                 sql_statements = [
@@ -138,6 +165,9 @@ def create_admin_blueprint(logger, limiter=None):
                     "ALTER TABLE user ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL",
                     "ALTER TABLE user ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL",
                     "ALTER TABLE user ADD COLUMN usage_reset_date TIMESTAMP",
+                    "ALTER TABLE story ADD COLUMN themes TEXT",
+                    "ALTER TABLE story ADD COLUMN characters_featured TEXT",
+                    "ALTER TABLE story ADD COLUMN emotional_arc VARCHAR(120)",
                 ]
 
             applied_migrations = []

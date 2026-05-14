@@ -614,6 +614,9 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 Strictly return valid JSON with this structure:
 {{
   "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise (e.g. 'dragons', 'sibling-bond', 'overcoming-fear'); avoid generic tags like 'adventure', 'magic', 'story'"],
+  "characters_featured": ["named characters who actually appear in the story"],
+  "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
   "pages": [
     {{
       "text": "Page text ({per_page_words})...",
@@ -750,8 +753,76 @@ def _split_prose_into_pages(text: str) -> list:
     return paragraphs
 
 
+_THEMES_MAX = 6
+_CHARACTERS_MAX = 10
+_EMOTIONAL_ARC_MAX_LEN = 120
+
+
+def _normalize_themes(value) -> list[str]:
+    """Coerce model-returned themes to a clean list of <=6 short lowercase tags."""
+    if not isinstance(value, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        tag = item.strip().lower()
+        if not tag or tag in seen:
+            continue
+        seen.add(tag)
+        out.append(tag)
+        if len(out) >= _THEMES_MAX:
+            break
+    return out
+
+
+def _normalize_characters_featured(value) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        name = item.strip()
+        if name:
+            out.append(name)
+        if len(out) >= _CHARACTERS_MAX:
+            break
+    return out
+
+
+def _normalize_emotional_arc(value) -> str | None:
+    if not isinstance(value, str):
+        return None
+    arc = value.strip()
+    if not arc:
+        return None
+    return arc[:_EMOTIONAL_ARC_MAX_LEN]
+
+
+def _extract_story_metadata(data) -> dict:
+    """Pull themes / characters_featured / emotional_arc out of parsed JSON."""
+    if not isinstance(data, dict):
+        return {"themes": [], "characters_featured": [], "emotional_arc": None}
+    return {
+        "themes": _normalize_themes(data.get("themes")),
+        "characters_featured": _normalize_characters_featured(data.get("characters_featured")),
+        "emotional_arc": _normalize_emotional_arc(data.get("emotional_arc")),
+    }
+
+
+_EMPTY_METADATA = {"themes": [], "characters_featured": [], "emotional_arc": None}
+
+
 def _safe_extract_title_and_gem(text: str, theme: str):
-    """Extract title and pages from LLM JSON response.  wisdom_gem removed; slot kept as None for backward compat."""
+    """Extract title, pages, and metadata from LLM JSON response.
+
+    Returns a 6-tuple: (title, wisdom_gem, story_body, pages, post_story, metadata)
+    where wisdom_gem is always None (slot retained for backward compat) and
+    metadata is {"themes": [...], "characters_featured": [...], "emotional_arc": ...}.
+    On salvage / prose-fallback paths, metadata is the empty shape.
+    """
     clean_text = text.strip()
 
     # Strip markdown code blocks (```json ... ```)
@@ -808,17 +879,18 @@ def _safe_extract_title_and_gem(text: str, theme: str):
                  pages = [data['story']]
              elif 'story_text' in data and isinstance(data['story_text'], str):
                  pages = [data['story_text']]
-        
-        return title, None, pages, post_story
+
+        metadata = _extract_story_metadata(data)
+        return title, None, pages, post_story, metadata
 
     try:
         # 1. Try to parse the sliced text (most likely JSON candidate)
-        title, wisdom_gem, pages, post_story = _parse_story_data(sliced_text)
-        
+        title, wisdom_gem, pages, post_story, metadata = _parse_story_data(sliced_text)
+
         # If successful but pages empty, it might be a false positive JSON (rare) or just empty structure
         if not pages:
             # Fallback to using the entire sliced text if it was actually prose caught in braces?
-            # Unlikely if it parsed as JSON. 
+            # Unlikely if it parsed as JSON.
             # But let's check if sliced_text is very short/unlikely to be the real story?
             # For now, trust the JSON parser.
             pass
@@ -828,7 +900,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         # Or maybe the braces were part of prose.
         try:
              if sliced_text != candidate_text:
-                title, wisdom_gem, pages, post_story = _parse_story_data(candidate_text)
+                title, wisdom_gem, pages, post_story, metadata = _parse_story_data(candidate_text)
              else:
                 raise # Already tried candidate (as sliced)
         except json.JSONDecodeError as e:
@@ -866,7 +938,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
                     r'^(A|An)\s+(The|A|An)\s+', r'\2 ', salvaged_title, flags=re.IGNORECASE
                 )
                 story_body = "\n\n".join(salvaged)
-                return salvaged_title, None, story_body, salvaged, {}
+                return salvaged_title, None, story_body, salvaged, {}, dict(_EMPTY_METADATA)
 
             # 4. Final fallback — plain-prose response (e.g. Superhero Mode
             # prompts that explicitly ask for "plain prose, no JSON"). Split
@@ -878,13 +950,13 @@ def _safe_extract_title_and_gem(text: str, theme: str):
             fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
             prose_pages = _split_prose_into_pages(candidate_text)
             story_body = "\n\n".join(prose_pages)
-            return fallback_title, None, story_body, prose_pages, {}
+            return fallback_title, None, story_body, prose_pages, {}, dict(_EMPTY_METADATA)
     except Exception as e:
         logger.warning(f"Unexpected error parsing story: {e}. Falling back to raw text.")
         fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
         prose_pages = _split_prose_into_pages(candidate_text)
         story_body = "\n\n".join(prose_pages)
-        return fallback_title, None, story_body, prose_pages, {}
+        return fallback_title, None, story_body, prose_pages, {}, dict(_EMPTY_METADATA)
 
     # If we parsed successfully but got no pages, verify content length
     if not pages:
@@ -896,7 +968,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     pages = _strip_lesson_endings(pages)
     pages = _strip_the_end_pages(pages)
     story_body = "\n\n".join(pages)
-    return title, wisdom_gem, story_body, pages, post_story
+    return title, wisdom_gem, story_body, pages, post_story, metadata
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
@@ -1019,14 +1091,16 @@ Of cookies — she'd do it again!           (A)
 {{
   "title": "Story Title",
   "rhyme_scheme": "{rhyme_scheme_instruction}",
-
+  "themes": ["3-6 short lowercase tags a parent would recognise; avoid generic tags like 'rhyme', 'limerick', 'story'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<starting feeling> → <ending feeling>",
   "pages": [
     {{"text": "Limerick 1 — 5 lines, AABBA rhyme..."}},
     {{"text": "Limerick 2..."}},
     ...
   ]
 }}
-Each page is exactly one limerick. Return {num_pages} pages total. No extra keys. No prose outside the JSON.
+Each page is exactly one limerick. Return {num_pages} pages total. The themes / characters_featured / emotional_arc keys MUST appear. No other extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}
 """
     else:
@@ -1065,14 +1139,17 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
 {{
   "title": "Story Title",
   "rhyme_scheme": "{rhyme_scheme_instruction}",
+  "themes": ["3-6 short lowercase tags a parent would recognise; avoid generic tags like 'rhyme', 'story'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<starting feeling> → <ending feeling>",
   "pages": [
     {{"text": "Page 1: [Simple sentence ending in word A]"}},
     {{"text": "Page 2: [Simple sentence ending in word that RHYMES with A]"}},
     ...
   ]
 }}
-Return EXACTLY {num_pages} page objects. Use AABB couplets (Page 1 rhymes with Page 2, Page 3 with Page 4).
-No extra keys. No prose outside the JSON.
+Return EXACTLY {num_pages} page objects. Use AABB couplets (Page 1 rhymes with Page 2, Page 3 with Page 4). The themes / characters_featured / emotional_arc keys MUST appear.
+No other extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}"""
 
 
@@ -1251,13 +1328,16 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
 **OUTPUT FORMAT**: Strictly return valid JSON with this structure:
 {{
   "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise; avoid generic tags like 'rhyme', 'poem', 'story'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<starting feeling> → <ending feeling>",
   "pages": [
     {{"text": "Rhyming stanza or couplet..."}},
     {{"text": "Rhyming stanza or couplet..."}},
     ...
   ]
 }}
-No prose outside the JSON.
+The themes / characters_featured / emotional_arc keys MUST appear. No prose outside the JSON.
 """
 
 
@@ -1456,6 +1536,9 @@ WORD COUNT: {word_range[0]}–{word_range[1]} words total across all pages.
 **OUTPUT FORMAT** — return ONLY valid JSON, no prose outside it:
 {{
   "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise; avoid generic tags like 'bedtime', 'sleep', 'story'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<starting feeling> → <ending feeling> (bedtime stories typically end in 'sleepy', 'safe', 'cozy')",
   "pages": [
     {{"text": "First page prose..."}},
     {{"text": "Second page prose..."}},
@@ -1465,5 +1548,5 @@ WORD COUNT: {word_range[0]}–{word_range[1]} words total across all pages.
 
 Each page should be 2–4 sentences — short enough for a parent to read in one slow breath.
 Do not include page numbers or labels inside the text field.
-No extra keys. No prose outside the JSON.
+The themes / characters_featured / emotional_arc keys MUST appear. No other extra keys. No prose outside the JSON.
 """
