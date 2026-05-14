@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-14 | 14:11 | 302f | main | GitHub PAT placement + production schema verify for themes migration | [link](docs/sessions/2026-05-14-1411-302f.md) |
 | 2026-05-13 | 18:30 | d1e9 | main | Delegate triage backlog, MT-087 live verify surfaces rate-limit shadowing | [link](docs/sessions/2026-05-13-1830-d1e9.md) |
 | 2026-05-13 | 18:30 | 614f | main | MT-111/112 independent re-verify + filed MT-114 | [link](docs/sessions/2026-05-13-1830-614f.md) |
 | 2026-05-13 | 17:27 | fd9e | main | MT-111 ship + Playwright-verify Explorer Superhero render | [link](docs/sessions/2026-05-13-1727-fd9e.md) |
