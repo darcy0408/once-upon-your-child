@@ -15,8 +15,13 @@ _KEYWORDS_ALL_AGES = [
     'genitals', 'intercourse', 'rape', 'nude', 'naked',
 ]
 
-# Keywords only inappropriate for young children (age <= 7).
-# Older age bands may have age-appropriate conflict, peril, or mild scary elements.
+# Keywords only inappropriate for the youngest band (Sprout, age <= 5).
+# Explorer (6-8) and older bands explicitly authorize mild peril and named
+# villains ("Grumblestorm", "Shadow Trickster", etc.) — words like "scary"
+# and "monster" are normal Explorer vocabulary, and the broader gate was
+# false-positiving real Explorer stories into the silent fallback path.
+# The LLM safety layer (moderate_story_content) catches the egregious cases
+# for older bands.
 _KEYWORDS_YOUNG_ONLY = [
     'kill', 'murder', 'blood', 'death', 'gun', 'knife', 'stab',
     'weapon', 'torture', 'scary', 'monster', 'nightmare',
@@ -82,9 +87,14 @@ def get_tier_limits(operation: str = 'default') -> str | None:
             'byok': None
         },
         'expensive': {
-            'free': "1/minute; 5/hour; 10/day",
-            'premium': "3/minute; 20/hour",
-            'family': "5/minute; 30/hour",
+            # MT-113: per-minute floors bumped to accommodate per-page
+            # illustration prefetch bursts (one POST per text page, concurrent).
+            # The 5/hour and 10/day ladders remain the real cost ceiling, and
+            # the monthly-quota check inside /generate-illustrations is the
+            # actual cost protection.
+            'free': "15/minute; 5/hour; 10/day",
+            'premium': "30/minute; 20/hour",
+            'family': "60/minute; 30/hour",
             'byok': None
         }
     }
@@ -97,15 +107,16 @@ def make_filter_story_content(logger):
         """Detect age-inappropriate keywords in generated story content.
 
         Returns (story_text, flagged). Content is never modified — callers
-        decide whether to use a fallback. Young children (age <= 7) have a
-        stricter keyword set than older children and adults.
+        decide whether to use a fallback. The Sprout band (age <= 5) has a
+        stricter keyword set than older children and adults; Explorer (6-8)
+        and up rely on the LLM contextual classifier for nuanced calls.
         """
         if not story_text:
             return story_text, False
 
         lower_text = story_text.lower()
         keywords = list(_KEYWORDS_ALL_AGES)
-        if age <= 7:
+        if age <= 5:
             keywords.extend(_KEYWORDS_YOUNG_ONLY)
 
         triggered = [kw for kw in keywords if kw in lower_text]
