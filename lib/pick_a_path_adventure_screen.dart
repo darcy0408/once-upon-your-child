@@ -187,7 +187,8 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     if (age <= 5) return 3; // ~5 minutes
     if (age <= 7) return 5; // ~8 minutes
     if (age <= 10) return 8; // ~15 minutes
-    return 9999; // Creator: no limit
+    if (age <= 14) return 15; // Adventurer/Creator: ~25-30 minutes
+    return 20; // Adolescent/Adult: ~40 minutes
   }
 
   // Removed _progressText - now using StorybookProgressIndicator widget

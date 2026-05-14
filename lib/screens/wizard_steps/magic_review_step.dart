@@ -17,6 +17,7 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/models/api_error.dart';
 import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
+import 'package:story_weaver_app/services/chronicle_service.dart';
 import 'package:story_weaver_app/services/illustration_preference_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
@@ -337,6 +338,48 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             AgeBand.adult => 'literary',
           };
 
+          // Living Story Chronicle auto-attach: for saved (non-anonymous)
+          // characters starting a Pick-a-Path story, resolve a chronicle so
+          // chapter completion is reachable. Anonymous / temp characters
+          // continue down the un-chronicled path with chronicleId: null.
+          String? chronicleId;
+          final savedCharacterId = wd.characterId;
+          final isSavedCharacter = savedCharacterId != null &&
+              savedCharacterId.isNotEmpty &&
+              !savedCharacterId.startsWith('anon_') &&
+              !savedCharacterId.startsWith('temp-');
+          if (isSavedCharacter) {
+            try {
+              final existing =
+                  await ChronicleService.getChroniclesForCharacter(
+                      savedCharacterId);
+              if (!mounted) return;
+              if (existing.isNotEmpty) {
+                // ChronicleService.getChroniclesForCharacter sorts by
+                // lastPlayedAt desc — first entry is the most recent.
+                chronicleId = existing.first.chronicleId;
+              } else {
+                final genre = (requestData['theme'] is String &&
+                        (requestData['theme'] as String).isNotEmpty)
+                    ? requestData['theme'] as String
+                    : 'adventure';
+                final created = await ChronicleService.createChronicle(
+                  characterId: savedCharacterId,
+                  characterName: wd.characterName,
+                  characterAge: wd.characterAge,
+                  title: "${wd.characterName}'s Saga",
+                  genre: genre,
+                );
+                if (!mounted) return;
+                chronicleId = created.chronicleId;
+              }
+            } catch (_) {
+              // Chronicle resolution must never block story launch — fall
+              // back to un-chronicled mode if Isar is unavailable (e.g. web).
+              chronicleId = null;
+            }
+          }
+
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => PickAPathAdventureScreen(
                       userId: userId,
@@ -344,6 +387,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       theme: requestData['theme'] ?? 'Adventure',
                       tone: tone,
                       length: _mapStoryLength(wd.storyLength),
+                      chronicleId: chronicleId,
                       companions: companions.isEmpty ? null : companions,
                       interests: wd.selectedEmotionChips.isNotEmpty
                           ? wd.selectedEmotionChips
