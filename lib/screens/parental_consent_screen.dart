@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,6 +50,20 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     _titleTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) setState(() => _parentTitleActive = true);
     });
+    // Debug-only bypass for Playwright smoke tests. Flutter web canvas mode
+    // rejects programmatic scrolling, so the "scroll-to-bottom" gate cannot be
+    // satisfied from automation. Gated by `kDebugMode` so it cannot trigger in
+    // release builds.
+    if (kDebugMode) {
+      final bypass = Uri.base.queryParameters['bypass_consent'];
+      if (bypass == '1' || bypass == 'true') {
+        debugPrint('🔓 COPPA consent bypassed (debug build, bypass_consent flag)');
+        // Schedule after first frame so Navigator/context are ready.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _submitConsent();
+        });
+      }
+    }
   }
 
   @override
