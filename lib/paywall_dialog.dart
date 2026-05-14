@@ -298,7 +298,7 @@ class PaywallDialog {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Adventurer — \$4.99/mo · 3 characters · 10 stories/day',
+                      'Premium — \$4.99/mo · 3 characters · 10 stories/day',
                       style: TextStyle(fontSize: 13),
                     ),
                   ),

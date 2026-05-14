@@ -13,7 +13,7 @@ enum SubscriptionTier {
       case SubscriptionTier.free:
         return 'Free';
       case SubscriptionTier.premium:
-        return 'Adventurer';
+        return 'Premium';
       case SubscriptionTier.family:
         return 'Family';
     }
