@@ -740,6 +740,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       companions: _illustrationCompanions(),
       sceneRequirements:
           (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
+      heroPower: widget.wizardData?.heroPower,
       // Server key is used for Sprout AND ages-6+ non-BYOK (Flux Schnell route).
       allowServerKey: allowServerKey,
     );

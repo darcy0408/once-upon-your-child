@@ -669,7 +669,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           characterAppearance:
               requestData['characterDetails'] as Map<String, dynamic>?,
           companions: companionPrompts,
-          sceneRequirements: requestData['customElements']?.toString());
+          sceneRequirements: requestData['customElements']?.toString(),
+          heroPower: widget.wizardData.heroPower);
       return generated
           .map((illustration) {
             final url = illustration.imageUrl;
