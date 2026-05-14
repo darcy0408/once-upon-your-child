@@ -35,7 +35,8 @@ class ReplicateImageGenerator:
         age: int = 7,
         therapeutic_focus: str | None = None,
         character_appearance: dict | None = None,
-        companions: list | None = None
+        companions: list | None = None,
+        power_id: str | None = None,
     ) -> list:
         """
         Generate story illustrations using Replicate SDXL-Lightning.
@@ -62,7 +63,8 @@ class ReplicateImageGenerator:
             age,
             therapeutic_focus,
             character_appearance,
-            companions
+            companions,
+            power_id=power_id,
         )
 
         try:
@@ -141,7 +143,8 @@ class ReplicateImageGenerator:
         age: int,
         therapeutic_focus: str | None,
         character_appearance: dict | None,
-        companions: list | None
+        companions: list | None,
+        power_id: str | None = None,
     ) -> str:
         """Build optimized prompt for SDXL"""
 
@@ -185,6 +188,23 @@ class ReplicateImageGenerator:
         # Add therapeutic focus if specified
         if therapeutic_focus:
             prompt += f", promoting {therapeutic_focus}"
+
+        # MT-107: Per-power visual signature override (Explorer-band Superhero).
+        # PREPENDED so the visual signature survives the 500-char truncation
+        # below — the signature is the whole point of the override; better to
+        # truncate boilerplate scene-prose than the empathy-halo / wisp-edge
+        # instruction. Cap raised to 1000 chars when an override is present.
+        if power_id:
+            try:
+                from backend.gemini_image_generator import _power_visual_block
+                block = _power_visual_block(power_id)
+            except Exception:
+                block = ""
+            if block:
+                prompt = f"{block.strip()}. {prompt}"
+                if len(prompt) > 1000:
+                    prompt = prompt[:997] + "..."
+                return prompt
 
         # Keep prompt under 500 chars for best results
         if len(prompt) > 500:
@@ -234,6 +254,7 @@ class ReplicateImageGenerator:
         character_appearance: dict | None = None,
         companions: list | None = None,
         user_id: str | None = None,
+        power_id: str | None = None,
     ) -> list:
         """Per-page story illustration via Replicate Flux Schnell (~$0.003/image).
 
@@ -256,6 +277,7 @@ class ReplicateImageGenerator:
         prompt = self._build_prompt(
             scene_description, character_name, style, age,
             therapeutic_focus, character_appearance, companions,
+            power_id=power_id,
         )
         import time
         t0 = time.time()

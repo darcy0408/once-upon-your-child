@@ -16,6 +16,37 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
+# MT-107: Per-power visual signatures for Explorer-band Superhero Mode.
+# Keys are power_ids from backend/data/superhero_matrix.py EXPLORER_POWERS.
+# Only powers whose narrative identity demands a distinct silhouette appear
+# here; other powers (super_speed, flying, etc.) rely on action posture.
+_POWER_VISUAL_OVERRIDES: dict[str, str] = {
+    "feeling_sense": (
+        "POWER VISUAL SIGNATURE — Feeling Sense: render a soft pastel halo "
+        "(empathy glow) around the hero's head and shoulders in EVERY frame. "
+        "The glow is a gentle pink-and-gold gradient, slightly translucent, "
+        "about 1.5x the diameter of the head, with feathered diffuse edges — "
+        "never sharp, never lens-flare. It signals the hero is sensing "
+        "another character's emotions. Keep it subtle, dreamlike, warm."
+    ),
+    "invisibility": (
+        "POWER VISUAL SIGNATURE — Soft Step (invisibility): render the hero "
+        "with a translucent, wisp-edged silhouette. The body is ~70% opaque "
+        "in the core and fades to ~25% opacity at the edges with soft, smoky "
+        "wisp-like dissipation. Background is faintly visible THROUGH the "
+        "outer edges of the hero's outline. Eyes and face remain readable. "
+        "Effect should feel like a ghostly shimmer, not a glitch."
+    ),
+}
+
+
+def _power_visual_block(power_id: str | None) -> str:
+    if not power_id:
+        return ""
+    override = _POWER_VISUAL_OVERRIDES.get(power_id.strip().lower())
+    return f"\n{override}\n" if override else ""
+
+
 def _detect_mime_type(data: bytes) -> str:
     """Detect image MIME type from magic bytes."""
     if data[:8] == b'\x89PNG\r\n\x1a\n':
@@ -159,6 +190,7 @@ class GeminiImageGenerator:
         character_appearance: dict | None = None,
         companions: list | None = None,
         user_id: str | None = None,
+        power_id: str | None = None,
     ) -> list:
         """
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
@@ -266,7 +298,7 @@ SCENE (depict the action/setting, never the words): {visual_scene}
 {character_description}
 Target audience: {age_descriptor} (person is {age} years old)
 Detail level: {detail_level}{therapeutic_context}{companions_text}
-
+{_power_visual_block(power_id)}
 CRITICAL REQUIREMENTS:
 - The illustration MUST match the SCENE description above (same setting, action, and mood).
 - The main character MUST match the selected character exactly: {character_description}

@@ -1061,6 +1061,13 @@ def create_story_blueprint(
             therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             user_api_key = data.get("user_api_key")  # BYOK support
 
+            # MT-107: Optional power_id triggers per-power visual signature in
+            # the prompt (e.g., feeling_sense → empathy halo, invisibility →
+            # wisp-edged silhouette). Frontend may send either key.
+            power_id = data.get("power_id") or data.get("hero_power")
+            if power_id is not None:
+                power_id = sanitize_text(str(power_id), max_length=64) or None
+
             # Get character appearance/avatar details
             character_appearance = data.get("character_appearance") or data.get("appearance")
 
@@ -1104,6 +1111,7 @@ def create_story_blueprint(
                     therapeutic_focus=therapeutic_focus,
                     character_appearance=character_appearance,
                     companions=companions,
+                    power_id=power_id,
                 )
             else:
                 # Server-key path — ages 6+ non-BYOK is metered against the
@@ -1159,6 +1167,7 @@ def create_story_blueprint(
                         character_appearance=character_appearance,
                         companions=companions,
                         user_id=current_user_id,
+                        power_id=power_id,
                     )
                     using_flux_schnell = bool(illustrations)
                     if not illustrations:
@@ -1190,6 +1199,7 @@ def create_story_blueprint(
                         therapeutic_focus=therapeutic_focus,
                         character_appearance=character_appearance,
                         companions=companions,
+                        power_id=power_id,
                     )
 
             if not illustrations:

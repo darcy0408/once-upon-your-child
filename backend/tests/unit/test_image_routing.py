@@ -220,3 +220,41 @@ class TestFluxSchnellGenerator:
             num_images=1, age=8,
         )
         assert result == []
+
+
+class TestPowerVisualOverride:
+    """MT-107: Explorer-band Superhero powers must inject visual signatures."""
+
+    def test_feeling_sense_injects_empathy_glow(self):
+        from backend.gemini_image_generator import _power_visual_block
+        block = _power_visual_block("feeling_sense")
+        assert "soft pastel halo" in block.lower()
+        assert "empathy glow" in block.lower()
+        assert "every frame" in block.lower()
+
+    def test_invisibility_injects_translucent_wisp(self):
+        from backend.gemini_image_generator import _power_visual_block
+        block = _power_visual_block("invisibility")
+        assert "translucent" in block.lower()
+        assert "wisp-edged" in block.lower()
+
+    def test_no_power_id_returns_empty(self):
+        from backend.gemini_image_generator import _power_visual_block
+        assert _power_visual_block(None) == ""
+        assert _power_visual_block("") == ""
+        assert _power_visual_block("super_speed") == ""  # not overridden
+
+    def test_gemini_generate_threads_override_into_prompt(self):
+        from unittest.mock import MagicMock
+        from backend.gemini_image_generator import GeminiImageGenerator
+        gen = GeminiImageGenerator(api_key="fake")
+        gen._client = MagicMock()
+        gen._client.models.generate_content.return_value = MagicMock(candidates=[])
+        gen.generate_story_illustration(
+            scene_description="hero meets a sad cloud",
+            character_name="Mira",
+            age=7,
+            power_id="feeling_sense",
+        )
+        sent_prompt = gen._client.models.generate_content.call_args.kwargs["contents"][0]
+        assert "soft pastel halo" in sent_prompt.lower()
