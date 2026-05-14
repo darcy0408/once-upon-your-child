@@ -63,6 +63,7 @@ class PerPageIllustrationPrefetcher {
     this.characterAppearance,
     this.companions,
     this.sceneRequirements,
+    this.heroPower,
     this.allowServerKey = false,
     Set<int>? skipPages,
     http.Client? client,
@@ -83,6 +84,10 @@ class PerPageIllustrationPrefetcher {
   final Map<String, dynamic>? characterAppearance;
   final List<Map<String, String>>? companions;
   final String? sceneRequirements;
+  /// Superhero power id (e.g. `feeling_sense`, `soft_step`). When present the
+  /// backend may apply a per-power visual signature override. Null for
+  /// non-superhero stories or bands without a power picker.
+  final String? heroPower;
   /// When true, fall through to the backend's server-managed Imagen key when
   /// the user has no BYOK token. The backend's `/generate-illustrations`
   /// route already supports both paths — it uses `user_api_key` if present,
@@ -281,6 +286,8 @@ class PerPageIllustrationPrefetcher {
                 'character_appearance': characterAppearance,
               if (companions != null && companions!.isNotEmpty)
                 'companions': companions,
+              if (heroPower != null && heroPower!.isNotEmpty)
+                'power_id': heroPower,
               if (hasUserKey) 'user_api_key': apiKey,
             }),
           )

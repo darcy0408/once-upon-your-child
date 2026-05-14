@@ -31,6 +31,7 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
     Map<String, dynamic>? characterAppearance,
     List<Map<String, String>>? companions,
     String? sceneRequirements,
+    String? heroPower,
   }) async {
     try {
       // Call backend to extract story scenes

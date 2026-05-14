@@ -132,6 +132,7 @@ class StoryIllustrationService {
     Map<String, dynamic>? characterAppearance, // NEW: Character appearance details
     List<Map<String, String>>? companions, // NEW: Companions/pets
     String? sceneRequirements,
+    String? heroPower,
   }) async {
     // Split story into segments for illustration
     final segments = _identifyKeyScenes(storyText, numberOfImages);
@@ -159,6 +160,7 @@ class StoryIllustrationService {
           therapeuticFocus: therapeuticFocus,
           characterAppearance: characterAppearance,
           companions: companions,
+          heroPower: heroPower,
         );
 
         illustrations.add(StoryIllustration(
@@ -203,6 +205,7 @@ class StoryIllustrationService {
     String? therapeuticFocus,
     Map<String, dynamic>? characterAppearance,
     List<Map<String, String>>? companions,
+    String? heroPower,
   }) async {
     final illHeaders = await ApiServiceManager.authHeaders();
     final response = await http.post(
@@ -218,6 +221,7 @@ class StoryIllustrationService {
         if (characterAppearance != null)
           'character_appearance': characterAppearance,
         if (companions != null) 'companions': companions,
+        if (heroPower != null && heroPower.isNotEmpty) 'power_id': heroPower,
       }),
     );
 
@@ -426,6 +430,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
     Map<String, dynamic>? characterAppearance,
     List<Map<String, String>>? companions,
     String? sceneRequirements,
+    String? heroPower,
   }) async {
     // Use the base implementation, which calls /generate-illustrations
     // with scene_description (the current backend contract).
@@ -441,6 +446,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
       characterAppearance: characterAppearance,
       companions: companions,
       sceneRequirements: sceneRequirements,
+      heroPower: heroPower,
     );
   }
 }
@@ -462,6 +468,7 @@ class MockIllustrationService extends StoryIllustrationService {
     Map<String, dynamic>? characterAppearance,
     List<Map<String, String>>? companions,
     String? sceneRequirements,
+    String? heroPower,
   }) async {
     // Generate mock illustrations with placeholder images
     final mockIllustrations = <StoryIllustration>[];
