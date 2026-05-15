@@ -467,6 +467,16 @@ Begin now. Stop at 130 words inside the page text.
 
         identity_tag = f"{power_name} {character}"
 
+        # --- Canonical Explorer villain roster (must be named explicitly) ---
+        # The model MUST embody the conflict in one of these eight villains
+        # rather than inventing an abstract puzzle/landscape antagonist.
+        # MT-121: Explorer stories were drifting into puzzle motifs
+        # ("Whispering Rainbow Mountain") because the villain wasn't pinned.
+        canonical_villain_names = [
+            v["name"] for v in villains_t.values()
+        ]
+        canonical_villain_list = ", ".join(canonical_villain_names)
+
         # --- Section markers in plain language (the model fills in the prose) ---
         beat1_seed = (
             f"{character} pulled on the {color} suit and felt the fabric settle "
@@ -500,10 +510,11 @@ HERO IDENTITY (use the hero's name at least THREE times and the identity tag at 
 - Costume: {color} suit with {cape_phrase} and a {emblem} emblem
 - Signature power: {power_name} ({power_verb})
 
-VILLAIN (mischievous, lonely, or misunderstood — NEVER frightening):
-- Name: {villain['name']}
+VILLAIN — the antagonist MUST be one of these named Explorer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and use them as the embodied source of conflict.
+- Name: {villain['name']} (use this exact name in the prose)
 - What they do: {villain['action']}
 - How they soften: {villain['softens']}
+- DO NOT replace the villain with an abstract setting, weather pattern, riddle, puzzle, landscape, or "mysterious place" (no "Whispering Mountain", no "Rainbow Maze", no shape/line riddles, no logic puzzles standing in for the villain). The conflict MUST be embodied by {villain['name']} — a character who shows up, acts, and softens. The villain is mischievous, lonely, or misunderstood — NEVER frightening.
 
 PROBLEM TO SOLVE:
 - Goal: {problem['name']} — {problem['summary']}
@@ -528,6 +539,7 @@ HARD RULES — these are non-negotiable:
 - Include at least TWO sensory details (sight, sound, OR touch) in paragraph 1.
 - The hero MUST speak ONE line of dialogue at the resolution.
 - The villain is mischievous, lonely, or misunderstood — NEVER evil, NEVER frightening.
+- The antagonist MUST be the named villain {villain['name']} — do NOT substitute an abstract place, weather, riddle, puzzle, or mountain for the villain. The villain must appear AS A CHARACTER in the story.
 - NO weapons. NO fighting. NO scary or dark content. NO chasing, biting, or threats.
 - Resolution must come through empathy, cleverness, sharing, listening, or noticing — NEVER through force or punishment.
 

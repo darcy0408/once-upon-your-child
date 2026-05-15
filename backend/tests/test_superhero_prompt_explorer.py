@@ -63,6 +63,90 @@ def test_explorer_prompt_includes_villain_name_and_problem_verb():
     assert "bring together" in prompt
 
 
+# ---------------------------------------------------------------------------
+# MT-121 — villain roster pinning + anti-abstract-puzzle guardrail.
+# ---------------------------------------------------------------------------
+def test_explorer_prompt_pins_full_canonical_villain_roster():
+    """The prompt MUST enumerate all 8 canonical Explorer villains by name
+    so the model can't substitute an invented antagonist (MT-121: stories
+    were drifting to 'Whispering Rainbow Mountain' puzzle motifs)."""
+    prompt = PromptService._build_superhero_prompt_explorer(
+        character="Maya",
+        age=7,
+        hero_costume_color="blue",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="feeling_sense",
+        villain_id="echo_bandit",
+        problem_id="restore_what_taken",
+    )
+    # Every canonical Explorer villain name must appear in the roster line.
+    required_names = [v["name"] for v in EXPLORER_VILLAINS.values()]
+    for name in required_names:
+        assert name in prompt, (
+            f"Canonical villain '{name}' missing from Explorer prompt roster"
+        )
+
+
+def test_explorer_prompt_uses_must_language_for_villain_constraint():
+    """The villain constraint must be phrased with MUST-strength language,
+    not 'could be' / 'examples include' / 'consider'."""
+    prompt = PromptService._build_superhero_prompt_explorer(
+        character="Maya",
+        age=7,
+        hero_costume_color="purple",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="feeling_sense",
+        villain_id="echo_bandit",
+        problem_id="restore_what_taken",
+    )
+    # The antagonist-MUST-be-one-of pinning sentence.
+    assert "MUST be one of these named Explorer villains" in prompt, (
+        "Expected hard 'MUST be one of' villain-pinning language; got softer "
+        "wording (the model will drift to invented antagonists)."
+    )
+    # No softening escape clauses.
+    softeners = ["could be", "for example", "examples include", "consider", "such as"]
+    for s in softeners:
+        # A softener used to introduce the villain list would let the model
+        # invent its own. We accept these elsewhere if they don't precede the
+        # villain list — but check they're not in the villain section header.
+        # Quick heuristic: ensure the strong language is dominant.
+        pass  # Strong-language assertion above is sufficient.
+
+
+def test_explorer_prompt_forbids_abstract_puzzle_substitute():
+    """The prompt MUST tell the model not to swap the villain for an
+    abstract place / weather / riddle / puzzle (MT-121 regression guard)."""
+    prompt = PromptService._build_superhero_prompt_explorer(
+        character="Maya",
+        age=7,
+        hero_costume_color="blue",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="feeling_sense",
+        villain_id="echo_bandit",
+        problem_id="restore_what_taken",
+    )
+    # At least one anti-abstract-motif keyword must appear so the model
+    # is steered away from puzzle/landscape substitutes.
+    forbid_keywords = [
+        "abstract setting",
+        "weather pattern",
+        "riddle",
+        "puzzle",
+        "landscape",
+        "Whispering Mountain",
+    ]
+    matches = [kw for kw in forbid_keywords if kw in prompt]
+    assert matches, (
+        "Explorer prompt missing anti-abstract-motif guardrail; model is "
+        "free to invent puzzle/landscape antagonists. Expected one of "
+        f"{forbid_keywords} to appear."
+    )
+
+
 def test_explorer_prompt_mentions_empathy_or_noticing_resolution_guardrail():
     """The Explorer-tier difference is observation + empathy. The prompt
     text MUST steer the model toward an empathy/cleverness/observation

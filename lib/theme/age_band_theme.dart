@@ -314,17 +314,19 @@ const sproutTheme = AgeBandThemeData(
   wizardNextHint: 'Next: Review & Make Magic!',
 );
 
-/// Explorer (ages 6-8): Current magical purple — the baseline aesthetic.
-/// Sparkles, readable labels, sense of wonder.
+/// Explorer (ages 6-8): Magical purple — the baseline aesthetic.
+/// Sparkles, readable labels, sense of wonder. Visibly more vivid/purple
+/// than Sprout's warm plum (MT-121 — previous gradient read as dark navy).
 const explorerTheme = AgeBandThemeData(
   band: AgeBand.explorer,
-  // Current magical purple palette (preserved as-is)
-  primary: Color(0xFF6A1B9A),
-  primaryLight: Color(0xFF9C4DCC),
+  // Vivid magical purple palette — brighter than the prior near-black mix
+  // so Explorer reads as clearly "purple magic" and not Sprout-dark-navy.
+  primary: Color(0xFF7B1FA2),
+  primaryLight: Color(0xFFBA68C8),
   primaryDark: Color(0xFF4A148C),
-  gradientStart: Color(0xFF120226),
-  gradientMid: Color(0xFF2A0A4E),
-  gradientEnd: Color(0xFF1A1040),
+  gradientStart: Color(0xFF2E0854), // Deep royal violet
+  gradientMid: Color(0xFF5B21B6), // Vivid magical purple
+  gradientEnd: Color(0xFF3B1078), // Rich indigo-purple base
   accent: Color(0xFFFFD54F),
   accentLight: Color(0xFFFFE082),
   surface: Color(0xFFB2DFDB),
