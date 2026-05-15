@@ -20,8 +20,11 @@ import 'achievements_screen.dart' deferred as achievements_screen;
 import 'coloring_book_library_screen.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'saved_stories_screen.dart';
+import 'story_result_screen.dart';
 import 'screens/chronicles_list_screen.dart';
 import 'services/isar_service.dart';
+import 'services/offline_story_service.dart';
+import 'models/local/story_local.dart';
 import 'models.dart';
 import 'models/achievement.dart';
 import 'services/user_identity_service.dart';
@@ -245,6 +248,10 @@ class _StoryScreenState extends State<StoryScreen> {
   List<Character> _characters = [];
   Character? _selectedCharacter;
 
+  // Saved stories, newest-first. Powers the "Continue your story" home card
+  // and the Continue/New choice when a character with a recent story is tapped.
+  List<StoryLocal> _savedStories = [];
+
   final bool _interactiveMode = false;
   final bool _isLoading = false;
 
@@ -355,6 +362,7 @@ class _StoryScreenState extends State<StoryScreen> {
     _loadUserId();
     _loadProfiles();
     _loadCharacters();
+    _loadSavedStories();
     _loadSubscriptionInfo();
     _loadAchievementSummary();
     _refreshGracePeriodStatus();
@@ -807,6 +815,10 @@ class _StoryScreenState extends State<StoryScreen> {
                     _buildAchievementsOverviewCard(),
                     const SizedBox(height: 20),
                   ],
+                  if (_mostRecentStory != null) ...[
+                    _buildContinueStoryCard(_mostRecentStory!),
+                    const SizedBox(height: 20),
+                  ],
                   _buildSELPacksSection(),
                   const SizedBox(height: 20),
                   if (_childProfiles.length >= 2) ...[
@@ -935,6 +947,258 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
+  Future<void> _loadSavedStories() async {
+    try {
+      final service = OfflineStoryService(IsarService.instance);
+      final stories = await service.getAllStories();
+      if (mounted) setState(() => _savedStories = stories);
+    } catch (_) {
+      // Non-fatal: the Continue affordances simply won't appear.
+    }
+  }
+
+  /// Most recent saved story, but only if it's recent enough to plausibly be
+  /// something the child still wants to return to (not a months-old story).
+  StoryLocal? get _mostRecentStory {
+    if (_savedStories.isEmpty) return null;
+    final story = _savedStories.first; // getAllStories() is newest-first
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    return story.createdAt.isAfter(cutoff) ? story : null;
+  }
+
+  /// Newest recent saved story featuring [character], matched by name (saved
+  /// stories don't reliably carry a character id).
+  StoryLocal? _recentStoryForCharacter(Character character) {
+    final target = character.name.trim().toLowerCase();
+    if (target.isEmpty) return null;
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    for (final story in _savedStories) {
+      if (story.createdAt.isBefore(cutoff)) continue;
+      final match = story.characters
+          .any((c) => c.name.trim().toLowerCase() == target);
+      if (match) return story;
+    }
+    return null;
+  }
+
+  /// Tapping a character no longer silently launches a fresh wizard. If the
+  /// child has a recent story with this hero, offer Continue vs. New first.
+  void _onCharacterTapped(Character character) {
+    setState(() => _selectedCharacter = character);
+    final recent = _recentStoryForCharacter(character);
+    if (recent != null) {
+      _showContinueOrNewSheet(character, recent);
+    } else {
+      _startNewStoryWith(character);
+    }
+  }
+
+  void _startNewStoryWith(Character character) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WizardStoryScreen(
+          initialCharacter: character,
+          availableCharacters: _characters,
+        ),
+      ),
+    ).then((_) {
+      _loadCharacters();
+      _loadSubscriptionInfo();
+      _loadSavedStories();
+    });
+  }
+
+  void _openSavedStory(StoryLocal story) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoryResultScreen(
+          title: story.title,
+          storyText: story.storyText,
+          characterName: story.characters.isNotEmpty
+              ? story.characters.first.name
+              : null,
+          storyId: story.identifier,
+          persistedCoverImageBase64: story.coverImageBase64,
+          persistedPageIllustrationsJson: story.pageIllustrationsJson,
+        ),
+      ),
+    ).then((_) => _loadSavedStories());
+  }
+
+  void _showContinueOrNewSheet(Character character, StoryLocal recent) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "${character.name}'s stories",
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              _sheetChoice(
+                icon: Icons.menu_book_rounded,
+                color: const Color(0xFF6C3FC7),
+                title: 'Continue',
+                subtitle: recent.title,
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _openSavedStory(recent);
+                },
+              ),
+              _sheetChoice(
+                icon: Icons.auto_awesome,
+                color: const Color(0xFFFF8A00),
+                title: 'Start a new story',
+                subtitle: 'Make a brand-new adventure',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _startNewStoryWith(character);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _sheetChoice({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A one-tap card to jump back into the most recent story — so a child who
+  /// clicked away from a story isn't stranded.
+  Widget _buildContinueStoryCard(StoryLocal story) {
+    Widget cover;
+    final b64 = story.coverImageBase64;
+    if (b64 != null && b64.isNotEmpty) {
+      try {
+        cover = Image.memory(base64Decode(b64),
+            width: 64, height: 64, fit: BoxFit.cover);
+      } catch (_) {
+        cover = _continueCoverFallback();
+      }
+    } else {
+      cover = _continueCoverFallback();
+    }
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 2,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _openSavedStory(story),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                  borderRadius: BorderRadius.circular(14), child: cover),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Pick up where you left off',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF8A6FBF))),
+                    const SizedBox(height: 2),
+                    Text(story.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2C1B47))),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                    color: Color(0xFF6C3FC7), shape: BoxShape.circle),
+                child: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 28),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _continueCoverFallback() {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+            colors: [Color(0xFF6C3FC7), Color(0xFF9B6DFF)]),
+      ),
+      child: const Icon(Icons.auto_stories_rounded,
+          color: Colors.white, size: 30),
+    );
+  }
+
   /// Renders character portrait cards horizontally.Tapping a card opens the
   /// wizard with that character pre-loaded for a one-tap story.
   Widget _buildCharacterPortraitRow() {
@@ -965,21 +1229,7 @@ class _StoryScreenState extends State<StoryScreen> {
               ..._characters.map((character) => _CharacterPortraitCard(
                     character: character,
                     isSelected: _selectedCharacter?.id == character.id,
-                    onTap: () {
-                      setState(() => _selectedCharacter = character);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WizardStoryScreen(
-                            initialCharacter: character,
-                            availableCharacters: _characters,
-                          ),
-                        ),
-                      ).then((_) {
-                        _loadCharacters();
-                        _loadSubscriptionInfo();
-                      });
-                    },
+                    onTap: () => _onCharacterTapped(character),
                     onQuickPlay: () => _showQuickStartSheet(character),
                   )),
               // "New Hero" card at the end

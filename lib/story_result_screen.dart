@@ -91,6 +91,15 @@ class StoryResultScreen extends ConsumerStatefulWidget {
   final String? customElements;
   final WizardData? wizardData;
 
+  /// Base64-encoded cover illustration restored from a saved story. When set,
+  /// the cover renders directly without contacting the backend.
+  final String? persistedCoverImageBase64;
+
+  /// JSON array of base64-encoded per-page illustrations (indexed by page)
+  /// restored from a saved story. When set, pages render their saved art
+  /// directly instead of triggering regeneration.
+  final String? persistedPageIllustrationsJson;
+
   const StoryResultScreen({
     super.key,
     required this.title,
@@ -123,6 +132,8 @@ class StoryResultScreen extends ConsumerStatefulWidget {
     this.companionCharacters,
     this.customElements,
     this.wizardData,
+    this.persistedCoverImageBase64,
+    this.persistedPageIllustrationsJson,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -174,8 +185,21 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
   List<_InlineIllustration> _inlineIllustrations = [];
 
+  /// Per-page illustrations restored from a saved story, indexed by story
+  /// page. Decoded once from [widget.persistedPageIllustrationsJson]. When a
+  /// page has saved art here, it renders directly and no regeneration runs.
+  List<Uint8List?> _persistedPageIllustrations = const [];
+
+  bool get _hasPersistedPageIllustrations =>
+      _persistedPageIllustrations.any((b) => b != null);
+
   /// Per-page background prefetcher (BYOK only). Lazily created in initState.
   PerPageIllustrationPrefetcher? _perPagePrefetcher;
+
+  /// True once the character-details fetch has finished (success OR failure).
+  /// The per-page prefetcher waits for this so illustrations carry the
+  /// character's appearance instead of being generated generically.
+  bool _characterLoadDone = false;
 
   /// Once the reader dismisses the "out of free illustrations" banner for
   /// this story, don't show it again. Per-page upsell cards (older bands)
@@ -259,6 +283,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// promises something the BYOK upsell is simultaneously gating.
   bool get _hasRenderedIllustrations =>
       _inlineIllustrations.isNotEmpty ||
+      _hasPersistedPageIllustrations ||
       (_cachedIllustrations?.isNotEmpty ?? false);
 
   String _readingLevelLabel(AgeBandThemeData band) {
@@ -606,6 +631,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     _loadCachedIllustrations();
     _loadCachedColoringPages();
     _decodeInlineIllustrations();
+    _restoreReadingProgress();
     _loadQualityData();
     if (widget.trackStoryCreation) {
       _trackStoryCreation(); // Track that user created a story, check for unlocks
@@ -672,8 +698,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   void _decodeInlineIllustrations() {
+    _decodePersistedPageIllustrations();
+
     final raw = widget.backendIllustrations;
-    if (raw == null || raw.isEmpty) return;
+    if (raw == null || raw.isEmpty) {
+      // No fresh backend illustrations — fall back to a persisted cover so a
+      // re-opened saved story still shows its picture-book cover.
+      _decodePersistedCover();
+      return;
+    }
 
     final decoded = <_InlineIllustration>[];
     for (final item in raw) {
@@ -695,6 +728,40 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }
 
     _inlineIllustrations = decoded;
+    if (_inlineIllustrations.isEmpty) _decodePersistedCover();
+  }
+
+  void _decodePersistedCover() {
+    final raw = widget.persistedCoverImageBase64;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final base64Str = raw.contains(',') ? raw.split(',').last : raw;
+      _inlineIllustrations = [
+        _InlineIllustration(bytes: base64Decode(base64Str)),
+      ];
+    } catch (_) {
+      // Ignore corrupt persisted cover.
+    }
+  }
+
+  void _decodePersistedPageIllustrations() {
+    final raw = widget.persistedPageIllustrationsJson;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      _persistedPageIllustrations = decoded.map<Uint8List?>((entry) {
+        if (entry is! String || entry.isEmpty) return null;
+        try {
+          final base64Str = entry.contains(',') ? entry.split(',').last : entry;
+          return base64Decode(base64Str);
+        } catch (_) {
+          return null;
+        }
+      }).toList();
+    } catch (_) {
+      // Ignore malformed persisted illustrations payload.
+    }
   }
 
   @override
@@ -722,6 +789,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   void _maybeStartPerPagePrefetcher() {
     if (!mounted || _perPagePrefetcher != null) return;
     if (_storyPages.isEmpty) return;
+    // Defer until character details have loaded — otherwise the prefetcher
+    // fires every page request with characterAppearance=null and the
+    // illustrations don't match the character the user created.
+    // _loadCharacterDetails() re-invokes this once the fetch settles.
+    if (widget.characterId != null && _character == null && !_characterLoadDone) {
+      return;
+    }
     final settings = ref.read(settingsProvider);
     final isSproutBand = ageBandFromAge(_effectiveAge) == AgeBand.sprout;
     final hasByok = settings.useOwnApiKey || widget.usedUserApiKey;
@@ -729,6 +803,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // ages-6+ non-BYOK path.
     final allowServerKey = isSproutBand || (!hasByok && _effectiveAge >= 6);
     if (!hasByok && !allowServerKey) return;
+
+    // Pages restored from a saved story already have art — never regenerate
+    // them. If every page is persisted, skip the prefetcher entirely so a
+    // re-opened saved story costs zero quota.
+    final skipPages = <int>{
+      for (int i = 0; i < _persistedPageIllustrations.length; i++)
+        if (i < _storyPages.length && _persistedPageIllustrations[i] != null) i,
+    };
+    if (skipPages.length >= _storyPages.length) return;
 
     final prefetcher = PerPageIllustrationPrefetcher(
       storyId: _analyticsStoryId,
@@ -743,6 +826,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       heroPower: widget.wizardData?.heroPower,
       // Server key is used for Sprout AND ages-6+ non-BYOK (Flux Schnell route).
       allowServerKey: allowServerKey,
+      skipPages: skipPages,
     );
     _perPagePrefetcher = prefetcher;
     unawaited(prefetcher.initialize().then((_) {
@@ -881,16 +965,22 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         );
       }
     } on TimeoutException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Loading character details timed out. Using a default age for now.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Loading character details timed out. Using a default age for now.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
       debugPrint('Error loading character ${widget.characterId}: $e');
+    } finally {
+      // Release the per-page prefetcher even if the fetch failed — better to
+      // illustrate without appearance than to never illustrate at all.
+      _characterLoadDone = true;
+      if (mounted) _maybeStartPerPagePrefetcher();
     }
   }
 
@@ -1472,6 +1562,52 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     );
   }
 
+  /// Base64-encode the currently-displayed cover illustration (if any) so it
+  /// can be persisted with the saved story. Returns null when there is no
+  /// cover art to keep.
+  String? _captureCoverImageBase64() {
+    if (_inlineIllustrations.isEmpty) return null;
+    try {
+      return base64Encode(_inlineIllustrations.first.bytes);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Capture per-page illustration bytes available right now — from art that
+  /// was already persisted (re-save case) or from the live prefetcher's
+  /// `ready` pages — as a JSON array of base64 strings indexed by story page.
+  /// Returns null when no page has art (avoids storing an all-null payload).
+  String? _capturePageIllustrationsJson() {
+    final prefetcher = _perPagePrefetcher;
+    final entries = <String?>[];
+    var hasAny = false;
+    for (int i = 0; i < _storyPages.length; i++) {
+      Uint8List? bytes;
+      if (i < _persistedPageIllustrations.length) {
+        bytes = _persistedPageIllustrations[i];
+      }
+      if (bytes == null && prefetcher != null) {
+        final state = prefetcher.stateOf(i).value;
+        if (state.status == PageIllustrationStatus.ready) {
+          bytes = state.bytes;
+        }
+      }
+      if (bytes != null) {
+        try {
+          entries.add(base64Encode(bytes));
+          hasAny = true;
+          continue;
+        } catch (_) {
+          // Fall through to null entry.
+        }
+      }
+      entries.add(null);
+    }
+    if (!hasAny) return null;
+    return jsonEncode(entries);
+  }
+
   Future<void> _saveStory() async {
     // If storyId is present, it might already be saved or we can't save a new one easily without checking.
     // But usually in Wizard flow, storyId is null.
@@ -1496,6 +1632,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           // Calculate stats
           totalWords: widget.storyText.split(RegExp(r'\s+')).length,
           totalPages: widget.pages?.length ?? _storyPages.length,
+          // Persist whatever illustrations are available now so re-opening
+          // this story shows its pictures without regenerating them.
+          coverImageBase64: _captureCoverImageBase64(),
+          pageIllustrationsJson: _capturePageIllustrationsJson(),
         );
 
         debugPrint('[MT-035] widget.characterName=${widget.characterName}');
@@ -2086,6 +2226,49 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }
   }
 
+  /// Stable id used to bookmark this story's reading position. Prefers the id
+  /// the story was opened with; falls back to the id auto-save assigns to a
+  /// freshly generated story.
+  String? get _progressStoryId => widget.storyId ?? _savedLocalStoryId;
+
+  String _progressPrefsKey(String id) => 'story_progress_$id';
+
+  /// Bookmarks the current page so the child can pick the story back up if
+  /// they leave. A finished story clears its bookmark — it should re-open at
+  /// the cover, not the last page.
+  Future<void> _saveReadingProgress() async {
+    final id = _progressStoryId;
+    if (id == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = _progressPrefsKey(id);
+      if (_currentPageIndex >= _totalPages - 1) {
+        await prefs.remove(key);
+      } else {
+        await prefs.setInt(key, _currentPageIndex);
+      }
+    } catch (_) {
+      // Reading position is a nicety — never let it break page turns.
+    }
+  }
+
+  /// Resumes a re-opened saved story at the page the child left off on.
+  Future<void> _restoreReadingProgress() async {
+    final id = widget.storyId;
+    if (id == null) return; // fresh stories always start at the cover
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_progressPrefsKey(id));
+      if (saved == null || !mounted) return;
+      final target = saved.clamp(0, _totalPages - 1);
+      if (target != _currentPageIndex) {
+        setState(() => _currentPageIndex = target);
+      }
+    } catch (_) {
+      // Fall back to the cover page.
+    }
+  }
+
   void _handlePageFlip(bool isForward) {
     if (mounted) {
       setState(() {
@@ -2122,6 +2305,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             : _currentPageIndex;
         if (textIndex >= 0) prefetcher.prioritize(textIndex);
       }
+
+      unawaited(_saveReadingProgress());
     }
   }
 
@@ -2133,6 +2318,54 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   void _goToPreviousStoryPage() {
     if (_currentPageIndex <= 0) return;
     _handlePageFlip(false);
+  }
+
+  /// Leaves the reader without stranding the child. A freshly generated story
+  /// sits on top of the wizard route stack — popping one level lands them
+  /// back mid-wizard, which looks like it will start a brand-new story. Send
+  /// them home instead, where the "Continue your story" card offers a one-tap
+  /// way back in. A re-opened saved story just pops back where it came from.
+  void _exitReader() {
+    if (widget.storyId == null) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  /// Per-page illustration for [textIndex]. Prefers art persisted from a
+  /// saved story (rendered directly, no backend call); otherwise falls back
+  /// to the live prefetcher; otherwise renders nothing.
+  Widget _buildPerPageIllustration(int textIndex) {
+    if (textIndex >= 0 && textIndex < _persistedPageIllustrations.length) {
+      final bytes = _persistedPageIllustrations[textIndex];
+      if (bytes != null) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: Image.memory(
+                bytes,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildImageErrorPlaceholder(),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    final prefetcher = _perPagePrefetcher;
+    if (prefetcher == null) return const SizedBox.shrink();
+    return PerPageIllustration(
+      listenable: prefetcher.stateOf(textIndex),
+      onTapUpgrade: _useInlineQuotaUpsell
+          ? () => _showIllustrationUnlockSheet(context)
+          : null,
+    );
   }
 
   Widget _buildStoryPage(int index) {
@@ -2182,17 +2415,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Per-page illustration (BYOK background prefetch). Renders
+              // Per-page illustration. Renders art persisted from a saved
+              // story directly, otherwise the BYOK background prefetch:
               // bytes when ready, a skeleton while loading, an upsell card
               // when the free-tier monthly cap is hit (older bands only),
               // and nothing otherwise.
-              if (_perPagePrefetcher != null)
-                PerPageIllustration(
-                  listenable: _perPagePrefetcher!.stateOf(textIndex),
-                  onTapUpgrade: _useInlineQuotaUpsell
-                      ? () => _showIllustrationUnlockSheet(context)
-                      : null,
-                ),
+              _buildPerPageIllustration(textIndex),
               // Story text - MAGIC TYPEWRITER EFFECT
               if (!isRevealed)
                 MagicalTypewriterText(
@@ -2302,13 +2530,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_perPagePrefetcher != null)
-                  PerPageIllustration(
-                    listenable: _perPagePrefetcher!.stateOf(textIndex),
-                    onTapUpgrade: _useInlineQuotaUpsell
-                        ? () => _showIllustrationUnlockSheet(context)
-                        : null,
-                  ),
+                _buildPerPageIllustration(textIndex),
                 SelectableText.rich(
                   TextSpan(
                     style: GoogleFonts.merriweather(
@@ -2343,15 +2565,20 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               Flexible(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: maxImageHeight),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.memory(
-                      illustration.bytes,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImageErrorPlaceholder();
-                      },
+                  // Tapping the cover picture begins the story — pre-readers
+                  // navigate by tapping what they see, not by reading hints.
+                  child: GestureDetector(
+                    onTap: _goToNextStoryPage,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.memory(
+                        illustration.bytes,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildImageErrorPlaceholder();
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -2370,41 +2597,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                       : const Color(0xFF2C3E50),
                 ),
               ),
-              const SizedBox(height: 16),
-              // Navigation hint — always show so kids know to tap the arrow
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6C3FC7).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: const Color(0xFF6C3FC7).withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tap the arrow to start reading!',
-                      style: GoogleFonts.fredoka(
-                        fontSize: 15 * _textScale,
-                        fontWeight: FontWeight.w500,
-                        color: _highContrastMode
-                            ? Colors.white70
-                            : const Color(0xFF6C3FC7),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 18,
-                      color: _highContrastMode
-                          ? Colors.white70
-                          : const Color(0xFF6C3FC7),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 20),
+              // A big, obviously-tappable button that actually advances the
+              // page. Replaces an earlier text hint whose arrow was purely
+              // decorative — confusing for pre-readers who can't read it and
+              // tapped the dead icon expecting it to work.
+              _StartReadingButton(
+                textScale: _textScale,
+                highContrast: _highContrastMode,
+                onTap: _goToNextStoryPage,
               ),
             ],
           );
@@ -3098,7 +3299,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back,
                                 color: Colors.white),
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: _exitReader,
                           ),
                         ),
                         SizedBox(width: band.space(8)),
@@ -4468,6 +4669,109 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
         return Transform.scale(scale: scale, child: child);
       },
       child: tappable,
+    );
+  }
+}
+
+/// Big, pulsing "Start Reading" button shown on the storybook cover page.
+///
+/// Sized and styled for pre-readers (ages 2-5): a large tap target, an
+/// instantly-recognizable play icon, a gentle idle pulse to draw the eye,
+/// and a press-down scale + haptic so the child feels the tap register.
+class _StartReadingButton extends StatefulWidget {
+  final double textScale;
+  final bool highContrast;
+  final VoidCallback onTap;
+
+  const _StartReadingButton({
+    required this.textScale,
+    required this.highContrast,
+    required this.onTap,
+  });
+
+  @override
+  State<_StartReadingButton> createState() => _StartReadingButtonState();
+}
+
+class _StartReadingButtonState extends State<_StartReadingButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  bool _pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      duration: const Duration(milliseconds: 1100),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = widget.highContrast ? Colors.white : const Color(0xFF6C3FC7);
+    final fg = widget.highContrast ? Colors.black : Colors.white;
+
+    final button = AnimatedScale(
+      scale: _pressed ? 0.95 : 1.0,
+      duration: const Duration(milliseconds: 90),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 64, minWidth: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(36),
+          boxShadow: [
+            BoxShadow(
+              color: bg.withValues(alpha: 0.45),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.play_arrow_rounded,
+                color: fg, size: 32 * widget.textScale),
+            const SizedBox(width: 8),
+            Text(
+              'Start Reading',
+              style: GoogleFonts.fredoka(
+                fontSize: 22 * widget.textScale,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      label: 'Start reading the story',
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          widget.onTap();
+        },
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 1.0, end: 1.06).animate(
+            CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+          ),
+          child: button,
+        ),
+      ),
     );
   }
 }
