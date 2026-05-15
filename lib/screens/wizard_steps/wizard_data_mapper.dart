@@ -90,20 +90,24 @@ class WizardDataMapper {
     String sensoryPalette = ''; // Default to empty string instead of null
     String worldBible = '';
 
-    if (data.selectedScenario != null) {
-      // Superhero Mode (ages 3-5) is a backend routing key, not a story
-      // title — pass the literal 'superhero' so backend/main.py picks up
-      // the dedicated prompt chain.
-      if (data.selectedScenario == 'superhero') {
-        theme = 'superhero';
-      }
+    // MT-118: dispatch on the sturdier `heroPower` signal rather than
+    // `selectedScenario`. After the superhero flow (costume/cape/emblem/power)
+    // the wizard pops back to Pick Place, where any scene tap rewrites
+    // `selectedScenario` to that scene id — silently demoting the request
+    // off the superhero path (theme='superhero' lost, hero* fields stripped).
+    // `heroPower` survives those subsequent steps, so it's a more honest
+    // "this is a superhero adventure" marker.
+    final hasHeroPower =
+        data.heroPower != null && data.heroPower!.trim().isNotEmpty;
+    if (hasHeroPower) {
+      theme = 'superhero';
+      // Intentionally skip conflictHook / sensoryPalette / worldBible — the
+      // superhero prompt chain owns those, and feeding it a Rainbow World
+      // world bible produces the exact non-canonical drift MT-121 chases.
+    } else if (data.selectedScenario != null) {
       final scenarioCard = ScenarioData.getById(data.selectedScenario!);
       if (scenarioCard != null) {
-        // Don't overwrite the literal 'superhero' theme key — the backend
-        // dispatches on it. The other fields are still useful context.
-        if (data.selectedScenario != 'superhero') {
-          theme = scenarioCard.titleForAge(age);
-        }
+        theme = scenarioCard.titleForAge(age);
         conflictHook = scenarioCard.conflictHookForAge(age);
         sensoryPalette = scenarioCard.sensoryPalette;
         worldBible = scenarioCard.worldBibleForAge(age);
@@ -297,10 +301,12 @@ class WizardDataMapper {
               : null),
       // Story DNA: parent-authored therapeutic context (Feature 4)
       if (therapeuticPrompt != null) 'therapeutic_prompt': therapeuticPrompt,
-      // Superhero Mode (ages 3-5). Only emitted when theme == 'superhero';
-      // ApiServiceManager.generateStory ignores them otherwise. These keys
-      // mirror the named-parameter API on the manager.
-      if (data.selectedScenario == 'superhero') ...{
+      // Superhero Mode (ages 3-5 / 6-8). MT-118: gate on heroPower presence
+      // rather than selectedScenario — the latter gets overwritten by any
+      // scene pick on the page the user is popped back to after the
+      // superhero flow. ApiServiceManager.generateStory translates these
+      // camelCase keys to snake_case (`hero_costume_color`, …) on the wire.
+      if (data.heroPower != null && data.heroPower!.trim().isNotEmpty) ...{
         'heroCostumeColor': data.heroCostumeColor,
         'heroCapeStyle': data.heroCapeStyle,
         'heroEmblem': data.heroEmblem,
