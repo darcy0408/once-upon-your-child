@@ -1,0 +1,57 @@
+name: Postgres Backup
+
+# Daily off-Railway logical backup of the production Postgres database.
+# Railway native volume backups require the Pro plan; this workflow gives the
+# Hobby plan an equivalent (and account-loss-resilient) safety net by pushing a
+# pg_dump to a Cloudflare R2 bucket.
+#
+# DISABLED until secrets are configured. Uncomment the `schedule:` block once
+# the five secrets below are set in the repo (Settings → Secrets and variables
+# → Actions):
+#   DATABASE_PUBLIC_URL   — Railway Postgres public connection string
+#   R2_ACCOUNT_ID         — Cloudflare account id (R2 endpoint host prefix)
+#   R2_ACCESS_KEY_ID      — R2 API token access key
+#   R2_SECRET_ACCESS_KEY  — R2 API token secret
+#   R2_BUCKET             — target bucket name (e.g. story-weaver-pg-backups)
+on:
+  # schedule:
+  #   - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
+  workflow_dispatch: {}      # manual run — use this to smoke-test once secrets are set
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump Postgres
+        env:
+          DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          DUMP_FILE="story-weaver-pg-$(date -u +%Y-%m-%d).sql.gz"
+          echo "DUMP_FILE=$DUMP_FILE" >> "$GITHUB_ENV"
+          # pg_dump from the official image so the client version always keeps
+          # pace with the Railway server version (newer client, older server OK).
+          docker run --rm postgres:17-alpine \
+            pg_dump "$DATABASE_PUBLIC_URL" --no-owner --no-privileges \
+            | gzip > "$DUMP_FILE"
+          SIZE=$(stat -c%s "$DUMP_FILE")
+          echo "Dump size: ${SIZE} bytes"
+          # A real dump is several KB even for a near-empty schema; anything
+          # tiny means pg_dump produced nothing useful — fail loudly.
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "::error::Dump file is suspiciously small (${SIZE} bytes) — aborting."
+            exit 1
+          fi
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 rejects the aws-cli v2 default integrity checksums; only send
+          # them when the operation requires it.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          aws s3 cp "$DUMP_FILE" "s3://${{ secrets.R2_BUCKET }}/postgres/$DUMP_FILE" \
+            --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          echo "Uploaded postgres/$DUMP_FILE to R2 bucket ${{ secrets.R2_BUCKET }}"
