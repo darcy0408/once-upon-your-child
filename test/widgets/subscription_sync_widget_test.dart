@@ -68,7 +68,7 @@ void main() {
     await tester.pump();
 
     // Check if the widget updated
-    expect(find.text('Tier: Adventurer, Status: active'), findsOneWidget);
+    expect(find.text('Tier: Premium, Status: active'), findsOneWidget);
 
     // Emit another status
     final freeStatus = SubscriptionStatus(
