@@ -22,93 +22,103 @@ const StoryLocalSchema = CollectionSchema(
       name: r'charactersJson',
       type: IsarType.string,
     ),
-    r'createdAt': PropertySchema(
+    r'coverImageBase64': PropertySchema(
       id: 1,
+      name: r'coverImageBase64',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 2,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'currentSegmentNumber': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'currentSegmentNumber',
       type: IsarType.long,
     ),
     r'imageUrl': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'imageUrl',
       type: IsarType.string,
     ),
     r'inventoryJson': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'inventoryJson',
       type: IsarType.string,
     ),
     r'isCompleted': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isCompleted',
       type: IsarType.bool,
     ),
     r'isFavorite': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isFavorite',
       type: IsarType.bool,
     ),
     r'isInteractive': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isInteractive',
       type: IsarType.bool,
     ),
     r'isLearningToRead': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isLearningToRead',
       type: IsarType.bool,
     ),
     r'isRhyming': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isRhyming',
       type: IsarType.bool,
     ),
     r'isSyncedToServer': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isSyncedToServer',
       type: IsarType.bool,
     ),
     r'length': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'length',
       type: IsarType.string,
     ),
+    r'pageIllustrationsJson': PropertySchema(
+      id: 13,
+      name: r'pageIllustrationsJson',
+      type: IsarType.string,
+    ),
     r'stateJson': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'stateJson',
       type: IsarType.string,
     ),
     r'storyId': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'storyId',
       type: IsarType.string,
     ),
     r'storyText': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'storyText',
       type: IsarType.string,
     ),
     r'theme': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'theme',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'title',
       type: IsarType.string,
     ),
     r'tone': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'tone',
       type: IsarType.string,
     ),
     r'wisdomGem': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'wisdomGem',
       type: IsarType.string,
     )
@@ -167,6 +177,12 @@ int _storyLocalEstimateSize(
     }
   }
   {
+    final value = object.coverImageBase64;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.imageUrl;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -180,6 +196,12 @@ int _storyLocalEstimateSize(
   }
   {
     final value = object.length;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.pageIllustrationsJson;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -216,24 +238,26 @@ void _storyLocalSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.charactersJson);
-  writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeLong(offsets[2], object.currentSegmentNumber);
-  writer.writeString(offsets[3], object.imageUrl);
-  writer.writeString(offsets[4], object.inventoryJson);
-  writer.writeBool(offsets[5], object.isCompleted);
-  writer.writeBool(offsets[6], object.isFavorite);
-  writer.writeBool(offsets[7], object.isInteractive);
-  writer.writeBool(offsets[8], object.isLearningToRead);
-  writer.writeBool(offsets[9], object.isRhyming);
-  writer.writeBool(offsets[10], object.isSyncedToServer);
-  writer.writeString(offsets[11], object.length);
-  writer.writeString(offsets[12], object.stateJson);
-  writer.writeString(offsets[13], object.storyId);
-  writer.writeString(offsets[14], object.storyText);
-  writer.writeString(offsets[15], object.theme);
-  writer.writeString(offsets[16], object.title);
-  writer.writeString(offsets[17], object.tone);
-  writer.writeString(offsets[18], object.wisdomGem);
+  writer.writeString(offsets[1], object.coverImageBase64);
+  writer.writeDateTime(offsets[2], object.createdAt);
+  writer.writeLong(offsets[3], object.currentSegmentNumber);
+  writer.writeString(offsets[4], object.imageUrl);
+  writer.writeString(offsets[5], object.inventoryJson);
+  writer.writeBool(offsets[6], object.isCompleted);
+  writer.writeBool(offsets[7], object.isFavorite);
+  writer.writeBool(offsets[8], object.isInteractive);
+  writer.writeBool(offsets[9], object.isLearningToRead);
+  writer.writeBool(offsets[10], object.isRhyming);
+  writer.writeBool(offsets[11], object.isSyncedToServer);
+  writer.writeString(offsets[12], object.length);
+  writer.writeString(offsets[13], object.pageIllustrationsJson);
+  writer.writeString(offsets[14], object.stateJson);
+  writer.writeString(offsets[15], object.storyId);
+  writer.writeString(offsets[16], object.storyText);
+  writer.writeString(offsets[17], object.theme);
+  writer.writeString(offsets[18], object.title);
+  writer.writeString(offsets[19], object.tone);
+  writer.writeString(offsets[20], object.wisdomGem);
 }
 
 StoryLocal _storyLocalDeserialize(
@@ -244,25 +268,27 @@ StoryLocal _storyLocalDeserialize(
 ) {
   final object = StoryLocal();
   object.charactersJson = reader.readStringOrNull(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
-  object.currentSegmentNumber = reader.readLongOrNull(offsets[2]);
+  object.coverImageBase64 = reader.readStringOrNull(offsets[1]);
+  object.createdAt = reader.readDateTime(offsets[2]);
+  object.currentSegmentNumber = reader.readLongOrNull(offsets[3]);
   object.id = id;
-  object.imageUrl = reader.readStringOrNull(offsets[3]);
-  object.inventoryJson = reader.readStringOrNull(offsets[4]);
-  object.isCompleted = reader.readBool(offsets[5]);
-  object.isFavorite = reader.readBool(offsets[6]);
-  object.isInteractive = reader.readBool(offsets[7]);
-  object.isLearningToRead = reader.readBool(offsets[8]);
-  object.isRhyming = reader.readBool(offsets[9]);
-  object.isSyncedToServer = reader.readBool(offsets[10]);
-  object.length = reader.readStringOrNull(offsets[11]);
-  object.stateJson = reader.readStringOrNull(offsets[12]);
-  object.storyId = reader.readString(offsets[13]);
-  object.storyText = reader.readString(offsets[14]);
-  object.theme = reader.readString(offsets[15]);
-  object.title = reader.readString(offsets[16]);
-  object.tone = reader.readStringOrNull(offsets[17]);
-  object.wisdomGem = reader.readStringOrNull(offsets[18]);
+  object.imageUrl = reader.readStringOrNull(offsets[4]);
+  object.inventoryJson = reader.readStringOrNull(offsets[5]);
+  object.isCompleted = reader.readBool(offsets[6]);
+  object.isFavorite = reader.readBool(offsets[7]);
+  object.isInteractive = reader.readBool(offsets[8]);
+  object.isLearningToRead = reader.readBool(offsets[9]);
+  object.isRhyming = reader.readBool(offsets[10]);
+  object.isSyncedToServer = reader.readBool(offsets[11]);
+  object.length = reader.readStringOrNull(offsets[12]);
+  object.pageIllustrationsJson = reader.readStringOrNull(offsets[13]);
+  object.stateJson = reader.readStringOrNull(offsets[14]);
+  object.storyId = reader.readString(offsets[15]);
+  object.storyText = reader.readString(offsets[16]);
+  object.theme = reader.readString(offsets[17]);
+  object.title = reader.readString(offsets[18]);
+  object.tone = reader.readStringOrNull(offsets[19]);
+  object.wisdomGem = reader.readStringOrNull(offsets[20]);
   return object;
 }
 
@@ -276,15 +302,15 @@ P _storyLocalDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
-    case 2:
-      return (reader.readLongOrNull(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
+    case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readLongOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
@@ -296,20 +322,24 @@ P _storyLocalDeserializeProp<P>(
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
       return (reader.readString(offset)) as P;
     case 16:
       return (reader.readString(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -699,6 +729,160 @@ extension StoryLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'charactersJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64IsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'coverImageBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64IsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'coverImageBase64',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64EqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64GreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64LessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64Between(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'coverImageBase64',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64StartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64EndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64Contains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'coverImageBase64',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64Matches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'coverImageBase64',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64IsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'coverImageBase64',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      coverImageBase64IsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'coverImageBase64',
         value: '',
       ));
     });
@@ -1393,6 +1577,161 @@ extension StoryLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'length',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'pageIllustrationsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'pageIllustrationsJson',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pageIllustrationsJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'pageIllustrationsJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'pageIllustrationsJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pageIllustrationsJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pageIllustrationsJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'pageIllustrationsJson',
         value: '',
       ));
     });
@@ -2398,6 +2737,19 @@ extension StoryLocalQuerySortBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByCoverImageBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImageBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      sortByCoverImageBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImageBase64', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2534,6 +2886,20 @@ extension StoryLocalQuerySortBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      sortByPageIllustrationsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pageIllustrationsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      sortByPageIllustrationsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pageIllustrationsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByStateJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'stateJson', Sort.asc);
@@ -2631,6 +2997,19 @@ extension StoryLocalQuerySortThenBy
       thenByCharactersJsonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'charactersJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByCoverImageBase64() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImageBase64', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      thenByCoverImageBase64Desc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'coverImageBase64', Sort.desc);
     });
   }
 
@@ -2782,6 +3161,20 @@ extension StoryLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      thenByPageIllustrationsJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pageIllustrationsJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      thenByPageIllustrationsJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pageIllustrationsJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByStateJson() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'stateJson', Sort.asc);
@@ -2877,6 +3270,14 @@ extension StoryLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByCoverImageBase64(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'coverImageBase64',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -2948,6 +3349,14 @@ extension StoryLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QDistinct>
+      distinctByPageIllustrationsJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pageIllustrationsJson',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByStateJson(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3009,6 +3418,13 @@ extension StoryLocalQueryProperty
   QueryBuilder<StoryLocal, String?, QQueryOperations> charactersJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'charactersJson');
+    });
+  }
+
+  QueryBuilder<StoryLocal, String?, QQueryOperations>
+      coverImageBase64Property() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'coverImageBase64');
     });
   }
 
@@ -3076,6 +3492,13 @@ extension StoryLocalQueryProperty
   QueryBuilder<StoryLocal, String?, QQueryOperations> lengthProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'length');
+    });
+  }
+
+  QueryBuilder<StoryLocal, String?, QQueryOperations>
+      pageIllustrationsJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pageIllustrationsJson');
     });
   }
 

@@ -227,6 +227,10 @@ class SavedStoriesScreen extends ConsumerWidget {
               ? story.characters.first.name
               : null,
           storyId: story.identifier,
+          // Re-open the saved story with its persisted illustrations so the
+          // pictures appear immediately without regenerating them.
+          persistedCoverImageBase64: story.coverImageBase64,
+          persistedPageIllustrationsJson: story.pageIllustrationsJson,
         ),
       ),
     );

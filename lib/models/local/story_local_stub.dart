@@ -16,6 +16,11 @@ class StoryLocal {
   String? wisdomGem;
   String? charactersJson;
 
+  // Persisted illustrations so a re-opened story shows its pictures without
+  // regenerating them (regeneration needs a BYOK key and costs money/time).
+  String? coverImageBase64; // base64 of the cover illustration bytes
+  String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
+
   static StoryLocal fromJson(Map<String, dynamic> json) {
     return StoryLocal()
       ..storyId = json['storyId']?.toString() ?? ''
@@ -30,7 +35,9 @@ class StoryLocal {
       ..isSyncedToServer = json['isSyncedToServer'] == true
       ..isInteractive = json['isInteractive'] == true
       ..wisdomGem = json['wisdomGem']?.toString()
-      ..charactersJson = json['charactersJson']?.toString();
+      ..charactersJson = json['charactersJson']?.toString()
+      ..coverImageBase64 = json['coverImageBase64']?.toString()
+      ..pageIllustrationsJson = json['pageIllustrationsJson']?.toString();
   }
 
   static StoryLocal fromSavedStory(SavedStory saved) {
@@ -44,7 +51,9 @@ class StoryLocal {
       ..isSyncedToServer = true
       ..charactersJson = saved.characters.isNotEmpty
           ? jsonEncode(saved.characters.map((c) => c.toJson()).toList())
-          : null;
+          : null
+      ..coverImageBase64 = saved.coverImageBase64
+      ..pageIllustrationsJson = saved.pageIllustrationsJson;
   }
 
   Map<String, dynamic> toJson() {
@@ -61,6 +70,8 @@ class StoryLocal {
       'isInteractive': isInteractive,
       'wisdomGem': wisdomGem,
       'charactersJson': charactersJson,
+      'coverImageBase64': coverImageBase64,
+      'pageIllustrationsJson': pageIllustrationsJson,
     };
   }
 

@@ -37,6 +37,11 @@ class StoryLocal {
   String? tone; // whimsical, mystery, sci-fi, fantasy, cozy-adventure
   String? length; // short, medium, long
 
+  // Persisted illustrations so a re-opened story shows its pictures without
+  // regenerating them (regeneration needs a BYOK key and costs money/time).
+  String? coverImageBase64; // base64 of the cover illustration bytes
+  String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
+
   static StoryLocal fromJson(Map<String, dynamic> json) {
     return StoryLocal()
       ..storyId = json['id']?.toString() ?? json['storyId']?.toString() ?? ''
@@ -53,6 +58,9 @@ class StoryLocal {
       ..isLearningToRead = json['isLearningToRead'] ?? json['is_learning_to_read'] ?? false
       ..wisdomGem = json['wisdomGem'] ?? json['wisdom_gem']
       ..charactersJson = _encodeCharactersFromJson(json['characters'])
+      ..coverImageBase64 = json['coverImageBase64'] ?? json['cover_image_base64']
+      ..pageIllustrationsJson =
+          json['pageIllustrationsJson'] ?? json['page_illustrations_json']
       ..isSyncedToServer = true;
   }
 
@@ -68,7 +76,9 @@ class StoryLocal {
       ..isRhyming = savedStory.isRhyming
       ..isLearningToRead = savedStory.isLearningToRead
       ..wisdomGem = savedStory.wisdomGem
-      ..charactersJson = _encodeCharacters(savedStory.characters);
+      ..charactersJson = _encodeCharacters(savedStory.characters)
+      ..coverImageBase64 = savedStory.coverImageBase64
+      ..pageIllustrationsJson = savedStory.pageIllustrationsJson;
   }
 
   Map<String, dynamic> toJson() => {
@@ -84,6 +94,8 @@ class StoryLocal {
         'isLearningToRead': isLearningToRead,
         'wisdomGem': wisdomGem,
         'characters': _decodeCharacters().map((c) => c.toJson()).toList(),
+        'coverImageBase64': coverImageBase64,
+        'pageIllustrationsJson': pageIllustrationsJson,
       };
 
   @ignore

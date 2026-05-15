@@ -305,6 +305,10 @@ class SavedStory {
   final int? totalWords;
   final int? totalPages;
   final String? storyDuration;
+  // Persisted illustrations so a re-opened story shows its pictures without
+  // regenerating them.
+  final String? coverImageBase64;
+  final String? pageIllustrationsJson;
 
   SavedStory({
     String? id,
@@ -323,6 +327,8 @@ class SavedStory {
     this.totalWords,
     this.totalPages,
     this.storyDuration,
+    this.coverImageBase64,
+    this.pageIllustrationsJson,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   factory SavedStory.fromJson(Map<String, dynamic> json) {
@@ -347,6 +353,8 @@ class SavedStory {
       totalWords: json['total_words'],
       totalPages: json['total_pages'],
       storyDuration: json['story_duration'],
+      coverImageBase64: json['cover_image_base64'],
+      pageIllustrationsJson: json['page_illustrations_json'],
     );
   }
 
@@ -368,6 +376,9 @@ class SavedStory {
         if (totalWords != null) 'total_words': totalWords,
         if (totalPages != null) 'total_pages': totalPages,
         if (storyDuration != null) 'story_duration': storyDuration,
+        if (coverImageBase64 != null) 'cover_image_base64': coverImageBase64,
+        if (pageIllustrationsJson != null)
+          'page_illustrations_json': pageIllustrationsJson,
       };
 
   SavedStory copyWith({
@@ -387,6 +398,8 @@ class SavedStory {
     int? totalWords,
     int? totalPages,
     String? storyDuration,
+    String? coverImageBase64,
+    String? pageIllustrationsJson,
   }) {
     return SavedStory(
       id: id ?? this.id,
@@ -405,6 +418,9 @@ class SavedStory {
       totalWords: totalWords ?? this.totalWords,
       totalPages: totalPages ?? this.totalPages,
       storyDuration: storyDuration ?? this.storyDuration,
+      coverImageBase64: coverImageBase64 ?? this.coverImageBase64,
+      pageIllustrationsJson:
+          pageIllustrationsJson ?? this.pageIllustrationsJson,
     );
   }
 }
