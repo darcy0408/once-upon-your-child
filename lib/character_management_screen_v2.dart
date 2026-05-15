@@ -7,7 +7,7 @@ import 'models.dart';
 import 'character_creation_screen_enhanced.dart';
 import 'character_edit_screen_enhanced.dart';
 import 'character_evolution_screen.dart';
-import 'subscription_service.dart';
+import 'services/subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'enhanced_character_avatar.dart';
 import 'services/api_service_manager.dart';

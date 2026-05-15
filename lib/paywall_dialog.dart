@@ -1,7 +1,7 @@
 // lib/paywall_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'subscription_service.dart';
+import 'services/subscription_service.dart';
 import 'premium_upgrade_screen.dart';
 
 /// Paywall dialog shown when user hits tier limits

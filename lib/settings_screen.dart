@@ -10,11 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/secure_storage_service.dart';
 
 import 'config/environment.dart';
+import 'models/subscription_status.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/theme_provider.dart';
-import 'subscription_models.dart';
 import 'subscription_screen.dart';
-import 'subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
@@ -678,14 +677,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
-                    await SubscriptionService().upgradeToPremium(SubscriptionTier.premium);
+                    // Dev shortcut: write directly to the SharedPref keys that
+                    // ApiServiceManager.hasPremiumAccess and
+                    // ProgressionService.hasPaidPremium actually read. Bypasses
+                    // Stripe — useful for local UI testing of premium-only
+                    // surfaces without standing up a checkout session.
+                    //
+                    // NOTE: SubscriptionSyncService will OVERWRITE these keys on
+                    // its next backend sync, so the override is ephemeral and
+                    // will not corrupt real subscription state on a logged-in
+                    // user. (Previously this called a non-canonical method that
+                    // wrote to the wrong key, so this button was a silent no-op.)
+                    final prefs = await SharedPreferences.getInstance();
+                    final fakeStatus = SubscriptionStatus(
+                      userId: 'dev_override',
+                      tier: SubscriptionTier.premium,
+                      status: 'active',
+                      currentPeriodEnd:
+                          DateTime.now().add(const Duration(days: 365)),
+                      cancelAtPeriodEnd: false,
+                    );
+                    await prefs.setBool('is_paid_premium', true);
+                    await prefs.setString(
+                      'subscription_status',
+                      jsonEncode(fakeStatus.toJson()),
+                    );
                     if (context.mounted) {
                       ProviderScope.containerOf(context)
                           .read(subscriptionProvider.notifier)
                           .refresh();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('✅ Upgraded to Premium (dev only)'),
+                          content: Text(
+                              '✅ Upgraded to Premium (dev only — local override)'),
                           backgroundColor: Colors.deepPurple,
                         ),
                       );
@@ -702,7 +726,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
-                    await SubscriptionService().downgradeToFree();
+                    // Dev shortcut: clear the premium-access keys directly.
+                    // Same caveat as Force Premium — next backend sync will
+                    // overwrite. Also clears the legacy `user_subscription`
+                    // key in case stale data is lurking from before MT-104.
+                    final prefs = await SharedPreferences.getInstance();
+                    final freeStatus = SubscriptionStatus(
+                      userId: 'dev_override',
+                      tier: SubscriptionTier.free,
+                      status: 'inactive',
+                      cancelAtPeriodEnd: false,
+                    );
+                    await prefs.setBool('is_paid_premium', false);
+                    await prefs.setString(
+                      'subscription_status',
+                      jsonEncode(freeStatus.toJson()),
+                    );
+                    await prefs.remove('user_subscription');
                     if (context.mounted) {
                       ProviderScope.containerOf(context)
                           .read(subscriptionProvider.notifier)

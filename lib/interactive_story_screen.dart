@@ -9,7 +9,7 @@ import 'models.dart';
 import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
-import 'subscription_service.dart';
+import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';

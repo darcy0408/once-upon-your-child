@@ -7,7 +7,7 @@ import 'main_story.dart';
 import 'offline_story_cache.dart';
 import 'premium_upgrade_screen.dart';
 import 'services/api_service_manager.dart';
-import 'subscription_service.dart';
+import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'utils/paywall_gate.dart';
