@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-14 | 22:59 | 358e | main | Multi-agent follow-through: MT-118/119/121/104 all closed + verified | [link](docs/sessions/2026-05-14-2259-358e.md) |
 | 2026-05-14 | 21:41 | a1bf | main | Close MT-115 + MT-116; delegated themes-recall + prod migration | [link](docs/sessions/2026-05-14-2141-a1bf.md) |
 | 2026-05-14 | 21:36 | 282e | main | Multi-agent Phase 1 sweep: 7 MTs shipped + MT-104 plan + MT-107 verify | [link](docs/sessions/2026-05-14-2136-282e.md) |
 | 2026-05-14 | 14:30 | eed1 | main | Themes feature ship + Postgres provisioning | [link](docs/sessions/2026-05-14-1430-eed1.md) |
