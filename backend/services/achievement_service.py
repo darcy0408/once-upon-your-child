@@ -132,7 +132,12 @@ class AchievementService:
         stats.characters_created = stats_data.get('characters_created', stats.characters_created)
         stats.current_streak = stats_data.get('current_streak', stats.current_streak)
         stats.longest_streak = stats_data.get('longest_streak', stats.longest_streak)
-        stats.last_story_date_iso = stats_data.get('last_story_date_iso', stats.last_story_date_iso)
+        # Column is VARCHAR(10) (YYYY-MM-DD). Older app clients post a full ISO
+        # datetime; truncate to the date portion to avoid StringDataRightTruncation.
+        last_story_date = stats_data.get('last_story_date_iso', stats.last_story_date_iso)
+        if last_story_date and len(last_story_date) > 10:
+            last_story_date = last_story_date[:10]
+        stats.last_story_date_iso = last_story_date
         stats.earned_early_bird = stats_data.get('earned_early_bird', stats.earned_early_bird)
         stats.earned_night_owl = stats_data.get('earned_night_owl', stats.earned_night_owl)
         stats.unique_emotions_logged = stats_data.get('unique_emotions_logged', stats.unique_emotions_logged)

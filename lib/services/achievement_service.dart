@@ -349,7 +349,8 @@ class AchievementService {
 
   void _updateStreak(AchievementState state, DateTime timestamp) {
     final today = DateTime(timestamp.year, timestamp.month, timestamp.day);
-    final todayIso = today.toIso8601String();
+    // Backend column is VARCHAR(10) — persist the date portion only (YYYY-MM-DD).
+    final todayIso = today.toIso8601String().split('T').first;
 
     if (state.lastStoryDateIso == null) {
       state.currentStreak = 1;
