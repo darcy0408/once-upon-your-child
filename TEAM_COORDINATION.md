@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-14 | 21:36 | 282e | main | Multi-agent Phase 1 sweep: 7 MTs shipped + MT-104 plan + MT-107 verify | [link](docs/sessions/2026-05-14-2136-282e.md) |
 | 2026-05-14 | 14:30 | eed1 | main | Themes feature ship + Postgres provisioning | [link](docs/sessions/2026-05-14-1430-eed1.md) |
 | 2026-05-14 | 14:11 | 302f | main | GitHub PAT placement + production schema verify for themes migration | [link](docs/sessions/2026-05-14-1411-302f.md) |
 | 2026-05-13 | 18:30 | d1e9 | main | Delegate triage backlog, MT-087 live verify surfaces rate-limit shadowing | [link](docs/sessions/2026-05-13-1830-d1e9.md) |
