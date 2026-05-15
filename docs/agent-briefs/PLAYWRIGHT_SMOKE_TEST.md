@@ -26,6 +26,21 @@ Then `browser_snapshot` returns a full tree and clicks-by-label work.
 - Use `page.mouse.wheel()` (Playwright API) with cursor positioned over the canvas
 - Pre-seed `SharedPreferences` to skip the gate
 
+### COPPA parental consent — Playwright canonical approach (post MT-119)
+
+**`?bypass_consent=1` does NOT work against production.** MT-103 shipped a debug-only URL-param bypass in `lib/screens/parental_consent_screen.dart`, but the entire branch is gated on `kDebugMode` so it tree-shakes out of release builds. The grand-light frontend on Railway is built in release mode → the param is a no-op there. The bypass is **local-debug-only** (handy when running `flutter run` against the dev server, useless against `https://grand-light-production-68d9.up.railway.app/`).
+
+**Canonical Playwright flow against production** (verified 2026-05-14):
+
+1. `mcp__playwright__browser_navigate` → `https://grand-light-production-68d9.up.railway.app/`
+2. Trigger Flutter a11y (`flt-semantics-placeholder.click()`)
+3. Walk through age picker + welcome to the COPPA consent screen
+4. **Scroll the consent body to enable the Accept button**: position cursor over the consent card area, then call `page.mouse.wheel(0, 4000)` (Playwright API, dispatched via `mcp__playwright__browser_press_key` with `PageDown` repeated may also work as a fallback)
+5. Click the now-enabled Accept button (snapshot first to find the label)
+6. Proceed with the rest of the flow
+
+This adds ~10-20 sec to each Playwright walk versus a working bypass, which is acceptable given how rarely smoke tests run. If continuous Playwright runs become a thing, revisit options (a) HMAC-guarded production bypass or (b) a separate debug-mode Railway service per the MT-119 ticket — but until then, accept the scroll-then-click cost.
+
 **Use `flutter build web` + static serve, NOT `flutter run -d web-server`.** The web-server device requires the Dart Debug Chrome extension; without it, `main()` never runs and you get a blank page. Build once:
 ```powershell
 flutter build web --no-tree-shake-icons

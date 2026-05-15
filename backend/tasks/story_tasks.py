@@ -611,6 +611,22 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
         companion_characters = kwargs.get("companion_characters", [])  # List of character names
 
+        # MT-118 diagnostic: log dispatch-critical kwargs so we can confirm whether
+        # the backend actually received theme='superhero' (and the sturdier signals
+        # hero_power / hero_costume_color) on Explorer Feeling Sense walks.
+        logger.info(
+            "story_dispatch: theme=%r age=%s is_superhero=%s hero_power=%r "
+            "hero_costume_color=%r hero_cape_style=%r hero_emblem=%r length=%s",
+            theme,
+            age,
+            _is_superhero_theme(theme),
+            kwargs.get("hero_power"),
+            kwargs.get("hero_costume_color"),
+            kwargs.get("hero_cape_style"),
+            kwargs.get("hero_emblem"),
+            story_length,
+        )
+
         try:
             character = db.session.get(Character, character_id) if character_id else None
             if character:
