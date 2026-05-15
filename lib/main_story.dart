@@ -35,7 +35,7 @@ import 'services/api_service_manager.dart';
 import 'services/grace_period_service.dart';
 import 'services/grace_period_analytics.dart';
 import 'subscription_models.dart';
-import 'subscription_service.dart';
+import 'services/subscription_service.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'services/caregiver_service.dart';
 import 'services/child_profile_service.dart';
