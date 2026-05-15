@@ -441,6 +441,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             characterName: requestData['character'] ?? 'Hero',
             age: requestData['age'] ?? 5,
             theme: requestData['theme'] ?? 'Magical Adventure',
+            characterId: requestData['character_id']?.toString(),
             childProfileId: requestData['childProfileId']?.toString(),
             companion: requestData['companion']?.toString() ?? '',
             characterDetails: requestData['characterDetails'],

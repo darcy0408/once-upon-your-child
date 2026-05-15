@@ -236,6 +236,12 @@ class WizardDataMapper {
       'character': data.characterName.isNotEmpty
           ? InputSanitizer.sanitizeName(data.characterName)
           : 'Hero',
+      // MT-126: forward saved character UUID so the backend can attribute the
+      // Story row and inject the PRIOR ADVENTURES prompt block on subsequent
+      // generations. Absent on guest/quick-create flows; backend treats null
+      // as "no recall, no FK" and short-circuits.
+      if (data.characterId != null && data.characterId!.trim().isNotEmpty)
+        'character_id': data.characterId,
       'age': age,
       'theme': theme,
       'conflictHook': conflictHook,

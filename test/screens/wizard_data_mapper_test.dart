@@ -75,4 +75,32 @@ void main() {
       },
     );
   });
+
+  group('WizardDataMapper.mapToStoryRequest — character_id wiring (MT-126)', () {
+    test('characterId set → emitted as character_id in payload', () {
+      final wd = _baseHero()
+        ..characterId = '1b320068-3937-406c-88a2-684edc9a629d';
+
+      final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+      expect(payload['character_id'],
+          equals('1b320068-3937-406c-88a2-684edc9a629d'));
+    });
+
+    test('characterId null → key absent (backend treats as no recall)', () {
+      final wd = _baseHero();
+
+      final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+      expect(payload.containsKey('character_id'), isFalse);
+    });
+
+    test('characterId whitespace only → key absent', () {
+      final wd = _baseHero()..characterId = '   ';
+
+      final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+      expect(payload.containsKey('character_id'), isFalse);
+    });
+  });
 }

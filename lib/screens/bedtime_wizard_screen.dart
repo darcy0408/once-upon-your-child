@@ -559,6 +559,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         characterName: requestData['character'] ?? 'Hero',
         age: requestData['age'] ?? 5,
         theme: _settingChoice ?? 'Magical Adventure',
+        characterId: requestData['character_id']?.toString(),
         companion: requestData['companion'] ?? '',
         characterDetails: requestData['characterDetails'],
         currentFeeling: null,
