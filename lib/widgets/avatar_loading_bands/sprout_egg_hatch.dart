@@ -9,8 +9,9 @@ import '../safe_asset_image.dart';
 
 /// Sprout (2-5) avatar loading: a glowing egg that wobbles and cracks on tap.
 ///
-/// After several taps, golden light peeks through the cracks. A companion
-/// image bounces gently beside the egg when provided.
+/// Each tap cracks the egg exactly where the child touched. After several
+/// taps, golden light peeks through the cracks. A companion image bounces
+/// gently beside the egg when provided.
 class SproutEggHatch extends StatefulWidget {
   final double stageSize;
   final double progress;
@@ -40,6 +41,8 @@ class _SproutEggHatchState extends State<SproutEggHatch>
   final Random _rng = Random();
   int _tapCount = 0;
 
+  double get _eggSize => widget.stageSize * 0.65;
+
   @override
   void initState() {
     super.initState();
@@ -68,17 +71,43 @@ class _SproutEggHatchState extends State<SproutEggHatch>
     super.dispose();
   }
 
-  void _onTapEgg() {
+  /// Maps a tap on the [widget.stageSize]-square gesture area onto a point
+  /// inside the egg's painter coordinate space, clamped to stay on the shell.
+  Offset _crackOriginForTap(Offset tapInStage) {
+    final eggW = _eggSize;
+    final eggH = _eggSize * 1.2;
+    // Painter is centred inside the square stage.
+    final px = tapInStage.dx - (widget.stageSize - eggW) / 2;
+    final py = tapInStage.dy - (widget.stageSize - eggH) / 2;
+
+    // Egg ellipse in painter space (mirrors _EggCrackPainter).
+    final cx = eggW / 2;
+    final cy = eggH / 2;
+    final rx = eggW * 0.42;
+    final ry = eggH * 0.48;
+
+    // Clamp the point inside the shell so the crack always lands on the egg
+    // even if the child taps just outside it.
+    final nx = (px - cx) / rx;
+    final ny = (py - cy) / ry;
+    final dist = sqrt(nx * nx + ny * ny);
+    const maxDist = 0.78;
+    if (dist > maxDist && dist > 0) {
+      final scale = maxDist / dist;
+      return Offset(cx + nx * rx * scale, cy + ny * ry * scale);
+    }
+    return Offset(px, py);
+  }
+
+  void _onTapEgg(TapDownDetails details) {
     HapticFeedback.lightImpact();
     widget.onTap();
     setState(() {
       _tapCount++;
-      // Add a crack line at a random angle from center
-      final angle = _rng.nextDouble() * 2 * pi;
-      final length = 0.15 + _rng.nextDouble() * 0.25;
       _cracks.add(_CrackLine(
-        angle: angle,
-        length: length,
+        origin: _crackOriginForTap(details.localPosition),
+        angle: _rng.nextDouble() * 2 * pi,
+        length: 0.10 + _rng.nextDouble() * 0.16,
         jaggedness: 0.3 + _rng.nextDouble() * 0.4,
       ));
     });
@@ -96,11 +125,11 @@ class _SproutEggHatchState extends State<SproutEggHatch>
     final reduced = MotionPrefs.reduceMotion(context);
     final bt = Theme.of(context).extension<AgeBandThemeData>() ??
         themeForBand(AgeBand.sprout);
-    final eggSize = widget.stageSize * 0.65;
+    final eggSize = _eggSize;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _onTapEgg(),
+      onTapDown: _onTapEgg,
       child: SizedBox(
         width: widget.stageSize,
         height: widget.stageSize,
@@ -189,6 +218,14 @@ class _SproutEggHatchState extends State<SproutEggHatch>
                 ),
               ),
 
+            // "Tap me" hint — shown until the child cracks the egg the first
+            // time, so it's discoverable even with the sound off.
+            if (_tapCount == 0)
+              Positioned(
+                bottom: 0,
+                child: _buildTapHint(bt, reduced),
+              ),
+
             // Progress-based hatching hint
             if (_tapCount >= 8)
               Positioned(
@@ -205,6 +242,48 @@ class _SproutEggHatchState extends State<SproutEggHatch>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTapHint(AgeBandThemeData bt, bool reduced) {
+    final hint = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: bt.accent.withValues(alpha: 0.35),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.touch_app, color: bt.accent, size: 20),
+          const SizedBox(width: 6),
+          Text(
+            'Tap the egg to crack it!',
+            style: TextStyle(
+              color: bt.accent,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (reduced) return hint;
+
+    return AnimatedBuilder(
+      animation: _bounceCtrl,
+      builder: (_, child) {
+        final scale = 0.96 + 0.08 * _bounceCtrl.value;
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: hint,
     );
   }
 
@@ -252,11 +331,14 @@ class _SproutEggHatchState extends State<SproutEggHatch>
 // ── Data classes ──────────────────────────────────────────────────────────────
 
 class _CrackLine {
+  /// Impact point in painter coordinate space — where the child tapped.
+  final Offset origin;
   final double angle;
   final double length;
   final double jaggedness;
 
   const _CrackLine({
+    required this.origin,
     required this.angle,
     required this.length,
     required this.jaggedness,
@@ -377,7 +459,8 @@ class _EggCrackPainter extends CustomPainter {
     );
     canvas.restore();
 
-    // Cracks
+    // Cracks — each tap produces a small jagged star centred on the impact
+    // point, so the crack appears wherever the child actually touched.
     if (cracks.isNotEmpty) {
       final crackPaint = Paint()
         ..color = crackColor.withValues(alpha: 0.8)
@@ -385,41 +468,56 @@ class _EggCrackPainter extends CustomPainter {
         ..strokeWidth = 2.0
         ..strokeCap = StrokeCap.round;
 
-      for (final crack in cracks) {
-        final crackPath = Path();
-        final startX = cx;
-        final startY = cy;
-        crackPath.moveTo(startX, startY);
-
-        // Draw jagged crack line from center outward
-        const segments = 5;
-        for (int i = 1; i <= segments; i++) {
-          final frac = i / segments;
-          final dist = crack.length * frac * (rx + ry) / 2;
-          final jitter = (i % 2 == 0 ? 1 : -1) * crack.jaggedness * 8;
-          final perpAngle = crack.angle + pi / 2;
-          final x = cx + cos(crack.angle) * dist + cos(perpAngle) * jitter;
-          final y = cy + sin(crack.angle) * dist + sin(perpAngle) * jitter;
-          crackPath.lineTo(x, y);
-        }
-
-        canvas.save();
-        canvas.clipPath(eggPath);
-        canvas.drawPath(crackPath, crackPaint);
-
-        // Glow along crack for later taps
-        if (tapCount > 5) {
-          final crackGlowPaint = Paint()
+      final crackGlowPaint = tapCount > 5
+          ? (Paint()
             ..color = glowColor.withValues(
-                alpha: 0.4 * ((tapCount - 5) / 8.0).clamp(0.0, 1.0) *
+                alpha: 0.4 *
+                    ((tapCount - 5) / 8.0).clamp(0.0, 1.0) *
                     (0.6 + 0.4 * glowPhase))
             ..style = PaintingStyle.stroke
             ..strokeWidth = 6.0
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-          canvas.drawPath(crackPath, crackGlowPaint);
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4))
+          : null;
+
+      final maxRadius = (rx + ry) / 2;
+
+      canvas.save();
+      canvas.clipPath(eggPath);
+      for (final crack in cracks) {
+        // Three jagged spokes radiating from the tap point.
+        for (int spoke = 0; spoke < 3; spoke++) {
+          final spokeAngle = crack.angle + spoke * (2 * pi / 3);
+          final crackPath = Path()
+            ..moveTo(crack.origin.dx, crack.origin.dy);
+
+          const segments = 4;
+          final maxDist = crack.length * maxRadius;
+          for (int i = 1; i <= segments; i++) {
+            final frac = i / segments;
+            final dist = maxDist * frac;
+            // Jitter tapers toward the tip so the crack looks like it grows
+            // out of the impact point.
+            final jitter = (i % 2 == 0 ? 1 : -1) *
+                crack.jaggedness *
+                6 *
+                (1 - frac * 0.6);
+            final perpAngle = spokeAngle + pi / 2;
+            final x = crack.origin.dx +
+                cos(spokeAngle) * dist +
+                cos(perpAngle) * jitter;
+            final y = crack.origin.dy +
+                sin(spokeAngle) * dist +
+                sin(perpAngle) * jitter;
+            crackPath.lineTo(x, y);
+          }
+
+          if (crackGlowPaint != null) {
+            canvas.drawPath(crackPath, crackGlowPaint);
+          }
+          canvas.drawPath(crackPath, crackPaint);
         }
-        canvas.restore();
       }
+      canvas.restore();
     }
   }
 
