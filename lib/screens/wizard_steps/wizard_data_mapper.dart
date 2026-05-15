@@ -99,12 +99,6 @@ class WizardDataMapper {
     // "this is a superhero adventure" marker.
     final hasHeroPower =
         data.heroPower != null && data.heroPower!.trim().isNotEmpty;
-    // ignore: avoid_print
-    print(
-        '[MT-118 mapper] heroPower=${data.heroPower} '
-        'heroSuperpower=${data.heroSuperpower} '
-        'selectedScenario=${data.selectedScenario} '
-        'hasHeroPower=$hasHeroPower');
     if (hasHeroPower) {
       theme = 'superhero';
       // Intentionally skip conflictHook / sensoryPalette / worldBible — the
