@@ -792,7 +792,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             prior_block = _build_prior_adventures_block(character_id)
             if prior_block:
                 prompt = prior_block + prompt
-                logger.info(
+                # WARNING level intentionally: prod root logger runs at WARNING
+                # (backend/app.py), so an INFO line here is invisible — leaving
+                # themes-recall with no production-observable signal.
+                logger.warning(
                     "prior_adventures injected for character_id=%s (block_len=%d)",
                     character_id, len(prior_block),
                 )
