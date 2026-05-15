@@ -48,7 +48,7 @@ class SuperheroEntryScreen extends ConsumerWidget {
     final band = ageBandFromAge(wizardData.characterAge);
 
     return async.when(
-      loading: _loadingScaffold,
+      loading: () => _loadingScaffold(band),
       error: (_, __) =>
           SuperheroCostumeScreen(wizardData: wizardData, band: band),
       data: (profile) {
@@ -64,9 +64,12 @@ class SuperheroEntryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loadingScaffold() {
+  Widget _loadingScaffold(AgeBand band) {
+    // MT-121: don't hardcode Sprout's plum here — read the loading background
+    // from the current band so Explorer doesn't briefly flash Sprout dark navy.
+    final bandTheme = themeForBand(band);
     return Scaffold(
-      backgroundColor: const Color(0xFF2D1B42),
+      backgroundColor: bandTheme.gradientStart,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
