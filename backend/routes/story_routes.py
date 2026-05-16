@@ -338,6 +338,42 @@ def _resolve_task_owner(cache, task_id: str, task) -> str | None:
     return None
 
 
+def _flux_disabled(env_var: str) -> bool:
+    """True when [env_var] is set to a truthy kill-switch value."""
+    return os.getenv(env_var, "").lower() in ("1", "true", "yes")
+
+
+def _generate_flux_illustration(**kwargs) -> list:
+    """Per-page Flux Schnell illustration with provider fallback (MT-131).
+
+    Tries Cloudflare Workers AI first — it runs the same flux-1-schnell model
+    under a free daily allocation that covers current scale at $0 — then falls
+    back to Replicate Flux Schnell (~$0.003/img) so a Cloudflare outage or
+    quota exhaustion doesn't regress illustrations. ``CLOUDFLARE_FLUX_DISABLED``
+    and ``FLUX_SCHNELL_DISABLED`` independently kill each provider. Returns []
+    if both are disabled or both fail, so the caller's Gemini fallback runs.
+
+    [kwargs] are passed through unchanged to both generators — they share the
+    ``scene_description, character_name, style, num_images, age,
+    therapeutic_focus, character_appearance, companions, user_id, power_id``
+    signature.
+    """
+    images: list = []
+    if not _flux_disabled("CLOUDFLARE_FLUX_DISABLED"):
+        try:
+            from ..cloudflare_image_generator import CloudflareImageGenerator
+        except ImportError:
+            from cloudflare_image_generator import CloudflareImageGenerator
+        images = CloudflareImageGenerator().generate_story_illustration_flux(**kwargs)
+    if not images and not _flux_disabled("FLUX_SCHNELL_DISABLED"):
+        try:
+            from ..replicate_image_generator import ReplicateImageGenerator
+        except ImportError:
+            from replicate_image_generator import ReplicateImageGenerator
+        images = ReplicateImageGenerator().generate_story_illustration_flux_schnell(**kwargs)
+    return images
+
+
 def create_story_blueprint(
     limiter,
     cache,
@@ -1079,8 +1115,11 @@ def create_story_blueprint(
 
             # Use user's API key if provided, otherwise use the hybrid pipeline.
             # MT-084 hybrid routing for per-page illustrations:
-            #   - Sprout (age <=5):  Gemini-via-OpenRouter primary, Flux Schnell fallback
-            #   - Ages 6+:           Flux Schnell ($0.003/img) primary, Gemini fallback
+            #   - Sprout (age <=5):  Gemini-via-OpenRouter primary, Flux fallback
+            #   - Ages 6+:           Flux primary, Gemini fallback
+            # MT-131: "Flux" = Cloudflare Workers AI flux-1-schnell first ($0
+            # at current scale), Replicate Flux Schnell second — see
+            # _generate_flux_illustration.
             # BYOK users always use their own Gemini key regardless of age.
             # See docs/IMAGE_GEN_AB_TEST_RESULTS.md for the visual scoring + cost math.
             generator = None
@@ -1150,14 +1189,11 @@ def create_story_blueprint(
                         200,
                     )
 
-                # Hybrid routing by age band.
-                if age >= 6 and os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in ("1", "true", "yes"):
-                    try:
-                        from ..replicate_image_generator import ReplicateImageGenerator
-                    except ImportError:
-                        from replicate_image_generator import ReplicateImageGenerator
-                    flux = ReplicateImageGenerator()
-                    illustrations = flux.generate_story_illustration_flux_schnell(
+                # Hybrid routing by age band. Flux = Cloudflare first, then
+                # Replicate fallback (see _generate_flux_illustration); each
+                # provider has its own kill-switch env var.
+                if age >= 6:
+                    illustrations = _generate_flux_illustration(
                         scene_description=scene_description,
                         character_name=character_name,
                         style=style,
@@ -1172,7 +1208,7 @@ def create_story_blueprint(
                     using_flux_schnell = bool(illustrations)
                     if not illustrations:
                         logger.info(
-                            "Flux Schnell returned empty for age %d; falling back to Gemini-via-OpenRouter",
+                            "Flux returned empty for age %d; falling back to Gemini-via-OpenRouter",
                             age,
                         )
 
@@ -1192,22 +1228,13 @@ def create_story_blueprint(
 
                 # Last-resort fallback for Sprout (age <= 5): if Gemini-via-
                 # OpenRouter produced nothing — quota exhausted or outage —
-                # fall back to Flux Schnell so a young child still gets a
-                # picture on every page. Flux's style is less warm than
-                # Gemini's 3D Pixar look, but for this band a picture on
-                # every page matters more than peak fidelity. Reuses the
-                # REPLICATE_API_TOKEN already wired for the age 6+ path.
-                if (
-                    not illustrations
-                    and age <= 5
-                    and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
-                    not in ("1", "true", "yes")
-                ):
-                    try:
-                        from ..replicate_image_generator import ReplicateImageGenerator
-                    except ImportError:
-                        from replicate_image_generator import ReplicateImageGenerator
-                    illustrations = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
+                # fall back to Flux so a young child still gets a picture on
+                # every page. Flux's style is less warm than Gemini's 3D Pixar
+                # look, but for this band a picture on every page matters more
+                # than peak fidelity. Flux = Cloudflare first, Replicate
+                # second (see _generate_flux_illustration).
+                if not illustrations and age <= 5:
+                    illustrations = _generate_flux_illustration(
                         scene_description=scene_description,
                         character_name=character_name,
                         style=style,
@@ -1222,7 +1249,7 @@ def create_story_blueprint(
                     if illustrations:
                         using_flux_schnell = True
                         logger.info(
-                            "Sprout Flux Schnell fallback produced %d image(s)",
+                            "Sprout Flux fallback produced %d image(s)",
                             len(illustrations),
                         )
 

@@ -281,6 +281,176 @@ class TestFluxSchnellGenerator:
         assert result == []
 
 
+class TestCloudflareFluxGenerator:
+    """MT-131: the CloudflareImageGenerator Flux Schnell provider."""
+
+    def test_method_exists_with_expected_signature(self):
+        """Must share the Replicate Flux signature so callers can swap freely."""
+        from backend.cloudflare_image_generator import CloudflareImageGenerator
+        import inspect
+
+        gen = CloudflareImageGenerator()
+        assert hasattr(gen, "generate_story_illustration_flux")
+        sig = inspect.signature(gen.generate_story_illustration_flux)
+        for p in ("user_id", "age", "character_appearance", "companions", "power_id"):
+            assert p in sig.parameters, f"missing kwarg: {p}"
+
+    def test_returns_empty_in_mock_mode(self, monkeypatch):
+        """MOCK_TESTING_MODE=true must return [] without hitting Cloudflare."""
+        monkeypatch.setenv("MOCK_TESTING_MODE", "true")
+        monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+        monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+        from backend.cloudflare_image_generator import CloudflareImageGenerator
+        gen = CloudflareImageGenerator()
+        assert gen.generate_story_illustration_flux(
+            scene_description="anything", character_name="Hero", age=8
+        ) == []
+
+    def test_returns_empty_without_credentials(self, monkeypatch):
+        """Missing account id / token must return [] not raise."""
+        monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
+        monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+        monkeypatch.setenv("MOCK_TESTING_MODE", "false")
+        from backend.cloudflare_image_generator import CloudflareImageGenerator
+        gen = CloudflareImageGenerator()
+        gen.mock_mode = False
+        assert gen.generate_story_illustration_flux(
+            scene_description="anything", character_name="Hero", age=8
+        ) == []
+
+    def test_parses_workers_ai_response_to_image_dict(self, monkeypatch):
+        """A successful Workers AI response normalizes to the shared dict shape."""
+        monkeypatch.setenv("MOCK_TESTING_MODE", "false")
+        monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+        monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+        from backend.cloudflare_image_generator import CloudflareImageGenerator
+
+        gen = CloudflareImageGenerator()
+        gen.mock_mode = False
+        fake_resp = MagicMock()
+        fake_resp.status_code = 200
+        fake_resp.json.return_value = {
+            "success": True,
+            "result": {"image": "BASE64DATA"},
+        }
+        with patch(
+            "backend.cloudflare_image_generator.requests.post",
+            return_value=fake_resp,
+        ):
+            out = gen.generate_story_illustration_flux(
+                scene_description="a cave", character_name="Hero", age=8,
+            )
+        assert len(out) == 1
+        img = out[0]
+        assert img["image_data"] == "BASE64DATA"
+        assert img["format"] == "jpeg"
+        assert img["provider"] == "cloudflare-flux-schnell"
+        for key in ("id", "prompt", "generated_at"):
+            assert key in img, f"missing key: {key}"
+
+
+class TestFluxProviderPrecedence:
+    """MT-131: _generate_flux_illustration — Cloudflare first, Replicate next."""
+
+    def test_cloudflare_is_tried_first(self, monkeypatch):
+        """When Cloudflare yields art, Replicate must never be called."""
+        monkeypatch.delenv("CLOUDFLARE_FLUX_DISABLED", raising=False)
+        monkeypatch.delenv("FLUX_SCHNELL_DISABLED", raising=False)
+        from backend.routes.story_routes import _generate_flux_illustration
+
+        with patch(
+            "backend.cloudflare_image_generator.CloudflareImageGenerator"
+        ) as cf, patch(
+            "backend.replicate_image_generator.ReplicateImageGenerator"
+        ) as rep:
+            cf.return_value.generate_story_illustration_flux.return_value = [
+                _make_image_dict("cloudflare")
+            ]
+            result = _generate_flux_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=8,
+            )
+            assert cf.return_value.generate_story_illustration_flux.call_count == 1
+            assert (
+                rep.return_value.generate_story_illustration_flux_schnell.call_count
+                == 0
+            ), "Replicate must not run when Cloudflare succeeds"
+            assert result[0]["id"] == "test-cloudflare"
+
+    def test_replicate_fallback_when_cloudflare_empty(self, monkeypatch):
+        """Cloudflare outage/quota → fall through to Replicate Flux Schnell."""
+        monkeypatch.delenv("CLOUDFLARE_FLUX_DISABLED", raising=False)
+        monkeypatch.delenv("FLUX_SCHNELL_DISABLED", raising=False)
+        from backend.routes.story_routes import _generate_flux_illustration
+
+        with patch(
+            "backend.cloudflare_image_generator.CloudflareImageGenerator"
+        ) as cf, patch(
+            "backend.replicate_image_generator.ReplicateImageGenerator"
+        ) as rep:
+            cf.return_value.generate_story_illustration_flux.return_value = []
+            rep.return_value.generate_story_illustration_flux_schnell.return_value = [
+                _make_image_dict("flux")
+            ]
+            result = _generate_flux_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=8,
+            )
+            assert cf.return_value.generate_story_illustration_flux.call_count == 1
+            assert (
+                rep.return_value.generate_story_illustration_flux_schnell.call_count
+                == 1
+            )
+            assert result[0]["id"] == "test-flux"
+
+    def test_cloudflare_disabled_skips_straight_to_replicate(self, monkeypatch):
+        """CLOUDFLARE_FLUX_DISABLED=true must skip Cloudflare entirely."""
+        monkeypatch.setenv("CLOUDFLARE_FLUX_DISABLED", "true")
+        monkeypatch.delenv("FLUX_SCHNELL_DISABLED", raising=False)
+        from backend.routes.story_routes import _generate_flux_illustration
+
+        with patch(
+            "backend.cloudflare_image_generator.CloudflareImageGenerator"
+        ) as cf, patch(
+            "backend.replicate_image_generator.ReplicateImageGenerator"
+        ) as rep:
+            rep.return_value.generate_story_illustration_flux_schnell.return_value = [
+                _make_image_dict("flux")
+            ]
+            result = _generate_flux_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=8,
+            )
+            assert cf.return_value.generate_story_illustration_flux.call_count == 0
+            assert (
+                rep.return_value.generate_story_illustration_flux_schnell.call_count
+                == 1
+            )
+            assert result[0]["id"] == "test-flux"
+
+    def test_both_providers_disabled_returns_empty(self, monkeypatch):
+        """Both kill-switches on → [] and neither provider invoked."""
+        monkeypatch.setenv("CLOUDFLARE_FLUX_DISABLED", "true")
+        monkeypatch.setenv("FLUX_SCHNELL_DISABLED", "true")
+        from backend.routes.story_routes import _generate_flux_illustration
+
+        with patch(
+            "backend.cloudflare_image_generator.CloudflareImageGenerator"
+        ) as cf, patch(
+            "backend.replicate_image_generator.ReplicateImageGenerator"
+        ) as rep:
+            result = _generate_flux_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=8,
+            )
+            assert result == []
+            assert cf.return_value.generate_story_illustration_flux.call_count == 0
+            assert (
+                rep.return_value.generate_story_illustration_flux_schnell.call_count
+                == 0
+            )
+
+
 class TestPowerVisualOverride:
     """MT-107: Explorer-band Superhero powers must inject visual signatures."""
 
