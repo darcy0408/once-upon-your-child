@@ -2346,12 +2346,26 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // Preload saved characters so the wizard's HeroCreatorStep can pick its
     // "welcome back" grid synchronously in initState — without them it falls
     // back to the blank create-a-hero form and the child (or a sibling
-    // taking their turn) can't reach an already-created hero.
+    // taking their turn) can't reach an already-created hero. Fetch from the
+    // backend (the source the wizard itself uses): a hero created moments ago
+    // in this session may not have synced to local Isar yet.
     List<Character> characters = const [];
     try {
-      characters = await IsarService.getAllCharacters();
+      final response = await ApiServiceManager().get('/get-characters');
+      final list = response['data'] is List
+          ? response['data'] as List
+          : (response['characters'] as List? ?? const []);
+      characters = list
+          .whereType<Map<String, dynamic>>()
+          .map(Character.fromJson)
+          .toList();
     } catch (_) {
-      // Non-fatal — the wizard reloads characters itself, just less smoothly.
+      // Backend unreachable — fall back to the last-known local snapshot.
+      try {
+        characters = await IsarService.getAllCharacters();
+      } catch (_) {
+        // Non-fatal — the wizard reloads characters itself, just less smoothly.
+      }
     }
     if (!mounted) return;
     navigator.pushAndRemoveUntil(
