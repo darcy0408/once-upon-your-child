@@ -114,6 +114,31 @@ class OpenRouterImageGenerator:
             return re.sub(r"\s+", "", image_value)
         return None
 
+    def _build_appearance_text(self, character_appearance: dict | None) -> str:
+        """Flatten the appearance attribute dict into a short prompt clause.
+
+        Enum `.name` values from the Flutter client arrive camelCase
+        ("lightBrown", "vNeck") — split them back into readable words.
+        """
+        if not character_appearance:
+            return ""
+        labels = {
+            'hair_color': 'hair color',
+            'hair_length': 'hair length',
+            'hair_style': 'hair style',
+            'eye_color': 'eye color',
+            'skin_tone': 'skin tone',
+            'clothing_style': 'wearing',
+            'clothing_colors': 'clothing color',
+        }
+        parts = []
+        for key, label in labels.items():
+            value = character_appearance.get(key)
+            if value:
+                readable = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', str(value)).lower()
+                parts.append(f"{label}: {readable}")
+        return "; ".join(parts)
+
     def generate_story_illustration(
         self,
         scene_description: str,
@@ -123,6 +148,7 @@ class OpenRouterImageGenerator:
         age: int | None = None,
         therapeutic_focus: str | None = None,
         companions: list | None = None,
+        character_appearance: dict | None = None,
         **_: dict
     ) -> list:
         """
@@ -133,6 +159,9 @@ class OpenRouterImageGenerator:
             character_name: Name of the main character
             style: Art style
             num_images: Number of images (note: generates 1 at a time)
+            character_appearance: Optional appearance dict. When it carries a
+                'custom_avatar_base64' the avatar image is sent as a reference
+                so the model matches the character's likeness across pages.
 
         Returns:
             List of dicts with image URLs or base64 data
@@ -150,21 +179,63 @@ class OpenRouterImageGenerator:
             if companion_names:
                 companion_line = f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
 
+        # Character likeness: a reference avatar image (preferred) keeps the
+        # character visually consistent page-to-page; the text attributes are
+        # always included as a fallback / reinforcement.
+        appearance_text = self._build_appearance_text(character_appearance)
+        reference_data_uri = None
+        if character_appearance:
+            raw_avatar = character_appearance.get('custom_avatar_base64')
+            if raw_avatar:
+                normalized = self._normalize_image_to_base64(raw_avatar)
+                if normalized:
+                    reference_data_uri = f"data:image/png;base64,{normalized}"
+
+        character_line = f"Main character (must match selected character): {character_name}"
+        if appearance_text:
+            character_line += f"\nCharacter appearance: {appearance_text}"
+
+        reference_note = ""
+        if reference_data_uri:
+            reference_note = (
+                "\n\nA reference image of the main character is provided. The "
+                "character in the illustration MUST match the reference image's "
+                "face, hair, skin tone, and outfit exactly — keep the character "
+                "visually identical to the reference, only changing pose and "
+                "setting to fit the scene."
+            )
+
         prompt = f"""
 {style}, high quality digital art:
 
 SCENE (must be depicted literally): {scene_description}
 
-Main character (must match selected character): {character_name}
+{character_line}
 {companion_line}
 
 Style: colorful, vibrant, child-friendly, professional illustration, {audience}, engaging, imaginative, no text, clean composition{therapy}
 """.strip()
 
+        user_text = (
+            prompt
+            + reference_note
+            + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
+        )
+        if reference_data_uri:
+            message_content = [
+                {"type": "image_url", "image_url": {"url": reference_data_uri}},
+                {"type": "text", "text": user_text},
+            ]
+        else:
+            message_content = user_text
+
         images = []
         for i in range(num_images):
             try:
-                logger.info(f"OpenRouter story_illustration: Sending request for story illustration prompt (first 100 chars): {prompt[:100]}...")
+                logger.info(
+                    "OpenRouter story_illustration: Sending request (reference_image=%s) prompt (first 100 chars): %s...",
+                    bool(reference_data_uri), prompt[:100],
+                )
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers={
@@ -179,7 +250,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
+                                "content": message_content,
                             }
                         ],
                     },

@@ -841,7 +841,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   Map<String, dynamic>? _characterAppearanceForBackend() {
     final appearance = _buildCharacterAppearance();
     if (appearance == null) return null;
-    return {
+    final payload = <String, dynamic>{
       'character_name': appearance.characterName,
       'hair_color': appearance.hairColor.name,
       'hair_length': appearance.hairLength.name,
@@ -851,6 +851,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       'clothing_style': appearance.clothingStyle.name,
       'clothing_colors': appearance.clothingColors.name,
     };
+    // When the character has an AI-generated avatar, send the avatar image
+    // itself as a reference so the illustration model can match the
+    // character's likeness across pages, not just approximate it from text.
+    final avatarImage = _character?.generatedAvatar?.imageBase64;
+    if (avatarImage != null && avatarImage.isNotEmpty) {
+      payload['custom_avatar_base64'] = avatarImage;
+    }
+    return payload;
   }
 
   List<Map<String, String>> _illustrationCompanions() {
