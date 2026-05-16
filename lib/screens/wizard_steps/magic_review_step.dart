@@ -154,6 +154,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (widget.wizardData.selectedCompanions.isNotEmpty) {
       final firstComp = widget.wizardData.selectedCompanions.first;
       // Legacy global companion IDs that use the _normal.jpg naming scheme.
+      // Note: 'robin' is intentionally excluded — it is a real band companion
+      // (Sprout/Explorer/Adventurer) and resolves via the band-specific branch
+      // below to assets/images/companions/<band>/robin.png.
       const legacyIds = {
         'dragon',
         'owl',
@@ -161,7 +164,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         'dog',
         'unicorn',
         'fox',
-        'robin'
       };
       if (legacyIds.contains(firstComp)) {
         return 'assets/images/companions/${firstComp}_normal.jpg';

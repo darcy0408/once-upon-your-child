@@ -1079,7 +1079,7 @@ def create_story_blueprint(
 
             # Use user's API key if provided, otherwise use the hybrid pipeline.
             # MT-084 hybrid routing for per-page illustrations:
-            #   - Sprout (age <=5):  Gemini-via-OpenRouter (preserves warm 3D Pixar style)
+            #   - Sprout (age <=5):  Gemini-via-OpenRouter primary, Flux Schnell fallback
             #   - Ages 6+:           Flux Schnell ($0.003/img) primary, Gemini fallback
             # BYOK users always use their own Gemini key regardless of age.
             # See docs/IMAGE_GEN_AB_TEST_RESULTS.md for the visual scoring + cost math.
@@ -1177,19 +1177,7 @@ def create_story_blueprint(
                         )
 
                 # Fallback (or Sprout path): Gemini via OpenRouter.
-                if not illustrations:
-                    if image_generator is None:
-                        return (
-                            jsonify(
-                                {
-                                    "error": "Image generation temporarily unavailable",
-                                    "hint": "OpenRouter image service is currently unavailable. Please try again later.",
-                                    "illustrations": [],
-                                    "count": 0,
-                                }
-                            ),
-                            200,
-                        )
+                if not illustrations and image_generator is not None:
                     illustrations = image_generator.generate_story_illustration(
                         scene_description=scene_description,
                         character_name=character_name,
@@ -1201,6 +1189,42 @@ def create_story_blueprint(
                         companions=companions,
                         power_id=power_id,
                     )
+
+                # Last-resort fallback for Sprout (age <= 5): if Gemini-via-
+                # OpenRouter produced nothing — quota exhausted or outage —
+                # fall back to Flux Schnell so a young child still gets a
+                # picture on every page. Flux's style is less warm than
+                # Gemini's 3D Pixar look, but for this band a picture on
+                # every page matters more than peak fidelity. Reuses the
+                # REPLICATE_API_TOKEN already wired for the age 6+ path.
+                if (
+                    not illustrations
+                    and age <= 5
+                    and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
+                    not in ("1", "true", "yes")
+                ):
+                    try:
+                        from ..replicate_image_generator import ReplicateImageGenerator
+                    except ImportError:
+                        from replicate_image_generator import ReplicateImageGenerator
+                    illustrations = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
+                        scene_description=scene_description,
+                        character_name=character_name,
+                        style=style,
+                        num_images=num_images,
+                        age=age,
+                        therapeutic_focus=therapeutic_focus,
+                        character_appearance=character_appearance,
+                        companions=companions,
+                        user_id=current_user_id,
+                        power_id=power_id,
+                    )
+                    if illustrations:
+                        using_flux_schnell = True
+                        logger.info(
+                            "Sprout Flux Schnell fallback produced %d image(s)",
+                            len(illustrations),
+                        )
 
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")

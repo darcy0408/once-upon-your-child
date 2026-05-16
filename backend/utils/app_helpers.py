@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -17,14 +18,19 @@ _KEYWORDS_ALL_AGES = [
 
 # Keywords only inappropriate for the youngest band (Sprout, age <= 5).
 # Explorer (6-8) and older bands explicitly authorize mild peril and named
-# villains ("Grumblestorm", "Shadow Trickster", etc.) — words like "scary"
-# and "monster" are normal Explorer vocabulary, and the broader gate was
-# false-positiving real Explorer stories into the silent fallback path.
-# The LLM safety layer (moderate_story_content) catches the egregious cases
-# for older bands.
+# villains ("Grumblestorm", "Shadow Trickster", etc.).
+#
+# "scary", "monster", and "nightmare" are intentionally NOT here: they appear
+# constantly in gentle, *reassuring* Sprout stories ("it wasn't scary", "the
+# monster was friendly", "no more bad dreams"). A bare keyword match can't
+# tell reassurance from peril and was silently swapping good stories for the
+# generic fallback (and paying for a full regeneration). Those three words
+# now fall through to the LLM contextual classifier (moderate_story_content),
+# which judges them in context — the same treatment Explorer+ already gets.
+# Only unambiguously violent words stay as instant keyword blocks here.
 _KEYWORDS_YOUNG_ONLY = [
     'kill', 'murder', 'blood', 'death', 'gun', 'knife', 'stab',
-    'weapon', 'torture', 'scary', 'monster', 'nightmare',
+    'weapon', 'torture',
 ]
 
 
@@ -119,7 +125,13 @@ def make_filter_story_content(logger):
         if age <= 5:
             keywords.extend(_KEYWORDS_YOUNG_ONLY)
 
-        triggered = [kw for kw in keywords if kw in lower_text]
+        # Match on a leading word boundary so inflections are still caught
+        # ("kill" → killed/killing) but unrelated words that merely *contain*
+        # a keyword are not ("skill", "begun", "establish").
+        triggered = [
+            kw for kw in keywords
+            if re.search(r'\b' + re.escape(kw), lower_text)
+        ]
         if triggered:
             logger.warning(
                 f"Content filter triggered for age {age}: {triggered!r} "

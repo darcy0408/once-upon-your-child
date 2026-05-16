@@ -585,7 +585,11 @@ class ApiServiceManager {
     http.Client? client,
     int maxAttempts = 3,
     Duration retryInitialDelay = const Duration(seconds: 2),
-    Duration requestTimeout = const Duration(seconds: 90),
+    // Backend SYNC_STORY_TIMEOUT_SECONDS allows generation up to 120s; a
+    // Sprout story that hits a validation/word-cap regen can run close to
+    // that. Keep the client timeout above the backend ceiling so a slow but
+    // successful generation still lands instead of being abandoned.
+    Duration requestTimeout = const Duration(seconds: 150),
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',

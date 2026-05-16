@@ -34,11 +34,15 @@ def filter_fn():
 # MT-114: narrowed _KEYWORDS_YOUNG_ONLY gate (was age<=7, now age<=5)
 # ---------------------------------------------------------------------------
 class TestNarrowedYoungOnlyGate:
-    def test_age_5_with_scary_monster_is_flagged(self, filter_fn):
-        """Sprout still gets the strict gate — 'scary monster' triggers the filter."""
+    def test_age_5_scary_monster_defers_to_llm_classifier(self, filter_fn):
+        """'scary'/'monster'/'nightmare' are no longer instant keyword blocks
+        for Sprout — a bare match can't tell a friendly monster from a peril,
+        and was swapping reassuring Sprout stories for the generic fallback.
+        Those words now fall through to moderate_story_content, so the keyword
+        gate must NOT flag them."""
         text = "Once upon a time there was a scary monster in the forest."
         _, flagged = filter_fn(text, age=5)
-        assert flagged is True
+        assert flagged is False
 
     def test_age_7_with_scary_moment_is_not_flagged(self, filter_fn):
         """Explorer (age 7) gets 'scary' as normal vocabulary — must NOT flag."""

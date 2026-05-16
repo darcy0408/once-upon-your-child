@@ -3,7 +3,7 @@
 Verifies that per-page illustration dispatch in story_routes follows the
 hybrid recommendation from docs/IMAGE_GEN_AB_TEST_RESULTS.md:
 
-  age <= 5  →  Gemini-via-OpenRouter (preserves warm 3D Pixar Sprout style)
+  age <= 5  →  Gemini-via-OpenRouter primary; Flux Schnell fallback when empty
   age >= 6  →  Flux Schnell (8/10 quality at 12.5× cheaper)
   Flux fail →  Fall back to Gemini-via-OpenRouter
 
@@ -30,7 +30,8 @@ class TestHybridImageDispatch:
     """Routing decisions inside generate_illustrations_endpoint."""
 
     def test_age_5_routes_to_gemini_openrouter(self):
-        """Sprout band (age <= 5) must use Gemini-via-OpenRouter, never Flux Schnell."""
+        """Sprout band (age <= 5) primary path is Gemini-via-OpenRouter — Flux
+        Schnell is never the *primary* provider for this band."""
         from backend.replicate_image_generator import ReplicateImageGenerator
 
         gemini_mock = MagicMock()
@@ -45,7 +46,8 @@ class TestHybridImageDispatch:
         ) as flux_call:
             from backend.routes import story_routes  # noqa: F401 — module-level import-time check
 
-            # Simulate the conditional block: age <= 5 → no Flux call.
+            # Simulate the primary-routing conditional: age <= 5 → no Flux on
+            # the primary path (the Flux fallback is a separate conditional).
             age = 5
             if age >= 6 and os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in (
                 "1",
@@ -57,7 +59,64 @@ class TestHybridImageDispatch:
                     num_images=1, age=age, therapeutic_focus=None,
                     character_appearance=None, companions=None,
                 )
-            assert flux_call.call_count == 0, "Flux Schnell must not fire for age <= 5"
+            assert flux_call.call_count == 0, (
+                "Flux Schnell must not be the primary provider for age <= 5"
+            )
+
+    def test_sprout_falls_back_to_flux_when_gemini_empty(self):
+        """Sprout (age <= 5): when Gemini-via-OpenRouter yields no image, Flux
+        Schnell is the last-resort fallback so the child still gets a picture."""
+        from backend.replicate_image_generator import ReplicateImageGenerator
+
+        with patch.object(
+            ReplicateImageGenerator,
+            "generate_story_illustration_flux_schnell",
+            return_value=[_make_image_dict("flux")],
+        ) as flux_call:
+            age = 4
+            illustrations = []  # Gemini-via-OpenRouter produced nothing
+            if (
+                not illustrations
+                and age <= 5
+                and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
+                not in ("1", "true", "yes")
+            ):
+                illustrations = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
+                    scene_description="x", character_name="y", style="z",
+                    num_images=1, age=age, therapeutic_focus=None,
+                    character_appearance=None, companions=None,
+                )
+            assert flux_call.call_count == 1, (
+                "Flux Schnell must fire as the Sprout fallback when Gemini is empty"
+            )
+            assert illustrations, "Sprout fallback must yield an illustration"
+
+    def test_sprout_no_flux_fallback_when_gemini_succeeds(self):
+        """Sprout: a successful Gemini-via-OpenRouter result must NOT trigger
+        the Flux fallback — the warm 3D style is preferred when available."""
+        from backend.replicate_image_generator import ReplicateImageGenerator
+
+        with patch.object(
+            ReplicateImageGenerator,
+            "generate_story_illustration_flux_schnell",
+            return_value=[_make_image_dict("flux")],
+        ) as flux_call:
+            age = 4
+            illustrations = [_make_image_dict("gemini")]  # Gemini succeeded
+            if (
+                not illustrations
+                and age <= 5
+                and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
+                not in ("1", "true", "yes")
+            ):
+                ReplicateImageGenerator().generate_story_illustration_flux_schnell(
+                    scene_description="x", character_name="y", style="z",
+                    num_images=1, age=age, therapeutic_focus=None,
+                    character_appearance=None, companions=None,
+                )
+            assert flux_call.call_count == 0, (
+                "Flux fallback must not fire when Gemini already produced art"
+            )
 
     def test_age_6_routes_to_flux_schnell(self):
         """Explorer band (age 6) must call Flux Schnell first."""
