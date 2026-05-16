@@ -16,7 +16,7 @@ class SubscriptionScreen extends StatelessWidget {
         foregroundColor: Colors.green,
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -44,12 +44,14 @@ class SubscriptionScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.star, color: Colors.deepPurple),
                         const SizedBox(width: 8),
-                        Text(
-                          'Premium — for the whole family',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                        Expanded(
+                          child: Text(
+                            'Premium — for the whole family',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
                           ),
                         ),
                       ],
@@ -101,12 +103,14 @@ class SubscriptionScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.family_restroom, color: Colors.amber),
                         const SizedBox(width: 8),
-                        Text(
-                          'Family',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.amber,
+                        Expanded(
+                          child: Text(
+                            'Family',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber,
+                            ),
                           ),
                         ),
                       ],
