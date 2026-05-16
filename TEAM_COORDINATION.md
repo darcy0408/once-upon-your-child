@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-16 | 13:11 | 369d | main | MT-128 verify, reader-exit fix, per-hero Continue affordance | [link](docs/sessions/2026-05-16-1311-369d.md) |
 | 2026-05-16 | 13:11 | d03f | main | Commit parallel-session per-hero Continue affordance | [link](docs/sessions/2026-05-16-1311-d03f.md) |
 | 2026-05-16 | 12:38 | ec15 | main | Explorer-band Robin companion placeholder (404 asset) fix | [link](docs/sessions/2026-05-16-1238-ec15.md) |
 | 2026-05-16 | 12:37 | bac9 | main | Triaged + committed parallel-session Sprout-reliability sweep | [link](docs/sessions/2026-05-16-1237-bac9.md) |
