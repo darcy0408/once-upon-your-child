@@ -39,6 +39,9 @@ import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
 import 'hero_creator_creative_brief.dart';
 import '../life_quest_screen.dart';
+import '../../services/offline_story_service.dart';
+import '../../models/local/story_local.dart';
+import '../../story_result_screen.dart';
 
 // ---------------------------------------------------------------------------
 class _PetAvatarGenerationResult {
@@ -138,6 +141,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String? _pendingCompanionSpecies;
   int _pendingCompanionToken = 0; // increments to distinguish repeated adds of same species
 
+  // Recent saved stories — powers the per-hero "Continue" affordance on the
+  // welcome-back grid (page 0). Newest-first.
+  List<StoryLocal> _recentStories = const [];
+
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
   void _logPageView(int pageIndex) {
     FirebaseAnalyticsService.logEvent('hero_creator_page_view', {
@@ -215,6 +222,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     _refreshPremiumStatus();
     _loadLastHeroId();
+    _loadRecentStories();
     const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
       if (mounted) setState(() => _allowPhotoAvatar = allow);
     });
@@ -1055,16 +1063,49 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             itemBuilder: (context, index) {
               final char = orderedChars[index];
               final isSuggested = showRotatingBanner && char.id == suggested.id;
+              final recentForCard = _recentStoryForCharacter(char);
               return Stack(
                 children: [
                   HeroCharacterChoiceCard(
                     character: char,
                     getAvatarProvider: _getAvatarProvider,
                     onTap: () {
-                      _loadExistingCharacter(char);
-                      _handleContinue();
+                      if (recentForCard != null) {
+                        _showContinueOrNewSheet(char, recentForCard);
+                      } else {
+                        _loadExistingCharacter(char);
+                        _handleContinue();
+                      }
                     },
                   ),
+                  if (recentForCard != null)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6C3FC7),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          '📖 Continue',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (isSuggested)
                     Positioned(
                       top: 12,
@@ -1146,6 +1187,125 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       ),
+    );
+  }
+
+  // ─── Welcome-back grid: per-hero Continue affordance ────────────────────────
+
+  Future<void> _loadRecentStories() async {
+    try {
+      final stories =
+          await OfflineStoryService(IsarService.instance).getAllStories();
+      stories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      if (mounted) setState(() => _recentStories = stories);
+    } catch (_) {
+      // Non-fatal — the Continue affordance simply won't appear.
+    }
+  }
+
+  /// Most recent saved story (within 30 days) featuring [character], matched
+  /// by id first then name. The dual match matters because wizard-saved
+  /// stories don't always carry a character id.
+  StoryLocal? _recentStoryForCharacter(Character character) {
+    final id = character.id.trim();
+    final name = character.name.trim().toLowerCase();
+    if (id.isEmpty && name.isEmpty) return null;
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    for (final story in _recentStories) {
+      if (story.createdAt.isBefore(cutoff)) continue;
+      final match = story.characters.any((c) =>
+          (id.isNotEmpty && c.id.trim() == id) ||
+          (name.isNotEmpty && c.name.trim().toLowerCase() == name));
+      if (match) return story;
+    }
+    return null;
+  }
+
+  /// Re-opens a saved story; passing [storyId] makes the reader resume at the
+  /// page the child last left off on.
+  void _openSavedStory(StoryLocal story) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+          builder: (_) => StoryResultScreen(
+            title: story.title,
+            storyText: story.storyText,
+            characterName: story.characters.isNotEmpty
+                ? story.characters.first.name
+                : null,
+            storyId: story.identifier,
+            persistedCoverImageBase64: story.coverImageBase64,
+            persistedPageIllustrationsJson: story.pageIllustrationsJson,
+          ),
+        ))
+        .then((_) => _loadRecentStories());
+  }
+
+  /// Tapping a hero who has a recent story offers Continue vs. start-new
+  /// rather than silently launching a fresh wizard.
+  void _showContinueOrNewSheet(Character character, StoryLocal recent) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "${character.name}'s stories",
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            _continueSheetChoice(
+              icon: Icons.menu_book_rounded,
+              color: const Color(0xFF6C3FC7),
+              title: 'Continue',
+              subtitle: recent.title,
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _openSavedStory(recent);
+              },
+            ),
+            _continueSheetChoice(
+              icon: Icons.auto_awesome,
+              color: const Color(0xFFFF8A00),
+              title: 'Start a new story',
+              subtitle: 'Make a brand-new adventure',
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _loadExistingCharacter(character);
+                _handleContinue();
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _continueSheetChoice({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: color,
+        child: Icon(icon, color: Colors.white),
+      ),
+      title: Text(title,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 
