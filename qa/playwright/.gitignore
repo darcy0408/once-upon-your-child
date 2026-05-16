@@ -1,0 +1,13 @@
+# Playwright browser-verification harness — local artifacts
+node_modules/
+screenshots/
+
+# One-off exploration scripts — kept locally, not part of the harness
+a11y-probe.mjs
+a11y-recon.mjs
+boot-probe.mjs
+recon.mjs
+walk-hero.mjs
+walk-recon.mjs
+walk-seeded.mjs
+walk-wizard.mjs
