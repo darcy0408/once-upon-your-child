@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-15 | 20:20 | 0e2f | main | MT-126 re-verify + MT-127 fix + MT-122 R2 backup shipped + MT-123/124 closed | [link](docs/sessions/2026-05-15-2020-0e2f.md) |
 | 2026-05-15 | 17:21 | b667 | main | Kids-reader UX: egg cracks, illustration persistence, resume/continue | [link](docs/sessions/2026-05-15-1721-b667.md) |
 | 2026-05-15 | 08:24 | 32c7 | main | No-op close (no work since 5f6d) | [link](docs/sessions/2026-05-15-0824-32c7.md) |
 | 2026-05-14 | 23:46 | 5f6d | main | No-op re-close after da24 (no new work) | [link](docs/sessions/2026-05-14-2346-5f6d.md) |
