@@ -815,10 +815,6 @@ class _StoryScreenState extends State<StoryScreen> {
                     _buildAchievementsOverviewCard(),
                     const SizedBox(height: 20),
                   ],
-                  if (_mostRecentStory != null) ...[
-                    _buildContinueStoryCard(_mostRecentStory!),
-                    const SizedBox(height: 20),
-                  ],
                   _buildSELPacksSection(),
                   const SizedBox(height: 20),
                   if (_childProfiles.length >= 2) ...[
@@ -955,15 +951,6 @@ class _StoryScreenState extends State<StoryScreen> {
     } catch (_) {
       // Non-fatal: the Continue affordances simply won't appear.
     }
-  }
-
-  /// Most recent saved story, but only if it's recent enough to plausibly be
-  /// something the child still wants to return to (not a months-old story).
-  StoryLocal? get _mostRecentStory {
-    if (_savedStories.isEmpty) return null;
-    final story = _savedStories.first; // getAllStories() is newest-first
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
-    return story.createdAt.isAfter(cutoff) ? story : null;
   }
 
   /// Newest recent saved story featuring [character], matched by name (saved
@@ -1123,82 +1110,6 @@ class _StoryScreenState extends State<StoryScreen> {
 
   /// A one-tap card to jump back into the most recent story — so a child who
   /// clicked away from a story isn't stranded.
-  Widget _buildContinueStoryCard(StoryLocal story) {
-    Widget cover;
-    final b64 = story.coverImageBase64;
-    if (b64 != null && b64.isNotEmpty) {
-      try {
-        cover = Image.memory(base64Decode(b64),
-            width: 64, height: 64, fit: BoxFit.cover);
-      } catch (_) {
-        cover = _continueCoverFallback();
-      }
-    } else {
-      cover = _continueCoverFallback();
-    }
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      elevation: 2,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => _openSavedStory(story),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                  borderRadius: BorderRadius.circular(14), child: cover),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Pick up where you left off',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8A6FBF))),
-                    const SizedBox(height: 2),
-                    Text(story.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2C1B47))),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                    color: Color(0xFF6C3FC7), shape: BoxShape.circle),
-                child: const Icon(Icons.play_arrow_rounded,
-                    color: Colors.white, size: 28),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _continueCoverFallback() {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-            colors: [Color(0xFF6C3FC7), Color(0xFF9B6DFF)]),
-      ),
-      child: const Icon(Icons.auto_stories_rounded,
-          color: Colors.white, size: 30),
-    );
-  }
-
   /// Renders character portrait cards horizontally.Tapping a card opens the
   /// wizard with that character pre-loaded for a one-tap story.
   Widget _buildCharacterPortraitRow() {

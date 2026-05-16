@@ -2329,16 +2329,40 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   /// Leaves the reader without stranding the child. A freshly generated story
-  /// sits on top of the wizard route stack — popping one level lands them
-  /// back mid-wizard, which looks like it will start a brand-new story. Send
-  /// them home instead, where the "Continue your story" card offers a one-tap
-  /// way back in. A re-opened saved story just pops back where it came from.
-  void _exitReader() {
-    if (widget.storyId == null) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } else {
+  /// sits on top of the wizard, which is left parked on its "Make Magic"
+  /// review step — popping back to it lands the child on a live "GO!" button
+  /// that silently burns another daily story. Instead, replace the whole
+  /// stack with a fresh wizard at step 0: the welcome-back character grid,
+  /// where each saved hero offers its own Continue / start-new choice. A
+  /// re-opened saved story just pops back where it came from.
+  Future<void> _exitReader() async {
+    if (widget.storyId != null) {
       Navigator.of(context).pop();
+      return;
     }
+    // Capture the navigator before the async gap so we never touch a
+    // possibly-stale context afterwards.
+    final navigator = Navigator.of(context);
+    // Preload saved characters so the wizard's HeroCreatorStep can pick its
+    // "welcome back" grid synchronously in initState — without them it falls
+    // back to the blank create-a-hero form and the child (or a sibling
+    // taking their turn) can't reach an already-created hero.
+    List<Character> characters = const [];
+    try {
+      characters = await IsarService.getAllCharacters();
+    } catch (_) {
+      // Non-fatal — the wizard reloads characters itself, just less smoothly.
+    }
+    if (!mounted) return;
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => WizardStoryScreen(
+          initialStep: 0,
+          availableCharacters: characters,
+        ),
+      ),
+      (route) => false,
+    );
   }
 
   /// Per-page illustration for [textIndex]. Prefers art persisted from a
