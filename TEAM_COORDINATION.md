@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-16 | 12:37 | bac9 | main | Triaged + committed parallel-session Sprout-reliability sweep | [link](docs/sessions/2026-05-16-1237-bac9.md) |
 | 2026-05-15 | 20:57 | 295d | main | Stripe key warning triage + subscription overflow fix | [link](docs/sessions/2026-05-15-2057-295d.md) |
 | 2026-05-15 | 20:20 | 0e2f | main | MT-126 re-verify + MT-127 fix + MT-122 R2 backup shipped + MT-123/124 closed | [link](docs/sessions/2026-05-15-2020-0e2f.md) |
 | 2026-05-15 | 17:21 | b667 | main | Kids-reader UX: egg cracks, illustration persistence, resume/continue | [link](docs/sessions/2026-05-15-1721-b667.md) |
