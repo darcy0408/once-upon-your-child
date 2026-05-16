@@ -47,6 +47,87 @@ def _power_visual_block(power_id: str | None) -> str:
     return f"\n{override}\n" if override else ""
 
 
+def _humanize(value) -> str:
+    """Turn a Flutter enum `.name` (camelCase) into readable words.
+
+    The Flutter app serialises CharacterAppearance enums via `.name`, so the
+    illustration payload carries values like `lightBrown`, `strawberryBlonde`,
+    `mediumTan`, `veryLong`. Insert spaces before internal capitals and
+    lowercase so the image model reads natural language ("light brown").
+    """
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    out = []
+    for i, ch in enumerate(text):
+        if ch.isupper() and i > 0 and not text[i - 1].isupper():
+            out.append(" ")
+        out.append(ch)
+    return "".join(out).replace("_", " ").lower().strip()
+
+
+def build_appearance_details(character_appearance: dict | None) -> list:
+    """Extract human-readable appearance phrases from a character_appearance dict.
+
+    MT-129: the Flutter app (`story_result_screen._characterAppearanceForBackend`)
+    sends snake_case keys derived from the saved Character / GeneratedAvatar —
+    `hair_color`, `hair_length`, `hair_style`, `eye_color`, `skin_tone`,
+    `clothing_style`, `clothing_colors`. Older / simpler callers may instead
+    send the flat `hair` / `skin` / `outfit` keys. Previously the generators
+    only read `hair`/`skin`/`outfit`/`gender`, so the rich avatar-derived
+    fields (eye colour, skin tone, hairstyle) were silently dropped and the
+    model rendered a generic child. Read BOTH key conventions here so the
+    illustrated character actually matches the created character.
+
+    Does NOT include the avatar reference image — callers handle that
+    separately via `custom_avatar_base64`.
+    """
+    if not character_appearance:
+        return []
+
+    ca = character_appearance
+    details: list[str] = []
+
+    # --- Hair: combine length + style + colour into one phrase ---------------
+    hair_color = _humanize(ca.get('hair_color')) or _humanize(ca.get('hair'))
+    hair_length = _humanize(ca.get('hair_length'))
+    hair_style = _humanize(ca.get('hair_style') or ca.get('hairstyle'))
+    hair_parts = [p for p in (hair_length, hair_style, hair_color) if p]
+    if hair_parts:
+        details.append(f"hair: {' '.join(hair_parts)}")
+
+    # --- Eyes ----------------------------------------------------------------
+    eye_color = _humanize(ca.get('eye_color') or ca.get('eyes'))
+    if eye_color:
+        details.append(f"eye color: {eye_color}")
+
+    # --- Skin ----------------------------------------------------------------
+    skin = _humanize(ca.get('skin_tone')) or _humanize(ca.get('skin'))
+    if skin:
+        details.append(f"skin tone: {skin}")
+
+    # --- Clothing ------------------------------------------------------------
+    clothing_style = _humanize(ca.get('clothing_style'))
+    clothing_colors = _humanize(ca.get('clothing_colors'))
+    outfit = _humanize(ca.get('outfit'))
+    if outfit:
+        details.append(f"wearing: {outfit}")
+    elif clothing_style or clothing_colors:
+        clothing_phrase = ' '.join(
+            p for p in (clothing_colors, clothing_style) if p
+        )
+        details.append(f"wearing: {clothing_phrase} clothing")
+
+    # --- Gender --------------------------------------------------------------
+    gender = _humanize(ca.get('gender'))
+    if gender:
+        details.append(f"gender: {gender}")
+
+    return details
+
+
 def _detect_mime_type(data: bytes) -> str:
     """Detect image MIME type from magic bytes."""
     if data[:8] == b'\x89PNG\r\n\x1a\n':
@@ -235,15 +316,11 @@ class GeminiImageGenerator:
                 except Exception as e:
                     logger.warning(f"Failed to decode custom avatar image: {e}")
 
-            # Add physical characteristics
-            if character_appearance.get('hair'):
-                appearance_details.append(f"hair: {character_appearance['hair']}")
-            if character_appearance.get('skin'):
-                appearance_details.append(f"skin tone: {character_appearance['skin']}")
-            if character_appearance.get('outfit'):
-                appearance_details.append(f"wearing: {character_appearance['outfit']}")
-            if character_appearance.get('gender'):
-                appearance_details.append(f"gender: {character_appearance['gender']}")
+            # MT-129: physical characteristics. Reads BOTH the rich snake_case
+            # keys the Flutter app sends (hair_color/eye_color/skin_tone/etc.)
+            # AND the legacy flat hair/skin/outfit keys — see
+            # build_appearance_details() for the full key contract.
+            appearance_details.extend(build_appearance_details(character_appearance))
 
             # Add avatar details if available
             if character_appearance.get('avatar'):
@@ -455,15 +532,10 @@ Style: {style}, optimized for {age_descriptor}
                 except Exception as e:
                     logger.warning(f"Failed to decode custom avatar image: {e}")
 
-            # Add physical characteristics
-            if character_appearance.get('hair'):
-                appearance_details.append(f"hair: {character_appearance['hair']}")
-            if character_appearance.get('skin'):
-                appearance_details.append(f"skin tone: {character_appearance['skin']}")
-            if character_appearance.get('outfit'):
-                appearance_details.append(f"wearing: {character_appearance['outfit']}")
-            if character_appearance.get('gender'):
-                appearance_details.append(f"gender: {character_appearance['gender']}")
+            # MT-129: physical characteristics — reads both the rich
+            # snake_case keys and the legacy flat keys (see
+            # build_appearance_details()).
+            appearance_details.extend(build_appearance_details(character_appearance))
 
             # Add avatar details if available
             if character_appearance.get('avatar'):

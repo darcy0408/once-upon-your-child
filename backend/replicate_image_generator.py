@@ -156,14 +156,26 @@ class ReplicateImageGenerator:
         else:
             style_modifier = "detailed storybook art"
 
-        # Build character description
+        # Build character description.
+        # MT-129: previously this only read 'age' + 'gender', so the SDXL /
+        # Flux prompt never received hair colour, eye colour, skin tone,
+        # hairstyle or clothing — the model rendered a generic child that
+        # didn't match the created character. Thread the full appearance in
+        # via the shared build_appearance_details() helper (it reads both the
+        # rich snake_case keys the Flutter app sends and the legacy flat
+        # hair/skin/outfit keys). Signature of _build_prompt is unchanged.
         char_desc = character_name
         if character_appearance:
             details = []
             if character_appearance.get('age'):
                 details.append(f"{character_appearance['age']} years old")
-            if character_appearance.get('gender'):
-                details.append(character_appearance['gender'])
+            try:
+                from backend.gemini_image_generator import build_appearance_details
+                details.extend(build_appearance_details(character_appearance))
+            except Exception:
+                # Fallback: at least keep gender if the helper is unavailable.
+                if character_appearance.get('gender'):
+                    details.append(str(character_appearance['gender']))
             if details:
                 char_desc = f"{character_name} ({', '.join(details)})"
 
