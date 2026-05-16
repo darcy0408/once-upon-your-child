@@ -5,18 +5,17 @@ name: Postgres Backup
 # Hobby plan an equivalent (and account-loss-resilient) safety net by pushing a
 # pg_dump to a Cloudflare R2 bucket.
 #
-# DISABLED until secrets are configured. Uncomment the `schedule:` block once
-# the five secrets below are set in the repo (Settings → Secrets and variables
-# → Actions):
+# Runs daily on a schedule (and on demand via workflow_dispatch). Depends on
+# five repo secrets (Settings → Secrets and variables → Actions):
 #   DATABASE_PUBLIC_URL   — Railway Postgres public connection string
 #   R2_ACCOUNT_ID         — Cloudflare account id (R2 endpoint host prefix)
 #   R2_ACCESS_KEY_ID      — R2 API token access key
 #   R2_SECRET_ACCESS_KEY  — R2 API token secret
 #   R2_BUCKET             — target bucket name (e.g. story-weaver-pg-backups)
 on:
-  # schedule:
-  #   - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
-  workflow_dispatch: {}      # manual run — use this to smoke-test once secrets are set
+  schedule:
+    - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
+  workflow_dispatch: {}    # manual run — also available on demand
 
 jobs:
   backup:
