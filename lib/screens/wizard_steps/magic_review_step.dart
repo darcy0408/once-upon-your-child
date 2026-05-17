@@ -619,9 +619,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       debugPrint('❌ Error generating story: $e');
       if (mounted) {
         String errorMsg = 'Uh oh! Something went wiggly.';
+        final errText = e.toString().toLowerCase();
         if (e is ApiError && e.isParentalConsentError) {
           errorMsg = 'A grown-up needs to give permission first. '
               'Ask a parent to open Settings and complete the parental consent step.';
+        } else if (errText.contains('429') ||
+            errText.contains('quota') ||
+            errText.contains('rate limit') ||
+            errText.contains('rate-limit') ||
+            errText.contains('too many requests')) {
+          // Gemini free-tier exhaustion — commonly a BYOK key with limit:0.
+          errorMsg = 'Stories are taking a quick break — try again in a minute! ✨\n'
+              'Stories temporarily limited by API quota.';
         }
         setState(() {
           _isGenerating = false;
