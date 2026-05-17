@@ -22,6 +22,7 @@ def _auth_headers(app, user_id):
     token = jwt.encode(
         {
             "user_id": user_id,
+            "sub": user_id,
             "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
         },
         secret,

@@ -32,6 +32,24 @@ def _create_admin_user(app, user_id="admin-user-1"):
         return user_id
 
 
+def _create_premium_user(app, user_id="premium-user-1"):
+    with app.app_context():
+        user = db.session.get(User, user_id)
+        if user:
+            return user_id
+        user = User(
+            id=user_id,
+            username=f"premium_{user_id}",
+            email=f"{user_id}@example.com",
+            password_hash="hashed",
+            subscription_tier="premium",
+        )
+        user.set_password("test-password")
+        db.session.add(user)
+        db.session.commit()
+        return user_id
+
+
 def _auth_headers(app, user_id):
     secret = app.config.get("JWT_SECRET_KEY") or "dev-secret-key"
     token = jwt.encode(
@@ -48,25 +66,29 @@ def _auth_headers(app, user_id):
 
 @pytest.mark.api_contract
 def test_health_endpoint_schema(client):
+    # M-12: the public /health probe is intentionally minimal — only
+    # status + version. Detailed diagnostics moved to /health/detailed.
     response = client.get("/health")
     assert response.status_code == 200
     payload = response.get_json()
     assert isinstance(payload, dict)
     assert "status" in payload
-    assert "timestamp" in payload
     assert "version" in payload
-    assert "database" in payload
-    assert "has_api_key" in payload
-    assert "model" in payload
-    assert "stripe_configured" in payload
-    assert "stripe_premium_price" in payload
-    assert "stripe_family_price" in payload
-    assert "environment" in payload
+    # Diagnostic detail must NOT be exposed to unauthenticated callers.
+    assert "database" not in payload
+    assert "has_api_key" not in payload
+    assert "environment" not in payload
 
 
 @pytest.mark.api_contract
 def test_health_database_endpoint_schema(client):
+    # M-12: /health/database now requires auth + admin.
     response = client.get("/health/database")
+    assert response.status_code == 401
+
+    admin_id = _create_admin_user(client.application, user_id="health-db-admin")
+    headers = _auth_headers(client.application, admin_id)
+    response = client.get("/health/database", headers=headers)
     assert response.status_code == 200
     payload = response.get_json()
     assert isinstance(payload, dict)
@@ -85,8 +107,14 @@ def test_version_endpoint_schema(client):
 
 @pytest.mark.api_contract
 def test_health_detailed_endpoint_schema(client):
-    # This endpoint can return 200 (healthy) or 503 (unhealthy) depending on environment.
+    # M-12: /health/detailed now requires auth + admin.
     response = client.get("/health/detailed")
+    assert response.status_code == 401
+
+    admin_id = _create_admin_user(client.application, user_id="health-detailed-admin")
+    headers = _auth_headers(client.application, admin_id)
+    # This endpoint can return 200 (healthy) or 503 (unhealthy) depending on environment.
+    response = client.get("/health/detailed", headers=headers)
     assert response.status_code in (200, 503)
     payload = response.get_json()
     assert isinstance(payload, dict)
@@ -361,13 +389,17 @@ def test_auth_anonymous_contract(client):
 
 @pytest.mark.api_contract
 def test_auth_anonymous_reuses_client_id(client):
-    resp1 = client.post("/auth/anonymous", json={"client_id": "anon_contract_1"})
-    resp2 = client.post("/auth/anonymous", json={"client_id": "anon_contract_1"})
-
+    # M-16: the server generates the anonymous ID. A client reclaims an
+    # existing anonymous session by passing the server-issued ID back; a
+    # client-invented ID is ignored and a fresh account is created.
+    resp1 = client.post("/auth/anonymous", json={})
     assert resp1.status_code == 200
+    server_id = resp1.get_json()["user_id"]
+    assert server_id.startswith("anon_")
+
+    resp2 = client.post("/auth/anonymous", json={"client_id": server_id})
     assert resp2.status_code == 200
-    assert resp1.get_json()["user_id"] == "anon_contract_1"
-    assert resp2.get_json()["user_id"] == "anon_contract_1"
+    assert resp2.get_json()["user_id"] == server_id
 
 
 @pytest.mark.api_contract
@@ -510,7 +542,8 @@ def test_generate_illustrations_contract_returns_list_and_count(client):
 
 @pytest.mark.api_contract
 def test_generate_coloring_pages_requires_scene_or_scenes(client):
-    user_id = _create_user(client.application, user_id="gen-cp-user-1")
+    # M-8: /generate-coloring-pages is premium-gated; authenticate as premium.
+    user_id = _create_premium_user(client.application, user_id="gen-cp-user-1")
     headers = _auth_headers(client.application, user_id)
     response = client.post("/generate-coloring-pages", json={}, headers=headers)
     assert response.status_code == 400
@@ -520,7 +553,8 @@ def test_generate_coloring_pages_requires_scene_or_scenes(client):
 
 @pytest.mark.api_contract
 def test_generate_coloring_pages_contract_returns_list_and_count(client):
-    user_id = _create_user(client.application, user_id="gen-cp-user-2")
+    # M-8: /generate-coloring-pages is premium-gated; authenticate as premium.
+    user_id = _create_premium_user(client.application, user_id="gen-cp-user-2")
     headers = _auth_headers(client.application, user_id)
     response = client.post(
         "/generate-coloring-pages",

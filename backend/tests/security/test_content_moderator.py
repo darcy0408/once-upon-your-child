@@ -73,18 +73,22 @@ class TestKeywordFilter:
         assert not flagged_explorer, "Mild violence incorrectly flagged for Explorer (age 7)"
         assert not flagged_adventurer, "Age-appropriate conflict incorrectly flagged for age 11"
 
-    def test_monster_flagged_only_for_sprout(self):
-        """MT-114: 'Monster' triggers only for Sprout (age <= 5). Explorer
-        prompts explicitly authorize named villains and 'monster' is normal
-        Explorer vocabulary."""
+    def test_monster_not_keyword_flagged_for_any_age(self):
+        """'Monster' is intentionally NOT a keyword for any age band.
+
+        A bare keyword match cannot distinguish a reassuring story
+        ("the friendly monster helped the children", "it wasn't scary")
+        from genuine peril, and was silently swapping good Sprout stories
+        for fallbacks. Nuanced peril detection is delegated to the Layer-2
+        LLM contextual classifier; the keyword filter only catches
+        unambiguously harmful terms (suicide, sexual, weapons, etc.).
+        See the comment block above _KEYWORDS_YOUNG_ONLY in app_helpers.py.
+        """
         fn = self._make_filter()
         story = "The friendly monster helped the children cross the river."
-        _, flagged_sprout = fn(story, age=5)
-        _, flagged_explorer = fn(story, age=7)
-        _, flagged_adventurer = fn(story, age=10)
-        assert flagged_sprout, "Monster not flagged for Sprout band"
-        assert not flagged_explorer, "Monster incorrectly flagged for Explorer band"
-        assert not flagged_adventurer, "Monster incorrectly flagged for Adventurer band"
+        for age in [5, 7, 10]:
+            _, flagged = fn(story, age=age)
+            assert not flagged, f"'monster' incorrectly keyword-flagged for age {age}"
 
     def test_empty_story_not_flagged(self):
         """Empty story text does not raise errors."""
@@ -99,9 +103,15 @@ class TestKeywordFilter:
         assert not flagged
 
     def test_default_age_is_young(self):
-        """When age is omitted, default (5) uses strict young-child rules."""
+        """When age is omitted, default (5) uses strict young-child rules.
+
+        Uses a term from the young-only keyword set ('knife') — it must
+        flag at the default age, confirming the default applies the strict
+        Sprout ruleset. ('monster'/'nightmare' are intentionally not
+        keywords for any band — see test_monster_not_keyword_flagged_*.)
+        """
         fn = self._make_filter()
-        story = "The monster growled at the children in the nightmare forest."
+        story = "The villain threatened the children with a knife."
         _, flagged = fn(story)  # no age arg — defaults to 5
         assert flagged
 

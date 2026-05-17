@@ -90,6 +90,7 @@ def test_require_auth_user_not_found(app, client):
 
     payload = {
         'user_id': 'ghost_user_404',
+        'sub': 'ghost_user_404',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
@@ -112,6 +113,7 @@ def test_require_admin_success(app, client):
     # Generate token for this specific user
     payload = {
         'user_id': admin_id,
+        'sub': admin_id,
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
@@ -182,24 +184,31 @@ def test_require_owner_missing_param_returns_400(app, client, test_user, auth_he
 # ============================================================================
 
 def test_get_anonymous_token_new_user(app, client):
-    """Test creating a brand new anonymous user."""
-    client_id = 'new_anon_device_777'
-    payload = {'client_id': client_id}
-    
-    response = client.post('/auth/anonymous', 
-                          data=json.dumps(payload), 
+    """Test creating a brand new anonymous user.
+
+    The server always generates the anonymous user ID server-side; a
+    client-supplied client_id that does not map to a confirmed anonymous
+    account is ignored (M-16 / auth-bypass prevention).
+    """
+    payload = {'client_id': 'new_anon_device_777'}
+
+    response = client.post('/auth/anonymous',
+                          data=json.dumps(payload),
                           headers={'Content-Type': 'application/json'})
-    
+
     assert response.status_code == 200
     assert 'token' in response.json
-    assert response.json['user_id'] == client_id
     assert response.json['is_anonymous'] is True
-    
+    # ID is server-generated, not the client-supplied value.
+    server_id = response.json['user_id']
+    assert server_id != 'new_anon_device_777'
+    assert server_id.startswith('anon_')
+
     # Verify user was created in DB
     with app.app_context():
-        user = db.session.get(User, client_id)
+        user = db.session.get(User, server_id)
         assert user is not None
-        assert user.id == client_id
+        assert user.id == server_id
         db.session.delete(user)
         db.session.commit()
 
@@ -294,6 +303,7 @@ def test_token_validation_edge_cases(app, client, auth_headers):
     # 2. Token with non-existent user_id in payload
     payload = {
         'user_id': 'missing_user_uuid',
+        'sub': 'missing_user_uuid',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     ghost_token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
@@ -302,31 +312,54 @@ def test_token_validation_edge_cases(app, client, auth_headers):
     assert response.json['error'] == 'User not found'
 
 def test_anonymous_token_refresh_flow(app, client):
-    """Test getting a new token for an existing anonymous user."""
+    """Test getting a new token for an existing anonymous user.
+
+    Only client_ids that map to a confirmed anonymous account (email domain
+    @anonymous.storyweaver.app) may be reclaimed (M-16). Pre-create such an
+    account, then verify the same client_id reclaims it on a second call.
+    """
     setup_test_routes(app)
-    client_id = 'persistent_device_id'
+    client_id = 'anon_persistentdevice0'
+    with app.app_context():
+        user = User(
+            id=client_id,
+            username='guest_persist',
+            email=f'{client_id}@anonymous.storyweaver.app',
+        )
+        user.set_password('random')
+        db.session.add(user)
+        db.session.commit()
+
     payload = {'client_id': client_id}
-    
-    # 1. Get initial token
-    resp1 = client.post('/auth/anonymous', 
-                       data=json.dumps(payload), 
+
+    # 1. Get initial token (reclaims the existing anonymous account)
+    resp1 = client.post('/auth/anonymous',
+                       data=json.dumps(payload),
                        headers={'Content-Type': 'application/json'})
+    assert resp1.json['user_id'] == client_id
     token1 = resp1.json['token']
-    
+
     # 2. Get "refreshed" token (same client_id)
-    resp2 = client.post('/auth/anonymous', 
-                       data=json.dumps(payload), 
+    resp2 = client.post('/auth/anonymous',
+                       data=json.dumps(payload),
                        headers={'Content-Type': 'application/json'})
+    assert resp2.json['user_id'] == client_id
     token2 = resp2.json['token']
-    
+
     assert token1 != token2  # Tokens should be different because of 'iat' or 'jti'
-    
+
     # 3. Verify both tokens are valid
     for token in [token1, token2]:
         headers = {'Authorization': f'Bearer {token}'}
         resp = client.get('/test/auth', headers=headers)
         assert resp.status_code == 200
         assert resp.json['user_id'] == client_id
+
+    with app.app_context():
+        u = db.session.get(User, client_id)
+        if u:
+            db.session.delete(u)
+            db.session.commit()
 
 def test_iam_manager_isolation():
     """Test the IdentityAccessManager in isolation (from security/iam.py)."""

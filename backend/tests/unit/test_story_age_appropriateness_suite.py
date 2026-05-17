@@ -237,10 +237,22 @@ class TestStoryGenerationRoutingAndValidation:
         assert kwargs["story_length"] == payload["story_length"]
         assert kwargs["companion_pets"] == payload["companion_pets"]
         assert kwargs["companion_characters"] == payload["companion_characters"]
+        # custom_elements is NOT [USER_INPUT]-wrapped here — the prompt
+        # templates already wrap it, so it passes through unchanged.
         assert kwargs["custom_elements"] == payload["customElements"]
-        assert kwargs["conflict_hook"] == payload["conflictHook"]
-        assert kwargs["sensory_palette"] == payload["sensoryPalette"]
-        assert kwargs["world_bible"] == payload["worldBible"]
+        # Prompt-injection defense: free-text directive fields (conflictHook,
+        # sensoryPalette, worldBible) are [USER_INPUT]-wrapped by
+        # sanitize_story_request so the model treats them as data, not
+        # instructions. The original text is preserved inside the wrapper.
+        assert kwargs["conflict_hook"] == (
+            f'[USER_INPUT field="conflictHook"]{payload["conflictHook"]}[/USER_INPUT]'
+        )
+        assert kwargs["sensory_palette"] == (
+            f'[USER_INPUT field="sensoryPalette"]{payload["sensoryPalette"]}[/USER_INPUT]'
+        )
+        assert kwargs["world_bible"] == (
+            f'[USER_INPUT field="worldBible"]{payload["worldBible"]}[/USER_INPUT]'
+        )
 
     def test_task_retries_when_story_omits_companions_or_custom_requests(self, app, mocker):
         mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)

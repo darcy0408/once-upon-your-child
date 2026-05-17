@@ -19,6 +19,7 @@ def _auth_headers(user_id: str) -> dict[str, str]:
     token = jwt.encode(
         {
             "user_id": user_id,
+            "sub": user_id,
             "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
         },
         "dev-secret-key",

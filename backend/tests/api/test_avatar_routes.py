@@ -6,6 +6,11 @@ from backend.database import db
 from backend.models import User
 from backend.routes import avatar_routes
 
+# Minimal valid PNG signature + padding so the avatar route's magic-byte
+# photo validation (_is_valid_image) accepts the upload. The validator
+# inspects only the leading bytes.
+_VALID_PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+
 
 def _create_user(user_id: str, tier: str) -> str:
     """Create a user and return a valid JWT token."""
@@ -115,7 +120,7 @@ def test_generate_custom_avatar_accepts_age_99(client, app, monkeypatch):
     resp = client.post(
         "/avatar/generate-custom-avatar",
         data={
-            "photo": (io.BytesIO(b"fake-image-bytes"), "photo.png"),
+            "photo": (io.BytesIO(_VALID_PNG_BYTES), "photo.png"),
             "character_name": "Luna",
             "age": "99",
             "gender": "girl",
@@ -148,7 +153,7 @@ def test_generate_custom_avatar_returns_400_for_out_of_range_age(client, app, mo
     resp = client.post(
         "/avatar/generate-custom-avatar",
         data={
-            "photo": (io.BytesIO(b"fake-image-bytes"), "photo.png"),
+            "photo": (io.BytesIO(_VALID_PNG_BYTES), "photo.png"),
             "character_name": "Luna",
             "age": "100",
             "gender": "girl",

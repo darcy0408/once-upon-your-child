@@ -98,11 +98,23 @@ def test_api_rate_limiting(client):
 
 
 def test_cors_headers(client):
-    """Test CORS headers are properly set"""
-    response = client.get('/health', headers={'Origin': 'http://localhost:3000'})
-    assert 'Access-Control-Allow-Origin' in response.headers
-    # Note: Flask-CORS may not always include all headers for simple requests
+    """Test CORS headers are properly set.
+
+    CORS is allow-listed: an origin that is not on the allowlist must NOT be
+    echoed back in Access-Control-Allow-Origin, while an allow-listed origin
+    is reflected.
+    """
+    # Non-allowlisted origin: must not be echoed back.
+    rogue = 'https://evil-attacker.example'
+    response = client.get('/health', headers={'Origin': rogue})
     assert response.status_code == 200
+    assert response.headers.get('Access-Control-Allow-Origin') != rogue
+
+    # Allow-listed production origin: reflected back by Flask-CORS.
+    allowed = 'https://grand-light-production-68d9.up.railway.app'
+    response = client.get('/health', headers={'Origin': allowed})
+    assert response.status_code == 200
+    assert response.headers.get('Access-Control-Allow-Origin') == allowed
 
 
 def test_input_validation(client, auth_headers, test_user):

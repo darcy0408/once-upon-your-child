@@ -103,22 +103,39 @@ def character_factory(session_client: requests.Session, auth_headers: dict[str, 
 
 class TestHealthSmoke:
     def test_health_endpoint(self, session_client: requests.Session):
-        """Basic health check returns 200"""
+        """Basic health check returns 200.
+
+        M-12: the public /health probe is intentionally minimal — only
+        status + version. Diagnostic detail (database/api-key/environment)
+        is not exposed to unauthenticated callers.
+        """
         response = session_client.get(f"{BASE_URL}/health", timeout=REQUEST_TIMEOUT)
         assert response.status_code == 200
         data = _assert_json_response(response)
         assert data["status"] == "ok"
-        assert data["database"] == "ok"
-        assert data["has_api_key"] is True
+        assert "version" in data
+        # Diagnostic fields must NOT be exposed publicly.
+        assert "database" not in data
+        assert "has_api_key" not in data
 
-    def test_detailed_health(self, session_client: requests.Session):
-        """Detailed health shows all systems healthy"""
+    def test_detailed_health(self, session_client: requests.Session, auth_headers: dict[str, str]):
+        """Detailed health is admin-only (M-12).
+
+        Unauthenticated callers get 401. With a (non-admin) anonymous token
+        the endpoint returns 403. An admin token is needed for full detail;
+        the smoke suite has no admin credentials, so it only asserts the
+        endpoint is gated, not the body.
+        """
         response = session_client.get(f"{BASE_URL}/health/detailed", timeout=REQUEST_TIMEOUT)
-        assert response.status_code == 200
-        data = _assert_json_response(response)
-        assert data["status"] == "healthy"
-        assert data["checks"]["database"]["status"] == "healthy"
-        assert data["checks"]["gemini_api"]["configured"] is True
+        assert response.status_code == 401
+
+        response = session_client.get(
+            f"{BASE_URL}/health/detailed",
+            headers=auth_headers,
+            timeout=REQUEST_TIMEOUT,
+        )
+        # Anonymous smoke token is not admin -> 403; an admin token -> 200/503.
+        assert response.status_code in (200, 403, 503)
 
 
 class TestAPIContractSmoke:

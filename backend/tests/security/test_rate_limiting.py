@@ -296,9 +296,18 @@ def test_tts_requires_auth(ratelimit_client):
 
 
 def test_tts_rate_limit(ratelimit_client, ratelimit_app):
-    """
-    Test that /tts/synthesize enforces the 20-per-hour rate limit.
-    We mock the TTS service call so no real Google credentials are needed.
+    """Test that /tts/synthesize enforces the per-user daily TTS quota.
+
+    The endpoint's flask-limiter cap is 500/hour, but the practical per-user
+    throttle is the daily TTS quota (check_tts_quota -> HTTP 429
+    TTS_QUOTA_EXCEEDED). That quota is Redis-backed and Redis is not available
+    in the test environment, so the check is exercised here by patching it
+    directly: the first N calls are allowed, then the quota reports exceeded.
+
+    The TTS service is mocked to return a proper (audio_bytes, timestamps)
+    tuple so allowed requests succeed with 200 rather than falling through to
+    the 503 "no TTS provider" path — a pure test-environment artifact that has
+    nothing to do with rate limiting.
     """
     from unittest.mock import patch
     with ratelimit_app.app_context():
@@ -316,15 +325,37 @@ def test_tts_rate_limit(ratelimit_client, ratelimit_app):
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
     payload = {'text': 'Once upon a time', 'voice_id': 'en-US-Standard-A'}
 
-    # Override the 20/hour limit with a tighter 2/minute for this test via the verify-limiter pattern.
-    # Instead, send 21 requests and verify the 21st is 429.
-    # We mock the actual TTS call so we don't need credentials.
+    # Mock the TTS service with the real method signature: synthesize() calls
+    # generate_speech_with_timestamps() and unpacks an (audio, timestamps) tuple.
     fake_audio = b'\x00\x01\x02'
     mock_service = MagicMock()
-    mock_service.generate_speech.return_value = fake_audio
-    with patch('backend.routes.tts_routes._get_tts_service', return_value=mock_service):
+    mock_service.generate_speech_with_timestamps.return_value = (fake_audio, [])
+    mock_service.generate_speech_chunked.return_value = fake_audio
+    mock_service.generate_speech_with_dialogue.return_value = fake_audio
+
+    # Per-user daily TTS quota: allow the first 20 calls, then report exceeded.
+    quota_calls = {'n': 0}
+
+    def fake_check_tts_quota(user_id, user_tier):
+        quota_calls['n'] += 1
+        limit = 20
+        count = quota_calls['n'] - 1
+        return (count < limit, count, limit)
+
+    # backend/.env sets TTS_DISABLED=true (the route then short-circuits to a
+    # 503 before any rate-limit logic runs). Clear it for this test so the
+    # quota/limiter path is actually exercised.
+    with patch.dict(os.environ, {'TTS_DISABLED': 'false'}), \
+         patch('backend.routes.tts_routes._get_tts_service', return_value=mock_service), \
+         patch('backend.utils.ai_quota.check_tts_quota', side_effect=fake_check_tts_quota), \
+         patch('backend.utils.ai_quota.check_tts_chars_quota', return_value=(True, None, 0, 1000000)), \
+         patch('backend.utils.ai_quota.increment_tts_quota'), \
+         patch('backend.utils.ai_quota.increment_tts_chars'):
         for i in range(20):
             resp = ratelimit_client.post('/tts/synthesize', data=json.dumps(payload), headers=headers)
-            assert resp.status_code != 429, f"Request {i+1} unexpectedly rate-limited"
+            assert resp.status_code != 429, (
+                f"Request {i+1} unexpectedly rate-limited (status {resp.status_code})"
+            )
         resp = ratelimit_client.post('/tts/synthesize', data=json.dumps(payload), headers=headers)
         assert resp.status_code == 429
+        assert resp.get_json().get('code') == 'TTS_QUOTA_EXCEEDED'

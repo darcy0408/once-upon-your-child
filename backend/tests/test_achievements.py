@@ -5,15 +5,27 @@ import pytest
 import json
 from unittest.mock import patch
 
+
+def _setup_account_and_token(client):
+    """Create the test account and log in.
+
+    /setup-test-account generates a RANDOM password per call (H-1 hardening
+    removed the hardcoded credential), so the password must be read back from
+    the setup response rather than assumed.
+    """
+    setup_response = client.post('/setup-test-account')
+    password = setup_response.get_json()['password']
+    login_response = client.post('/auth/login', json={
+        'username': 'testuser',
+        'password': password,
+    })
+    return login_response.get_json()['token']
+
+
 def test_sync_achievement_progress(client):
     """Test syncing achievement progress from frontend to backend."""
     # First create a test user and get token
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     # Prepare achievement sync data
     sync_data = {
@@ -52,12 +64,7 @@ def test_sync_achievement_progress(client):
 def test_get_achievement_data(client):
     """Test getting achievement data for a user."""
     # Setup test account
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     # Get achievement data
     response = client.get('/achievement/data',
@@ -73,12 +80,7 @@ def test_get_achievement_data(client):
 def test_record_story_creation(client):
     """Test recording story creation."""
     # Setup test account
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     # Record story creation
     response = client.post('/achievement/record/story',
@@ -93,12 +95,7 @@ def test_record_story_creation(client):
 def test_record_character_creation(client):
     """Test recording character creation."""
     # Setup test account
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     # Record character creation
     response = client.post('/achievement/record/character',
@@ -112,12 +109,7 @@ def test_record_character_creation(client):
 def test_get_achievement_stats(client):
     """Test getting achievement statistics."""
     # Setup test account
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     # Get achievement stats
     response = client.get('/achievement/stats',
@@ -133,12 +125,7 @@ def test_get_achievement_stats(client):
 
 def test_record_story_returns_500_when_service_raises(client, mocker):
     """Achievement route should fail safely when service throws unexpectedly."""
-    client.post('/setup-test-account')
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': 'password'
-    })
-    token = login_response.get_json()['token']
+    token = _setup_account_and_token(client)
 
     mocker.patch(
         'backend.routes.achievement_routes.AchievementService.record_story_created',

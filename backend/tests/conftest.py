@@ -317,6 +317,7 @@ def admin_token(admin_user):
 
     payload = {
         'user_id': admin_user.id,
+        'sub': admin_user.id,
         'email': admin_user.email,
         'role': 'admin',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
@@ -331,6 +332,7 @@ def admin_headers(admin_user):
 
     payload = {
         'user_id': admin_user.id,
+        'sub': admin_user.id,
         'email': admin_user.email,
         'role': 'admin',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
