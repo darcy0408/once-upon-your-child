@@ -5,6 +5,9 @@ import '../theme/app_theme.dart';
 class TermsOfServiceScreen extends StatelessWidget {
   const TermsOfServiceScreen({super.key});
 
+  /// Static last-updated date — keep in sync with PRIVACY_POLICY.md.
+  static const String lastUpdated = 'May 17, 2026';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,7 +48,7 @@ By using Story Weaver, you agree to these terms. If you are under 13, a parent o
               content: '''
 - First month: full refund if not satisfied
 - After first month: no refunds for partial months
-- Contact support@storyweaver.app for help
+- Contact onceuponyourchild@gmail.com for help
 ''',
             ),
             _buildSection(
@@ -82,8 +85,8 @@ We may suspend or terminate accounts that violate these terms or abuse the servi
             _buildSection(
               title: 'Contact',
               content: '''
-Questions? Contact support@storyweaver.app
-Last updated: ${DateTime.now().toString().split(' ').first}
+Questions? Contact onceuponyourchild@gmail.com
+Last updated: $lastUpdated
 ''',
             ),
           ],

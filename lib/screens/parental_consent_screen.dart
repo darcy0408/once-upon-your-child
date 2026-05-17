@@ -302,7 +302,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       '• Your child can choose a premade avatar instead of creating a cartoon image from a photo',
                                       style: textWhite70),
                                   const Text(
-                                      "• Your child's stories and characters are saved on this device",
+                                      "• Your child's stories and characters are saved on our secure servers — you can view or delete them any time from Parent Controls",
                                       style: textWhite70),
                                   const Text(
                                       '• Photo-based avatars are optional and off by default — if you turn them on, a photo is sent securely to create the cartoon avatar and is used for nothing else',
@@ -318,13 +318,32 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
-                                      '• Google Gemini — AI story generation (story text only)',
+                                      '• Google Gemini — AI story-text and illustration generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image prompts.',
                                       style: textWhite70),
                                   const Text(
-                                      '• ElevenLabs — text-to-speech narration (story text only)',
+                                      "• OpenRouter, Replicate, Cloudflare Workers AI — AI image and avatar generation. Receive image prompts, and on the photo-avatar path the child's photo.",
                                       style: textWhite70),
                                   const Text(
-                                      '• Stripe — payment processing (payment info only, never child data)',
+                                      '• ElevenLabs — text-to-speech narration. Receives generated story text.',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Stripe — payment processing. Receives parent payment info; never child data.',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Railway — secure cloud hosting. Stores profiles, stories, and preferences (United States).',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Firebase / Google Analytics — app analytics. Anonymized usage events only; off by default and not enabled for children under 13.',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Sentry — error monitoring. Receives crash and error diagnostics.',
+                                      style: textWhite70),
+                                  const Text(
+                                      "• Resend — sends this consent verification email. Receives the parent/guardian email address.",
+                                      style: textWhite70),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
+                                      'Each provider receives only the minimum data needed and is governed by its own privacy policy. The full list also appears in our Privacy Policy.',
                                       style: textWhite70),
                                 ],
                               ),
@@ -1036,7 +1055,7 @@ class _KidSummaryCardState extends State<_KidSummaryCard> {
                   _kidPoint('📖',
                       'Stories are made just for YOU — your name is the hero!'),
                   _kidPoint('🔒',
-                      'Your choices stay on this device, like a secret journal.'),
+                      'Your stories are saved safely — a grown-up can see or delete them any time.'),
                   _kidPoint('🚫', 'No ads will pop up or follow you around.'),
                   _kidPoint('📸',
                       'A grown-up decides if you can use a photo for your character.'),
