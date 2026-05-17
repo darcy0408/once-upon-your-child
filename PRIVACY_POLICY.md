@@ -25,6 +25,10 @@ Story Weaver is committed to protecting the privacy and safety of children and f
 - Coping strategy usage
 - Milestone achievements
 
+### Character & Avatar Data
+- Character names and avatar customization choices
+- Photos (optional): if a parent enables photo-based avatars, a photo used to create a child's character avatar. Photo-based avatars are off by default and require parental opt-in.
+
 ## How We Use Information
 
 ### Therapeutic Services
@@ -124,11 +128,12 @@ We use minimal tracking for app functionality:
 Story Weaver uses the following third-party service providers. We share only the minimum data required for each service to function:
 
 - **Google Gemini** (AI story generation) — Story text and character details are sent to Google's Gemini API to generate personalized stories. No child name, email, or account information is sent. Google's privacy policy applies to this processing: [policies.google.com/privacy](https://policies.google.com/privacy)
+- **AI image generation** (Google Gemini, Replicate, and/or OpenRouter) — To create story illustrations and character avatars, image prompts are sent to these providers. If a parent enables photo-based avatars, the child's photo is also sent to the active image provider for the sole purpose of generating the cartoon avatar. We do not store the photo on our servers. Each provider's own privacy policy governs its processing.
 - **ElevenLabs** (text-to-speech narration) — Generated story text is sent to ElevenLabs to produce audio narration. No personal identifying information is included. ElevenLabs' privacy policy applies: [elevenlabs.io/privacy](https://elevenlabs.io/privacy)
 - **Stripe** (payment processing) — If you subscribe or add a payment method, payment information is handled directly by Stripe. Story Weaver never stores your full card details. Stripe's privacy policy applies: [stripe.com/privacy](https://stripe.com/privacy)
 - **Railway** (cloud infrastructure) — All app data (profiles, stories, preferences) is stored on secure servers provided by Railway. Data is stored in the United States.
 
-**Photos used for character avatars are processed entirely on your device and are never uploaded to our servers or shared with any third party.**
+**Photo avatars (optional).** If you choose to create a character avatar from a photo, the photo is uploaded to our servers and our AI image-generation provider solely to generate the cartoon avatar. It is not used for advertising or any other purpose, and it is not sold or shared. Photo-based avatars are turned off by default and require a parent or guardian to opt in.
 
 ## Changes to This Policy
 

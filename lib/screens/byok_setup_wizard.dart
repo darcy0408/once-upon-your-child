@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/environment.dart';
 import '../services/illustration_preference_service.dart';
 import '../services/secure_storage_service.dart';
 import '../theme/app_theme.dart';
@@ -319,7 +318,9 @@ class _BenefitsStepState extends State<_BenefitsStep> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Your key stays on your device. We never see it or store it.',
+                            'Your key is sent securely to our servers, stored '
+                            'encrypted, and used only to generate your '
+                            'stories. We never share it with anyone.',
                             style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.greenAccent,
@@ -465,25 +466,31 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
     }
 
     try {
+      // Validate the key by calling Google directly from the client — this
+      // confirms the key works without a backend round trip. (Story generation
+      // itself runs server-side; the key is sent to our backend over HTTPS and
+      // stored encrypted at rest — see the disclosure on the key-entry step.)
       final uri = Uri.parse(
-          '${Environment.backendUrl}/api/user/settings/validate-api-key');
-      final response = await http
-          .post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'api_key': key}),
-          )
-          .timeout(const Duration(seconds: 15));
+          'https://generativelanguage.googleapis.com/v1beta/models?key=$key');
+      final response =
+          await http.get(uri).timeout(const Duration(seconds: 15));
 
-      final Map<String, dynamic>? body =
-          response.body.isNotEmpty ? jsonDecode(response.body) : null;
-      final bool ok = body != null && body['valid'] == true;
+      final bool ok = response.statusCode == 200;
+      String? failureDetail;
+      if (!ok && response.body.isNotEmpty) {
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map) {
+            failureDetail = body['error']?['message']?.toString();
+          }
+        } catch (_) {/* non-JSON error body — ignore */}
+      }
 
       setState(() {
         _valid = ok;
         _status = ok
             ? 'Great! Your key looks good. Tap finish to save.'
-            : 'Validation failed: ${body?['message'] ?? body?['error'] ?? 'Unknown error'}';
+            : 'Validation failed: ${failureDetail ?? 'That key was rejected by Google (HTTP ${response.statusCode}).'}';
         _validating = false;
       });
     } on http.ClientException catch (e) {

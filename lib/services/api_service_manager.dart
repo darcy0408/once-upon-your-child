@@ -122,23 +122,63 @@ class ApiServiceManager {
     }
   }
 
+  /// One-time migration: tokens used to live in plaintext SharedPreferences
+  /// (CWE-922). If a value is still there but absent from secure storage, move
+  /// it across and delete the plaintext copy so existing users are not logged
+  /// out by the upgrade.
+  static Future<String?> _migrateTokenToSecureStorage({
+    required SharedPreferences prefs,
+    required String prefsKey,
+    required Future<String?> Function() secureRead,
+    required Future<void> Function(String) secureWrite,
+  }) async {
+    final secure = await secureRead();
+    if (secure != null && secure.isNotEmpty) {
+      // Already migrated — make sure no stale plaintext copy lingers.
+      if (prefs.getString(prefsKey) != null) {
+        await prefs.remove(prefsKey);
+      }
+      return secure;
+    }
+    final legacy = prefs.getString(prefsKey);
+    if (legacy != null && legacy.isNotEmpty) {
+      await secureWrite(legacy);
+      await prefs.remove(prefsKey);
+      debugPrint('🔐 Migrated $prefsKey from SharedPreferences to secure storage');
+      return legacy;
+    }
+    return null;
+  }
+
   Future<void> _doEnsureAuthenticated() async {
     if (_authToken != null && !_isTokenExpired(_authToken!)) return;
     _authToken = null; // clear any expired in-memory token
 
-    // Try to load from storage
+    // Try to load from storage. The access + refresh tokens are credentials
+    // and live in flutter_secure_storage; only the non-sensitive user id stays
+    // in SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString(_tokenKey);
-    _refreshToken = prefs.getString(_refreshTokenKey);
+    final stored = await _migrateTokenToSecureStorage(
+      prefs: prefs,
+      prefsKey: _tokenKey,
+      secureRead: SecureStorageService.getUserToken,
+      secureWrite: SecureStorageService.saveUserToken,
+    );
+    _refreshToken = await _migrateTokenToSecureStorage(
+      prefs: prefs,
+      prefsKey: _refreshTokenKey,
+      secureRead: SecureStorageService.getRefreshToken,
+      secureWrite: SecureStorageService.saveRefreshToken,
+    );
     _userId = prefs.getString(_userIdKey);
 
     if (stored != null && !_isTokenExpired(stored)) {
       _authToken = stored;
-      debugPrint('✅ Loaded auth token from storage');
+      debugPrint('✅ Loaded auth token from secure storage');
       return;
     }
     // Stored token absent or expired — remove it and get a fresh one.
-    await prefs.remove(_tokenKey);
+    await SecureStorageService.deleteUserToken();
 
     // Get new anonymous token
     debugPrint('🔐 Getting anonymous auth token...');
@@ -157,10 +197,11 @@ class ApiServiceManager {
         _refreshToken = data['refresh_token'];
         _userId = data['user_id'];
 
-        // Save to storage
-        await prefs.setString(_tokenKey, _authToken!);
+        // Save credentials to secure storage; only the user id (non-sensitive)
+        // stays in SharedPreferences.
+        await SecureStorageService.saveUserToken(_authToken!);
         if (_refreshToken != null && _refreshToken!.isNotEmpty) {
-          await prefs.setString(_refreshTokenKey, _refreshToken!);
+          await SecureStorageService.saveRefreshToken(_refreshToken!);
         }
         await prefs.setString(_userIdKey, _userId!);
         debugPrint('✅ Got anonymous auth token for user: $_userId');
@@ -175,6 +216,10 @@ class ApiServiceManager {
   Future<void> _clearAuthState() async {
     _authToken = null;
     _refreshToken = null;
+    await SecureStorageService.deleteUserToken();
+    await SecureStorageService.deleteRefreshToken();
+    // Defensively clear any legacy plaintext copies that pre-date the
+    // secure-storage migration.
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_refreshTokenKey);
@@ -208,14 +253,13 @@ class ApiServiceManager {
       }
 
       _authToken = newToken;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_tokenKey, newToken);
+      await SecureStorageService.saveUserToken(newToken);
 
       // Persist the rotated refresh token returned by the server.
       final newRefreshToken = data['refresh_token']?.toString();
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
         _refreshToken = newRefreshToken;
-        await prefs.setString(_refreshTokenKey, newRefreshToken);
+        await SecureStorageService.saveRefreshToken(newRefreshToken);
       }
       return true;
     } catch (_) {
