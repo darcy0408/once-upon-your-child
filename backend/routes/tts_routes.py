@@ -65,6 +65,50 @@ def _get_voice_list():
     return CURATED_VOICES, DEFAULT_VOICE_ID
 
 
+# Free Edge TTS fallback — used when ElevenLabs is unconfigured or out of budget.
+_edge_service = None
+
+
+def _get_edge_service():
+    """Lazy-init the free Microsoft Edge TTS fallback service."""
+    global _edge_service
+    if _edge_service is not None:
+        return _edge_service
+
+    try:
+        from backend.edge_tts_service import EdgeTTSService
+    except ImportError:
+        try:
+            from edge_tts_service import EdgeTTSService
+        except ImportError:
+            logger.warning("edge_tts_service module not found")
+            return None
+
+    if not EdgeTTSService.available():
+        logger.warning("edge-tts package not installed — no free TTS fallback")
+        return None
+    _edge_service = EdgeTTSService()
+    logger.info("Edge TTS fallback initialised")
+    return _edge_service
+
+
+def _edge_synthesize(text, voice_id, speed):
+    """
+    Synthesize narration via the free Edge TTS fallback.
+    Returns (audio_bytes, word_timestamps) or None if unavailable.
+    """
+    service = _get_edge_service()
+    if service is None:
+        return None
+    try:
+        return service.generate_speech_with_timestamps(
+            text=text, voice_id=voice_id, speed=speed
+        )
+    except Exception as e:
+        logger.error("Edge TTS fallback failed: %s", e)
+        return None
+
+
 def create_tts_blueprint(limiter, require_auth):
     tts_bp = Blueprint("tts", __name__)
 
@@ -92,14 +136,9 @@ def create_tts_blueprint(limiter, require_auth):
             }), 503
 
         service = _get_tts_service()
-        if service is None:
-            return jsonify({
-                "error": "TTS service unavailable",
-                "message": "ElevenLabs API key not configured. "
-                           "Set ELEVENLABS_API_KEY in backend/.env.",
-            }), 503
+        elevenlabs_ok = service is not None
 
-        # Per-user daily TTS quota check
+        # Per-user daily TTS quota check (applies to both providers)
         try:
             from backend.utils.ai_quota import (
                 check_tts_quota,
@@ -135,11 +174,10 @@ def create_tts_blueprint(limiter, require_auth):
         if not text:
             return jsonify({"error": "text is required"}), 400
 
-        # Monthly char-budget check (per-user + global). Returns 503 with a
-        # `reason` field so the client can show an appropriate toast and
-        # fall back to flutter_tts. 503 (not 429) keeps the existing client
-        # fallback path that triggers on TTS service unavailability.
-        if user_id:
+        # Monthly ElevenLabs character-budget check (per-user + global). When
+        # the premium budget is depleted we don't fail the request — we fall
+        # through to the free Edge TTS voice so narration still sounds natural.
+        if user_id and elevenlabs_ok:
             chars_req = len(text)
             ok, cap_reason, used, limit = check_tts_chars_quota(user_id, user_tier, chars_req)
             if not ok:
@@ -154,20 +192,7 @@ def create_tts_blueprint(limiter, require_auth):
                         'requested': chars_req,
                     },
                 )
-                return jsonify({
-                    "error": "TTS service unavailable",
-                    "code": "TTS_CAP_EXCEEDED",
-                    "reason": cap_reason,
-                    "chars_used": used,
-                    "chars_limit": limit,
-                    "message": (
-                        "You've used your premium voice for this month. "
-                        "Read Aloud will continue with the in-app voice."
-                    ) if cap_reason == 'user_cap_exceeded' else (
-                        "Premium voice is temporarily at capacity. "
-                        "Read Aloud will continue with the in-app voice."
-                    ),
-                }), 503
+                elevenlabs_ok = False
 
         # Strip markdown/formatting before sending so we don't waste
         # the per-chunk budget on asterisks and pound signs.
@@ -189,64 +214,81 @@ def create_tts_blueprint(limiter, require_auth):
         except (ValueError, TypeError):
             speed = 1.0
 
+        audio_bytes = None
         word_timestamps = []
-        try:
-            if character_voice_id:
-                # Dialogue-differentiated synthesis: narrator + character voices.
-                # Timestamps not supported across multi-voice segments.
-                logger.info(
-                    "Dialogue synthesis (%d chars) — narrator=%s character=%s",
-                    len(text), voice_id, character_voice_id,
-                )
-                audio_bytes = service.generate_speech_with_dialogue(
-                    text=text,
-                    narrator_voice_id=voice_id,
-                    character_voice_id=character_voice_id,
-                )
-            elif len(text) > 5000:
-                # Long story — chunked synthesis to avoid ElevenLabs truncation.
-                # Timestamps not supported for chunked mode.
-                logger.info("Long story (%d chars) — using chunked synthesis", len(text))
-                audio_bytes = service.generate_speech_chunked(text=text, voice_id=voice_id)
-            else:
-                # Short story — use with-timestamps endpoint for accurate word highlighting.
-                audio_bytes, word_timestamps = service.generate_speech_with_timestamps(
-                    text=text, voice_id=voice_id, speed=speed
-                )
-        except Exception as e:
-            logger.error("ElevenLabs TTS synthesis error: %s", e)
-            if "quota_exceeded" in str(e):
-                return jsonify({
-                    "error": "TTS_QUOTA_EXCEEDED",
-                    "message": "ElevenLabs quota exhausted.",
-                }), 503
-            return jsonify({"error": "TTS_FAILED", "message": "Narration is unavailable right now. Please try again in a moment."}), 500
+        provider = None
 
+        if elevenlabs_ok:
+            try:
+                if character_voice_id:
+                    # Dialogue-differentiated synthesis: narrator + character voices.
+                    # Timestamps not supported across multi-voice segments.
+                    logger.info(
+                        "Dialogue synthesis (%d chars) — narrator=%s character=%s",
+                        len(text), voice_id, character_voice_id,
+                    )
+                    audio_bytes = service.generate_speech_with_dialogue(
+                        text=text,
+                        narrator_voice_id=voice_id,
+                        character_voice_id=character_voice_id,
+                    )
+                elif len(text) > 5000:
+                    # Long story — chunked synthesis to avoid ElevenLabs truncation.
+                    # Timestamps not supported for chunked mode.
+                    logger.info("Long story (%d chars) — using chunked synthesis", len(text))
+                    audio_bytes = service.generate_speech_chunked(text=text, voice_id=voice_id)
+                else:
+                    # Short story — use with-timestamps endpoint for accurate word highlighting.
+                    audio_bytes, word_timestamps = service.generate_speech_with_timestamps(
+                        text=text, voice_id=voice_id, speed=speed
+                    )
+                provider = 'elevenlabs'
+            except Exception as e:
+                # Any ElevenLabs failure (exhausted credits, network, API
+                # error) falls through to the free Edge TTS voice rather than
+                # failing the request.
+                logger.error("ElevenLabs TTS synthesis error — using Edge fallback: %s", e)
+                elevenlabs_ok = False
+                audio_bytes = None
+
+        # Free Edge TTS fallback — used when ElevenLabs is unconfigured, its
+        # monthly budget is depleted, or it returned no audio.
         if not audio_bytes:
-            return jsonify({"error": "Empty audio returned"}), 500
+            edge_result = _edge_synthesize(text, voice_id, speed)
+            if edge_result is None or not edge_result[0]:
+                # No TTS available — client falls back to its on-device voice.
+                return jsonify({
+                    "error": "TTS service unavailable",
+                    "message": "Narration is unavailable right now.",
+                }), 503
+            audio_bytes, word_timestamps = edge_result
+            provider = 'edge'
 
         if user_id:
             increment_tts_quota(user_id, user_tier)
-            increment_tts_chars(user_id, user_tier, len(text))
-            try:
-                from backend.services.cost_tracker import elevenlabs_tts_cost, log_api_cost
-                log_api_cost(
-                    provider='elevenlabs',
-                    feature='tts',
-                    cost_usd=elevenlabs_tts_cost(len(text)),
-                    user_id=user_id,
-                    units=len(text),
-                    unit_kind='chars',
-                    success=True,
-                    extra={'voice_id': voice_id, 'tier': user_tier},
-                )
-            except Exception:
-                logger.debug("cost_tracker logging failed", exc_info=True)
+            # Character budget and cost tracking apply only to paid ElevenLabs use.
+            if provider == 'elevenlabs':
+                increment_tts_chars(user_id, user_tier, len(text))
+                try:
+                    from backend.services.cost_tracker import elevenlabs_tts_cost, log_api_cost
+                    log_api_cost(
+                        provider='elevenlabs',
+                        feature='tts',
+                        cost_usd=elevenlabs_tts_cost(len(text)),
+                        user_id=user_id,
+                        units=len(text),
+                        unit_kind='chars',
+                        success=True,
+                        extra={'voice_id': voice_id, 'tier': user_tier},
+                    )
+                except Exception:
+                    logger.debug("cost_tracker logging failed", exc_info=True)
 
         return jsonify({
             "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
             "format": "mp3",
             "voice_id": voice_id,
+            "provider": provider,  # 'elevenlabs' or 'edge'
             "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
         })
 

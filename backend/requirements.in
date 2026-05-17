@@ -56,6 +56,10 @@ celery==5.6.3
 elevenlabs>=1.50.0
 pydub>=0.25.1
 
+# Microsoft Edge TTS — free, no-API-key neural voice used as the narration
+# fallback when ElevenLabs is unavailable or its monthly quota is exhausted.
+edge-tts>=7.0.0
+
 # Testing (development only)
 pytest==9.0.3
 pytest-cov==7.1.0
