@@ -1,23 +1,51 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim-bookworm
+# ---- Stage 1: builder ----
+# Compiles wheels with the full build toolchain. Nothing from this stage's
+# apt packages (gcc, *-dev headers) ends up in the runtime image.
+FROM python:3.11-slim-bookworm AS builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# System deps required for psycopg2 and Pillow wheels; keep image lean
+# Build-time system deps required to compile psycopg2 and Pillow wheels
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential libpq-dev libjpeg62-turbo-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install any needed packages specified in requirements.txt
 # Copy backend requirements separately to leverage Docker caching
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r ./backend/requirements.txt \
-    && pip show psycopg2-binary >/dev/null
 
-# Copy the rest of the application code
-COPY . .
+# Build all dependencies into wheels so the runtime stage installs without a compiler
+RUN pip install --upgrade pip \
+    && pip wheel --no-cache-dir --wheel-dir /wheels -r ./backend/requirements.txt
+
+# ---- Stage 2: runtime ----
+# Clean image with NO compiler / build toolchain. Only the runtime shared
+# libraries needed by the compiled wheels are installed.
+FROM python:3.11-slim-bookworm AS runtime
+
+WORKDIR /app
+
+# Runtime-only shared libraries (no -dev headers, no gcc)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 libjpeg62-turbo zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the prebuilt wheels from the builder stage (no compilation here)
+COPY --from=builder /wheels /wheels
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --no-index --find-links=/wheels -r ./backend/requirements.txt \
+    && pip show psycopg2-binary >/dev/null \
+    && rm -rf /wheels
+
+# Create a non-root user/group to run the application (CWE-250)
+RUN groupadd --system app && useradd --system --gid app --create-home --home-dir /home/app app
+
+# Copy the rest of the application code, owned by the non-root user
+COPY --chown=app:app . .
+
+# Drop privileges before running the app. The app writes backend_errors.log
+# into /app, so /app must be owned by the app user (handled by --chown above).
+USER app
 
 # Expose the port the app runs on (Railway will set $PORT dynamically)
 EXPOSE 8080

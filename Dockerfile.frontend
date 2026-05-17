@@ -19,7 +19,7 @@ RUN flutter clean && flutter pub get
 
 # Accept backend URL as a build argument
 ARG BACKEND_URL
-# If not provided, it will fallback to the default in FlavorConfig, 
+# If not provided, it will fallback to the default in FlavorConfig,
 # but for production it really should be provided.
 
 # Build the web app with the custom backend URL
@@ -28,8 +28,10 @@ RUN flutter build web --release \
     --dart-define=FLAVOR=production \
     --dart-define=CUSTOM_BACKEND_URL=$BACKEND_URL
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
+# Stage 2: Serve with nginx (unprivileged - runs as non-root, CWE-250)
+# nginxinc/nginx-unprivileged runs as UID 101 and ships a default
+# config that listens on 8080 instead of the privileged port 80.
+FROM nginxinc/nginx-unprivileged:alpine
 
 # Copy the built web files from the build stage
 COPY --from=build /app/build/web /usr/share/nginx/html
@@ -37,8 +39,14 @@ COPY --from=build /app/build/web /usr/share/nginx/html
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 
-# Expose port (Railway will provide PORT env var)
+# Expose port (Railway will provide PORT env var; defaults to 8080)
 EXPOSE 8080
 
-# Start nginx
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# The base image already runs as the non-root 'nginx' user (UID 101) and
+# ships docker-entrypoint.sh, which runs envsubst over /etc/nginx/templates/*.template
+# at startup -> /etc/nginx/conf.d/default.conf (substituting ${PORT}).
+# That entrypoint runs before this CMD, so nginx.conf is rendered automatically.
+# Railway's startCommand in railway.frontend.json ("nginx -g 'daemon off;'")
+# overrides this CMD but still benefits from the same entrypoint.
+# Note: PORT must be an unprivileged port (>1024); Railway uses 8080.
+CMD ["nginx", "-g", "daemon off;"]
