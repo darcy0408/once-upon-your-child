@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-17 | 09:52 | 0fe7 | main | Backlog code-task batch + MANUAL_TASKS.md cleanup | [link](docs/sessions/2026-05-17-0952-0fe7.md) |
 | 2026-05-17 | 09:12 | ed41 | main | Git maintenance: branch cleanup + stale-PR triage | [link](docs/sessions/2026-05-17-0912-ed41.md) |
 | 2026-05-17 | 08:55 | 3315 | main | Six Hats security audit + P0/P1 remediation shipped | [link](docs/sessions/2026-05-17-0855-3315.md) |
 | 2026-05-17 | 07:51 | bc1a | main | 6-8 story-type wizard UX rework + COPPA debug-skip | [link](docs/sessions/2026-05-17-0751-bc1a.md) |
