@@ -11,9 +11,11 @@ _AVATAR_TIMEOUT_SECONDS = 30
 try:
     from backend.utils.app_helpers import get_user_tier, get_user_identifier
     from backend.middleware.auth import require_auth, require_parental_consent
+    from backend.routes.subscription_routes import require_premium
 except ImportError:
     from utils.app_helpers import get_user_tier, get_user_identifier
     from middleware.auth import require_auth, require_parental_consent
+    from routes.subscription_routes import require_premium
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +235,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route('/generate-pet-avatar', methods=['POST'])
     @require_auth
+    @require_premium  # M-8: photo->cartoon companion creation is a premium capability (image-gen cost)
     @require_parental_consent
     @limiter.limit(_tier_limit(free=3, premium=20))
     def generate_pet_avatar():
@@ -254,6 +257,24 @@ def create_avatar_blueprint(limiter):
                     'message': 'Photo is required'
                 }), 400
 
+            # Extract other data from form
+            pet_name = request.form.get('pet_name')
+            species = request.form.get('species')
+            breed_description = request.form.get('breed_description')
+            owner_favorite_color = request.form.get('owner_favorite_color')
+            owner_age = request.form.get('owner_age', '0')
+            companion_type = request.form.get('companion_type', 'pet')  # 'human' or 'pet'
+
+            # Basic validation — required-field check runs BEFORE the photo
+            # magic-byte validation so a request missing metadata gets the
+            # more specific MISSING_DATA error rather than INVALID_PHOTO (L-3).
+            if not all([pet_name, species, breed_description, owner_favorite_color]):
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'MISSING_DATA',
+                    'message': 'All fields (pet_name, species, breed_description, owner_favorite_color) are required'
+                }), 400
+
             photo_file = request.files['photo']
             _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
             photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
@@ -269,22 +290,6 @@ def create_avatar_blueprint(limiter):
                     'status': 'error',
                     'error_code': 'INVALID_PHOTO',
                     'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
-                }), 400
-
-            # Extract other data from form
-            pet_name = request.form.get('pet_name')
-            species = request.form.get('species')
-            breed_description = request.form.get('breed_description')
-            owner_favorite_color = request.form.get('owner_favorite_color')
-            owner_age = request.form.get('owner_age', '0')
-            companion_type = request.form.get('companion_type', 'pet')  # 'human' or 'pet'
-
-            # Basic validation
-            if not all([pet_name, species, breed_description, owner_favorite_color]):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_DATA',
-                    'message': 'All fields (pet_name, species, breed_description, owner_favorite_color) are required'
                 }), 400
 
             try:
