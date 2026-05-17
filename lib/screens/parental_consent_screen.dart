@@ -248,6 +248,27 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   color: Colors.white, fontSize: 16),
                             ),
                             const SizedBox(height: AppSpacing.sm),
+                            // AI-transparency notice at consent time (STORE-6 /
+                            // PP-6): parents must know content is AI-generated.
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('✨',
+                                    style: TextStyle(fontSize: 16)),
+                                const SizedBox(width: AppSpacing.xs),
+                                Expanded(
+                                  child: Text(
+                                    'Please note: stories, illustrations, and avatars are created by AI from your child\'s inputs. AI content can be imperfect and is not human-authored or clinician-reviewed.',
+                                    style: GoogleFonts.fredoka(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
                             // Notice to Parents box
                             Container(
                               padding: const EdgeInsets.all(AppSpacing.md),

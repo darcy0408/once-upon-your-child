@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../theme/app_theme.dart';
 import '../models/generated_avatar.dart';
 import 'safe_asset_image.dart';
+import 'ai_generated_badge.dart';
 
 /// CharacterPreview - Large character display with magical sparkle circle
 ///
@@ -242,48 +243,59 @@ class _CharacterPreviewState extends State<CharacterPreview>
           imageData.startsWith('http://') || imageData.startsWith('https://');
       final isAsset = imageData.startsWith('assets/');
 
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withAlpha(102),
-              blurRadius: 25,
-              spreadRadius: 8,
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withAlpha(102),
+                  blurRadius: 25,
+                  spreadRadius: 8,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipOval(
-          child: isAsset
-              ? SafeAssetImage(
-                  imageData,
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  placeholder: _buildPlaceholder(size),
-                )
-              : isUrl
-                  ? Image.network(
+            child: ClipOval(
+              child: isAsset
+                  ? SafeAssetImage(
                       imageData,
                       width: size,
                       height: size,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholder(size);
-                      },
+                      placeholder: _buildPlaceholder(size),
                     )
-                  : Image.memory(
-                      base64Decode(imageData.split(',').last),
-                      width: size,
-                      height: size,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholder(size);
-                      },
-                    ),
-        ),
+                  : isUrl
+                      ? Image.network(
+                          imageData,
+                          width: size,
+                          height: size,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholder(size);
+                          },
+                        )
+                      : Image.memory(
+                          base64Decode(imageData.split(',').last),
+                          width: size,
+                          height: size,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholder(size);
+                          },
+                        ),
+            ),
+          ),
+          // AI-transparency label: this avatar is machine-generated.
+          const Positioned(
+            bottom: -6,
+            child: AiGeneratedBadge.corner(),
+          ),
+        ],
       );
     } catch (e) {
       return _buildPlaceholder(size);
