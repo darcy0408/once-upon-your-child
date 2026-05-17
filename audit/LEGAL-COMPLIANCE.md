@@ -297,7 +297,7 @@ Also set the user-visible app name to the brand ("Once Upon a Time…") in `andr
 > you can never publish an update to the Play listing. The app-name rename
 > (slug → brand) is deferred. 
 
-### ☐ STORE-3 — High — Age rating / declared range inconsistent across the app
+### ✅ STORE-3 — High — Age rating / declared range inconsistent across the app (Resolved 2026-05-17)
 `lib/onboarding_screen.dart:22` (ages 3-12 only — appears to be dead duplicate),
 `lib/screens/welcome_screen.dart:82-83` (offers 15-17, 18+), `:952` (dialog says "for ages 13 and
 up"). Effective served range is 3-21. Apple's Kids Category is segmented 5-/6-8/9-11 and does not
@@ -305,11 +305,24 @@ accommodate teens/adults. **Fix:** decide store positioning (recommend: Families
 under-13, 13+ as secondary); remove the dead `onboarding_screen.dart`; make the rating
 questionnaire, in-app gate, and marketing copy agree. Effort: M.
 
-### ☐ STORE-5 — High — No neutral age gate; age picker is child-completed and gamified
+> **Resolved 2026-05-17 (`30691bab`):** positioning decided — Families app,
+> under-13 primary, 13-17 secondary. The dead `lib/onboarding_screen.dart` was
+> deleted; the false "Story Weaver is for ages 13 and up" dialog was reworded;
+> the age step now states the app serves ages 3-17. **Still required (console,
+> not code):** set the App Store Connect / Play Console age-rating questionnaire
+> and store-listing copy to the under-13 Families positioning.
+
+### ✅ STORE-5 — High — No neutral age gate; age picker is child-completed and gamified (Resolved 2026-05-17)
 `lib/screens/welcome_screen.dart:241-290`. No "ask a parent" screen, no DOB entry; the child taps a
 playful age band. Apple 5.1.4 / Google Families expect a neutral, non-incentivized gate (ideally
 DOB-derived). **Fix:** add a neutral age/DOB gate as the first screen — plain styling, no steering
 TTS, no reward for older ages. Effort: M.
+
+> **Resolved 2026-05-17 (`30691bab`):** the age step is now neutral — a calm
+> "How old is the child?" header (plain font), no decorative glyphs, no steering
+> TTS, and the Adventurer-band "unlocked new adventures" celebration was removed
+> so an older age band is not a reward. Age-band selection is otherwise
+> unchanged (no DOB switch). Optional future enhancement: a true DOB-derived gate.
 
 ### ✅ STORE-7 — Medium — External links open without a parental gate (Resolved 2026-05-17)
 `byok_setup_wizard.dart:38-41` (Google AI Studio), `settings_screen.dart:851` &
@@ -388,10 +401,10 @@ policy), PP-2/CMP-3 (remove E2EE claim, fix age range/date), PP-3/PP-4 (false "o
 PP-7 (standardize the rights-contact address — user must still confirm the mailbox is monitored),
 the sub-processor table (CMP-4/PP-5). PP-6 (AI disclosure) deferred to Phase 3.
 
-**Phase 3 — store gates (days):** ✅ mostly done 2026-05-17 — STORE-2 (gate Sentry, `99cfde6f`),
-STORE-6/PP-6 (AI labelling, `4f788edc`), STORE-7 (parental gate on external links, `e6b7f4ff`).
-**Still open:** STORE-3 + STORE-5 (age-gate rework) — held pending a store-positioning product
-decision; they rework the live onboarding flow so are best done deliberately.
+**Phase 3 — store gates (days):** ✅ done 2026-05-17 — STORE-2 (gate Sentry, `99cfde6f`),
+STORE-6/PP-6 (AI labelling, `4f788edc`), STORE-7 (parental gate on external links, `e6b7f4ff`),
+STORE-3 + STORE-5 (age positioning + neutral gate, `30691bab`). Console follow-up: set the store
+age-rating questionnaire and listing copy to the under-13 Families positioning (STORE-3).
 
 **Phase 4 — larger / decision-gated:** STORE-1 (IAP migration — 2–4 weeks, start now), CMP-5/PP-13
 (retention job), CMP-7 (therapeutic-data decision + possible DPIA), CMP-9 (jurisdictional consent
