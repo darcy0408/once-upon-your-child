@@ -24,19 +24,21 @@ jobs:
   canary-deployment:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
+    # RAILWAY_TOKEN is read from the environment by the CLI for every step
+    # below — never pass it as a CLI argument (L-11: tokens on the command line
+    # leak into logs/ps).
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
-
-      - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy to Canary Environment
         run: |

@@ -7,11 +7,14 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 # Backend Service (Python Flask API)
+# startCommand is the canonical boot path (it overrides the Dockerfile CMD at
+# runtime). The Dockerfile CMD is kept identical as a local-dev fallback.
+# nixpacks.toml was removed (L-9) — the Docker build is authoritative.
 [[services]]
 name = "backend"
 dockerfile = "Dockerfile"
 buildCommand = "pip install --no-cache-dir -r backend/requirements.txt"
-startCommand = "sh -c 'gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app --timeout 120'"
+startCommand = "sh -c 'gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2'"
 
 [services.healthcheck]
 path = "/health"

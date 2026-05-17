@@ -23,17 +23,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
-
       - name: Deploy to Railway Staging
+        # RAILWAY_TOKEN is read from the environment by the CLI — never pass it
+        # as a CLI argument (L-11: tokens on the command line leak into logs/ps).
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           railway link --project ${{ secrets.RAILWAY_PROJECT_ID_STAGING }}
           railway up --detach
@@ -56,17 +57,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
-
       - name: Deploy to Railway Production
+        # RAILWAY_TOKEN is read from the environment by the CLI — never pass it
+        # as a CLI argument (L-11: tokens on the command line leak into logs/ps).
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
           railway up --detach

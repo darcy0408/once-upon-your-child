@@ -34,19 +34,21 @@ jobs:
   rollback-backend:
     runs-on: ubuntu-latest
     environment: production
+    # RAILWAY_TOKEN is read from the environment by the CLI for every step
+    # below — never pass it as a CLI argument (L-11: tokens on the command line
+    # leak into logs/ps).
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
-
-      - name: Login to Railway
-        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Rollback Railway Deployment
         run: |
@@ -65,8 +67,10 @@ jobs:
     if: always()
     steps:
       - name: Send Rollback Notification
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v2
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚨 Production Rollback Completed",
@@ -80,5 +84,3 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
