@@ -94,9 +94,13 @@ Insufficient data for a confident score in this band, but the trend matches Spro
 | Flux Schnell | 8.0 | $0.003 | **2.7× better quality-per-dollar** |
 | SDXL-Lightning | 5.0 | $0.003 | 1.7× — but quality below acceptance bar |
 
+## Update 2026-05-17 — Sprout switched to Flux Schnell primary
+
+**Superseded:** the original recommendation kept Gemini primary for Sprout. As of 2026-05-17 Sprout (age ≤5) routes to **Flux Schnell as primary** (Gemini-via-OpenRouter remains the fallback so a young child always gets a picture). Driver was cost: Flux Schnell (~$0.003/image) is ~13× cheaper than Gemini-via-OpenRouter (~$0.0375/image), and a Sprout picture book is ~10 images per story. Sprout illustrations are now metered under a separate, generous monthly cap (free 60 / premium 250 / family 500). Tradeoff to monitor: Flux's style is less warm than Gemini's soft 3D Pixar look — re-evaluate if Sprout image-quality feedback regresses; the `CLOUDFLARE_FLUX_DISABLED` / `FLUX_SCHNELL_DISABLED` kill-switches plus the Gemini fallback allow a fast revert.
+
 ## Recommendation
 
-**Hybrid pipeline: Flux Schnell as primary for ages 6+, Gemini stays primary for Sprout.**
+**Hybrid pipeline: Flux Schnell as primary for ages 6+, Gemini stays primary for Sprout.** _(Sprout half superseded — see "Update 2026-05-17" above.)_
 
 Rationale:
 1. **Sprout (≤5): keep Gemini.** The warm soft 3D Pixar style is critical for 3-5 year olds. Flux Schnell's anime-influenced style is the wrong vibe; SDXL's painterly style is worse. The cost saving doesn't justify the aesthetic miss. Sprout is your visible hook — don't compromise it.

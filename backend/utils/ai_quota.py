@@ -566,15 +566,25 @@ def increment_tts_chars(user_id: str, user_tier: str, chars: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Illustration monthly quota (per-image, used by ages-6+ non-BYOK path)
+# Illustration monthly quota (per-image, used by ALL non-BYOK paths)
 #
-# Flux Schnell ($0.003/image) makes free-tier illustrations economical at small
-# caps. Sprout and BYOK paths are intentionally NOT counted here:
-#   - Sprout free non-BYOK uses Gemini-via-OpenRouter (existing behavior, kept
-#     unlimited because per-page art is essential to the 3-5 picture-book
-#     experience and the server-side budget is small).
-#   - BYOK users pay Google directly, no server-side cost to meter.
-# Only the ages-6+ non-BYOK path consumes from this counter (route enforces).
+# Flux Schnell ($0.003/image) makes per-page illustrations economical even at
+# generous caps. As of 2026-05-17 the Sprout (age <=5) band ALSO routes to
+# Flux Schnell as its primary provider and is metered here — it is no longer
+# unmetered. Sprout uses a SEPARATE, much more generous cap because a Sprout
+# picture book is ~10 images per story (vs ~5 for the 6+ bands) and per-page
+# art is essential to that band's experience.
+#
+# Two cap families, selected by the `is_sprout` parameter on the quota
+# functions (the route passes is_sprout=(age <= 5)):
+#   - is_sprout=False → ages-6+ caps  (free 10 / premium 100 / family 200)
+#   - is_sprout=True  → Sprout caps   (free 60 / premium 250 / family 500)
+# Both families share ONE Redis counter per user/month (`illust:{uid}:{month}`)
+# — a user is either in the Sprout band or not for a given request, and the
+# cap simply differs; this avoids a second counter and keeps TTLs simple.
+#
+# BYOK still bypasses entirely: BYOK users pay Google directly, no server-side
+# cost to meter (byok tier resolves to the 0 sentinel; route skips the check).
 # ---------------------------------------------------------------------------
 
 _ILLUSTRATION_MONTHLY_LIMITS: dict[str, int] = {
@@ -585,21 +595,47 @@ _ILLUSTRATION_MONTHLY_LIMITS: dict[str, int] = {
                       # bypass the quota check entirely for BYOK)
 }
 
+# Sprout (age <=5) caps — generous because a Sprout picture book is ~10
+# images each and per-page art is core to the 3-5 experience.
+_ILLUSTRATION_SPROUT_MONTHLY_LIMITS: dict[str, int] = {
+    "free": 60,       # ~6 Sprout picture books at 10 pages each
+    "premium": 250,   # ~25 Sprout picture books at 10 pages each
+    "family": 500,    # ~50 Sprout picture books at 10 pages each
+    "byok": 0,        # BYOK sentinel — route bypasses the check entirely
+}
+
 _ENV_ILLUSTRATION_OVERRIDES = {
     "free": "ILLUSTRATIONS_FREE",
     "premium": "ILLUSTRATIONS_PREMIUM",
     "family": "ILLUSTRATIONS_FAMILY",
 }
 
+_ENV_ILLUSTRATION_SPROUT_OVERRIDES = {
+    "free": "ILLUSTRATIONS_SPROUT_FREE",
+    "premium": "ILLUSTRATIONS_SPROUT_PREMIUM",
+    "family": "ILLUSTRATIONS_SPROUT_FAMILY",
+}
 
-def _get_illustration_limit(tier: str) -> int:
-    env_key = _ENV_ILLUSTRATION_OVERRIDES.get(tier)
+
+def _get_illustration_limit(tier: str, is_sprout: bool = False) -> int:
+    """Resolve the monthly illustration cap for *tier*.
+
+    When *is_sprout* is True the (more generous) Sprout cap family and its
+    `ILLUSTRATIONS_SPROUT_*` env overrides are used; otherwise the ages-6+
+    caps and `ILLUSTRATIONS_*` overrides apply.
+    """
+    if is_sprout:
+        env_key = _ENV_ILLUSTRATION_SPROUT_OVERRIDES.get(tier)
+        limits = _ILLUSTRATION_SPROUT_MONTHLY_LIMITS
+    else:
+        env_key = _ENV_ILLUSTRATION_OVERRIDES.get(tier)
+        limits = _ILLUSTRATION_MONTHLY_LIMITS
     if env_key and os.getenv(env_key):
         try:
             return int(os.getenv(env_key))
         except ValueError:
             pass
-    return _ILLUSTRATION_MONTHLY_LIMITS.get(tier, _ILLUSTRATION_MONTHLY_LIMITS["free"])
+    return limits.get(tier, limits["free"])
 
 
 def _illustration_user_key(user_id: str) -> str:
@@ -608,7 +644,7 @@ def _illustration_user_key(user_id: str) -> str:
 
 
 def check_illustration_quota(
-    user_id: str, user_tier: str, num_images: int = 1
+    user_id: str, user_tier: str, num_images: int = 1, is_sprout: bool = False
 ) -> tuple[bool, int, int]:
     """Check whether *user_id* is within their monthly illustration quota.
 
@@ -617,8 +653,9 @@ def check_illustration_quota(
     - allowed=False → at least one would push over; caller should return [] /
                       surface the upgrade CTA
     - Returns allowed=True on Redis error (degrade open).
+    - *is_sprout* selects the generous Sprout cap family (see module comment).
     """
-    limit = _get_illustration_limit(user_tier)
+    limit = _get_illustration_limit(user_tier, is_sprout=is_sprout)
     if limit <= 0:
         return False, 0, 0
 
@@ -630,8 +667,8 @@ def check_illustration_quota(
         used = int(r.get(_illustration_user_key(user_id)) or 0)
         if used + max(1, num_images) > limit:
             logger.warning(
-                "illustration_quota: user=%s tier=%s used=%d req=%d limit=%d — capped",
-                user_id, user_tier, used, num_images, limit,
+                "illustration_quota: user=%s tier=%s sprout=%s used=%d req=%d limit=%d — capped",
+                user_id, user_tier, is_sprout, used, num_images, limit,
             )
             return False, used, limit
         return True, used, limit
@@ -643,7 +680,8 @@ def check_illustration_quota(
 def increment_illustration_quota(user_id: str, user_tier: str, num_images: int = 1) -> None:
     """Bump per-user monthly illustration counter after success. 35-day TTL.
 
-    No-op when Redis unavailable or num_images <= 0.
+    No-op when Redis unavailable or num_images <= 0. Sprout and ages-6+ share
+    this single counter — only the cap (checked above) differs by band.
     """
     if num_images <= 0:
         return

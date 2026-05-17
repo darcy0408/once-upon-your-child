@@ -1,11 +1,14 @@
-"""Tests for the hybrid image-generation routing (MT-084).
+"""Tests for the image-generation routing (MT-084; cost-reduction 2026-05-17).
 
 Verifies that per-page illustration dispatch in story_routes follows the
-hybrid recommendation from docs/IMAGE_GEN_AB_TEST_RESULTS.md:
+current routing (see docs/IMAGE_GEN_AB_TEST_RESULTS.md "Update 2026-05-17"):
 
-  age <= 5  →  Gemini-via-OpenRouter primary; Flux Schnell fallback when empty
-  age >= 6  →  Flux Schnell (8/10 quality at 12.5× cheaper)
-  Flux fail →  Fall back to Gemini-via-OpenRouter
+  ALL ages (incl. Sprout <=5)  →  Flux Schnell primary
+  Flux fail                    →  Fall back to Gemini-via-OpenRouter
+
+Sprout was switched off Gemini-primary to Flux Schnell primary for cost
+(~13× cheaper); Gemini-via-OpenRouter remains the fallback so a child always
+gets a picture.
 
 Also covers the BYOK override (user_api_key forces Gemini regardless of age)
 and the FLUX_SCHNELL_DISABLED kill-switch env var.
@@ -29,27 +32,21 @@ def _make_image_dict(provider_tag: str) -> dict:
 class TestHybridImageDispatch:
     """Routing decisions inside generate_illustrations_endpoint."""
 
-    def test_age_5_routes_to_gemini_openrouter(self):
-        """Sprout band (age <= 5) primary path is Gemini-via-OpenRouter — Flux
-        Schnell is never the *primary* provider for this band."""
+    def test_age_5_routes_to_flux_schnell(self):
+        """Sprout band (age <= 5) primary path is now Flux Schnell — switched
+        from Gemini-primary on 2026-05-17 for cost (~13× cheaper)."""
         from backend.replicate_image_generator import ReplicateImageGenerator
-
-        gemini_mock = MagicMock()
-        gemini_mock.generate_story_illustration.return_value = [
-            _make_image_dict("gemini")
-        ]
 
         with patch.object(
             ReplicateImageGenerator,
             "generate_story_illustration_flux_schnell",
             return_value=[_make_image_dict("flux")],
         ) as flux_call:
-            from backend.routes import story_routes  # noqa: F401 — module-level import-time check
+            from backend.routes import story_routes  # noqa: F401 — import-time check
 
-            # Simulate the primary-routing conditional: age <= 5 → no Flux on
-            # the primary path (the Flux fallback is a separate conditional).
+            # Flux is the primary provider for ALL ages — no age gate anymore.
             age = 5
-            if age >= 6 and os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in (
+            if os.getenv("FLUX_SCHNELL_DISABLED", "").lower() not in (
                 "1",
                 "true",
                 "yes",
@@ -59,64 +56,50 @@ class TestHybridImageDispatch:
                     num_images=1, age=age, therapeutic_focus=None,
                     character_appearance=None, companions=None,
                 )
-            assert flux_call.call_count == 0, (
-                "Flux Schnell must not be the primary provider for age <= 5"
-            )
-
-    def test_sprout_falls_back_to_flux_when_gemini_empty(self):
-        """Sprout (age <= 5): when Gemini-via-OpenRouter yields no image, Flux
-        Schnell is the last-resort fallback so the child still gets a picture."""
-        from backend.replicate_image_generator import ReplicateImageGenerator
-
-        with patch.object(
-            ReplicateImageGenerator,
-            "generate_story_illustration_flux_schnell",
-            return_value=[_make_image_dict("flux")],
-        ) as flux_call:
-            age = 4
-            illustrations = []  # Gemini-via-OpenRouter produced nothing
-            if (
-                not illustrations
-                and age <= 5
-                and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
-                not in ("1", "true", "yes")
-            ):
-                illustrations = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
-                    scene_description="x", character_name="y", style="z",
-                    num_images=1, age=age, therapeutic_focus=None,
-                    character_appearance=None, companions=None,
-                )
             assert flux_call.call_count == 1, (
-                "Flux Schnell must fire as the Sprout fallback when Gemini is empty"
+                "Flux Schnell must be the primary provider for age <= 5"
             )
-            assert illustrations, "Sprout fallback must yield an illustration"
 
-    def test_sprout_no_flux_fallback_when_gemini_succeeds(self):
-        """Sprout: a successful Gemini-via-OpenRouter result must NOT trigger
-        the Flux fallback — the warm 3D style is preferred when available."""
-        from backend.replicate_image_generator import ReplicateImageGenerator
+    def test_sprout_falls_back_to_gemini_when_flux_empty(self):
+        """Sprout (age <= 5): when Flux Schnell yields no image, Gemini-via-
+        OpenRouter is the fallback so the child still gets a picture."""
+        gemini_mock = MagicMock()
+        gemini_mock.generate_story_illustration.return_value = [
+            _make_image_dict("gemini")
+        ]
 
-        with patch.object(
-            ReplicateImageGenerator,
-            "generate_story_illustration_flux_schnell",
-            return_value=[_make_image_dict("flux")],
-        ) as flux_call:
-            age = 4
-            illustrations = [_make_image_dict("gemini")]  # Gemini succeeded
-            if (
-                not illustrations
-                and age <= 5
-                and os.getenv("FLUX_SCHNELL_DISABLED", "").lower()
-                not in ("1", "true", "yes")
-            ):
-                ReplicateImageGenerator().generate_story_illustration_flux_schnell(
-                    scene_description="x", character_name="y", style="z",
-                    num_images=1, age=age, therapeutic_focus=None,
-                    character_appearance=None, companions=None,
-                )
-            assert flux_call.call_count == 0, (
-                "Flux fallback must not fire when Gemini already produced art"
+        age = 4
+        illustrations = []  # Flux produced nothing
+        if not illustrations and gemini_mock is not None:
+            illustrations = gemini_mock.generate_story_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=age, therapeutic_focus=None,
+                character_appearance=None, companions=None,
             )
+        assert gemini_mock.generate_story_illustration.call_count == 1, (
+            "Gemini-via-OpenRouter must fire as the Sprout fallback when Flux is empty"
+        )
+        assert illustrations, "Sprout fallback must yield an illustration"
+
+    def test_sprout_no_gemini_fallback_when_flux_succeeds(self):
+        """Sprout: a successful Flux result must NOT trigger the Gemini
+        fallback — Flux is the (cheaper) primary provider."""
+        gemini_mock = MagicMock()
+        gemini_mock.generate_story_illustration.return_value = [
+            _make_image_dict("gemini")
+        ]
+
+        age = 4
+        illustrations = [_make_image_dict("flux")]  # Flux succeeded
+        if not illustrations and gemini_mock is not None:
+            gemini_mock.generate_story_illustration(
+                scene_description="x", character_name="y", style="z",
+                num_images=1, age=age, therapeutic_focus=None,
+                character_appearance=None, companions=None,
+            )
+        assert gemini_mock.generate_story_illustration.call_count == 0, (
+            "Gemini fallback must not fire when Flux already produced art"
+        )
 
     def test_age_6_routes_to_flux_schnell(self):
         """Explorer band (age 6) must call Flux Schnell first."""
@@ -196,7 +179,11 @@ class TestHybridImageDispatch:
 
 
 class TestIllustrationQuota:
-    """Monthly illustration cap for ages-6+ non-BYOK users (MT-085)."""
+    """Monthly illustration cap for non-BYOK users (MT-085).
+
+    Ages-6+ use the standard caps; Sprout (age <=5) uses the separate,
+    generous caps selected by is_sprout=True (cost-reduction 2026-05-17).
+    """
 
     def test_free_tier_has_10_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
@@ -238,6 +225,49 @@ class TestIllustrationQuota:
         monkeypatch.setenv("ILLUSTRATIONS_FREE", "25")
         from backend.utils.ai_quota import _get_illustration_limit
         assert _get_illustration_limit("free") == 25
+
+    # --- Sprout (age <=5) monthly cap (cost-reduction 2026-05-17) ---
+
+    def test_sprout_free_tier_has_60_image_cap(self):
+        """Sprout free cap is generous — ~6 picture books at 10 images each."""
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("free", is_sprout=True) == 60
+
+    def test_sprout_premium_tier_has_250_image_cap(self):
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("premium", is_sprout=True) == 250
+
+    def test_sprout_family_tier_has_500_image_cap(self):
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("family", is_sprout=True) == 500
+
+    def test_sprout_byok_returns_zero_sentinel(self):
+        """Sprout BYOK still resolves to the 0 bypass sentinel."""
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("byok", is_sprout=True) == 0
+
+    def test_sprout_cap_does_not_change_ages6_caps(self):
+        """The Sprout caps must not regress the existing ages-6+ caps."""
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("free", is_sprout=False) == 10
+        assert _get_illustration_limit("premium", is_sprout=False) == 100
+        assert _get_illustration_limit("family", is_sprout=False) == 200
+
+    def test_sprout_env_override_changes_free_limit(self, monkeypatch):
+        monkeypatch.setenv("ILLUSTRATIONS_SPROUT_FREE", "120")
+        from backend.utils.ai_quota import _get_illustration_limit
+        assert _get_illustration_limit("free", is_sprout=True) == 120
+
+    def test_check_quota_uses_sprout_cap_when_is_sprout(self, monkeypatch):
+        """check_illustration_quota with is_sprout=True reports the Sprout limit."""
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        from backend.utils.ai_quota import check_illustration_quota
+        allowed, _, limit = check_illustration_quota(
+            "user-x", "free", 1, is_sprout=True,
+        )
+        assert allowed is True
+        assert limit == 60
 
 
 class TestFluxSchnellGenerator:

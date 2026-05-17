@@ -1263,19 +1263,27 @@ def create_story_blueprint(
                 return jsonify({"error": "Scene description is required"}), 400
 
             # Use user's API key if provided, otherwise use the hybrid pipeline.
-            # MT-084 hybrid routing for per-page illustrations:
-            #   - Sprout (age <=5):  Gemini-via-OpenRouter primary, Flux fallback
-            #   - Ages 6+:           Flux primary, Gemini fallback
+            # Per-page illustration routing (cost reduction, 2026-05-17):
+            #   - All ages (incl. Sprout <=5): Flux Schnell primary, Gemini-
+            #     via-OpenRouter fallback when Flux returns empty — so a child
+            #     always gets a picture. Sprout was switched off Gemini-primary
+            #     to Flux (~13x cheaper); see docs/IMAGE_GEN_AB_TEST_RESULTS.md.
             # MT-131: "Flux" = Cloudflare Workers AI flux-1-schnell first ($0
             # at current scale), Replicate Flux Schnell second — see
             # _generate_flux_illustration.
             # BYOK users always use their own Gemini key regardless of age.
-            # See docs/IMAGE_GEN_AB_TEST_RESULTS.md for the visual scoring + cost math.
+            # Every non-BYOK page is metered against the monthly illustration
+            # quota (Sprout uses a separate, generous cap — see ai_quota.py);
+            # a cache hit on a re-read serves the stored image and does NOT
+            # consume quota.
             generator = None
             using_user_key = False
             using_flux_schnell = False
+            served_from_cache = False
             current_user = getattr(request, 'current_user', None)
             current_user_id = getattr(current_user, 'id', None) if current_user else None
+            # Sprout band (age <=5) uses the generous Sprout illustration cap.
+            is_sprout = age <= 5
 
             if user_api_key and not disable_gemini_image:
                 generator = GeminiImageGenerator(api_key=user_api_key)
@@ -1287,7 +1295,54 @@ def create_story_blueprint(
             quota_exhausted = False
             quota_used = 0
             quota_limit = 0
-            if generator is not None:
+
+            # Persistent cache lookup (non-BYOK only). A story re-read produces
+            # identical inputs → identical key → a hit returns the stored image
+            # without billing a provider and without consuming quota. The cache
+            # layer degrades open: any DB fault behaves as a miss.
+            cache_key = None
+            if generator is None and num_images == 1:
+                try:
+                    from ..services.illustration_cache_service import (
+                        compute_cache_key,
+                        get_cached_illustration,
+                    )
+                except ImportError:
+                    from services.illustration_cache_service import (
+                        compute_cache_key,
+                        get_cached_illustration,
+                    )
+                cache_key = compute_cache_key(
+                    scene_description=scene_description,
+                    character_name=character_name,
+                    style=style,
+                    age=age,
+                    therapeutic_focus=therapeutic_focus,
+                    companions=companions,
+                    power_id=power_id,
+                    character_appearance=character_appearance,
+                )
+                cached = get_cached_illustration(cache_key)
+                if cached and cached.get("image_data"):
+                    from datetime import datetime as _dt, timezone as _tz
+                    served_from_cache = True
+                    using_flux_schnell = str(cached.get("provider") or "").startswith("flux")
+                    illustrations = [{
+                        "id": f"cache-{cache_key[:12]}",
+                        "prompt": scene_description,
+                        "image_data": cached["image_data"],
+                        "format": cached.get("format", "png"),
+                        "provider": cached.get("provider"),
+                        "generated_at": _dt.now(_tz.utc).isoformat(),
+                    }]
+                    logger.info(
+                        "Illustration cache HIT key=%s provider=%s — skipping provider + quota",
+                        cache_key[:12], cached.get("provider"),
+                    )
+
+            if served_from_cache:
+                pass  # cache supplied `illustrations`; skip provider + quota.
+            elif generator is not None:
                 # BYOK path — direct Gemini with the user's key.
                 # BYOK is not server-cost-metered (user pays Google).
                 illustrations = generator.generate_story_illustration(
@@ -1302,11 +1357,12 @@ def create_story_blueprint(
                     power_id=power_id,
                 )
             else:
-                # Server-key path — ages 6+ non-BYOK is metered against the
-                # monthly illustration quota (Sprout remains unmetered since
-                # per-page art is essential to that band's UX and the cost is
-                # capped naturally by Sprout's small page counts).
-                if age >= 6 and current_user_id:
+                # Server-key path — ALL non-BYOK ages are metered against the
+                # monthly illustration quota. Sprout (age <=5) uses a separate,
+                # generous cap (is_sprout=True; see ai_quota.py). A cache hit
+                # above already short-circuited and never reaches here, so a
+                # re-read never consumes quota.
+                if current_user_id:
                     try:
                         from ..utils.ai_quota import check_illustration_quota
                     except ImportError:
@@ -1314,12 +1370,13 @@ def create_story_blueprint(
                     user_tier = getattr(current_user, 'subscription_tier', 'free') or 'free'
                     allowed, quota_used, quota_limit = check_illustration_quota(
                         current_user_id, user_tier.lower(), num_images,
+                        is_sprout=is_sprout,
                     )
                     if not allowed:
                         quota_exhausted = True
                         logger.info(
-                            "Illustration quota exhausted for user=%s tier=%s used=%d/%d",
-                            current_user_id, user_tier, quota_used, quota_limit,
+                            "Illustration quota exhausted for user=%s tier=%s sprout=%s used=%d/%d",
+                            current_user_id, user_tier, is_sprout, quota_used, quota_limit,
                         )
 
                 if quota_exhausted:
@@ -1338,30 +1395,30 @@ def create_story_blueprint(
                         200,
                     )
 
-                # Hybrid routing by age band. Flux = Cloudflare first, then
-                # Replicate fallback (see _generate_flux_illustration); each
-                # provider has its own kill-switch env var.
-                if age >= 6:
-                    illustrations = _generate_flux_illustration(
-                        scene_description=scene_description,
-                        character_name=character_name,
-                        style=style,
-                        num_images=num_images,
-                        age=age,
-                        therapeutic_focus=therapeutic_focus,
-                        character_appearance=character_appearance,
-                        companions=companions,
-                        user_id=current_user_id,
-                        power_id=power_id,
+                # Primary provider for ALL ages: Flux Schnell. Flux = Cloudflare
+                # first, then Replicate fallback (see _generate_flux_illustration);
+                # each provider has its own kill-switch env var.
+                illustrations = _generate_flux_illustration(
+                    scene_description=scene_description,
+                    character_name=character_name,
+                    style=style,
+                    num_images=num_images,
+                    age=age,
+                    therapeutic_focus=therapeutic_focus,
+                    character_appearance=character_appearance,
+                    companions=companions,
+                    user_id=current_user_id,
+                    power_id=power_id,
+                )
+                using_flux_schnell = bool(illustrations)
+                if not illustrations:
+                    logger.info(
+                        "Flux returned empty for age %d; falling back to Gemini-via-OpenRouter",
+                        age,
                     )
-                    using_flux_schnell = bool(illustrations)
-                    if not illustrations:
-                        logger.info(
-                            "Flux returned empty for age %d; falling back to Gemini-via-OpenRouter",
-                            age,
-                        )
 
-                # Fallback (or Sprout path): Gemini via OpenRouter.
+                # Fallback for ALL ages: Gemini via OpenRouter, so a child
+                # always gets a picture even if Flux is down or empty.
                 if not illustrations and image_generator is not None:
                     illustrations = image_generator.generate_story_illustration(
                         scene_description=scene_description,
@@ -1374,33 +1431,6 @@ def create_story_blueprint(
                         companions=companions,
                         power_id=power_id,
                     )
-
-                # Last-resort fallback for Sprout (age <= 5): if Gemini-via-
-                # OpenRouter produced nothing — quota exhausted or outage —
-                # fall back to Flux so a young child still gets a picture on
-                # every page. Flux's style is less warm than Gemini's 3D Pixar
-                # look, but for this band a picture on every page matters more
-                # than peak fidelity. Flux = Cloudflare first, Replicate
-                # second (see _generate_flux_illustration).
-                if not illustrations and age <= 5:
-                    illustrations = _generate_flux_illustration(
-                        scene_description=scene_description,
-                        character_name=character_name,
-                        style=style,
-                        num_images=num_images,
-                        age=age,
-                        therapeutic_focus=therapeutic_focus,
-                        character_appearance=character_appearance,
-                        companions=companions,
-                        user_id=current_user_id,
-                        power_id=power_id,
-                    )
-                    if illustrations:
-                        using_flux_schnell = True
-                        logger.info(
-                            "Sprout Flux fallback produced %d image(s)",
-                            len(illustrations),
-                        )
 
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
@@ -1512,12 +1542,37 @@ def create_story_blueprint(
                 logger.error(f"Error in illustration transformation: {str(e)}")
                 transformed_illustrations = illustrations  # Fallback to original
 
-            # Increment monthly quota for ages-6+ non-BYOK only.
-            # BYOK and Sprout intentionally not counted (see route comments above).
+            # Persist a freshly generated image so a re-read is free. Skipped
+            # for BYOK (user pays Google) and for a cache hit (already stored).
+            # Only single-image requests are cached — the key identifies one
+            # image. The cache layer never raises.
+            if (
+                cache_key
+                and not served_from_cache
+                and not using_user_key
+                and len(transformed_illustrations) == 1
+            ):
+                first = transformed_illustrations[0]
+                img_data = first.get("image_data")
+                if img_data:
+                    try:
+                        from ..services.illustration_cache_service import store_illustration
+                    except ImportError:
+                        from services.illustration_cache_service import store_illustration
+                    store_illustration(
+                        cache_key,
+                        img_data,
+                        image_format=first.get("format"),
+                        provider="flux_schnell" if using_flux_schnell else "gemini_openrouter",
+                    )
+
+            # Increment monthly quota for ALL non-BYOK ages (Sprout included).
+            # A cache hit (served_from_cache) is excluded — a re-read is free.
+            # BYOK is excluded — the user pays Google directly.
             if (
                 len(transformed_illustrations) > 0
                 and not using_user_key
-                and age >= 6
+                and not served_from_cache
                 and current_user_id
             ):
                 try:
@@ -1532,17 +1587,19 @@ def create_story_blueprint(
                     len(transformed_illustrations),
                 )
 
+            _meter_in_response = not using_user_key and not served_from_cache
             return (
                 jsonify(
                     {
                         "illustrations": transformed_illustrations,
                         "count": len(transformed_illustrations),
                         "used_user_key": using_user_key,
+                        "cached": served_from_cache,
                         "provider": "flux_schnell" if using_flux_schnell else (
                             "gemini_byok" if using_user_key else "gemini_openrouter"
                         ),
-                        "quota_used": quota_used + len(transformed_illustrations) if (not using_user_key and age >= 6) else None,
-                        "quota_limit": quota_limit if (not using_user_key and age >= 6) else None,
+                        "quota_used": quota_used + len(transformed_illustrations) if _meter_in_response else None,
+                        "quota_limit": quota_limit if _meter_in_response else None,
                         "debug_info": {
                         },
                     }
