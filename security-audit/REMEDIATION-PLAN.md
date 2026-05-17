@@ -59,7 +59,30 @@ P2/P3 **Medium batch (M-1…M-17)** executed by 5 parallel agents (one per WP) p
 - **Pre-existing (not this batch):** `backend/backup_database.py:66` has a committed syntax error (`exit(1)</content>`) — recommend a separate fix.
 - Verify before deploy: Docker images build (WP-E did not run `docker build`); add the `CONSENT_TEST_BYPASS` dart-define to any Playwright CI config that relied on `?bypass_consent=1`.
 
-P4 (Low, L-1…L-12) — not yet started; see work packages below. WP-E infra now done.
+### Low batch (L-1…L-12) — 2026-05-17
+
+P4 **Low batch executed** by 3 parallel agents (backend-auth, infra, flutter-client). L-4 was already closed by the H-4 recursive-sanitizer refactor; L-12 (`MainActivity` exported) is informational — LAUNCHER activity, accepted, no action.
+
+| Finding | Status | Notes |
+|---|---|---|
+| L-1 | ✅ Done | `@require_auth` on `/validate-api-key`; rate limit kept as defense-in-depth. |
+| L-2 | ✅ Done | `http://` CORS origin variant added only in dev; prod gets `https://` only. |
+| L-3 | ✅ Done | `MAX_CONTENT_LENGTH` 12 MB; `tweak_gallery_avatar` read bounded to 10 MB; magic-byte image validation on all three avatar upload paths. |
+| L-4 | ✅ Done | Closed earlier by the H-4 recursive sanitizer. |
+| L-5 | ✅ Done | Auth-lifecycle logging routed through `LoggerService` (build-mode gated); `user_id` redacted, no raw tokens logged. |
+| L-6 | ✅ Done | `progression_routes.py` confirmed unregistered (grep) and deleted. `swagger.json` still lists stub `/progression/*` paths — harmless doc, flagged. |
+| L-7 | ✅ Done | Raw `str(e)` removed from `api_key_routes` 500 responses; detail logged server-side. |
+| L-8 | ✅ Done | Identity standardized on the `sub` claim; `user_id` claim fallback dropped (M-1 `tv` check preserved). |
+| L-9 | ✅ Done | `nixpacks.toml` deleted; one gunicorn command (`--workers 2`, info log level) across `railway.toml` + Dockerfile. |
+| L-10 | ✅ Done | `server_tokens off` + CSP / `Referrer-Policy` / HSTS on the frontend nginx. |
+| L-11 | ✅ Done | Railway token via `env:` not CLI arg; `setup-python`→v5, `codecov-action`→v5, `slack-github-action`→v2. |
+| L-12 | ☐ N/A | Informational — exported LAUNCHER `MainActivity` is expected; no action. |
+
+### Low-batch caveats to verify on deploy
+- **`slack-github-action` v2** has breaking input changes (`webhook`+`webhook-type` instead of the v1 env var) — confirm Slack messages still post on the first rollback / health-failure.
+- **`codecov-action` v5** — private repos need a `CODECOV_TOKEN` secret; verify coverage upload still succeeds.
+- **nginx CSP** `connect-src` is `https: wss:` (broad) because the backend URL is build-time injected — tighten to the concrete Railway domain when stable; watch the browser console after deploy.
+- **`nixpacks.toml` deletion** is safe only if the Railway backend service builder is "Dockerfile" — confirm in the Railway UI.
 
 ---
 
