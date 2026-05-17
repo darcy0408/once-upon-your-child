@@ -29,8 +29,37 @@ P0 + P1 batch executed by 5 parallel agents. 8 backend files + 9 Flutter files c
 - **D4 (H-8 backend):** The consent email round-trip needs backend endpoints (`POST /api/user/<id>/consent/request-verification`, `.../verify`), a `ConsentRecord.verified` column + code store, and an email-sending provider. **Until built, under-13 signups are blocked** (fails closed — intentional, no false consent recorded). Pick an email provider before this can proceed.
 - **D5 (BYOK scope):** BYOK now offloads story *text* to the client, but illustrations/coloring still use the server-managed image key. BYOK no longer reduces server image cost — decide whether BYOK stays a premium unlock or whether a client-direct image path is worth building.
 
-### Not yet started
-P2/P3/P4 (Medium/Low) — see work packages below; WP-E (infra) untouched. M-12 partially overlaps the H-1 agent's flagged `debug-gemini`/`debug-openrouter` env-leak siblings.
+### Execution status — 2026-05-17
+
+P2/P3 **Medium batch (M-1…M-17)** executed by 5 parallel agents (one per WP) plus cross-WP handoff edits. 19 backend files changed (+2 new: `models/stripe_event.py`, `migrations/add_stripe_webhook_event.py`), 7 Flutter files, 3 Dockerfiles. Backend `compileall` clean; `flutter analyze` clean (4 pre-existing `unused_element` lints). No commits — working tree only, pending review.
+
+| Finding | Status | Notes |
+|---|---|---|
+| M-1 | ✅ Done | Access-token TTL 24h→1h; `tv` token-version claim minted + checked in `require_auth`; `User.token_version` column + boot auto-migration; bumped on data-deletion. No logout endpoint exists. |
+| M-2 | ✅ Done | Cost circuit breaker fails CLOSED on Redis outage — conservative DB counter + emergency monthly cap (`AI_QUOTA_EMERGENCY_MULTIPLIER`, default 3); availability paths still fail open. |
+| M-3 | ✅ Done | `StripeWebhookEvent` (unique `event_id`) dedups replays; `StripeSubscriptionCursor` high-water mark drops stale/out-of-order events. New tables auto-created at boot. |
+| M-4 | ✅ Done | Interactive path runs the LLM classifier; fails CLOSED for the Sprout band (safe fallback segment); other bands keep documented fail-open. |
+| M-5 | ✅ Done | Flux prompts vetted via blocklist in the shared `_build_prompt` (covers Replicate + Cloudflare); unsafe terms → safe templated prompt. |
+| M-6 | ✅ Done | Content age band clamped to the verified anchor (owned `Character.age` / account `declared_age`); client `age` may only adjust downward. |
+| M-7 | ✅ Done | Hero name pseudonymized to `HERO_1` before all provider calls — interactive service + main `/generate-story` task path; real name restored locally in output. See caveat below. |
+| M-8 | ✅ Done | Backend: `require_premium` gate on interactive (×2) + coloring endpoints, per-feature multi-character gate in `/generate-story`. Client: premium flags documented cosmetic-only; backend is source of truth. |
+| M-9 | ✅ Done | Firebase Analytics defaults OFF; enabled only after verified consent AND declared age ≥13 via `PrivacyService.applyConsentDecision`. |
+| M-10 | ✅ Done | Age persistence deferred until after consent; age screen made neutral (TTS/gamification removed). |
+| M-11 | ✅ Done | `getAllowPhotoAvatar()` enforced in `CustomAvatarScreen.initState` + before every camera/upload/generate path. |
+| M-12 | ✅ Done | `/health` minimal `{status,version}`; `/health/detailed`+`/database` behind `@require_auth @require_admin`; `env_keys`/`str(e)`/key previews removed from debug endpoints. |
+| M-13 | ✅ Done | Non-root `USER` in all three Dockerfiles; frontend on `nginxinc/nginx-unprivileged`. |
+| M-14 | ✅ Done | Backend + worker images converted to multi-stage builds — no compiler in the runtime image. |
+| M-15 | ✅ Done | Consent test-bypass now compile-time `--dart-define=CONSENT_TEST_BYPASS` (default off); runtime `?bypass_consent=1` removed. |
+| M-16 | ✅ Done | `/auth/anonymous` rejects the singleton `anonymous` id; every anon session gets a unique `anon_*` id. |
+| M-17 | ✅ Done | Quota systems unified — DB `*_this_month` counter repurposed as the M-2 cost counter and actively maintained; `/api/user/usage` no longer reads dead state. |
+
+### Caveats / follow-ups surfaced
+- **M-7 main path:** the hero name is scrubbed from the assembled prompt via word-boundary regex. A child whose real name is also a common English word (e.g. "May", "Hope") could see that word replaced in *prompt instructions* (prompt only, never output) — worth a glance during review.
+- **M-5:** chose prompt-vetting over per-image vision moderation — provider-agnostic, zero added cost; revisit if Flux output drift is observed.
+- **Pre-existing (not this batch):** `backend/backup_database.py:66` has a committed syntax error (`exit(1)</content>`) — recommend a separate fix.
+- Verify before deploy: Docker images build (WP-E did not run `docker build`); add the `CONSENT_TEST_BYPASS` dart-define to any Playwright CI config that relied on `?bypass_consent=1`.
+
+P4 (Low, L-1…L-12) — not yet started; see work packages below. WP-E infra now done.
 
 ---
 
