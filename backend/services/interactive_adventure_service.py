@@ -25,6 +25,7 @@ from backend.models import (
     Character
 )
 from backend.services.interactive_adventure_prompt_builder import InteractiveAdventurePromptBuilder
+from backend.services.story_service import pseudonymize_hero_name, restore_hero_name
 from backend.gemini_image_generator import GeminiImageGenerator
 from backend.replicate_image_generator import ReplicateImageGenerator
 
@@ -152,14 +153,23 @@ class InteractiveAdventureService:
         else:
             character_age = age or 8
 
+        # M-7: pseudonymize the child's real hero name before it reaches the
+        # third-party LLM. The prompt (and character dict) carry the opaque
+        # HERO_1 token; the real name is substituted back locally after
+        # generation so the child still sees their own name.
+        hero_token = pseudonymize_hero_name(child_name)
+        prompt_character_dict = self._pseudonymize_character_dict(
+            character_dict, child_name, hero_token
+        )
+
         # Build opening prompt
         prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
-            child_name=child_name,
+            child_name=hero_token,
             age=character_age,
             length=length,
             theme=theme,
             tone=tone,
-            character=character_dict,
+            character=prompt_character_dict,
             companions=companions if companions else None,
             interests=interests,
             must_include=must_include,
@@ -176,6 +186,10 @@ class InteractiveAdventureService:
 
         # Generate first segment
         segment_data = self._generate_segment_with_retry(prompt)
+        # M-7: substitute the real hero name back into the model output locally.
+        segment_data = self._restore_hero_name_in_segment(
+            segment_data, child_name, hero_token
+        )
 
         # Create database records
         story = InteractiveStory(
@@ -333,18 +347,47 @@ class InteractiveAdventureService:
         # Build story summary
         story_so_far = self._build_story_summary(story)
 
+        # M-7: pseudonymize the child's real hero name everywhere it would reach
+        # the LLM — the character dict, the recap of the story so far, and the
+        # selected-choice text. The real name is substituted back locally after
+        # generation.
+        real_hero_name = (
+            (story_context.get('character') or {}).get('name')
+            if isinstance(story_context.get('character'), dict)
+            else None
+        )
+        hero_token = pseudonymize_hero_name(real_hero_name)
+        prompt_story_context = dict(story_context)
+        prompt_story_context['character'] = self._pseudonymize_character_dict(
+            story_context.get('character'), real_hero_name, hero_token
+        )
+        prompt_story_so_far = (
+            story_so_far.replace(real_hero_name, hero_token)
+            if real_hero_name and story_so_far
+            else story_so_far
+        )
+        prompt_selected_choice = (
+            selected_choice_text.replace(real_hero_name, hero_token)
+            if real_hero_name and selected_choice_text
+            else selected_choice_text
+        )
+
         # Build continuation prompt
         prompt = InteractiveAdventurePromptBuilder.build_continuation_prompt(
-            story_context=story_context,
-            selected_choice=selected_choice_text,
+            story_context=prompt_story_context,
+            selected_choice=prompt_selected_choice,
             current_segment_number=story.current_segment_number,
             inventory=current_inventory,
             story_state=current_state,
-            story_so_far=story_so_far
+            story_so_far=prompt_story_so_far
         )
 
         # Generate next segment
         segment_data = self._generate_segment_with_retry(prompt)
+        # M-7: substitute the real hero name back into the model output locally.
+        segment_data = self._restore_hero_name_in_segment(
+            segment_data, real_hero_name, hero_token
+        )
 
         next_segment_number = story.current_segment_number + 1
 
@@ -424,6 +467,51 @@ class InteractiveAdventureService:
         }
 
     # Helper methods
+
+    @staticmethod
+    def _pseudonymize_character_dict(
+        character_dict: Optional[Dict], real_name: Optional[str], hero_token: str
+    ) -> Optional[Dict]:
+        """Return a copy of *character_dict* with the hero name replaced by the
+        pseudonym token (M-7). The original dict is left untouched so the real
+        name is still available for the local restore step and DB persistence.
+        """
+        if not character_dict:
+            return character_dict
+        safe = dict(character_dict)
+        if real_name and safe.get('name'):
+            safe['name'] = hero_token
+        return safe
+
+    @staticmethod
+    def _restore_hero_name_in_segment(
+        segment_data: Dict[str, Any], real_name: Optional[str], hero_token: str
+    ) -> Dict[str, Any]:
+        """Substitute the real hero name back into every text field of a parsed
+        segment (M-7). Applied locally to provider output before the segment is
+        persisted or returned, so the child sees their own name even though the
+        provider only ever saw the HERO_1 token.
+        """
+        if not real_name or not isinstance(segment_data, dict):
+            return segment_data
+        for key in ('title', 'content', 'image_description', 'stage_label'):
+            if isinstance(segment_data.get(key), str):
+                segment_data[key] = restore_hero_name(
+                    segment_data[key], real_name, hero_token
+                )
+        for choice in segment_data.get('choices', []) or []:
+            if isinstance(choice, dict) and isinstance(choice.get('text'), str):
+                choice['text'] = restore_hero_name(
+                    choice['text'], real_name, hero_token
+                )
+        inv = segment_data.get('inventory')
+        if isinstance(inv, list):
+            segment_data['inventory'] = [
+                restore_hero_name(item, real_name, hero_token)
+                if isinstance(item, str) else item
+                for item in inv
+            ]
+        return segment_data
 
     def _generate_segment_with_retry(self, prompt: str, max_retries: int = 3) -> Dict[str, Any]:
         """Generate segment with retry logic and JSON parsing"""

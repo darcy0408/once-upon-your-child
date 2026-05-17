@@ -19,7 +19,7 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band, _build_prior_adventures_block
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band, _build_prior_adventures_block, pseudonymize_hero_name, restore_hero_name
 from backend.services.prompt_service import PromptService
 from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 
@@ -618,6 +618,25 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             elif character_id:
                 raise ValueError(f"Character {character_id} not found")
 
+            # M-7: pseudonymize the hero name before ANY provider call. The
+            # entire pipeline (prompt build, validation, fallbacks, word-cap
+            # cheer beat) runs on the opaque HERO_1 token; the child's real
+            # name is substituted back into the output locally before the
+            # story is returned, so no provider ever receives the real name.
+            real_hero_name = character_name
+            character_name = pseudonymize_hero_name(real_hero_name)
+
+            def _scrub_real_name(text):
+                """Replace stray real-name occurrences (from character_details,
+                feelings_prompt, the prior-adventures recall block, etc.) with
+                the token so the assembled prompt never carries the real name."""
+                if not text or not real_hero_name or not str(real_hero_name).strip():
+                    return text
+                return re.sub(
+                    r"\b" + re.escape(str(real_hero_name).strip()) + r"\b",
+                    character_name, text, flags=re.IGNORECASE,
+                )
+
             try:
                 self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
             except Exception as e:
@@ -799,6 +818,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "prior_adventures injected for character_id=%s (block_len=%d)",
                     character_id, len(prior_block),
                 )
+
+            # M-7: final boundary scrub before the prompt leaves for any provider.
+            prompt = _scrub_real_name(prompt)
 
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
             logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
@@ -1102,6 +1124,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_duration=story_duration,
                     age=age,
                 )
+                fallback_prompt = _scrub_real_name(fallback_prompt)  # M-7
                 fallback_text = _generate_story_text(fallback_prompt, theme, character_name, companion)
                 fallback_title, _, fallback_body, fallback_pages, fallback_post, fallback_metadata = _safe_extract_title_and_gem(
                     fallback_text, theme
@@ -1233,6 +1256,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 _arc = story_metadata.get("emotional_arc")
             except NameError:
                 _themes, _characters, _arc = [], [], None
+
+            # M-7: substitute the real hero name back into every output surface
+            # locally — the child sees their own name even though every provider
+            # only ever saw the HERO_1 token. Stored Story rows also carry the
+            # real name (consistent with the interactive path).
+            title = restore_hero_name(title, real_hero_name)
+            story_body = restore_hero_name(story_body, real_hero_name)
+            pages = [restore_hero_name(p, real_hero_name) for p in pages]
+            _characters = [restore_hero_name(c, real_hero_name) for c in _characters]
+            try:
+                post_story = json.loads(
+                    restore_hero_name(json.dumps(post_story), real_hero_name)
+                )
+            except (TypeError, ValueError):
+                pass
 
             story_payload = {
                 "id": story_id,

@@ -16,6 +16,7 @@ from ..models.user import User
 from ..models import Character, ParentHiddenContext
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
+from ..routes.subscription_routes import require_premium, _user_is_premium
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..utils.audit import audit_log
 from ..services.interactive_adventure_service import InteractiveAdventureService
@@ -28,7 +29,7 @@ from ..utils.validators import (
     sanitize_text,
 )
 
-def _resolve_age(raw_age, default: int = 5) -> int:
+def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
     """
     Convert a raw age value from a request payload into a validated integer.
 
@@ -38,6 +39,11 @@ def _resolve_age(raw_age, default: int = 5) -> int:
     3. If the authenticated user is an under-13 minor (g.minor_age_cap is set),
        cap to their declared age so they cannot request adult-calibrated content
        by submitting a higher age value in the request body.
+    4. M-6: if a *verified_age* anchor is supplied (the authenticated account's
+       verified onboarding age, or the age stored on an owned Character record),
+       cap the resolved age to it. The content age band therefore cannot be
+       inflated above what the account/character is actually known to be — only
+       a DOWNWARD override is honoured (a parent may request a younger band).
     """
     try:
         age = max(2, min(120, int(raw_age)))
@@ -46,7 +52,36 @@ def _resolve_age(raw_age, default: int = 5) -> int:
     cap = getattr(g, 'minor_age_cap', None)
     if cap is not None:
         age = min(age, cap)
+    # M-6: clamp upward to the verified anchor — client-declared age may only
+    # move the band DOWN, never up above the verified/owned-character age.
+    if verified_age is not None:
+        try:
+            age = min(age, max(2, min(120, int(verified_age))))
+        except (TypeError, ValueError):
+            pass
     return age
+
+
+def _verified_age_anchor(character=None) -> int | None:
+    """Return the verified upper-bound age for content-band calibration (M-6).
+
+    Preference order:
+    1. The age on the authenticated user's owned Character record (ownership is
+       checked by the caller before this is invoked) — the most specific
+       verified value for the child the story is about.
+    2. The authenticated account's declared onboarding age.
+
+    Returns None when neither is available, in which case _resolve_age applies
+    only the existing under-13 minor cap.
+    """
+    if character is not None:
+        char_age = getattr(character, 'age', None)
+        if char_age is not None:
+            return char_age
+    current_user = getattr(request, 'current_user', None)
+    if current_user is not None:
+        return getattr(current_user, 'declared_age', None)
+    return None
 
 
 def _looks_like_base64_image(value: str) -> bool:
@@ -443,6 +478,7 @@ def create_story_blueprint(
 
         # Validate character ownership
         character_id = payload.get("character_id")
+        owned_character = None
         if character_id:
             char = db.session.get(Character, character_id)
             if not char:
@@ -450,6 +486,7 @@ def create_story_blueprint(
             if char.user_id and str(char.user_id) != str(user_id):
                 logger.warning(f"IDOR attempt: User {user_id} tried to generate story for character {character_id}")
                 return jsonify({"error": "Unauthorized"}), 403
+            owned_character = char
 
         if not character_id and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
@@ -479,6 +516,18 @@ def create_story_blueprint(
         companion_pets = payload.get("companion_pets", [])
         companion_characters = payload.get("companion_characters", [])
 
+        # M-8: multi-character (companions / additional characters) is a premium
+        # capability. /generate-story itself is free-tier, so gate per-feature
+        # off the authoritative subscription tier — never the editable client flags.
+        if (companion_pets or companion_characters or additional_chars) \
+                and not _user_is_premium(request.current_user):
+            audit_log('premium_feature_denied', user_id=user_id,
+                      data={'feature': 'multi_character', 'tier': user_tier})
+            return jsonify({
+                "error": "Multiple characters require a premium subscription",
+                "code": "upgrade_required",
+            }), 403
+
         # Accept multiple age keys for backward compatibility with older clients.
         resolved_age = payload.get("age")
         if resolved_age is None:
@@ -497,7 +546,14 @@ def create_story_blueprint(
         except (TypeError, ValueError):
             return jsonify({"error": "age must be a valid integer"}), 400
 
-        resolved_age = _resolve_age(resolved_age)
+        # M-6: derive the content age band from the verified account age /
+        # owned Character record. The client-declared `age` may only move the
+        # band DOWN (a parent requesting a gentler story) — it can never push
+        # content calibration above the verified/owned-character age.
+        resolved_age = _resolve_age(
+            resolved_age,
+            verified_age=_verified_age_anchor(owned_character),
+        )
 
         task_kwargs = {
             "character_id": payload.get("character_id"),
@@ -776,6 +832,7 @@ def create_story_blueprint(
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @require_auth
+    @require_premium  # M-8: interactive stories are a premium capability — enforce server-side
     @require_parental_consent
     def generate_interactive_story_endpoint():
         """
@@ -812,6 +869,7 @@ def create_story_blueprint(
         character_id = payload.get("character_id")
 
         # Validate character ownership
+        owned_character = None
         if character_id:
             char = db.session.get(Character, character_id)
             if not char:
@@ -819,11 +877,17 @@ def create_story_blueprint(
             if char.user_id and str(char.user_id) != str(user_id):
                 logger.warning(f"IDOR attempt: User {user_id} tried to generate interactive story for character {character_id}")
                 return jsonify({"error": "Unauthorized"}), 403
+            owned_character = char
 
         theme = payload.get("theme", "Adventure")
         tone = payload.get("tone", "whimsical")
         length = payload.get("length", "medium")
-        age = _resolve_age(payload.get("age"))
+        # M-6: clamp the content age band to the verified account / owned
+        # Character age — client-declared `age` may only override downward.
+        age = _resolve_age(
+            payload.get("age"),
+            verified_age=_verified_age_anchor(owned_character),
+        )
         interests = payload.get("interests")
         must_include = payload.get("must_include")
         avoid = payload.get("avoid")
@@ -873,7 +937,17 @@ def create_story_blueprint(
             )
 
             # Two-layer output moderation — keyword filter, then LLM classifier
-            # if the keyword layer didn't already flag. Both fail open.
+            # if the keyword layer didn't already flag.
+            # M-4: the LLM contextual classifier is wired into the interactive
+            # path and FAILS CLOSED for the Sprout band (ages 3-5) — when the
+            # classifier errors for a Sprout child the segment is treated as
+            # unsafe and replaced with a safe fallback rather than served
+            # unmoderated. Older bands keep the deliberate fail-open behaviour.
+            from backend.utils.content_moderator import (
+                moderate_story_content,
+                is_sprout_band,
+                build_safe_fallback_segment,
+            )
             segment_content = result['segment']['content']
             filtered_content, flagged = filter_story_content(segment_content, age)
             result['segment']['content'] = filtered_content
@@ -882,17 +956,36 @@ def create_story_blueprint(
                 logger.warning("Interactive story opening flagged by content filter")
             else:
                 try:
-                    from backend.utils.content_moderator import moderate_story_content
-                    llm_safe, llm_reason = moderate_story_content(filtered_content, age)
+                    llm_safe, llm_reason = moderate_story_content(
+                        filtered_content, age, fail_closed=is_sprout_band(age)
+                    )
                     if not llm_safe:
                         flagged = True
                         logger.warning(
                             f"Interactive story opening flagged by LLM moderator: {llm_reason!r}"
                         )
                 except Exception as moderation_err:
+                    # Defensive: moderate_story_content already handles its own
+                    # errors, but if something unexpected escapes, fail closed
+                    # for Sprout so the youngest children never see unvetted text.
                     logger.warning(
-                        f"Interactive story opening LLM moderation error ({moderation_err!r}), failing open"
+                        f"Interactive story opening LLM moderation error ({moderation_err!r})"
                     )
+                    if is_sprout_band(age):
+                        flagged = True
+
+            # When the opening segment is unsafe (or unverifiable for Sprout),
+            # serve a safe fallback segment instead of the generated content.
+            if flagged:
+                fallback = build_safe_fallback_segment(segment_number=1)
+                result['segment']['content'] = fallback['content']
+                result['segment']['title'] = fallback['title']
+                result['segment']['image_description'] = fallback['image_description']
+                result['segment']['image_url'] = None
+                logger.warning(
+                    "Interactive story opening replaced with safe fallback segment "
+                    f"(story {result.get('story_id')})"
+                )
 
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
@@ -919,6 +1012,7 @@ def create_story_blueprint(
     @story_bp.route("/continue-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
     @require_auth
+    @require_premium  # M-8: interactive stories are a premium capability — enforce server-side
     @require_parental_consent
     def continue_interactive_story_endpoint():
         """
@@ -981,9 +1075,16 @@ def create_story_blueprint(
             # Two-layer output moderation — same as the main story path.
             # Layer 1: fast age-band keyword filter.
             # Layer 2: LLM contextual classifier (only if Layer 1 didn't flag).
-            # Both layers fail open; this catches subtle violations the keyword
-            # filter alone cannot — important now that free-text custom choices
-            # can steer the continuation. (Finding H-3.)
+            # M-4: the classifier FAILS CLOSED for the Sprout band (ages 3-5) —
+            # a classifier error means the segment is replaced with a safe
+            # fallback rather than served unmoderated. This is important now
+            # that free-text custom choices can steer the continuation
+            # (Finding H-3). Older bands keep the deliberate fail-open path.
+            from backend.utils.content_moderator import (
+                moderate_story_content,
+                is_sprout_band,
+                build_safe_fallback_segment,
+            )
             story_age = getattr(story, 'age', None) or 5
             segment_content = result['segment']['content']
             filtered_content, flagged = filter_story_content(segment_content, story_age)
@@ -993,18 +1094,37 @@ def create_story_blueprint(
                 logger.warning("Interactive continuation flagged by content filter")
             else:
                 try:
-                    from backend.utils.content_moderator import moderate_story_content
-                    llm_safe, llm_reason = moderate_story_content(filtered_content, story_age)
+                    llm_safe, llm_reason = moderate_story_content(
+                        filtered_content, story_age, fail_closed=is_sprout_band(story_age)
+                    )
                     if not llm_safe:
                         flagged = True
                         logger.warning(
                             f"Interactive continuation flagged by LLM moderator: {llm_reason!r}"
                         )
                 except Exception as moderation_err:
-                    # Fail open — keyword filter already ran as the primary net.
+                    # Defensive: fail closed for Sprout if anything unexpected escapes.
                     logger.warning(
-                        f"Interactive continuation LLM moderation error ({moderation_err!r}), failing open"
+                        f"Interactive continuation LLM moderation error ({moderation_err!r})"
                     )
+                    if is_sprout_band(story_age):
+                        flagged = True
+
+            # When the continuation is unsafe (or unverifiable for Sprout),
+            # serve a safe fallback segment instead of the generated content.
+            if flagged:
+                fallback = build_safe_fallback_segment(
+                    segment_number=result['segment'].get('segment_number', 1),
+                    is_opening=False,
+                )
+                result['segment']['content'] = fallback['content']
+                result['segment']['title'] = fallback['title']
+                result['segment']['image_description'] = fallback['image_description']
+                result['segment']['image_url'] = None
+                logger.warning(
+                    f"Interactive continuation replaced with safe fallback segment "
+                    f"(story {story_id})"
+                )
 
             logger.info(f"Story {story_id} continued to segment {result['segment']['segment_number']}")
             return jsonify(result), 200
@@ -1469,6 +1589,7 @@ def create_story_blueprint(
 
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
     @require_auth
+    @require_premium  # M-8: coloring pages are a premium capability — enforce server-side
     @require_parental_consent
     @limiter.limit("10 per hour")
     def generate_coloring_pages_endpoint():

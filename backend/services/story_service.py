@@ -346,6 +346,50 @@ def _get_age_band(age: int) -> str:
 
 
 # ============================================================================
+# M-7 — Hero-name pseudonymization (child PII minimization)
+# ============================================================================
+# The child's real first name is the highest-value piece of PII in a story
+# request. Sending it verbatim to third-party LLM providers (Gemini, Replicate,
+# OpenRouter, Cloudflare) is a data-minimization gap (COPPA §312.8, OWASP
+# LLM02). These helpers replace the real name with a per-request token
+# (HERO_1) BEFORE any provider call, and substitute the real name back into the
+# returned text LOCALLY so the child still sees their own name. The provider
+# only ever sees the opaque token.
+HERO_NAME_TOKEN = "HERO_1"
+
+
+def pseudonymize_hero_name(real_name: str | None, token: str = HERO_NAME_TOKEN) -> str:
+    """Return the placeholder token to use in the prompt instead of *real_name*.
+
+    Returns *token* when a usable name is supplied, otherwise a safe generic
+    ("Hero") so the prompt never carries an empty placeholder.
+    """
+    if real_name and str(real_name).strip():
+        return token
+    return "Hero"
+
+
+def restore_hero_name(text: str | None, real_name: str | None,
+                       token: str = HERO_NAME_TOKEN) -> str:
+    """Substitute the per-request hero token back to the child's real name.
+
+    Applied LOCALLY to provider output before the story reaches the child, so
+    the child sees their own name even though the provider only saw the token.
+    Case-insensitive on the token; a no-op when no real name was supplied.
+    """
+    if not text:
+        return text or ""
+    if not real_name or not str(real_name).strip():
+        return text
+    clean_name = str(real_name).strip()
+    # Use a function replacement so characters in the real name (e.g. a literal
+    # backslash) are never interpreted as regex backreferences.
+    return re.sub(
+        re.escape(token), lambda _m: clean_name, text, flags=re.IGNORECASE
+    )
+
+
+# ============================================================================
 # Prior-adventures recall
 # ============================================================================
 # How many recent stories to scan when assembling a character's prior-themes

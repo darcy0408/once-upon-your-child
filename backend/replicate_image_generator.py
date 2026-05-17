@@ -7,11 +7,63 @@ import base64
 import io
 import logging
 import os
+import re
 import uuid
 from datetime import datetime
 import requests
 
 logger = logging.getLogger(__name__)
+
+# M-5 — Image moderation parity. The Flux providers (Replicate Flux Schnell and
+# Cloudflare Workers AI Flux, which reuse this _build_prompt) have no upstream
+# content filter of their own — unlike the Gemini path. To close the parity
+# gap with the lowest-risk, codebase-fitting change we VET THE ASSEMBLED PROMPT
+# here before it is sent to any Flux provider: if the prompt contains a term
+# that should never reach a children's illustration model, the scene-specific
+# text is discarded and a known-safe templated prompt is substituted instead.
+# This is provider-agnostic (covers Replicate + Cloudflare via the shared
+# builder), adds no API cost or latency, and mirrors the blocklist approach
+# already used for avatar prompts (AvatarPromptService.AVATAR_UNSAFE_CONTENT_*).
+_IMAGE_UNSAFE_TERMS = [
+    'scary', 'frightening', 'horror', 'creepy', 'disturbing', 'nightmare',
+    'violent', 'violence', 'weapon', 'gun', 'knife', 'blood', 'bloody',
+    'gore', 'gory', 'injury', 'wound', 'corpse', 'dead body', 'death',
+    'kill', 'murder', 'torture', 'abuse',
+    'inappropriate', 'suggestive', 'explicit', 'sexual', 'sexy', 'erotic',
+    'nude', 'naked', 'undressed', 'revealing', 'lingerie', 'underwear',
+    'drug', 'alcohol', 'cigarette',
+]
+_IMAGE_UNSAFE_PATTERN = re.compile(
+    r'\b(' + '|'.join(re.escape(t) for t in _IMAGE_UNSAFE_TERMS) + r')\b',
+    re.IGNORECASE,
+)
+
+# Known-safe templated prompt used when the assembled Flux prompt fails the
+# vet above. Generic, wholesome, and free of any caller-supplied scene text.
+_SAFE_FALLBACK_IMAGE_PROMPT = (
+    "vibrant children's book illustration, a cheerful young hero standing in a "
+    "sunny meadow with friendly animals, bright and engaging, safe for "
+    "children, high quality digital art, colorful, friendly atmosphere"
+)
+
+
+def _vet_flux_prompt(prompt: str) -> str:
+    """Return *prompt* if it is child-safe, else a known-safe templated prompt.
+
+    Acts as the missing content filter for the Flux image providers. The Flux
+    prompt is auto-assembled from an already-moderated scene description plus
+    appearance details, so a hit here is rare — but a hit means unsafe content
+    drifted into the image request, and serving a generic safe illustration is
+    strictly better than rendering it.
+    """
+    match = _IMAGE_UNSAFE_PATTERN.search(prompt or "")
+    if match:
+        logger.warning(
+            "Flux prompt failed image safety vet (term %r) — substituting "
+            "safe templated prompt", match.group(0),
+        )
+        return _SAFE_FALLBACK_IMAGE_PROMPT
+    return prompt
 
 
 class ReplicateImageGenerator:
@@ -216,13 +268,16 @@ class ReplicateImageGenerator:
                 prompt = f"{block.strip()}. {prompt}"
                 if len(prompt) > 1000:
                     prompt = prompt[:997] + "..."
-                return prompt
+                # M-5: vet the assembled prompt before it reaches a Flux provider.
+                return _vet_flux_prompt(prompt)
 
         # Keep prompt under 500 chars for best results
         if len(prompt) > 500:
             prompt = prompt[:497] + "..."
 
-        return prompt
+        # M-5: vet the assembled prompt before it reaches a Flux provider
+        # (Replicate Flux Schnell / Cloudflare Flux both build via this method).
+        return _vet_flux_prompt(prompt)
 
     def _download_images(self, urls: list, prompt: str) -> list:
         """Download images from URLs and convert to base64"""
