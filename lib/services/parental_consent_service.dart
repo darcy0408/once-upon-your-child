@@ -9,6 +9,7 @@ class ParentalConsentService {
   static const _keyConsent = 'parental_consent_granted';
   static const _keyParentEmail = 'parent_email';
   static const _keyConsentMethod = 'parental_consent_method';
+  static const _keyConsentVerified = 'parental_consent_verified';
   static const _keyRecordedAt = 'parental_consent_recorded_at';
   static const _keyAllowPhotoAvatar = 'allow_photo_avatar';
   static const _keyDailyLimitMinutes = 'screen_time_daily_limit';
@@ -29,9 +30,37 @@ class ParentalConsentService {
     await prefs.setBool(_keyAllowPhotoAvatar, allow);
   }
 
+  /// Validates an email address well enough for a COPPA verifiable-consent
+  /// round trip. This is a syntactic check only — the *real* verification is
+  /// the email round trip itself (the parent must receive and act on the code).
+  ///
+  /// Returns true only for a non-empty, single-`@`, dotted-domain address.
+  static bool isValidEmail(String? email) {
+    if (email == null) return false;
+    final trimmed = email.trim();
+    if (trimmed.isEmpty || trimmed.length > 254) return false;
+    // local-part@domain with at least one dot in the domain and no whitespace.
+    final re = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+    return re.hasMatch(trimmed);
+  }
+
   Future<bool> hasConsent() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_keyConsent) ?? false;
+  }
+
+  /// Returns the recorded consent method (e.g. 'parent', 'self_attested',
+  /// 'email_verified', 'email_pending') or null if no consent recorded.
+  Future<String?> getConsentMethod() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyConsentMethod);
+  }
+
+  /// True only when a COPPA-verifiable consent round trip actually completed.
+  /// For under-13 users this MUST be true before the child gets full access.
+  Future<bool> isConsentVerified() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyConsentVerified) ?? false;
   }
 
   /// Returns true if consent exists but was recorded before [cutoff].
@@ -52,6 +81,7 @@ class ParentalConsentService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyConsent);
     await prefs.remove(_keyConsentMethod);
+    await prefs.remove(_keyConsentVerified);
     await prefs.remove(_keyRecordedAt);
   }
 
@@ -65,17 +95,36 @@ class ParentalConsentService {
     await prefs.setInt(_keyAge, age);
   }
 
+  /// Records a consent decision locally and (best-effort) on the backend.
+  ///
+  /// IMPORTANT (COPPA §312.5(b)): [method] and [verified] must reflect reality.
+  /// For under-13 users, full access requires a completed email round trip;
+  /// callers MUST pass [method] = 'email_pending' / [verified] = false until
+  /// [verifyEmailConsent] succeeds. Never pass 'email_verified' for under-13
+  /// unless an email round trip actually completed.
+  ///
+  /// 13+ self-attested / parent-attested consent is not COPPA verifiable
+  /// consent; callers pass [verified] = false for those and a truthful
+  /// [method] ('self_attested' or 'parent').
   Future<void> recordConsent({
     required int age,
     String? parentEmail,
-    String method = 'email_verified',
+    String method = 'self_attested',
     bool allowPhotoAvatar = false,
+    bool verified = false,
   }) async {
+    // Guard against a false compliance record: 'email_verified' may only be
+    // stored when an actual round trip completed.
+    assert(
+      method != 'email_verified' || verified,
+      "consent_method 'email_verified' requires verified == true",
+    );
     final recordedAt = DateTime.now().toIso8601String();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyAge, age);
     await prefs.setBool(_keyConsent, true);
     await prefs.setString(_keyConsentMethod, method);
+    await prefs.setBool(_keyConsentVerified, verified);
     await prefs.setString(_keyRecordedAt, recordedAt);
     await prefs.setBool(_keyAllowPhotoAvatar, allowPhotoAvatar);
     if (parentEmail != null && parentEmail.isNotEmpty) {
@@ -90,6 +139,7 @@ class ParentalConsentService {
         await api.post('/api/user/$userId/consent', {
           'child_age': age,
           'consent_method': method,
+          'verified': verified,
           'allow_photo_avatar': allowPhotoAvatar,
           if (parentEmail != null && parentEmail.isNotEmpty)
             'parent_email': parentEmail,
@@ -98,6 +148,91 @@ class ParentalConsentService {
     } catch (_) {
       // Backend sync failure does not block local consent — will retry on next launch.
     }
+  }
+
+  /// Begins the COPPA email round-trip for an under-13 user.
+  ///
+  /// Asks the backend to send a verification email containing a unique code/
+  /// link to [parentEmail], and records consent locally as PENDING (granted
+  /// flag set so onboarding can continue to the verification step, but
+  /// [method] = 'email_pending' and verified = false). The child does NOT get
+  /// full access until [verifyEmailConsent] completes.
+  ///
+  /// Returns true if the backend accepted the request and an email was queued.
+  ///
+  /// REQUIRES BACKEND: `POST /api/user/<id>/consent/request-verification`
+  /// (see report — endpoint must be built server-side).
+  Future<bool> requestEmailVerification({
+    required int age,
+    required String parentEmail,
+    bool allowPhotoAvatar = false,
+  }) async {
+    final email = parentEmail.trim();
+    if (!isValidEmail(email)) {
+      throw ArgumentError('A valid parent email is required for verification.');
+    }
+
+    // Record locally as PENDING — truthful method, NOT verified.
+    await recordConsent(
+      age: age,
+      parentEmail: email,
+      method: 'email_pending',
+      allowPhotoAvatar: allowPhotoAvatar,
+      verified: false,
+    );
+
+    final api = ApiServiceManager();
+    final userId = await api.getUserId();
+    if (userId == null) {
+      throw StateError('No user id — cannot request email verification.');
+    }
+    final resp = await api.post(
+      '/api/user/$userId/consent/request-verification',
+      {
+        'child_age': age,
+        'parent_email': email,
+        'allow_photo_avatar': allowPhotoAvatar,
+      },
+    );
+    return resp['success'] == true;
+  }
+
+  /// Completes the COPPA email round-trip: submits the [code] the parent
+  /// received by email. On success, promotes the local record to verified
+  /// consent ([method] = 'email_verified', verified = true).
+  ///
+  /// Returns true only when the backend confirms the code matched. A false
+  /// return MUST leave consent as pending — the caller must not grant the
+  /// child full access.
+  ///
+  /// REQUIRES BACKEND: `POST /api/user/<id>/consent/verify`
+  /// (see report — endpoint must be built server-side).
+  Future<bool> verifyEmailConsent({required String code}) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return false;
+
+    final api = ApiServiceManager();
+    final userId = await api.getUserId();
+    if (userId == null) {
+      throw StateError('No user id — cannot verify email consent.');
+    }
+    final resp = await api.post(
+      '/api/user/$userId/consent/verify',
+      {'code': trimmed},
+    );
+    final verified = resp['verified'] == true || resp['success'] == true;
+    if (!verified) return false;
+
+    // Promote local record to verified — only now is 'email_verified' truthful.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyConsentMethod, 'email_verified');
+    await prefs.setBool(_keyConsentVerified, true);
+    await prefs.setBool(_keyConsent, true);
+    await prefs.setString(
+      _keyRecordedAt,
+      DateTime.now().toIso8601String(),
+    );
+    return true;
   }
 
   /// Returns daily limit in minutes. null = unlimited (default).

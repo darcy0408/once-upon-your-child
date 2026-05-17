@@ -530,6 +530,29 @@ def create_app(config_name):
         except Exception as _mig_err:
             logger.warning("Auto-migration check failed (non-fatal): %s", _mig_err)
 
+        # Auto-migrate: COPPA email-verified consent. db.create_all() above
+        # already creates the new 'consent_verification_code' table on a fresh
+        # database; this block adds the 'verified' column to an existing
+        # 'consent_record' table created before the email round trip existed.
+        try:
+            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            inspector = sa_inspect(db.engine)
+            consent_cols = {c['name'] for c in inspector.get_columns('consent_record')}
+            if 'verified' not in consent_cols:
+                with db.engine.connect() as _conn:
+                    _conn.execute(sa_text(
+                        'ALTER TABLE consent_record '
+                        'ADD COLUMN verified BOOLEAN DEFAULT 0 NOT NULL'
+                    ))
+                    _conn.commit()
+                    logger.info(
+                        "Auto-migration: added column 'verified' to consent_record table"
+                    )
+        except Exception as _mig_err:
+            logger.warning(
+                "Consent auto-migration check failed (non-fatal): %s", _mig_err
+            )
+
         # Ensure anonymous user exists for story generation
         try:
             anonymous_user = db.session.get(User, 'anonymous')
