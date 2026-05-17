@@ -16,7 +16,7 @@ from ..models.user import User
 from ..models import Character, ParentHiddenContext
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
-from ..routes.subscription_routes import require_premium, _user_is_premium
+from ..routes.subscription_routes import require_premium
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..utils.audit import audit_log
 from ..services.interactive_adventure_service import InteractiveAdventureService
@@ -516,18 +516,6 @@ def create_story_blueprint(
         companion_pets = payload.get("companion_pets", [])
         companion_characters = payload.get("companion_characters", [])
 
-        # M-8: multi-character (companions / additional characters) is a premium
-        # capability. /generate-story itself is free-tier, so gate per-feature
-        # off the authoritative subscription tier — never the editable client flags.
-        if (companion_pets or companion_characters or additional_chars) \
-                and not _user_is_premium(request.current_user):
-            audit_log('premium_feature_denied', user_id=user_id,
-                      data={'feature': 'multi_character', 'tier': user_tier})
-            return jsonify({
-                "error": "Multiple characters require a premium subscription",
-                "code": "upgrade_required",
-            }), 403
-
         # Accept multiple age keys for backward compatibility with older clients.
         resolved_age = payload.get("age")
         if resolved_age is None:
@@ -664,16 +652,7 @@ def create_story_blueprint(
                 return jsonify({"error": "STORY_TIMEOUT", "message": "Story generation took too long. Please try again."}), 500
 
         except Exception as exc:
-            import traceback
-            error_trace = traceback.format_exc()
             logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
-
-            # Write error to file for debugging
-            try:
-                with open("backend_last_error.log", "w") as f:
-                    f.write(error_trace)
-            except Exception:
-                pass
 
             if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
@@ -832,7 +811,6 @@ def create_story_blueprint(
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @require_auth
-    @require_premium  # M-8: interactive stories are a premium capability — enforce server-side
     @require_parental_consent
     def generate_interactive_story_endpoint():
         """
@@ -1012,7 +990,6 @@ def create_story_blueprint(
     @story_bp.route("/continue-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
     @require_auth
-    @require_premium  # M-8: interactive stories are a premium capability — enforce server-side
     @require_parental_consent
     def continue_interactive_story_endpoint():
         """
@@ -1574,17 +1551,7 @@ def create_story_blueprint(
             )
 
         except Exception as exc:
-            import traceback
-            error_trace = traceback.format_exc()
             logger.exception("Illustration generation failed")
-            
-            # Write error to file for debugging
-            try:
-                with open("backend_last_error.log", "w") as f:
-                    f.write(error_trace)
-            except Exception:
-                pass
-
             return jsonify({"error": str(exc), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
 
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
