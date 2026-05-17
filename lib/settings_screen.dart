@@ -848,7 +848,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
-          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io/impact-program')),
+          onTap: () => _openPartnerLink(context),
           child: SvgPicture.network(
             isDark
                 ? 'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg'
@@ -860,6 +860,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  /// Opens the ElevenLabs partner page behind a parental gate.
+  /// Kids-Category requirement (Apple Guideline 1.3 / 5.1.4): links out of the
+  /// app must sit behind a gate a child cannot trivially pass. Reuses the
+  /// shared [ParentalGateDialog] (math challenge).
+  Future<void> _openPartnerLink(BuildContext context) async {
+    final passed = await ParentalGateDialog.show(context);
+    if (!passed || !context.mounted) return;
+    final uri = Uri.parse('https://elevenlabs.io/impact-program');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the link. Please try again later.'),
+        ),
+      );
+    }
   }
 
   Future<void> _onValidateApiKey(BuildContext context) async {
