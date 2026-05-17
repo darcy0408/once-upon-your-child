@@ -14,7 +14,6 @@ import '../services/privacy_service.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/star_burst_celebration.dart';
-import '../widgets/adventurer_unlock_celebration.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
 
@@ -727,27 +726,30 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   // ── Step 2: Age picker ────────────────────────────────────────────────────
 
   Widget _buildAgeStep() {
-    // M-10 (COPPA): a neutral age screen — no decorative/celebratory glyph,
-    // no child-directed framing. COPPA guidance discourages a gamified age
-    // gate because it invites misreporting.
+    // STORE-5 / M-10 (Apple 5.1.4, Google Families, COPPA): a neutral,
+    // non-incentivized age gate — plain styling, a calm question, no
+    // decorative/celebratory glyph, no steering or rewarding TTS, and no
+    // reward for choosing an older age band. Older ages must not look like
+    // they unlock more, so a child has no incentive to misreport.
     return Column(
       key: const ValueKey('age'),
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 4),
-        Text(
-          'Select your child\'s age',
+        const Text(
+          'How old is the child?',
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         const Text(
-          'Parents/guardians — please enter your child\'s real age. '
-          'This determines what content is appropriate.',
+          'Parents/guardians — please enter the child\'s real age. '
+          'This determines which content is appropriate. '
+          'Once Upon a Time is a storytelling app for ages 3 to 17.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
@@ -813,19 +815,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
       ],
     );
-  }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  static String _glyphForAge(int age) {
-    if (age <= 5) return '🌱'; // sprout
-    if (age <= 8) return '🧭'; // explorer
-    return '⚔️'; // adventurer
-  }
-
-  static String? _glyphForOlderBand(int value) {
-    if (value == 12) return '🖊️'; // creator
-    return null; // adolescent / adult — keep clean
   }
 
   // ── Logic ─────────────────────────────────────────────────────────────────
@@ -923,10 +912,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             );
           }
         }
-        // One-time "new adventures unlocked" celebration for Adventurer band.
-        if (mounted && ageBandFromAge(_selectedAge!) == AgeBand.adventurer) {
-          await AdventurerUnlockCelebration.show(context);
-        }
+        // STORE-5 (Apple 5.1.4 / Google Families): no celebration or reward is
+        // tied to the declared age — a neutral, non-incentivized age gate must
+        // not encourage a child to pick an older age band to unlock more.
         if (mounted) widget.onComplete();
       }
       return;
@@ -949,8 +937,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
           ),
           content: const Text(
-            'Story Weaver is for ages 13 and up. If you\'re under 18, please '
-            'make sure a parent or guardian knows you\'re using this app.',
+            'Since you\'re under 18, please make sure a parent or guardian '
+            'knows you\'re using this app.',
             style: TextStyle(color: Colors.white70, height: 1.5),
           ),
           actions: [
@@ -1035,13 +1023,11 @@ class _AgeBandButton extends StatefulWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.glyph,
   });
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
-  final String? glyph;
 
   @override
   State<_AgeBandButton> createState() => _AgeBandButtonState();
@@ -1084,22 +1070,13 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
           alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.glyph != null) ...[
-                  Text(widget.glyph!, style: const TextStyle(fontSize: 13, height: 1.0)),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: widget.selected ? _gold : Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
         ),
@@ -1116,7 +1093,6 @@ class _AgeCircle extends StatefulWidget {
     required this.size,
     required this.selected,
     required this.onTap,
-    this.glyph,
   });
 
   final String label;
@@ -1124,7 +1100,6 @@ class _AgeCircle extends StatefulWidget {
   final double size;
   final bool selected;
   final VoidCallback? onTap;
-  final String? glyph;
 
   @override
   State<_AgeCircle> createState() => _AgeCircleState();
@@ -1178,38 +1153,16 @@ class _AgeCircleState extends State<_AgeCircle> {
                   : [],
             ),
             alignment: Alignment.center,
-            child: widget.glyph != null
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.glyph!,
-                        style: TextStyle(fontSize: widget.size * 0.22, height: 1.0),
-                      ),
-                      Text(
-                        widget.label,
-                        style: TextStyle(
-                          color: widget.selected ? _gold : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.label.length > 2
-                              ? widget.size * 0.17
-                              : widget.size * 0.24,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  )
-                : Text(
-                    widget.label,
-                    style: TextStyle(
-                      color: widget.selected ? _gold : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: widget.label.length > 2
-                          ? widget.size * 0.19
-                          : widget.size * 0.28,
-                    ),
-                  ),
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: widget.label.length > 2
+                    ? widget.size * 0.19
+                    : widget.size * 0.28,
+              ),
+            ),
           ),
         ),
       ),
