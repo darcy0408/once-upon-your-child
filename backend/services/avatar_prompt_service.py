@@ -47,6 +47,21 @@ class AvatarPromptService:
         'nude', 'naked', 'undressed', 'revealing'
     ]
 
+    # Safety-critical subset of the blocklist. This EXCLUDES the photorealism /
+    # camera style terms ('photo', 'photograph', 'camera', 'selfie', etc.)
+    # because the photo-based avatar prompts (custom child / pet / human
+    # companion) legitimately reference the uploaded reference photo — those
+    # terms would always false-positive there. The terms kept below describe
+    # genuinely unsafe content (sexual / violent / frightening) that must
+    # NEVER appear in a children's avatar prompt regardless of context.
+    AVATAR_UNSAFE_CONTENT_BLOCKLIST = [
+        'scary', 'frightening', 'horror', 'creepy', 'disturbing',
+        'violent', 'weapon', 'blood', 'injury', 'gore',
+        'inappropriate', 'suggestive', 'explicit',
+        'nude', 'naked', 'undressed', 'revealing',
+        'sexy', 'sexual', 'lingerie', 'underwear',
+    ]
+
     # Critical safety rules embedded in every prompt
     SAFETY_RULES = """
 CRITICAL SAFETY REQUIREMENTS:
@@ -238,6 +253,36 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
             if blocked_term in prompt_to_check:
                 return False, f"Prompt validation failed: contains blocked term '{blocked_term}' in unsafe context"
 
+        return True, "Prompt is safe"
+
+    @staticmethod
+    def validate_photo_avatar_prompt_safety(prompt: str) -> Tuple[bool, str]:
+        """Validate a fully assembled PHOTO-BASED avatar prompt.
+
+        Photo-based avatar prompts (custom child, pet, human companion) are
+        built from an uploaded photo plus free-text fields and legitimately
+        reference the word "photo". Running the full AVATAR_BLOCKLIST against
+        them would always false-positive on the photorealism style terms, so
+        this method checks the AVATAR_UNSAFE_CONTENT_BLOCKLIST instead — the
+        sexual / violent / frightening subset that must never appear no matter
+        what, including via injected free text.
+
+        Args:
+            prompt: The fully assembled photo-avatar prompt to validate.
+
+        Returns:
+            Tuple of (is_safe: bool, message: str)
+        """
+        lower_prompt = (prompt or "").lower()
+        # Word-boundary match so substrings inside benign words don't trip
+        # (e.g. 'harm' inside 'harmony', 'gore' inside a name).
+        import re as _re
+        for blocked_term in AvatarPromptService.AVATAR_UNSAFE_CONTENT_BLOCKLIST:
+            if _re.search(rf'\b{_re.escape(blocked_term)}\b', lower_prompt):
+                return False, (
+                    f"Prompt validation failed: contains unsafe term "
+                    f"'{blocked_term}'"
+                )
         return True, "Prompt is safe"
 
     @staticmethod

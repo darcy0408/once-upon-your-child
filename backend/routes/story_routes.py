@@ -791,7 +791,12 @@ def create_story_blueprint(
             - avoid: list[str] (optional)
         """
         logger.info("POST /generate-interactive-story called")
+        from ..utils.sanitizer import sanitize_story_request
         payload = request.get_json(silent=True) or {}
+        # Sanitize every free-text field (worldBible, conflictHook, sensoryPalette,
+        # etc.) before it reaches the interactive prompt builder — same defense
+        # the synchronous /generate-story path gets.
+        payload = sanitize_story_request(payload)
 
         # Mark as interactive for validation
         payload["interactive"] = True
@@ -867,13 +872,27 @@ def create_story_blueprint(
                 character_name=character_name,
             )
 
-            # Filter content
+            # Two-layer output moderation — keyword filter, then LLM classifier
+            # if the keyword layer didn't already flag. Both fail open.
             segment_content = result['segment']['content']
             filtered_content, flagged = filter_story_content(segment_content, age)
             result['segment']['content'] = filtered_content
 
             if flagged:
                 logger.warning("Interactive story opening flagged by content filter")
+            else:
+                try:
+                    from backend.utils.content_moderator import moderate_story_content
+                    llm_safe, llm_reason = moderate_story_content(filtered_content, age)
+                    if not llm_safe:
+                        flagged = True
+                        logger.warning(
+                            f"Interactive story opening flagged by LLM moderator: {llm_reason!r}"
+                        )
+                except Exception as moderation_err:
+                    logger.warning(
+                        f"Interactive story opening LLM moderation error ({moderation_err!r}), failing open"
+                    )
 
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
@@ -910,18 +929,32 @@ def create_story_blueprint(
             - custom_text: str (optional) — required when choice_id is "custom"; max 200 chars
         """
         logger.info("POST /continue-interactive-story called")
+        from ..utils.sanitizer import sanitize_for_prompt, wrap_user_input
         payload = request.get_json(silent=True) or {}
 
         story_id = payload.get("story_id")
         choice_id = payload.get("choice_id")
-        custom_text = (payload.get("custom_text") or "").strip()[:200]
+        raw_custom_text = (payload.get("custom_text") or "").strip()[:200]
 
         # Validate required fields
         if not story_id or not choice_id:
             return jsonify({"error": "story_id and choice_id are required"}), 400
 
-        if choice_id == "custom" and not custom_text:
+        if choice_id == "custom" and not raw_custom_text:
             return jsonify({"error": "custom_text is required when choice_id is 'custom'"}), 400
+
+        # The "Something Else" free-text choice flows straight into the
+        # continuation prompt. Strip injection/HTML/delimiter tokens, hard-cap
+        # length, and wrap as [USER_INPUT] so the model treats it as a story
+        # choice — never as an instruction. (Finding H-3, CWE-94/1427.)
+        custom_text = None
+        if choice_id == "custom":
+            cleaned_custom = sanitize_for_prompt(raw_custom_text, 200)
+            if not cleaned_custom:
+                return jsonify(
+                    {"error": "custom_text is required when choice_id is 'custom'"}
+                ), 400
+            custom_text = wrap_user_input(cleaned_custom, "player_choice")
 
         try:
             from backend.models import InteractiveStory
@@ -945,7 +978,12 @@ def create_story_blueprint(
                 custom_text=custom_text or None
             )
 
-            # Filter content — use story's age if available, fall back to 5
+            # Two-layer output moderation — same as the main story path.
+            # Layer 1: fast age-band keyword filter.
+            # Layer 2: LLM contextual classifier (only if Layer 1 didn't flag).
+            # Both layers fail open; this catches subtle violations the keyword
+            # filter alone cannot — important now that free-text custom choices
+            # can steer the continuation. (Finding H-3.)
             story_age = getattr(story, 'age', None) or 5
             segment_content = result['segment']['content']
             filtered_content, flagged = filter_story_content(segment_content, story_age)
@@ -953,6 +991,20 @@ def create_story_blueprint(
 
             if flagged:
                 logger.warning("Interactive continuation flagged by content filter")
+            else:
+                try:
+                    from backend.utils.content_moderator import moderate_story_content
+                    llm_safe, llm_reason = moderate_story_content(filtered_content, story_age)
+                    if not llm_safe:
+                        flagged = True
+                        logger.warning(
+                            f"Interactive continuation flagged by LLM moderator: {llm_reason!r}"
+                        )
+                except Exception as moderation_err:
+                    # Fail open — keyword filter already ran as the primary net.
+                    logger.warning(
+                        f"Interactive continuation LLM moderation error ({moderation_err!r}), failing open"
+                    )
 
             logger.info(f"Story {story_id} continued to segment {result['segment']['segment_number']}")
             return jsonify(result), 200

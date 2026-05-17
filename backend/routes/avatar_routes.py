@@ -305,6 +305,16 @@ def create_avatar_blueprint(limiter):
                     'message': get_error_message('timeout'),
                 }), 504
 
+            except ValueError as e:
+                # Raised by input validation and by the assembled-prompt
+                # safety check — reject with a clear 400, never proceed.
+                logger.warning(f"Pet/companion avatar validation error: {e}")
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'VALIDATION_ERROR',
+                    'message': str(e)
+                }), 400
+
             except Exception as e:
                 logger.error(f"Pet avatar generation failed: {e}")
                 return jsonify({

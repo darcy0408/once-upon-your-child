@@ -282,7 +282,10 @@ class InteractiveAdventureService:
         Args:
             story_id: ID of the interactive story
             choice_id: ID of the choice user selected, or "custom" for free-text input
-            custom_text: Free-text input when choice_id is "custom" (max 200 chars)
+            custom_text: Free-text input when choice_id is "custom". The caller
+                MUST pass this already sanitized and [USER_INPUT]-wrapped (see
+                continue_interactive_story_endpoint) — it is injected directly
+                into the continuation prompt.
 
         Returns:
             Dict with new segment data, updated inventory, and state

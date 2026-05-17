@@ -194,10 +194,24 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
     @utility_bp.route("/setup-test-account", methods=["POST"])
     def setup_test_account():
-        """Create or update a test account for E2E tests."""
+        """Create or update a test account for E2E tests.
+
+        Test scaffolding only — never available in production.  Returns 404
+        when running in production so the endpoint's existence is not even
+        confirmed to an unauthenticated caller.  The account password is
+        randomly generated per call (no hardcoded credentials); callers that
+        need to log in must capture the returned ``password`` value.
+        """
+        import uuid
+
+        from ..utils.app_helpers import is_production
+
+        if is_production():
+            return jsonify({"error": "Not found"}), 404
+
         username = "testuser"
         email = "testuser@test.com"
-        password = "password"
+        password = uuid.uuid4().hex
         user = User.query.filter_by(username=username).first()
         if user:
             user.set_password(password)
@@ -208,7 +222,11 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             db.session.add(user)
             status = "created"
         db.session.commit()
-        return jsonify({"status": status, "username": username}), 201 if status == "created" else 200
+        return jsonify({
+            "status": status,
+            "username": username,
+            "password": password,
+        }), 201 if status == "created" else 200
 
     @utility_bp.route("/auth/anonymous", methods=["POST"])
     @rate_limit("20 per minute")

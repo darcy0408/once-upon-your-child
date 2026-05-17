@@ -13,6 +13,12 @@ from .avatar_prompt_service import AvatarPromptService
 
 logger = logging.getLogger(__name__)
 
+# Strict length cap for free-text avatar fields (refinement_note,
+# breed_description, appearance_description) before they are interpolated
+# into an image prompt. Photo-based avatars are CSAM-adjacent surface;
+# unbounded free text here is a content-injection risk (Finding C-3, CWE-1427).
+MAX_AVATAR_FREE_TEXT = 200
+
 
 class AvatarGenerationService:
     """Service for generating AI-powered child avatars with safety controls."""
@@ -202,13 +208,27 @@ Maintain the character's facial features while converting them into the target a
         )
 
         # Append user-requested modifications without changing the base style.
+        # refinement_note is free text from the client — sanitize (strip
+        # injection/HTML/delimiter tokens) and hard-cap before interpolation.
         if refinement_note:
-            prompt += (
-                f"\n\n**User-Requested Modifications**\n"
-                f"Apply the following changes to the character's appearance: {refinement_note}\n"
-                f"Keep all other character attributes, art style, and environment unchanged."
-            )
-            logger.info(f"Refinement note appended: {refinement_note!r}")
+            from backend.utils.sanitizer import sanitize_for_prompt
+            safe_refinement = sanitize_for_prompt(refinement_note, MAX_AVATAR_FREE_TEXT)
+            if safe_refinement:
+                prompt += (
+                    f"\n\n**User-Requested Modifications**\n"
+                    f"Apply the following changes to the character's appearance: {safe_refinement}\n"
+                    f"Keep all other character attributes, art style, and environment unchanged."
+                )
+                logger.info(f"Refinement note appended: {safe_refinement!r}")
+
+        # Validate the FULLY ASSEMBLED prompt against the unsafe-content
+        # blocklist (sexual / violent / frightening terms). Custom avatars are
+        # built from an uploaded child photo + free text — reject, never
+        # silently proceed, on a safety failure. (Finding C-3, CWE-1427.)
+        is_safe, safety_message = self.prompt_service.validate_photo_avatar_prompt_safety(prompt)
+        if not is_safe:
+            logger.warning(f"Custom avatar prompt failed safety check: {safety_message}")
+            raise ValueError(f"Safety validation failed: {safety_message}")
 
         logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
 
@@ -757,6 +777,13 @@ Maintain the character's facial features while converting them into the target a
         if not species or not species.strip():
             raise ValueError("Species is required")
 
+        # breed_description is free text from the client and is interpolated
+        # raw into the image prompt — sanitize and hard-cap it before use so
+        # every downstream consumer (prompt, fallback, response) sees the safe
+        # value. (Finding C-3, CWE-1427.)
+        from backend.utils.sanitizer import sanitize_for_prompt
+        breed_description = sanitize_for_prompt(breed_description or "", MAX_AVATAR_FREE_TEXT)
+
         # Build a band-aware prompt based on the owner's age
         band_style = self._pet_style_for_age(owner_age)
 
@@ -791,6 +818,13 @@ Transform the reference photo into a fully illustrated magical pet companion for
 **Fallback**
 If reference photo is unclear, use Species/Breed description to generate a representative best-fit pet companion.
 """
+
+        # Validate the fully assembled prompt against the unsafe-content
+        # blocklist before any generation call. Reject on failure.
+        is_safe, safety_message = self.prompt_service.validate_photo_avatar_prompt_safety(prompt)
+        if not is_safe:
+            logger.warning(f"Pet avatar prompt failed safety check: {safety_message}")
+            raise ValueError(f"Safety validation failed: {safety_message}")
 
         logger.info(f"Generating magical pet avatar for {pet_name} ({species}), owner_age={owner_age}, style={band_style['style_name']}")
         primary_error = None
@@ -904,6 +938,14 @@ If reference photo is unclear, use Species/Breed description to generate a repre
         """
         start_time = datetime.now()
 
+        # appearance_description is free text from the client and is
+        # interpolated raw into the image prompt — sanitize and hard-cap it
+        # before use. (Finding C-3, CWE-1427.)
+        from backend.utils.sanitizer import sanitize_for_prompt
+        appearance_description = sanitize_for_prompt(
+            appearance_description or "", MAX_AVATAR_FREE_TEXT
+        )
+
         band_style = self._pet_style_for_age(owner_age)
 
         prompt = f"""
@@ -936,6 +978,13 @@ Transform the reference photo into a fully illustrated human companion character
 **Fallback**
 If reference photo is unclear, generate a friendly human character matching the appearance description above.
 """
+
+        # Validate the fully assembled prompt against the unsafe-content
+        # blocklist before any generation call. Reject on failure.
+        is_safe, safety_message = self.prompt_service.validate_photo_avatar_prompt_safety(prompt)
+        if not is_safe:
+            logger.warning(f"Human companion avatar prompt failed safety check: {safety_message}")
+            raise ValueError(f"Safety validation failed: {safety_message}")
 
         logger.info(f"Generating human companion avatar for {name}, owner_age={owner_age}, style={band_style['style_name']}")
         primary_error = None
