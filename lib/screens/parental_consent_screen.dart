@@ -13,13 +13,16 @@ import '../theme/app_theme.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
-/// TEMP — TESTING ONLY. When true, debug builds skip the under-13 COPPA
-/// email-verification round-trip and record self-attested consent directly,
-/// so age-band testing doesn't need an email round-trip on every run. Has NO
-/// effect in release builds (guarded by `kDebugMode` at the use site).
+/// TEMP — PRE-LAUNCH TESTING ONLY. When true, the under-13 COPPA
+/// email-verification round-trip is skipped in ALL builds (release included);
+/// under-13 parents get the same simple checkbox consent screen as 13+, and
+/// self-attested consent is recorded directly (method 'self_attested',
+/// verified=false — honest, NOT mislabelled 'email_verified').
 ///
-/// MUST be set back to `false` before launch — tracked in docs/MANUAL_TASKS.md.
-const bool _kSkipEmailConsentInDebug = true;
+/// This is NOT COPPA-verifiable consent. It is acceptable only for a closed
+/// tester build with no real end users. MUST be set back to `false` before
+/// launch to re-enable the email round-trip — tracked in docs/MANUAL_TASKS.md.
+const bool _kSkipEmailConsent = true;
 
 class ParentalConsentScreen extends StatefulWidget {
   const ParentalConsentScreen({
@@ -59,10 +62,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
 
   bool get _isUnder13 => widget.declaredAge < 13;
 
-  /// Whether the COPPA email round-trip applies. Normally true for under-13,
-  /// but debug builds can force-skip it via [_kSkipEmailConsentInDebug].
+  /// Whether the COPPA email round-trip applies. True for under-13 unless the
+  /// pre-launch [_kSkipEmailConsent] flag is set (see its doc comment).
   bool get _requiresEmailVerification =>
-      _isUnder13 && !(kDebugMode && _kSkipEmailConsentInDebug);
+      _isUnder13 && !_kSkipEmailConsent;
 
   /// For under-13, a properly-formatted parent email is REQUIRED — it is the
   /// destination of the COPPA verifiable-consent round trip. For 13+ the email
