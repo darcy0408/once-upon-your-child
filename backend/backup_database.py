@@ -63,5 +63,4 @@ if __name__ == '__main__':
     if backup_file:
         cleanup_old_backups()
     else:
-        exit(1)</content>
-<parameter name="filePath">/mnt/c/dev/story-weaver-app/backend/backup_database.py
+        exit(1)
