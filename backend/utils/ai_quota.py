@@ -1,5 +1,5 @@
 """
-Per-user daily quota enforcement via Redis.
+Per-user daily quota enforcement via Redis, with a fail-CLOSED cost breaker.
 
 Two resources are tracked:
 
@@ -11,8 +11,26 @@ response so failed/error responses don't count against the user's quota.
 
 TTL on all Redis keys: 2 days (auto-expiry, no cleanup job needed).
 
-Graceful degradation: if Redis is unreachable the check is skipped with a
-WARNING so a Redis outage never blocks user-facing features.
+Quota subsystem split (security finding M-2)
+--------------------------------------------
+The quota system serves two distinct purposes that need OPPOSITE failure
+modes when Redis is unreachable:
+
+  * AVAILABILITY limits (TTS daily-call cap, illustration monthly cap) — these
+    protect user experience / burst abuse. They keep failing OPEN on a Redis
+    outage so an infra blip never blocks a child mid-story.
+
+  * The story-generation COST circuit breaker (`check_daily_quota`) — this
+    maps directly to Gemini/LLM spend. Failing it open on a Redis outage
+    silently UNCAPS spend for every user at once. So when Redis is down it now
+    falls back to a conservative per-user DB counter
+    (`User.stories_generated_this_month`) enforced against a global EMERGENCY
+    cap. The DB counter is also kept up to date while Redis is healthy, so it
+    is always a usable conservative baseline (and it doubles as the single
+    source of truth for usage read-outs — finding M-17).
+
+Graceful degradation otherwise: if Redis is unreachable an availability check
+is skipped with a WARNING so a Redis outage never blocks user-facing features.
 """
 
 import logging
@@ -36,6 +54,38 @@ _ENV_OVERRIDES = {
     "premium": "AI_QUOTA_PREMIUM",
     "family": "AI_QUOTA_FAMILY",
 }
+
+# M-2 — fail-CLOSED cost breaker.
+#
+# When Redis is unreachable the story-generation quota can no longer be
+# enforced per-day. Rather than fail open (uncapped LLM spend), fall back to
+# the monthly DB counter `User.stories_generated_this_month` enforced against
+# a deliberately conservative EMERGENCY monthly cap. The cap is intentionally
+# low — the goal is cost containment during an outage, not normal service.
+#
+# AI_QUOTA_EMERGENCY_MULTIPLIER * tier-daily-limit = the monthly emergency cap.
+# Default 3 → a free user (10/day) gets at most ~30 stories total while Redis
+# is down, vs. an unbounded number under the old fail-open behaviour.
+_EMERGENCY_MULTIPLIER_ENV = "AI_QUOTA_EMERGENCY_MULTIPLIER"
+_EMERGENCY_MULTIPLIER_DEFAULT = 3
+
+
+def _get_emergency_cap(tier: str) -> int | None:
+    """Conservative monthly story cap used while Redis is unavailable.
+
+    Returns None for BYOK / unlimited tiers (no server-side LLM cost to cap).
+    """
+    daily = _get_limit(tier)
+    if daily is None:
+        return None
+    raw = os.getenv(_EMERGENCY_MULTIPLIER_ENV)
+    multiplier = _EMERGENCY_MULTIPLIER_DEFAULT
+    if raw:
+        try:
+            multiplier = max(1, int(raw))
+        except ValueError:
+            pass
+    return daily * multiplier
 
 
 def _get_limit(tier: str) -> int | None:
@@ -71,16 +121,81 @@ def _get_redis():
         return None
 
 
+# ---------------------------------------------------------------------------
+# M-2 / M-17 — DB-backed story cost counter.
+#
+# `User.stories_generated_this_month` is the conservative monthly counter that:
+#   * backs the cost breaker when Redis is down (fail-closed), and
+#   * is the single source of truth for usage read-outs (M-17 — previously it
+#     was declared but never incremented; the real limit lived only in Redis).
+#
+# All DB access is best-effort and lazy-imported so this module stays usable
+# outside an app context (e.g. unit tests of the Redis path).
+# ---------------------------------------------------------------------------
+
+def _load_user(user_id: str):
+    """Best-effort fetch of the User row. Returns (db, user) or (None, None)."""
+    try:
+        from backend.database import db  # lazy — avoid import cycle / app-ctx need
+        from backend.models.user import User
+    except Exception:  # pragma: no cover - import shape varies in some entrypoints
+        try:
+            from database import db  # type: ignore
+            from models.user import User  # type: ignore
+        except Exception:
+            return None, None
+    try:
+        user = db.session.get(User, user_id)
+    except Exception as exc:
+        logger.warning("ai_quota: DB lookup failed for user=%s (%s)", user_id, exc)
+        return None, None
+    return db, user
+
+
+def _maybe_reset_monthly(db, user) -> None:
+    """Roll the monthly DB story counter over when past its reset date."""
+    try:
+        now = datetime.now(timezone.utc)
+        reset_date = user.usage_reset_date
+        if reset_date is not None and reset_date.tzinfo is None:
+            reset_date = reset_date.replace(tzinfo=timezone.utc)
+        if reset_date is None or now >= reset_date:
+            user.stories_generated_this_month = 0
+            # Reset on the 1st of next month.
+            from datetime import timedelta
+            next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+            user.usage_reset_date = next_month.replace(
+                hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+            )
+    except Exception as exc:
+        logger.warning("ai_quota: monthly counter reset check failed (%s)", exc)
+
+
+def _db_story_count(user_id: str) -> int | None:
+    """Return the monthly DB story count for *user_id*, or None if unavailable."""
+    db, user = _load_user(user_id)
+    if user is None:
+        return None
+    _maybe_reset_monthly(db, user)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return int(getattr(user, "stories_generated_this_month", 0) or 0)
+
+
 def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | None]:
     """
-    Check whether *user_id* is within their daily generation quota.
+    Check whether *user_id* is within their story-generation quota.
 
     Returns (allowed, current_count, limit).
     - allowed=True  → generation may proceed
     - allowed=False → quota exceeded; caller should return 429
     - limit=None    → unlimited (BYOK)
 
-    Never raises; falls back to allowed=True on Redis errors.
+    Never raises. This is the COST circuit breaker, so on a Redis outage it
+    does NOT fail open — it falls back to the conservative DB counter enforced
+    against a global emergency cap (M-2).
     """
     limit = _get_limit(user_tier)
     if limit is None:
@@ -88,7 +203,32 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
 
     r = _get_redis()
     if r is None:
-        return True, 0, limit  # degrade gracefully
+        # --- Redis DOWN: fail-CLOSED to the conservative DB counter (M-2) ----
+        emergency_cap = _get_emergency_cap(user_tier)
+        db_count = _db_story_count(user_id)
+        if db_count is None or emergency_cap is None:
+            # DB also unreachable, or unlimited tier. We cannot meter spend at
+            # all — alert loudly. Still allow (a hard block here would take the
+            # whole product down), but this is the one path that stays open.
+            logger.error(
+                "ALERT ai_quota: Redis DOWN and DB counter unavailable for "
+                "user=%s tier=%s — story cost is UNMETERED this request",
+                user_id, user_tier,
+            )
+            return True, 0, limit
+        logger.error(
+            "ALERT ai_quota: Redis DOWN — cost breaker on DB fallback for "
+            "user=%s tier=%s count=%d emergency_cap=%d",
+            user_id, user_tier, db_count, emergency_cap,
+        )
+        if db_count >= emergency_cap:
+            logger.warning(
+                "ai_quota: user=%s tier=%s DB count=%d >= emergency_cap=%d "
+                "— blocked while Redis down",
+                user_id, user_tier, db_count, emergency_cap,
+            )
+            return False, db_count, emergency_cap
+        return True, db_count, emergency_cap
 
     key = _redis_key(user_id)
     try:
@@ -101,18 +241,53 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
             return False, current, limit
         return True, current, limit
     except Exception as exc:
-        logger.warning("ai_quota: Redis error during check (%s) — allowing request", exc)
-        return True, 0, limit
+        # Redis reachable for ping but erroring on GET — treat like an outage
+        # and fall back to the fail-closed DB path rather than allowing blindly.
+        logger.warning(
+            "ai_quota: Redis error during check (%s) — falling back to DB cost breaker",
+            exc,
+        )
+        emergency_cap = _get_emergency_cap(user_tier)
+        db_count = _db_story_count(user_id)
+        if db_count is None or emergency_cap is None:
+            logger.error(
+                "ALERT ai_quota: Redis errored and DB counter unavailable for "
+                "user=%s — story cost is UNMETERED this request", user_id,
+            )
+            return True, 0, limit
+        if db_count >= emergency_cap:
+            return False, db_count, emergency_cap
+        return True, db_count, emergency_cap
 
 
 def increment_daily_quota(user_id: str, user_tier: str) -> None:
     """
-    Increment the daily counter for *user_id* after a successful generation.
-    Sets a 2-day TTL so keys expire automatically without a cleanup job.
-    No-op if Redis is unavailable or user is BYOK.
+    Increment the story-generation counters after a successful generation.
+
+    Bumps BOTH:
+      * the Redis daily counter (primary enforced limit, 2-day TTL), and
+      * the monthly DB counter `User.stories_generated_this_month` — kept
+        current so it is a usable conservative baseline for the M-2 cost
+        breaker and the single source of truth for usage read-outs (M-17).
+
+    No-op for BYOK / unlimited tiers. Never raises.
     """
     if user_tier in _BYOK_TIERS or _get_limit(user_tier) is None:
         return
+
+    # Always maintain the DB counter (cheap UPDATE) so the cost breaker has a
+    # truthful baseline if Redis later goes down mid-month.
+    db, user = _load_user(user_id)
+    if user is not None:
+        try:
+            _maybe_reset_monthly(db, user)
+            user.stories_generated_this_month = int(
+                getattr(user, "stories_generated_this_month", 0) or 0
+            ) + 1
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            logger.warning("ai_quota: DB counter increment failed for %s (%s)", user_id, exc)
 
     r = _get_redis()
     if r is None:
@@ -126,6 +301,55 @@ def increment_daily_quota(user_id: str, user_tier: str) -> None:
         pipe.execute()
     except Exception as exc:
         logger.warning("ai_quota: Redis error during increment (%s)", exc)
+
+
+def get_story_usage(user_id: str, user_tier: str) -> dict:
+    """Single source of truth for story-usage read-outs (M-17).
+
+    Returns a dict suitable for a `/usage`-style endpoint:
+        {
+          'tier': str,
+          'daily_used': int,        # today's count from the enforced Redis counter
+          'daily_limit': int|None,  # None = unlimited (BYOK)
+          'month_used': int,        # conservative monthly DB counter
+          'source': 'redis' | 'db', # which counter `daily_used` came from
+        }
+
+    Previously two counters disagreed: `/api/.../usage` read the DB
+    `*_this_month` column (never incremented) while enforcement used Redis.
+    Both are now kept consistent; this helper exposes the enforced view.
+    """
+    limit = _get_limit(user_tier)
+    month_used = _db_story_count(user_id) or 0
+    if limit is None:
+        return {
+            'tier': user_tier,
+            'daily_used': 0,
+            'daily_limit': None,
+            'month_used': month_used,
+            'source': 'unlimited',
+        }
+    r = _get_redis()
+    if r is not None:
+        try:
+            daily_used = int(r.get(_redis_key(user_id)) or 0)
+            return {
+                'tier': user_tier,
+                'daily_used': daily_used,
+                'daily_limit': limit,
+                'month_used': month_used,
+                'source': 'redis',
+            }
+        except Exception:
+            pass
+    # Redis unavailable — report the DB fallback view.
+    return {
+        'tier': user_tier,
+        'daily_used': month_used,
+        'daily_limit': _get_emergency_cap(user_tier),
+        'month_used': month_used,
+        'source': 'db',
+    }
 
 
 # ---------------------------------------------------------------------------

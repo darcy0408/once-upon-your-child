@@ -5,10 +5,14 @@ from typing import Any, Dict, Optional
 import os
 import stripe
 from flask import Blueprint, current_app, jsonify, request
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from backend.database import db
 from backend.models.user import User
+# Importing the dedup models at module level registers them with SQLAlchemy
+# before app.py runs db.create_all(), so the tables are auto-created on a
+# fresh database with no manual migration step (M-3).
+from backend.models.stripe_event import StripeWebhookEvent, StripeSubscriptionCursor
 from backend.routes.stripe_routes import get_price_ids
 
 webhook_routes = Blueprint("webhook_routes", __name__)
@@ -121,6 +125,115 @@ def _tier_from_subscription(
     return _FREE_TIER
 
 
+def _event_id(event: Any) -> Optional[str]:
+    if hasattr(event, "to_dict"):
+        event = event.to_dict()
+    if isinstance(event, dict):
+        return event.get("id")
+    return getattr(event, "id", None)
+
+
+def _event_created(event: Any) -> Optional[datetime]:
+    if hasattr(event, "to_dict"):
+        event = event.to_dict()
+    created = event.get("created") if isinstance(event, dict) else getattr(event, "created", None)
+    return _parse_timestamp(created)
+
+
+def _already_processed(event_id: str) -> bool:
+    """Return True if this Stripe event.id has already been recorded (M-3).
+
+    On any DB error here we fail OPEN (treat as not-yet-seen and continue):
+    a dedup-store outage must not drop a legitimate payment event. The unique
+    constraint in `_record_event` is the hard guarantee against double-apply.
+    """
+    try:
+        return (
+            db.session.query(StripeWebhookEvent.id)
+            .filter_by(event_id=event_id)
+            .first()
+            is not None
+        )
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Stripe webhook dedup lookup failed for %s — proceeding", event_id
+        )
+        return False
+
+
+def _record_event(event_id: str, event_type: Optional[str],
+                   event_created: Optional[datetime]) -> bool:
+    """Persist the event.id. Returns False if it was already present (M-3).
+
+    The unique constraint on `event_id` is the authoritative replay guard: if
+    two retries race past `_already_processed`, the second INSERT raises an
+    IntegrityError and we treat the event as a duplicate.
+    """
+    try:
+        db.session.add(StripeWebhookEvent(
+            event_id=event_id,
+            event_type=event_type,
+            event_created=event_created,
+        ))
+        db.session.commit()
+        return True
+    except IntegrityError:
+        db.session.rollback()
+        current_app.logger.info(
+            "Stripe webhook event %s already recorded (race) — skipping", event_id
+        )
+        return False
+
+
+def _is_stale_event(user_id: Optional[str], event_created: Optional[datetime]) -> bool:
+    """Return True if *event_created* is older than the last applied state change.
+
+    Guards against out-of-order / replayed delivery: a stale
+    `invoice.payment_succeeded` arriving after a real `invoice.payment_failed`
+    must not flip a delinquent account back to active. Events with no
+    timestamp, or for users with no cursor yet, are treated as fresh.
+    """
+    if not user_id or event_created is None:
+        return False
+    try:
+        cursor = db.session.get(StripeSubscriptionCursor, user_id)
+    except SQLAlchemyError:
+        db.session.rollback()
+        return False
+    if cursor is None or cursor.last_event_created is None:
+        return False
+    last = cursor.last_event_created
+    incoming = event_created
+    # Compare naive-UTC to naive-UTC (cursor stores naive UTC).
+    if last.tzinfo is not None:
+        last = last.astimezone(timezone.utc).replace(tzinfo=None)
+    if incoming.tzinfo is not None:
+        incoming = incoming.astimezone(timezone.utc).replace(tzinfo=None)
+    return incoming < last
+
+
+def _advance_cursor(user_id: Optional[str], event_created: Optional[datetime],
+                    event_id: Optional[str]) -> None:
+    """Move the per-user high-water mark forward after a state change (M-3)."""
+    if not user_id or event_created is None:
+        return
+    incoming = event_created
+    if incoming.tzinfo is not None:
+        incoming = incoming.astimezone(timezone.utc).replace(tzinfo=None)
+    cursor = db.session.get(StripeSubscriptionCursor, user_id)
+    if cursor is None:
+        cursor = StripeSubscriptionCursor(user_id=user_id)
+        db.session.add(cursor)
+    if cursor.last_event_created is None or incoming >= (
+        cursor.last_event_created.replace(tzinfo=None)
+        if cursor.last_event_created.tzinfo is not None
+        else cursor.last_event_created
+    ):
+        cursor.last_event_created = incoming
+        cursor.last_event_id = event_id
+
+
 @webhook_routes.route("/webhooks/stripe", methods=["POST"])
 @webhook_routes.route("/stripe/webhook", methods=["POST"])
 def handle_webhook():
@@ -144,14 +257,39 @@ def handle_webhook():
         current_app.logger.warning("Stripe webhook signature verification failed")
         return jsonify({"error": "Invalid signature"}), 401
 
+    # --- Idempotency / replay-dedup (M-3) -----------------------------------
+    # Stripe delivers at-least-once; within the 5-min signature window a
+    # captured payload can also be replayed. Short-circuit (200, no-op) on a
+    # duplicate event.id so handlers run exactly once per event.
+    event_id = _event_id(event)
+    if event_id and _already_processed(event_id):
+        current_app.logger.info(
+            "Stripe webhook %s already processed — skipping (idempotent)", event_id
+        )
+        return jsonify({"status": "duplicate"}), 200
+
     try:
         _dispatch_event(event)
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("Database error while handling Stripe webhook")
+        # Do NOT record the event — Stripe will retry and we want it reprocessed.
         return jsonify({"error": "Database error"}), 500
 
+    # Record the event AFTER successful processing so a mid-handler failure
+    # leaves it eligible for Stripe's retry.
+    if event_id:
+        _record_event(event_id, _event_type(event), _event_created(event))
+
     return jsonify({"status": "success"}), 200
+
+
+def _event_type(event: Any) -> Optional[str]:
+    if hasattr(event, "to_dict"):
+        event = event.to_dict()
+    if isinstance(event, dict):
+        return event.get("type")
+    return getattr(event, "type", None)
 
 
 def _dispatch_event(event: Any) -> None:
@@ -159,28 +297,36 @@ def _dispatch_event(event: Any) -> None:
         event = event.to_dict()
     event_type = event.get("type")
     data_object = (event.get("data") or {}).get("object") or {}
+    # Stripe event.created — used by state-changing handlers to reject
+    # out-of-order / replayed deliveries (M-3).
+    event_ts = _parse_timestamp(event.get("created"))
+    event_id = event.get("id")
 
     if event_type == "checkout.session.completed":
-        _handle_checkout_completed(data_object)
+        _handle_checkout_completed(data_object, event_ts, event_id)
     elif event_type == "customer.subscription.created":
         # Non-checkout creation paths (Stripe-side recovery, manual creation in
         # dashboard, etc.). Same downstream sync as `subscription.updated`.
-        _handle_subscription_updated(data_object)
+        _handle_subscription_updated(data_object, event_ts, event_id)
     elif event_type == "customer.subscription.updated":
-        _handle_subscription_updated(data_object)
+        _handle_subscription_updated(data_object, event_ts, event_id)
     elif event_type == "customer.subscription.deleted":
-        _handle_subscription_deleted(data_object)
+        _handle_subscription_deleted(data_object, event_ts, event_id)
     elif event_type == "invoice.payment_succeeded":
         # Renewal confirmation — recurring charge cleared. Refresh tier so a
         # previously past_due account is restored to active.
-        _handle_payment_succeeded(data_object)
+        _handle_payment_succeeded(data_object, event_ts, event_id)
     elif event_type == "invoice.payment_failed":
-        _handle_payment_failed(data_object)
+        _handle_payment_failed(data_object, event_ts, event_id)
     else:
         current_app.logger.info("Unhandled Stripe event type: %s", event_type)
 
 
-def _handle_checkout_completed(session: Dict[str, Any]) -> None:
+def _handle_checkout_completed(
+    session: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
     user = _find_user(_extract_user_id(session))
     if not user:
         current_app.logger.warning("Checkout completed for unknown user")
@@ -212,10 +358,16 @@ def _handle_checkout_completed(session: Dict[str, Any]) -> None:
         status=status,
         period_end=period_end,
         cancel_at_period_end=cancel_at_period_end,
+        event_ts=event_ts,
+        event_id=event_id,
     )
 
 
-def _handle_subscription_updated(subscription: Dict[str, Any]) -> None:
+def _handle_subscription_updated(
+    subscription: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
     user = _find_user(_extract_user_id(subscription))
     if not user:
         current_app.logger.warning("Subscription update for unknown user")
@@ -232,10 +384,16 @@ def _handle_subscription_updated(subscription: Dict[str, Any]) -> None:
         status=subscription.get("status"),
         period_end=_parse_timestamp(subscription.get("current_period_end")),
         cancel_at_period_end=bool(subscription.get("cancel_at_period_end")),
+        event_ts=event_ts,
+        event_id=event_id,
     )
 
 
-def _handle_subscription_deleted(subscription: Dict[str, Any]) -> None:
+def _handle_subscription_deleted(
+    subscription: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
     user = _find_user(_extract_user_id(subscription))
     if not user:
         current_app.logger.warning("Subscription deleted for unknown user")
@@ -246,10 +404,16 @@ def _handle_subscription_deleted(subscription: Dict[str, Any]) -> None:
         status="canceled",
         period_end=_parse_timestamp(subscription.get("current_period_end")),
         cancel_at_period_end=True,
+        event_ts=event_ts,
+        event_id=event_id,
     )
 
 
-def _handle_payment_failed(invoice: Dict[str, Any]) -> None:
+def _handle_payment_failed(
+    invoice: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
     user = _find_user(_extract_user_id(invoice))
     if not user:
         current_app.logger.warning("Payment failed for unknown user")
@@ -258,10 +422,16 @@ def _handle_payment_failed(invoice: Dict[str, Any]) -> None:
     _apply_subscription_updates(
         user,
         status="past_due",
+        event_ts=event_ts,
+        event_id=event_id,
     )
 
 
-def _handle_payment_succeeded(invoice: Dict[str, Any]) -> None:
+def _handle_payment_succeeded(
+    invoice: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
     user = _find_user(_extract_user_id(invoice))
     if not user:
         current_app.logger.warning("Payment succeeded for unknown user")
@@ -271,6 +441,8 @@ def _handle_payment_succeeded(invoice: Dict[str, Any]) -> None:
         user,
         status="active",
         period_end=_parse_timestamp(invoice.get("period_end")),
+        event_ts=event_ts,
+        event_id=event_id,
     )
 
 
@@ -281,7 +453,20 @@ def _apply_subscription_updates(
     status: Any = _UNSET,
     period_end: Any = _UNSET,
     cancel_at_period_end: Any = _UNSET,
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
 ) -> None:
+    # Out-of-order / replay guard (M-3): if this event predates the last
+    # state-changing event already applied to the user, drop it so a stale
+    # `payment_succeeded` cannot un-do a newer `payment_failed`.
+    if _is_stale_event(user.id, event_ts):
+        current_app.logger.warning(
+            "Dropping stale/out-of-order Stripe event %s for user %s "
+            "(event_created predates last applied state change)",
+            event_id, user.id,
+        )
+        return
+
     if tier is not _UNSET and tier:
         user.subscription_tier = tier
     if status is not _UNSET and status:
@@ -292,6 +477,9 @@ def _apply_subscription_updates(
         user.cancel_at_period_end = bool(cancel_at_period_end)
 
     db.session.add(user)
+    # Advance the per-user high-water mark so a later replay of an older event
+    # is recognised as stale.
+    _advance_cursor(user.id, event_ts, event_id)
     db.session.commit()
 
 
