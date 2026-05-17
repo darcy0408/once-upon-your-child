@@ -43,8 +43,12 @@ RUN groupadd --system app && useradd --system --gid app --create-home --home-dir
 # Copy the rest of the application code, owned by the non-root user
 COPY --chown=app:app . .
 
-# Drop privileges before running the app. The app writes backend_errors.log
-# into /app, so /app must be owned by the app user (handled by --chown above).
+# The app writes backend_errors.log into /app, so the app user must own the
+# WORKDIR itself. `COPY --chown` only sets ownership of the copied files, not
+# of the /app directory created by WORKDIR — chown it explicitly.
+RUN chown app:app /app
+
+# Drop privileges before running the app (CWE-250).
 USER app
 
 # Expose the port the app runs on (Railway will set $PORT dynamically)

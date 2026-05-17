@@ -15,14 +15,18 @@ from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# Configure logging to file
+# Configure logging. Containers (Railway) capture stdout, so the log file is
+# best-effort — an unwritable working directory must never crash startup.
+_log_handlers = [logging.StreamHandler(sys.stdout)]
+try:
+    _log_handlers.insert(0, logging.FileHandler("backend_errors.log"))
+except OSError:
+    pass
+
 logging.basicConfig(
     level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("backend_errors.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=_log_handlers,
 )
 logger = logging.getLogger(__name__)
 
