@@ -136,7 +136,7 @@ class _BenefitsStepState extends State<_BenefitsStep> {
       (
         '🧒',
         'A cartoon portrait that\'s uniquely your child',
-        'Generate a Pixar-style character that actually looks like your child — stored only on your phone and never shared with anyone.'
+        'Generate a Pixar-style character that actually looks like your child. The photo is sent securely to create the cartoon avatar and is used for nothing else.'
       ),
       (
         '🖼️',
