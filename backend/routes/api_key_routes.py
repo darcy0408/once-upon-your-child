@@ -101,7 +101,7 @@ def create_api_key_blueprint(limiter=None):
         except Exception as e:
             logger.exception(f"Failed to save API key: {e}")
             db.session.rollback()
-            return jsonify({"error": "Failed to save API key", "details": str(e)}), 500
+            return jsonify({"error": "Failed to save API key"}), 500
 
     @api_key_routes.route('/api/user/settings/api-key', methods=['DELETE'])
     @require_auth
@@ -137,13 +137,17 @@ def create_api_key_blueprint(limiter=None):
         except Exception as e:
             logger.exception(f"Failed to remove API key: {e}")
             db.session.rollback()
-            return jsonify({"error": "Failed to remove API key", "details": str(e)}), 500
+            return jsonify({"error": "Failed to remove API key"}), 500
 
     @api_key_routes.route('/api/user/settings/validate-api-key', methods=['POST'])
+    @require_auth
     @limiter.limit("10 per minute")  # Allow testing but prevent abuse
     def validate_api_key():
         """
         Test an API key without saving it.
+
+        Requires authentication: an unauthenticated endpoint here acts as an
+        oracle for validating stolen Gemini keys against Google's API.
 
         Request body:
             {
@@ -157,7 +161,6 @@ def create_api_key_blueprint(limiter=None):
             }
         """
         try:
-            # This endpoint doesn't require authentication - allows testing before signup
             data = request.get_json(silent=True) or {}
             api_key = data.get('api_key', '').strip()
 
@@ -189,7 +192,7 @@ def create_api_key_blueprint(limiter=None):
             logger.exception(f"API key validation error: {e}")
             return jsonify({
                 "valid": False,
-                "message": f"Validation failed: {str(e)}"
+                "message": "Validation failed due to a server error. Please try again later."
             }), 500
 
     @api_key_routes.route('/api/user/usage', methods=['GET'])
@@ -265,6 +268,6 @@ def create_api_key_blueprint(limiter=None):
 
         except Exception as e:
             logger.exception(f"Failed to get usage: {e}")
-            return jsonify({"error": "Failed to retrieve usage data", "details": str(e)}), 500
+            return jsonify({"error": "Failed to retrieve usage data"}), 500
 
     return api_key_routes

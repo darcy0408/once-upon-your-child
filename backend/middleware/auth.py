@@ -67,9 +67,11 @@ def require_auth(f):
                 algorithms=['HS256']
             )
 
-            user_id = data.get('user_id') or data.get('sub')
+            # Identity is standardized on the JWT `sub` claim. The legacy
+            # `user_id` claim is no longer accepted as a fallback.
+            user_id = data.get('sub')
             if not user_id:
-                logger.warning(f"Auth failed: No user_id in token. Payload keys: {list(data.keys())}")
+                logger.warning(f"Auth failed: No 'sub' claim in token. Payload keys: {list(data.keys())}")
                 return jsonify({'error': 'Invalid token payload'}), 401
 
             current_user = db.session.get(User, user_id)
@@ -277,7 +279,8 @@ def get_current_user_id():
 
         secret = _get_jwt_secret()
         data = jwt.decode(token, secret, algorithms=['HS256'])
-        return data.get('user_id') or data.get('sub')
+        # Identity is standardized on the `sub` claim.
+        return data.get('sub')
     except (jwt.InvalidTokenError, ValueError):
         # Token invalid but that's okay for optional auth
         return request.headers.get('X-User-ID')
@@ -302,7 +305,8 @@ def optional_auth(f):
 
                 secret = _get_jwt_secret()
                 data = jwt.decode(token, secret, algorithms=['HS256'])
-                user_id = data.get('user_id') or data.get('sub')
+                # Identity is standardized on the `sub` claim.
+                user_id = data.get('sub')
 
                 if user_id:
                     current_user = db.session.get(User, user_id)

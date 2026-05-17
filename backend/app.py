@@ -224,6 +224,10 @@ def create_app(config_name):
 
     testing_mode = app.config.get('TESTING', False)
 
+    # Cap request body size to defend against memory-exhaustion via oversized
+    # uploads (e.g. avatar image uploads). Flask aborts with 413 if exceeded.
+    app.config.setdefault('MAX_CONTENT_LENGTH', 12 * 1024 * 1024)  # 12 MB
+
     if not testing_mode:
         _run_security_assertions(app, config_name)
 

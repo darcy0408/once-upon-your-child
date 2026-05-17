@@ -152,9 +152,14 @@ class Config:
         # Add Railway frontend URL if available (takes precedence / replaces hardcoded URL
         # when the Railway service URL changes without requiring a new deploy).
         railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')
+        is_development = os.environ.get('FLASK_ENV', 'production') in ['dev', 'development']
         if railway_frontend:
             base_origins.append(railway_frontend)
-            base_origins.append(railway_frontend.replace('https://', 'http://'))
+            # SECURITY: Only allow the insecure http:// downgrade of the frontend
+            # origin in development. In production it would let a network attacker
+            # serve an http:// page that passes the CORS allowlist.
+            if is_development:
+                base_origins.append(railway_frontend.replace('https://', 'http://'))
 
         # Add Railway static outbound URL if available
         railway_static_url = os.environ.get('RAILWAY_STATIC_URL')

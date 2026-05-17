@@ -72,6 +72,26 @@ def _seconds_until_next_hour() -> int:
     return 3600 - (now % 3600)
 
 
+def _is_valid_image(image_bytes: bytes) -> bool:
+    """
+    Validate uploaded image data by inspecting magic bytes.
+
+    Accepts only PNG, JPEG, WebP and GIF — prevents a client from uploading
+    a non-image (e.g. HTML, SVG, an executable) by relabelling the form field.
+    """
+    if not image_bytes or len(image_bytes) < 12:
+        return False
+    if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return True
+    if image_bytes.startswith(b"\xff\xd8\xff"):
+        return True
+    if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
+        return True
+    if image_bytes.startswith((b"GIF87a", b"GIF89a")):
+        return True
+    return False
+
+
 def create_avatar_blueprint(limiter):
     avatar_bp = Blueprint('avatar', __name__)
 
@@ -108,6 +128,13 @@ def create_avatar_blueprint(limiter):
                     'error_code': 'PHOTO_TOO_LARGE',
                     'message': 'Photo must be under 10 MB',
                 }), 413
+
+            if not _is_valid_image(photo_bytes):
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'INVALID_PHOTO',
+                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
+                }), 400
 
             # Extract other data from form
             character_name = request.form.get('character_name')
@@ -236,6 +263,13 @@ def create_avatar_blueprint(limiter):
                     'error_code': 'PHOTO_TOO_LARGE',
                     'message': 'Photo must be under 10 MB',
                 }), 413
+
+            if not _is_valid_image(photo_bytes):
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'INVALID_PHOTO',
+                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
+                }), 400
 
             # Extract other data from form
             pet_name = request.form.get('pet_name')
@@ -712,7 +746,22 @@ def create_avatar_blueprint(limiter):
                     'message': 'Avatar image is required'
                 }), 400
 
-            image_bytes = request.files['image'].read()
+            _MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
+            image_bytes = request.files['image'].read(_MAX_IMAGE_BYTES + 1)
+            if len(image_bytes) > _MAX_IMAGE_BYTES:
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'IMAGE_TOO_LARGE',
+                    'message': 'Avatar image must be under 10 MB',
+                }), 413
+
+            if not _is_valid_image(image_bytes):
+                return jsonify({
+                    'status': 'error',
+                    'error_code': 'INVALID_IMAGE',
+                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
+                }), 400
+
             hair_length = request.form.get('hair_length') or None
             eye_color = request.form.get('eye_color') or None
 
