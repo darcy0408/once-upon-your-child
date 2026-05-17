@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
-import 'safe_asset_image.dart';
 
-/// Illustrated rectangular scene-thumbnail card for story mode selection.
-/// Each card shows the mode illustration over a per-mode gradient, with the
+/// Rectangular card for story mode selection.
+/// Each card shows the mode glyph over a per-mode gradient, with the
 /// mode label (and optional subtitle) overlaid at the bottom.
 class ImageModeOrb extends StatefulWidget {
   final String modeType; // 'tales', 'rhyme', 'reading', 'pickpath'
@@ -62,20 +61,20 @@ class _ImageModeOrbState extends State<ImageModeOrb>
     super.dispose();
   }
 
-  String _getAssetPath() {
-    // Always use the same asset regardless of active state — the active
-    // state is communicated via border/glow rather than a different image.
+  /// Emoji glyph per mode — replaces the per-mode PNG illustration. The
+  /// active state is communicated via border/glow, not a different glyph.
+  String _getGlyph() {
     switch (widget.modeType) {
       case 'tales':
-        return 'assets/images/ui/clean/tales_orb.png';
+        return '📖';
       case 'rhyme':
-        return 'assets/images/ui/clean/rhyme_time_orb.png';
+        return '🎵';
       case 'reading':
-        return 'assets/images/ui/clean/easy_read_orb.png';
+        return '📚';
       case 'pickpath':
-        return 'assets/images/ui/clean/pick_path_orb.png';
+        return '🔀';
       default:
-        return 'assets/images/ui/clean/tales_orb.png';
+        return '📖';
     }
   }
 
@@ -91,168 +90,176 @@ class _ImageModeOrbState extends State<ImageModeOrb>
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              final t = _pulseController.value;
-              final borderWidth = widget.isActive ? 2.5 + t * 1.0 : 0.0;
-              final borderAlpha = widget.isActive ? 0.85 + t * 0.15 : 0.0;
+          animation: _pulseController,
+          builder: (context, child) {
+            final t = _pulseController.value;
+            final borderWidth = widget.isActive ? 2.5 + t * 1.0 : 0.0;
+            final borderAlpha = widget.isActive ? 0.85 + t * 0.15 : 0.0;
 
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 136,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: borderAlpha),
-                    width: borderWidth,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(
-                        alpha: widget.isActive ? 0.55 + t * 0.15 : 0.25,
-                      ),
-                      blurRadius: widget.isActive ? 18 + t * 8 : 10,
-                      spreadRadius: widget.isActive ? 3 + t * 2 : 1,
-                    ),
-                  ],
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 136,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: primaryColor.withValues(alpha: borderAlpha),
+                  width: borderWidth,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    widget.isActive ? 16.5 : 18,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withValues(
+                      alpha: widget.isActive ? 0.55 + t * 0.15 : 0.25,
+                    ),
+                    blurRadius: widget.isActive ? 18 + t * 8 : 10,
+                    spreadRadius: widget.isActive ? 3 + t * 2 : 1,
                   ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Gradient background
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              secondaryColor.withValues(
-                                alpha: widget.isActive ? 0.55 : 0.35,
-                              ),
-                              primaryColor.withValues(
-                                alpha: widget.isActive ? 0.75 : 0.5,
-                              ),
-                            ],
-                          ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  widget.isActive ? 16.5 : 18,
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Gradient background
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            secondaryColor.withValues(
+                              alpha: widget.isActive ? 0.55 : 0.35,
+                            ),
+                            primaryColor.withValues(
+                              alpha: widget.isActive ? 0.75 : 0.5,
+                            ),
+                          ],
                         ),
                       ),
-                      // Illustration — centred in the upper 75% of the card
-                      Positioned(
-                        top: 8,
-                        left: 0,
-                        right: 0,
-                        height: 82,
-                        child: AnimatedScale(
-                          duration: const Duration(milliseconds: 200),
-                          scale: widget.isActive ? 1.05 : 1.0,
-                          child: SafeAssetImage(
-                            _getAssetPath(),
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                          ),
-                        ),
-                      ),
-                      // Bottom label strip with scrim
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.0),
-                                Colors.black.withValues(alpha: 0.72),
+                    ),
+                    // Mode glyph — centred in the upper portion of the card
+                    Positioned(
+                      top: 8,
+                      left: 0,
+                      right: 0,
+                      height: 82,
+                      child: AnimatedScale(
+                        duration: const Duration(milliseconds: 200),
+                        scale: widget.isActive ? 1.08 : 1.0,
+                        child: Center(
+                          child: Text(
+                            _getGlyph(),
+                            style: TextStyle(
+                              fontSize: 50,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 10,
+                                ),
                               ],
                             ),
                           ),
-                          padding: const EdgeInsets.fromLTRB(8, 10, 8, 7),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
+                        ),
+                      ),
+                    ),
+                    // Bottom label strip with scrim
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.0),
+                              Colors.black.withValues(alpha: 0.72),
+                            ],
+                          ),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(8, 10, 8, 7),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              widget.label,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: widget.isActive
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                fontSize: 13,
+                                height: 1.2,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.8),
+                                    blurRadius: 4,
+                                  ),
+                                  if (widget.isActive)
+                                    Shadow(
+                                      color:
+                                          primaryColor.withValues(alpha: 0.6),
+                                      blurRadius: 8,
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (widget.subtitle != null) ...[
+                              const SizedBox(height: 2),
                               Text(
-                                widget.label,
+                                widget.subtitle!,
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: widget.isActive
-                                      ? FontWeight.w800
-                                      : FontWeight.w600,
-                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  fontSize: 10,
                                   height: 1.2,
-                                  shadows: [
-                                    Shadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.8),
-                                      blurRadius: 4,
-                                    ),
-                                    if (widget.isActive)
-                                      Shadow(
-                                        color: primaryColor.withValues(
-                                            alpha: 0.6),
-                                        blurRadius: 8,
-                                      ),
-                                  ],
                                 ),
                               ),
-                              if (widget.subtitle != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  widget.subtitle!,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.75),
-                                    fontSize: 10,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ],
                             ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Selected checkmark badge
+                    if (widget.isActive)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryColor.withValues(alpha: 0.9),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 14,
                           ),
                         ),
                       ),
-                      // Selected checkmark badge
-                      if (widget.isActive)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: primaryColor.withValues(alpha: 0.9),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primaryColor.withValues(alpha: 0.5),
-                                  blurRadius: 6,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
-      );
+      ),
+    );
   }
 }

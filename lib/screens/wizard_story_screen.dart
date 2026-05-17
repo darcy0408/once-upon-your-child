@@ -142,8 +142,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   Future<void> _saveWizardDraft() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          _wizardDraftKey, jsonEncode(_wizardData.toJson()));
+      await prefs.setString(_wizardDraftKey, jsonEncode(_wizardData.toJson()));
     } catch (_) {
       // Non-fatal — draft persistence is best-effort.
     }
@@ -213,7 +212,6 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
       // Corrupt draft — ignore and start fresh.
     }
   }
-
 
   Future<void> _loadOnboardingName() async {
     final prefs = await SharedPreferences.getInstance();
@@ -362,8 +360,9 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     final isMature =
         Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
     final dialogTitle = isMature ? 'Voice Story Settings' : 'Bedtime Settings';
-    final interactiveTitle =
-        isMature ? 'Interactive Voice Adventure' : 'Interactive Bedtime Adventure';
+    final interactiveTitle = isMature
+        ? 'Interactive Voice Adventure'
+        : 'Interactive Bedtime Adventure';
     final interactiveSubtitle = isMature
         ? 'Voice-led pick-a-path story.'
         : 'Voice-led pick-a-path bedtime story.';
@@ -386,14 +385,19 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SwitchListTile(
-                    title: Text(interactiveTitle, style: const TextStyle(color: Colors.white)),
-                    subtitle: Text(interactiveSubtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    title: Text(interactiveTitle,
+                        style: const TextStyle(color: Colors.white)),
+                    subtitle: Text(interactiveSubtitle,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
                     value: isInteractive,
                     activeThumbColor: const Color(0xFFFFD700),
-                    onChanged: (val) => setDialogState(() => isInteractive = val),
+                    onChanged: (val) =>
+                        setDialogState(() => isInteractive = val),
                   ),
                   const Divider(color: Colors.white24),
-                  const Text('Sleep Timer', style: TextStyle(color: Colors.white)),
+                  const Text('Sleep Timer',
+                      style: TextStyle(color: Colors.white)),
                   Slider(
                     value: timerMinutes,
                     min: 0,
@@ -401,11 +405,16 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     divisions: 6,
                     activeColor: const Color(0xFFFFD700),
                     inactiveColor: Colors.white24,
-                    label: timerMinutes == 0 ? 'Off' : '${timerMinutes.round()} min',
-                    onChanged: (val) => setDialogState(() => timerMinutes = val),
+                    label: timerMinutes == 0
+                        ? 'Off'
+                        : '${timerMinutes.round()} min',
+                    onChanged: (val) =>
+                        setDialogState(() => timerMinutes = val),
                   ),
                   Text(
-                    timerMinutes == 0 ? 'Timer is Off' : 'Story ends in ${timerMinutes.round()} minutes',
+                    timerMinutes == 0
+                        ? 'Timer is Off'
+                        : 'Story ends in ${timerMinutes.round()} minutes',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -413,7 +422,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.white70)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -465,217 +475,227 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
               // Top bar with back button and progress
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
+                child: Column(
                   children: [
-                    // Back button (or close on first step)
-                    IconButton(
-                      icon: Icon(
-                        _currentStep == 0 ? Icons.close : Icons.arrow_back,
-                        color: Colors.white,
-                      ),
-                      onPressed: _currentStep == 0
-                          ? () async {
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Leave story creation?'),
-                                  content: const Text(
-                                      'Your progress is saved as a draft — you can pick up where you left off next time.'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(false),
-                                      child: const Text('Keep going'),
+                    Row(
+                      children: [
+                        // Back button (or close on first step)
+                        IconButton(
+                          icon: Icon(
+                            _currentStep == 0 ? Icons.close : Icons.arrow_back,
+                            color: Colors.white,
+                          ),
+                          onPressed: _currentStep == 0
+                              ? () async {
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title:
+                                          const Text('Leave story creation?'),
+                                      content: const Text(
+                                          'Your progress is saved as a draft — you can pick up where you left off next time.'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(false),
+                                          child: const Text('Keep going'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(ctx).pop(true),
+                                          child: const Text('Leave'),
+                                        ),
+                                      ],
                                     ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(true),
-                                      child: const Text('Leave'),
-                                    ),
-                                  ],
+                                  );
+                                  if ((confirmed ?? false) &&
+                                      context.mounted &&
+                                      Navigator.of(context).canPop()) {
+                                    Navigator.of(context).pop();
+                                  }
+                                }
+                              : _previousStep,
+                          tooltip: _currentStep == 0 ? 'Close' : 'Back',
+                        ),
+                        const Spacer(),
+                        // Life Quests button — labeled for young bands, icon-only for mature.
+                        // Sprout band sees "Big Feelings" + cloud icon (matches bottom nav).
+                        if (!band.band.isMature)
+                          _LabeledNavButton(
+                            icon: band.band == AgeBand.sprout
+                                ? Icons.cloud
+                                : Icons.explore_rounded,
+                            label: band.band == AgeBand.sprout
+                                ? 'Big Feelings'
+                                : 'Life Quests',
+                            onPressed: _openLifeQuests,
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.explore_rounded,
+                                color: Colors.white),
+                            onPressed: _openLifeQuests,
+                            tooltip: 'Life Quests',
+                          ),
+                        // Character Library button — labeled for young bands, icon-only for mature
+                        if (!band.band.isMature)
+                          _LabeledNavButton(
+                            icon: Icons.people,
+                            label: 'Heroes',
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CharacterLibraryScreen(),
                                 ),
                               );
-                              if ((confirmed ?? false) &&
-                                  context.mounted &&
-                                  Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              }
-                            }
-                          : _previousStep,
-                      tooltip: _currentStep == 0 ? 'Close' : 'Back',
-                    ),
-                    // Progress indicator (responsive)
-                    Expanded(
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Builder(
-                            builder: (context) {
-                              // Sprout: use emoji icons so pre-readers can
-                              // track their progress without reading text.
-                              final sproutIcons = band.band == AgeBand.sprout
-                                  ? const <String>['⭐', '🐉', '🌈', '✨']
-                                  : null;
-                              final stepLabels = band.band == AgeBand.sprout
-                                  ? <String>[
-                                      'My Hero!',
-                                      'My Buddies!',
-                                      'My World!',
-                                      band.launchStoryLabel
-                                    ]
-                                  : band.band == AgeBand.adventurer
-                                      ? <String>[
-                                          'My Character',
-                                          'My Companions',
-                                          'My Setting',
-                                          band.launchStoryLabel
-                                        ]
-                                      : band.band.isMature
-                                          ? <String>[
-                                              'Character',
-                                              'Companions',
-                                              'Setting',
-                                              band.launchStoryLabel
-                                            ]
-                                          : <String>[
-                                              'Pick Hero',
-                                              'Pick Team',
-                                              'Pick Place',
-                                              band.launchStoryLabel
-                                            ];
-                              return Transform.scale(
-                                scale: band.spacingScale,
-                                child: MoonPhaseProgress(
-                                  currentStep: _progressStep,
-                                  totalSteps: 4,
-                                  stepLabels: stepLabels,
-                                  stepIcons: sproutIcons,
-                                  onStepTap: (step) {
-                                    if (_currentStep == 0) {
-                                      setState(() {
-                                        _requestedSubStep = step;
-                                        _progressStep = step;
-                                        _subStepRequestNonce++;
-                                      });
-                                    } else if (_currentStep == 1 && step < 3) {
-                                      // User tapped a previous sub-step from the review page — go back.
-                                      setState(() => _progressStep = step);
-                                      _goToSubStep(step);
-                                    }
-                                  },
+                              _loadSavedCharacters();
+                            },
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.people, color: Colors.white),
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CharacterLibraryScreen(),
+                                ),
+                              );
+                              _loadSavedCharacters();
+                            },
+                            tooltip: 'My Characters',
+                          ),
+                        // Chronicles button — only when a character is selected
+                        if (_wizardData.characterId != null)
+                          IconButton(
+                            icon: const Icon(Icons.menu_book_rounded,
+                                color: Colors.white),
+                            onPressed: () {
+                              final stub = Character(
+                                id: _wizardData.characterId!,
+                                name: _wizardData.characterName,
+                                age: _wizardData.characterAge,
+                                role: _wizardData.selectedArchetypeId ??
+                                    'Adventurer',
+                              );
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => ChroniclesListScreen(
+                                  character: stub,
+                                  userId: '',
+                                ),
+                              ));
+                            },
+                            tooltip: 'My Chronicles',
+                          ),
+                        // Bedtime Mode button — labeled for young bands, icon-only for mature
+                        if (!band.band.isMature)
+                          Semantics(
+                            button: true,
+                            label: 'Bedtime mode',
+                            child: _LabeledNavButton(
+                              icon: Icons.bedtime_outlined,
+                              label: 'Bedtime',
+                              onPressed: () =>
+                                  _showBedtimeSettingsDialog(context),
+                            ),
+                          )
+                        else
+                          Semantics(
+                            button: true,
+                            label: 'Voice story mode',
+                            child: IconButton(
+                              icon: const Icon(Icons.mic_none_rounded,
+                                  color: Colors.white),
+                              onPressed: () =>
+                                  _showBedtimeSettingsDialog(context),
+                              tooltip: 'Voice Story Mode',
+                            ),
+                          ),
+                        // Parent settings — small icon-only button so kids ignore
+                        // it but parents can find it from anywhere in the wizard.
+                        Semantics(
+                          button: true,
+                          label: 'Parent controls',
+                          child: IconButton(
+                            icon: const Icon(Icons.shield_outlined,
+                                color: Colors.white70, size: 22),
+                            onPressed: () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ParentControlsScreen(),
                                 ),
                               );
                             },
+                            tooltip: 'Parent',
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    // Life Quests button — labeled for young bands, icon-only for mature.
-                    // Sprout band sees "Big Feelings" + cloud icon (matches bottom nav).
-                    if (!band.band.isMature)
-                      _LabeledNavButton(
-                        icon: band.band == AgeBand.sprout
-                            ? Icons.cloud
-                            : Icons.explore_rounded,
-                        label: band.band == AgeBand.sprout
-                            ? 'Big Feelings'
-                            : 'Life Quests',
-                        onPressed: _openLifeQuests,
-                      )
-                    else
-                      IconButton(
-                        icon: const Icon(Icons.explore_rounded, color: Colors.white),
-                        onPressed: _openLifeQuests,
-                        tooltip: 'Life Quests',
-                      ),
-                    // Character Library button — labeled for young bands, icon-only for mature
-                    if (!band.band.isMature)
-                      _LabeledNavButton(
-                        icon: Icons.people,
-                        label: 'Heroes',
-                        onPressed: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const CharacterLibraryScreen(),
-                            ),
-                          );
-                          _loadSavedCharacters();
-                        },
-                      )
-                    else
-                      IconButton(
-                        icon: const Icon(Icons.people, color: Colors.white),
-                        onPressed: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const CharacterLibraryScreen(),
-                            ),
-                          );
-                          _loadSavedCharacters();
-                        },
-                        tooltip: 'My Characters',
-                      ),
-                    // Chronicles button — only when a character is selected
-                    if (_wizardData.characterId != null)
-                      IconButton(
-                        icon: const Icon(Icons.menu_book_rounded,
-                            color: Colors.white),
-                        onPressed: () {
-                          final stub = Character(
-                            id: _wizardData.characterId!,
-                            name: _wizardData.characterName,
-                            age: _wizardData.characterAge,
-                            role: _wizardData.selectedArchetypeId ??
-                                'Adventurer',
-                          );
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => ChroniclesListScreen(
-                              character: stub,
-                              userId: '',
-                            ),
-                          ));
-                        },
-                        tooltip: 'My Chronicles',
-                      ),
-                    // Bedtime Mode button — labeled for young bands, icon-only for mature
-                    if (!band.band.isMature)
-                      Semantics(
-                        button: true,
-                        label: 'Bedtime mode',
-                        child: _LabeledNavButton(
-                          icon: Icons.bedtime_outlined,
-                          label: 'Bedtime',
-                          onPressed: () => _showBedtimeSettingsDialog(context),
+                    const SizedBox(height: 6),
+                    // Progress tracker — own row, full width, so the step
+                    // dots aren't cramped between the nav buttons above.
+                    Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Builder(
+                          builder: (context) {
+                            // Sprout: use emoji icons so pre-readers can
+                            // track their progress without reading text.
+                            final sproutIcons = band.band == AgeBand.sprout
+                                ? const <String>['⭐', '🐉', '🌈', '✨']
+                                : null;
+                            final stepLabels = band.band == AgeBand.sprout
+                                ? <String>[
+                                    'My Hero!',
+                                    'My Buddies!',
+                                    'My World!',
+                                    band.launchStoryLabel
+                                  ]
+                                : band.band == AgeBand.adventurer
+                                    ? <String>[
+                                        'My Character',
+                                        'My Companions',
+                                        'My Setting',
+                                        band.launchStoryLabel
+                                      ]
+                                    : band.band.isMature
+                                        ? <String>[
+                                            'Character',
+                                            'Companions',
+                                            'Setting',
+                                            band.launchStoryLabel
+                                          ]
+                                        : <String>[
+                                            'Pick Hero',
+                                            'Pick Team',
+                                            'Pick Place',
+                                            band.launchStoryLabel
+                                          ];
+                            return Transform.scale(
+                              scale: band.spacingScale,
+                              child: MoonPhaseProgress(
+                                currentStep: _progressStep,
+                                totalSteps: 4,
+                                stepLabels: stepLabels,
+                                stepIcons: sproutIcons,
+                                onStepTap: (step) {
+                                  if (_currentStep == 0) {
+                                    setState(() {
+                                      _requestedSubStep = step;
+                                      _progressStep = step;
+                                      _subStepRequestNonce++;
+                                    });
+                                  } else if (_currentStep == 1 && step < 3) {
+                                    // User tapped a previous sub-step from the review page — go back.
+                                    setState(() => _progressStep = step);
+                                    _goToSubStep(step);
+                                  }
+                                },
+                              ),
+                            );
+                          },
                         ),
-                      )
-                    else
-                      Semantics(
-                        button: true,
-                        label: 'Voice story mode',
-                        child: IconButton(
-                          icon: const Icon(Icons.mic_none_rounded, color: Colors.white),
-                          onPressed: () => _showBedtimeSettingsDialog(context),
-                          tooltip: 'Voice Story Mode',
-                        ),
-                      ),
-                    // Parent settings — small icon-only button so kids ignore
-                    // it but parents can find it from anywhere in the wizard.
-                    Semantics(
-                      button: true,
-                      label: 'Parent controls',
-                      child: IconButton(
-                        icon: const Icon(Icons.shield_outlined,
-                            color: Colors.white70, size: 22),
-                        onPressed: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ParentControlsScreen(),
-                            ),
-                          );
-                        },
-                        tooltip: 'Parent',
                       ),
                     ),
                   ],

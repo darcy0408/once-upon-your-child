@@ -31,9 +31,11 @@ class HeroStoryTypePage extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onContinue;
   final void Function(String field) onToggleListening;
+
   /// Optional Sprout TTS callback — when provided, card taps speak the label
   /// aloud so non-readers get audio confirmation of their selection.
   final Future<void> Function(String text)? onSpeakForSprout;
+
   /// Whether the current user can generate illustrations (premium or BYOK).
   /// When false, story-type labels avoid promising pictures.
   final bool illustrationsEnabled;
@@ -152,7 +154,9 @@ class HeroStoryTypePage extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               child: isSelected
                   ? Icon(Icons.check_circle_rounded,
-                      key: const ValueKey('check'), color: accentColor, size: 32)
+                      key: const ValueKey('check'),
+                      color: accentColor,
+                      size: 32)
                   : Icon(Icons.circle_outlined,
                       key: const ValueKey('empty'),
                       color: Colors.white30,
@@ -180,11 +184,20 @@ class HeroStoryTypePage extends StatelessWidget {
   }
 
   Widget _buildWishPromptButtons(AgeBandThemeData band) {
+    // Action "wishes" — what the child wants to *do* in the story (the scene
+    // is already chosen on an earlier page). Tuned for 6–8 year-olds, where
+    // power-fantasy and magic verbs resonate most strongly.
     final prompts = <(String emoji, String label, String value)>[
-      ('🧚', 'Magic friend', 'A friendly fairy helps on the journey.'),
-      ('🐉', 'Dragon helper', 'A kind dragon becomes my helper.'),
-      ('🗺️', 'Treasure quest', 'Find a hidden treasure map adventure.'),
-      ('🌈', 'Rainbow world', 'A magical rainbow world appears.'),
+      ('🦅', 'Fly in the sky', 'I get to fly high up in the sky.'),
+      ('⚡', 'Be super fast', 'I can run super fast, faster than anyone.'),
+      ('🫥', 'Turn invisible', 'I can turn invisible whenever I want.'),
+      ('🐉', 'Ride a dragon', 'I get to ride on a friendly dragon.'),
+      ('✨', 'Do real magic', 'I can cast real magic spells.'),
+      (
+        '🦊',
+        'Outsmart the villain',
+        'I use a clever trick to outsmart the villain.'
+      ),
     ];
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: band.space(4)),
@@ -192,11 +205,19 @@ class HeroStoryTypePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Pick something special!",
+            "What do you want to do?",
             style: GoogleFonts.fredoka(
               color: Colors.white,
               fontSize: band.body(16),
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: band.space(2)),
+          Text(
+            "Pick a wish for your story — or skip it!",
+            style: GoogleFonts.fredoka(
+              color: Colors.white.withAlpha(160),
+              fontSize: band.body(12),
             ),
           ),
           SizedBox(height: band.space(10)),
@@ -216,8 +237,15 @@ class HeroStoryTypePage extends StatelessWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(band.radiusMd),
                 onTap: () {
-                  wizardData.customElements = prompt.$3;
-                  wishController.text = prompt.$3;
+                  // Tap a selected wish again to clear it — lets kids fix a
+                  // wrong pick without hunting for a deselect control.
+                  if (selected) {
+                    wizardData.customElements = '';
+                    wishController.clear();
+                  } else {
+                    wizardData.customElements = prompt.$3;
+                    wishController.text = prompt.$3;
+                  }
                   onChanged();
                 },
                 child: AnimatedContainer(
@@ -449,7 +477,8 @@ class HeroStoryTypePage extends StatelessWidget {
                     Expanded(
                       child: ImageModeOrb(
                         modeType: 'rhyme',
-                        label: data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
+                        label:
+                            data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
                         subtitle: isCreator
                             ? 'Verse and rhythm'
                             : 'A story in rhymes',
@@ -599,9 +628,7 @@ class HeroStoryTypePage extends StatelessWidget {
             _buildWishTextInput(band),
           SizedBox(height: band.space(32)),
           PressableArrowButton(
-              enabled: true,
-              onTap: onContinue,
-              hint: band.wizardNextHint),
+              enabled: true, onTap: onContinue, hint: band.wizardNextHint),
           SizedBox(height: band.space(20)),
         ],
       ),
