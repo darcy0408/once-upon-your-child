@@ -213,7 +213,9 @@ def create_user_routes_blueprint(limiter=None):
                 }), 400
 
             parent_email = (data.get('parent_email') or '').strip()[:120] or None
-            allow_photo_avatar = data.get('allow_photo_avatar', True)
+            # CMP-8: default False — an omitted field must not record the
+            # child as opted in to photo-based (biometric) avatars.
+            allow_photo_avatar = data.get('allow_photo_avatar', False)
 
             # COPPA: 'verified' may only be truthy when the method is a real
             # verified method. The email round trip is verified server-side by
@@ -313,6 +315,10 @@ def create_user_routes_blueprint(limiter=None):
             user.stories_created_count = 0
             user.stories_generated_this_month = 0
             user.illustrations_generated_this_month = 0
+
+            # M-1: invalidate all outstanding access tokens for this account so
+            # the erasure cannot be undone by a still-valid pre-deletion token.
+            user.token_version = (getattr(user, 'token_version', 0) or 0) + 1
 
             db.session.commit()
 

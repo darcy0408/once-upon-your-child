@@ -25,7 +25,13 @@ class User(db.Model):
     gemini_api_key_encrypted = db.Column(db.Text, nullable=True)  # Encrypted API key
     has_byok = db.Column(db.Boolean, default=False, nullable=False)  # Quick flag for BYOK status
 
-    # Monthly usage tracking for free tier limits
+    # Monthly usage tracking.
+    # M-2/M-17: `stories_generated_this_month` is the conservative monthly story
+    # counter maintained by backend.utils.ai_quota.increment_daily_quota. It is
+    # the fail-CLOSED fallback for the LLM-cost circuit breaker when Redis is
+    # unavailable, and the single source of truth for story-usage read-outs.
+    # Previously it was declared but never incremented (dead state); it is now
+    # actively maintained alongside the enforced Redis daily counter.
     stories_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
     illustrations_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
     usage_reset_date = db.Column(db.DateTime, nullable=True)  # When to reset monthly counters
@@ -33,6 +39,11 @@ class User(db.Model):
     # COPPA compliance
     declared_age = db.Column(db.Integer, nullable=True)  # Age declared during onboarding
     is_under_13 = db.Column(db.Boolean, default=False, nullable=False)  # COPPA flag
+
+    # JWT revocation: minted into access tokens as the `tv` claim and verified
+    # by require_auth. Bumping this value invalidates every outstanding access
+    # token for the user (e.g. on logout or data-deletion).
+    token_version = db.Column(db.Integer, default=0, nullable=False)
 
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)

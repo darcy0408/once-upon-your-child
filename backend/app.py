@@ -520,6 +520,7 @@ def create_app(config_name):
                 'usage_reset_date':                    'TIMESTAMP',
                 'declared_age':                        'INTEGER',
                 'is_under_13':                         'BOOLEAN DEFAULT FALSE NOT NULL',
+                'token_version':                       'INTEGER DEFAULT 0 NOT NULL',
             }
             with db.engine.connect() as _conn:
                 for col_name, col_def in pending_cols.items():
@@ -579,7 +580,9 @@ def create_app(config_name):
 
     # JWT setup - SECURITY: Require proper secret in production
     jwt = JWTManager(app)
-    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=24))
+    # Access tokens are short-lived (1h) so a stolen token has a small window;
+    # clients refresh via /auth/refresh. Refresh tokens stay long-lived (30d).
+    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=1))
     app.config.setdefault('JWT_REFRESH_TOKEN_EXPIRES', timedelta(days=30))
     jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
     if not jwt_secret or jwt_secret == 'dev-secret-key':

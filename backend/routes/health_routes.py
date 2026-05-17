@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify
 
 from ..database import db
+from ..middleware.auth import require_auth, require_admin
 
 
 def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model: str, limiter=None):
@@ -11,55 +12,27 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
 
     @health_bp.route("/health", methods=["GET"])
     def health_check():
-        health_status = {
-            "status": "ok",
-            "timestamp": datetime.now().isoformat(),
-            "version": app_version,
-        }
+        """Public liveness probe.
 
-        # Database check
-        try:
-            from sqlalchemy import text
-
-            db.session.execute(text("SELECT 1"))
-            health_status["database"] = "ok"
-        except Exception as e:
-            health_status["database"] = "error"
-            health_status["database_error"] = str(e)
-            health_status["status"] = "degraded"
-
-        # Gemini API check — live probe
-        health_status["has_api_key"] = bool(api_key)
-        health_status["model"] = os.getenv("GEMINI_MODEL", "not-set")
-        try:
-            from google import genai as _genai
-            _client = _genai.Client(api_key=api_key)
-            _client.models.get(model=gemini_model)
-            health_status["gemini_live"] = True
-        except Exception as _e:
-            health_status["gemini_live"] = False
-            health_status["gemini_error"] = str(_e)
-            health_status["status"] = "degraded"
-
-        # Stripe check
-        health_status["stripe_configured"] = bool(os.getenv("STRIPE_API_KEY"))
-        health_status["stripe_premium_price"] = bool(os.getenv("STRIPE_PRICE_ID_PREMIUM"))
-        health_status["stripe_family_price"] = bool(os.getenv("STRIPE_PRICE_ID_FAMILY"))
-
-        # Environment
-        health_status["environment"] = os.getenv("RAILWAY_ENVIRONMENT", "unknown")
-
-        if health_status["status"] != "ok":
-            logger.warning(f"Health degraded: {health_status}")
-
-        return jsonify(health_status), 200
+        Intentionally minimal: returns only status + version. Detailed
+        diagnostics (DB/Gemini/Stripe config, environment, raw errors) are
+        not exposed to unauthenticated callers — see /health/detailed.
+        """
+        return jsonify({"status": "ok", "version": app_version}), 200
 
     @health_bp.route("/version", methods=["GET"])
     def version():
         return jsonify({"version": app_version, "gemini_model": gemini_model}), 200
 
     @health_bp.route("/health/detailed", methods=["GET"])
+    @require_auth
+    @require_admin
     def detailed_health():
+        """Authenticated, admin-only detailed health check.
+
+        Returns integration/diagnostic detail. Raw exception strings are
+        logged server-side but never returned to the client.
+        """
         health_status = {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat(), "checks": {}}
 
         # Database check
@@ -68,9 +41,10 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
 
             db.session.execute(text("SELECT 1"))
             health_status["checks"]["database"] = {"status": "healthy"}
-        except Exception as e:
+        except Exception:
+            logger.exception("Health check: database probe failed")
             health_status["status"] = "unhealthy"
-            health_status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
+            health_status["checks"]["database"] = {"status": "unhealthy"}
 
         # Gemini API check — live probe
         try:
@@ -78,9 +52,10 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
             _client = _genai.Client(api_key=api_key)
             _client.models.get(model=gemini_model)
             health_status["checks"]["gemini_api"] = {"status": "healthy", "configured": True, "live": True}
-        except Exception as e:
+        except Exception:
+            logger.exception("Health check: Gemini probe failed")
             health_status["status"] = "degraded"
-            health_status["checks"]["gemini_api"] = {"status": "unhealthy", "configured": bool(api_key), "live": False, "error": str(e)}
+            health_status["checks"]["gemini_api"] = {"status": "unhealthy", "configured": bool(api_key), "live": False}
 
         # Memory check
         try:
@@ -98,8 +73,10 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
         return jsonify(health_status), status_code
 
     @health_bp.route("/health/database", methods=["GET"])
+    @require_auth
+    @require_admin
     def database_health():
-        """Detailed database health check"""
+        """Authenticated, admin-only database connection-pool health check."""
         try:
             pool = db.engine.pool
             from sqlalchemy.pool import StaticPool
@@ -116,8 +93,9 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
                     "overflow": pool.overflow(),
                 }
             )
-        except Exception as e:
-            return jsonify({"status": "error", "error": str(e)}), 500
+        except Exception:
+            logger.exception("Health check: database pool probe failed")
+            return jsonify({"status": "error", "error": "Database health check failed"}), 500
 
     if limiter is not None:
         limiter.exempt(health_check)

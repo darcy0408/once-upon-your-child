@@ -77,6 +77,20 @@ def require_auth(f):
                 logger.warning(f"Auth failed: User {user_id} not found in DB")
                 return jsonify({'error': 'User not found'}), 401
 
+            # Token-version revocation check: the `tv` claim minted at token
+            # issue time must still match the user's stored token_version.
+            # Bumping User.token_version (e.g. on logout or data-deletion)
+            # invalidates every outstanding access token for that user.
+            stored_tv = getattr(current_user, 'token_version', 0) or 0
+            token_tv = data.get('tv', 0) or 0
+            if token_tv != stored_tv:
+                logger.warning(
+                    "Auth failed: token_version mismatch for user %s "
+                    "(token tv=%s, stored tv=%s)",
+                    user_id, token_tv, stored_tv,
+                )
+                return jsonify({'error': 'Token revoked'}), 401
+
             # Attach user to request context
             request.current_user = current_user
             g.current_user_id = current_user.id
@@ -114,6 +128,11 @@ def require_parental_consent(f):
     allowing access to content-generation endpoints. Users aged 13+ pass
     through unconditionally.
 
+    When COPPA_REQUIRE_VERIFIED_CONSENT is enabled, the record must also
+    have verified=True (the email round-trip completed). It defaults OFF so
+    the tester-phase build (self_attested consent, verified=False) is not
+    blocked — set it true for launch. See audit/LEGAL-COMPLIANCE.md (CMP-2).
+
     Usage:
         @story_bp.route("/generate-story", methods=["POST"])
         @require_auth
@@ -146,6 +165,24 @@ def require_parental_consent(f):
             return jsonify({
                 'error': 'Parental consent required',
                 'code': 'PARENTAL_CONSENT_REQUIRED',
+            }), 403
+
+        # COPPA: when verified-consent enforcement is enabled (production),
+        # the record must be verified=True. A self_attested or email_pending
+        # record (verified=False) does NOT satisfy the gate. Defaults off for
+        # the tester phase — see the decorator docstring / CMP-2.
+        require_verified = os.getenv(
+            'COPPA_REQUIRE_VERIFIED_CONSENT', 'false'
+        ).strip().lower() in ('1', 'true', 'yes', 'on')
+        if require_verified and not consent.verified:
+            logger.warning(
+                "COPPA: under-13 user %s has consent record %s with verified=False; "
+                "blocked under COPPA_REQUIRE_VERIFIED_CONSENT",
+                user.id, consent.id,
+            )
+            return jsonify({
+                'error': 'Verified parental consent required',
+                'code': 'PARENTAL_CONSENT_UNVERIFIED',
             }), 403
 
         return f(*args, **kwargs)

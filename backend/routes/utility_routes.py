@@ -1,6 +1,5 @@
 import os
 import time
-import traceback
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import (
@@ -88,11 +87,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         
         status = {
             "api_key_configured": bool(api_key),
-            "api_key_prefix": api_key[:4] + "..." if api_key else None,
             "model_name": model_name,
             "steps": []
         }
-        
+
         try:
             # Step 1: Configure
             if not api_key:
@@ -120,11 +118,13 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             status["success"] = True
 
         except Exception as e:
-            status["success"] = False
-            status["error"] = str(e)
-            status["error_type"] = type(e).__name__
-            status["steps"].append(f"❌ Error: {str(e)}")
+            # Log the detail server-side; return only a generic message so the
+            # response never leaks driver/connection internals.
             logger.exception("Debug Gemini failed")
+            status["success"] = False
+            status["error"] = "Gemini generation failed — see server logs for detail"
+            status["error_type"] = type(e).__name__
+            status["steps"].append("❌ Error: generation failed")
 
             # Try to list available models to help debug
             try:
@@ -135,8 +135,9 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                     available_models.append(m.name)
                 status["available_models"] = available_models[:20]  # Limit to first 20
                 status["steps"].append(f"ℹ️ Listed {len(available_models)} available models")
-            except Exception as list_err:
-                status["steps"].append(f"❌ Failed to list models: {str(list_err)}")
+            except Exception:
+                logger.exception("Debug Gemini: failed to list models")
+                status["steps"].append("❌ Failed to list models — see server logs")
 
         return jsonify(status)
 
@@ -148,20 +149,21 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         try:
             api_key = os.getenv("OPENROUTER_API_KEY")
             if not api_key:
+                # SECURITY: never echo the environment variable names — that
+                # leaks the full server config surface to the caller.
                 return jsonify({
                     "status": "error",
-                    "message": "OPENROUTER_API_KEY not found in environment variables",
-                    "env_keys": list(os.environ.keys())
+                    "message": "OPENROUTER_API_KEY is not configured",
                 }), 500
 
             # Test generation
             generator = OpenRouterImageGenerator()
             test_prompt = "A cute small blue bird"
-            
+
             try:
                 # Returns list of dicts: [{'image_url': '...', ...}]
-                images = generator.generate_story_illustration(test_prompt) 
-                
+                images = generator.generate_story_illustration(test_prompt)
+
                 preview = "None"
                 if images and len(images) > 0:
                      first_img = images[0]
@@ -169,27 +171,27 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                          # Handle if image_url is very long (base64)
                          url_str = str(first_img['image_url'])
                          preview = url_str[:50] + "..." if len(url_str) > 50 else url_str
-                
+
                 return jsonify({
                     "status": "success",
                     "message": "Image generated successfully",
                     "model": "google/gemini-2.5-flash-image",
                     "image_count": len(images),
                     "image_data_preview": preview,
-                    "api_key_preview": f"{api_key[:4]}...{api_key[-4:]}"
                 })
-            except Exception as e:
+            except Exception:
+                # Log detail server-side; return a generic message only.
+                logger.exception("Debug OpenRouter: image generation failed")
                 return jsonify({
                     "status": "error",
-                    "message": f"Generation failed: {str(e)}",
-                    "traceback": traceback.format_exc()
+                    "message": "Image generation failed — see server logs for detail",
                 }), 500
 
-        except Exception as e:
+        except Exception:
+            logger.exception("Debug OpenRouter endpoint failed")
             return jsonify({
                 "status": "error",
-                "message": f"Debug endpoint failed: {str(e)}",
-                "traceback": traceback.format_exc()
+                "message": "Debug endpoint failed — see server logs for detail",
             }), 500
 
     @utility_bp.route("/setup-test-account", methods=["POST"])
@@ -247,10 +249,25 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         client_id = data.get('client_id')
         user = None
 
+        # Only honour client-supplied IDs that belong to per-session anonymous
+        # accounts. The bootstrap singleton 'anonymous' user must never be
+        # reclaimed — issuing a JWT for it would collapse all anonymous traffic
+        # onto one identity / rate-limit bucket (M-16).
+        if client_id == 'anonymous':
+            logger.warning(
+                "auth/anonymous: client_id 'anonymous' (singleton) rejected; "
+                "creating new per-session anonymous account."
+            )
+            client_id = None
+
         # Only honour client-supplied IDs that belong to anonymous accounts.
         if client_id:
             candidate = User.query.filter_by(id=client_id).first()
-            if candidate and candidate.email.endswith('@anonymous.storyweaver.app'):
+            if (
+                candidate
+                and candidate.id != 'anonymous'
+                and candidate.email.endswith('@anonymous.storyweaver.app')
+            ):
                 user = candidate
                 logger.info("Anonymous session reclaimed: %s", client_id)
             elif candidate:
@@ -284,7 +301,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                     raise
                 logger.info("Anonymous user already exists after race: %s", new_id)
 
-        token = create_access_token(identity=user.id)
+        token = create_access_token(
+            identity=user.id,
+            additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+        )
         refresh_token = create_refresh_token(identity=user.id)
         audit_log('anonymous_session', user_id=user.id)
         return jsonify({
@@ -304,7 +324,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            token = create_access_token(identity=user.id)
+            token = create_access_token(
+                identity=user.id,
+                additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+            )
             refresh_token = create_refresh_token(identity=user.id)
             audit_log('user_login', user_id=user.id)
             return jsonify({'token': token, 'refresh_token': refresh_token}), 200
@@ -332,7 +355,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         if old_jti and old_exp:
             _blocklist_jti(old_jti, old_exp, logger)
 
-        token = create_access_token(identity=user.id)
+        token = create_access_token(
+            identity=user.id,
+            additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+        )
         new_refresh = create_refresh_token(identity=user.id)
         audit_log('token_refreshed', user_id=user.id)
         return jsonify({
