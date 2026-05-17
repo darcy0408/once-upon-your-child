@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,6 +22,18 @@ import 'terms_of_service_screen.dart';
 /// tester build with no real end users. MUST be set back to `false` before
 /// launch to re-enable the email round-trip — tracked in docs/MANUAL_TASKS.md.
 const bool _kSkipEmailConsent = true;
+
+/// M-15 (CWE-489) — Consent test bypass.
+///
+/// Compile-time flag, default OFF. The COPPA consent gate is auto-completed
+/// ONLY when the app is built with `--dart-define=CONSENT_TEST_BYPASS=true`
+/// (used by Playwright smoke tests, which cannot satisfy the scroll gate in
+/// Flutter web canvas mode). Because this is resolved at compile time, a
+/// normal release/QA build CANNOT enable it via a URL query parameter or any
+/// other runtime input — the previous `?bypass_consent=1` runtime bypass is
+/// removed entirely.
+const bool _kConsentTestBypass =
+    bool.fromEnvironment('CONSENT_TEST_BYPASS', defaultValue: false);
 
 class ParentalConsentScreen extends StatefulWidget {
   const ParentalConsentScreen({
@@ -90,20 +101,18 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     _titleTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) setState(() => _parentTitleActive = true);
     });
-    // Debug-only bypass for Playwright smoke tests. Flutter web canvas mode
-    // rejects programmatic scrolling, so the "scroll-to-bottom" gate cannot be
-    // satisfied from automation. Gated by `kDebugMode` so it cannot trigger in
-    // release builds.
-    if (kDebugMode) {
-      final bypass = Uri.base.queryParameters['bypass_consent'];
-      if (bypass == '1' || bypass == 'true') {
-        debugPrint(
-            '🔓 COPPA consent bypassed (debug build, bypass_consent flag)');
-        // Schedule after first frame so Navigator/context are ready.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _debugBypassConsent();
-        });
-      }
+    // M-15: test-only consent bypass for Playwright smoke tests. Flutter web
+    // canvas mode rejects programmatic scrolling, so the "scroll-to-bottom"
+    // gate cannot be satisfied from automation. This is driven by the
+    // compile-time `_kConsentTestBypass` flag (`--dart-define`), default OFF —
+    // it cannot be triggered by a URL query parameter or any runtime input.
+    if (_kConsentTestBypass) {
+      debugPrint(
+          '🔓 COPPA consent bypassed (CONSENT_TEST_BYPASS build flag)');
+      // Schedule after first frame so Navigator/context are ready.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _debugBypassConsent();
+      });
     }
   }
 
@@ -704,11 +713,13 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     }
   }
 
-  /// Debug-only consent bypass for Playwright smoke tests. Records an HONEST,
-  /// clearly test-only consent method — it does NOT mislabel consent as
-  /// 'email_verified'. Gated by `kDebugMode` so it cannot run in release.
+  /// Test-only consent bypass for Playwright smoke tests. Records an HONEST,
+  /// clearly test-only consent method ('debug_bypass') — it does NOT mislabel
+  /// consent as 'email_verified'. Reachable only when the build sets the
+  /// compile-time `_kConsentTestBypass` flag (`--dart-define`), default OFF.
   Future<void> _debugBypassConsent() async {
-    assert(kDebugMode, 'consent bypass must never run outside debug builds');
+    assert(_kConsentTestBypass,
+        'consent bypass must only run when CONSENT_TEST_BYPASS is set');
     setState(() => _submitting = true);
     try {
       await widget.consentService.recordConsent(

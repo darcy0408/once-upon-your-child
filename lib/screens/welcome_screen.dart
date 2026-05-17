@@ -10,6 +10,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../providers/age_band_provider.dart';
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
+import '../services/privacy_service.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/star_burst_celebration.dart';
@@ -242,9 +243,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // First user gesture — unlock web audio.
     AppTtsService.instance.markInteracted();
     AppTtsService.instance.stop();
-    // Persist immediately so any still-running _resumeFromSavedAge() reads the
-    // correct age if it hasn't hit SharedPreferences yet.
-    unawaited(const ParentalConsentService().saveDeclaredAge(age));
+    // M-10 (COPPA §312.5(a)): a minor's age is regulated PII — do NOT persist
+    // it here. The declared age is held only in this widget's in-memory state
+    // (`_selectedAge`) and is written to storage exclusively via
+    // `recordConsent`, i.e. as an atomic part of the consent record, after
+    // consent is granted.
     setState(() => _selectedAge = age);
     _handleContinue();
   }
@@ -282,7 +285,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             _celebratingName = false;
             _step = 1; // advance to age picker
           });
-          unawaited(_speak('How old are you?... Tap your age!', rateScale: 0.72));
+          // M-10 (COPPA): the age screen is intentionally neutral — no
+          // child-directed TTS prompt that gamifies the age question or
+          // invites a child to answer it themselves.
         }
       });
     }
@@ -722,24 +727,27 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   // ── Step 2: Age picker ────────────────────────────────────────────────────
 
   Widget _buildAgeStep() {
+    // M-10 (COPPA): a neutral age screen — no decorative/celebratory glyph,
+    // no child-directed framing. COPPA guidance discourages a gamified age
+    // gate because it invites misreporting.
     return Column(
       key: const ValueKey('age'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.auto_awesome, color: _goldColor, size: 36),
         const SizedBox(height: 4),
         Text(
-          'How old are you?',
+          'Select your child\'s age',
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
-            color: _goldColor,
-            fontSize: 34,
-            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
         const Text(
-          'Parents — tap your child\'s age below',
+          'Parents/guardians — please enter your child\'s real age. '
+          'This determines what content is appropriate.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
@@ -828,8 +836,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
     setState(() => _submitting = true);
 
-    await const ParentalConsentService().saveDeclaredAge(_selectedAge!);
-    await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
+    // M-10 (COPPA §312.5(a)): do NOT persist the declared age or the derived
+    // age band before consent. Age is written to storage only as part of the
+    // consent record below (`recordConsent` / the consent screen's flow), and
+    // the age band is set only after consent is granted.
 
     if (_selectedAge! < 13) {
       // For under-13 users, obtain parental consent BEFORE persisting the
@@ -849,7 +859,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       );
       if (mounted) setState(() { _submitting = false; _step = 0; });
       if (granted == true) {
-        // Consent obtained — now safe to persist the child's name.
+        // Consent obtained — now safe to persist the child's name and age.
+        // M-10: age and age band are persisted here, only after consent.
+        await const ParentalConsentService().saveDeclaredAge(_selectedAge!);
+        if (mounted) {
+          await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
+        }
+        // M-9: reconcile analytics with the consent result. Under-13 ⇒ stays
+        // off regardless (applyConsentDecision enforces the age >= 13 gate).
+        await PrivacyService.applyConsentDecision(
+          consentGranted: true,
+          declaredAge: _selectedAge!,
+        );
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_kUserNameKey, name);
         // Offer parent controls setup before the child starts playing.
@@ -950,11 +971,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
 
     // Age 13+ — no parental consent required; persist name immediately.
+    // M-10: recordConsent persists the declared age as part of the consent
+    // record; the age band is set here, after the consent record is written.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kUserNameKey, name);
     await const ParentalConsentService().recordConsent(
       age: _selectedAge!,
       method: 'self_attested',
+    );
+    if (mounted) {
+      await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
+    }
+    // M-9: 13+ self-attested consent — analytics may now be enabled.
+    await PrivacyService.applyConsentDecision(
+      consentGranted: true,
+      declaredAge: _selectedAge!,
     );
     if (mounted) {
       setState(() => _submitting = false);

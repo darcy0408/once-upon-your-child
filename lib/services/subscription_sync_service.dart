@@ -134,10 +134,19 @@ class SubscriptionSyncService {
   void _emit(SubscriptionStatus status) {
     _currentStatus = status;
     _subscriptionController.add(status);
-    // Mirror the tier/status into the legacy `is_paid_premium` SharedPref bool
-    // so the two readers (`ApiServiceManager.hasPremiumAccess`,
-    // `ProgressionService.hasPaidPremium`) reflect the real subscription state.
-    // Truthy when tier is paid AND status is in any "has access" state:
+    // M-8 (client half): the backend is the sole source of truth for
+    // entitlement. `is_paid_premium` is a COSMETIC cache only — it gates UI
+    // affordances, never a real capability. Every premium-gated capability is
+    // (and must be) enforced server-side off `User.subscription_tier`; a
+    // tampered-up local bool buys nothing but a misleading UI.
+    //
+    // This mirror writes the backend's truth UNCONDITIONALLY on every sync —
+    // including downgrades (paid → free). It therefore overrides any local
+    // tampering DOWNWARD as well as upward: a stale or hand-edited
+    // `is_paid_premium=true` is corrected the next time the backend is
+    // reached. The cache is never allowed to override the backend.
+    //
+    // Truthy only when tier is paid AND status is an "active access" state:
     //   active    → fully paid
     //   trialing  → 14-day free trial (Premium features active)
     //   past_due  → Stripe dunning window (~3 weeks of retries; keep access)
@@ -152,6 +161,8 @@ class SubscriptionSyncService {
               status.status == 'trialing' ||
               status.status == 'past_due');
       final prefs = await SharedPreferences.getInstance();
+      // Always write — never skip — so the cache cannot drift above the
+      // backend's entitlement (M-8: no local override of the backend).
       await prefs.setBool('is_paid_premium', isPaid);
     } catch (_) {
       // Pref write failures are non-fatal — readers fall back to false.

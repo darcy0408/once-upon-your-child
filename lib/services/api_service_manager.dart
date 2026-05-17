@@ -597,7 +597,19 @@ class ApiServiceManager {
     return SecureStorageService.getApiKey('gemini');
   }
 
-  /// Check if user has premium access (either BYOK or paid)
+  /// COSMETIC premium check — drives UI affordances ONLY (M-8, client half).
+  ///
+  /// `is_premium_byok` / `is_paid_premium` are plain SharedPreferences bools
+  /// and therefore editable on a rooted device or via a backup round-trip.
+  /// They are NOT a security boundary: every premium-gated capability is
+  /// enforced server-side off `User.subscription_tier`, so a tampered-up
+  /// value buys a misleading UI and nothing more. `is_paid_premium` is kept
+  /// in sync with the backend by `SubscriptionSyncService`, which overwrites
+  /// it (including downgrades) on every sync — the local cache can never
+  /// override the backend's entitlement.
+  ///
+  /// Do NOT use this result to authorize a paid action; rely on the backend
+  /// to reject unentitled requests.
   static Future<bool> hasPremiumAccess() async {
     final prefs = await SharedPreferences.getInstance();
     final byokPremium = prefs.getBool('is_premium_byok') ?? false;

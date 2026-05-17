@@ -12,6 +12,7 @@ import 'avatar_models.dart';
 import 'config/environment.dart';
 import 'services/api_service_manager.dart';
 import 'services/app_tts_service.dart';
+import 'services/parental_consent_service.dart';
 import 'theme/age_band_theme.dart';
 import 'widgets/avatar_generating_view.dart';
 import 'widgets/safe_asset_image.dart';
@@ -60,6 +61,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   Uint8List? _imageBytes;
   bool _isGenerating = false;
   String? _generatedImageBase64;
+
+  // M-11 (COPPA): photo-based avatar creation requires an explicit parental
+  // opt-in. `null` = the opt-in check is still loading; `false` = blocked.
+  // Enforced inside this screen, not only by hiding an entry button.
+  bool? _photoAvatarAllowed;
 
   // One-time refinement (Adventurer+ / BYOK only)
   bool _hasUsedRefinement = false;
@@ -215,6 +221,21 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         if (mounted) setState(() => _refinementSpeechEnabled = ok);
       });
     }
+
+    // M-11 (COPPA, CWE-602): enforce the parental "Allow photo-based avatar
+    // creation" opt-in at the screen level. This screen is reachable from
+    // several entry points (avatar builder, gallery callback, Sprout welcome
+    // route) — relying on a hidden entry button is not sufficient.
+    _enforcePhotoAvatarOptIn();
+  }
+
+  /// Reads the parental photo-avatar opt-in. If it is off, the photo path is
+  /// blocked: the screen shows a "needs a grown-up's permission" message and
+  /// pops, so neither the camera nor an upload can ever be reached.
+  Future<void> _enforcePhotoAvatarOptIn() async {
+    final allowed = await const ParentalConsentService().getAllowPhotoAvatar();
+    if (!mounted) return;
+    setState(() => _photoAvatarAllowed = allowed);
   }
 
   @override
@@ -349,6 +370,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Photo helpers ───────────────────────────────────────────────────────────
   Future<void> _takePhoto() async {
+    // M-11: defence-in-depth — never invoke the camera/picker unless the
+    // parental photo-avatar opt-in is on. The build gate already blocks the
+    // UI, but re-check here so a future code path cannot bypass it.
+    if (_photoAvatarAllowed != true) return;
     final picker = ImagePicker();
     XFile? picked;
     if (kIsWeb) {
@@ -385,6 +410,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   Future<void> _pickFromGallery() async {
+    // M-11: defence-in-depth — see _takePhoto.
+    if (_photoAvatarAllowed != true) return;
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -395,6 +422,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Avatar generation (API call unchanged) ──────────────────────────────────
   Future<void> _generateAvatar({String? refinementNote}) async {
+    // M-11: final backstop — never upload a child photo without the parental
+    // photo-avatar opt-in.
+    if (_photoAvatarAllowed != true) return;
     if (_imageBytes == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -550,12 +580,99 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       body: Container(
         decoration: BoxDecoration(gradient: _bt.backgroundGradient),
         child: SafeArea(
-          child: _isGenerating
-              ? _buildGeneratingView()
-              : _generatedImageBase64 != null
-                  ? _buildResultView()
-                  : _buildWizardView(),
+          // M-11: gate the entire screen on the parental photo-avatar opt-in.
+          child: _photoAvatarAllowed == null
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.white))
+              : _photoAvatarAllowed == false
+                  ? _buildPhotoAvatarBlockedView()
+                  : _isGenerating
+                      ? _buildGeneratingView()
+                      : _generatedImageBase64 != null
+                          ? _buildResultView()
+                          : _buildWizardView(),
         ),
+      ),
+    );
+  }
+
+  // ── Photo-avatar blocked view (M-11) ────────────────────────────────────────
+  /// Shown when the parental "Allow photo-based avatar creation" opt-in is off.
+  /// The camera/upload flow is never built, so a photo cannot be captured.
+  Widget _buildPhotoAvatarBlockedView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.close_rounded,
+                  color: Colors.white, size: 28),
+            ),
+          ),
+          const Spacer(),
+          const Icon(Icons.lock_outline_rounded,
+              color: Colors.white, size: 56),
+          const SizedBox(height: 16),
+          Text(
+            _isSprout
+                ? 'Ask a grown-up first!'
+                : 'Photo avatars need a grown-up\'s permission',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+              fontSize: _isSprout ? 26 : 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'A parent or guardian can turn on photo-based avatars in '
+            'parental controls. Until then, you can pick a ready-made hero '
+            'instead.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.quicksand(
+              fontSize: 15,
+              color: Colors.white.withAlpha(200),
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (widget.onOpenGallery != null)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onOpenGallery!();
+              },
+              icon: const Icon(Icons.star_rounded),
+              label: Text(
+                _isSprout ? 'Pick a ready hero!' : 'Pick a premade hero',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5F4BDB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    vertical: 14, horizontal: 28),
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(_bt.buttonRadiusBase)),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: Text(
+                'Go back',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          const Spacer(),
+        ],
       ),
     );
   }
