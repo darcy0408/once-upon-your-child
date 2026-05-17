@@ -514,12 +514,12 @@ def create_app(config_name):
             pending_cols = {
                 'stories_created_count':               'INTEGER DEFAULT 0 NOT NULL',
                 'gemini_api_key_encrypted':             'TEXT',
-                'has_byok':                            'BOOLEAN DEFAULT 0 NOT NULL',
+                'has_byok':                            'BOOLEAN DEFAULT FALSE NOT NULL',
                 'stories_generated_this_month':        'INTEGER DEFAULT 0 NOT NULL',
                 'illustrations_generated_this_month':  'INTEGER DEFAULT 0 NOT NULL',
                 'usage_reset_date':                    'TIMESTAMP',
                 'declared_age':                        'INTEGER',
-                'is_under_13':                         'BOOLEAN DEFAULT 0 NOT NULL',
+                'is_under_13':                         'BOOLEAN DEFAULT FALSE NOT NULL',
             }
             with db.engine.connect() as _conn:
                 for col_name, col_def in pending_cols.items():
@@ -542,7 +542,7 @@ def create_app(config_name):
                 with db.engine.connect() as _conn:
                     _conn.execute(sa_text(
                         'ALTER TABLE consent_record '
-                        'ADD COLUMN verified BOOLEAN DEFAULT 0 NOT NULL'
+                        'ADD COLUMN verified BOOLEAN DEFAULT FALSE NOT NULL'
                     ))
                     _conn.commit()
                     logger.info(

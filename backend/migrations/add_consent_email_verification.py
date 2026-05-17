@@ -53,7 +53,7 @@ def run_migration():
                 with db.engine.connect() as conn:
                     conn.execute(text(
                         'ALTER TABLE consent_record '
-                        'ADD COLUMN verified BOOLEAN DEFAULT 0 NOT NULL'
+                        'ADD COLUMN verified BOOLEAN DEFAULT FALSE NOT NULL'
                     ))
                     conn.commit()
                 print("    done.")
