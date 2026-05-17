@@ -272,5 +272,9 @@ scrolled-down.png
 /chronicle-smoke-*.png
 /p1-*.png
 /p3-*.png
+/flutter_*.png
+
+# Claude Code session lock (per-session, never commit)
+.claude/scheduled_tasks.lock
 /curr*.yml
 /current.yml

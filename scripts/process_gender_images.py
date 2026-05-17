@@ -15,7 +15,10 @@ try:
 except ImportError:
     sys.exit("Pillow and numpy are required: pip install pillow numpy")
 
-SRC = Path("C:/dev/story-weaver-app/assets/BoyGirl images")
+# Source portraits live in the "BoyGirl placeholder images" subfolder.
+# (The AdventurerBoyArchtype/ and AdventurerGirlArchtype/ siblings hold archetype
+# card art, not gender portraits, and are not consumed by the JOBS list below.)
+SRC = Path("C:/dev/story-weaver-app/assets/BoyGirl images/BoyGirl placeholder images")
 DST = Path("C:/dev/story-weaver-app/assets/images/ui/gender")
 DST.mkdir(parents=True, exist_ok=True)
 

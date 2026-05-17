@@ -96,7 +96,7 @@ void main() {
               'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=',
           'seed': 'seed-milo',
           'style': 'cartoon',
-          'attributes': {},
+          'attributes': <String, dynamic>{},
           'generated_at': '2026-01-01T00:00:00Z',
         },
       }),
@@ -141,7 +141,7 @@ void main() {
               'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=',
           'seed': 'seed-nova',
           'style': 'cartoon',
-          'attributes': {},
+          'attributes': <String, dynamic>{},
           'generated_at': '2026-01-01T00:00:00Z',
         },
       }),
@@ -156,16 +156,17 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    // Page 0: shows existing characters + create new button
-    // Look for add icon or "Create New" text
-    final addIcon = find.byIcon(Icons.add);
-    final createNew = find.textContaining('Create');
-    if (addIcon.evaluate().isNotEmpty) {
-      await tester.tap(addIcon.first);
-    } else if (createNew.evaluate().isNotEmpty) {
-      await tester.tap(createNew.first);
-    }
-    // Pump long enough to drain TTS/navigation timers (~850ms) after page transition
+    // Page 0: shows existing characters + the "Or create someone new" button.
+    final createNew = find.textContaining('create someone new');
+    expect(createNew, findsOneWidget);
+    await tester.tap(createNew);
+    await pumpFor(tester, const Duration(milliseconds: 500));
+
+    // Tapping it opens the age-band picker dialog — pick a band.
+    final explorerBand = find.text('Explorer');
+    expect(explorerBand, findsOneWidget);
+    await tester.tap(explorerBand);
+    // Drain dialog dismiss + page transition + TTS timers (~850ms).
     await pumpFor(tester, const Duration(seconds: 2));
 
     // Should navigate to page 1 (name input)
