@@ -121,7 +121,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
 
   // ── State ─────────────────────────────────────────────────────────────────
 
-  bool _allowPhotoAvatar = true;
+  bool _allowPhotoAvatar = false; // CMP-8: fail safe until the real value loads
   bool _hasApiKey = false;
   bool _loading = true;
   bool _deletingData = false;

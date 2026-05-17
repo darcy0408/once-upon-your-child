@@ -19,7 +19,9 @@ class ConsentRecord(db.Model):
     consent_method = db.Column(db.String(50), nullable=False)
     consent_given_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     ip_address = db.Column(db.String(45), nullable=True)  # IPv4 or IPv6
-    allow_photo_avatar = db.Column(db.Boolean, default=True, nullable=False)
+    # Photo-avatar opt-in. Defaults False so the consent record fails safe:
+    # an omitted field must never record the child as opted in (CMP-8).
+    allow_photo_avatar = db.Column(db.Boolean, default=False, nullable=False)
     withdrawn = db.Column(db.Boolean, default=False, nullable=False)
     withdrawn_at = db.Column(db.DateTime, nullable=True)
     # COPPA email round-trip: True only once a parent submitted a valid code.
