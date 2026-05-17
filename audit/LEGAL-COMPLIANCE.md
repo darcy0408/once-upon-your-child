@@ -34,8 +34,8 @@ Two themes dominate:
 | 3 | ~~**PP-1** — the corrected `PRIVACY_POLICY.md` is never rendered; in-app policy is a different, weaker doc~~ — ✅ resolved 2026-05-17 | M |
 | 4 | ~~**CMP-3 / PP-2** — policy claims "end-to-end encryption" (false) + wrong age range + stale date~~ — ✅ resolved 2026-05-17 | M |
 | 5 | **STORE-1** — Stripe used for in-app subscriptions; Apple & Google require their own IAP | L (2–4 wk) |
-| 6 | **STORE-2** — Sentry crash reporting initialized with no consent gate (Kids-Category violation) | M |
-| 7 | **STORE-6 / PP-6** — AI-generated stories/images carry no "AI-generated" label or disclosure | M |
+| 6 | ~~**STORE-2** — Sentry crash reporting initialized with no consent gate (Kids-Category violation)~~ — ✅ resolved 2026-05-17 | M |
+| 7 | ~~**STORE-6 / PP-6** — AI-generated stories/images carry no "AI-generated" label or disclosure~~ — ✅ resolved 2026-05-17 | M |
 | 8 | **STORE-10** — Android release build signed with debug keys; Play rejects debug-signed uploads | S |
 
 ---
@@ -239,7 +239,7 @@ StoreKit / Google Play Billing (`in_app_purchase` plugin), define products in Ap
 Play Console, reconcile entitlement server-side. Keep Stripe only for the Flutter **web** build;
 gate it unreachable on iOS/Android. Effort: L (2–4 weeks).
 
-### ☐ STORE-2 — Critical — Sentry initialized with no consent gate
+### ✅ STORE-2 — Critical — Sentry initialized with no consent gate (Resolved 2026-05-17)
 `lib/main.dart:19-37`. `SentryFlutter.init()` runs unconditionally at the top of `main()`,
 `sampleRate=1.0` in release, before any consent — unlike Firebase Analytics, which *is* correctly
 gated. Apple Kids-Category 1.3/5.1.4 prohibits third-party crash/analytics from a child's session
@@ -247,13 +247,29 @@ without verified consent. **Fix:** gate Sentry behind the same `PrivacyService` 
 (init only post-consent, age ≥ 13), or confirm a children's-safe config (`sendDefaultPii=false`,
 breadcrumb scrub) + DPA. Effort: M.
 
-### ☐ STORE-6 / PP-6 — Critical — AI-generated content is not labelled or disclosed
+> **Resolved 2026-05-17 (`99cfde6f`):** Sentry's `beforeSend` hook now drops
+> every event while `SentryConsentGate.isReportingEnabled` is false (its
+> startup default). `PrivacyService.applyConsentDecision` flips it true only
+> when consent is granted AND declared age ≥ 13 — the same gate as analytics.
+> Also set `sendDefaultPii=false` and lowered the release `sampleRate` to 0.2.
+> Follow-up: breadcrumb scrubbing + a Sentry DPA are still recommended.
+
+### ✅ STORE-6 / PP-6 — Critical — AI-generated content is not labelled or disclosed (Resolved 2026-05-17)
 `lib/story_result_screen.dart`, `character_preview.dart`, `avatar_gallery_selector.dart`; no
 AI-transparency section in any policy/consent surface. Google Play's Generative-AI policy requires
 in-app disclosure + a content-report mechanism; Apple flags unlabelled generative AI, especially in
 kids' apps; EU AI Act Art. 50 requires AI-output disclosure. **Fix:** persistent "Created with AI"
 label on generated stories/avatars; in-app "report this content" path; AI-disclosure section in the
 privacy notice + a line in the consent flow; complete the Play Console gen-AI declaration. Effort: M.
+
+> **Resolved 2026-05-17 (`4f788edc`):** new `AiGeneratedBadge` widget — a
+> "Created with AI" chip on the story result screen and corner "AI" badges on
+> generated illustrations and character avatars. An "AI-Generated Content"
+> section was added to the privacy policy (doc + in-app screen), a one-line AI
+> notice to the consent flow, and a "Report this content" (mailto) affordance.
+> Follow-ups: the Play Console generative-AI declaration (a console action,
+> not code); and the live BYOK prefetch illustration widget
+> (`per_page_illustration.dart`) does not yet carry the badge.
 
 ### ◐ STORE-10 — Critical — Android release build signed with debug keys (code done 2026-05-17; keystore pending)
 `android/app/build.gradle.kts:34-37` (`TODO: Add your own signing config`). Play rejects
@@ -295,11 +311,17 @@ playful age band. Apple 5.1.4 / Google Families expect a neutral, non-incentiviz
 DOB-derived). **Fix:** add a neutral age/DOB gate as the first screen — plain styling, no steering
 TTS, no reward for older ages. Effort: M.
 
-### ☐ STORE-7 — Medium — External links open without a parental gate
+### ✅ STORE-7 — Medium — External links open without a parental gate (Resolved 2026-05-17)
 `byok_setup_wizard.dart:38-41` (Google AI Studio), `settings_screen.dart:851` &
 `parental_consent_screen.dart:442-447` (elevenlabs.io). Apple Kids 1.3/5.1.4 requires links out and
 account-creation flows behind a parental gate. **Fix:** route every external `launchUrl` through the
 existing math parental gate; confine the BYOK/API-key flow to a parent-only area. Effort: S–M.
+
+> **Resolved 2026-05-17 (`e6b7f4ff`):** the Google AI Studio link (BYOK wizard)
+> and the ElevenLabs partner link (settings) now sit behind a multiplication
+> `ParentalGateDialog`. Follow-ups: the consent-screen `elevenlabs.io` link
+> (`parental_consent_screen.dart:442-447`) is still ungated; and the math gate
+> now has three near-duplicate implementations worth consolidating into one.
 
 ### ☐ STORE-8 — Medium — Mic/camera capture from children needs Kids-Category justification
 `android/app/src/main/AndroidManifest.xml:5` (`RECORD_AUDIO`), `pubspec.yaml:38,47-48`
@@ -366,8 +388,10 @@ policy), PP-2/CMP-3 (remove E2EE claim, fix age range/date), PP-3/PP-4 (false "o
 PP-7 (standardize the rights-contact address — user must still confirm the mailbox is monitored),
 the sub-processor table (CMP-4/PP-5). PP-6 (AI disclosure) deferred to Phase 3.
 
-**Phase 3 — store gates (days):** STORE-2 (gate Sentry), STORE-6/PP-6 (AI labelling), STORE-3/STORE-5
-(age-gate rework), STORE-7 (parental gate on external links).
+**Phase 3 — store gates (days):** ✅ mostly done 2026-05-17 — STORE-2 (gate Sentry, `99cfde6f`),
+STORE-6/PP-6 (AI labelling, `4f788edc`), STORE-7 (parental gate on external links, `e6b7f4ff`).
+**Still open:** STORE-3 + STORE-5 (age-gate rework) — held pending a store-positioning product
+decision; they rework the live onboarding flow so are best done deliberately.
 
 **Phase 4 — larger / decision-gated:** STORE-1 (IAP migration — 2–4 weeks, start now), CMP-5/PP-13
 (retention job), CMP-7 (therapeutic-data decision + possible DPIA), CMP-9 (jurisdictional consent
