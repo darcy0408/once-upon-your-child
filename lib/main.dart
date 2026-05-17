@@ -11,6 +11,7 @@ import 'services/app_tts_service.dart';
 import 'services/isar_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/screen_time_service.dart';
+import 'services/sentry_consent_gate.dart';
 import 'services/subscription_service.dart';
 import 'services/storage_migration.dart';
 import 'screens/times_up_screen.dart';
@@ -22,9 +23,21 @@ Future<void> main() async {
       options.environment = kReleaseMode ? 'production' : 'development';
       // Don't ship dev/test errors or traces to Sentry — local logs are richer
       // and a single bad headless run can flood the project (see STORY-WEAVER-1K).
-      options.sampleRate = kReleaseMode ? 1.0 : 0.0;
+      // STORE-2: keep the release sample rate well below 1.0 so a child's
+      // session never floods the project even after consent is granted.
+      options.sampleRate = kReleaseMode ? 0.2 : 0.0;
       options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
+      // STORE-2 (COPPA §312.5 / Apple Kids-Category 1.3, 5.1.4): never attach
+      // device/user PII to events from a children's app.
+      options.sendDefaultPii = false;
       options.beforeSend = (event, hint) {
+        // STORE-2: Sentry's init() must wrap runApp, so it cannot be deferred.
+        // Instead, drop EVERY event until a parental-consent decision has
+        // enabled reporting (consent granted AND declared age >= 13). This
+        // mirrors how Firebase Analytics collection is consent-gated.
+        if (!SentryConsentGate.isReportingEnabled) {
+          return null;
+        }
         final isDwds = event.exceptions?.any((ex) =>
                 ex.stackTrace?.frames.any((f) =>
                     (f.fileName?.contains('dwds/src/injected/client.js') ??

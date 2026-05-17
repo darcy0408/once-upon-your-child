@@ -2,6 +2,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
 import 'firebase_analytics_service.dart';
+import 'sentry_consent_gate.dart';
 
 class PrivacyService {
   PrivacyService._();
@@ -17,14 +18,18 @@ class PrivacyService {
     await FirebaseAnalyticsService.setCollectionEnabled(consented);
   }
 
-  /// Reconciles analytics collection with a parental-consent result.
+  /// Reconciles analytics AND crash-reporting collection with a
+  /// parental-consent result.
   ///
-  /// Collection is enabled ONLY when BOTH hold:
+  /// Both Firebase Analytics collection and Sentry crash reporting are enabled
+  /// ONLY when BOTH hold:
   ///  - the consent flow granted consent ([consentGranted]), AND
   ///  - the declared age is >= 13 ([declaredAge]).
   ///
-  /// GA-for-Firebase is not COPPA-certified for children's data, so an
-  /// under-13 account never turns analytics on even with parental consent.
+  /// GA-for-Firebase is not COPPA-certified for children's data, and
+  /// third-party crash reporting from a child's session is prohibited by
+  /// Apple Kids-Category 1.3/5.1.4 — so an under-13 account never turns
+  /// either one on, even with parental consent (STORE-2, M-9, COPPA §312.5).
   ///
   /// Best-effort: this runs inside the parental-consent completion flow, so
   /// an analytics/plugin failure must NEVER propagate and break consent
@@ -33,10 +38,15 @@ class PrivacyService {
     required bool consentGranted,
     required int declaredAge,
   }) async {
+    final allowCollection = consentGranted && declaredAge >= 13;
+    // STORE-2: gate Sentry crash reporting on the same COPPA decision as
+    // analytics. This is a pure in-process flag flip and cannot throw, so it
+    // runs before the analytics block (which may fail) to guarantee the
+    // Sentry gate is always reconciled.
+    SentryConsentGate.setReportingEnabled(allowCollection);
     try {
-      final allowAnalytics = consentGranted && declaredAge >= 13;
-      await FirebaseAnalyticsService.setCollectionEnabled(allowAnalytics);
-      if (!allowAnalytics) {
+      await FirebaseAnalyticsService.setCollectionEnabled(allowCollection);
+      if (!allowCollection) {
         // Defensive: clear any data buffered before the gate was evaluated.
         await resetAnalyticsData();
       }
