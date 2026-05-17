@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-16 | 16:17 | 41cd | main | MT-129 fix + credential audit + a11y Playwright harness | [link](docs/sessions/2026-05-16-1617-41cd.md) |
 | 2026-05-16 | 14:21 | 4237 | main | Railway DB endpoint Q&A (no code changes) | [link](docs/sessions/2026-05-16-1421-4237.md) |
 | 2026-05-16 | 14:20 | 2d29 | main | No-op re-close after b95a (no new work) | [link](docs/sessions/2026-05-16-1420-2d29.md) |
 | 2026-05-16 | 13:53 | b95a | main | MT-131 Cloudflare image migration shipped + MT-132 orphaned fix landed | [link](docs/sessions/2026-05-16-1353-b95a.md) |
