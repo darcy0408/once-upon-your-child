@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-17 | 07:51 | bc1a | main | 6-8 story-type wizard UX rework + COPPA debug-skip | [link](docs/sessions/2026-05-17-0751-bc1a.md) |
 | 2026-05-16 | 16:17 | a4e1 | main | Reviewed P0/P1 security remediation; reverted H-5 BYOK regression | [link](docs/sessions/2026-05-16-1617-a4e1.md) |
 | 2026-05-16 | 16:17 | 41cd | main | MT-129 fix + credential audit + a11y Playwright harness | [link](docs/sessions/2026-05-16-1617-41cd.md) |
 | 2026-05-16 | 14:21 | 4237 | main | Railway DB endpoint Q&A (no code changes) | [link](docs/sessions/2026-05-16-1421-4237.md) |
