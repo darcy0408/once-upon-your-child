@@ -14,6 +14,17 @@ enum LogLevel {
 class LoggerService {
   static const String _tag = '[StoryWeaver]';
 
+  /// Redacts a sensitive identifier or token for safe logging (CWE-532).
+  /// Never returns the raw value: shows a short prefix plus the length so a
+  /// developer can correlate logs without exposing a minor's user id or a
+  /// credential. Returns `<null>` / `<empty>` for absent values.
+  static String redact(String? value) {
+    if (value == null) return '<null>';
+    if (value.isEmpty) return '<empty>';
+    final prefix = value.length <= 4 ? value : value.substring(0, 4);
+    return '$prefix…(${value.length} chars)';
+  }
+
   // Log debug messages (only in debug mode)
   static void debug(String message, [Object? error, StackTrace? stackTrace]) {
     if (kDebugMode) {

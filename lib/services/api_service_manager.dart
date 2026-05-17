@@ -16,6 +16,7 @@ import '../config/environment.dart';
 import '../character_traits_data.dart';
 import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
+import 'logger_service.dart';
 import 'story_complexity_service.dart';
 import 'story_scaffold_fallback.dart';
 import 'user_identity_service.dart';
@@ -144,7 +145,7 @@ class ApiServiceManager {
     if (legacy != null && legacy.isNotEmpty) {
       await secureWrite(legacy);
       await prefs.remove(prefsKey);
-      debugPrint('🔐 Migrated $prefsKey from SharedPreferences to secure storage');
+      LoggerService.info('Migrated $prefsKey to secure storage');
       return legacy;
     }
     return null;
@@ -174,14 +175,14 @@ class ApiServiceManager {
 
     if (stored != null && !_isTokenExpired(stored)) {
       _authToken = stored;
-      debugPrint('✅ Loaded auth token from secure storage');
+      LoggerService.debug('Loaded auth token from secure storage');
       return;
     }
     // Stored token absent or expired — remove it and get a fresh one.
     await SecureStorageService.deleteUserToken();
 
     // Get new anonymous token
-    debugPrint('🔐 Getting anonymous auth token...');
+    LoggerService.debug('Getting anonymous auth token...');
     try {
       final client = _testClient ?? http.Client();
       final uri = Uri.parse('$_localBackendUrl/auth/anonymous');
@@ -204,12 +205,14 @@ class ApiServiceManager {
           await SecureStorageService.saveRefreshToken(_refreshToken!);
         }
         await prefs.setString(_userIdKey, _userId!);
-        debugPrint('✅ Got anonymous auth token for user: $_userId');
+        LoggerService.debug(
+            'Got anonymous auth token for user ${LoggerService.redact(_userId)}');
       } else {
-        debugPrint('⚠️ Failed to get anonymous token: ${response.statusCode}');
+        LoggerService.warning(
+            'Failed to get anonymous token: HTTP ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('⚠️ Error getting anonymous token: $e');
+      LoggerService.warning('Error getting anonymous token', e);
     }
   }
 
@@ -293,7 +296,7 @@ class ApiServiceManager {
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
-        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        LoggerService.debug('401 Unauthorized from $uri. Refreshing token...');
         final refreshed = await _tryRefreshAccessToken(
           httpClient: httpClient,
           timeout: timeout,
@@ -361,7 +364,7 @@ class ApiServiceManager {
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
-        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        LoggerService.debug('401 Unauthorized from $uri. Refreshing token...');
         final refreshed = await _tryRefreshAccessToken(
           httpClient: httpClient,
           timeout: timeout,
@@ -427,7 +430,7 @@ class ApiServiceManager {
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
-        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        LoggerService.debug('401 Unauthorized from $uri. Refreshing token...');
         final refreshed = await _tryRefreshAccessToken(
           httpClient: httpClient,
           timeout: timeout,
@@ -487,7 +490,7 @@ class ApiServiceManager {
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
-        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        LoggerService.debug('401 Unauthorized from $uri. Refreshing token...');
         final refreshed = await _tryRefreshAccessToken(
           httpClient: httpClient,
           timeout: timeout,
@@ -544,7 +547,7 @@ class ApiServiceManager {
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
-        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        LoggerService.debug('401 Unauthorized from $uri. Refreshing token...');
         final refreshed = await _tryRefreshAccessToken(
           httpClient: httpClient,
           timeout: timeout,
