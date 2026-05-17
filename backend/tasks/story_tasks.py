@@ -95,12 +95,13 @@ def _generate_story_text_with_metadata(
     theme: str,
     character_name: str,
     companion: str = None,
+    user_tier: str | None = None,
 ) -> tuple[str, str, list[str]]:
     provider_sequence: list[str] = []
 
     try:
         logger.info("Attempting story generation with primary service (Gemini)...")
-        gemini_generator = StoryGenerationService()
+        gemini_generator = StoryGenerationService(user_tier=user_tier)
         story_text = gemini_generator.generate_story(prompt)
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with primary service.")
@@ -145,7 +146,13 @@ def _generate_story_text_with_metadata(
 
 
 
-def _generate_story_text(prompt: str, theme: str, character_name: str, companion: str = None) -> str:
+def _generate_story_text(
+    prompt: str,
+    theme: str,
+    character_name: str,
+    companion: str = None,
+    user_tier: str | None = None,
+) -> str:
     """
     Generate story text with a tiered fallback system.
     1. Try Gemini via StoryGenerationService.
@@ -157,6 +164,7 @@ def _generate_story_text(prompt: str, theme: str, character_name: str, companion
         theme,
         character_name,
         companion,
+        user_tier=user_tier,
     )
     return story_text
 
@@ -574,6 +582,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character_id: ID of character to personalize the story
         theme: Story theme
         user_id: Requesting user
+        user_tier: Subscription tier ('free'/'premium'/'family'/'byok'); drives
+            tier-aware text-model selection. Optional — falls back to a DB
+            lookup, then to the full model, when omitted.
         include_illustrations, rhyme_time_mode, learning_to_read_mode: Feature flags
         companion, therapeutic_prompt, feelings_prompt: Additional context
         character: Optional character name fallback when no ID is provided
@@ -589,6 +600,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character_id = kwargs.get("character_id")
         theme = kwargs.get("theme") or "Adventure"
         user_id = kwargs.get("user_id") or "anonymous"
+        # Subscription tier from the route (drives tier-aware text-model
+        # selection). May be None for legacy callers that predate the kwarg —
+        # the validation-loop block below falls back to a DB lookup, and a
+        # still-missing tier defaults to the full model (fail toward quality).
+        user_tier = (kwargs.get("user_tier") or "").strip().lower() or None
         include_illustrations = kwargs.get("include_illustrations", False)
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
@@ -849,14 +865,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             # Tier-aware retry cap: free tier gets 2 attempts (not 3) to bound
             # Gemini cost on validation failures. Premium/Family/BYOK keep 3.
-            user_tier = 'free'
-            if user_id and user_id != 'anonymous':
-                try:
-                    _u = User.query.filter_by(id=user_id).first()
-                    if _u and _u.subscription_tier:
-                        user_tier = _u.subscription_tier.lower()
-                except Exception:
-                    logger.debug("could not resolve user tier", exc_info=True)
+            # The tier is normally passed in via task kwargs (from the route);
+            # fall back to a DB lookup for legacy callers that omit it.
+            if user_tier is None:
+                resolved_tier = 'free'
+                if user_id and user_id != 'anonymous':
+                    try:
+                        _u = User.query.filter_by(id=user_id).first()
+                        if _u and _u.subscription_tier:
+                            resolved_tier = _u.subscription_tier.lower()
+                    except Exception:
+                        logger.debug("could not resolve user tier", exc_info=True)
+                user_tier = resolved_tier
             max_attempts = 2 if user_tier == 'free' else 3
             attempt = 0
             validation_loop_start = time.perf_counter()
@@ -871,6 +891,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     theme,
                     character_name,
                     companion,
+                    user_tier=user_tier,
                 )
                 attempt_ai_call_ms = (time.perf_counter() - ai_call_start) * 1000.0
                 ai_call_ms += attempt_ai_call_ms
@@ -1036,7 +1057,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     post_story=post_story,
                     character_name=character_name,
                     base_prompt=prompt,
-                    regen_fn=lambda p: _generate_story_text(p, theme, character_name, companion),
+                    regen_fn=lambda p: _generate_story_text(
+                        p, theme, character_name, companion, user_tier=user_tier
+                    ),
                 )
                 if _sprout_info.get("original_words", 0) > SPROUT_WORD_CAP:
                     logger.info(
@@ -1068,7 +1091,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     post_story=post_story,
                     character_name=character_name,
                     base_prompt=prompt,
-                    regen_fn=lambda p: _generate_story_text(p, theme, character_name, companion),
+                    regen_fn=lambda p: _generate_story_text(
+                        p, theme, character_name, companion, user_tier=user_tier
+                    ),
                     cap=EXPLORER_SUPERHERO_WORD_CAP,
                     band_label="Explorer",
                     age_max=8,
@@ -1125,7 +1150,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     age=age,
                 )
                 fallback_prompt = _scrub_real_name(fallback_prompt)  # M-7
-                fallback_text = _generate_story_text(fallback_prompt, theme, character_name, companion)
+                fallback_text = _generate_story_text(
+                    fallback_prompt, theme, character_name, companion, user_tier=user_tier
+                )
                 fallback_title, _, fallback_body, fallback_pages, fallback_post, fallback_metadata = _safe_extract_title_and_gem(
                     fallback_text, theme
                 )

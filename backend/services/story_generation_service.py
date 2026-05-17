@@ -86,8 +86,30 @@ def _extract_text(response) -> str | None:
     return None
 
 
+# Tiers that get the full-quality (more expensive) text model. Anything not in
+# this set — including a missing/None tier — falls through to free-tier logic,
+# EXCEPT that an unknown non-empty tier is treated as paid (fail toward quality).
+_PAID_TEXT_TIERS = frozenset({'premium', 'family', 'byok'})
+
+
+def _resolve_text_model(user_tier: str | None) -> str:
+    """Pick the Gemini text model for a subscription tier.
+
+    Free-tier users (who never pay) get the cheaper flash-lite model;
+    everyone else — paid, BYOK, or any unrecognized tier — gets the full
+    GEMINI_MODEL. A missing tier defaults to the full model so a payer is
+    never silently downgraded (fail toward quality).
+    """
+    full_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+    free_model = os.getenv('GEMINI_MODEL_FREE', 'gemini-2.5-flash-lite')
+    tier = (user_tier or '').strip().lower()
+    if tier == 'free':
+        return free_model
+    return full_model
+
+
 class StoryGenerationService:
-    def __init__(self):
+    def __init__(self, user_tier: str | None = None):
         primary_key = os.getenv('GEMINI_API_KEY')
         if not primary_key:
             raise ValueError("GEMINI_API_KEY not set")
@@ -104,12 +126,15 @@ class StoryGenerationService:
         ]
         self._api_keys = [primary_key] + backup_keys
         self._client = genai.Client(api_key=primary_key)
-        # Use configured model from env (defaults to gemini-2.5-flash)
-        self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+        # Tier-aware model selection: free tier uses the cheaper flash-lite
+        # model; paid/BYOK/unknown/missing tiers use the full GEMINI_MODEL.
+        self._user_tier = user_tier
+        self._model_name = _resolve_text_model(user_tier)
         self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '90'))
         logger.info(
             f"Initializing Gemini with model: {self._model_name} "
-            f"({len(self._api_keys)} key(s) available for rotation)"
+            f"(tier={user_tier or 'unknown'}, "
+            f"{len(self._api_keys)} key(s) available for rotation)"
         )
 
     def generate_story(self, prompt: str) -> str:

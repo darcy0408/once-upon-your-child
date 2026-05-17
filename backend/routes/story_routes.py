@@ -549,6 +549,7 @@ def create_story_blueprint(
             "character_details": character_details,
             "theme": theme,
             "user_id": user_id,
+            "user_tier": user_tier,  # Drives tier-aware text-model selection
             "include_illustrations": payload.get("include_illustrations", False),
             "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),

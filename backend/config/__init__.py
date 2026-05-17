@@ -27,6 +27,12 @@ if not os.environ.get('GEMINI_MODEL'):
     os.environ['GEMINI_MODEL'] = 'gemini-2.5-flash'
 logger.debug(f"DEFAULT GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
+# Free-tier text generation uses the cheaper flash-lite model (~6x cheaper on
+# input). Paid/BYOK tiers stay on the full GEMINI_MODEL. Overridable via env.
+if not os.environ.get('GEMINI_MODEL_FREE'):
+    os.environ['GEMINI_MODEL_FREE'] = 'gemini-2.5-flash-lite'
+logger.debug(f"DEFAULT GEMINI_MODEL_FREE = {os.environ.get('GEMINI_MODEL_FREE')}")
+
 def _get_required_secret(key_name, allow_dev_fallback=True):
     """
     Get a required secret from environment variables.
@@ -96,6 +102,8 @@ class Config:
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.5-flash'
+    # Free-tier model: cheaper flash-lite. Paid/BYOK tiers use GEMINI_MODEL.
+    GEMINI_MODEL_FREE = os.environ.get('GEMINI_MODEL_FREE') or 'gemini-2.5-flash-lite'
 
     # Stripe
     STRIPE_API_KEY = os.environ.get('STRIPE_SECRET_KEY') or os.environ.get('STRIPE_API_KEY')
