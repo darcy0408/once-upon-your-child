@@ -3,6 +3,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 
+/// Which side of a [StoryBookPage] carries the book binding.
+///
+/// Drives where the spine shadow sits and which corners curl: a left-hand
+/// (even) page binds on the right toward the centre of an open book, a
+/// right-hand page binds on the left, and a stand-alone single page binds
+/// on the left like the front of a closed book.
+enum BookBindingSide { left, right }
+
 /// A magical storybook page widget that wraps content with decorative book aesthetics.
 ///
 /// Features:
@@ -10,6 +18,9 @@ import 'package:story_weaver_app/theme/app_theme.dart';
 /// - Decorative corner ornaments with gold accents
 /// - Gold border with glow effect
 /// - Elegant shadows for depth
+/// - A stacked page-edge fan on the outer side so the page reads as one
+///   leaf of a thick book rather than a floating card
+/// - An optional "Page N of M" badge tucked into the outer bottom corner
 /// - Configurable padding and decorations
 class StoryBookPage extends StatelessWidget {
   const StoryBookPage({
@@ -18,12 +29,32 @@ class StoryBookPage extends StatelessWidget {
     this.showDecorations = true,
     this.contentPadding,
     this.backgroundColor = const Color(0xFFFFF8E7), // Parchment
+    this.bindingSide = BookBindingSide.left,
+    this.showPageEdges = true,
+    this.pageLabel,
+    this.darkPage = false,
   });
 
   final Widget child;
   final bool showDecorations;
   final EdgeInsets? contentPadding;
   final Color backgroundColor;
+
+  /// Side the book spine sits on. The opposite side gets the stacked
+  /// page-edge fan and the page-number badge.
+  final BookBindingSide bindingSide;
+
+  /// When true, draws a thin fan of page edges along the outer side so the
+  /// reader feels they're holding one leaf of many.
+  final bool showPageEdges;
+
+  /// Optional "Page N of M" text tucked into the outer bottom corner of the
+  /// page itself (replaces the separate pill below the book).
+  final String? pageLabel;
+
+  /// True when the page background is dark (mature bands / high contrast) so
+  /// the paper edges and badge invert to stay legible.
+  final bool darkPage;
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +73,21 @@ class StoryBookPage extends StatelessWidget {
                 ? const EdgeInsets.fromLTRB(26, 34, 26, 30)
                 : const EdgeInsets.fromLTRB(40, 50, 40, 40));
         final effectiveShowDecorations = showDecorations && !isTiny;
+        final bindLeft = bindingSide == BookBindingSide.left;
+        // The binding side gets a deeper spine shadow; the outer side gets
+        // the stacked page-edge fan and (optionally) the page-number badge.
+        final radius = isCompact ? 16.0 : 20.0;
+        // Asymmetric corner rounding: corners on the binding side stay
+        // crisp (held by the spine) while the outer corners curl softly.
+        final pageRadius = BorderRadius.horizontal(
+          left: Radius.circular(bindLeft ? 3 : radius),
+          right: Radius.circular(bindLeft ? radius : 3),
+        );
 
         return Container(
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(isCompact ? 16 : 20),
+            borderRadius: pageRadius,
             border: Border.all(
               color: AppColors.gold.withValues(alpha: 0.3),
               width: 2,
@@ -65,39 +106,75 @@ class StoryBookPage extends StatelessWidget {
               ),
             ],
           ),
-          child: Stack(
+          child: ClipRRect(
+            borderRadius: pageRadius,
+            child: Stack(
             children: [
-              // Spine shadow on the left edge.
+              // Stacked page-edge fan on the OUTER side — three hairline
+              // strokes that read as the cut edges of the leaves beneath
+              // this one, so the page feels like part of a thick book.
+              if (showPageEdges && !isTiny)
+                Positioned(
+                  top: 6,
+                  bottom: 6,
+                  left: bindLeft ? null : 0,
+                  right: bindLeft ? 0 : null,
+                  width: 6,
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _PageEdgeStackPainter(
+                        onLeft: bindLeft,
+                        dark: darkPage,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Spine shadow on the binding edge — deeper than before so a
+              // two-page spread reads as a real gutter, not a seam.
               Positioned(
-                left: 0,
+                left: bindLeft ? 0 : null,
+                right: bindLeft ? null : 0,
                 top: 0,
                 bottom: 0,
                 width: spineWidth,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                      begin: bindLeft
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                      end: bindLeft
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       colors: [
-                        Colors.black.withValues(alpha: 0.1),
+                        Colors.black.withValues(alpha: 0.22),
+                        Colors.black.withValues(alpha: 0.06),
                         Colors.transparent,
                       ],
+                      stops: const [0.0, 0.45, 1.0],
                     ),
                   ),
                 ),
               ),
 
-              // Edge highlight (top/right).
+              // Edge highlight on the OUTER side — a faint catch of light
+              // along the page's free edge.
               Positioned(
-                right: 2,
+                left: bindLeft ? null : 2,
+                right: bindLeft ? 2 : null,
                 top: 2,
                 bottom: 2,
                 width: 4,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                      begin: bindLeft
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      end: bindLeft
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
                       colors: [
                         Colors.transparent,
                         Colors.white.withValues(alpha: 0.2),
@@ -178,12 +255,83 @@ class StoryBookPage extends StatelessWidget {
                   ),
                 ),
               ],
+
+              // "Page N of M" badge tucked into the OUTER bottom corner of
+              // the page itself — replaces the separate pill that used to
+              // float below the book and broke the "this is a page" feel.
+              if (pageLabel != null)
+                Positioned(
+                  bottom: isTiny ? 6 : 10,
+                  left: bindLeft ? null : (isTiny ? 14 : 20),
+                  right: bindLeft ? (isTiny ? 14 : 20) : null,
+                  child: IgnorePointer(
+                    child: Text(
+                      pageLabel!,
+                      style: TextStyle(
+                        fontSize: isTiny ? 10 : 11,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                        color: darkPage
+                            ? Colors.white.withValues(alpha: 0.45)
+                            : const Color(0xFF8C7240)
+                                .withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ),
             ],
+          ),
           ),
         );
       },
     );
   }
+}
+
+/// Paints a thin fan of page edges along one side of a [StoryBookPage] so a
+/// single leaf reads as the top of a thick stack of pages.
+class _PageEdgeStackPainter extends CustomPainter {
+  const _PageEdgeStackPainter({required this.onLeft, required this.dark});
+
+  /// True to draw the stack flush against the left side of the paint box.
+  final bool onLeft;
+
+  /// Dark-page mode flips the edge strokes light so they stay visible.
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    final edgeColor = dark
+        ? Colors.white.withValues(alpha: 0.18)
+        : const Color(0xFF8C7240).withValues(alpha: 0.28);
+    // Three hairlines progressively further from the page so they read as
+    // receding leaves underneath the current one.
+    for (var i = 0; i < 3; i++) {
+      paint.color = edgeColor.withValues(
+        alpha: edgeColor.a * (1.0 - i * 0.25),
+      );
+      final x = onLeft ? size.width - 1.0 - i * 2.0 : 1.0 + i * 2.0;
+      // A gentle inward bow so the stack curls rather than sitting ruler-straight.
+      final bow = (i + 1) * 1.5;
+      final path = Path()
+        ..moveTo(x, 0)
+        ..quadraticBezierTo(
+          onLeft ? x - bow : x + bow,
+          size.height / 2,
+          x,
+          size.height,
+        );
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PageEdgeStackPainter oldDelegate) =>
+      oldDelegate.onLeft != onLeft || oldDelegate.dark != dark;
 }
 
 /// Subtle paper speckle overlay used by [StoryBookPage].

@@ -1168,32 +1168,94 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 14),
           child: _buildCreateNewHeroButton(),
         ),
       ],
     );
   }
 
-  // Demoted to a secondary text-style button so the character tile above
-  // reads as the primary "tap me" affordance for kids.
+  // MT-071(b): the "create someone new" path is the only way into the
+  // photo-to-cartoon avatar flow, but as a faint underlined text link it
+  // vanished under the character tiles — kids never discovered the
+  // snap-a-selfie magic. Reframed as a featured tile with the 📸 → ✨ → 🦸
+  // transformation preview so the capability is impossible to miss, while
+  // still reading as secondary to the existing-hero tiles above it.
   Widget _buildCreateNewHeroButton() {
-    return TextButton.icon(
-      onPressed: _switchToNewCharacter,
-      icon: const Icon(Icons.add_circle_outline,
-          size: 18, color: Colors.white70),
-      label: Text(
-        "Or create someone new",
-        style: GoogleFonts.fredoka(
-          color: Colors.white70,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          decoration: TextDecoration.underline,
-          decorationColor: Colors.white38,
+    return GestureDetector(
+      onTap: _switchToNewCharacter,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF6B2FB3),
+              Color(0xFFB23A8E),
+              Color(0xFFFF6B35),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withAlpha(70),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
         ),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Row(
+          children: [
+            // 📸 → ✨ → 🦸 makes the photo-to-cartoon magic legible at a
+            // glance, even to a pre-reader.
+            const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('📸', style: TextStyle(fontSize: 22)),
+                SizedBox(height: 2),
+                Icon(Icons.arrow_downward_rounded,
+                    color: Colors.white70, size: 12),
+                SizedBox(height: 2),
+                Text('🦸', style: TextStyle(fontSize: 22)),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Create a new hero',
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      shadows: const [
+                        Shadow(color: Colors.black54, blurRadius: 4),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Snap a selfie — turn YOU into a cartoon hero!',
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFFFFD700), size: 28),
+          ],
+        ),
       ),
     );
   }
