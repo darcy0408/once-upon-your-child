@@ -1416,12 +1416,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // AI photo avatar is gated by both parental consent and premium —
-                // free users on younger bands don't see it, so they aren't teased
-                // with a feature that hits a paywall on tap. When unlocked, it's
-                // surfaced as the featured option so kids can immediately see
-                // they can turn a real photo into a cartoon hero.
-                if (_allowPhotoAvatar && _isPremium) ...[
+                // AI photo avatar is gated on parental consent only. Every
+                // account gets ONE free custom avatar — the "magic moment" of
+                // turning a real photo into a cartoon hero. The backend
+                // enforces the 1-free limit and returns UPGRADE_REQUIRED after
+                // that. Surfaced as the featured option so kids see it first.
+                if (_allowPhotoAvatar) ...[
                   HeroAvatarChoiceCard(
                     featured: true,
                     icon: Icons.camera_alt_rounded,
@@ -2373,10 +2373,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _generatedAvatar != null || _customAvatarFilePath != null;
 
   // Page 2 ("How do you want to build your hero?") only offers a real choice
-  // when the photo-avatar option is unlocked (parental consent + premium).
-  // Otherwise it's a single-button screen, so we skip it and open the gallery
-  // directly from the name/gender page.
-  bool get _shouldShowBuildHeroPage => _allowPhotoAvatar && _isPremium;
+  // when the photo-avatar option is available, which is gated on parental
+  // consent alone. Every account gets one free custom avatar (the "magic
+  // moment"); the backend enforces the 1-free limit thereafter.
+  // Without consent it's a single-button screen, so we skip it and open the
+  // gallery directly from the name/gender page.
+  bool get _shouldShowBuildHeroPage => _allowPhotoAvatar;
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;

@@ -25,6 +25,10 @@ class User(db.Model):
 
     # Feature unlock tracking
     stories_created_count = db.Column(db.Integer, default=0, nullable=False)
+    # Lifetime count of AI photo-avatars generated. The first one is free for
+    # every account (the "magic moment"); further ones require a paid tier.
+    # Premium/BYOK users are unlimited and not counted here.
+    custom_avatars_generated = db.Column(db.Integer, default=0, nullable=False)
 
     # BYOK (Bring Your Own API Key) support
     gemini_api_key_encrypted = db.Column(db.Text, nullable=True)  # Encrypted API key
@@ -75,6 +79,7 @@ class User(db.Model):
             'cancel_at_period_end': self.cancel_at_period_end,
             'stripe_customer_id': self.stripe_customer_id,
             'stories_created_count': self.stories_created_count,
+            'custom_avatars_generated': self.custom_avatars_generated,
             # BYOK fields
             'has_byok': self.has_byok,
             'stories_generated_this_month': self.stories_generated_this_month,

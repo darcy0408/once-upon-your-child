@@ -8,14 +8,21 @@ import logging
 
 _AVATAR_TIMEOUT_SECONDS = 30
 
+# Every account gets ONE free AI photo-avatar — the "magic moment" that lets a
+# child see themselves as a cartoon hero; further custom avatars require a paid
+# tier. Premium/BYOK users are unlimited. Enforced in generate_custom_avatar.
+FREE_CUSTOM_AVATARS = 1
+
 try:
     from backend.utils.app_helpers import get_user_tier, get_user_identifier
     from backend.middleware.auth import require_auth, require_parental_consent
-    from backend.routes.subscription_routes import require_premium
+    from backend.routes.subscription_routes import require_premium, _user_is_premium
+    from backend.database import db
 except ImportError:
     from utils.app_helpers import get_user_tier, get_user_identifier
     from middleware.auth import require_auth, require_parental_consent
-    from routes.subscription_routes import require_premium
+    from routes.subscription_routes import require_premium, _user_is_premium
+    from database import db
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +182,20 @@ def create_avatar_blueprint(limiter):
                     'message': 'Age must be a number'
                 }), 400
 
+            # 1-free-avatar gate: every account gets one free AI photo-avatar
+            # (the "magic moment"); after that it is a premium feature.
+            # Enforced server-side so a tampered client cannot bypass it.
+            current_user = request.current_user
+            if not _user_is_premium(current_user):
+                used = current_user.custom_avatars_generated or 0
+                if used >= FREE_CUSTOM_AVATARS:
+                    return jsonify({
+                        'status': 'error',
+                        'error_code': 'UPGRADE_REQUIRED',
+                        'message': "You've already created your free magic avatar! "
+                                   'Upgrade to premium to create more.',
+                    }), 403
+
             logger.info(f"Custom avatar request: name={character_name}, age={age}, gender={gender}")
 
             service = get_avatar_service()
@@ -194,6 +215,14 @@ def create_avatar_blueprint(limiter):
                     avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
 
                 logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")
+
+                # Count this generation against the 1-free allowance. Only
+                # non-premium users are metered; premium/BYOK are unlimited.
+                if not _user_is_premium(current_user):
+                    current_user.custom_avatars_generated = (
+                        current_user.custom_avatars_generated or 0
+                    ) + 1
+                    db.session.commit()
 
                 return jsonify({
                     'status': 'success',

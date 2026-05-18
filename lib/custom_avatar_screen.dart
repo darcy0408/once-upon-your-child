@@ -518,11 +518,57 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         }
       } else {
         String msg = 'Server error: ${response.statusCode}';
+        String? errorCode;
         try {
           final body = json.decode(response.body) as Map<String, dynamic>;
           final m = body['message']?.toString();
           if (m != null && m.trim().isNotEmpty) msg = m;
+          errorCode = body['error_code']?.toString();
         } catch (_) {}
+        // The one free custom avatar has already been used — show a friendly
+        // upgrade invitation rather than the generic "Generation failed".
+        if (errorCode == 'UPGRADE_REQUIRED' && mounted) {
+          setState(() => _isGenerating = false);
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF2D1060),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text(
+                'Unlock more magic ✨',
+                style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w800),
+              ),
+              content: Text(
+                msg,
+                style: GoogleFonts.quicksand(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: Text('Maybe later', style: GoogleFonts.quicksand(color: Colors.white60)),
+                ),
+                if (widget.onOpenGallery != null)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF5F4BDB),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Navigator.of(context).pop();
+                      widget.onOpenGallery!();
+                    },
+                    child: Text(
+                      _isSprout ? 'Pick a ready hero!' : 'Pick a premade hero',
+                      style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+              ],
+            ),
+          );
+          return;
+        }
         throw Exception(msg);
       }
     } catch (e) {

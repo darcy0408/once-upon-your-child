@@ -521,6 +521,7 @@ def create_app(config_name):
             existing_cols = {col['name'] for col in inspector.get_columns('user')}
             pending_cols = {
                 'stories_created_count':               'INTEGER DEFAULT 0 NOT NULL',
+                'custom_avatars_generated':            'INTEGER DEFAULT 0 NOT NULL',
                 'gemini_api_key_encrypted':             'TEXT',
                 'has_byok':                            'BOOLEAN DEFAULT FALSE NOT NULL',
                 'stories_generated_this_month':        'INTEGER DEFAULT 0 NOT NULL',
