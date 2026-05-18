@@ -1142,14 +1142,6 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return text.trim();
   }
 
-  double _averageWordsPerPage(List<String> pages) {
-    if (pages.isEmpty) return 0;
-    final totalWords = pages
-        .map((p) => p.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length)
-        .fold<int>(0, (sum, count) => sum + count);
-    return totalWords / pages.length;
-  }
-
   /// Break a page's text into one phrase per line for the Read Along reading
   /// level (3–5 yo). Sentences are the primary break; long sentences are
   /// further split on commas. Tiny fragments are merged forward so we don't
@@ -2550,27 +2542,92 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     );
   }
 
+  /// Builds the page that occupies index [index] of the flip stack.
+  ///
+  /// On wide viewports (web / tablet landscape) this returns a two-page
+  /// spread — the page itself on the left and a peek of the next leaf on
+  /// the right, joined by a centre binding shadow — so the reader feels
+  /// like an open book. On narrow phones it stays a single full-bleed page.
   Widget _buildStoryPage(int index) {
-    // Cover illustration page
+    // Cover illustration page — always full-bleed, never part of a spread.
     if (_hasCoverIllustration && index == 0) {
       return _buildCoverPage();
     }
 
-    // End-of-story page
+    final isWide = MediaQuery.of(context).size.width >= 720;
+    if (!isWide) return _buildSinglePage(index, bindingSide: null);
+
+    // Two-page spread: current leaf binds on the right, the next leaf binds
+    // on the left, and the StoryBookPage spine shadows meet in a gutter.
+    final hasNext = index < _totalPages - 1;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _buildSinglePage(index, bindingSide: BookBindingSide.right),
+        ),
+        Expanded(
+          child: hasNext
+              ? _buildSinglePage(index + 1,
+                  bindingSide: BookBindingSide.left, isSpreadPeek: true)
+              : _buildSinglePage(index,
+                  bindingSide: BookBindingSide.left,
+                  isSpreadPeek: true,
+                  blankLeaf: true),
+        ),
+      ],
+    );
+  }
+
+  /// A single storybook leaf. [bindingSide] is null for a stand-alone phone
+  /// page (binds left like a closed book), otherwise it places the spine on
+  /// the gutter side of a spread. [isSpreadPeek] marks the right-hand leaf
+  /// of a spread, and [blankLeaf] renders an empty leaf when the spread runs
+  /// past the end of the story.
+  Widget _buildSinglePage(
+    int index, {
+    required BookBindingSide? bindingSide,
+    bool isSpreadPeek = false,
+    bool blankLeaf = false,
+  }) {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isDarkPage = !_highContrastMode && band.preferDarkMode;
+    final pageBg = _highContrastMode
+        ? Colors.black
+        : (band.preferDarkMode
+            ? const Color(0xFF1A1A2E)
+            : const Color(0xFFFFF8E7));
+    final effectiveBinding = bindingSide ?? BookBindingSide.left;
+    final pageLabel = _totalPages > 1 && !blankLeaf
+        ? 'Page ${index + 1} of $_totalPages'
+        : null;
+
+    // End-of-story / blank trailing leaf.
     final textIndex = _hasCoverIllustration ? index - 1 : index;
+    if (blankLeaf) {
+      return StoryBookPage(
+        backgroundColor: pageBg,
+        showDecorations: !_highContrastMode && !band.preferDarkMode,
+        bindingSide: effectiveBinding,
+        darkPage: _highContrastMode || isDarkPage,
+        showPageEdges: !isSpreadPeek,
+        child: const SizedBox.expand(),
+      );
+    }
     if (textIndex < 0 || textIndex >= _storyPages.length) {
-      return _buildEndOfStoryPage();
+      return _buildEndOfStoryPage(
+        bindingSide: effectiveBinding,
+        showPageEdges: !isSpreadPeek,
+      );
     }
 
     final bool isRevealed = _revealedPages.contains(index);
-    final band =
-        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final pageBg = _highContrastMode
-        ? Colors.black
-        : (band.preferDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFFFF8E7));
     final pageTextColor = _highContrastMode
         ? Colors.white
-        : (band.preferDarkMode ? const Color(0xFFE0E0E0) : const Color(0xFF2C3E50));
+        : (band.preferDarkMode
+            ? const Color(0xFFE0E0E0)
+            : const Color(0xFF2C3E50));
 
     final pageText = widget.isLearningToReadMode
         ? _phrasifyForEarlyReader(_storyPages[textIndex])
@@ -2580,12 +2637,34 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return StoryBookPage(
       backgroundColor: pageBg,
       showDecorations: !_highContrastMode && !band.preferDarkMode,
+      bindingSide: effectiveBinding,
+      darkPage: _highContrastMode || isDarkPage,
+      // The right-hand leaf of a spread sits against the gutter, not a free
+      // edge, so it doesn't carry the page-edge fan.
+      showPageEdges: !isSpreadPeek,
+      pageLabel: pageLabel,
+      // MT-071(a): tap-to-turn. A tap anywhere on the page body reveals the
+      // text on first tap, then turns to the next page — the reader no
+      // longer has to find the right-edge chevron. InkWell only claims tap
+      // gestures, so the per-page scroll view keeps its drag/scroll
+      // gestures and drag-to-flip on the page edges still works. The TTS
+      // button and SelectableText are descendants with their own gesture
+      // recognizers, so they win their own taps in the arena. A peeked
+      // right-hand spread leaf isn't the live page, so it doesn't turn.
       child: InkWell(
         onTap: () {
+          // The right-hand peek leaf of a spread isn't independently
+          // revealable — a tap there just turns the book forward.
+          if (isSpreadPeek) {
+            if (_currentPageIndex < _totalPages - 1) _goToNextStoryPage();
+            return;
+          }
           if (!isRevealed) {
             setState(() {
               _revealedPages.add(index);
             });
+          } else if (index < _totalPages - 1) {
+            _goToNextStoryPage();
           }
         },
         splashColor: Colors.transparent,
@@ -2642,6 +2721,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                     ),
                   ),
                 ),
+              // Bottom breathing room so the page-number badge tucked into
+              // the corner never collides with the last line of text.
+              const SizedBox(height: 18),
             ],
           ),
         ),
@@ -2815,7 +2897,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   /// Celebratory end-of-story page with rating.
-  Widget _buildEndOfStoryPage() {
+  Widget _buildEndOfStoryPage({
+    BookBindingSide bindingSide = BookBindingSide.left,
+    bool showPageEdges = true,
+  }) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
@@ -2823,6 +2908,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       backgroundColor:
           _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
       showDecorations: !_highContrastMode,
+      bindingSide: bindingSide,
+      showPageEdges: showPageEdges,
+      darkPage: _highContrastMode,
       child: Center(
         child: SingleChildScrollView(
           key: const ValueKey('story-end-of-story-scroll'),
@@ -3672,6 +3760,25 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                 ],
                               ),
                             ),
+                            // Thin gold rule under the title — evokes a
+                            // chapter heading and ties the title to the
+                            // book below it.
+                            SizedBox(height: band.space(8)),
+                            Container(
+                              width: isNarrowArea ? 90 : 140,
+                              height: 2,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(1),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.gold.withValues(alpha: 0.0),
+                                    AppColors.gold,
+                                    AppColors.gold.withValues(alpha: 0.0),
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
+                              ),
+                            ),
                             if (showReadingLevel) ...[
                               SizedBox(height: band.space(8)),
                               Container(
@@ -3916,16 +4023,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                           .arrow_back_rounded),
                                                       color: AppColors.primary,
                                                     ),
-                                                    Text(
-                                                      'Page ${_currentPageIndex + 1} of $_totalPages',
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color: _highContrastMode
-                                                            ? Colors.white
-                                                            : AppColors.primary,
-                                                      ),
-                                                    ),
+                                                    // The "Page N of M" text
+                                                    // now lives in the bottom
+                                                    // corner of the page
+                                                    // itself (MT-099 d) — the
+                                                    // footer keeps only the
+                                                    // prev/next controls.
                                                     IconButton(
                                                       tooltip: 'Next page',
                                                       onPressed:
