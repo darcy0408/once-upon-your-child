@@ -789,7 +789,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   ///                       page fetches will return empty once capped.
   /// Safe to call multiple times — only the first call wires up.
   void _maybeStartPerPagePrefetcher() {
-    if (!mounted || _perPagePrefetcher != null) return;
+    if (!mounted || _perPagePrefetcher != null || _perPagePrefetcherStarting) {
+      return;
+    }
     if (_storyPages.isEmpty) return;
     // Defer until character details have loaded — otherwise the prefetcher
     // fires every page request with characterAppearance=null and the
@@ -815,13 +817,32 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     };
     if (skipPages.length >= _storyPages.length) return;
 
+    // Resolving the avatar reference image is async (an asset/URL avatar must
+    // be loaded to base64). Claim the start slot now so a concurrent caller
+    // doesn't wire up a second prefetcher across that await.
+    _perPagePrefetcherStarting = true;
+    unawaited(_wirePerPagePrefetcher(allowServerKey, skipPages));
+  }
+
+  bool _perPagePrefetcherStarting = false;
+
+  Future<void> _wirePerPagePrefetcher(
+    bool allowServerKey,
+    Set<int> skipPages,
+  ) async {
+    final characterAppearance = await _characterAppearanceForBackend();
+    if (!mounted || _perPagePrefetcher != null) {
+      _perPagePrefetcherStarting = false;
+      return;
+    }
+
     final prefetcher = PerPageIllustrationPrefetcher(
       storyId: _analyticsStoryId,
       pageTexts: List<String>.from(_storyPages),
       characterName: widget.characterName ?? 'the hero',
       age: _effectiveAge,
       theme: widget.theme,
-      characterAppearance: _characterAppearanceForBackend(),
+      characterAppearance: characterAppearance,
       companions: _illustrationCompanions(),
       sceneRequirements:
           (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
@@ -840,7 +861,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }));
   }
 
-  Map<String, dynamic>? _characterAppearanceForBackend() {
+  Future<Map<String, dynamic>?> _characterAppearanceForBackend() async {
     final appearance = _buildCharacterAppearance();
     if (appearance == null) return null;
     final payload = <String, dynamic>{
@@ -853,14 +874,63 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       'clothing_style': appearance.clothingStyle.name,
       'clothing_colors': appearance.clothingColors.name,
     };
-    // When the character has an AI-generated avatar, send the avatar image
-    // itself as a reference so the illustration model can match the
-    // character's likeness across pages, not just approximate it from text.
-    final avatarImage = _character?.generatedAvatar?.imageBase64;
-    if (avatarImage != null && avatarImage.isNotEmpty) {
-      payload['custom_avatar_base64'] = avatarImage;
+    // When the character has a saved avatar/photo, send the image itself as a
+    // reference so the illustration model can match the character's likeness
+    // across pages, not just approximate it from text. This is the only
+    // grounding signal Sprout-band characters have — their simplified wizard
+    // collects gender + favourite colour + photo, leaving the text appearance
+    // fields above empty. See MT-129 / MT-070.
+    final avatarReference = await _resolveAvatarReferenceBase64();
+    if (avatarReference != null && avatarReference.isNotEmpty) {
+      payload['custom_avatar_base64'] = avatarReference;
     }
     return payload;
+  }
+
+  /// Resolve the saved avatar image to a base64 (data-URI) string the backend
+  /// can decode for `custom_avatar_base64`.
+  ///
+  /// `GeneratedAvatar.imageBase64` is overloaded — depending on the pipeline
+  /// that produced it the value can already be a base64 blob, an asset path
+  /// (`assets/avatars/.../avatar_NNN.webp`), or an http(s) URL. The backend's
+  /// `gemini_image_generator` only base64-decodes the value, so an asset path
+  /// or URL would throw and the photo reference would be silently dropped —
+  /// leaving the illustration model to render a generic child. Fetch/load
+  /// non-base64 forms here so the reference always arrives as base64.
+  Future<String?> _resolveAvatarReferenceBase64() async {
+    final raw = _character?.generatedAvatar?.imageBase64.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    // Already base64 (optionally `data:image/...;base64,` prefixed).
+    if (!raw.startsWith('assets/') &&
+        !raw.startsWith('http://') &&
+        !raw.startsWith('https://')) {
+      return raw;
+    }
+
+    try {
+      Uint8List bytes;
+      if (raw.startsWith('assets/')) {
+        final data = await rootBundle.load(raw);
+        bytes = data.buffer.asUint8List();
+      } else {
+        final response =
+            await http.get(Uri.parse(raw)).timeout(const Duration(seconds: 15));
+        if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+          debugPrint(
+            'Avatar reference fetch failed (${response.statusCode}) for $raw',
+          );
+          return null;
+        }
+        bytes = response.bodyBytes;
+      }
+      return base64Encode(bytes);
+    } catch (e) {
+      // Best-effort: if the reference can't be resolved, fall back to the
+      // text appearance fields rather than failing illustration generation.
+      debugPrint('Could not resolve avatar reference image: $e');
+      return null;
+    }
   }
 
   List<Map<String, String>> _illustrationCompanions() {
