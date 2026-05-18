@@ -250,9 +250,10 @@ class WizardDataMapper {
       // Send structured companion data
       'companion_pets': companionsPets,
       'companion_characters': companionsOther,
-      // Adult relatives get the relation prepended to the name so the LLM
-      // treats them as supportive adult presence (e.g. "Mom Sarah", "Grandpa
-      // Joe") without requiring a backend prompt change.
+      // Adult relatives are sent as structured dicts with is_adult_relative: true
+      // so the backend prompt builder renders them in the dedicated ADULT FAMILY
+      // section rather than GUESTS. The relation is prepended to the name for
+      // readability in the prompt (e.g. "Mom Sarah", "Grandpa Joe").
       'additionalCharacters': [
         ...data.additionalCharacters,
         ...data.adultRelatives
@@ -260,9 +261,14 @@ class WizardDataMapper {
             .map((r) {
               final n = r['name']!.trim();
               final rel = (r['relation'] ?? '').trim();
-              if (rel.isEmpty) return n;
-              final relTitle = rel[0].toUpperCase() + rel.substring(1);
-              return '$relTitle $n';
+              final relTitle = rel.isNotEmpty
+                  ? rel[0].toUpperCase() + rel.substring(1)
+                  : '';
+              final displayName = relTitle.isNotEmpty ? '$relTitle $n' : n;
+              return {
+                'name': displayName,
+                'is_adult_relative': true,
+              };
             }),
       ],
       // Structured copy for future backend-prompt support without churning
