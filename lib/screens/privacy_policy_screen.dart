@@ -35,7 +35,7 @@ Once Upon a Time is committed to protecting the privacy and safety of children a
               content: '''
 - Account information: parent/guardian email, username, basic profile, age range and preferences
 - Usage data: story creation patterns, activity engagement, character progress, app usage statistics
-- Story & feelings data: emotional check-ins and "big feelings" a child chooses to share, story goals and themes, milestone achievements
+- Story & feelings data: story goals and themes, milestone achievements, and any "big feelings" your child chooses to share — a short, optional piece of text used only to personalize a single story. We treat this emotional-state text as transient story-personalization input, not as a health record or a retained emotional profile of your child.
 - Character & avatar data: character names and avatar choices. If a parent enables photo-based avatars, a photo used to create the child's character avatar (off by default, parental opt-in required; not stored on our servers)
 ''',
             ),
@@ -60,7 +60,7 @@ Stories, illustrations, and character avatars in Once Upon a Time are generated 
 
 - Content is machine-generated. Stories and pictures are created automatically by AI — they are not written, drawn, or pre-approved by a human author or illustrator.
 - AI output can be imperfect. AI is creative but not always accurate; it can occasionally produce content that is unexpected, wrong, or not quite right for your child. We apply safety filters, but no filter is perfect.
-- It is not professional advice. AI-generated stories are not reviewed by a teacher, doctor, therapist, or other clinician, and are not a substitute for professional care.
+- It is for entertainment, not advice. Once Upon a Time is a storytelling app. AI-generated stories are not reviewed by a teacher, doctor, or other professional, and are not a substitute for professional care.
 - AI-generated stories and images carry a visible "Created with AI" label in the app.
 - If you see AI content that seems wrong or unsafe, report it from the story screen ("Report this content") or email onceuponyourchild@gmail.com.
 
@@ -128,16 +128,31 @@ Parents and guardians have complete control over their child's data. You can:
 - Opt out of analytics where supported
 - Withdraw consent at any time
 
-To delete your child's data: open the app → menu → Parent Controls → Data & Privacy → Delete All My Data. This hard-deletes your child's profiles, stories, and content from our servers and anonymizes your account.
+To delete your child's data: open the app → menu → Parent Controls → Data & Privacy → Delete All My Data. This permanently deletes your child's stories, characters and profile data and anonymizes your account so it can no longer be identified.
 
 To exercise these rights, contact us at:
 onceuponyourchild@gmail.com
 ''',
             ),
             _buildSection(
-              title: 'Professional Disclaimer',
+              title: 'Operator Identity & Contact',
               content: '''
-Once Upon a Time provides storytelling tools and resources, but is not a substitute for professional mental health care. Always consult qualified professionals for serious emotional or mental health concerns.
+This app is operated by:
+
+- Operator (legal entity): [Operator legal entity name]
+- Postal address: [Postal address]
+- Phone: [Contact phone]
+- Email: onceuponyourchild@gmail.com
+
+As required by COPPA, contact us using the details above to review, delete, or stop further collection of your child's information.
+
+NOTE TO OWNER: the bracketed values above are placeholders. COPPA §312.4(d) requires the operator's real legal name, postal address, and phone number — fill these in before any public release.
+''',
+            ),
+            _buildSection(
+              title: 'Not a Health or Therapeutic Product',
+              content: '''
+Once Upon a Time is a storytelling and entertainment app with an emotional-wellbeing angle — it helps children explore feelings through personalized stories. It is not a therapeutic, clinical, or medical product, and it does not diagnose, treat, or provide care for any emotional or mental-health condition. The "big feelings" a child shares are used only to personalize a story; they are not retained as a health profile. Always consult a qualified professional for serious emotional or mental-health concerns.
 ''',
             ),
             _buildSection(

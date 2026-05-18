@@ -14,7 +14,7 @@ from functools import wraps
 from flask import request, jsonify, g, current_app
 from backend.database import db
 from backend.models.user import User
-from backend.models.consent_record import ConsentRecord
+from backend.models.consent_record import ConsentRecord, CURRENT_POLICY_VERSION
 import jwt
 import os
 import logging
@@ -135,6 +135,15 @@ def require_parental_consent(f):
     the tester-phase build (self_attested consent, verified=False) is not
     blocked — set it true for launch. See audit/LEGAL-COMPLIANCE.md (CMP-2).
 
+    CMP-10 — policy-version staleness: when COPPA_REQUIRE_CURRENT_POLICY_VERSION
+    is enabled, a consent record whose policy_version is older than
+    CURRENT_POLICY_VERSION (or NULL, i.e. a legacy pre-column row) is treated
+    as stale and fails the gate exactly like a missing record — so a privacy-
+    policy update forces fresh parental consent. This flag defaults OFF so the
+    tester phase is not broken; enable it (together with bumping
+    CURRENT_POLICY_VERSION) when a policy change must invalidate prior consent.
+    See audit/LEGAL-COMPLIANCE.md (CMP-10).
+
     Usage:
         @story_bp.route("/generate-story", methods=["POST"])
         @require_auth
@@ -186,6 +195,28 @@ def require_parental_consent(f):
                 'error': 'Verified parental consent required',
                 'code': 'PARENTAL_CONSENT_UNVERIFIED',
             }), 403
+
+        # CMP-10: when policy-version enforcement is enabled, a consent record
+        # stamped with an older policy_version (or NULL — a legacy row created
+        # before the column existed) is stale: the privacy policy has changed
+        # since the parent consented, so fresh consent is required. Defaults
+        # off for the tester phase — see the decorator docstring / CMP-10.
+        require_current_policy = os.getenv(
+            'COPPA_REQUIRE_CURRENT_POLICY_VERSION', 'false'
+        ).strip().lower() in ('1', 'true', 'yes', 'on')
+        if require_current_policy:
+            record_version = consent.policy_version
+            if record_version is None or record_version < CURRENT_POLICY_VERSION:
+                logger.warning(
+                    "COPPA: under-13 user %s has consent record %s with stale "
+                    "policy_version=%s (current=%s); blocked under "
+                    "COPPA_REQUIRE_CURRENT_POLICY_VERSION",
+                    user.id, consent.id, record_version, CURRENT_POLICY_VERSION,
+                )
+                return jsonify({
+                    'error': 'Parental consent required for updated privacy policy',
+                    'code': 'PARENTAL_CONSENT_STALE_POLICY',
+                }), 403
 
         return f(*args, **kwargs)
 

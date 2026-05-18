@@ -73,7 +73,7 @@ Do not use Story Weaver to:
             _buildSection(
               title: 'Disclaimer',
               content: '''
-Story Weaver is provided "as is." AI-generated therapeutic content is not a substitute for professional mental health care. Seek licensed support when needed.
+Story Weaver is provided "as is." It is a storytelling and entertainment app, not a therapeutic, clinical, or medical product. AI-generated stories are not a substitute for professional mental health care. Seek licensed support when needed.
 ''',
             ),
             _buildSection(

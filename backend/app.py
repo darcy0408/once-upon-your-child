@@ -529,6 +529,9 @@ def create_app(config_name):
                 'declared_age':                        'INTEGER',
                 'is_under_13':                         'BOOLEAN DEFAULT FALSE NOT NULL',
                 'token_version':                       'INTEGER DEFAULT 0 NOT NULL',
+                # CMP-5 / PP-13: activity timestamp for the data-retention
+                # purge job. Nullable — the job falls back to created_at.
+                'last_active_at':                      'TIMESTAMP',
             }
             with db.engine.connect() as _conn:
                 for col_name, col_def in pending_cols.items():
@@ -556,6 +559,18 @@ def create_app(config_name):
                     _conn.commit()
                     logger.info(
                         "Auto-migration: added column 'verified' to consent_record table"
+                    )
+            # CMP-10: policy_version column. Nullable (no DEFAULT / NOT NULL) so
+            # legacy rows stay NULL — the COPPA gate treats NULL as stale. New
+            # rows are stamped with CURRENT_POLICY_VERSION at the app layer.
+            if 'policy_version' not in consent_cols:
+                with db.engine.connect() as _conn:
+                    _conn.execute(sa_text(
+                        'ALTER TABLE consent_record ADD COLUMN policy_version INTEGER'
+                    ))
+                    _conn.commit()
+                    logger.info(
+                        "Auto-migration: added column 'policy_version' to consent_record table"
                     )
         except Exception as _mig_err:
             logger.warning(

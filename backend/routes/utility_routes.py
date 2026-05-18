@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import (
@@ -306,6 +307,13 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
         )
         refresh_token = create_refresh_token(identity=user.id)
+        # CMP-5 / PP-13: stamp activity so the retention purge job does not
+        # treat a freshly-issued anonymous session as inactive.
+        try:
+            user.last_active_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         audit_log('anonymous_session', user_id=user.id)
         return jsonify({
             'token': token,
@@ -329,6 +337,13 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                 additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
             )
             refresh_token = create_refresh_token(identity=user.id)
+            # CMP-5 / PP-13: stamp activity so the data-retention purge job
+            # does not treat a still-active account as inactive.
+            try:
+                user.last_active_at = datetime.now(timezone.utc)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             audit_log('user_login', user_id=user.id)
             return jsonify({'token': token, 'refresh_token': refresh_token}), 200
 
@@ -360,6 +375,13 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
         )
         new_refresh = create_refresh_token(identity=user.id)
+        # CMP-5 / PP-13: a token refresh means the app is in active use —
+        # stamp activity so the retention purge job leaves this account alone.
+        try:
+            user.last_active_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         audit_log('token_refreshed', user_id=user.id)
         return jsonify({
             'token': token,

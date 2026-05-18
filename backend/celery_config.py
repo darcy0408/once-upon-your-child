@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 # Get Redis URL from environment
 # If not present, default to memory/cache to avoid connection errors on localhost
@@ -26,7 +27,12 @@ celery = Celery(
     "story_weaver",
     broker=CELERY_BROKER_URL or REDIS_URL or "memory://",
     backend=CELERY_RESULT_BACKEND or REDIS_URL or "cache+memory://",
-    include=["backend.tasks.story_tasks"],
+    include=[
+        "backend.tasks.story_tasks",
+        # CMP-5 / PP-13: data-retention purge task. Must be in `include` so the
+        # worker (and the embedded beat scheduler) can resolve it by name.
+        "backend.tasks.retention_tasks",
+    ],
 )
 
 task_always_eager = _as_bool("CELERY_TASK_ALWAYS_EAGER", False)
@@ -49,4 +55,15 @@ celery.conf.update(
     task_track_started=True,
     task_time_limit=600,  # 10 minute max per task
     result_expires=3600,  # Results expire after 1 hour
+    # CMP-5 / PP-13: Celery-beat schedule. The data-retention purge runs once
+    # daily at 03:30 UTC (low-traffic window). The actual inactivity window is
+    # configured separately via DATA_RETENTION_INACTIVE_DAYS (default 730).
+    # Beat must be running for this to fire — the worker is started with the
+    # embedded beat scheduler (`celery worker -B`); see railway.toml.
+    beat_schedule={
+        "data-retention-purge-inactive-accounts": {
+            "task": "backend.tasks.retention_tasks.purge_inactive_accounts_task",
+            "schedule": crontab(hour=3, minute=30),
+        },
+    },
 )

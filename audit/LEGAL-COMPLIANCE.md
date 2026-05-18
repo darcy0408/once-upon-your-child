@@ -79,14 +79,14 @@ column and the `.get()` fallback to `False`; audit existing rows. Effort: S + mi
 > needs no DDL migration. Optional: audit pre-existing `consent_record` rows
 > created under the old default.
 
-### ☐ CMP-6 — Medium — Consent screen is child-directed; no assurance an adult is present
+### ✅ CMP-6 — Medium — Consent screen is child-directed; no assurance an adult is present (Resolved 2026-05-17)
 `parental_consent_screen.dart:98-99,151,194-232,976-1077`. Child-directed TTS ("Ask a grown-up to
 unlock your magical adventure!"), gamified intro, single checkbox — no parent-gate (the math gate
 used at `parent_controls_screen.dart:1102` is not applied here). §312.5 requires reasonable efforts
 to ensure consent is from a *parent*. **Fix:** drop child-directed TTS/gamification on the consent
 *action*; add a "hand to a parent" interstitial/parent-gate before the checkbox. Effort: S–M.
 
-### ☐ CMP-7 — Medium — Emotional-state data lacks GDPR Art. 9 treatment
+### ✅ CMP-7 — Medium — Emotional-state data lacks GDPR Art. 9 treatment (Resolved 2026-05-17 — D-1: not a therapeutic product)
 `parental_consent_service.dart:279-315`, `parent_controls_screen.dart:286-308`,
 `backend/services/story_service.py:217-255`. "Big feelings" input and parent-configured "hidden
 context" (child's struggles, triggers, coping tools) are collected, stored, and sent to the LLM.
@@ -103,20 +103,20 @@ Art. 9 consent + DPIA. Disclose that emotional text is sent to the AI provider. 
 teen. **Fix:** jurisdiction-aware threshold (coarse geo or country selector), defaulting to 16 for
 unknown EU traffic. Effort: M.
 
-### ☐ CMP-10 — Low — Re-consent on policy change is client-side only, under-13 only
+### ✅ CMP-10 — Low — Re-consent on policy change is client-side only, under-13 only (Resolved 2026-05-17 — backend policy-version gate)
 `lib/main_story.dart:108,124-127`, `parental_consent_service.dart:68-77`. A hardcoded `2026-03-21`
 cutoff in the Flutter client clears local consent; the backend `ConsentRecord` is never invalidated
 against a policy version. Clearing app storage / reinstalling keeps a stale backend consent.
 **Fix:** add `policy_version` to `ConsentRecord`; reject stale versions in the gate; drive the
 client cutoff from the server. Effort: S–M.
 
-### ☐ CMP-11 — Low — Direct notice missing operator identity/contact (§312.4(d))
+### ◐ CMP-11 — Low — Direct notice missing operator identity/contact (§312.4(d)) (Scaffolded 2026-05-17 — owner must fill the placeholders)
 `PRIVACY_POLICY.md:146-152`, `parental_consent_screen.dart:251-331`. §312.4(d) requires operator
 name, physical address, and phone. The policy gives only an email; the in-app Notice to Parents
 names no entity. Already flagged in `docs/COPPA_AUDIT.md:23`, still open. **Fix:** add legal entity
 name, postal address, phone to the policy and the consent-screen notice. Effort: S.
 
-### ☐ CMP-5 / PP-13 — High — Stated retention period has no enforcing code
+### ✅ CMP-5 / PP-13 — High — Stated retention period has no enforcing code (Resolved 2026-05-17)
 `PRIVACY_POLICY.md:90-96`. The policy promises deletion after 2 years of inactivity; no cron/Celery
 job exists anywhere in `backend/` to enforce it — child PII is retained indefinitely in practice.
 A stated-but-unenforced retention period is a §312.10 / GDPR Art. 5(1)(e) gap. **Fix:** implement a
@@ -204,26 +204,26 @@ Effort: S.
 > confirm `onceuponyourchild@gmail.com` is an actively monitored mailbox before
 > launch (§312.6 / GDPR Art. 13 require a working rights channel).
 
-### ☐ PP-8 — Medium — Policy promises a data-export feature that does not exist
+### ✅ PP-8 — Medium — Policy promises a data-export feature that does not exist (Resolved 2026-05-17)
 `PRIVACY_POLICY.md:86,115`, `privacy_policy_screen.dart:102`. `parent_controls_screen.dart` has
 delete but no export/download UI. (A backend `export_user_data` endpoint exists but is not surfaced
 in the client.) GDPR Art. 20. **Fix:** surface the existing backend export endpoint in Parent
 Controls, or change the policy to "export on request" and ensure that request can be fulfilled.
 Effort: M.
 
-### ☐ PP-9 — Medium — Policy promises an analytics opt-out; no in-app toggle exists
+### ✅ PP-9 — Medium — Policy promises an analytics opt-out; no in-app toggle exists (Resolved 2026-05-17)
 `privacy_policy_screen.dart:65`. Analytics is correctly consent+age gated (M-9), but once enabled a
 parent has no in-app way to turn it back off. GDPR Art. 7(3) — withdrawal must be as easy as
 giving. **Fix:** add an analytics toggle in Parent Controls wired to
 `PrivacyService.setAnalyticsConsent`, or drop the promise. Effort: S.
 
-### ☐ PP-11 — Low — Deletion described as "permanently removes all profiles"; code anonymizes
+### ✅ PP-11 — Low — Deletion described as "permanently removes all profiles"; code anonymizes (Resolved 2026-05-17)
 `PRIVACY_POLICY.md:85`, `parent_controls_screen.dart:717` vs `backend/routes/user_routes.py:262-329`.
 Child content is hard-deleted, but the user row is anonymized, not removed. Defensible erasure
 technique; only the wording overstates it. **Fix:** soften to "deletes your child's data and
 anonymizes your account." Effort: S.
 
-### ☐ PP-12 — Low — Effective dates stale / inconsistent; Terms date is a live `DateTime.now()`
+### ✅ PP-12 — Low — Effective dates stale / inconsistent; Terms date is a live `DateTime.now()` (Resolved — Phase 2)
 `PRIVACY_POLICY.md:3`, `privacy_policy_screen.dart:88`, `terms_of_service_screen.dart:86`. The Terms
 "Last updated" renders the current device date, so it appears to change daily. **Fix:** one static,
 accurate effective date per document; hard-code the Terms date. Effort: S.
@@ -406,9 +406,15 @@ STORE-6/PP-6 (AI labelling, `4f788edc`), STORE-7 (parental gate on external link
 STORE-3 + STORE-5 (age positioning + neutral gate, `30691bab`). Console follow-up: set the store
 age-rating questionnaire and listing copy to the under-13 Families positioning (STORE-3).
 
-**Phase 4 — larger / decision-gated:** STORE-1 (IAP migration — 2–4 weeks, start now), CMP-5/PP-13
-(retention job), CMP-7 (therapeutic-data decision + possible DPIA), CMP-9 (jurisdictional consent
-age), PP-8/PP-9 (export + analytics-opt-out UI), STORE-9 (data-safety forms).
+**Phase 4 — larger / decision-gated:** ✅ mostly done 2026-05-17 — CMP-5/PP-13 (retention-purge
+Celery task), CMP-6 (parent-gated consent action), CMP-7/WP-5 (de-therapeutic copy; D-1 decided:
+not a therapeutic product), CMP-10 (backend policy-version consent gate), PP-8 (data-export UI),
+PP-9 (analytics opt-out toggle), PP-11/PP-12 (deletion wording + static dates). ◐ CMP-11 —
+scaffolded; owner must fill the operator legal name / postal address / phone placeholders.
+**Still open:** STORE-1 (IAP migration — gated on decision D-2), CMP-1 (launch gate — flip
+`_kSkipEmailConsent`), CMP-9 (jurisdictional consent age — needs a geo-IP vs country-picker
+decision), STORE-8/STORE-9 (store data-safety forms / mic-camera justification), STORE-3 console
+tail (age-rating questionnaire + listing copy). See `audit/PHASE-4-PLAN.md`.
 
 ## Out-of-scope follow-ups
 - STORE-1's IAP migration is large enough to warrant its own brief.

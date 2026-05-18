@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
+import 'byok_setup_wizard.dart' show ParentalGateDialog;
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
@@ -60,10 +59,15 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _consentGiven = false;
   bool _allowPhotoAvatar = false; // COPPA: parent must explicitly opt in
   bool _submitting = false;
-  bool _parentTitleActive = false;
-  Timer? _titleTimer;
   final _scrollController = ScrollController();
   double _scrollProgress = 0.0;
+
+  /// CMP-6 — COPPA §312.5 requires reasonable effort to ensure the consent
+  /// action is taken by a parent, not the child. The parent must clear a
+  /// `ParentalGateDialog` (multiplication challenge) before the consent
+  /// checkbox/email entry becomes available. Until then only the child-facing
+  /// explainer and a "hand this to a parent/guardian" prompt are shown.
+  bool _parentGatePassed = false;
 
   // ── Email round-trip verification state (under-13 only) ──────────────────
   _ConsentPhase _phase = _ConsentPhase.notice;
@@ -94,13 +98,9 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Child-facing: let them know to get a grown-up, then hand off to the parent.
-    AppTtsService.instance.speak(
-        'Almost there! Ask a grown-up to unlock your magical adventure!');
-    // Switch to parent-facing title after the TTS phrase finishes (~5 s).
-    _titleTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) setState(() => _parentTitleActive = true);
-    });
+    // CMP-6: the consent action is parent-directed. No child-directed TTS and
+    // no gamified framing on the consent step itself — the only spoken/animated
+    // cue here would be aimed at a child, which §312.5 says it must not be.
     // M-15: test-only consent bypass for Playwright smoke tests. Flutter web
     // canvas mode rejects programmatic scrolling, so the "scroll-to-bottom"
     // gate cannot be satisfied from automation. This is driven by the
@@ -118,7 +118,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
 
   @override
   void dispose() {
-    _titleTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _codeController.dispose();
@@ -143,15 +142,9 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: Text(
-            _parentTitleActive
-                ? 'Parental Consent Required'
-                : 'Just one sec! ✨',
-            key: ValueKey(_parentTitleActive),
-            style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
-          ),
+        title: Text(
+          'Parental Consent Required',
+          style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: PreferredSize(
@@ -175,7 +168,9 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         child: SafeArea(
           child: _phase == _ConsentPhase.awaitingCode
               ? _buildVerificationStep()
-              : Column(
+              : !_parentGatePassed
+                  ? _buildHandoffStep()
+                  : Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
@@ -190,50 +185,12 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Child-facing intro — shown before the parent legal content
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              margin:
-                                  const EdgeInsets.only(bottom: AppSpacing.md),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withAlpha(30),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFFFD700).withAlpha(180),
-                                  width: 2,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text('🌟',
-                                      style: TextStyle(fontSize: 36)),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    'Your magical story is almost ready!',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.fredoka(
-                                      color: const Color(0xFFFFD700),
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    'Hand this to a parent or guardian — they just need to say yes, and your adventure begins!',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.fredoka(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const _KidSummaryCard(),
-                            const SizedBox(height: AppSpacing.sm),
+                            // Parent-directed legal notice. The child-facing
+                            // intro and kid summary are shown on the prior
+                            // hand-off step (CMP-6); this section is for the
+                            // parent/guardian who has cleared the parental gate.
                             Text(
-                              'Notice to Parents & Guardians 👋',
+                              'Notice to Parents & Guardians',
                               style: GoogleFonts.fredoka(
                                 color: Colors.white,
                                 fontSize: 26,
@@ -258,7 +215,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                 const SizedBox(width: AppSpacing.xs),
                                 Expanded(
                                   child: Text(
-                                    'Please note: stories, illustrations, and avatars are created by AI from your child\'s inputs. AI content can be imperfect and is not human-authored or clinician-reviewed.',
+                                    'Please note: stories, illustrations, and avatars are created by AI from your child\'s inputs. AI content can be imperfect and is not human-authored or pre-reviewed.',
                                     style: GoogleFonts.fredoka(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -295,10 +252,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       '• Child\'s first name and age — to personalize stories',
                                       style: textWhite70),
                                   const Text(
-                                      '• Character choices and avatar selections — saved locally on this device for your child\'s stories',
+                                      '• Character choices and avatar selections — saved for your child\'s stories',
                                       style: textWhite70),
                                   const Text(
-                                      '• Story preferences & emotions — to generate content',
+                                      '• Story preferences and any "big feelings" your child chooses to share — used to personalize that story. This emotional-state text is sent to our AI provider as part of generating the story. It is not a health or therapy record and is not used to build a profile of your child.',
                                       style: textWhite70),
                                   const Text(
                                       '• Usage data — to improve the app (no personal identifiers)',
@@ -365,6 +322,39 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
                                       'Each provider receives only the minimum data needed and is governed by its own privacy policy. The full list also appears in our Privacy Policy.',
+                                      style: textWhite70),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    'Who Operates This App',
+                                    style: GoogleFonts.fredoka(
+                                      color: const Color(0xFFFFD700),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  // CMP-11 / COPPA §312.4(d): the direct notice
+                                  // to parents must name the operator and give
+                                  // a postal address and phone number.
+                                  // OWNER ACTION REQUIRED — replace the
+                                  // bracketed placeholders below with the real
+                                  // legal entity name, postal address and
+                                  // phone before any public release.
+                                  const Text(
+                                      '• Operator: [Operator legal entity name]',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Postal address: [Postal address]',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Phone: [Contact phone]',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Email: onceuponyourchild@gmail.com',
+                                      style: textWhite70),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
+                                      'Contact us using the details above to review, delete, or stop further collection of your child\'s information.',
                                       style: textWhite70),
                                 ],
                               ),
@@ -480,11 +470,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                             const SizedBox(height: AppSpacing.lg),
                             // ── ElevenLabs kudos ─────────────────────────────────────────
                             GestureDetector(
-                              onTap: () => launchUrl(
-                                Uri.parse(
-                                    'https://elevenlabs.io/impact-program'),
-                                mode: LaunchMode.externalApplication,
-                              ),
+                              onTap: _openElevenLabsImpactProgram,
                               child: Container(
                                 padding: const EdgeInsets.all(AppSpacing.md),
                                 decoration: BoxDecoration(
@@ -591,6 +577,163 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     await SharePlus.instance.share(ShareParams(text: message));
   }
 
+  /// STORE-7 — opens the ElevenLabs Impact Program page. Apple Kids-Category
+  /// 1.3/5.1.4 requires external links to sit behind a parental gate, so this
+  /// routes through the same [ParentalGateDialog] used for the consent action.
+  Future<void> _openElevenLabsImpactProgram() async {
+    // Already past the consent parental gate — re-confirm only if somehow not.
+    final passed =
+        _parentGatePassed || await ParentalGateDialog.show(context);
+    if (!passed || !mounted) return;
+    await launchUrl(
+      Uri.parse('https://elevenlabs.io/impact-program'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  /// CMP-6 — parental gate guarding the consent action. The parent must solve
+  /// the multiplication challenge before the legal notice, email entry and
+  /// consent checkbox become available, so a child cannot complete consent
+  /// alone. Reuses the shared [ParentalGateDialog] from the BYOK wizard.
+  Future<void> _runParentGate() async {
+    final passed = await ParentalGateDialog.show(context);
+    if (!mounted) return;
+    if (passed) {
+      setState(() => _parentGatePassed = true);
+    }
+  }
+
+  /// CMP-6 — the "hand this to a parent/guardian" interstitial shown before the
+  /// consent action. It keeps the child-facing explainer (so a child can read
+  /// what the app does), but the action that follows — the parental gate, then
+  /// the legal notice and consent checkbox — is unambiguously parent-directed.
+  Widget _buildHandoffStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Child-facing intro — explains the hand-off in kid-friendly terms.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withAlpha(30),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withAlpha(180),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                const Text('🌟', style: TextStyle(fontSize: 36)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Time to get a grown-up!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.fredoka(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'A parent or guardian needs to say yes before you can play. '
+                  'Hand them the device — they will answer a quick question to continue.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const _KidSummaryCard(),
+          const SizedBox(height: AppSpacing.md),
+          // Parent-directed gate panel — plain styling, no gamification.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFD700).withAlpha(120)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'For the parent or guardian',
+                  style: GoogleFonts.fredoka(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                const Text(
+                  'This app is for a child under your care. As required by the '
+                  "Children's Online Privacy Protection Act (COPPA), the next "
+                  'steps — reviewing what is collected and giving consent — must '
+                  'be completed by a parent or legal guardian. Please take the '
+                  'device and tap below to continue.',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _runParentGate,
+                    icon: const Icon(Icons.lock_outline),
+                    label: const Text("I'm the parent/guardian — continue"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: GoogleFonts.fredoka(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Kid's escape hatch — message a grown-up who is not nearby.
+          Center(
+            child: TextButton.icon(
+              onPressed: _shareToGrownUp,
+              icon: const Icon(Icons.ios_share,
+                  color: Color(0xFFFFD700), size: 16),
+              label: Text(
+                'Send this to a grown-up',
+                style: GoogleFonts.fredoka(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStickyFooter() {
     final bool readEnough = _scrollProgress >= 0.95;
     final bool canSubmit =
@@ -619,27 +762,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Kid's escape hatch — they can message a grown-up instead of waiting.
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _shareToGrownUp,
-              icon: const Icon(Icons.ios_share,
-                  color: Color(0xFFFFD700), size: 16),
-              label: Text(
-                'Send to a grown-up',
-                style: GoogleFonts.fredoka(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 32),
-              ),
-            ),
-          ),
           if (!readEnough)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),

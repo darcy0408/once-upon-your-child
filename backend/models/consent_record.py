@@ -3,6 +3,16 @@ import uuid
 from datetime import datetime, timezone
 from ..database import db
 
+# CMP-10: monotonically increasing version of the privacy policy / consent
+# terms. Bump this integer whenever the privacy policy or Notice to Parents
+# materially changes. Any ConsentRecord stamped with an older value (or null,
+# for rows created before this column existed) is considered STALE and — when
+# stale-version enforcement is enabled — no longer satisfies the COPPA gate,
+# forcing the parent to re-consent against the new policy.
+#
+# Keep this in sync with the client-side policy cutoff (lib/main_story.dart).
+CURRENT_POLICY_VERSION = 1
+
 
 class ConsentRecord(db.Model):
     """
@@ -28,6 +38,11 @@ class ConsentRecord(db.Model):
     # A 'email_pending' record carries verified=False until the round trip
     # completes; the COPPA gate must treat verified=False as not-yet-consented.
     verified = db.Column(db.Boolean, default=False, nullable=False)
+    # CMP-10: the CURRENT_POLICY_VERSION in effect when this consent was given.
+    # Nullable so rows created before this column existed (legacy) parse as
+    # NULL — those are treated as stale by the gate. New records are stamped
+    # with CURRENT_POLICY_VERSION at creation time.
+    policy_version = db.Column(db.Integer, nullable=True, default=CURRENT_POLICY_VERSION)
 
     def to_dict(self):
         return {
@@ -41,6 +56,7 @@ class ConsentRecord(db.Model):
             'withdrawn': self.withdrawn,
             'withdrawn_at': self.withdrawn_at.isoformat() if self.withdrawn_at else None,
             'verified': self.verified,
+            'policy_version': self.policy_version,
         }
 
 

@@ -20,7 +20,7 @@ Once Upon a Time (powered by Story Weaver) is committed to protecting the privac
 - App usage statistics
 
 ### Story & Feelings Data
-- Emotional check-ins and "big feelings" a child chooses to share
+- "Big feelings" a child chooses to share — a short, optional piece of text the child enters to shape the tone of a single story (for example, "I feel nervous about my first day at school"). This is used only to personalize that story. We treat it as transient story-personalization input, not as a health record or a retained emotional profile of your child.
 - Story goals and themes
 - Milestone achievements
 
@@ -55,7 +55,7 @@ What this means for families:
 
 - **Content is machine-generated.** Stories and pictures are created automatically by AI. They are not written, drawn, or pre-approved by a human author or illustrator.
 - **AI output can be imperfect.** AI is creative but not always accurate. It can occasionally produce content that is unexpected, factually wrong, or not quite right for your child. We apply safety filters, but no filter is perfect.
-- **It is not professional advice.** AI-generated stories are not reviewed by a teacher, doctor, therapist, or other clinician. They are not therapeutic treatment or a substitute for professional care.
+- **It is for entertainment, not advice.** Once Upon a Time is a storytelling app. AI-generated stories are not reviewed by a teacher, doctor, or other professional, and are not a substitute for professional care.
 - **In-app labelling.** AI-generated stories and images carry a visible "Created with AI" label so it is always clear the content was produced by a machine.
 - **Reporting content.** If you see AI-generated content that seems wrong or unsafe, you can report it from the story screen ("Report this content") or by emailing onceuponyourchild@gmail.com.
 
@@ -99,7 +99,7 @@ Parents and guardians have complete control over their child's data:
 
 - **Access**: View all data collected about their child
 - **Correction**: Update or correct information
-- **Deletion**: Request removal of data. To delete your child's data: open the app → tap the menu → **Parent Controls** → scroll to **Data & Privacy** → tap **Delete All My Data**. This hard-deletes your child's profiles, stories, and associated content from our servers and anonymizes your account. You may also email onceuponyourchild@gmail.com to request deletion.
+- **Deletion**: Request removal of data. To delete your child's data: open the app → tap the menu → **Parent Controls** → scroll to **Data & Privacy** → tap **Delete All My Data**. This permanently deletes your child's stories, characters and profile data and anonymizes your account so it can no longer be identified. You may also email onceuponyourchild@gmail.com to request deletion.
 - **Export**: Request a copy of your child's data
 - **Consent**: Control sharing and third-party access
 
@@ -168,17 +168,30 @@ We will notify users of material changes to this policy:
 - **In-app notifications** for policy updates
 - **Grace period** to review changes before they take effect
 
-## Contact Us
+## Operator Identity & Contact
 
-For privacy questions or concerns:
+This app is operated by:
 
+<!-- OWNER ACTION REQUIRED (CMP-11 / COPPA §312.4(d)):
+     Replace the three bracketed placeholders below with the operator's real
+     legal entity name, postal address, and contact phone number before any
+     public release. COPPA requires the direct notice to parents and this
+     privacy policy to disclose all three. -->
+
+- **Operator (legal entity)**: [Operator legal entity name]
+- **Postal address**: [Postal address]
+- **Phone**: [Contact phone]
 - **Email**: onceuponyourchild@gmail.com
+
+For privacy questions or concerns, or to review, delete, or stop further
+collection of your child's information, contact us using the details above.
+
 - **Support**: In-app help section
 - **Emergency**: For immediate safety concerns, contact local authorities
 
-## Professional Disclaimer
+## Not a Health or Therapeutic Product
 
-Once Upon a Time provides storytelling tools and resources, but is not a substitute for professional mental health care. Always consult qualified professionals for serious emotional or mental health concerns.
+Once Upon a Time is a storytelling and entertainment app with an emotional-wellbeing angle — it helps children explore feelings through personalized stories. It is **not** a therapeutic, clinical, or medical product, and it does not diagnose, treat, or provide care for any emotional or mental-health condition. The "big feelings" a child shares are used only to personalize a story; they are not retained as a health profile. Always consult a qualified professional for serious emotional or mental-health concerns.
 
 ---
 

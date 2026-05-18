@@ -1,14 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
+import '../services/privacy_service.dart';
 import '../services/screen_time_service.dart';
 import '../settings_screen.dart';
 import '../subscription_screen.dart';
@@ -125,6 +131,9 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   bool _hasApiKey = false;
   bool _loading = true;
   bool _deletingData = false;
+  bool _exportingData = false;
+  bool _analyticsEnabled = false;
+  bool _analyticsAgeAllowed = false; // analytics toggle usable only for age >= 13
   int? _dailyLimitMinutes;
   bool _bedtimeEnabled = false;
   int _bedtimeHour = 20;
@@ -220,6 +229,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     }
 
     final caregivers = await _caregiverService.load(activeProfileId);
+    final recordedAge = await _consentService.getRecordedAge();
 
     setState(() {
       _hasApiKey = hasKey;
@@ -235,6 +245,10 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _copingSelections = copingSelections;
       _repairSelections = repairSelections;
       _caregivers = caregivers;
+      _analyticsEnabled = PrivacyService.isAnalyticsEnabled;
+      // COPPA: analytics is never collected for under-13s — the toggle is
+      // disabled for them so a parent cannot enable it.
+      _analyticsAgeAllowed = recordedAge != null && recordedAge >= 13;
       _loading = false;
     });
   }
@@ -620,6 +634,94 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Data & Privacy'),
+                  // PP-9: analytics opt-out. Analytics is only ever ON for a
+                  // declared age >= 13 with consent — this toggle lets a
+                  // parent withdraw at any time (GDPR Art. 7(3)).
+                  _ControlTile(
+                    title: 'Allow anonymous usage analytics',
+                    subtitle:
+                        'Helps us improve the app. You can turn this off at '
+                        'any time. Analytics is never collected for children '
+                        'under 13.',
+                    value: _analyticsEnabled,
+                    // COPPA: for under-13 the switch is disabled (null) so a
+                    // parent cannot enable analytics for a child's account.
+                    onChanged: _analyticsAgeAllowed
+                        ? (v) async {
+                            await PrivacyService.setAnalyticsConsent(v);
+                            if (mounted) setState(() => _analyticsEnabled = v);
+                          }
+                        : null,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // PP-8: surface the backend data-export endpoint (GDPR
+                  // Art. 20 / COPPA right to access).
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Download my child\'s data',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Export a copy of your child\'s profile, characters, '
+                          'stories, and consent records as a JSON file you can '
+                          'save or share.',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _exportingData ? null : _exportData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7E57C2),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: _exportingData
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.download_rounded),
+                            label: Text(
+                              _exportingData
+                                  ? 'Preparing export…'
+                                  : 'Download my child\'s data',
+                              style: GoogleFonts.fredoka(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.red.withAlpha(25),
@@ -640,7 +742,9 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          'Permanently removes your child\'s profile, stories, and all associated data from our servers. '
+                          'Permanently deletes your child\'s stories, characters '
+                          'and profile data and anonymizes your account so it can '
+                          'no longer be identified. '
                           'You may exercise this right at any time under COPPA.',
                           style: GoogleFonts.fredoka(
                             color: Colors.white70,
@@ -714,8 +818,9 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete All Data?'),
         content: const Text(
-          'This will permanently delete your child\'s profile, stories, and all associated data '
-          'from our servers. This action cannot be undone.',
+          'This permanently deletes your child\'s stories, characters and '
+          'profile data and anonymizes your account so it can no longer be '
+          'identified. This action cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -749,6 +854,76 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       );
     } finally {
       if (mounted) setState(() => _deletingData = false);
+    }
+  }
+
+  /// PP-8 — surfaces the backend `GET /api/user/<id>/export` endpoint
+  /// (GDPR Art. 20 / COPPA right to access). Mirrors the [_deleteAllData]
+  /// pattern: resolve the user id, call the backend, then deliver the result.
+  /// The export JSON is written to a temp file and handed to the OS share
+  /// sheet so the parent can save it anywhere (Files, email, cloud).
+  Future<void> _exportData() async {
+    setState(() => _exportingData = true);
+    try {
+      final userId = await _api.getUserId();
+      if (userId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No account found to export.')),
+        );
+        return;
+      }
+      final export = await _api.get('/api/user/$userId/export');
+      final jsonText =
+          const JsonEncoder.withIndent('  ').convert(export);
+
+      if (kIsWeb) {
+        // path_provider/share file delivery is unavailable on web — show the
+        // export so the parent can still copy it.
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Your data export'),
+            content: SingleChildScrollView(
+              child: SelectableText(jsonText),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/storyweaver_export_${userId.substring(0, userId.length < 8 ? userId.length : 8)}.json',
+      );
+      await file.writeAsString(jsonText);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/json')],
+          subject: 'Once Upon a Time — my child\'s data export',
+          text: 'Your child\'s data export from Once Upon a Time.',
+        ),
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data export ready to save or share.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not export data: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _exportingData = false);
     }
   }
 
@@ -1455,7 +1630,8 @@ class _ControlTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  /// Null disables the switch (e.g. analytics toggle for an under-13 account).
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {

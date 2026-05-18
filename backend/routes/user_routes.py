@@ -6,7 +6,11 @@ from flask import Blueprint, jsonify, current_app, request
 from backend.models.user import User
 from backend.models.character import Character
 from backend.models.story import Story
-from backend.models.consent_record import ConsentRecord, ConsentVerificationCode
+from backend.models.consent_record import (
+    ConsentRecord,
+    ConsentVerificationCode,
+    CURRENT_POLICY_VERSION,
+)
 from backend.database import db
 from backend.middleware.auth import require_auth, require_owner
 from backend.utils.audit import audit_log
@@ -239,6 +243,8 @@ def create_user_routes_blueprint(limiter=None):
                 ip_address=request.remote_addr,
                 allow_photo_avatar=bool(allow_photo_avatar),
                 verified=verified,
+                # CMP-10: stamp the policy version in effect at consent time.
+                policy_version=CURRENT_POLICY_VERSION,
             )
             db.session.add(record)
             db.session.commit()
@@ -268,59 +274,14 @@ def create_user_routes_blueprint(limiter=None):
         Anonymizes the user record.
         """
         try:
-            from backend.models import (
-                InteractiveStory, StorySegment, StoryChoice,
-                InventoryItem, StoryState, UserAchievement, AchievementStats,
-            )
+            # CMP-5 / PP-13: the deletion + anonymisation cascade lives in
+            # backend.services.data_retention.purge_user_data so this
+            # user-initiated erasure path and the scheduled inactivity-purge
+            # job can never drift apart.
+            from backend.services.data_retention import purge_user_data
 
             user = request.current_user
-
-            # --- Delete interactive story data (cascade-aware) ---
-            interactive_stories = InteractiveStory.query.filter_by(user_id=user_id).all()
-            for story in interactive_stories:
-                StoryChoice.query.filter(
-                    StoryChoice.segment_id.in_(
-                        db.session.query(StorySegment.id).filter_by(story_id=story.id)
-                    )
-                ).delete(synchronize_session=False)
-                StorySegment.query.filter_by(story_id=story.id).delete()
-                InventoryItem.query.filter_by(story_id=story.id).delete()
-                StoryState.query.filter_by(story_id=story.id).delete()
-                db.session.delete(story)
-
-            # --- Delete linear stories ---
-            Story.query.filter_by(user_id=user_id).delete()
-
-            # --- Delete characters ---
-            Character.query.filter_by(user_id=user_id).delete()
-
-            # --- Delete achievements ---
-            UserAchievement.query.filter_by(user_id=user_id).delete()
-            AchievementStats.query.filter_by(user_id=user_id).delete()
-
-            # --- Delete consent records ---
-            ConsentRecord.query.filter_by(user_id=user_id).delete()
-
-            # --- Anonymize user record ---
-            import uuid
-            anon_id = str(uuid.uuid4())[:8]
-            user.username = f'deleted_{anon_id}'
-            user.email = f'deleted_{anon_id}@deleted.local'
-            user.password_hash = 'DELETED'
-            user.declared_age = None
-            user.is_under_13 = False
-            user.stripe_customer_id = None
-            user.gemini_api_key_encrypted = None
-            user.has_byok = False
-            user.stories_created_count = 0
-            user.stories_generated_this_month = 0
-            user.illustrations_generated_this_month = 0
-
-            # M-1: invalidate all outstanding access tokens for this account so
-            # the erasure cannot be undone by a still-valid pre-deletion token.
-            user.token_version = (getattr(user, 'token_version', 0) or 0) + 1
-
-            db.session.commit()
+            purge_user_data(user, commit=True)
 
             current_app.logger.info('All data deleted for user %s (anonymized)', user_id)
             audit_log('data_deleted', user_id=user_id)
@@ -484,6 +445,8 @@ def create_user_routes_blueprint(limiter=None):
                     ip_address=request.remote_addr,
                     allow_photo_avatar=allow_photo_avatar,
                     verified=False,
+                    # CMP-10: stamp the policy version in effect at consent time.
+                    policy_version=CURRENT_POLICY_VERSION,
                 )
                 db.session.add(pending)
             else:
@@ -668,11 +631,16 @@ def create_user_routes_blueprint(limiter=None):
                     consent_method='email_verified',
                     ip_address=request.remote_addr,
                     verified=True,
+                    # CMP-10: stamp the policy version in effect at consent time.
+                    policy_version=CURRENT_POLICY_VERSION,
                 )
                 db.session.add(record)
             else:
                 record.consent_method = 'email_verified'
                 record.verified = True
+                # CMP-10: completing the verification round-trip is a fresh
+                # consent event — re-stamp to the current policy version.
+                record.policy_version = CURRENT_POLICY_VERSION
 
             db.session.commit()
 

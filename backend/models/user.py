@@ -9,6 +9,11 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # CMP-5 / PP-13: last time this account showed activity (login or
+    # anonymous-session issue). Used by the data-retention purge task to
+    # identify inactive accounts. Nullable for rows created before this
+    # column existed — the retention job falls back to created_at when NULL.
+    last_active_at = db.Column(db.DateTime, nullable=True)
 
     # Subscription details
     role = db.Column(db.String(20), default='user', nullable=False)
@@ -63,6 +68,7 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'created_at': self.created_at.isoformat(),
+            'last_active_at': self.last_active_at.isoformat() if self.last_active_at else None,
             'subscription_tier': self.subscription_tier,
             'subscription_status': self.subscription_status,
             'current_period_end': self.current_period_end.isoformat() if self.current_period_end else None,

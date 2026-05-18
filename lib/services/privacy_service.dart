@@ -16,7 +16,20 @@ class PrivacyService {
   /// gate so analytics never turns on for an under-13 user.
   static Future<void> setAnalyticsConsent(bool consented) async {
     await FirebaseAnalyticsService.setCollectionEnabled(consented);
+    if (!consented) {
+      // GDPR Art. 7(3): on withdrawal, also drop any data buffered while
+      // collection was enabled.
+      await resetAnalyticsData();
+    }
   }
+
+  /// Whether Firebase Analytics collection is currently enabled.
+  ///
+  /// Reflects the in-process collection flag set by [setAnalyticsConsent] /
+  /// [applyConsentDecision]. Used by the Parent Controls analytics toggle so
+  /// it shows the live state (PP-9, GDPR Art. 7(3)).
+  static bool get isAnalyticsEnabled =>
+      FirebaseAnalyticsService.isCollectionEnabled;
 
   /// Reconciles analytics AND crash-reporting collection with a
   /// parental-consent result.

@@ -48,6 +48,29 @@ Future<void> main() async {
             false;
         return isDwds ? null : event;
       };
+      // STORE-2 follow-up (COPPA §312.5 / Apple Kids-Category 1.3, 5.1.4):
+      // breadcrumbs can passively capture child PII (typed text, URLs, request
+      // payloads, console output). For a children's app, keep only the coarse
+      // category/type/level/timestamp of each crumb and strip every value:
+      // drop the free-form message and the data map entirely.
+      options.beforeBreadcrumb = (breadcrumb, hint) {
+        if (breadcrumb == null) return null;
+        // Drop user-input and navigation crumbs outright — their message/data
+        // (typed text, route arguments) are the most likely PII carriers.
+        if (breadcrumb.category == 'ui.input' ||
+            breadcrumb.type == 'user' ||
+            breadcrumb.category == 'navigation') {
+          return null;
+        }
+        // Rebuild the crumb keeping only coarse, non-PII metadata — the
+        // free-form message and the data map are dropped entirely.
+        return Breadcrumb(
+          category: breadcrumb.category,
+          type: breadcrumb.type,
+          level: breadcrumb.level,
+          timestamp: breadcrumb.timestamp,
+        );
+      };
     },
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();

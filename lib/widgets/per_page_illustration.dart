@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/per_page_illustration_prefetcher.dart';
+import 'ai_generated_badge.dart';
 
 /// Renders the prefetcher's state for a single page: the image when ready,
 /// a soft skeleton when the reader arrived before generation finished, an
@@ -42,10 +43,23 @@ class PerPageIllustration extends StatelessWidget {
                 borderRadius: BorderRadius.circular(borderRadius),
                 child: AspectRatio(
                   aspectRatio: aspectRatio,
-                  child: Image.memory(
-                    bytes,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
+                  // STORE-6/PP-6: freshly-prefetched illustrations are not yet
+                  // persisted, so they bypass the story-result badge — label
+                  // them here too with the corner "AI" badge.
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.memory(
+                        bytes,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
+                      const Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: AiGeneratedBadge.corner(),
+                      ),
+                    ],
                   ),
                 ),
               ),
