@@ -4293,6 +4293,16 @@ class _PostStoryActionBar extends StatelessWidget {
                     onTap: onShare,
                     color: Colors.white,
                   ),
+                  // Coloring pages are a deliberate end-of-story activity —
+                  // surfaced only on the final page, where the kid is done
+                  // reading, rather than cluttering every page-turn.
+                  if (isOnEndPage)
+                    _ActionChip(
+                      icon: Icons.palette_rounded,
+                      label: 'Color',
+                      onTap: onColor,
+                      color: Colors.white,
+                    ),
                 ],
                 if (isYoungUser) ...[
                   _ActionChip(
@@ -4314,6 +4324,16 @@ class _PostStoryActionBar extends StatelessWidget {
                     color: isSaved ? AppColors.gold : Colors.white,
                     largeMode: true,
                   ),
+                  // Coloring is a calm end-of-story activity — a natural fit
+                  // for young kids, shown only once the story is finished.
+                  if (isOnEndPage)
+                    _ActionChip(
+                      icon: Icons.palette_rounded,
+                      label: 'Color',
+                      onTap: onColor,
+                      color: Colors.white,
+                      largeMode: true,
+                    ),
                 ],
               ],
             ),
