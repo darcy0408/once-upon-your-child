@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-17 | 22:33 | ed03 | main | Security Medium+Low batch, M-8 re-scope, one-free-avatar feat | [link](docs/sessions/2026-05-17-2233-ed03.md) |
 | 2026-05-17 | 22:07 | ddd2 | main | Cost-reduction wins shipped to production | [link](docs/sessions/2026-05-17-2207-ddd2.md) |
 | 2026-05-17 | 21:49 | 9cc7 | main | Railway deploy of Phase 4 + Celery -B revert | [link](docs/sessions/2026-05-17-2149-9cc7.md) |
 | 2026-05-17 | 21:42 | 149a | feat/cost-reduction | Free Edge TTS narration fallback + prod deploy crash fix | [link](docs/sessions/2026-05-17-2142-149a.md) |
