@@ -336,18 +336,14 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   // CMP-11 / COPPA §312.4(d): the direct notice
                                   // to parents must name the operator and give
                                   // a postal address and phone number.
-                                  // OWNER ACTION REQUIRED — replace the
-                                  // bracketed placeholders below with the real
-                                  // legal entity name, postal address and
-                                  // phone before any public release.
                                   const Text(
-                                      '• Operator: [Operator legal entity name]',
+                                      '• Operator: Darcy VanPelt',
                                       style: textWhite70),
                                   const Text(
-                                      '• Postal address: [Postal address]',
+                                      '• Postal address: 2816 Orchard Ave, Grand Junction, CO 81501',
                                       style: textWhite70),
                                   const Text(
-                                      '• Phone: [Contact phone]',
+                                      '• Phone: 970-640-2011',
                                       style: textWhite70),
                                   const Text(
                                       '• Email: onceuponyourchild@gmail.com',

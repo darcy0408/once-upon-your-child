@@ -172,15 +172,9 @@ We will notify users of material changes to this policy:
 
 This app is operated by:
 
-<!-- OWNER ACTION REQUIRED (CMP-11 / COPPA §312.4(d)):
-     Replace the three bracketed placeholders below with the operator's real
-     legal entity name, postal address, and contact phone number before any
-     public release. COPPA requires the direct notice to parents and this
-     privacy policy to disclose all three. -->
-
-- **Operator (legal entity)**: [Operator legal entity name]
-- **Postal address**: [Postal address]
-- **Phone**: [Contact phone]
+- **Operator (legal entity)**: Darcy VanPelt
+- **Postal address**: 2816 Orchard Ave, Grand Junction, CO 81501
+- **Phone**: 970-640-2011
 - **Email**: onceuponyourchild@gmail.com
 
 For privacy questions or concerns, or to review, delete, or stop further

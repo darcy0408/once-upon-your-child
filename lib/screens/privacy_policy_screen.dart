@@ -139,14 +139,12 @@ onceuponyourchild@gmail.com
               content: '''
 This app is operated by:
 
-- Operator (legal entity): [Operator legal entity name]
-- Postal address: [Postal address]
-- Phone: [Contact phone]
+- Operator (legal entity): Darcy VanPelt
+- Postal address: 2816 Orchard Ave, Grand Junction, CO 81501
+- Phone: 970-640-2011
 - Email: onceuponyourchild@gmail.com
 
 As required by COPPA, contact us using the details above to review, delete, or stop further collection of your child's information.
-
-NOTE TO OWNER: the bracketed values above are placeholders. COPPA §312.4(d) requires the operator's real legal name, postal address, and phone number — fill these in before any public release.
 ''',
             ),
             _buildSection(
