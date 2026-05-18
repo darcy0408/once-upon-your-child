@@ -114,3 +114,46 @@ def test_generate_story_requires_character_payload(client, auth_headers):
     response = client.post("/generate-story", json={"theme": "Adventure"}, headers=auth_headers)
     assert response.status_code == 400
     assert "error" in response.get_json()
+
+
+# --- Companion-aware sync timeout (MT-147) -----------------------------------
+# Companion payloads add mandatory validation names and a larger prompt, which
+# routinely forces an extra full-story regeneration and pushes wall time past
+# the base sync budget. The route grants extra sync head-room per companion so
+# these legitimately-slower requests finish synchronously instead of restarting
+# from scratch on the async worker (which makes the client fall back to a
+# canned scaffold story).
+
+def test_companion_count_sums_pets_characters_and_legacy():
+    assert story_routes._companion_count({}) == 0
+    assert story_routes._companion_count({"companion_pets": [{"name": "Rex"}]}) == 1
+    assert (
+        story_routes._companion_count(
+            {
+                "companion_pets": [{"name": "Rex"}, {"name": "Spot"}],
+                "companion_characters": [{"name": "Mia"}],
+                "companion": "Buddy",
+            }
+        )
+        == 4
+    )
+
+
+def test_sync_timeout_unchanged_with_no_companions():
+    assert story_routes._sync_timeout_for({}, 120) == 120
+
+
+def test_sync_timeout_extends_per_companion(monkeypatch):
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", raising=False)
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", raising=False)
+    # Two companions -> base 120 + 2*30 = 180.
+    kwargs = {"companion_pets": [{"name": "Rex"}], "companion_characters": [{"name": "Mia"}]}
+    assert story_routes._sync_timeout_for(kwargs, 120) == 180
+
+
+def test_sync_timeout_extension_is_capped(monkeypatch):
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", raising=False)
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", raising=False)
+    # Ten companions would add 300s uncapped; the cap holds it to +120 -> 240.
+    kwargs = {"companion_pets": [{"name": f"P{i}"} for i in range(10)]}
+    assert story_routes._sync_timeout_for(kwargs, 120) == 240

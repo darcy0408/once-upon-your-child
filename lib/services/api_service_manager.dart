@@ -696,6 +696,23 @@ class ApiServiceManager {
             currentFeeling?['feeling_id'] as String?)
         ?.toLowerCase();
 
+    // Companion-aware request timeout. Companions enlarge the prompt and add
+    // mandatory validation names on the backend, which routinely forces an
+    // extra full-story regeneration — and the backend correspondingly grants
+    // itself extra sync head-room per companion (see _sync_timeout_for in
+    // backend/routes/story_routes.py). The client must wait at least as long,
+    // or the POST aborts first and we needlessly fall back to a canned
+    // scaffold story. We only ever EXTEND the timeout (never shrink an
+    // explicit caller override) and cap the extension so it stays bounded.
+    final int companionCount =
+        (companionPets?.length ?? 0) + (companionCharacters?.length ?? 0);
+    final Duration effectiveRequestTimeout = companionCount <= 0
+        ? requestTimeout
+        : Duration(
+            seconds: requestTimeout.inSeconds +
+                (companionCount * 30).clamp(0, 120),
+          );
+
     if (!useOwnKey || needsBackendForFeatures) {
       final userApiKey = useOwnKey ? await getUserApiKey() : null;
       return await runWithScaffoldFallback(
@@ -731,7 +748,7 @@ class ApiServiceManager {
           client: effectiveClient,
           maxAttempts: maxAttempts,
           initialDelay: retryInitialDelay,
-          requestTimeout: requestTimeout,
+          requestTimeout: effectiveRequestTimeout,
           companionPets: companionPets,
           companionCharacters: companionCharacters,
           storyLength: storyLength,

@@ -334,6 +334,53 @@ def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout):
         executor.shutdown(wait=False, cancel_futures=True)
 
 
+def _companion_count(task_kwargs: dict) -> int:
+    """Count the companions (pets + characters) carried by this request.
+
+    Companion names are appended to the mandatory-name validation set in
+    generate_story_task; each additional name raises the chance a generation
+    attempt fails the name check and triggers a full re-generation. More
+    companions therefore means more sequential AI calls and a longer wall
+    time — see _sync_timeout_for below.
+    """
+    pets = task_kwargs.get("companion_pets") or []
+    chars = task_kwargs.get("companion_characters") or []
+    legacy = task_kwargs.get("companion")
+    count = 0
+    if isinstance(pets, (list, tuple)):
+        count += len(pets)
+    if isinstance(chars, (list, tuple)):
+        count += len(chars)
+    if legacy:
+        count += 1
+    return count
+
+
+def _sync_timeout_for(task_kwargs: dict, base_timeout: int) -> int:
+    """Companion-aware sync-generation timeout.
+
+    The base SYNC_STORY_TIMEOUT_SECONDS is tuned for a plain single-character
+    story (one or two AI calls). Companion-heavy requests enlarge the prompt
+    AND add mandatory validation names, which routinely forces an extra
+    full-story regeneration — pushing wall time past the base budget. When
+    that happens the route abandons the sync attempt and restarts generation
+    from scratch on the async worker, and the client (which polls on a fixed
+    budget) often gives up and shows a canned scaffold story instead.
+
+    Granting extra head-room per companion keeps a legitimate multi-companion
+    generation completing in the sync path. The grant is capped so a request
+    with many companions cannot hold a worker indefinitely. This widens a
+    timeout only — it never gates or rejects a request.
+    """
+    companions = _companion_count(task_kwargs)
+    if companions <= 0:
+        return base_timeout
+    per_companion = int(os.getenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", "30"))
+    max_extra = int(os.getenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", "120"))
+    extra = min(companions * per_companion, max_extra)
+    return base_timeout + extra
+
+
 def _celery_runs_eagerly() -> bool:
     try:
         return bool(getattr(celery.conf, "task_always_eager", False))
@@ -589,10 +636,17 @@ def create_story_blueprint(
             task_kwargs["include_illustrations"] = False
             logger.info("Async illustrations enabled - skipping inline generation")
 
+        # Companion-heavy requests get extra sync head-room: companions enlarge
+        # the prompt and add mandatory validation names that often force an
+        # extra regeneration. Without the bump these legitimately-slower
+        # requests time out, restart on the async worker from scratch, and the
+        # client falls back to a canned scaffold story.
+        effective_sync_timeout = _sync_timeout_for(task_kwargs, sync_story_timeout)
+
         # Try synchronous execution first (to bypass polling issues on Railway)
         try:
             # Run synchronous task in a bounded worker thread so timeout is enforced.
-            sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
+            sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
 
             # Debugging: Log the result type
             logger.info(f"Sync task result type: {type(sync_result)}")
@@ -618,7 +672,7 @@ def create_story_blueprint(
         except (FuturesTimeoutError, CeleryTimeoutError) as exc:
             logger.warning(
                 "Synchronous story generation timed out after %ss, switching to async fallback.",
-                sync_story_timeout,
+                effective_sync_timeout,
             )
             logger.error(f"Full task_kwargs that timed out: {task_kwargs}")
             if _celery_runs_eagerly():
@@ -693,7 +747,7 @@ def create_story_blueprint(
                 # Last resort: retry synchronously before giving up entirely
                 logger.warning("Retrying synchronous story generation after async failure")
                 try:
-                    sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
+                    sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
                     story_payload = (sync_result or {}).get("story", {})
                     response_payload = {
                         "status": sync_result.get("status", "complete"),
