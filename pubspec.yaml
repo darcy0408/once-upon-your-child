@@ -58,6 +58,12 @@ dependencies:
   google_fonts: ^8.0.2  # Quicksand font for magical UI
   crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
   audioplayers: ^6.1.0  # For background ambience and SFX
+  # STORE-1 (MT-143): in-app purchases for the iOS/Android store builds.
+  # Apple/Google require their own billing for digital subscriptions; Stripe
+  # web checkout is an automatic store rejection. The plugin is dispatched via
+  # the conditional-import split in lib/services/payment/ so it is compiled
+  # OUT of the web build (where Stripe remains the payment channel).
+  in_app_purchase: ^3.2.0
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   flutter_secure_storage: ^10.0.0 # Encrypted storage for API keys

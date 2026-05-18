@@ -462,9 +462,13 @@ def create_app(config_name):
     try:
         from backend.routes.stripe_routes import stripe_routes, init_stripe_api
         from backend.routes.webhook_handler import webhook_routes
+        # STORE-1 (MT-143): in-app-purchase receipt verification + S2S
+        # notification endpoints for the iOS/Android store builds.
+        from backend.routes.iap_routes import iap_routes
     except ImportError:
         from routes.stripe_routes import stripe_routes, init_stripe_api
         from routes.webhook_handler import webhook_routes
+        from routes.iap_routes import iap_routes
 
     if not testing_mode:
         init_stripe_api(app)
@@ -674,6 +678,10 @@ def create_app(config_name):
         app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     if webhook_routes:
         app.register_blueprint(webhook_routes, url_prefix='/api')
+    # STORE-1 (MT-143): iap_routes already prefixes its rules with '/iap/...',
+    # so mount it under '/api' to expose '/api/iap/apple/verify' etc.
+    if iap_routes:
+        app.register_blueprint(iap_routes, url_prefix='/api')
     analytics_bp = create_analytics_blueprint(limiter=limiter)
     app.register_blueprint(analytics_bp)
     achievement_bp = create_achievement_blueprint(limiter=limiter)
