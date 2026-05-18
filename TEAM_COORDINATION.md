@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-18 | 16:37 | 3dfa | main | MT-149 cost-reduction deploy smoke test (passed) | [link](docs/sessions/2026-05-18-1637-3dfa.md) |
 | 2026-05-18 | 16:38 | 7ce6 | main | Closed MT-153 — SECRET_KEY verified on story-weaver-app backend | [link](docs/sessions/2026-05-18-1638-7ce6.md) |
 | 2026-05-18 | 14:48 | c859 | main | Investigated uncommitted coloring-chip (already committed by parallel session) | [link](docs/sessions/2026-05-18-1448-c859.md) |
 | 2026-05-18 | 13:54 | 61aa | main | Restored orphaned coloring-page UI entry point (end-page chip) | [link](docs/sessions/2026-05-18-1354-61aa.md) |
