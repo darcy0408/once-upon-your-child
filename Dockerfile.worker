@@ -57,4 +57,4 @@ USER app
 # No CMD - Railway will use the custom start command
 
 # Default command (will be overridden by Railway's custom start command)
-CMD ["celery", "-A", "backend.celery_config.celery", "worker", "--loglevel=info", "--pool=solo"]
+CMD ["celery", "-A", "backend.celery_config.celery", "worker", "-B", "--loglevel=info", "--pool=solo"]
