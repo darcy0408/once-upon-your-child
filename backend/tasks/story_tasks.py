@@ -399,6 +399,73 @@ def _post_process_ltr_pages(
     return new_pages or pages
 
 
+def _post_process_sprout_pages(
+    pages: list[str],
+    min_pages: int = 8,
+    max_pages: int = 12,
+    max_words: int = 25,
+) -> list[str]:
+    """Programmatically split Sprout output into min_pages–max_pages × ≤max_words/page.
+
+    Used as a deterministic fallthrough after the Sprout non-LTR validation+retry
+    loop exhausts (MT-098). Joins all pages into one body, splits on sentence
+    boundaries, then groups into pages within the word cap. Mirrors
+    _post_process_ltr_pages but targets the Sprout page-count band (8-12).
+    """
+    if not pages:
+        return pages
+
+    body = " ".join(p.strip() for p in pages if p and p.strip())
+    if not body:
+        return pages
+
+    sentence_parts = re.split(
+        r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body
+    )
+    sentences = [s.strip() for s in sentence_parts if s.strip()]
+    if not sentences:
+        return pages
+
+    # Try grouping 1 sentence per page first; fall back to word-boundary split
+    # for sentences that individually exceed max_words.
+    new_pages: list[str] = []
+    for sent in sentences:
+        sent_words = len(sent.split())
+        if sent_words <= max_words:
+            new_pages.append(sent)
+        else:
+            # Hard-split oversize sentence at word boundaries
+            words = sent.split()
+            for i in range(0, len(words), max_words):
+                new_pages.append(" ".join(words[i : i + max_words]))
+
+    if not new_pages:
+        return pages
+
+    # If we produced too many pages, merge adjacent pairs until we fit max_pages.
+    while len(new_pages) > max_pages:
+        merged: list[str] = []
+        i = 0
+        while i < len(new_pages):
+            if (
+                i + 1 < len(new_pages)
+                and len(new_pages) > max_pages
+                and len((new_pages[i] + " " + new_pages[i + 1]).split()) <= max_words
+            ):
+                merged.append(new_pages[i] + " " + new_pages[i + 1])
+                i += 2
+            else:
+                merged.append(new_pages[i])
+                i += 1
+        if len(merged) >= len(new_pages):
+            # No progress possible — stop to avoid infinite loop
+            break
+        new_pages = merged
+
+    # If we produced too few pages, accept what we have (better than crashing).
+    return new_pages or pages
+
+
 # --- Sprout word-cap enforcement (post-generation safety belt) ----------------
 # The Sprout prompt (ages 3-5) tells Gemini to stop at 130 words (lowered from
 # 150 to leave headroom). Models still overshoot. This safety belt counts words
@@ -935,6 +1002,32 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 ltr_expected_pages = 0
                 ltr_pages_count = 0
                 ltr_over_word_pages: list[int] = []
+                # MT-098: Sprout non-LTR page-count + per-page word-count validation.
+                # Mirrors the LTR validation block above for the Sprout band when not
+                # in any specialised mode (LTR/rhyme/bedtime all have their own guards).
+                is_sprout_format_ok = True
+                sprout_format_error = ""
+                sprout_pages_count = 0
+                sprout_over_word_pages: list[int] = []
+                _is_sprout_nonltr = (
+                    age <= 5
+                    and not learning_to_read_mode
+                    and not rhyme_time_mode
+                    and not bedtime_mode
+                )
+                if _is_sprout_nonltr:
+                    sprout_pages_count = len(pages)
+                    sprout_over_word_pages = [
+                        i for i, p in enumerate(pages) if len(p.split()) > 25
+                    ]
+                    if sprout_pages_count < 8 or sprout_pages_count > 12 or sprout_over_word_pages:
+                        is_sprout_format_ok = False
+                        sprout_format_error = (
+                            f"Sprout format check failed: {sprout_pages_count} pages "
+                            f"(need 8-12), "
+                            f"{len(sprout_over_word_pages)} pages exceed 25 words."
+                        )
+                        validation_error = sprout_format_error
                 if learning_to_read_mode:
                     is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
                     if not is_rhyme_quality_ok:
@@ -993,7 +1086,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         is_long_enough = False
                         validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
                 
-                if is_clean and is_long_enough and is_rhyme_quality_ok and is_ltr_format_ok:
+                if is_clean and is_long_enough and is_rhyme_quality_ok and is_ltr_format_ok and is_sprout_format_ok:
                     logger.info("Story passed validation.")
                     break
                 else:
@@ -1019,6 +1112,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page 25 words or fewer. "
                                 f"Split any long page into two shorter pages. Do not compress the story into a few dense pages."
                             )
+                        if not is_sprout_format_ok:
+                            prompt += (
+                                f"\n\nRETRY INSTRUCTION: This is a Sprout (3-4 year old) story and MUST be between 8 and 12 short pages "
+                                f"(10-25 words each). Your previous response had {sprout_pages_count} pages "
+                                f"with {len(sprout_over_word_pages)} pages exceeding 25 words. "
+                                f"Return EXACTLY 8-12 pages. Split any dense page into two shorter ones. "
+                                f"Traditional picture-book pacing: one short scene per page, never more than 25 words per page."
+                            )
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
             validation_loop_ms = (time.perf_counter() - validation_loop_start) * 1000.0
@@ -1035,6 +1136,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 post_split = [(i, len(p.split())) for i, p in enumerate(pages)]
                 logger.warning(
                     "LTR post-process split applied: pages %s → %s",
+                    pre_split,
+                    post_split,
+                )
+
+            # MT-098: Sprout non-LTR page-count post-process fallthrough.
+            # When the validation+retry loop exhausts without producing a
+            # conforming 8-12 page story, split programmatically at sentence
+            # boundaries (same pattern as LTR post-process above).
+            if _is_sprout_nonltr and not is_sprout_format_ok:
+                pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
+                pages = _post_process_sprout_pages(pages, min_pages=8, max_pages=12, max_words=25)
+                story_body = "\n\n".join(pages)
+                post_split = [(i, len(p.split())) for i, p in enumerate(pages)]
+                logger.warning(
+                    "Sprout non-LTR post-process split applied: pages %s → %s",
                     pre_split,
                     post_split,
                 )

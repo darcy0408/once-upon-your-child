@@ -585,14 +585,29 @@ class AdvancedStoryEngine:
                     + "\n".join(behavior_instructions)
                 )
         if additional_characters:
-            others = []
+            guests = []
+            adult_relatives = []
             for ac in additional_characters:
-                name = ac.get('name') if isinstance(ac, dict) else str(ac)
+                if isinstance(ac, dict):
+                    name = ac.get('name')
+                    is_adult = ac.get('is_adult_relative', False)
+                else:
+                    name = str(ac)
+                    is_adult = False
                 if name:
-                    others.append(name)
+                    if is_adult:
+                        adult_relatives.append(name)
+                    else:
+                        guests.append(name)
                     all_companion_names.append(name)
-            if others:
-                companion_sections.append(f"GUESTS: {', '.join(others)}")
+            if guests:
+                companion_sections.append(f"GUESTS: {', '.join(guests)}")
+            if adult_relatives:
+                companion_sections.append(
+                    f"ADULT FAMILY (supportive adult presence — not peer characters, never villains; "
+                    f"they offer guidance, comfort, and warmth, and step back so the kid hero leads the action): "
+                    f"{', '.join(adult_relatives)}"
+                )
 
         if not companion_sections and companion:
             if isinstance(companion, dict):
@@ -1149,7 +1164,19 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     # Graduate vocabulary and format based on age
     rhyme_scheme_instruction = "Simple rhyming couplets across pages (AABB pairs by page endings)."
     if age <= 5:
-        vocab_instruction = "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters."
+        vocab_instruction = (
+            "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters. "
+            "DECODABILITY CHECK (HARD — re-read every page before finalizing): "
+            "Every noun or concept must be instantly understandable to a 3-year-old on first listen. "
+            "Before writing each page, scan for ANY word a toddler would not use in everyday speech "
+            "(examples: 'dragon', 'compass', 'lantern', 'ancient', 'festival', 'cape', 'echo'). "
+            "For EACH such word, you MUST do one of two things in the SAME sentence or the very next one: "
+            "(a) replace it with a simpler everyday word, OR "
+            "(b) explain it inline using only CVC/sight words a toddler already knows. "
+            "Example: 'A cape — it is a big cloth that flies out behind you when you run.' "
+            "A bare mention with no inline explanation is a FAIL — rewrite the page. "
+            "This rule overrides rhyme or rhythm if they conflict."
+        )
         format_instruction = "Each page 1 short sentence. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
     elif age <= 6:
