@@ -401,12 +401,23 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
             stories_created = user.stories_created_count
 
+            # 1-free-avatar gate (MT-151): surface the lifetime custom-avatar
+            # count and the authoritative premium flag so the client can gate
+            # the photo-avatar card UPFRONT instead of letting a non-premium
+            # user who already used their free one waste a selfie.
+            try:
+                from backend.routes.subscription_routes import _user_is_premium
+            except ImportError:
+                from routes.subscription_routes import _user_is_premium
+
             unlock_status = {
                 'stories_created_count': stories_created,
                 'character_creation_unlocked': stories_created >= 1,
                 'interactive_stories_unlocked': stories_created >= 2,
                 'coloring_pages_unlocked': stories_created >= 3,
                 'advanced_settings_unlocked': stories_created >= 5,
+                'custom_avatars_generated': user.custom_avatars_generated or 0,
+                'is_premium': _user_is_premium(user),
             }
 
             return jsonify(unlock_status), 200

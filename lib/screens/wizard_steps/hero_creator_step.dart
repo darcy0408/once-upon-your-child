@@ -16,6 +16,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/magic_star_cursor.dart';
 import '../../services/api_service_manager.dart';
+import '../../services/user_identity_service.dart';
 import '../../services/isar_service.dart';
 import '../../models/local/character_local.dart';
 import '../../services/avatar_generation_state.dart';
@@ -94,6 +95,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
+  /// MT-151: lifetime count of AI photo-avatars this account has generated,
+  /// fetched from the backend's `feature-unlocks` endpoint. Every account gets
+  /// ONE free custom avatar; after that it is premium. When a non-premium user
+  /// has already used their free one, the photo-avatar card shows a "Premium"
+  /// badge and routes straight to the upgrade dialog — skipping the selfie.
+  int _customAvatarsUsed = 0;
   /// Premium "Whose turn is it?" feature — character_id of the last hero,
   /// loaded from SharedPreferences. Null when there's no prior story or only
   /// one kid character is saved.
@@ -221,6 +228,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     _refreshPremiumStatus();
+    _refreshCustomAvatarUsage();
     _loadLastHeroId();
     _loadRecentStories();
     const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
@@ -1421,13 +1429,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 // turning a real photo into a cartoon hero. The backend
                 // enforces the 1-free limit and returns UPGRADE_REQUIRED after
                 // that. Surfaced as the featured option so kids see it first.
+                //
+                // MT-151: when a non-premium account has already used its one
+                // free custom avatar, the card carries a "Premium" badge and
+                // its tap opens the upgrade dialog directly — skipping the
+                // selfie capture so no photo is wasted on a 403.
                 if (_allowPhotoAvatar) ...[
                   HeroAvatarChoiceCard(
                     featured: true,
                     icon: Icons.camera_alt_rounded,
                     title: 'Turn YOU into a cartoon hero!',
                     subtitle: 'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
-                    onTap: _openCustomAvatarScreen,
+                    badgeText: _customAvatarLocked ? '✨ Premium ✨' : null,
+                    onTap: _customAvatarLocked
+                        ? _showCustomAvatarUpgradeDialog
+                        : _openCustomAvatarScreen,
                   ),
                   const SizedBox(height: 18),
                   Row(
@@ -2292,6 +2308,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
+  /// MT-151: pull the account's lifetime custom-avatar count (and the
+  /// authoritative premium flag) from the backend so the photo-avatar card can
+  /// be gated UPFRONT. Best-effort: a failure leaves [_customAvatarsUsed] at 0,
+  /// so the card stays tappable and the backend still enforces the 1-free limit
+  /// (the user just hits the UPGRADE_REQUIRED dialog after a selfie, as before).
+  Future<void> _refreshCustomAvatarUsage() async {
+    try {
+      final userId = await UserIdentityService.getOrCreateUserId();
+      if (userId.startsWith('anon_')) return;
+      final response =
+          await ApiServiceManager().get('/users/$userId/feature-unlocks');
+      if (!mounted) return;
+      final used = response['custom_avatars_generated'];
+      final premium = response['is_premium'];
+      setState(() {
+        if (used is int) _customAvatarsUsed = used;
+        if (premium is bool && premium) _isPremium = true;
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch custom-avatar usage: $e');
+    }
+  }
+
+  /// MT-151: true when the photo-avatar card must be presented as a premium
+  /// upsell — a non-premium account that has already used its one free custom
+  /// avatar. Tapping the card then opens the upgrade dialog instead of the
+  /// selfie flow, so no selfie is wasted.
+  bool get _customAvatarLocked =>
+      !_isPremium && _customAvatarsUsed >= 1;
+
   Future<void> _openAvatarGallery() async {
     if (!mounted) return;
     await showDialog<void>(
@@ -2363,6 +2409,56 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       const SnackBar(
         content: Text('✨ Custom avatar ready!'),
         backgroundColor: Color(0xFF4CAF50),
+      ),
+    );
+  }
+
+  /// MT-151: shown when a non-premium account that has already used its one
+  /// free custom avatar taps the photo-avatar card. Mirrors the "Unlock more
+  /// magic ✨" dialog in CustomAvatarScreen, but is reached BEFORE any selfie
+  /// is captured — so the user never wastes a photo on a 403. The actionable
+  /// path is to pick a ready-made hero from the gallery.
+  Future<void> _showCustomAvatarUpgradeDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2D1060),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Unlock more magic ✨',
+          style: GoogleFonts.nunito(
+              color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          "You've already created your free magic avatar! "
+          'Upgrade to premium to turn more photos into cartoon heroes.',
+          style: GoogleFonts.quicksand(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Maybe later',
+                style: GoogleFonts.quicksand(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5F4BDB),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _openAvatarGallery();
+            },
+            child: Text(
+              'Pick a premade hero',
+              style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
       ),
     );
   }
