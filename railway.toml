@@ -32,10 +32,12 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 [[services]]
 name = "lovely-perfection"
 dockerfile = "Dockerfile.worker"
-# -B runs the embedded Celery beat scheduler in-process (fine with --pool=solo
-# at current scale) so beat-scheduled jobs actually fire — e.g. the daily
-# data-retention purge (CMP-5). Without -B, scheduled tasks never run.
-startCommand = "celery -A backend.celery_config.celery worker -B --loglevel=info --pool=solo"
+# --pool=solo is required: the prefork pool's fork() breaks the worker's
+# gRPC-based Gemini calls. Beat is intentionally NOT embedded here (-B is
+# incompatible with --pool=solo) — the Celery beat scheduler must run as a
+# separate dedicated service so scheduled jobs (the data-retention purge,
+# CMP-5) fire. See MT-148.
+startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=solo"
 
 # No healthcheck needed for worker (it's not a web service)
 # No public networking needed (worker connects to Redis privately)
