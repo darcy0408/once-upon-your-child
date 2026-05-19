@@ -589,6 +589,22 @@ class ApiServiceManager {
     _testClient = client;
   }
 
+  /// Clears cached auth state so each test starts from a clean slate.
+  ///
+  /// The auth token is cached in a static field and survives between tests in
+  /// the same suite run; without this reset a token loaded by an earlier test
+  /// would leak into a later one. Tests that exercise auth-header behaviour
+  /// should call this in `setUp`.
+  @visibleForTesting
+  static Future<void> resetAuthForTest() async {
+    _authToken = null;
+    _refreshToken = null;
+    _userId = null;
+    _authInFlight = null;
+    await SecureStorageService.deleteUserToken();
+    await SecureStorageService.deleteRefreshToken();
+  }
+
   /// Check if user has configured their own API key
   static Future<bool> isUsingOwnApiKey() async {
     final apiKey = await SecureStorageService.getApiKey('gemini');

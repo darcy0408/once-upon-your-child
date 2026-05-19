@@ -11,6 +11,7 @@ import 'package:story_weaver_app/screens/subscription_management_screen.dart';
 import 'package:story_weaver_app/screens/subscription_success_screen.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/stripe_service.dart';
+import 'package:story_weaver_app/services/subscription_sync_service.dart';
 
 import 'golden_test_harness.dart';
 
@@ -101,6 +102,7 @@ void main() {
 
   tearDown(() {
     ApiServiceManager.setTestClient(null);
+    SubscriptionSyncService.resetInstance();
   });
 
   testWidgets('Subscription management screen', (tester) async {
@@ -113,6 +115,14 @@ void main() {
   });
 
   testWidgets('Subscription success screen', (tester) async {
+    // SubscriptionSuccessScreen.initState fires a fire-and-forget
+    // SubscriptionSyncService().syncSubscriptionStatus(). Seed the singleton
+    // with a stub-backed instance so the sync resolves instantly instead of
+    // hitting the network and leaving a retry timer pending after teardown.
+    SubscriptionSyncService.resetInstance(
+      SubscriptionSyncService.forTest(stripeService: _StubStripeService()),
+    );
+
     await pumpGoldenApp(tester, const SubscriptionSuccessScreen());
 
     await expectLater(

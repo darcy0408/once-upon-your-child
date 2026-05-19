@@ -38,6 +38,15 @@ void main() {
     // age >= 9 skips particle/audio effects in _triggerPageCelebration
     ..characterAge = 10;
 
+  // Avatar-choice card titles. The hero-creator refactor reworded these from
+  // the old "Gallery Avatar" / "AI Avatar" labels.
+  const galleryCardTitle = 'Pick a magical hero';
+  const photoCardTitle = 'Turn YOU into a cartoon hero!';
+  // When the photo-avatar gate is OFF the avatar-choice page is skipped
+  // entirely — tapping Next on page 1 opens the gallery modal directly, whose
+  // header reads "Choose Your Look".
+  const galleryModalHeader = 'Choose Your Look';
+
   group('AI Avatar card visibility gate', () {
     testWidgets('hidden when allowPhotoAvatar is false (default)', (tester) async {
       SharedPreferences.setMockInitialValues({'allow_photo_avatar': false});
@@ -47,8 +56,10 @@ void main() {
 
       await advanceToAvatarPage(tester);
 
-      expect(find.text('Gallery Avatar'), findsOneWidget);
-      expect(find.text('AI Avatar'), findsNothing);
+      // Gate off: the photo-avatar card is never reachable; the gallery modal
+      // opens straight from page 1.
+      expect(find.text(photoCardTitle), findsNothing);
+      expect(find.text(galleryModalHeader), findsOneWidget);
     });
 
     testWidgets('hidden when allow_photo_avatar key is absent', (tester) async {
@@ -59,8 +70,8 @@ void main() {
 
       await advanceToAvatarPage(tester);
 
-      expect(find.text('Gallery Avatar'), findsOneWidget);
-      expect(find.text('AI Avatar'), findsNothing);
+      expect(find.text(photoCardTitle), findsNothing);
+      expect(find.text(galleryModalHeader), findsOneWidget);
     });
 
     testWidgets('shown when allowPhotoAvatar is true', (tester) async {
@@ -71,8 +82,10 @@ void main() {
 
       await advanceToAvatarPage(tester);
 
-      expect(find.text('Gallery Avatar'), findsOneWidget);
-      expect(find.text('AI Avatar'), findsOneWidget);
+      // Gate on: the avatar-choice page renders both the photo card and the
+      // gallery card.
+      expect(find.text(galleryCardTitle), findsOneWidget);
+      expect(find.text(photoCardTitle), findsOneWidget);
     });
   });
 }

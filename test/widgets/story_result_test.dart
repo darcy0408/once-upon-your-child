@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
@@ -55,16 +56,20 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: StoryResultScreen(
-          title: story.title,
-          storyText: story.storyText,
-          wisdomGem: 'Be kind and curious.',
-          characterName: story.characters.first.name,
-          storyId: story.id,
-          trackStoryCreation: false, // Disable achievement tracking in test
-          trackAnalytics: false, // Disable analytics tracking in test
-          offlineService: FakeOfflineStoryService(),
+      // StoryResultScreen is now a ConsumerStatefulWidget — it needs a
+      // ProviderScope ancestor.
+      ProviderScope(
+        child: MaterialApp(
+          home: StoryResultScreen(
+            title: story.title,
+            storyText: story.storyText,
+            wisdomGem: 'Be kind and curious.',
+            characterName: story.characters.first.name,
+            storyId: story.id,
+            trackStoryCreation: false, // Disable achievement tracking in test
+            trackAnalytics: false, // Disable analytics tracking in test
+            offlineService: FakeOfflineStoryService(),
+          ),
         ),
       ),
     );
@@ -86,16 +91,18 @@ void main() {
     testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
       (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: StoryResultScreen(
-          title: 'No Wisdom Story',
-          storyText: 'A tiny test story.',
-          wisdomGem: '',
-          characterName: 'Ava',
-          storyId: 'story_no_wisdom',
-          trackStoryCreation: false,
-          trackAnalytics: false,
-          offlineService: FakeOfflineStoryService(),
+      ProviderScope(
+        child: MaterialApp(
+          home: StoryResultScreen(
+            title: 'No Wisdom Story',
+            storyText: 'A tiny test story.',
+            wisdomGem: '',
+            characterName: 'Ava',
+            storyId: 'story_no_wisdom',
+            trackStoryCreation: false,
+            trackAnalytics: false,
+            offlineService: FakeOfflineStoryService(),
+          ),
         ),
       ),
     );

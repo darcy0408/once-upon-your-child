@@ -64,7 +64,11 @@ void main() {
         ),
       );
 
+      // Verify the button displays correct text. SubscriptionTier.premium
+      // renders as "Premium" (SubscriptionTier.displayName).
       expect(find.text('Subscribe to Premium'), findsOneWidget);
+
+      // Verify the button has the correct icon
       expect(find.byIcon(Icons.star), findsOneWidget);
       expect(find.byType(ElevatedButton), findsOneWidget);
     });
