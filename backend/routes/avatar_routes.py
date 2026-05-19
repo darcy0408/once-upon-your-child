@@ -81,6 +81,31 @@ def _seconds_until_next_hour() -> int:
     return 3600 - (now % 3600)
 
 
+def _run_with_timeout(fn, /, *args, **kwargs):
+    """
+    Run ``fn(*args, **kwargs)`` in a worker thread, bounded by
+    ``_AVATAR_TIMEOUT_SECONDS``.
+
+    On timeout this raises ``concurrent.futures.TimeoutError`` and returns
+    *promptly* — it does NOT block waiting for the orphaned worker thread to
+    finish. (MT-155: the previous ``with ThreadPoolExecutor()`` pattern's
+    ``__exit__`` called ``shutdown(wait=True)``, so a 30s timeout actually
+    blocked the client for the full ~110s generation runtime.)
+
+    The executor is shut down with ``wait=False, cancel_futures=True`` so the
+    request thread is released immediately; the orphaned generation thread is
+    left to drain on its own. Behaviour on the success path is unchanged.
+    """
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(fn, *args, **kwargs)
+        return future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
+    finally:
+        # wait=False: do NOT block on the (possibly still-running) worker.
+        # cancel_futures=True: drop any not-yet-started work (Python 3.9+).
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
 def _is_valid_image(image_bytes: bytes) -> bool:
     """
     Validate uploaded image data by inspecting magic bytes.
@@ -201,18 +226,16 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    future = ex.submit(
-                        service.generate_custom_avatar,
-                        character_name=character_name,
-                        age=age,
-                        gender=gender,
-                        eye_color=eye_color,
-                        favorite_color=favorite_color,
-                        photo_bytes=photo_bytes,
-                        refinement_note=refinement_note,
-                    )
-                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
+                avatar_data = _run_with_timeout(
+                    service.generate_custom_avatar,
+                    character_name=character_name,
+                    age=age,
+                    gender=gender,
+                    eye_color=eye_color,
+                    favorite_color=favorite_color,
+                    photo_bytes=photo_bytes,
+                    refinement_note=refinement_note,
+                )
 
                 logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")
 
@@ -349,8 +372,7 @@ def create_avatar_blueprint(limiter):
                         owner_age=owner_age,
                     )
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    avatar_data = ex.submit(_run_companion).result(timeout=_AVATAR_TIMEOUT_SECONDS)
+                avatar_data = _run_with_timeout(_run_companion)
 
                 logger.info(f"Companion avatar generated successfully: {avatar_data['id']} (type={companion_type})")
 
@@ -542,17 +564,15 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    future = ex.submit(
-                        service.generate_avatar,
-                        character_name=character_name,
-                        age=age,
-                        style=style,
-                        features=features,
-                        emotion_data=emotion_data,
-                        seed=seed,
-                    )
-                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
+                avatar_data = _run_with_timeout(
+                    service.generate_avatar,
+                    character_name=character_name,
+                    age=age,
+                    style=style,
+                    features=features,
+                    emotion_data=emotion_data,
+                    seed=seed,
+                )
 
                 logger.info(f"Avatar generated successfully: {avatar_data['id']}")
 
@@ -643,17 +663,15 @@ def create_avatar_blueprint(limiter):
             service = get_avatar_service()
 
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    future = ex.submit(
-                        service.generate_avatar,
-                        character_name=character_name,
-                        age=age,
-                        style=style,
-                        features=features,
-                        emotion_data=emotion_data,
-                        seed=None,
-                    )
-                    avatar_data = future.result(timeout=_AVATAR_TIMEOUT_SECONDS)
+                avatar_data = _run_with_timeout(
+                    service.generate_avatar,
+                    character_name=character_name,
+                    age=age,
+                    style=style,
+                    features=features,
+                    emotion_data=emotion_data,
+                    seed=None,
+                )
 
                 logger.info(f"Avatar re-rolled successfully: {avatar_data['id']}")
 
@@ -815,13 +833,12 @@ def create_avatar_blueprint(limiter):
 
             generator = GeminiImageGenerator()
             try:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    images = ex.submit(
-                        generator.tweak_gallery_avatar,
-                        image_bytes=image_bytes,
-                        hair_length=hair_length,
-                        eye_color=eye_color,
-                    ).result(timeout=_AVATAR_TIMEOUT_SECONDS)
+                images = _run_with_timeout(
+                    generator.tweak_gallery_avatar,
+                    image_bytes=image_bytes,
+                    hair_length=hair_length,
+                    eye_color=eye_color,
+                )
             except concurrent.futures.TimeoutError:
                 logger.warning("Gallery avatar tweak timed out")
                 return jsonify({

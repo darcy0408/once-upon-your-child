@@ -479,11 +479,19 @@ Maintain the character's facial features while converting them into the target a
                 if is_boy else "Refined: flowing or structured silhouette with intentional styling."
             )
 
+    # MT-155: hard cap on the best-effort photo-analysis vision call. This is
+    # a non-fatal enrichment step; if Gemini is slow we must not let it eat the
+    # request's latency budget. Kept well under the route's 30s timeout so the
+    # primary image-generation call still has room to run.
+    _PHOTO_ANALYSIS_TIMEOUT_SECONDS = int(
+        os.getenv("AVATAR_PHOTO_ANALYSIS_TIMEOUT_SECONDS", "12")
+    )
+
     def _analyze_photo_features(self, photo_bytes: bytes) -> dict:
         """
         Best-effort photo feature extraction via Gemini vision.
         Returns dict with keys: hair_style, skin_tone, distinguishing.
-        Returns empty dict on any failure.
+        Returns empty dict on any failure (including timeout — MT-155).
         """
         if self.image_generator is None:
             return {}
@@ -507,13 +515,27 @@ Maintain the character's facial features while converting them into the target a
 
             from backend.gemini_image_generator import _detect_mime_type
             mime_type = _detect_mime_type(photo_bytes)
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    analysis_prompt,
-                    types.Part.from_bytes(data=photo_bytes, mime_type=mime_type),
-                ],
-            )
+
+            # Bound the vision call with a non-blocking timeout. On timeout the
+            # executor is released immediately (wait=False) and we fall through
+            # to the empty-dict path, so a slow analysis call cannot stall the
+            # request — generation proceeds without photo descriptors.
+            import concurrent.futures as _cf
+            _executor = _cf.ThreadPoolExecutor(max_workers=1)
+            try:
+                _future = _executor.submit(
+                    client.models.generate_content,
+                    model="gemini-2.5-flash",
+                    contents=[
+                        analysis_prompt,
+                        types.Part.from_bytes(data=photo_bytes, mime_type=mime_type),
+                    ],
+                )
+                response = _future.result(
+                    timeout=self._PHOTO_ANALYSIS_TIMEOUT_SECONDS
+                )
+            finally:
+                _executor.shutdown(wait=False, cancel_futures=True)
 
             text = response.text.strip()
             # Strip markdown code fences if present

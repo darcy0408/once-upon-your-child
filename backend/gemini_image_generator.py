@@ -225,20 +225,38 @@ class GeminiImageGenerator:
         
         return images
 
-    def _generate_content_with_timeout(self, prompt: str):
+    def _generate_content_with_timeout(self, contents, *, with_rotation: bool = False):
+        """
+        Call ``models.generate_content`` bounded by ``_request_timeout_seconds``.
+
+        ``contents`` may be a plain prompt string or a list of parts (prompt +
+        reference image). On timeout this raises ``FuturesTimeoutError`` and
+        returns promptly — the executor is shut down with ``wait=False`` so the
+        orphaned API thread does not pin the request (MT-155).
+
+        When ``with_rotation`` is True the call is retried across the
+        GEMINI_API_KEY / GOOGLE_API_KEY_2..4 rotation pool on quota errors;
+        the per-attempt timeout still applies to each key.
+        """
         from google.genai import types
         config = types.GenerateContentConfig(response_modalities=["IMAGE"])
-        executor = ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(
-            self._client.models.generate_content,
-            model=self._model_name,
-            contents=prompt,
-            config=config,
-        )
-        try:
-            return future.result(timeout=self._request_timeout_seconds)
-        finally:
-            executor.shutdown(wait=False, cancel_futures=True)
+
+        def _invoke(client):
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                client.models.generate_content,
+                model=self._model_name,
+                contents=contents,
+                config=config,
+            )
+            try:
+                return future.result(timeout=self._request_timeout_seconds)
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
+
+        if with_rotation:
+            return self._call_with_rotation(_invoke)
+        return _invoke(self._client)
 
     def _read_avatar_details(self, avatar: dict) -> list:
         """Extract appearance strings from avatar dict.
@@ -661,12 +679,13 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
                 prompt,
                 types.Part.from_bytes(data=base_image_bytes, mime_type=mime_type)
             ]
-            
-            # Call Gemini
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+
+            # MT-155: bound the Gemini call with a per-attempt timeout (was an
+            # unbounded synchronous call — a single slow image generation could
+            # run ~110s and was the root cause of the /generate-custom-avatar
+            # 504s). Key rotation also kicks in here on quota exhaustion.
+            response = self._generate_content_with_timeout(
+                contents, with_rotation=True
             )
 
             # Process response and extract images
@@ -677,6 +696,13 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
 
             return images
 
+        except FuturesTimeoutError:
+            logger.warning(
+                "Gemini custom avatar generation timed out after %ss for %s",
+                self._request_timeout_seconds,
+                character_name,
+            )
+            return []
         except Exception as e:
             logger.exception(f"Error generating custom avatar with Gemini: {e}")
             return []
@@ -901,14 +927,11 @@ MANDATORY REQUIREMENTS:
                 types.Part.from_bytes(data=photo_bytes, mime_type=mime_type)
             ]
 
-            def _generate(client):
-                return client.models.generate_content(
-                    model=self._model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
-                )
-
-            response = self._call_with_rotation(_generate)
+            # MT-155: bounded, rotation-aware call (previously an unbounded
+            # synchronous generate_content under _call_with_rotation).
+            response = self._generate_content_with_timeout(
+                contents, with_rotation=True
+            )
 
             images = self._process_image_response(response, prompt)
 
@@ -917,6 +940,13 @@ MANDATORY REQUIREMENTS:
 
             return images
 
+        except FuturesTimeoutError:
+            logger.warning(
+                "Gemini pet avatar generation timed out after %ss for %s",
+                self._request_timeout_seconds,
+                pet_name,
+            )
+            return []
         except Exception as e:
             logger.exception(f"Error generating pet avatar with Gemini: {e}")
             return []
