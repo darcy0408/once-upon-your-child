@@ -517,3 +517,49 @@ class TestPowerVisualOverride:
         )
         sent_prompt = gen._client.models.generate_content.call_args.kwargs["contents"][0]
         assert "soft pastel halo" in sent_prompt.lower()
+
+
+class TestBuildAppearanceDetails:
+    """MT-129: the illustration prompt must describe only appearance the user
+    actually supplied — never a fabricated default — so the rendered character
+    matches the created avatar instead of a generic child."""
+
+    def test_empty_appearance_yields_no_details(self):
+        from backend.gemini_image_generator import build_appearance_details
+        # No appearance → empty list. (The fabrication bug lived on the Flutter
+        # side; this guards the backend never invents one from a bare dict.)
+        assert build_appearance_details(None) == []
+        assert build_appearance_details({}) == []
+
+    def test_only_supplied_fields_are_emitted(self):
+        from backend.gemini_image_generator import build_appearance_details
+        details = build_appearance_details({"skin_tone": "deep", "gender": "boy"})
+        joined = " | ".join(details)
+        assert "skin tone: deep" in joined
+        assert "gender: boy" in joined
+        # Hair/eyes were never supplied — they must not appear at all.
+        assert "hair" not in joined
+        assert "eye color" not in joined
+
+    def test_photo_hair_style_phrase_is_passed_through(self):
+        from backend.gemini_image_generator import build_appearance_details
+        # The custom-photo pipeline returns hair as one combined phrase.
+        details = build_appearance_details(
+            {"hair_style": "wavy black shoulder-length"}
+        )
+        assert any("wavy black shoulder-length" in d for d in details)
+
+    def test_distinguishing_feature_is_emitted(self):
+        from backend.gemini_image_generator import build_appearance_details
+        details = build_appearance_details({"distinguishing": "round glasses"})
+        assert any("notable feature: round glasses" in d for d in details)
+
+    def test_legacy_flat_keys_still_read(self):
+        from backend.gemini_image_generator import build_appearance_details
+        details = build_appearance_details(
+            {"hair": "red", "skin": "fair", "outfit": "blue raincoat"}
+        )
+        joined = " | ".join(details)
+        assert "red" in joined
+        assert "skin tone: fair" in joined
+        assert "wearing: blue raincoat" in joined

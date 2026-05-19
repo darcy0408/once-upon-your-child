@@ -62,6 +62,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   bool _isGenerating = false;
   String? _generatedImageBase64;
 
+  // MT-129: appearance attributes returned by the backend custom-avatar
+  // pipeline (hair_style, skin_tone, eye_color, gender, distinguishing, ...).
+  // Carried into the saved GeneratedAvatar so story illustrations match the
+  // avatar the parent created rather than rendering a generic child.
+  Map<String, String>? _generatedAttributes;
+
   // M-11 (COPPA): photo-based avatar creation requires an explicit parental
   // opt-in. `null` = the opt-in check is still loading; `false` = blocked.
   // Enforced inside this screen, not only by hiding an entry button.
@@ -504,9 +510,26 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         if (data['status'] == 'success') {
           final raw = data['avatar']['image_base64'] as String;
           final base64Only = raw.contains(',') ? raw.split(',').last : raw;
+          // MT-129: capture the backend's appearance attributes (photo-inferred
+          // hair_style/skin_tone/distinguishing + wizard-entered gender/eye)
+          // so the saved avatar carries real features for story illustrations.
+          final rawAttrs = data['avatar']?['attributes'];
+          final attrs = <String, String>{};
+          if (rawAttrs is Map) {
+            rawAttrs.forEach((k, v) {
+              if (v != null) attrs[k.toString()] = v.toString();
+            });
+          }
+          // Drop placeholder fields the wizard never actually collects, so they
+          // can't fabricate the illustration prompt: this screen has no
+          // hair-colour step at all, and the Sprout flow also skips the
+          // eye-colour step (its `_eyeColor` stays the untouched default).
+          attrs.remove('hair_color');
+          if (_isSprout) attrs.remove('eye_color');
           if (mounted) {
             setState(() {
               _generatedImageBase64 = base64Only;
+              _generatedAttributes = attrs.isEmpty ? null : attrs;
               _isGenerating = false;
             });
             if (_isSprout) {
@@ -1753,6 +1776,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                   CharacterAvatar.defaultAvatar.copyWith(
                 customImagePath: dataUri,
                 isCustom: true,
+                generationAttributes: _generatedAttributes,
               );
               Navigator.pop(context, customAvatar);
             },

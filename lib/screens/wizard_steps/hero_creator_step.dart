@@ -2450,12 +2450,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final dataUri = result?.customImagePath;
     if (!mounted || dataUri == null || dataUri.isEmpty) return;
 
+    // MT-129: carry the backend's appearance attributes (photo-inferred
+    // hair/skin/distinguishing + wizard-entered eye/gender) onto the saved
+    // avatar so story illustrations match the created character. Falls back to
+    // just the source tag when the backend returned no attributes.
+    final avatarAttributes = <String, String>{
+      'source': 'custom_photo',
+      ...?result?.generationAttributes,
+    };
+
     final generated = GeneratedAvatar(
       id: 'custom_photo_${DateTime.now().millisecondsSinceEpoch}',
       imageBase64: dataUri,
       seed: 'custom_photo',
       style: 'pixar',
-      attributes: const {'source': 'custom_photo'},
+      attributes: avatarAttributes,
       generatedAt: DateTime.now(),
     );
 
@@ -3262,16 +3271,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Future<void> _speakPagePrompt(int page) async {
     final age = widget.wizardData.characterAge;
+    final knownName = widget.wizardData.characterName.trim();
+    final hasKnownName = knownName.isNotEmpty;
     if (age <= 5) {
       // Sprout — full guided TTS on every page.
-      // Page 1 reframes as a confirmation when the name is already known
-      // (from the welcome screen) — otherwise we'd ask the same question
-      // twice in a row, which a 4yo finds confusing.
-      final knownName = widget.wizardData.characterName.trim();
-      final hasKnownName = knownName.isNotEmpty;
+      // Page 1 opens with a warm, personalised greeting when the name is
+      // already known (from the welcome screen) so we don't ask for it twice
+      // in a row, which a 4yo finds confusing.
       final page1Prompt = hasKnownName
-          ? "Will $knownName be your hero? Tap a picture!"
-          : "What is your hero's name? Tap the microphone to say it!";
+          ? "Hi $knownName! Let's go on a magical adventure together. "
+              "Tap a picture to start making your hero!"
+          : "Hi there! Let's go on a magical adventure together. "
+              "What is your hero's name? Tap the microphone to say it!";
       final prompt = switch (page) {
         1 => page1Prompt,
         2 => "Pick your hero's look! Tap Choose Look to pick one.",
@@ -3283,8 +3294,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       };
       if (prompt != null) await _speakForSprout(prompt);
     } else {
-      // Older bands — warm narrator voice on archetype + companion pages only
+      // Older bands — warm narrator voice. Page 1 opens with a personalised
+      // greeting framed for the band; archetype + companion pages keep their
+      // existing guidance.
+      final isAdventurer = age >= 9;
+      final page1Prompt = isAdventurer
+          ? (hasKnownName
+              ? "Hey $knownName! Your next adventure is about to begin. "
+                  "Let's build your hero."
+              : "Hey there! Your next adventure is about to begin. "
+                  "Let's build your hero.")
+          : (hasKnownName
+              ? "Hi $knownName! Get ready for a brand-new adventure. "
+                  "Let's create your hero!"
+              : "Hi there! Get ready for a brand-new adventure. "
+                  "Let's create your hero!");
       final prompt = switch (page) {
+        1 => page1Prompt,
         3 => "Choose your hero's path!",
         4 => "Who will join you on your quest?",
         _ => null,

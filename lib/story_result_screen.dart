@@ -861,30 +861,72 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }));
   }
 
+  /// Build the `character_appearance` payload for `/generate-illustrations`.
+  ///
+  /// MT-129: this used to run every field through `_buildCharacterAppearance()`
+  /// and serialize the result — but those mappers return a **non-null default**
+  /// (`brown` hair, `light` skin, …) when the source is empty, so the backend
+  /// was always handed a confident, fabricated description. The illustration
+  /// model rendered that description faithfully → a child who didn't match the
+  /// one the user created. This now emits only fields backed by real source
+  /// data; an unknown field is omitted so the model stays neutral instead of
+  /// being told something false.
   Future<Map<String, dynamic>?> _characterAppearanceForBackend() async {
-    final appearance = _buildCharacterAppearance();
-    if (appearance == null) return null;
+    final character = _character;
+    // Prefer the backend-fetched character, but fall back to the live wizard
+    // data — a freshly created (often unsaved/anonymous) character has no
+    // `characterId`, so `_character` is null even though the user just built
+    // an avatar this session.
+    final generatedAvatar =
+        character?.generatedAvatar ?? widget.wizardData?.generatedAvatar;
+    final attrs = generatedAvatar?.attributes ?? const <String, String>{};
+
+    // Returns the trimmed value, or null when there is nothing real to send.
+    String? real(Object? value) {
+      final text = value?.toString().trim();
+      return (text == null || text.isEmpty) ? null : text;
+    }
+
+    final name = real(character?.name) ?? real(widget.characterName);
+
+    // Hair: the custom-photo pipeline returns `hair_style` as one combined
+    // phrase ("wavy brown shoulder-length"); a legacy avatar-builder character
+    // may instead carry separate `hair`/`hairstyle` fields. All passed
+    // verbatim — the backend prompt builder reads free text.
+    final hairStyle = real(attrs['hair_style']) ??
+        real(attrs['hairstyle']) ??
+        real(character?.hairstyle);
+    final hairColor = real(attrs['hair_color']) ?? real(character?.hair);
+    final eyeColor = real(attrs['eye_color']) ?? real(character?.eyes);
+    final skinTone = real(attrs['skin_tone']) ?? real(character?.skinTone);
+    final outfit = real(attrs['outfit']) ??
+        real(character?.outfit) ??
+        real(character?.characterStyle);
+    final distinguishing = real(attrs['distinguishing']);
+    final gender = real(attrs['gender']);
+
     final payload = <String, dynamic>{
-      'character_name': appearance.characterName,
-      'hair_color': appearance.hairColor.name,
-      'hair_length': appearance.hairLength.name,
-      'hair_style': appearance.hairStyle.name,
-      'eye_color': appearance.eyeColor.name,
-      'skin_tone': appearance.skinTone.name,
-      'clothing_style': appearance.clothingStyle.name,
-      'clothing_colors': appearance.clothingColors.name,
+      if (name != null) 'character_name': name,
+      if (hairStyle != null) 'hair_style': hairStyle,
+      if (hairColor != null) 'hair_color': hairColor,
+      if (eyeColor != null) 'eye_color': eyeColor,
+      if (skinTone != null) 'skin_tone': skinTone,
+      if (outfit != null) 'outfit': outfit,
+      if (distinguishing != null) 'distinguishing': distinguishing,
+      if (gender != null) 'gender': gender,
     };
-    // When the character has a saved avatar/photo, send the image itself as a
-    // reference so the illustration model can match the character's likeness
-    // across pages, not just approximate it from text. This is the only
-    // grounding signal Sprout-band characters have — their simplified wizard
-    // collects gender + favourite colour + photo, leaving the text appearance
-    // fields above empty. See MT-129 / MT-070.
+
+    // The avatar image itself — used as a true likeness reference by
+    // image-capable backends (the BYOK Gemini path). The non-BYOK Flux path is
+    // text-to-image only and ignores it; see MT-129.
     final avatarReference = await _resolveAvatarReferenceBase64();
     if (avatarReference != null && avatarReference.isNotEmpty) {
       payload['custom_avatar_base64'] = avatarReference;
     }
-    return payload;
+
+    // No appearance fields and no reference image → nothing useful to send.
+    final hasAppearance = payload.keys.any((k) => k != 'character_name');
+    return hasAppearance ? payload : null;
   }
 
   /// Resolve the saved avatar image to a base64 (data-URI) string the backend
@@ -898,7 +940,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// leaving the illustration model to render a generic child. Fetch/load
   /// non-base64 forms here so the reference always arrives as base64.
   Future<String?> _resolveAvatarReferenceBase64() async {
-    final raw = _character?.generatedAvatar?.imageBase64.trim();
+    // MT-129: same fallback as `_characterAppearanceForBackend` — the avatar
+    // may live only on the live wizard data when the character is unsaved.
+    final generatedAvatar =
+        _character?.generatedAvatar ?? widget.wizardData?.generatedAvatar;
+    final raw = generatedAvatar?.imageBase64.trim();
     if (raw == null || raw.isEmpty) return null;
 
     // Already base64 (optionally `data:image/...;base64,` prefixed).

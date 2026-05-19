@@ -151,6 +151,25 @@ class AvatarGenerationService:
             if parts:
                 photo_context = "Photo Analysis — " + "; ".join(parts) + "."
 
+        # MT-129: surface the avatar's appearance in the returned attributes so
+        # the saved character carries real features and downstream story
+        # illustrations match the avatar instead of rendering a generic child.
+        # `hair_style`/`skin_tone`/`distinguishing` are the photo-inferred
+        # descriptors from `_analyze_photo_features`; the rest are the parent's
+        # wizard inputs. Previously only the wizard inputs were returned and the
+        # photo-derived features were discarded after prompt assembly.
+        avatar_attributes = {
+            'character_name': character_name,
+            'age': age,
+            'gender': gender,
+            'eye_color': eye_color,
+            'favorite_color': favorite_color,
+        }
+        for _feat_key in ('hair_style', 'skin_tone', 'distinguishing'):
+            _feat_val = photo_descriptors.get(_feat_key)
+            if _feat_val:
+                avatar_attributes[_feat_key] = _feat_val
+
         age_profile = (
             f"Age Styling: Character should appear approximately {age} years old, "
             f"matching the visual maturity level appropriate for a {band_style['band_name']} protagonist. "
@@ -263,13 +282,7 @@ Maintain the character's facial features while converting them into the target a
                 'id': avatar_id,
                 'image_base64': f"data:image/png;base64,{image_base64}",
                 'style': 'pixar-custom',
-                'attributes': {
-                    'character_name': character_name,
-                    'age': age,
-                    'gender': gender,
-                    'eye_color': eye_color,
-                    'favorite_color': favorite_color
-                },
+                'attributes': dict(avatar_attributes),
                 'generated_at': datetime.now().isoformat(),
                 'generation_time_ms': generation_time_ms,
                 'version': 3
@@ -297,13 +310,7 @@ Maintain the character's facial features while converting them into the target a
                     'id': avatar_id,
                     'image_base64': f"data:image/png;base64,{image_base64}",
                     'style': 'pixar-custom',
-                    'attributes': {
-                        'character_name': character_name,
-                        'age': age,
-                        'gender': gender,
-                        'eye_color': eye_color,
-                        'favorite_color': favorite_color
-                    },
+                    'attributes': dict(avatar_attributes),
                     'generated_at': datetime.now().isoformat(),
                     'version': 3,
                 }
@@ -335,13 +342,7 @@ Maintain the character's facial features while converting them into the target a
                                     'id': avatar_id,
                                     'image_base64': f"data:image/png;base64,{image_base64}",
                                     'style': 'pixar-custom',
-                                    'attributes': {
-                                        'character_name': character_name,
-                                        'age': age,
-                                        'gender': gender,
-                                        'eye_color': eye_color,
-                                        'favorite_color': favorite_color
-                                    },
+                                    'attributes': dict(avatar_attributes),
                                     'generated_at': datetime.now().isoformat(),
                                     'version': 3,
                                 }

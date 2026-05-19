@@ -155,6 +155,13 @@ def build_appearance_details(character_appearance: dict | None) -> list:
     if gender:
         details.append(f"gender: {gender}")
 
+    # --- Distinguishing feature (MT-129) -------------------------------------
+    # A single notable visual cue from photo analysis (e.g. "round glasses",
+    # "freckles", "curly bangs"). High recognisability signal — passed verbatim.
+    distinguishing = _humanize(ca.get('distinguishing'))
+    if distinguishing:
+        details.append(f"notable feature: {distinguishing}")
+
     return details
 
 

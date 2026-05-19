@@ -18,6 +18,13 @@ class CharacterAvatar {
   final String? customImagePath;
   final bool isCustom;
 
+  /// MT-129: appearance attributes returned by the backend custom-avatar
+  /// pipeline (hair_style, skin_tone, eye_color, gender, distinguishing, ...).
+  /// Transient — used only to carry the photo-derived features from
+  /// `CustomAvatarScreen` to the saved `GeneratedAvatar` so story
+  /// illustrations match the created avatar. Not persisted in JSON.
+  final Map<String, String>? generationAttributes;
+
   const CharacterAvatar({
     required this.skinColor,
     required this.hairStyle,
@@ -31,6 +38,7 @@ class CharacterAvatar {
     this.accessoriesType,
     this.customImagePath,
     this.isCustom = false,
+    this.generationAttributes,
   });
 
   /// Create from JSON (compatible with React web app format)
@@ -105,6 +113,7 @@ class CharacterAvatar {
     String? accessoriesType,
     String? customImagePath,
     bool? isCustom,
+    Map<String, String>? generationAttributes,
   }) {
     return CharacterAvatar(
       skinColor: skinColor ?? this.skinColor,
@@ -119,6 +128,7 @@ class CharacterAvatar {
       accessoriesType: accessoriesType ?? this.accessoriesType,
       customImagePath: customImagePath ?? this.customImagePath,
       isCustom: isCustom ?? this.isCustom,
+      generationAttributes: generationAttributes ?? this.generationAttributes,
     );
   }
 
