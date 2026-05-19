@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 17:07 | b617 | main | MT-168 Playwright partial-verify; blocked on Railway outage | [link](docs/sessions/2026-05-19-1707-b617.md) |
 | 2026-05-19 | 16:23 | 22c7 | main | MT-113 reopen — raise hour/day rate-limit above monthly quota | [link](docs/sessions/2026-05-19-1623-22c7.md) |
 | 2026-05-19 | 16:19 | 4449 | main | Six Hats security audit 03 + full Critical/High/Medium/Low remediation | [link](docs/sessions/2026-05-19-1619-4449.md) |
 | 2026-05-19 | 15:02 | 4c3e | main | Fix backend crash restart + story-gen List cast TypeError | [link](docs/sessions/2026-05-19-1502-4c3e.md) |
