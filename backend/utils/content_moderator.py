@@ -96,6 +96,58 @@ def _age_band_label(age: int) -> str:
     return "an adult"
 
 
+# F-03: the classifier previously inspected only story_text[:3000] — roughly
+# the first ~500 words. A teen-band "long" story runs 3400-4500 words, so the
+# climax and ending went unmoderated. Stories are now split into chunks and
+# every chunk is classified.
+#
+# _CHUNK_SIZE: characters sent to the classifier in one call. flash-lite
+# handles far more, but bounded chunks keep latency and cost predictable.
+# _MAX_CHUNKS: hard ceiling so a pathologically long input cannot fan out into
+# unbounded classifier calls. 5 * 12000 = 60000 chars (~10k words) comfortably
+# exceeds the longest age-band target (adult 'long').
+_CHUNK_SIZE = 12000
+_MAX_CHUNKS = 5
+
+
+def _split_into_chunks(
+    text: str, chunk_size: int = _CHUNK_SIZE, max_chunks: int = _MAX_CHUNKS
+) -> list[str]:
+    """Split *text* into at most *max_chunks* pieces of roughly *chunk_size*.
+
+    Breaks on a paragraph boundary where possible, then a sentence end, then a
+    space, so the classifier always sees coherent prose rather than a word cut
+    in half. A story longer than chunk_size * max_chunks is truncated at that
+    bound — the leading 60k characters are still fully classified.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    if len(text) <= chunk_size:
+        return [text]
+
+    chunks: list[str] = []
+    remaining = text
+    while remaining and len(chunks) < max_chunks:
+        if len(remaining) <= chunk_size:
+            chunks.append(remaining)
+            break
+        window = remaining[:chunk_size]
+        # Prefer a paragraph break; fall back to a sentence end, then a space.
+        split_at = window.rfind("\n\n")
+        if split_at < chunk_size // 2:
+            split_at = max(
+                window.rfind(". "), window.rfind("! "), window.rfind("? ")
+            )
+        if split_at < chunk_size // 2:
+            split_at = window.rfind(" ")
+        if split_at <= 0:
+            split_at = chunk_size
+        chunks.append(remaining[: split_at + 1].strip())
+        remaining = remaining[split_at + 1 :].strip()
+    return [c for c in chunks if c]
+
+
 def moderate_story_content(
     story_text: str, age: int, client=None, fail_closed: bool = False
 ) -> tuple[bool, str]:
@@ -109,17 +161,17 @@ def moderate_story_content(
         fail_closed: When True, a classifier error returns (False, <reason>)
             instead of (True, "") — i.e. the content is treated as UNSAFE
             when the classifier could not vet it. The interactive Sprout-band
-            path (ages 3-5) sets this so unmoderated content is never served
-            to the youngest children. Defaults to False (fail open) to
-            preserve the existing behaviour of the keyword-backed paths.
+            path (ages 3-5) and the standard pre-teen path set this so
+            unmoderated content is never served to the youngest children.
+            Defaults to False (fail open).
 
     Returns:
         (is_safe, reason) — is_safe=True means content passed, reason is
         empty string when safe or a brief explanation when flagged.
 
-    On any error the function returns (True, "") to fail open by default,
-    preserving story delivery while the keyword filter acts as the primary
-    safety net. With fail_closed=True it instead returns (False, reason).
+    The full story is classified in chunks (F-03); the first chunk that is
+    flagged or that cannot be verified determines the result. On a classifier
+    error the function fails open by default, or closed when fail_closed=True.
     """
     if not story_text or not story_text.strip():
         return True, ""
@@ -139,6 +191,33 @@ def moderate_story_content(
 
     age_label = _age_band_label(age)
 
+    chunks = _split_into_chunks(story_text)
+    for index, chunk in enumerate(chunks):
+        is_safe, reason = _classify_chunk(
+            chunk, age, age_label, client, fail_closed, _unverified
+        )
+        if not is_safe:
+            if reason and reason != "moderation unavailable":
+                logger.warning(
+                    f"content_moderator: chunk {index + 1}/{len(chunks)} "
+                    f"flagged for age {age} — {reason!r}"
+                )
+            return False, reason
+    return True, ""
+
+
+def _classify_chunk(
+    story_text: str,
+    age: int,
+    age_label: str,
+    client,
+    fail_closed: bool,
+    _unverified: tuple[bool, str],
+) -> tuple[bool, str]:
+    """Classify a single chunk of story text. See moderate_story_content."""
+    if not story_text or not story_text.strip():
+        return True, ""
+
     prompt = (
         f"You are a child content safety reviewer. Read the following story written for "
         f"{age_label} and determine whether it is safe and appropriate.\n\n"
@@ -151,7 +230,8 @@ def moderate_story_content(
         f"Respond ONLY with a JSON object — no other text:\n"
         f'  {{"safe": true}} if the story is appropriate\n'
         f'  {{"safe": false, "reason": "brief explanation"}} if it is not\n\n'
-        f"Story (first 3000 characters):\n{story_text[:3000]}"
+        f"This is one section of a longer story; judge it on its own content.\n"
+        f"Story section:\n{story_text}"
     )
 
     try:

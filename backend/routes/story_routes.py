@@ -985,12 +985,30 @@ def create_story_blueprint(
             filtered_content, flagged = filter_story_content(segment_content, age)
             result['segment']['content'] = filtered_content
 
+            # F-01: widen moderation input to cover the segment title and every
+            # choice-button label — children see/tap these, not just the body.
+            moderation_input = "\n".join([
+                filtered_content,
+                result['segment'].get('title', ''),
+                *[c.get('text', '') for c in result['segment'].get('choices', [])],
+            ])
+            _, title_choices_flagged = filter_story_content(
+                "\n".join([
+                    result['segment'].get('title', ''),
+                    *[c.get('text', '') for c in result['segment'].get('choices', [])],
+                ]),
+                age,
+            )
+            if title_choices_flagged:
+                flagged = True
+                logger.warning("Interactive story opening title/choices flagged by content filter")
+
             if flagged:
                 logger.warning("Interactive story opening flagged by content filter")
             else:
                 try:
                     llm_safe, llm_reason = moderate_story_content(
-                        filtered_content, age, fail_closed=is_sprout_band(age)
+                        moderation_input, age, fail_closed=is_sprout_band(age)
                     )
                     if not llm_safe:
                         flagged = True
@@ -1009,11 +1027,13 @@ def create_story_blueprint(
 
             # When the opening segment is unsafe (or unverifiable for Sprout),
             # serve a safe fallback segment instead of the generated content.
+            # F-02: also replace choices so unsafe button labels are never shown.
             if flagged:
                 fallback = build_safe_fallback_segment(segment_number=1)
                 result['segment']['content'] = fallback['content']
                 result['segment']['title'] = fallback['title']
                 result['segment']['image_description'] = fallback['image_description']
+                result['segment']['choices'] = fallback['choices']
                 result['segment']['image_url'] = None
                 logger.warning(
                     "Interactive story opening replaced with safe fallback segment "
@@ -1122,12 +1142,30 @@ def create_story_blueprint(
             filtered_content, flagged = filter_story_content(segment_content, story_age)
             result['segment']['content'] = filtered_content
 
+            # F-01: widen moderation input to cover the segment title and every
+            # choice-button label — children see/tap these, not just the body.
+            moderation_input = "\n".join([
+                filtered_content,
+                result['segment'].get('title', ''),
+                *[c.get('text', '') for c in result['segment'].get('choices', [])],
+            ])
+            _, title_choices_flagged = filter_story_content(
+                "\n".join([
+                    result['segment'].get('title', ''),
+                    *[c.get('text', '') for c in result['segment'].get('choices', [])],
+                ]),
+                story_age,
+            )
+            if title_choices_flagged:
+                flagged = True
+                logger.warning("Interactive continuation title/choices flagged by content filter")
+
             if flagged:
                 logger.warning("Interactive continuation flagged by content filter")
             else:
                 try:
                     llm_safe, llm_reason = moderate_story_content(
-                        filtered_content, story_age, fail_closed=is_sprout_band(story_age)
+                        moderation_input, story_age, fail_closed=is_sprout_band(story_age)
                     )
                     if not llm_safe:
                         flagged = True
@@ -1144,6 +1182,7 @@ def create_story_blueprint(
 
             # When the continuation is unsafe (or unverifiable for Sprout),
             # serve a safe fallback segment instead of the generated content.
+            # F-02: also replace choices so unsafe button labels are never shown.
             if flagged:
                 fallback = build_safe_fallback_segment(
                     segment_number=result['segment'].get('segment_number', 1),
@@ -1152,6 +1191,7 @@ def create_story_blueprint(
                 result['segment']['content'] = fallback['content']
                 result['segment']['title'] = fallback['title']
                 result['segment']['image_description'] = fallback['image_description']
+                result['segment']['choices'] = fallback['choices']
                 result['segment']['image_url'] = None
                 logger.warning(
                     f"Interactive continuation replaced with safe fallback segment "
@@ -1316,6 +1356,22 @@ def create_story_blueprint(
 
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
+
+            # F-10: keyword-screen the scene description before it reaches the
+            # image model. Story page text is moderated upstream, but a modified
+            # client can POST an arbitrary scene_description directly. On a flag,
+            # fall back to a known-safe generic scene.
+            from ..utils.app_helpers import make_filter_story_content
+            _, _scene_flagged = make_filter_story_content(logger)(scene_description, age)
+            if _scene_flagged:
+                logger.warning(
+                    "Illustration scene_description flagged by keyword filter; "
+                    "substituting safe fallback scene."
+                )
+                scene_description = (
+                    "a warm, gentle children's book illustration of a sunny "
+                    "meadow with friendly animals"
+                )
 
             # Use user's API key if provided, otherwise use the hybrid pipeline.
             # Per-page illustration routing (cost reduction, 2026-05-17):
@@ -1688,14 +1744,37 @@ def create_story_blueprint(
                 return jsonify({"error": "Scene description or scenes list is required"}), 400
 
             character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
-            
+
             # Enforce single image generation for coloring pages
             num_images_per_scene = 1
-            
+
             try:
                 age = validate_age(data.get("age", 7))
             except ValueError:
                 age = 7  # Default to 7 if invalid
+
+            # F-10: keyword-screen every scene description before it reaches the
+            # image model. On a flag, substitute a known-safe generic scene.
+            from ..utils.app_helpers import make_filter_story_content
+            _coloring_filter = make_filter_story_content(logger)
+            _SAFE_COLORING_SCENE = (
+                "a gentle children's coloring page of a sunny meadow with "
+                "friendly animals"
+            )
+            for _scene in scenes:
+                if not isinstance(_scene, dict):
+                    continue
+                _desc = _scene.get("description") or _scene.get("scene_description") or ""
+                _, _scene_flagged = _coloring_filter(_desc, age)
+                if _scene_flagged:
+                    logger.warning(
+                        "Coloring scene description flagged by keyword filter; "
+                        "substituting safe fallback scene."
+                    )
+                    if "description" in _scene:
+                        _scene["description"] = _SAFE_COLORING_SCENE
+                    if "scene_description" in _scene:
+                        _scene["scene_description"] = _SAFE_COLORING_SCENE
             therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             user_api_key = data.get("user_api_key")
 

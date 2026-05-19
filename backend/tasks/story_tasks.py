@@ -1234,12 +1234,32 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             from backend.utils.content_moderator import moderate_story_content
 
             _filter_fn = make_filter_story_content(logger)
-            _, keyword_flagged = _filter_fn(story_body, age)
+            # F-13: screen the title too — it is as child-visible as the body.
+            _, _keyword_flagged_body = _filter_fn(story_body, age)
+            _, _keyword_flagged_title = _filter_fn(title or "", age)
+            keyword_flagged = _keyword_flagged_body or _keyword_flagged_title
 
             llm_flagged = False
             llm_flag_reason = ""
             if not keyword_flagged:
-                llm_safe, llm_flag_reason = moderate_story_content(story_body, age)
+                # F-04/F-06: fail closed for pre-teens (age <= 12) so a
+                # classifier outage routes a young child's story into the
+                # safe-fallback regeneration below instead of serving it
+                # unverified. F-05: also fail closed when the weaker
+                # OpenRouter fallback model produced the story — it has no
+                # provider-side safety filtering of its own.
+                try:
+                    _mod_age = int(age) if age is not None else 5
+                except (TypeError, ValueError):
+                    _mod_age = 5
+                _fail_closed = _mod_age <= 12 or provider_name == "openrouter"
+                # Moderate title + body together (F-13).
+                _moderation_text = (
+                    f"{title}\n\n{story_body}" if title else story_body
+                )
+                llm_safe, llm_flag_reason = moderate_story_content(
+                    _moderation_text, age, fail_closed=_fail_closed
+                )
                 llm_flagged = not llm_safe
 
             if keyword_flagged or llm_flagged:

@@ -15,6 +15,36 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# Image-side content filter applied to every Gemini image-generation call.
+# Mirrors _CHILD_SAFETY_SETTINGS from story_generation_service.py so that
+# both the text and image paths enforce the same children's-audience thresholds.
+#   BLOCK_LOW_AND_ABOVE  — near-zero tolerance (sexual content, hate, harassment)
+#   BLOCK_MEDIUM_AND_ABOVE — blocks moderate+ harm; allows mild age-appropriate
+#                            danger/conflict that can appear in children's stories.
+try:
+    from google.genai import types as _genai_types_init
+    _CHILD_IMAGE_SAFETY_SETTINGS = [
+        _genai_types_init.SafetySetting(
+            category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold="BLOCK_LOW_AND_ABOVE",
+        ),
+        _genai_types_init.SafetySetting(
+            category="HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold="BLOCK_MEDIUM_AND_ABOVE",
+        ),
+        _genai_types_init.SafetySetting(
+            category="HARM_CATEGORY_HARASSMENT",
+            threshold="BLOCK_LOW_AND_ABOVE",
+        ),
+        _genai_types_init.SafetySetting(
+            category="HARM_CATEGORY_HATE_SPEECH",
+            threshold="BLOCK_LOW_AND_ABOVE",
+        ),
+    ]
+    del _genai_types_init
+except ImportError:
+    _CHILD_IMAGE_SAFETY_SETTINGS = []
+
 
 # MT-107: Per-power visual signatures for Explorer-band Superhero Mode.
 # Keys are power_ids from backend/data/superhero_matrix.py EXPLORER_POWERS.
@@ -239,7 +269,10 @@ class GeminiImageGenerator:
         the per-attempt timeout still applies to each key.
         """
         from google.genai import types
-        config = types.GenerateContentConfig(response_modalities=["IMAGE"])
+        config = types.GenerateContentConfig(
+            response_modalities=["IMAGE"],
+            safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
+        )
 
         def _invoke(client):
             executor = ThreadPoolExecutor(max_workers=1)
@@ -431,7 +464,10 @@ Style: {style}, optimized for {age_descriptor}
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                    safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
+                ),
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
@@ -628,7 +664,10 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                    safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
+                ),
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
@@ -757,7 +796,10 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                    safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
+                ),
             )
 
             images = self._process_image_response(response, prompt)
