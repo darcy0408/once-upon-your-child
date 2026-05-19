@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 14:31 | 1083 | main | Reword hero-creator greeting; diagnose robotic TTS voice | [link](docs/sessions/2026-05-19-1431-1083.md) |
 | 2026-05-19 | 14:31 | 2020 | main | MT-129 fix — story illustrations now match the created avatar | [link](docs/sessions/2026-05-19-1431-2020.md) |
 | 2026-05-19 | 13:58 | 9a8d | main | MT-156 resolved — mt150_smoke.py tracked under backend/tests/smoke/ | [link](docs/sessions/2026-05-19-1358-9a8d.md) |
 | 2026-05-19 | 13:53 | 8086 | main | Content-safety audit (Six Hats) + Critical/High mod fixes | [link](docs/sessions/2026-05-19-1353-8086.md) |
