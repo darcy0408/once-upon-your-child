@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 13:58 | 9a8d | main | MT-156 resolved — mt150_smoke.py tracked under backend/tests/smoke/ | [link](docs/sessions/2026-05-19-1358-9a8d.md) |
 | 2026-05-19 | 13:53 | 8086 | main | Content-safety audit (Six Hats) + Critical/High mod fixes | [link](docs/sessions/2026-05-19-1353-8086.md) |
 | 2026-05-19 | 08:16 | 8e76 | main | MT-154/155 interactive-story + avatar fixes; MT-150 monetization verified | [link](docs/sessions/2026-05-19-0816-8e76.md) |
 | 2026-05-18 | 16:37 | 3dfa | main | MT-149 cost-reduction deploy smoke test (passed) | [link](docs/sessions/2026-05-18-1637-3dfa.md) |
