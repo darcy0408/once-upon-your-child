@@ -4,12 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/stripe_service.dart';
 import '../../helpers/mocks.dart';
 
 void main() {
   late StripeService stripeService;
   late MockHttpClient mockHttpClient;
+
+  // A syntactically valid, non-expired JWT. Auth headers now flow through
+  // ApiServiceManager.authHeaders(), which validates the stored token is a
+  // well-formed JWT whose `exp` claim is in the future before attaching it as
+  // a Bearer token — a plain placeholder string is rejected and dropped.
+  const validJwt =
+      'eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.'
+      'eyJleHAiOiA5OTk5OTk5OTk5LCAic3ViIjogInVzZXJfMTIzIn0.sig';
 
   setUpAll(() {
     registerCommonMocks();
@@ -18,9 +27,12 @@ void main() {
   setUp(() async {
     mockHttpClient = MockHttpClient();
     SharedPreferences.setMockInitialValues({
-      'story_weaver_auth_token': 'mock_token',
+      'story_weaver_auth_token': validJwt,
       'story_weaver_user_id': 'user_123',
     });
+    // Auth state is cached statically in ApiServiceManager and would otherwise
+    // leak between tests; clear it so each test loads its own token.
+    await ApiServiceManager.resetAuthForTest();
     stripeService = StripeService(httpClient: mockHttpClient);
   });
 
@@ -100,7 +112,7 @@ void main() {
           )).captured.single as Map<String, String>;
 
       expect(headers['Content-Type'], 'application/json');
-      expect(headers['Authorization'], 'Bearer mock_token');
+      expect(headers['Authorization'], 'Bearer $validJwt');
     });
 
     test('createCheckoutSession omits bearer token when not present', () async {
@@ -318,7 +330,7 @@ void main() {
             body: any(named: 'body'),
           )).captured.single as Map<String, String>;
 
-      expect(headers['Authorization'], 'Bearer mock_token');
+      expect(headers['Authorization'], 'Bearer $validJwt');
     });
 
     test('cancelSubscription returns false on failed cancellation', () async {

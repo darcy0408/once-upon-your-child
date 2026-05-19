@@ -1142,14 +1142,6 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     return text.trim();
   }
 
-  double _averageWordsPerPage(List<String> pages) {
-    if (pages.isEmpty) return 0;
-    final totalWords = pages
-        .map((p) => p.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length)
-        .fold<int>(0, (sum, count) => sum + count);
-    return totalWords / pages.length;
-  }
-
   /// Break a page's text into one phrase per line for the Read Along reading
   /// level (3–5 yo). Sentences are the primary break; long sentences are
   /// further split on commas. Tiny fragments are merged forward so we don't

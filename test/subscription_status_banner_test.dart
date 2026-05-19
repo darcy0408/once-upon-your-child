@@ -45,7 +45,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Current plan: Adventurer'), findsOneWidget);
+    // SubscriptionTier.premium renders as "Premium" (SubscriptionTier.displayName).
+    expect(find.text('Current plan: Premium'), findsOneWidget);
   });
 
   testWidgets('shows status changes when stream updates', (tester) async {
