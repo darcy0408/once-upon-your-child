@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 15:02 | 4c3e | main | Fix backend crash restart + story-gen List cast TypeError | [link](docs/sessions/2026-05-19-1502-4c3e.md) |
 | 2026-05-19 | 15:01 | 8781 | main | Triage stranded uncommitted backend work (1 commit + cleanup) | [link](docs/sessions/2026-05-19-1501-8781.md) |
 | 2026-05-19 | 14:35 | 74a8 | main | MT-139 per-band prod verification sweep (14 closed) | [link](docs/sessions/2026-05-19-1435-74a8.md) |
 | 2026-05-19 | 14:31 | 1083 | main | Reword hero-creator greeting; diagnose robotic TTS voice | [link](docs/sessions/2026-05-19-1431-1083.md) |
