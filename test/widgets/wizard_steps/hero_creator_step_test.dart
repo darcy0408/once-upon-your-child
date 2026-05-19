@@ -156,8 +156,8 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    // Page 0: shows existing characters + the "Or create someone new" button.
-    final createNew = find.textContaining('create someone new');
+    // Page 0: shows existing characters + the "Create a new hero" CTA tile.
+    final createNew = find.text('Create a new hero');
     expect(createNew, findsOneWidget);
     await tester.tap(createNew);
     await pumpFor(tester, const Duration(milliseconds: 500));
