@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 13:53 | 8086 | main | Content-safety audit (Six Hats) + Critical/High mod fixes | [link](docs/sessions/2026-05-19-1353-8086.md) |
 | 2026-05-19 | 08:16 | 8e76 | main | MT-154/155 interactive-story + avatar fixes; MT-150 monetization verified | [link](docs/sessions/2026-05-19-0816-8e76.md) |
 | 2026-05-18 | 16:37 | 3dfa | main | MT-149 cost-reduction deploy smoke test (passed) | [link](docs/sessions/2026-05-18-1637-3dfa.md) |
 | 2026-05-18 | 16:38 | 7ce6 | main | Closed MT-153 — SECRET_KEY verified on story-weaver-app backend | [link](docs/sessions/2026-05-18-1638-7ce6.md) |
