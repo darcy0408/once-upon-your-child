@@ -1475,10 +1475,16 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
     // Build character integration if available (SECONDARY to feelings)
     String characterIntegration = '';
     if (characterDetails != null) {
-      final fears = characterDetails['fears'] as List<String>?;
-      final strengths = characterDetails['strengths'] as List<String>?;
-      final likes = characterDetails['likes'] as List<String>?;
-      final dislikes = characterDetails['dislikes'] as List<String>?;
+      final fears =
+          (characterDetails['fears'] as List?)?.whereType<String>().toList();
+      final strengths = (characterDetails['strengths'] as List?)
+          ?.whereType<String>()
+          .toList();
+      final likes =
+          (characterDetails['likes'] as List?)?.whereType<String>().toList();
+      final dislikes = (characterDetails['dislikes'] as List?)
+          ?.whereType<String>()
+          .toList();
       final comfortItem = characterDetails['comfort_item'] as String?;
 
       if (fears != null && fears.isNotEmpty) {
@@ -1792,10 +1798,16 @@ No extra keys. No prose outside the JSON.''';
     // Build character integration
     String characterIntegration = '';
     if (characterDetails != null) {
-      final fears = characterDetails['fears'] as List<String>?;
-      final strengths = characterDetails['strengths'] as List<String>?;
-      final likes = characterDetails['likes'] as List<String>?;
-      final dislikes = characterDetails['dislikes'] as List<String>?;
+      final fears =
+          (characterDetails['fears'] as List?)?.whereType<String>().toList();
+      final strengths = (characterDetails['strengths'] as List?)
+          ?.whereType<String>()
+          .toList();
+      final likes =
+          (characterDetails['likes'] as List?)?.whereType<String>().toList();
+      final dislikes = (characterDetails['dislikes'] as List?)
+          ?.whereType<String>()
+          .toList();
       final comfortItem = characterDetails['comfort_item'] as String?;
 
       if (fears != null && fears.isNotEmpty) {
