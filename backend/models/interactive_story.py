@@ -92,7 +92,7 @@ class StorySegment(db.Model):
     # Content
     content = db.Column(db.Text, nullable=False)  # Story prose (now 350-650 words for immersion)
     image_description = db.Column(db.Text, nullable=True)  # Description for illustration generation
-    image_url = db.Column(db.String(500), nullable=True)  # Base64 data URI or URL
+    image_url = db.Column(db.Text, nullable=True)  # Base64 data URI or URL
 
     # Navigation
     parent_choice_id = db.Column(db.String(36), db.ForeignKey('story_choice.id', use_alter=True, name='fk_segment_parent_choice'), nullable=True)

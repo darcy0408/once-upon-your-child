@@ -582,6 +582,32 @@ def create_app(config_name):
                 "Consent auto-migration check failed (non-fatal): %s", _mig_err
             )
 
+        # Auto-migrate: widen story_segment.image_url. Older databases created
+        # it as VARCHAR(500), but a segment illustration can be stored inline as
+        # a ~1.8M-char base64 data URI — a too-narrow column raises
+        # StringDataRightTruncation and 500s interactive-story creation (MT-154).
+        try:
+            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            if db.engine.dialect.name == 'postgresql':
+                inspector = sa_inspect(db.engine)
+                seg_cols = {c['name']: c for c in inspector.get_columns('story_segment')}
+                img_col = seg_cols.get('image_url')
+                if img_col is not None and 'TEXT' not in str(img_col['type']).upper():
+                    with db.engine.connect() as _conn:
+                        _conn.execute(sa_text(
+                            'ALTER TABLE story_segment '
+                            'ALTER COLUMN image_url TYPE TEXT'
+                        ))
+                        _conn.commit()
+                        logger.info(
+                            "Auto-migration: widened story_segment.image_url to TEXT"
+                        )
+        except Exception as _mig_err:
+            logger.warning(
+                "story_segment.image_url widen migration failed (non-fatal): %s",
+                _mig_err
+            )
+
         # Ensure anonymous user exists for story generation
         try:
             anonymous_user = db.session.get(User, 'anonymous')
