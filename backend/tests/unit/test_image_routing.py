@@ -212,14 +212,112 @@ class TestIllustrationQuota:
         assert allowed is False
         assert limit == 0
 
-    def test_check_quota_no_redis_degrades_open(self, monkeypatch):
-        """Redis unavailable → allow the request (don't break image gen)."""
+    def test_check_quota_no_redis_no_db_falls_through_to_allow(self, monkeypatch):
+        """MT-169 escape hatch: Redis down AND no DB user (anon / no app context)
+        → allow + ALERT log. Hard-blocking on a double-outage takes the whole
+        product down; matches M-2's `check_daily_quota` precedent.
+
+        This unit test has no Flask app context, so `_load_user` returns
+        (None, None) and the DB fallback hits the escape hatch.
+        """
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         from backend.utils.ai_quota import check_illustration_quota
         allowed, _, limit = check_illustration_quota("user-x", "free", 1)
         assert allowed is True
         assert limit == 10
+
+    def test_check_quota_no_redis_db_under_emergency_cap_allows(self, monkeypatch):
+        """MT-169: Redis down + DB count under the emergency cap → allow.
+
+        Patches the DB-fallback helpers directly so this stays a unit test
+        (no Flask context / DB session needed).
+        """
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
+        from backend.utils import ai_quota
+        # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
+        # DB count 5 + req 1 = 6 ≤ 30 → allow.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 5)
+        allowed, used, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
+        assert allowed is True
+        assert used == 5
+        assert limit == 30  # emergency cap, not the Redis limit
+
+    def test_check_quota_no_redis_db_over_emergency_cap_blocks(self, monkeypatch):
+        """MT-169: Redis down + DB count already at the emergency cap → BLOCK.
+
+        This is the key fail-closed assertion: a Redis outage no longer
+        uncaps image-gen spend.
+        """
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
+        from backend.utils import ai_quota
+        # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
+        # DB count 30 + req 1 = 31 > 30 → block.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
+        allowed, used, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
+        assert allowed is False
+        assert used == 30
+        assert limit == 30
+
+    def test_check_quota_emergency_multiplier_env_override(self, monkeypatch):
+        """ILLUSTRATIONS_EMERGENCY_MULTIPLIER tunes the fail-closed cap."""
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        monkeypatch.setenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", "1")
+        from backend.utils import ai_quota
+        # multiplier 1 → emergency_cap = 10 (the base monthly cap).
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 10)
+        allowed, _, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
+        assert allowed is False
+        assert limit == 10
+
+    def test_check_quota_redis_get_error_uses_db_fallback(self, monkeypatch):
+        """MT-169: a Redis client that pings but then raises on GET must take
+        the DB fallback path, NOT silently fail open as before."""
+        monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
+        from backend.utils import ai_quota
+
+        class _BrokenRedis:
+            def get(self, _key):
+                raise RuntimeError("simulated GET failure")
+
+        monkeypatch.setattr(ai_quota, "_get_redis", lambda: _BrokenRedis())
+        # DB count already over the emergency cap → block.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
+        allowed, _, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
+        assert allowed is False
+        assert limit == 30  # emergency cap, confirming we took the DB fallback
+
+    def test_check_quota_sprout_emergency_cap_uses_sprout_base(self, monkeypatch):
+        """Sprout's generous base cap (60) scales by the same multiplier."""
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
+        from backend.utils import ai_quota
+        # sprout free base = 60, multiplier 3 → emergency_cap = 180.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 100)
+        allowed, used, limit = ai_quota.check_illustration_quota(
+            "user-x", "free", 1, is_sprout=True,
+        )
+        assert allowed is True
+        assert used == 100
+        assert limit == 180
+
+    def test_check_quota_byok_zero_sentinel_unchanged_under_redis_outage(
+        self, monkeypatch
+    ):
+        """BYOK still hits the 0-sentinel early return — no DB fallback needed
+        because there's no server-side spend to cap."""
+        monkeypatch.setenv("REDIS_URL", "")
+        monkeypatch.setenv("REDIS_PRIVATE_URL", "")
+        from backend.utils.ai_quota import check_illustration_quota
+        allowed, _, limit = check_illustration_quota("user-x", "byok", 1)
+        assert allowed is False
+        assert limit == 0
 
     def test_env_override_changes_free_limit(self, monkeypatch):
         monkeypatch.setenv("ILLUSTRATIONS_FREE", "25")

@@ -111,9 +111,9 @@ def get_tier_limits(operation: str = 'default') -> str | None:
             # per-minute is the burst guard for concurrent prefetcher POSTs.
             # The hour/day numbers below are set comfortably ABOVE the largest
             # monthly quota (200/month family) so they never shadow it for
-            # legitimate users; they remain as defense-in-depth backstops that
-            # bound spend if Redis ever fails (the monthly-quota check fails
-            # OPEN on Redis error — see ai_quota.py:664).
+            # legitimate users; they remain as defense-in-depth backstops on
+            # top of MT-169's DB-backed fail-closed cost breaker in
+            # `check_illustration_quota`.
             'free': "15/minute; 60/hour; 100/day",
             'premium': "30/minute; 120/hour; 200/day",
             'family': "60/minute; 240/hour; 400/day",

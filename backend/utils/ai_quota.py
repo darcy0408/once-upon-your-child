@@ -11,26 +11,31 @@ response so failed/error responses don't count against the user's quota.
 
 TTL on all Redis keys: 2 days (auto-expiry, no cleanup job needed).
 
-Quota subsystem split (security finding M-2)
---------------------------------------------
+Quota subsystem split (security finding M-2; MT-169)
+----------------------------------------------------
 The quota system serves two distinct purposes that need OPPOSITE failure
 modes when Redis is unreachable:
 
-  * AVAILABILITY limits (TTS daily-call cap, illustration monthly cap) — these
-    protect user experience / burst abuse. They keep failing OPEN on a Redis
-    outage so an infra blip never blocks a child mid-story.
+  * AVAILABILITY limits (TTS daily-call cap) — these protect user experience
+    / burst abuse. They keep failing OPEN on a Redis outage so an infra blip
+    never blocks a child mid-story.
 
-  * The story-generation COST circuit breaker (`check_daily_quota`) — this
-    maps directly to Gemini/LLM spend. Failing it open on a Redis outage
-    silently UNCAPS spend for every user at once. So when Redis is down it now
-    falls back to a conservative per-user DB counter
-    (`User.stories_generated_this_month`) enforced against a global EMERGENCY
-    cap. The DB counter is also kept up to date while Redis is healthy, so it
-    is always a usable conservative baseline (and it doubles as the single
-    source of truth for usage read-outs — finding M-17).
+  * COST circuit breakers — anything that maps directly to per-call provider
+    spend (Gemini/LLM tokens, Flux/Replicate/OpenRouter image generation).
+    Failing those OPEN on a Redis outage silently UNCAPS spend for every user
+    at once. When Redis is down they fall back to a conservative per-user DB
+    counter enforced against a global EMERGENCY cap:
 
-Graceful degradation otherwise: if Redis is unreachable an availability check
-is skipped with a WARNING so a Redis outage never blocks user-facing features.
+      - `check_daily_quota`          → `User.stories_generated_this_month`
+      - `check_illustration_quota`   → `User.illustrations_generated_this_month`
+
+    The DB counters are kept up to date while Redis is healthy, so they are
+    always usable conservative baselines (and they double as the single source
+    of truth for usage read-outs — finding M-17).
+
+Graceful degradation otherwise: if Redis is unreachable a pure-availability
+check is skipped with a WARNING so a Redis outage never blocks user-facing
+features.
 """
 
 import logging
@@ -161,6 +166,9 @@ def _maybe_reset_monthly(db, user) -> None:
             reset_date = reset_date.replace(tzinfo=timezone.utc)
         if reset_date is None or now >= reset_date:
             user.stories_generated_this_month = 0
+            # MT-169: roll the illustration counter on the same schedule so the
+            # cost-breaker baseline doesn't drift forever after Redis is down.
+            user.illustrations_generated_this_month = 0
             # Reset on the 1st of next month.
             from datetime import timedelta
             next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
@@ -643,6 +651,93 @@ def _illustration_user_key(user_id: str) -> str:
     return f"illust:{user_id}:{month}"
 
 
+# MT-169 — fail-CLOSED cost breaker for illustration generation.
+#
+# Image generation is real provider spend (~$0.0375/image on OpenRouter, plus
+# Flux Schnell on Cloudflare/Replicate). On a Redis outage we cannot meter the
+# monthly cap and must NOT fail open. ILLUSTRATIONS_EMERGENCY_MULTIPLIER * the
+# tier's monthly cap = the conservative monthly cap enforced against the DB
+# counter `User.illustrations_generated_this_month`. Default 3 keeps a short
+# Redis blip invisible to users while strictly bounding spend during a longer
+# outage. Mirrors the AI_QUOTA_EMERGENCY_MULTIPLIER design for `check_daily_quota`.
+_ILLUSTRATION_EMERGENCY_MULTIPLIER_ENV = "ILLUSTRATIONS_EMERGENCY_MULTIPLIER"
+_ILLUSTRATION_EMERGENCY_MULTIPLIER_DEFAULT = 3
+
+
+def _get_illustration_emergency_cap(tier: str, is_sprout: bool = False) -> int | None:
+    """Conservative monthly illustration cap used while Redis is unavailable.
+
+    Returns None for BYOK / sentinel-0 tiers (no server-side cost to cap; the
+    route is expected to bypass the call entirely for BYOK users).
+    """
+    base = _get_illustration_limit(tier, is_sprout=is_sprout)
+    if base <= 0:
+        return None
+    raw = os.getenv(_ILLUSTRATION_EMERGENCY_MULTIPLIER_ENV)
+    multiplier = _ILLUSTRATION_EMERGENCY_MULTIPLIER_DEFAULT
+    if raw:
+        try:
+            multiplier = max(1, int(raw))
+        except ValueError:
+            pass
+    return base * multiplier
+
+
+def _db_illustration_count(user_id: str) -> int | None:
+    """Return the monthly DB illustration count for *user_id*, or None.
+
+    Best-effort, lazy-imported — returns None outside an app context or when
+    the User row cannot be loaded (e.g. anon sessions, DB outage). Triggers a
+    monthly rollover if `usage_reset_date` has passed (cheap UPDATE).
+    """
+    db, user = _load_user(user_id)
+    if user is None:
+        return None
+    _maybe_reset_monthly(db, user)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return int(getattr(user, "illustrations_generated_this_month", 0) or 0)
+
+
+def _illustration_db_fallback(
+    user_id: str, user_tier: str, num_images: int, is_sprout: bool, redis_limit: int,
+    reason: str,
+) -> tuple[bool, int, int]:
+    """Shared fail-CLOSED path for `check_illustration_quota` (MT-169).
+
+    Called when Redis is unreachable OR errors mid-call. Enforces the DB-backed
+    `User.illustrations_generated_this_month` counter against the emergency
+    cap. If the DB counter is also unavailable (degenerate case — outside app
+    context, anon user, DB outage) we ALERT and allow, matching M-2's escape
+    hatch: hard-blocking on double-outage takes the whole product down and is
+    worse than briefly unmetered cost.
+    """
+    emergency_cap = _get_illustration_emergency_cap(user_tier, is_sprout=is_sprout)
+    db_count = _db_illustration_count(user_id)
+    if db_count is None or emergency_cap is None:
+        logger.error(
+            "ALERT illustration_quota: %s and DB counter unavailable for "
+            "user=%s tier=%s sprout=%s — image cost is UNMETERED this request",
+            reason, user_id, user_tier, is_sprout,
+        )
+        return True, 0, redis_limit
+    logger.error(
+        "ALERT illustration_quota: %s — cost breaker on DB fallback for "
+        "user=%s tier=%s sprout=%s count=%d emergency_cap=%d req=%d",
+        reason, user_id, user_tier, is_sprout, db_count, emergency_cap, num_images,
+    )
+    if db_count + max(1, num_images) > emergency_cap:
+        logger.warning(
+            "illustration_quota: user=%s tier=%s sprout=%s DB count=%d req=%d "
+            "> emergency_cap=%d — blocked while Redis down",
+            user_id, user_tier, is_sprout, db_count, num_images, emergency_cap,
+        )
+        return False, db_count, emergency_cap
+    return True, db_count, emergency_cap
+
+
 def check_illustration_quota(
     user_id: str, user_tier: str, num_images: int = 1, is_sprout: bool = False
 ) -> tuple[bool, int, int]:
@@ -652,8 +747,15 @@ def check_illustration_quota(
     - allowed=True  → the requested num_images all fit under the cap
     - allowed=False → at least one would push over; caller should return [] /
                       surface the upgrade CTA
-    - Returns allowed=True on Redis error (degrade open).
     - *is_sprout* selects the generous Sprout cap family (see module comment).
+
+    MT-169: on Redis outage this now fails CLOSED to the DB counter
+    `User.illustrations_generated_this_month` enforced against the
+    `ILLUSTRATIONS_EMERGENCY_MULTIPLIER`-scaled cap (default 3x). Previously
+    returned `allowed=True` on Redis errors, which uncapped image-gen spend
+    during a Redis blip. The DB counter is maintained by
+    `increment_illustration_quota` even while Redis is healthy so it's always
+    a usable baseline.
     """
     limit = _get_illustration_limit(user_tier, is_sprout=is_sprout)
     if limit <= 0:
@@ -661,7 +763,10 @@ def check_illustration_quota(
 
     r = _get_redis()
     if r is None:
-        return True, 0, limit
+        return _illustration_db_fallback(
+            user_id, user_tier, num_images, is_sprout, limit,
+            reason="Redis DOWN",
+        )
 
     try:
         used = int(r.get(_illustration_user_key(user_id)) or 0)
@@ -673,18 +778,46 @@ def check_illustration_quota(
             return False, used, limit
         return True, used, limit
     except Exception as exc:
-        logger.warning("illustration_quota: Redis error during check (%s)", exc)
-        return True, 0, limit
+        # Redis pinged OK but GET errored — treat like an outage and fall back
+        # to the DB cost breaker rather than allowing blindly.
+        return _illustration_db_fallback(
+            user_id, user_tier, num_images, is_sprout, limit,
+            reason=f"Redis error during check ({exc})",
+        )
 
 
 def increment_illustration_quota(user_id: str, user_tier: str, num_images: int = 1) -> None:
-    """Bump per-user monthly illustration counter after success. 35-day TTL.
+    """Bump per-user monthly illustration counter after success.
 
-    No-op when Redis unavailable or num_images <= 0. Sprout and ages-6+ share
-    this single counter — only the cap (checked above) differs by band.
+    Dual-writes (MT-169):
+      * Redis monthly counter (primary enforced limit, 35-day TTL)
+      * DB counter `User.illustrations_generated_this_month` — kept current so
+        the cost breaker in `check_illustration_quota` has a truthful baseline
+        when Redis is down.
+
+    Sprout and ages-6+ share this single counter — only the cap (checked above)
+    differs by band. No-op when num_images <= 0. Never raises.
     """
     if num_images <= 0:
         return
+
+    # Always maintain the DB counter (cheap UPDATE) so the cost breaker has a
+    # truthful baseline if Redis later goes down mid-month.
+    db, user = _load_user(user_id)
+    if user is not None:
+        try:
+            _maybe_reset_monthly(db, user)
+            user.illustrations_generated_this_month = int(
+                getattr(user, "illustrations_generated_this_month", 0) or 0
+            ) + num_images
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            logger.warning(
+                "illustration_quota: DB counter increment failed for %s (%s)",
+                user_id, exc,
+            )
+
     r = _get_redis()
     if r is None:
         return
