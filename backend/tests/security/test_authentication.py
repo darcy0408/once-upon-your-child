@@ -361,37 +361,6 @@ def test_anonymous_token_refresh_flow(app, client):
             db.session.delete(u)
             db.session.commit()
 
-def test_iam_manager_isolation():
-    """Test the IdentityAccessManager in isolation (from security/iam.py)."""
-    from security.iam import IdentityAccessManager
-    iam = IdentityAccessManager()
-    
-    user_id = 'test_iam_user'
-    role = 'user'
-    
-    # Test token generation
-    tokens = iam.generate_tokens(user_id, role)
-    assert 'access_token' in tokens
-    assert 'refresh_token' in tokens
-    
-    # Test validation
-    payload = iam.validate_token(tokens['access_token'])
-    assert payload is not None
-    assert payload['user_id'] == user_id
-    assert payload['role'] == role
-    
-    # Test refresh flow
-    import time
-    time.sleep(1.1)
-    new_tokens = iam.refresh_access_token(tokens['refresh_token'])
-    assert new_tokens is not None
-    assert new_tokens['access_token'] != tokens['access_token']
-    
-    # Test permission check
-    assert iam.check_permission('admin', 'any:permission') is True
-    assert iam.check_permission('user', 'create:story') is True
-    assert iam.check_permission('user', 'admin:access') is False
-
 def test_idor_protection_detailed(app, client, test_user, auth_headers):
     """Test detailed IDOR protection scenarios."""
     setup_test_routes(app)

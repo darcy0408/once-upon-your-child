@@ -43,6 +43,12 @@ try:
     )
     from ..middleware.auth import require_auth
     from ..services.entitlement_service import apply_entitlement, FREE_TIER
+    from ..utils.iap_notification_verify import (
+        IapVerificationConfigError,
+        IapVerificationError,
+        verify_apple_jws,
+        verify_google_pubsub_oidc,
+    )
 except ImportError:  # pragma: no cover - flat-module layout
     from database import db
     from models.user import User
@@ -54,6 +60,12 @@ except ImportError:  # pragma: no cover - flat-module layout
     )
     from middleware.auth import require_auth
     from services.entitlement_service import apply_entitlement, FREE_TIER
+    from utils.iap_notification_verify import (
+        IapVerificationConfigError,
+        IapVerificationError,
+        verify_apple_jws,
+        verify_google_pubsub_oidc,
+    )
 
 logger = logging.getLogger("iap_routes")
 
@@ -227,15 +239,36 @@ def apple_server_notifications():
     The mobile equivalent of the Stripe webhook. Apple POSTs a single
     `signedPayload` JWS; the payload's `notificationUUID` is the dedup key.
 
-    TODO(STORE-1 phase 2 / owner): implement signed-payload verification.
-      1. Parse the `signedPayload` JWS.
-      2. Verify the x5c certificate chain against Apple's root CA.
+    SECURITY GATE (S-06): the `signedPayload` JWS is verified against Apple's
+    root CA BEFORE anything else. An unverifiable payload is rejected with 403;
+    a missing-config situation (Apple root CA not bundled) fails CLOSED with
+    503 — never a blind ACK.
+
+    TODO(STORE-1 phase 2 / owner): implement entitlement application.
+      1. Parse the `signedPayload` JWS.  [DONE — verified below]
+      2. Verify the x5c certificate chain against Apple's root CA.  [DONE]
       3. Decode `notificationType` / `subtype` and the `data.signedTransactionInfo`
          + `data.signedRenewalInfo` to get product, expiry and state.
       4. Map originalTransactionId -> IapPurchase, apply ordering guard against
          `last_event_time`, update status/expiry, and call apply_entitlement().
     Requires the App Store Server API config (issuer ID, key ID, .p8 key).
     """
+    body = request.get_json(silent=True) or {}
+    signed_payload = body.get("signedPayload")
+    try:
+        # Verified payload is intentionally NOT consumed yet — entitlement
+        # mutation is the phase-2 TODO above. This gate only proves the
+        # request is genuinely from Apple before the stub ACKs it.
+        verify_apple_jws(signed_payload)
+    except IapVerificationConfigError:
+        logger.error("Apple S2S notification: verification not configured")
+        return jsonify({
+            "error": "notification verification not configured",
+        }), 503
+    except IapVerificationError as exc:
+        logger.warning("Apple S2S notification rejected: %s", exc)
+        return jsonify({"error": "notification verification failed"}), 403
+
     return _handle_notification_stub(store=STORE_APPLE)
 
 
@@ -247,8 +280,13 @@ def google_server_notifications():
     whose `message.data` is base64 JSON carrying `subscriptionNotification`
     (with `purchaseToken` and `notificationType`).
 
-    TODO(STORE-1 phase 2 / owner): implement.
-      1. (Recommended) verify the Pub/Sub push OIDC token.
+    SECURITY GATE (S-06): the Pub/Sub push OIDC bearer token is verified
+    against Google's public keys (audience = GOOGLE_PUBSUB_AUDIENCE) BEFORE
+    anything else. A missing/invalid token is rejected with 403; an unset
+    GOOGLE_PUBSUB_AUDIENCE fails CLOSED with 503 — never a blind ACK.
+
+    TODO(STORE-1 phase 2 / owner): implement entitlement application.
+      1. (Recommended) verify the Pub/Sub push OIDC token.  [DONE — below]
       2. Base64-decode `message.data`; read `purchaseToken` + `notificationType`.
       3. Re-query the Google Play Developer API for the authoritative
          subscription state (never trust the notification body alone).
@@ -256,6 +294,20 @@ def google_server_notifications():
          status/expiry, and call apply_entitlement().
     Requires the Google service-account JSON with Play Developer API access.
     """
+    try:
+        # Verified claims intentionally not consumed yet — entitlement
+        # mutation is the phase-2 TODO above. This gate only proves the
+        # request is a genuine Google Pub/Sub push before the stub ACKs it.
+        verify_google_pubsub_oidc(request)
+    except IapVerificationConfigError:
+        logger.error("Google S2S notification: verification not configured")
+        return jsonify({
+            "error": "notification verification not configured",
+        }), 503
+    except IapVerificationError as exc:
+        logger.warning("Google S2S notification rejected: %s", exc)
+        return jsonify({"error": "notification verification failed"}), 403
+
     return _handle_notification_stub(store=STORE_GOOGLE)
 
 

@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+from datetime import timedelta
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,14 @@ class Config:
     # SECRET_KEY is required in production - no silent fallback
     SECRET_KEY = _get_required_secret('SECRET_KEY')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', '')
+
+    # JWT token lifetimes (S-07). Set on the config class so they are applied
+    # by app.config.from_object() BEFORE JWTManager() is constructed — the
+    # prior post-init app.config.setdefault() was order-fragile. Access tokens
+    # are short-lived (1h) so a stolen token has a small window; clients
+    # refresh via /auth/refresh. Refresh tokens stay long-lived (30d).
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
     # Mock Testing Mode - Use mock endpoints instead of real API calls
     MOCK_TESTING_MODE = os.environ.get('MOCK_TESTING_MODE', 'false').lower() in ['true', '1', 'yes']

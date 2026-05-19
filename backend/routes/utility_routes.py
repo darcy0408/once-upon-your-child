@@ -18,6 +18,7 @@ from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
 from ..middleware.auth import require_auth, require_admin, require_owner
 from ..utils.audit import audit_log
+from ..utils.app_helpers import is_production
 
 
 def _blocklist_jti(jti: str, exp: int, logger) -> None:
@@ -39,6 +40,67 @@ def _blocklist_jti(jti: str, exp: int, logger) -> None:
         r.setex(f'jwt:blocklist:{jti}', remaining, '1')
     except Exception as exc:
         logger.warning('jwt refresh: failed to blocklist old JTI %s (%s)', jti, exc)
+
+
+# --- Per-account failed-login backoff (S-11) -------------------------------
+# Independent of the per-IP rate limit on /auth/login: tracks failed attempts
+# per username in Redis so a brute-force spread across many IPs is still
+# throttled. The password is always checked first, so a legitimate user with
+# the correct password is never locked out — only failed attempts past the
+# threshold get a 429. Degrades gracefully: a Redis outage disables the
+# backoff rather than breaking login.
+_LOGIN_FAIL_MAX = 10        # failed attempts within the window before throttling
+_LOGIN_FAIL_WINDOW = 900    # seconds (15 min)
+
+
+def _login_fail_redis():
+    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    if not redis_url:
+        return None
+    import redis as _redis_lib
+    return _redis_lib.from_url(redis_url, socket_connect_timeout=1)
+
+
+def _login_is_throttled(username: str, logger) -> bool:
+    """True if this account has exceeded the failed-login threshold."""
+    if not username:
+        return False
+    try:
+        r = _login_fail_redis()
+        if r is None:
+            return False
+        count = r.get(f'login:fail:{username}')
+        return count is not None and int(count) >= _LOGIN_FAIL_MAX
+    except Exception as exc:
+        logger.warning('login backoff: Redis unavailable (%s) — skipping', exc)
+        return False
+
+
+def _login_record_failure(username: str, logger) -> None:
+    """Increment the TTL-windowed failed-login counter for an account."""
+    if not username:
+        return
+    try:
+        r = _login_fail_redis()
+        if r is None:
+            return
+        key = f'login:fail:{username}'
+        if r.incr(key) == 1:
+            r.expire(key, _LOGIN_FAIL_WINDOW)
+    except Exception as exc:
+        logger.warning('login backoff: failed to record failure (%s)', exc)
+
+
+def _login_clear_failures(username: str, logger) -> None:
+    """Clear the failed-login counter after a successful login."""
+    if not username:
+        return
+    try:
+        r = _login_fail_redis()
+        if r is not None:
+            r.delete(f'login:fail:{username}')
+    except Exception:
+        pass
 
 
 def create_utility_blueprint(logger, log_error, limiter=None):
@@ -83,6 +145,9 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     @require_admin
     def debug_gemini():
         """Debug endpoint to test Gemini text generation"""
+        # S-09: debug endpoints run live, metered Gemini calls — never in prod.
+        if is_production():
+            return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         
@@ -147,6 +212,9 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     @require_admin
     def debug_openrouter():
         """Debug endpoint to test OpenRouter configuration and generation."""
+        # S-09: debug endpoints run live, metered image-gen calls — never in prod.
+        if is_production():
+            return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
         try:
             api_key = os.getenv("OPENROUTER_API_KEY")
             if not api_key:
@@ -330,8 +398,14 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         username = data.get('username')
         password = data.get('password')
 
+        # S-11: per-account failed-login backoff. Evaluated up front but the
+        # password is still checked below — a correct password always succeeds,
+        # so a legitimate user is never locked out by someone else's failures.
+        throttled = _login_is_throttled(username, logger)
+
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            _login_clear_failures(username, logger)
             token = create_access_token(
                 identity=user.id,
                 additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
@@ -347,6 +421,11 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             audit_log('user_login', user_id=user.id)
             return jsonify({'token': token, 'refresh_token': refresh_token}), 200
 
+        _login_record_failure(username, logger)
+        if throttled:
+            return jsonify({
+                'message': 'Too many failed login attempts. Please try again later.'
+            }), 429
         return jsonify({'message': 'Invalid credentials'}), 401
 
     @utility_bp.route("/auth/refresh", methods=["POST"])

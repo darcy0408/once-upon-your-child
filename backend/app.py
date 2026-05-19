@@ -3,7 +3,6 @@ import uuid
 import logging
 import traceback
 from datetime import datetime
-from datetime import timedelta
 import time
 import sys
 
@@ -632,12 +631,10 @@ def create_app(config_name):
                 logger.error(f"Failed to create anonymous user: {e}")
     logger.info("Database tables created")
 
-    # JWT setup - SECURITY: Require proper secret in production
+    # JWT setup - SECURITY: Require proper secret in production.
+    # Token lifetimes (JWT_ACCESS/REFRESH_TOKEN_EXPIRES) are set on the config
+    # class so they apply before JWTManager() is constructed (S-07).
     jwt = JWTManager(app)
-    # Access tokens are short-lived (1h) so a stolen token has a small window;
-    # clients refresh via /auth/refresh. Refresh tokens stay long-lived (30d).
-    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=1))
-    app.config.setdefault('JWT_REFRESH_TOKEN_EXPIRES', timedelta(days=30))
     jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
     if not jwt_secret or jwt_secret == 'dev-secret-key':
         if os.getenv('FLASK_ENV') in ('prod', 'production'):

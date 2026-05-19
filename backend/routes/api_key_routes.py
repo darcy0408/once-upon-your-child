@@ -10,6 +10,8 @@ from ..database import db
 from ..encryption_utils import (
     encrypt_api_key,
     decrypt_api_key,
+    decrypt_user_api_key,
+    is_legacy_encrypted,
     validate_gemini_api_key_format,
     test_gemini_api_key
 )

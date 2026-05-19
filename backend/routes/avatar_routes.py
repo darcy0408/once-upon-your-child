@@ -1,12 +1,21 @@
 """
 Avatar Routes - API endpoints for magical avatar generation
 """
+import os
 import time
 import concurrent.futures
 from flask import Blueprint, request, jsonify, make_response, after_this_request, current_app
 import logging
 
 _AVATAR_TIMEOUT_SECONDS = 30
+
+# Avatar rate-limit Redis keys self-evict after slightly more than one hour so
+# old hour-buckets never accumulate (S-05 memory-leak fix).
+_AVATAR_RL_TTL_SECONDS = 3700
+
+# Emitted once per process when the rate limiter falls back to the in-process
+# dict, so a Redis outage is visible in logs without spamming every request.
+_avatar_rl_fallback_warned = False
 
 # Every account gets ONE free AI photo-avatar — the "magic moment" that lets a
 # child see themselves as a cartoon hero; further custom avatars require a paid
@@ -51,21 +60,112 @@ def _tier_limit(free, premium):
     return get_limit
 
 
+def _get_avatar_rl_redis():
+    """
+    Return a Redis client for the avatar rate limiter, or None if Redis is not
+    configured / not reachable.
+
+    Reuses the exact connection pattern used elsewhere in the backend (the JWT
+    blocklist in app.py and ``backend/utils/ai_quota._get_redis``): read
+    ``REDIS_URL`` then ``REDIS_PRIVATE_URL``, build the client with
+    ``redis.from_url(..., socket_connect_timeout=1)``, and verify it with a
+    ``ping()`` so an unreachable Redis falls back instead of hanging.
+    """
+    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    if not redis_url:
+        return None
+    try:
+        import redis as redis_lib
+        client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        client.ping()
+        return client
+    except Exception:
+        return None
+
+
+def _warn_avatar_rl_fallback(reason: str) -> None:
+    """Log the in-process-fallback warning at most once per process."""
+    global _avatar_rl_fallback_warned
+    if not _avatar_rl_fallback_warned:
+        _avatar_rl_fallback_warned = True
+        logger.warning(
+            "Avatar rate limiter: Redis unavailable (%s) — falling back to "
+            "per-process in-memory counter. Counts will under-count across "
+            "gunicorn workers.", reason,
+        )
+
+
+def _prune_stale_avatar_buckets(counts: dict, current_hour: int) -> None:
+    """
+    Drop in-process counter entries whose hour-bucket is older than the current
+    hour. Keys are ``f"{user_key}:{hour_bucket}"``; without pruning the dict
+    grows unbounded (S-05 memory-leak fix on the fallback path).
+    """
+    stale = []
+    for key in counts:
+        bucket_part = key.rsplit(':', 1)[-1]
+        try:
+            if int(bucket_part) < current_hour:
+                stale.append(key)
+        except ValueError:
+            # Malformed key — drop it rather than leak it.
+            stale.append(key)
+    for key in stale:
+        counts.pop(key, None)
+
+
 def _check_avatar_rate_limit(user_key: str, limit: int) -> tuple[bool, int]:
     """
     Check and increment per-user hourly rate limit for generate-avatar.
     Increments the counter BEFORE checking, so all requests (including 400s) count.
     Returns (is_over_limit, new_count).
     Works regardless of flask-limiter's RATELIMIT_ENABLED setting.
+
+    The counter lives in Redis (key ``avatar:rl:{user_key}:{hour_bucket}``) so
+    it is shared across gunicorn workers; on the first INCR an EXPIRE of
+    ~3700s is set so the key self-evicts after its hour. If Redis is not
+    configured or a Redis call raises, it falls back to a per-process dict
+    (pruned of stale hour-buckets so it cannot leak memory).
     """
     now = int(time.time())
     hour_bucket = now // 3600
+
+    # --- Preferred path: shared Redis counter (cross-worker, self-evicting) ---
+    redis_client = _get_avatar_rl_redis()
+    if redis_client is not None:
+        redis_key = f"avatar:rl:{user_key}:{hour_bucket}"
+        try:
+            # Increment-before-check: every request (incl. 400s) counts.
+            new_count = redis_client.incr(redis_key)
+            if new_count == 1:
+                # First increment for this hour-bucket — arm self-eviction.
+                redis_client.expire(redis_key, _AVATAR_RL_TTL_SECONDS)
+            if new_count > limit:
+                # Over-limit requests are rejected and must NOT be counted —
+                # roll the INCR back so the counter never climbs past `limit`
+                # (matches the in-process path's early-return-before-increment).
+                try:
+                    redis_client.decr(redis_key)
+                except Exception:
+                    pass
+                return True, limit
+            return False, new_count
+        except Exception as exc:
+            _warn_avatar_rl_fallback(str(exc))
+            # fall through to in-process counter
+
+    else:
+        _warn_avatar_rl_fallback("REDIS_URL not configured")
+
+    # --- Fallback path: per-process dict (pruned so it cannot leak) ---
     counter_key = f"{user_key}:{hour_bucket}"
 
     if not hasattr(current_app, '_avatar_generate_counts'):
         current_app._avatar_generate_counts = {}
 
     counts = current_app._avatar_generate_counts
+    _prune_stale_avatar_buckets(counts, hour_bucket)
+
     current = counts.get(counter_key, 0)
 
     if current >= limit:
