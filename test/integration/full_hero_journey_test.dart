@@ -54,7 +54,14 @@ void main() {
         .thenAnswer((invocation) async {
       final url = invocation.positionalArguments[0].toString();
       if (url.contains('/auth/anonymous')) {
-        return http.Response(jsonEncode({'token': 'mock_token', 'user_id': 'user_test_123'}), 200);
+        // ApiServiceManager validates the auth token as a 3-segment JWT and
+        // discards anything else; use a JWT-shaped token (no `exp`).
+        return http.Response(
+            jsonEncode({
+              'token': 'eyJhbGciOiAibm9uZSJ9.eyJzdWIiOiAidXNlcl8xMjMifQ.sig',
+              'user_id': 'user_test_123'
+            }),
+            200);
       }
       if (url.contains('/create-character')) {
         return http.Response(jsonEncode({'id': 'char_test_123', 'name': 'Luna', 'age': 7}), 201);

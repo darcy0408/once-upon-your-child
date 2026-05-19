@@ -67,7 +67,12 @@ void main() {
 
       if (url.contains('/auth/anonymous')) {
         return http.Response(
-            jsonEncode({'token': 'mock_token', 'user_id': 'mock_user_123'}),
+            jsonEncode({
+              // ApiServiceManager validates the auth token as a 3-segment JWT
+              // and discards anything else; use a JWT-shaped token (no `exp`).
+              'token': 'eyJhbGciOiAibm9uZSJ9.eyJzdWIiOiAidXNlcl8xMjMifQ.sig',
+              'user_id': 'mock_user_123'
+            }),
             200);
       }
 
