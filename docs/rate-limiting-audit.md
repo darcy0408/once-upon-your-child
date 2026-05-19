@@ -12,7 +12,7 @@ The Story Weaver backend implements a multi-layered rate limiting strategy using
 - **Storage Backend:** 
   - **Production:** Configured to use Redis (`REDIS_URL` or `REDIS_PRIVATE_URL`) for distributed rate limiting across instances. Fallback to `memory://` with a logged error if Redis is missing.
   - **Development/Test:** Uses `memory://`.
-- **Key Strategy:** `get_user_identifier` (prioritizes Authenticated User ID > `X-User-ID` header > JWT Identity > Remote IP).
+- **Key Strategy:** `get_user_identifier` (prioritizes Authenticated User ID > verified JWT Identity > Remote IP). The client-supplied `X-User-ID` header is deliberately NOT trusted — see audit 03 finding S-01 (fixed 2026-05-19).
 - **Default Limits:** `200 per day`, `50 per hour`.
 
 ## 3. Per-Route Custom Limits

@@ -301,8 +301,9 @@ def get_current_user_id():
     """
     token = request.headers.get('Authorization')
     if not token:
-        # Also check X-User-ID header as fallback for legacy clients
-        return request.headers.get('X-User-ID')
+        # No fallback to the client-supplied X-User-ID header: it is
+        # unauthenticated and spoofable. Identity comes only from a verified JWT.
+        return None
 
     try:
         if token.startswith('Bearer '):
@@ -314,7 +315,7 @@ def get_current_user_id():
         return data.get('sub')
     except (jwt.InvalidTokenError, ValueError):
         # Token invalid but that's okay for optional auth
-        return request.headers.get('X-User-ID')
+        return None
 
 
 def optional_auth(f):

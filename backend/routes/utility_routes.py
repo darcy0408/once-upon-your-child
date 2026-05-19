@@ -501,7 +501,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         except Exception as e:
             logger.exception(f"Failed to get usage summary: {e}")
-            return jsonify({'error': 'Failed to get usage summary', 'detail': str(e)}), 500
+            return jsonify({'error': 'Failed to get usage summary'}), 500
 
     @utility_bp.route("/usage/daily", methods=["GET"])
     @require_auth
@@ -528,7 +528,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         except Exception as e:
             logger.exception(f"Failed to get daily usage: {e}")
-            return jsonify({'error': 'Failed to get daily usage', 'detail': str(e)}), 500
+            return jsonify({'error': 'Failed to get daily usage'}), 500
 
     @utility_bp.route("/usage/mock-mode", methods=["GET"])
     @require_auth
@@ -554,6 +554,6 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         except Exception as e:
             logger.exception(f"Failed to get mock mode status: {e}")
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': 'Failed to get mock mode status'}), 500
 
     return utility_bp

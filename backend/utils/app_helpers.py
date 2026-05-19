@@ -39,24 +39,27 @@ def is_production() -> bool:
 
 
 def get_user_identifier() -> str:
-    """Get user ID from request or fall back to IP address"""
-    # 1. Check for user attached by auth middleware
+    """Get a rate-limit identity for the request, falling back to remote IP.
+
+    Trusts only server-verified identity sources. The client-supplied
+    ``X-User-ID`` header is deliberately NOT consulted: an attacker could
+    rotate it per request to land every attempt in a fresh limiter bucket
+    (bypassing brute-force limits), or set it to a victim's id to exhaust
+    that victim's bucket. Unauthenticated requests are keyed on the IP.
+    """
+    # 1. Check for user attached by auth middleware (verified JWT)
     if hasattr(request, 'current_user') and request.current_user:
         return f"user:{request.current_user.id}"
-    
+
     if hasattr(g, 'current_user_id') and g.current_user_id:
         return f"user:{g.current_user_id}"
 
-    # 2. Check for legacy/manual header
-    user_id = request.headers.get('X-User-ID')
-
-    # 3. Check for flask-jwt-extended identity
-    if not user_id:
-        try:
-            from flask_jwt_extended import get_jwt_identity
-            user_id = get_jwt_identity()
-        except Exception:
-            pass
+    # 2. Check for flask-jwt-extended identity from a verified token
+    try:
+        from flask_jwt_extended import get_jwt_identity
+        user_id = get_jwt_identity()
+    except Exception:
+        user_id = None
 
     return f"user:{user_id}" if user_id else f"ip:{get_remote_address()}"
 
@@ -67,8 +70,11 @@ def get_user_tier() -> str:
     if hasattr(request, 'current_user') and request.current_user:
         return request.current_user.subscription_tier or 'free'
 
-    # 2. Try to load user from ID in request context or headers
-    user_id = request.headers.get('X-User-ID') or getattr(g, 'current_user_id', None) or getattr(g, 'user_id', None)
+    # 2. Try to load user from a server-verified ID in the request context.
+    #    The client-supplied X-User-ID header is NOT trusted here — keying
+    #    the rate limiter off it would let a client claim a higher tier's
+    #    limits by guessing another user's id.
+    user_id = getattr(g, 'current_user_id', None) or getattr(g, 'user_id', None)
 
     if user_id:
         try:
