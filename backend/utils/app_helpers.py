@@ -99,14 +99,24 @@ def get_tier_limits(operation: str = 'default') -> str | None:
             'byok': None
         },
         'expensive': {
-            # MT-113: per-minute floors bumped to accommodate per-page
-            # illustration prefetch bursts (one POST per text page, concurrent).
-            # The 5/hour and 10/day ladders remain the real cost ceiling, and
-            # the monthly-quota check inside /generate-illustrations is the
-            # actual cost protection.
-            'free': "15/minute; 5/hour; 10/day",
-            'premium': "30/minute; 20/hour",
-            'family': "60/minute; 30/hour",
+            # MT-113 (reopen): the previous 5/hour; 10/day ladder was tighter
+            # than the monthly illustration quota (free=10/month, sprout=60),
+            # so a single 6-10 page story couldn't finish illustrating — and
+            # the rate-limit trip returned a bare HTTP 429, which the Flutter
+            # prefetcher + MT-087 upsell card don't recognise (they listen for
+            # 200 + code:"ILLUSTRATION_QUOTA_EXCEEDED" returned by the in-handler
+            # monthly-quota check). The monthly quota is the real cost gate
+            # (`check_illustration_quota` runs BEFORE the provider call and
+            # returns the upsell-friendly 200 body once exhausted). The
+            # per-minute is the burst guard for concurrent prefetcher POSTs.
+            # The hour/day numbers below are set comfortably ABOVE the largest
+            # monthly quota (200/month family) so they never shadow it for
+            # legitimate users; they remain as defense-in-depth backstops that
+            # bound spend if Redis ever fails (the monthly-quota check fails
+            # OPEN on Redis error — see ai_quota.py:664).
+            'free': "15/minute; 60/hour; 100/day",
+            'premium': "30/minute; 120/hour; 200/day",
+            'family': "60/minute; 240/hour; 400/day",
             'byok': None
         }
     }
