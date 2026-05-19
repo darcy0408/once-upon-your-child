@@ -259,6 +259,7 @@ class GeminiColoringBookService extends ColoringBookService {
     List<dynamic>? companions,
     int age = 7,
     String? therapeuticFocus,
+    Map<String, dynamic>? appearancePayload,
   }) async {
     try {
       // Prepare scenes for backend
@@ -269,15 +270,27 @@ class GeminiColoringBookService extends ColoringBookService {
         };
       }).toList();
 
+      // MT-163: prefer the MT-129 no-fabrication payload when the caller
+      // supplies one. `appearancePayload` only contains fields backed by real
+      // source data (snake_case keys the backend reads), so the coloring model
+      // is never handed an invented hair/skin description. Fall back to the
+      // legacy `CharacterAppearance.toJson()` shape only when no payload was
+      // provided.
+      final characterAppearanceJson =
+          appearancePayload ?? characterAppearance?.toJson();
+      final characterName = (appearancePayload?['character_name'] as String?) ??
+          characterAppearance?.characterName ??
+          'the character';
+
       // Call backend to generate therapeutic coloring pages
       final geminiColoringHeaders = await ApiServiceManager.authHeaders();
       final userApiKey = await ApiServiceManager.getUserApiKey();
       final requestBody = {
         'scenes': scenesData,
-        'character_name': characterAppearance?.characterName ?? 'the character',
+        'character_name': characterName,
         'age': age,
         'therapeutic_focus': therapeuticFocus,
-        'character_appearance': characterAppearance?.toJson(),
+        'character_appearance': characterAppearanceJson,
         'companions': companions,
       };
       if (userApiKey != null && userApiKey.isNotEmpty) {

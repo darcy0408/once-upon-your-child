@@ -1443,12 +1443,23 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
       final scenes = _buildScenes(numberOfPages);
 
+      // MT-163: route coloring pages through the SAME MT-129 no-fabrication
+      // builder the illustration path uses. The legacy `_buildCharacterAppearance()`
+      // runs every field through mappers that default to `brown` hair / `light`
+      // skin even when the source is empty, so coloring pages were handed an
+      // invented description and could mismatch the created character.
+      // `_characterAppearanceForBackend()` emits only fields backed by real
+      // source data (and is null when there is nothing real to send).
+      final appearancePayload = await _characterAppearanceForBackend();
+      if (!mounted) return;
+
       final pages = await _coloringService.generateColoringPagesFromStory(
         storyId:
             widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         storyTitle: widget.title,
         scenes: scenes,
         characterAppearance: _buildCharacterAppearance(),
+        appearancePayload: appearancePayload,
         companions: _buildCompanionPrompts(),
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
