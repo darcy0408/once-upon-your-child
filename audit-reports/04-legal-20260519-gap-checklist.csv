@@ -1,0 +1,40 @@
+Item,Required By,Current Status,Gap,Effort,Blocker
+Gemini API terms compatibility,Gemini Additional ToS,Violation,API forbids apps directed at under-18; product targets 3-17,L,Launch-Blocker
+"Story Weaver" trademark clearance,Lanham Act 43(a),Unverified,Direct collision with Pratham Books StoryWeaver (storyweaver.org.in) in same product class,M,Launch-Blocker
+In-product "Once Upon a Time" strings (intended brand is "Once Upon YOUR Child"),Lanham Act 43(a),"Drifted","Welcome/consent/policy/emails render ""Once Upon a Time"" — collides with Disney Reg. 4230524 and crowded App Store; fix is a string-sweep + clearance on intended brand",S sweep + M clearance,Launch-Blocker
+COPPA verifiable parental consent in force,COPPA 312.5,Disabled,_kSkipEmailConsent=true ships in release builds,S,Launch-Blocker
+COPPA backend consent enforcement,COPPA 312.5(b),Disabled,COPPA_REQUIRE_VERIFIED_CONSENT defaults false on Railway,S,Launch-Blocker
+IAP receipt verification,Apple 3.1.1 / Play Payments,Stub,_verify_with_apple/_verify_with_google raise NotImplementedError; routes 503,L,Launch-Blocker
+Android release keystore,Play upload,Not generated,Falls back to debug-signing without key.properties,S,Launch-Blocker
+Legal entity formation,Counsel advised,Individual,"Operator listed as ""Darcy VanPelt"" (an individual) not an LLC/corp",M,Launch-Blocker
+Therapeutic claims in marketing,FTC Sec 5,Risk,"pubspec.yaml and README lead with ""Therapeutic AI"" without disclaimer",S,High
+EU AI Act Art. 50 machine-readable marking,EU AI Act Art. 50(2),Not implemented,Visible label exists; no C2PA/watermark or provenance flag,M-L,High
+EULA,Apple Schedule 2,Default,No custom EULA; Apple default applies by absence,M,High
+Apple age-rating questionnaire,Apple 1.3,Console todo,Code-side positioning resolved; console action pending,S,High
+Play Data Safety form,Play Data Safety,Console todo,Must enumerate all 10 sub-processors,S,High
+Operator personal contact in policy,Privacy/safety practice,Risk,Real home address + cell phone published in policy,M,Medium
+Android display name (brand),Brand consistency,Slug,android:label=""story_weaver_app"" not the brand name,S,Medium
+speech_to_text on-device confirmation,Apple Kids 1.3/5.1.4,Undocumented,Plugin behavior not documented; cloud vs on-device unclear,S-M,Medium
+Kids Category data interpretation,Apple Kids 1.3,Uncertain,"Under-13 segment may pull Kids restrictions even outside Kids Category",M,Medium
+Play generative-AI declaration,Play gen-AI policy,Console todo,Console-side declaration not filed,S,Medium
+Play target-audience designation,Play Families,Console todo,Console-side target-audience widget not set,S,Medium
+OpenRouter logging dashboard verification,OpenRouter ToS,Unverified,Code does not enable logging; dashboard flag must also be off,S,Medium
+DPAs for photo-path providers (MT-137),COPPA 312.8 / GDPR Art. 28,Unconfirmed,Replicate/Cloudflare/OpenRouter assurances not on file,M,Medium
+Refund policy by channel,Apple/Google refund policies + CA ARL,Inadequate,ToS single clause; conflicts with platform refund regimes,S,Medium
+State-specific auto-renewal disclosures,CA ARL and similar,Inadequate,Generic ToS lacks CA/NY/OR/VT-required notices,S,Medium
+California Privacy Notice (CCPA/CPRA),CCPA 1798.130,Missing,No CA addendum to Privacy Policy,S-M,Medium
+DMCA Designated Agent,DMCA 512(c)(2),Missing,UGC surfaces exist; no agent registered at copyright.gov,S,Medium
+Edge TTS commercial use,MSFT undocumented endpoint,Grey zone,Free Edge TTS endpoint not officially commercial-licensed,S-M,Low
+Cookie Policy,ePrivacy (if web site added),N/A today,Not required for native app; required if marketing site launches,S,Low
+"""No advertising"" claim accuracy",FTC Sec 5,Accurate,Maintain — re-consent required if ad SDKs added later,—,Low
+CCPA sale framing in DPAs,CCPA 1798.140,Unverified,Sub-processor DPAs must contain service-provider language,S,Low
+Rights mailbox monitoring,COPPA 312.6,Pending,onceuponyourchild@gmail.com active-monitoring confirmation,S,Low
+Brand string drift (intended brand vs rendered brand),Brand consistency,Drifted,"Rendered app + legal docs say ""Once Upon a Time""; intended brand is ""Once Upon YOUR Child""",S,High
+Logo / device-mark filing scope,Lanham Act,Open,Counsel may recommend device-mark in addition to wordmark,M,Low
+App Tracking Transparency,Apple ATT,Compliant,No tracking SDK; NSUserTrackingUsageDescription correctly absent,—,Low
+Self-Certified Ads SDK program,Play Families,N/A,No ad SDKs bundled,—,Low
+Sub-processor disclosure (CMP-4/PP-5),COPPA 312.4(d) / GDPR Art. 13,Resolved,Canonical 10-provider table in both PRIVACY_POLICY.md and consent screen,—,Done
+AI-generated content label (STORE-6),Play gen-AI / Apple / EU AI Act 50(1),Resolved,AiGeneratedBadge widget + Report-content path landed 2026-05-17,—,Done
+Sentry consent gating (STORE-2),Apple Kids 1.3,Resolved,beforeSend gate + age >=13 + sampleRate 0.2 landed 2026-05-17,—,Done
+External link parental gates (STORE-7),Apple Kids 1.3/5.1.4,Resolved,Math gate on BYOK and partner links landed 2026-05-17,—,Done
+Stripe gated out of iOS/Android,Apple 3.1.1 / Play Payments,Resolved,Conditional import compiles Stripe out of mobile builds,—,Done
