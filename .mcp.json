@@ -19,6 +19,12 @@
       "command": "cmd",
       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:/dev/story-weaver-app", "C:/Users/Darcy/Pictures/Screenshots"],
       "env": {}
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest", "--isolated", "--headless"],
+      "env": {}
     }
   }
 }
