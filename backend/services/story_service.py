@@ -740,9 +740,15 @@ class AdvancedStoryEngine:
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
         feelings_instruction = _build_feelings_instruction(feelings_prompt, age, theme)
 
-        # Sprout/young-band delight rules — only injected for age ≤ 7
+        # Young-band delight rules — split by sub-band so the toddler-strict
+        # "explain every fantasy noun inline" rule (#5) does not patronise
+        # 6-7 year-olds, while still preserving wow-word context-clue policy
+        # for the Spark band.
+        #   age ≤ 5  → full strict rules including inline-explanation rule #5
+        #   age 6-7  → softer Spark variant: keeps rules 1-4 + wow-word context
+        #              clue for new words, drops the toddler-grade noun list
         young_delight_rules = ""
-        if age <= 7:
+        if age <= 5:
             young_delight_rules = f"""
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
 1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — they are not optional.
@@ -750,6 +756,15 @@ class AdvancedStoryEngine:
 3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion must express hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward.
 5. KID-COMPREHENSIBLE VOCABULARY (HARD CHECK — re-read every page before finalizing): Every concept must be understandable to a 3-year-old on first listen. Before writing each page, scan it for ANY noun or concept a toddler wouldn't use in everyday speech (examples: "dragon breath", "cousin", "archery", "archeologist", "cape", "echo", "compass", "ancient", "lantern", "festival"). For EACH such term you find, you MUST do one of two things in the SAME sentence or the very next one: (a) replace it with a simpler everyday word, OR (b) explain it inline using only words a toddler already knows. Example: "Dragon breath — that's the warm, smoky air a dragon blows out, like when you puff air on a cold morning." A bare mention with no inline explanation is a FAIL — rewrite the page. This rule overrides poetic flow.
+"""
+        elif age <= 7:
+            young_delight_rules = f"""
+**YOUNG READER DELIGHT RULES** (mandatory for this age):
+1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — keep them sprinkled, not constant.
+2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
+3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
+4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward.
+5. WOW-WORD POLICY (Spark band): It is OK — and good — to use grade 1-2 "wow words" (e.g. "shimmered", "tumbled", "lantern", "festival"). Each new wow word must earn a context clue in the same paragraph: a vivid action, a comparison, or the reaction it causes ("the lantern shimmered like a tiny captured star"). Do NOT stop and define every fantasy noun inline as if explaining to a toddler — that flattens the story. The check is: a 6-7 year old should be able to guess the word from its surroundings on first listen.
 """
 
         return f"""

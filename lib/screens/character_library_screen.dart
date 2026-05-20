@@ -696,18 +696,13 @@ class _CharacterCard extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return SafeAssetImage(
-      'assets/images/character_placeholder.png',
-      fit: BoxFit.cover,
-      placeholder: SafeAssetImage(
-        'thePlaceholderImageBeforeCharacterGeneration.jpeg',
-        fit: BoxFit.cover,
-        placeholder: Center(
-          child: Text(
-            emoji,
-            style: const TextStyle(fontSize: 40),
-          ),
-        ),
+    // MT-176: dropped two dead asset references (character_placeholder.png and
+    // thePlaceholderImageBeforeCharacterGeneration.jpeg — neither exists on disk).
+    // The emoji placeholder is the only path that ever rendered in practice.
+    return Center(
+      child: Text(
+        emoji,
+        style: const TextStyle(fontSize: 40),
       ),
     );
   }

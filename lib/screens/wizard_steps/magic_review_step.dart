@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:story_weaver_app/services/feelings_ambient_service.dart';
@@ -547,6 +548,56 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           } catch (e) {
             debugPrint(
                 '⚠️ Could not load preset character asset for illustration: $e');
+          }
+        }
+
+        // MT-070: `wizard_data_mapper.dart` may already have set
+        // `custom_avatar_base64` from `generatedAvatar.imageBase64`, but that
+        // field is overloaded — it can be a real base64 blob, an asset path
+        // (`assets/avatars/midjourney/avatar_NNN.webp`), or an http(s) URL
+        // depending on which avatar pipeline produced it (see commit 3d616101).
+        // The backend `gemini_image_generator._read_avatar_details` only knows
+        // how to base64-decode the value, so an asset path or URL would silently
+        // get dropped and the illustration model would fall back to a generic
+        // child that doesn't resemble the saved character. Resolve those forms
+        // here so the reference photo actually reaches the multimodal prompt.
+        if (charDetails is Map<String, dynamic>) {
+          final raw = charDetails['custom_avatar_base64'];
+          if (raw is String && raw.isNotEmpty) {
+            final trimmed = raw.trim();
+            if (trimmed.startsWith('assets/')) {
+              try {
+                final byteData = await rootBundle.load(trimmed);
+                charDetails['custom_avatar_base64'] =
+                    base64Encode(byteData.buffer.asUint8List());
+              } catch (e) {
+                debugPrint(
+                    '⚠️ Could not load asset avatar reference for illustration: $e');
+                charDetails.remove('custom_avatar_base64');
+              }
+            } else if (trimmed.startsWith('http://') ||
+                trimmed.startsWith('https://')) {
+              try {
+                final response = await http
+                    .get(Uri.parse(trimmed))
+                    .timeout(const Duration(seconds: 15));
+                if (response.statusCode == 200 &&
+                    response.bodyBytes.isNotEmpty) {
+                  charDetails['custom_avatar_base64'] =
+                      base64Encode(response.bodyBytes);
+                } else {
+                  debugPrint(
+                      '⚠️ Avatar reference fetch failed (${response.statusCode}) for $trimmed');
+                  charDetails.remove('custom_avatar_base64');
+                }
+              } catch (e) {
+                debugPrint(
+                    '⚠️ Could not fetch URL avatar reference for illustration: $e');
+                charDetails.remove('custom_avatar_base64');
+              }
+            }
+            // else: already base64 (optionally with `data:image/...;base64,`
+            // prefix that the backend strips). Leave as-is.
           }
         }
 

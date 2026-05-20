@@ -1,11 +1,16 @@
 // lib/feelings_wheel_screen.dart
-// Interactive Feelings Wheel with age-aware depth and optional reference image
+// Interactive Feelings picker with age-aware depth.
+//
+// MT-176 (2026-05-20): The original geometric wheel image
+// `assets/images/FeelingsWheel.png` was never bundled and the
+// `SafeAssetImage` placeholder rendered as empty space, leaving the
+// screen visually broken. The list-based picker (originally the
+// "Use list instead" fallback) is now the sole UI. The geometric
+// tap handler, wheel keys, and image references were removed.
 
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'feelings_wheel_data.dart';
 import 'sunset_jungle_theme.dart';
-import 'widgets/safe_asset_image.dart';
 
 class FeelingsWheelScreen extends StatefulWidget {
   final SelectedFeeling? currentFeeling;
@@ -27,20 +32,6 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   CoreEmotion? _selectedCore;
   SecondaryFeeling? _selectedSecondary;
   late final List<_SecondaryOption> _secondaryOptions;
-  final GlobalKey _wheelKey = GlobalKey();
-  final GlobalKey _dialogWheelKey = GlobalKey();
-  bool _useListPicker = false;
-
-  // Order of core emotions as they appear clockwise on the wheel image, starting at 12 o'clock.
-  // Adjust here if the asset changes.
-  final List<String> _wheelOrder = const [
-    'happy',
-    'surprised',
-    'scared',
-    'sad',
-    'disgusted',
-    'angry',
-  ];
 
   @override
   void initState() {
@@ -93,38 +84,25 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildWheelImage(),
-        const SizedBox(height: 8),
         _buildGuidanceCard(maxDepth, age),
         const SizedBox(height: 14),
         _buildSelectionSummary(),
         const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _selectedCore = null;
-                  _selectedSecondary = null;
-                });
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Start over'),
-            ),
-            TextButton(
-              onPressed: () => setState(() => _useListPicker = !_useListPicker),
-              child: Text(_useListPicker ? 'Hide list picker' : 'Use list instead'),
-            ),
-          ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _selectedCore = null;
+                _selectedSecondary = null;
+              });
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Start over'),
+          ),
         ),
-        if (_useListPicker) ...[
-          const SizedBox(height: 8),
-          _buildGuidedSelector(maxDepth),
-        ],
+        const SizedBox(height: 8),
+        _buildGuidedSelector(maxDepth),
       ],
     );
   }
@@ -147,85 +125,6 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     }
   }
 
-  Widget _buildWheelImage() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              label: 'Feelings wheel - tap the colors to pick feelings',
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: AspectRatio(
-                  key: _wheelKey,
-                  aspectRatio: 1.1,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      SafeAssetImage(
-                        'assets/images/FeelingsWheel.png',
-                        fit: BoxFit.cover,
-                        placeholder: const SizedBox.shrink(),
-                      ),
-                      GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTapDown: (details) => _handleWheelTap(details),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => Dialog(
-                      child: LayoutBuilder(
-                        builder: (ctx, dialogConstraints) {
-                          return InteractiveViewer(
-                            minScale: 0.8,
-                            maxScale: 3.0,
-                            child: AspectRatio(
-                              key: _dialogWheelKey,
-                              aspectRatio: 1.1,
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  SafeAssetImage(
-                                    'assets/images/FeelingsWheel.png',
-                                    fit: BoxFit.contain,
-                                  ),
-                                  GestureDetector(
-                                    behavior: HitTestBehavior.translucent,
-                                    onTapDown: (details) => _handleWheelTap(
-                                      details,
-                                      boxOverride: _dialogWheelKey.currentContext
-                                          ?.findRenderObject() as RenderBox?,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.fullscreen),
-                label: const Text('Open & tap the wheel'),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildGuidanceCard(int maxDepth, int? age) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -238,7 +137,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Tap the wheel to pick feelings',
+            'Pick the feeling that fits',
             style: TextStyle(
               fontFamily: 'Quicksand',
               fontWeight: FontWeight.w700,
@@ -246,7 +145,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Tap the colored wheel itself. It dims non-relevant slices and lights up the next level as you drill down.',
+            'Start with the big feeling family, then drill down to the word that fits best.',
             style: TextStyle(fontFamily: 'Quicksand'),
           ),
           if (maxDepth > 1) ...const [
@@ -273,14 +172,6 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'List picker (optional)',
-          style: TextStyle(
-            fontFamily: 'Quicksand',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
         _buildStageCard(
           title: '1. Core feelings',
           subtitle: 'Tap the big feeling family first.',
@@ -309,121 +200,6 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
             child: _buildTertiaryChoices(),
           ),
       ],
-    );
-  }
-
-  void _handleWheelTap(TapDownDetails details, {RenderBox? boxOverride}) {
-    final box = boxOverride ?? _wheelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null) return;
-
-    final size = box.size;
-    final local = box.globalToLocal(details.globalPosition);
-    final center = Offset(size.width / 2, size.height / 2);
-    final dx = local.dx - center.dx;
-    final dy = local.dy - center.dy;
-    final radius = math.sqrt(dx * dx + dy * dy);
-    final maxRadius = math.min(size.width, size.height) / 2;
-
-    if (radius > maxRadius) return; // tapped outside the wheel
-
-    // Align 0° to the top of the wheel (12 o'clock) to match the graphic.
-    const double startAngleOffset = -math.pi / 2;
-    final angle = (math.atan2(dy, dx) + startAngleOffset + 2 * math.pi) % (2 * math.pi);
-    final ringRatio = radius / maxRadius;
-    const coreThreshold = 0.33;
-    const secondaryThreshold = 0.66;
-
-    final sectorCount = _wheelOrder.length;
-    final sectorAngle = (2 * math.pi) / sectorCount;
-    final sectorIndex = (angle / sectorAngle).floor() % sectorCount;
-    final coreId = _wheelOrder[sectorIndex];
-    final core = FeelingsWheelData.coreEmotions.firstWhere(
-      (c) => c.id == coreId,
-      orElse: () => FeelingsWheelData.coreEmotions.first,
-    );
-    final localAngle = (angle - (sectorIndex * sectorAngle)) % sectorAngle;
-    final localFraction = localAngle / sectorAngle;
-    final maxDepth = _maxDepthForAge(widget.ageYears);
-
-    if (ringRatio <= coreThreshold) {
-      // Core ring
-      if (maxDepth == 1) {
-        _notifySelection(
-          SelectedFeeling(
-            core: core.name,
-            secondary: '',
-            tertiary: core.name,
-            emoji: core.emoji,
-            eyeType: core.eyeType,
-            mouthType: core.mouthType,
-            color: core.color ?? SunsetJungleTheme.sunsetPeach,
-          ),
-        );
-      } else {
-        setState(() {
-          _selectedCore = core;
-          _selectedSecondary = null;
-        });
-      }
-      return;
-    }
-
-    final secondaryList = core.secondary;
-    if (secondaryList.isEmpty) return;
-
-    final secondaryIndex = (localFraction * secondaryList.length)
-        .floor()
-        .clamp(0, secondaryList.length - 1);
-    final secondary = secondaryList[secondaryIndex];
-
-    if (ringRatio <= secondaryThreshold) {
-      // Secondary ring
-      if (maxDepth <= 2) {
-        final feeling = SelectedFeeling(
-          core: core.name,
-          secondary: secondary.name,
-          tertiary: secondary.name,
-          emoji: secondary.emoji,
-          eyeType: secondary.eyeType,
-          mouthType: secondary.mouthType,
-          color: core.color ?? SunsetJungleTheme.sunsetPeach,
-        );
-        setState(() {
-          _selectedCore = core;
-          _selectedSecondary = secondary;
-        });
-        _notifySelection(feeling);
-      } else {
-        setState(() {
-          _selectedCore = core;
-          _selectedSecondary = secondary;
-        });
-      }
-      return;
-    }
-
-    // Tertiary ring
-    if (secondary.tertiary.isEmpty) return;
-    final tertiaryIndex = (localFraction * secondary.tertiary.length)
-        .floor()
-        .clamp(0, secondary.tertiary.length - 1);
-    final tertiary = secondary.tertiary[tertiaryIndex];
-
-    final emoji = FeelingsEmojiLookup.emojiFor(tertiary) ?? secondary.emoji;
-    setState(() {
-      _selectedCore = core;
-      _selectedSecondary = secondary;
-    });
-    _notifySelection(
-      SelectedFeeling(
-        core: core.name,
-        secondary: secondary.name,
-        tertiary: tertiary,
-        emoji: emoji,
-        eyeType: secondary.eyeType,
-        mouthType: secondary.mouthType,
-        color: core.color ?? SunsetJungleTheme.sunsetPeach,
-      ),
     );
   }
 

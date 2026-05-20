@@ -358,7 +358,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     title: 'Allow photo-based avatar creation',
                     subtitle:
                         'Your child can use a selfie to create their avatar. '
-                        'Photos are processed on-device and never uploaded.',
+                        'Photos are sent securely to the avatar provider and used only to generate the cartoon image.',
                     value: _allowPhotoAvatar,
                     onChanged: (v) async {
                       await _consentService.setAllowPhotoAvatar(v);

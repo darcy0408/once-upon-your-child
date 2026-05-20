@@ -319,20 +319,11 @@ class _CharacterPreviewState extends State<CharacterPreview>
       child: ClipOval(
         child: Stack(
           children: [
-            // The placeholder image
-            SafeAssetImage(
-              'assets/images/character_placeholder.png',
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              placeholder: SafeAssetImage(
-                'thePlaceholderImageBeforeCharacterGeneration.jpeg',
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                placeholder: _buildEmojiPlaceholder(size),
-              ),
-            ),
+            // MT-176: dropped two dead asset references (character_placeholder.png
+            // and thePlaceholderImageBeforeCharacterGeneration.jpeg — neither
+            // exists on disk). The emoji placeholder is the only path that
+            // ever actually rendered.
+            _buildEmojiPlaceholder(size),
             // Soft gradient vignette
             Container(
               width: size,

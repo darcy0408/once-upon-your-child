@@ -26,11 +26,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Switch to the list-based picker so the chips are available in tests.
-    final listToggle = find.text('Use list instead');
-    await tester.ensureVisible(listToggle);
-    await tester.tap(listToggle);
-    await tester.pumpAndSettle();
+    // MT-176: the geometric wheel image was removed (asset never shipped);
+    // the list picker is now the sole UI, so no toggle interaction is needed.
 
     // Tap a core emotion
     final happy = find.text('Happy');
