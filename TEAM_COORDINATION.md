@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 23:05 | 45c8 | main | Domain + email + Google Cloud Program $350k AI-tier application submitted | [link](docs/sessions/2026-05-19-2305-45c8.md) |
 | 2026-05-19 | 23:03 | 5de1 | main | Legal & distribution readiness audit 04 + "Once Upon YOUR Child" brand sweep | [link](docs/sessions/2026-05-19-2303-5de1.md) |
 | 2026-05-19 | 17:07 | 5e43 | main | MT-169 fail-CLOSED illustration-quota cost breaker on Redis outage | [link](docs/sessions/2026-05-19-1707-5e43.md) |
 | 2026-05-19 | 17:07 | b617 | main | MT-168 Playwright partial-verify; blocked on Railway outage | [link](docs/sessions/2026-05-19-1707-b617.md) |
