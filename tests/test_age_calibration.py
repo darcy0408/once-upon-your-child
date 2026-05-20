@@ -63,7 +63,7 @@ class TestAgeCalibration(unittest.TestCase):
             age=14,
             **self.base_params
         )
-        self.assertIn("1800-2400 words", prompt)
+        self.assertIn("2400-3400 words", prompt)
         self.assertIn("identity", prompt.lower())
         self.assertIn("reflection", prompt.lower())
 
