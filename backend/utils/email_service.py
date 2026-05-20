@@ -37,7 +37,7 @@ def _get_consent_email_from():
     """
     return (
         os.environ.get('CONSENT_EMAIL_FROM')
-        or 'Once Upon a Time <no-reply@storyweaver.app>'
+        or 'Once Upon YOUR Child <no-reply@storyweaver.app>'
     )
 
 
@@ -109,11 +109,11 @@ def send_consent_verification_email(parent_email, code, expiry_minutes):
         True if Resend accepted the message, False otherwise (caller must then
         leave consent pending and surface a 503-style error).
     """
-    subject = 'Verify your consent for your child’s Once Upon a Time account'
+    subject = 'Verify your consent for your child’s Once Upon YOUR Child account'
 
     text_body = (
         "Hello,\n\n"
-        "Someone created an account on Once Upon a Time (powered by Story "
+        "Someone created an account on Once Upon YOUR Child (powered by Story "
         "Weaver), a children's storytelling app, and listed this email address "
         "as the parent or guardian.\n\n"
         "Because the child is under 13, U.S. children's privacy law (COPPA) "
@@ -137,7 +137,7 @@ def send_consent_verification_email(parent_email, code, expiry_minutes):
     <h2 style="margin-bottom: 4px;">Verify your child&rsquo;s account</h2>
     <p>Hello,</p>
     <p>
-      Someone created an account on <strong>Once Upon a Time</strong>
+      Someone created an account on <strong>Once Upon YOUR Child</strong>
       (powered by Story Weaver), a children&rsquo;s storytelling app, and listed
       this email address as the parent or guardian.
     </p>

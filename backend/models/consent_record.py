@@ -11,7 +11,7 @@ from ..database import db
 # forcing the parent to re-consent against the new policy.
 #
 # Keep this in sync with the client-side policy cutoff (lib/main_story.dart).
-CURRENT_POLICY_VERSION = 1
+CURRENT_POLICY_VERSION = 2
 
 
 class ConsentRecord(db.Model):

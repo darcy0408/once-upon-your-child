@@ -103,9 +103,11 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   int? _savedAge;
   List<Character> _savedCharacters = const [];
 
-  // Privacy policy was updated 2026-03-21 — any consent before this date
-  // must be refreshed so parents see the updated data-transparency language.
-  static final _reConsentCutoff = DateTime(2026, 3, 21);
+  // Privacy policy was updated 2026-05-19 (rebrand: "Once Upon a Time" →
+  // "Once Upon YOUR Child"; aligned with the canonical brand). Any consent
+  // before this date must be refreshed so parents see the new brand and
+  // updated data-transparency language.
+  static final _reConsentCutoff = DateTime(2026, 5, 19);
 
   @override
   void initState() {

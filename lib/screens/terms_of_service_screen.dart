@@ -6,7 +6,7 @@ class TermsOfServiceScreen extends StatelessWidget {
   const TermsOfServiceScreen({super.key});
 
   /// Static last-updated date — keep in sync with PRIVACY_POLICY.md.
-  static const String lastUpdated = 'May 17, 2026';
+  static const String lastUpdated = 'May 19, 2026';
 
   @override
   Widget build(BuildContext context) {

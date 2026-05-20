@@ -908,8 +908,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path, mimeType: 'application/json')],
-          subject: 'Once Upon a Time — my child\'s data export',
-          text: 'Your child\'s data export from Once Upon a Time.',
+          subject: 'Once Upon YOUR Child — my child\'s data export',
+          text: 'Your child\'s data export from Once Upon YOUR Child.',
         ),
       );
 

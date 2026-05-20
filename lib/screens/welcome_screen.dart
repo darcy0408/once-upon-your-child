@@ -749,7 +749,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         const Text(
           'Parents/guardians — please enter the child\'s real age. '
           'This determines which content is appropriate. '
-          'Once Upon a Time is a storytelling app for ages 3 to 17.',
+          'Once Upon YOUR Child is a storytelling app for ages 3 to 17.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
