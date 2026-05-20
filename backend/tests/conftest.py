@@ -37,15 +37,15 @@ def mock_gemini(mocker):
     # Create a mock response
     mock_response = MagicMock()
     mock_response.text = '{"story_text": "Once upon a time...", "title": "Test Story"}'
-    
+
     # Create mock models
     mock_models = MagicMock()
     mock_models.generate_content.return_value = mock_response
-    
+
     # Create mock client
     mock_client = MagicMock()
     mock_client.models = mock_models
-    
+
     # Patch the Client class where it's used
     # The service uses 'from google import genai' and then 'genai.Client'
     try:
@@ -53,8 +53,58 @@ def mock_gemini(mocker):
     except (AttributeError, ImportError):
         # Fallback if the above fails
         mocker.patch('google.genai.Client', return_value=mock_client)
-    
+
     return mock_client
+
+
+@pytest.fixture(autouse=True)
+def mock_openrouter_story(mocker, monkeypatch):
+    """Mock the OpenRouter story-generation HTTP path to prevent real calls.
+
+    MT-171 Phase 1: paired with ``mock_gemini`` so tests can exercise either
+    provider without hitting a real API. We patch ``requests`` inside the
+    ``openrouter_story_generator`` module rather than the global ``requests``
+    so only the OpenRouter-story-gen code path is intercepted (the existing
+    ``mock_openrouter`` fixture for ``avatar_generation_service`` is unchanged).
+
+    The fixture also makes ``OPENROUTER_API_KEY`` non-empty during the test so
+    ``OpenRouterStoryGenerator()`` can be constructed without raising; tests
+    that need to assert the "no key" branch can monkeypatch.delenv it.
+    """
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-or-key")
+
+    # Default successful OpenAI/OpenRouter-shaped chat-completion response.
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.return_value = {
+        "id": "test-or-completion",
+        "model": "anthropic/claude-sonnet-4.7",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        '{"title": "OpenRouter Test Story", '
+                        '"pages": [{"text": "Once upon a time, an OpenRouter '
+                        'response carried a tiny child-safe tale."}]}'
+                    ),
+                },
+            }
+        ],
+    }
+
+    patched_requests = mocker.patch(
+        "backend.services.openrouter_story_generator.requests"
+    )
+    patched_requests.post.return_value = mock_response
+    # Expose the real exceptions module so tests can raise HTTPError from the
+    # mock without having to re-import requests themselves.
+    import requests as _real_requests
+    patched_requests.exceptions = _real_requests.exceptions
+    return patched_requests
 
 # ============================================================================
 # AUTHENTICATION & AUTHORIZATION FIXTURES

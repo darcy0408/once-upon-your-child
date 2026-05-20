@@ -90,6 +90,82 @@ def _classify_provider_failure(exc: Exception | None = None, message: str | None
     return raw_text.splitlines()[0][:80]
 
 
+def _resolve_story_provider() -> str:
+    """Read the MT-171 provider switch.
+
+    Looks at the Flask app config first (set in app.py from STORY_GEN_PROVIDER
+    + the Config class default), falling back to the env var directly so this
+    helper still works outside an app context (Celery worker bootstrap, scripts).
+    """
+    try:
+        from flask import current_app  # local import; Celery may not have app context
+        provider = current_app.config.get("STORY_GEN_PROVIDER")
+    except Exception:
+        provider = None
+    if not provider:
+        provider = os.environ.get("STORY_GEN_PROVIDER") or "gemini"
+    provider = str(provider).strip().lower()
+    if provider not in ("gemini", "openrouter", "auto"):
+        logger.warning(
+            "STORY_GEN_PROVIDER=%r is not a recognized value; defaulting to 'gemini'.",
+            provider,
+        )
+        provider = "gemini"
+    return provider
+
+
+def _try_gemini(prompt: str, user_tier: str | None, provider_sequence: list[str]) -> str | None:
+    """Attempt Gemini story generation. Returns text on success, None on failure
+    (any failure mode appends a tagged entry to provider_sequence)."""
+    try:
+        logger.info("Attempting story generation with Gemini...")
+        gemini_generator = StoryGenerationService(user_tier=user_tier)
+        story_text = gemini_generator.generate_story(prompt)
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with Gemini.")
+            provider_sequence.append("gemini(success)")
+            return story_text
+
+        logger.warning("Gemini returned a 'Sorry' message.")
+        provider_sequence.append(
+            f"gemini(fail:{_classify_provider_failure(message=story_text)})"
+        )
+    except google_exceptions.ResourceExhausted as exc:
+        logger.warning("Gemini is rate-limited.")
+        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
+    except Exception as exc:
+        logger.exception("Gemini failed with an unexpected error.")
+        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
+    return None
+
+
+def _try_openrouter(prompt: str, user_tier: str | None, provider_sequence: list[str]) -> str | None:
+    """Attempt OpenRouter story generation. Returns text on success, None on
+    failure (any failure mode appends a tagged entry to provider_sequence)."""
+    if not os.getenv("OPENROUTER_API_KEY"):
+        logger.warning("OPENROUTER_API_KEY not set. Skipping OpenRouter.")
+        provider_sequence.append("openrouter(fail:no_key)")
+        return None
+
+    try:
+        logger.info("Attempting story generation with OpenRouter...")
+        openrouter_generator = OpenRouterStoryGenerator(user_tier=user_tier)
+        story_text = openrouter_generator.generate_story(prompt)
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with OpenRouter.")
+            provider_sequence.append("openrouter(success)")
+            return story_text
+
+        logger.warning("OpenRouter returned a 'Sorry' message.")
+        provider_sequence.append(
+            f"openrouter(fail:{_classify_provider_failure(message=story_text)})"
+        )
+    except Exception as exc:
+        logger.exception("OpenRouter failed.")
+        provider_sequence.append(f"openrouter(fail:{_classify_provider_failure(exc=exc)})")
+    return None
+
+
 def _generate_story_text_with_metadata(
     prompt: str,
     theme: str,
@@ -97,48 +173,47 @@ def _generate_story_text_with_metadata(
     companion: str = None,
     user_tier: str | None = None,
 ) -> tuple[str, str, list[str]]:
+    """Generate story text with tier-aware provider sequencing (MT-171 Phase 1).
+
+    Sequencing is controlled by STORY_GEN_PROVIDER (app.config + env):
+        'gemini'     — Gemini -> OpenRouter -> static  (legacy default)
+        'openrouter' — OpenRouter -> static            (skip Gemini; ToS-compliant)
+        'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
+
+    The returned ``provider_sequence`` list traces every attempt for observability
+    (success/fail reasons surface in the audit_log + Sentry breadcrumbs).
+    """
     provider_sequence: list[str] = []
+    provider_choice = _resolve_story_provider()
 
-    try:
-        logger.info("Attempting story generation with primary service (Gemini)...")
-        gemini_generator = StoryGenerationService(user_tier=user_tier)
-        story_text = gemini_generator.generate_story(prompt)
-        if story_text and not story_text.startswith("Sorry"):
-            logger.info("Successfully generated story with primary service.")
-            provider_sequence.append("gemini(success)")
-            return story_text, "gemini", provider_sequence
+    if provider_choice == "openrouter":
+        # OpenRouter only — do NOT fall back to Gemini (Phase 1 target order;
+        # Gemini's child-directed-app ToS is the whole reason for the flag).
+        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "openrouter", provider_sequence
 
-        logger.warning("Primary service returned a 'Sorry' message.")
-        provider_sequence.append(
-            f"gemini(fail:{_classify_provider_failure(message=story_text)})"
-        )
-    except google_exceptions.ResourceExhausted as exc:
-        logger.warning("Primary service (Gemini) is rate-limited. Falling back to OpenRouter.")
-        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
-    except Exception as exc:
-        logger.exception("Primary service (Gemini) failed with an unexpected error.")
-        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
+    elif provider_choice == "auto":
+        # Rollback-safe: try OpenRouter first; if it fails for any reason, fall
+        # back to Gemini so a flipped flag never produces a static fallback
+        # when Gemini would have worked. Use during migration validation only.
+        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "openrouter", provider_sequence
 
-    if os.getenv("OPENROUTER_API_KEY"):
-        try:
-            logger.info("Attempting story generation with fallback service (OpenRouter)...")
-            openrouter_generator = OpenRouterStoryGenerator()
-            story_text = openrouter_generator.generate_story(prompt)
-            if story_text and not story_text.startswith("Sorry"):
-                logger.info("Successfully generated story with fallback service.")
-                provider_sequence.append("openrouter(success)")
-                return story_text, "openrouter", provider_sequence
+        text = _try_gemini(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "gemini", provider_sequence
 
-            logger.warning("Fallback service returned a 'Sorry' message.")
-            provider_sequence.append(
-                f"openrouter(fail:{_classify_provider_failure(message=story_text)})"
-            )
-        except Exception as exc:
-            logger.exception("Fallback service (OpenRouter) also failed.")
-            provider_sequence.append(f"openrouter(fail:{_classify_provider_failure(exc=exc)})")
     else:
-        logger.warning("OPENROUTER_API_KEY not set. Cannot use fallback service.")
-        provider_sequence.append("openrouter(fail:no_key)")
+        # 'gemini' — legacy default: Gemini first, OpenRouter as soft fallback.
+        text = _try_gemini(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "gemini", provider_sequence
+
+        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "openrouter", provider_sequence
 
     logger.warning("All story generation providers failed. Returning local static fallback.")
     provider_sequence.append("static")

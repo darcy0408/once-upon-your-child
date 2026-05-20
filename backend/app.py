@@ -424,6 +424,24 @@ def create_app(config_name):
     # Initialize request logging (payload size, mode flags, latency)
     init_request_logging(app, logger)
 
+    # MT-171 Phase 1: story-text provider switch.
+    # 'gemini' (default, legacy), 'openrouter' (target), 'auto' (rollback-safe).
+    # Read from env so deployments can override without restarting Flask, falling
+    # back to the value baked into the Config class at module import.
+    _provider_raw = os.environ.get("STORY_GEN_PROVIDER")
+    if _provider_raw is None:
+        _provider_raw = app.config.get("STORY_GEN_PROVIDER", "gemini")
+    _provider = (_provider_raw or "gemini").strip().lower()
+    if _provider not in ("gemini", "openrouter", "auto"):
+        logger.warning(
+            "STORY_GEN_PROVIDER=%r is not a recognized value "
+            "(expected 'gemini' | 'openrouter' | 'auto'); defaulting to 'gemini'.",
+            _provider_raw,
+        )
+        _provider = "gemini"
+    app.config["STORY_GEN_PROVIDER"] = _provider
+    logger.info("STORY_GEN_PROVIDER set to '%s' (MT-171)", _provider)
+
     # Gemini setup
     GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")

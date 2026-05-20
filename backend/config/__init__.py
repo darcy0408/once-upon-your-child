@@ -114,6 +114,15 @@ class Config:
     # Free-tier model: cheaper flash-lite. Paid/BYOK tiers use GEMINI_MODEL.
     GEMINI_MODEL_FREE = os.environ.get('GEMINI_MODEL_FREE') or 'gemini-2.5-flash-lite'
 
+    # MT-171 Phase 1: provider switch for story-text generation.
+    # Values:
+    #   'gemini'     — legacy behavior: Gemini -> OpenRouter -> static fallback.
+    #   'openrouter' — target:          OpenRouter -> static fallback (skip Gemini entirely).
+    #   'auto'       — rollback-safe:   OpenRouter -> Gemini -> static fallback.
+    # Defaults to 'gemini' so production behavior is unchanged until the flag is
+    # flipped after OpenRouter ToS verification (see audit/MT-171-OPENROUTER-MIGRATION-BRIEF.md).
+    STORY_GEN_PROVIDER = (os.environ.get('STORY_GEN_PROVIDER') or 'gemini').strip().lower()
+
     # Stripe
     STRIPE_API_KEY = os.environ.get('STRIPE_SECRET_KEY') or os.environ.get('STRIPE_API_KEY')
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
