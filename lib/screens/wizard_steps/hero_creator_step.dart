@@ -3094,11 +3094,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     setState(() => _listeningFor = field);
     await _speech.listen(
-      listenFor: const Duration(seconds: 15),
-      pauseFor: const Duration(seconds: 3),
       listenOptions: SpeechListenOptions(
         partialResults: true,
         listenMode: ListenMode.dictation,
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 3),
       ),
       onResult: (result) {
         if (!mounted) return;

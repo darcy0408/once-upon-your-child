@@ -62,6 +62,9 @@ backend/.env
 .claude/settings.local.json
 .claude/.cache/
 
+# Antigravity CLI (symlink to Gemini config, per-machine)
+.antigravitycli/
+
 # Database (local development only)
 backend/characters.db
 backend/*.db

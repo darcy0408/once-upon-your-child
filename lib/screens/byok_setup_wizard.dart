@@ -727,7 +727,8 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                             await prefs.setBool('is_premium_byok', true);
                             await SecureStorageService.saveApiKey('gemini', key);
                             if (mounted) widget.onDone(key);
-                          } else if (mounted) {
+                          } else {
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(

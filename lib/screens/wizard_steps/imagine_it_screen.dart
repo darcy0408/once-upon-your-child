@@ -89,11 +89,11 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     unawaited(AppTtsService.instance
         .speak('Tell me your big story idea!'));
     await _speech.listen(
-      listenFor: const Duration(seconds: 15),
-      pauseFor: const Duration(seconds: 3),
       listenOptions: SpeechListenOptions(
         partialResults: true,
         listenMode: ListenMode.dictation,
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 3),
       ),
       onResult: (result) {
         if (!mounted) return;

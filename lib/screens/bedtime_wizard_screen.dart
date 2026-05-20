@@ -293,8 +293,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
           completer.complete(result.recognizedWords);
         }
       },
-      listenFor: const Duration(seconds: 10),
-      pauseFor: const Duration(seconds: 3),
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 10),
+        pauseFor: const Duration(seconds: 3),
+      ),
     );
 
     final answer = await completer.future.timeout(

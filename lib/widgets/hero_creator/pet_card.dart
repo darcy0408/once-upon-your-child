@@ -148,8 +148,10 @@ class _HeroPetCardState extends State<HeroPetCard> {
     if (mounted) setState(() => _listeningField = fieldKey);
 
     await _speech.listen(
-      listenFor: const Duration(seconds: 12),
-      pauseFor: const Duration(seconds: 2),
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 12),
+        pauseFor: const Duration(seconds: 2),
+      ),
       onResult: (result) {
         final words = result.recognizedWords.trim();
         if (words.isEmpty) return;

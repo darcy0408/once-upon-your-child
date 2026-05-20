@@ -89,8 +89,10 @@ class _VoiceMicButtonState extends State<VoiceMicButton>
           _stopListening();
         }
       },
-      listenFor: const Duration(seconds: 15),
-      pauseFor: const Duration(seconds: 3),
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 3),
+      ),
     );
   }
 

@@ -51,7 +51,9 @@ class _BandAdaptiveImagineItState extends State<BandAdaptiveImagineIt> {
     if (!available || !mounted) return;
     setState(() => _isListening = true);
     _speech.listen(
-      listenFor: timeout,
+      listenOptions: stt.SpeechListenOptions(
+        listenFor: timeout,
+      ),
       onResult: (result) {
         if (result.finalResult && mounted) {
           final words = result.recognizedWords.trim();
