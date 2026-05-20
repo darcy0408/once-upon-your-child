@@ -11,6 +11,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-19 | 23:02 | c7b7 | main | R8 dry-run: 384 MB asset bloat; built WebP toolchain | [link](docs/sessions/2026-05-19-2302-c7b7.md) |
+| 2026-05-19 | 23:05 | d4b8 | main | wire chrome-devtools-mcp + smoke test surfaces prod outage | [link](docs/sessions/2026-05-19-2305-d4b8.md) |
 | 2026-05-19 | 23:05 | 45c8 | main | Domain + email + Google Cloud Program $350k AI-tier application submitted | [link](docs/sessions/2026-05-19-2305-45c8.md) |
 | 2026-05-19 | 23:03 | 5de1 | main | Legal & distribution readiness audit 04 + "Once Upon YOUR Child" brand sweep | [link](docs/sessions/2026-05-19-2303-5de1.md) |
 | 2026-05-19 | 17:07 | 5e43 | main | MT-169 fail-CLOSED illustration-quota cost breaker on Redis outage | [link](docs/sessions/2026-05-19-1707-5e43.md) |
