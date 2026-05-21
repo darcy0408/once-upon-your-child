@@ -1,11 +1,18 @@
 """
-TTS Routes — ElevenLabs high-quality narration endpoints.
+TTS Routes — three-tier narration fallback chain.
+
+Provider order on /tts/synthesize:
+  1. ElevenLabs (premium, ~$0.18/1k chars) — preferred while char budget OK
+  2. Gemini Flash TTS (overflow, ~$0.054/1k chars) — premium quality at lower
+     cost when ElevenLabs is unconfigured or its monthly cap is hit
+  3. Edge TTS (free) — final online fallback before on-device TTS
+The 'provider' field in the response indicates which tier served the request.
 
 POST /tts/synthesize
   Body: { "text": str, "voice_id": str (optional) }
-  Returns: { "audio_base64": str, "format": "mp3", "voice_id": str }
-  Returns 503 if ELEVENLABS_API_KEY not set so Flutter can fall back to
-  on-device flutter_tts gracefully.
+  Returns: { "audio_base64": str, "format": "mp3", "voice_id": str, "provider": str }
+  Returns 503 only if all three providers fail — clients then fall back to
+  on-device flutter_tts.
 
 GET /tts/voices
   Returns: { "voices": [...] }  — curated voice list for the picker UI.
@@ -63,6 +70,57 @@ def _get_voice_list():
         except ImportError:
             return [], "21m00Tcm4TlvDq8ikWAM"
     return CURATED_VOICES, DEFAULT_VOICE_ID
+
+
+# Gemini Flash TTS — overflow tier between ElevenLabs and Edge. Costs ~$0.054/1k
+# chars vs ElevenLabs' $0.18/1k, used when ElevenLabs is unavailable or over
+# budget so paying users keep a high-quality voice instead of dropping to Edge.
+_gemini_service = None
+
+
+def _get_gemini_service():
+    """Lazy-init the Gemini Flash TTS service."""
+    global _gemini_service
+    if _gemini_service is not None:
+        return _gemini_service
+
+    try:
+        from backend.gemini_tts_service import GeminiTTSService
+    except ImportError:
+        try:
+            from gemini_tts_service import GeminiTTSService
+        except ImportError:
+            logger.warning("gemini_tts_service module not found")
+            return None
+
+    try:
+        _gemini_service = GeminiTTSService()
+        logger.info("Gemini Flash TTS initialised successfully")
+        return _gemini_service
+    except (ImportError, ValueError) as e:
+        logger.warning("Gemini Flash TTS unavailable: %s", e)
+        return None
+    except Exception as e:
+        logger.warning("Gemini Flash TTS init error: %s", e)
+        return None
+
+
+def _gemini_synthesize(text, voice_id, speed):
+    """
+    Synthesize narration via Gemini Flash TTS.
+    Returns (audio_bytes, word_timestamps) or None if unavailable.
+    Word timestamps are always [] — Gemini TTS does not provide alignment.
+    """
+    service = _get_gemini_service()
+    if service is None:
+        return None
+    try:
+        return service.generate_speech_with_timestamps(
+            text=text, voice_id=voice_id, speed=speed
+        )
+    except Exception as e:
+        logger.error("Gemini Flash TTS failed: %s", e)
+        return None
 
 
 # Free Edge TTS fallback — used when ElevenLabs is unconfigured or out of budget.
@@ -251,8 +309,18 @@ def create_tts_blueprint(limiter, require_auth):
                 elevenlabs_ok = False
                 audio_bytes = None
 
-        # Free Edge TTS fallback — used when ElevenLabs is unconfigured, its
-        # monthly budget is depleted, or it returned no audio.
+        # Gemini Flash TTS overflow tier — kicks in when ElevenLabs is
+        # unconfigured, its monthly budget is depleted, or it returned no
+        # audio. Quality stays close to ElevenLabs at ~30% of the per-char
+        # cost; Edge stays below as the final free fallback.
+        if not audio_bytes:
+            gemini_result = _gemini_synthesize(text, voice_id, speed)
+            if gemini_result is not None and gemini_result[0]:
+                audio_bytes, word_timestamps = gemini_result
+                provider = 'gemini'
+
+        # Free Edge TTS fallback — used when both ElevenLabs and Gemini are
+        # unavailable, e.g. no GEMINI_API_KEY configured, or Gemini errored.
         if not audio_bytes:
             edge_result = _edge_synthesize(text, voice_id, speed)
             if edge_result is None or not edge_result[0]:
@@ -280,6 +348,23 @@ def create_tts_blueprint(limiter, require_auth):
                         unit_kind='chars',
                         success=True,
                         extra={'voice_id': voice_id, 'tier': user_tier},
+                    )
+                except Exception:
+                    logger.debug("cost_tracker logging failed", exc_info=True)
+            elif provider == 'gemini':
+                # Don't increment the ElevenLabs char budget — Gemini is the
+                # overflow tier that exists *because* that budget is exhausted.
+                try:
+                    from backend.services.cost_tracker import gemini_tts_cost, log_api_cost
+                    log_api_cost(
+                        provider='gemini',
+                        feature='tts',
+                        cost_usd=gemini_tts_cost(len(text)),
+                        user_id=user_id,
+                        units=len(text),
+                        unit_kind='chars',
+                        success=True,
+                        extra={'voice_id': voice_id, 'tier': user_tier, 'model': 'gemini-3.1-flash-tts-preview'},
                     )
                 except Exception:
                     logger.debug("cost_tracker logging failed", exc_info=True)

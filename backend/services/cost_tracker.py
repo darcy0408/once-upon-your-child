@@ -12,6 +12,7 @@ Cost estimates use 2025-2026 published list prices (Verified):
   Gemini 2.5 Flash:        $0.075/1M input, $0.30/1M output tokens
   Gemini 2.5 Flash Image:  $0.04/image (1 generated image per call)
   Gemini 2.5 Flash Lite:   $0.0375/1M input, $0.15/1M output tokens
+  Gemini 3.1 Flash TTS:    $0.054/1k characters (combined input + audio output)
   ElevenLabs Creator:      $0.18/1k characters
   Replicate SDXL-Lightning: $0.003/image
   OpenRouter (passthrough): provider rate × 1.05 markup
@@ -46,6 +47,11 @@ def gemini_image_cost(num_images: int = 1) -> float:
 def elevenlabs_tts_cost(characters: int) -> float:
     """Cost of an ElevenLabs Creator-tier TTS call."""
     return (characters / 1000) * 0.18
+
+
+def gemini_tts_cost(characters: int) -> float:
+    """Cost of a Gemini 3.1 Flash TTS call (input + audio output combined)."""
+    return (characters / 1000) * 0.054
 
 
 def replicate_image_cost(num_images: int = 1) -> float:
