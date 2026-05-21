@@ -68,13 +68,13 @@ This is the central question: **should BYOK get fewer features than paid Premium
 | **Per-page illustrations (non-Sprout)** | ❌ | ✅ | ❓ unverified | ❓ | `story_result_screen.dart:709-710` — gate is `hasByok \|\| isSproutBand` only; `is_paid_premium` not checked here |
 | **Per-page illustrations (Sprout)** | ✅ (server key) | ✅ | ✅ | ✅ | `story_result_screen.dart:724` — `allowServerKey: isSproutBand` |
 | **Story generation (Gemini)** | ✅ via server quota (limited) | ✅ via own key | ✅ via server quota | ✅ via server quota | `api_service_manager.dart:605-628` |
-| **Voice narration (TTS)** | ✅ on-device | ✅ on-device | ✅ on-device + ElevenLabs? | ✅ | TBD — verify ElevenLabs gate |
+| **Voice narration (TTS)** | ✅ Edge → on-device | ✅ Edge → on-device | ✅ ElevenLabs → Gemini → Edge → on-device | ✅ same chain, larger budgets | `backend/routes/tts_routes.py` (3-tier fallback added by `d2e31d0f` 2026-05-21; see [TTS fallback chain] entry below) |
 | **Story export / share** | ❌ | ❓ | ✅ | ✅ | `subscription_models.dart:105` — flag exists, UI gate unverified |
 | **Multi-character stories** | ❌ | ❓ | ✅ | ✅ | `subscription_models.dart:102` |
 | **Story limits (per day / month)** | 3/day, 30/mo | unlimited (own key) | 10/day, 150/mo | unlimited | `subscription_models.dart:81-145`; `grace_period_service.dart` |
-| **TTS — ElevenLabs char budget** [b7e2] | 0 (flutter_tts only) | 0 (BYOK doesn't unlock TTS — no per-user voice rights) | 10,000 chars/mo + flutter_tts fallback | 25,000 chars/mo + flutter_tts fallback | `backend/utils/ai_quota.py::_TTS_MONTHLY_CHAR_LIMITS` + `backend/routes/tts_routes.py` (post Phase-1, uncommitted as of [b7e2]) |
+| **TTS — ElevenLabs char budget** [b7e2] | 0 (Edge + on-device only) | 0 (BYOK doesn't unlock ElevenLabs — no per-user voice rights) | 10,000 chars/mo, then Gemini overflow → Edge → on-device | 25,000 chars/mo, then Gemini overflow → Edge → on-device | `backend/utils/ai_quota.py::_TTS_MONTHLY_CHAR_LIMITS` + `backend/routes/tts_routes.py` (3-tier chain shipped `d2e31d0f` 2026-05-21) |
 | **TTS — daily call burst quota** | 20 calls/day | 50 calls/day | 100 calls/day | 150 calls/day | `backend/utils/ai_quota.py::_TTS_DAILY_LIMITS` (existing pre-Phase-1) |
-| **Global ElevenLabs budget guard** [b7e2] | shared with all tiers | shared | shared | shared | `ELEVENLABS_GLOBAL_BUDGET_CHARS=100000` env var; protects Year-1 free Creator credits across all paying users (capacity ≈ 55 narrated stories/mo total) |
+| **Global ElevenLabs budget guard** [b7e2] | shared with all tiers | shared | shared | shared | `ELEVENLABS_GLOBAL_BUDGET_CHARS=100000` env var; protects Year-1 free Creator credits across all paying users (capacity ≈ 55 narrated stories/mo total). **After 2026-05-21:** when this cap fires the fallback is Gemini Flash TTS at ~$0.054/k (not Edge), so quality stays premium past the cap. |
 | **Character slots** | 1 | ❓ | 3 | 20 | `subscription_models.dart:82,98,133` |
 | **Themes available** | 3 (Adv/Magic/Friend) | ❓ | 8 | 12 | `subscription_models.dart:92,109,144` |
 | **Companions available** | 3 | ❓ | 8 | 8 | `subscription_models.dart:93,119,158` |
@@ -167,6 +167,35 @@ Margin is positive even at the cap ceiling. **Premium $9.99 is structurally prof
 | **Worst-case margin** | | **+$4.78 / 25%** ✅ |
 
 Family is also structurally profitable at the cap ceiling. The 25% margin is tighter than Premium's 28% — worth knowing, but not unsafe.
+
+#### Post Year-1 ElevenLabs credits — Gemini Flash TTS overflow shifts the worst case
+
+The above tables use ElevenLabs Creator retail $0.22/k for TTS. **In practice during Year-1 credits TTS costs $0 up to the global 100k char/mo cap; above the cap, the overflow tier is now Gemini Flash TTS at ~$0.054/k (commit `d2e31d0f`, 2026-05-21), not Edge.** So the worst-case math has three regimes worth distinguishing:
+
+**Premium $9.99 — three TTS-cost regimes**
+
+| Regime | TTS rate | TTS line item (10k chars) | Total cost | Margin |
+|---|---|---|---|---|
+| **Year-1, under global cap** | $0 (free credits) | $0.00 | $4.53 | +$4.87 / 51% |
+| **Worst-case (current table)** | $0.22/k retail | $2.20 | $6.73 | +$2.67 / 28% |
+| **Post Year-1, Gemini overflow** | $0.054/k | $0.54 | $5.07 | **+$4.33 / 46%** |
+
+**Family $19.99 — three TTS-cost regimes**
+
+| Regime | TTS rate | TTS line item (25k chars) | Total cost | Margin |
+|---|---|---|---|---|
+| **Year-1, under global cap** | $0 (free credits) | $0.00 | $8.83 | +$10.28 / 54% |
+| **Worst-case (current table)** | $0.22/k retail | $5.50 | $14.33 | +$4.78 / 25% |
+| **Post Year-1, Gemini overflow** | $0.054/k | $1.35 | $10.18 | **+$8.93 / 47%** |
+
+The "post Year-1" row is the new steady-state assuming Darcy drops the ElevenLabs Pro upgrade (which would be $99/mo flat for 500k chars = $0.198/k effective at peak) and routes all narration through Gemini Flash TTS instead. At any volume below ~1.8M chars/mo total, Gemini pay-as-you-go beats ElevenLabs Pro flat. So the natural post-Year-1 architecture is:
+
+1. Drop ElevenLabs entirely (remove `ELEVENLABS_API_KEY`) **OR** set `ELEVENLABS_GLOBAL_BUDGET_CHARS=0` to force the overflow tier
+2. Gemini Flash TTS becomes the de-facto primary at $0.054/k
+3. Edge stays as the free fallback
+4. Cost-per-narrated-story drops from worst-case $0.36 (ElevenLabs retail) to $0.10 (Gemini Flash TTS) — a 70% reduction
+
+Trade-off to budget for: the Gemini path doesn't expose word-level alignment, so the reader's synchronized highlight feature regresses to text-only on the Gemini tier. ElevenLabs is still required if word-highlight UX is part of the Premium pitch.
 
 #### Sensitivity analysis — what breaks the model?
 
@@ -488,6 +517,23 @@ Marketing implication:
 This also matches Darcy's economic reality: ElevenLabs is the highest-cost feature ($0.36/story narrated vs. $0.04/illustration). Locking it to Premium aligns price with cost.
 
 **Concrete capacity numbers (Year-1):** Darcy's free Creator credits = 100k chars/mo total ≈ 55 narrated stories/mo across all paying users. Pro plan upgrade ($99/mo) breaks even at ~10 Premium subscribers. See decision log entry "ElevenLabs free Year-1 credit budget".
+
+#### [d2e31d0f 2026-05-21] Softening — Gemini Flash TTS narrows the moat
+
+The "structural lock-in" framing above remains directionally correct but needs softening after commit `d2e31d0f` added Gemini 3.1 Flash TTS as the overflow tier between ElevenLabs and Edge. Gemini Flash TTS:
+
+- Costs ~$0.054/1k chars (≈30% of ElevenLabs Creator retail $0.18/k).
+- Supports 200+ inline emotion tags (`[whispers]`, `[gasps]`, `[laughs]`) which ElevenLabs does *not* — closer to the expressive control that storytelling needs.
+- 70+ languages out of the box.
+
+Two features keep ElevenLabs ahead, for now:
+
+1. **Word-level timestamp alignment** — `generate_speech_with_timestamps()` returns per-word `{start_ms, end_ms}` for synchronized highlighting. Gemini TTS doesn't expose alignment; on the Gemini path the reader silently degrades to text-only.
+2. **Multi-voice dialogue synthesis** — `generate_speech_with_dialogue()` plays narrator + character in different voices, splitting at quoted dialogue. Gemini supports multi-speaker natively but isn't wired in (see follow-up MT-180 + future work).
+
+Marketing implication update:
+- The "BYOK structurally cannot replace ElevenLabs" claim still holds — BYOK can't supply its own ElevenLabs key cleanly. But "ElevenLabs is the only premium-quality voice you can offer" is no longer true; Gemini Flash TTS is a credible second-source at much lower per-char cost.
+- Concretely: if Darcy ever needs to drop ElevenLabs entirely (Year-2 credits expire + Pro plan economics don't pencil out), narration stays premium-quality via Gemini Flash TTS — only the word-highlight + dialogue features regress.
 
 ### [open] BYOK Imagen quota story
 
