@@ -1,6 +1,8 @@
-# Story Weaver
+# Once Upon YOUR Child
 
-**Therapeutic AI storytelling for kids and families.** Story Weaver is a Flutter-based mobile and web application that generates personalized, age-appropriate stories using Google Gemini AI. The app focuses on emotional awareness and therapeutic storytelling to help children process feelings, build confidence, and develop social-emotional skills through engaging narratives.
+*powered by Story Weaver*
+
+**Therapeutic AI storytelling for kids and families.** Once Upon YOUR Child (technical platform name: Story Weaver) is a Flutter-based mobile and web application that generates personalized, age-appropriate stories. The app focuses on emotional awareness and therapeutic storytelling to help children process feelings, build confidence, and develop social-emotional skills through engaging narratives.
 
 > Built by a solo developer on a mission to make therapeutic tools accessible to every family. See [`BUSINESS_PLAN.md`](./BUSINESS_PLAN.md) for the full monetization strategy.
 
@@ -8,7 +10,7 @@
 
 ## What This App Does
 
-Story Weaver creates magical, personalized stories that help children ages 2 through adult understand and process their emotions. Parents and children work together to create custom heroes, select feelings, and generate therapeutic narratives that are both entertaining and emotionally supportive.
+Once Upon YOUR Child creates magical, personalized stories that help children ages 2 through adult understand and process their emotions. Parents and children work together to create custom heroes, select feelings, and generate therapeutic narratives that are both entertaining and emotionally supportive.
 
 ### Core Concept
 
@@ -16,9 +18,9 @@ The app combines:
 - **Emotional intelligence** — Mood Magic picker and optional 3-level feelings wheel help children identify and express emotions
 - **AI-powered storytelling** — Google Gemini 2.5 Flash generates age-calibrated narratives with rich therapeutic themes
 - **Deep personalization** — Custom characters with avatars, archetypes, companions, goals, and personality sliders that persist across sessions
-- **Age-specific visuals** — Dedicated character and UI asset sets for all 7 age bands (Sprout through Adult)
+- **Age-specific visuals** — Dedicated character and UI asset sets for all 6 age bands (Sprout through Adult)
 - **Visual engagement** — AI-generated illustrations and printable coloring pages
-- **Flexible modes** — Wizard-guided creation, interactive choose-your-own-path, rhyme time, learn-to-read, multi-character adventures, Big Feelings therapeutic theme, and conflict scenarios
+- **Flexible modes** — Wizard-guided creation, interactive choose-your-own-path, rhyme time, learn-to-read, multi-character adventures, Life Quests (formerly Big Feelings) therapeutic theme, and conflict scenarios
 
 ## Complete User Journey
 
@@ -50,8 +52,8 @@ Two modes:
 - Level 3: Most granular tertiary feelings
 - Intensity slider (1–10)
 
-**Big Feelings Mode** (therapeutic theme):
-- Age-specific feeling vocabulary for 6-8, 9-12, and 13-15 bands
+**Life Quests Mode** (formerly Big Feelings, therapeutic theme):
+- Age-specific feeling vocabulary across Sprout / Explorer / Adventurer / Creator / Adolescent bands
 - Routes to therapeutic interactive stories with social-emotional repair arcs
 
 Feeling data influences story theme, hero challenge, coping strategy modeled, and the closing "Wisdom Gem."
@@ -68,23 +70,22 @@ Summary card → tap **"Create My Story"** to start generation.
 
 **Backend** (`backend/services/story_service.py`) runs `AdvancedStoryEngine`:
 
-1. **Age Calibration** — 7 age bands with hard-coded word/node constraints (never change without approval):
+1. **Age Calibration** — 6 age bands with hard-coded word/node constraints (never change without approval):
 
    | Age Band | Regular Story | Pick-a-Path Nodes |
    |----------|--------------|-------------------|
-   | Sprout (2–4) | 200–650 words | 7–13 nodes |
-   | Early Reader (5–7) | 450–1200 words | 9–18 nodes |
-   | Adventurer (8–10) | 900–2400 words | 12–24 nodes |
-   | Creator (11–13) | 1300–3400 words | 14–26 nodes |
-   | Adolescent (13–15) | 1600–4500 words | 16–32 nodes |
-   | Older Adolescent (15–18) | 2000–6000 words | 18–38 nodes |
-   | Adult (18+) | 2000–7800 words | 18–44 nodes |
+   | Sprout (2–5) | 200–650 words | 7–13 nodes |
+   | Explorer (6–8) | 450–1200 words | 9–18 nodes |
+   | Adventurer (9–11) | 900–2400 words | 12–24 nodes |
+   | Creator (12–14) | 1300–3400 words | 14–26 nodes |
+   | Adolescent (15–17) | 1600–4500 words | 16–32 nodes |
+   | Adult (18+) | 2000–6000 words | 18–38 nodes |
 
 2. **Rich tone directives** — Each age band has a 6-part directive covering POV, sentence length, vocabulary level, emotional depth, structural expectations, and an explicit AVOID list.
 
 3. **Therapeutic integration** — Feeling + intensity → plot arc, coping model, Wisdom Gem
 
-4. **Big Feelings system** — Per-age-band therapeutic prompt variants (6-8, 9-12, 13-15) with believable social pressure, repair arcs, and hidden parent guidance layer
+4. **Life Quests system** (formerly Big Feelings) — Per-age-band therapeutic prompt variants with believable social pressure, repair arcs, and hidden parent guidance layer
 
 5. **Safety guardrails** — No violence, weapons, bullying; age-appropriate language enforced
 
@@ -230,23 +231,22 @@ Always maintain both paths when adding new modules.
 ## Core Features
 
 ### 1. Age-Aware Therapeutic Prompts
-Seven age bands with hard-coded developmental constraints. Each band has a 6-part tone directive covering POV guidance, sentence length, vocabulary complexity, emotional depth, structural expectations, and explicit AVOID lists. **Do not change the word count constraints without explicit approval.**
+Six age bands with hard-coded developmental constraints. Each band has a 6-part tone directive covering POV guidance, sentence length, vocabulary complexity, emotional depth, structural expectations, and explicit AVOID lists. **Do not change the word count constraints without explicit approval.**
 
 ### 2. Feelings-First Storytelling
 Mood Magic + optional 3-level feelings wheel (based on Plutchik / Geneva Emotion Wheel research). Feeling data shapes the entire story arc — challenge type, coping model, Wisdom Gem at the end.
 
-### 3. Big Feelings Therapeutic Theme
-Dedicated therapeutic story mode with age-specific prompt variants for ages 6-8, 9-12, and 13-15. Stories model believable social pressure, emotional regulation, and repair without moralizing. Parents can privately configure hidden guidance (feeling, trigger, body signal, coping tool, repair goal) in Parent Controls — this shapes stories without the child ever seeing the parent's notes.
+### 3. Life Quests Therapeutic Theme (formerly Big Feelings)
+Dedicated therapeutic story mode with age-specific prompt variants across Sprout / Explorer / Adventurer / Creator / Adolescent bands. Stories model believable social pressure, emotional regulation, and repair without moralizing. Parents can privately configure hidden guidance (feeling, trigger, body signal, coping tool, repair goal) in Parent Controls — this shapes stories without the child ever seeing the parent's notes.
 
 ### 4. Age-Band Visual Assets
-Each of the 7 age bands has a dedicated set of character and UI assets:
-- Sprout (2-4): Soft Pixar 3D, gender-neutral, 28 assets
-- Early Reader (5-7): Playful Pixar 3D, 31 assets
-- Adventurer (8-10): High-energy Cosmic Chronicle, 31 assets
-- Creator (11-13): Confident Pixar 3D, 31 assets
-- Adolescent (13-15): High-Fidelity Cinematic 3D, 33 assets
-- Older Adolescent (15-18): Upper-YA Cinematic, 41 assets
-- Adult (18+): Refined Fine-Art Cinematic, 43 assets
+Each of the 6 age bands has a dedicated set of character and UI assets:
+- Sprout (2-5): Warm, bubbly, illustration-heavy — soft Pixar 3D
+- Explorer (6-8): Magical purple, sparkles — playful Pixar 3D
+- Adventurer (9-11): Cosmic, book-like typography — high-energy Cosmic Chronicle
+- Creator (12-14): Clean editorial, dark mode default — confident Pixar 3D
+- Adolescent (15-17): Cinematic dark, teal accent — high-fidelity 3D
+- Adult (18+): Refined fine-art cinematic
 
 All character sets include diverse representation across Caucasian, Asian, Black, Hispanic, and South Asian ethnicities.
 
@@ -260,9 +260,9 @@ For BYOK/Premium users, Gemini generates a custom portrait from character appear
 Upload a photo of your pet → Gemini transforms it into a magical story companion. Robust fallback chain: Gemini image generation → text-based portrait generation → original photo fallback. Responses with original photo return HTTP 206 (partial content) so the UI can show an appropriate message.
 
 ### 8. Parent Controls & COPPA Compliance
-- **Parental consent screen** with full Notice to Parents disclosure (lists Google Gemini, ElevenLabs, Stripe, Railway)
+- **Parental consent screen** with full Notice to Parents disclosure (lists Google Gemini, OpenRouter, ElevenLabs, Cloudflare Workers AI, Replicate, Stripe, Firebase, Railway)
 - **Screen time controls**: daily limit, bedtime lockout
-- **Big Feelings Guidance**: hidden per-profile story shaping visible only to parents
+- **Life Quests Guidance** (formerly Big Feelings): hidden per-profile story shaping visible only to parents
 - **Delete All My Data**: prominent button calling `DELETE /api/user/<id>/data` with confirmation
 - Consent records synced to backend (`POST /api/user/<id>/consent`)
 - Privacy Policy explicitly names all third-party services
@@ -381,20 +381,21 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backe
 
 **Completed ✅:**
 - Core story generation (Gemini 2.5 Flash in production)
-- 7-band age calibration with therapeutic tone directives
+- 6-band age calibration with therapeutic tone directives
 - Mood Magic + 3-level feelings wheel
 - Wizard UI with moon phase progress
 - Hero Creator with archetype cards
 - My Buddies companion grid with pet photo upload + fallback chain
-- Age-band specific character carousels with diverse representation (all 7 bands, 100% complete)
+- Age-band specific character carousels with diverse representation (all 6 bands, 100% complete)
 - Avatar gallery with custom AI portrait generation (reference photo support)
 - World Bible setting field
 - Storybook reader with page-flip, typewriter, ambient audio
 - ElevenLabs TTS narration + voice picker
 - Illustration generation + coloring pages
 - Interactive Pick-a-Path (per-segment word sizing)
-- Big Feelings therapeutic theme (ages 6-8, 9-12, 13-15 variants)
+- Life Quests therapeutic theme (formerly Big Feelings; per-band variants across Sprout / Explorer / Adventurer / Creator / Adolescent)
 - Hidden Parent Layer (private per-profile story guidance)
+- Stripe payment integration (Free / Premium / Family tiers + 14-day trial; checkout + webhooks live)
 - COPPA compliance: Notice to Parents, consent backend sync, Delete All My Data
 - Parental Controls: screen time, bedtime lockout, photo avatar toggle
 - Offline caching (Isar)
@@ -409,8 +410,8 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backe
 - Production backend live and verified
 
 **In Progress 🔄:**
-- Stripe payment integration (routes + webhooks exist, checkout flow needs end-to-end testing)
-- Mobile app (iOS/Android) — currently web only
+- Mobile app (iOS/Android) store deployment — IAP migration in progress (web Stripe live)
+- TTS overflow tier (Gemini Flash TTS between ElevenLabs and Edge, shipped 2026-05-21)
 
 **Planned 📋:**
 1. **v1.1 — Verifiable parental consent**: SMS OTP (Twilio) or $0.50 Stripe micro-charge — parent picks one at setup, never asked again
