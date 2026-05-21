@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-21 | 10:39 | 3de3 | main | Shared close-session + start-session skill text for Antigravity port | [link](docs/sessions/2026-05-21-1039-3de3.md) |
 | 2026-05-21 | 09:24 | 4efd | main | Antigravity hand-off: test fixes + stt migration + idna CVE bump | [link](docs/sessions/2026-05-21-0924-4efd.md) |
 | 2026-05-19 | 23:15 | e02c | main | MT-169 fix absorbed by parallel race; MT-113 routine 3× uncommitted | [link](docs/sessions/2026-05-19-2315-e02c.md) |
 | 2026-05-19 | 23:15 | 1b55 | main | Briefing only; AI quality audit halted at clarifying-questions step | [link](docs/sessions/2026-05-19-2315-1b55.md) |
