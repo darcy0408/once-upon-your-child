@@ -191,17 +191,19 @@ backend/.coverage
 .coverage
 htmlcov/
 
-# Temporary test scripts and utilities
-check_*.py
-live_test_*.py
+# Temporary test scripts and utilities (scoped to repo root only — patterns
+# without leading slash also matched legitimate pytest files in
+# backend/tests/, silently excluding them from version control).
+/check_*.py
+/live_test_*.py
 /test_*_integration.py
-test_gemini_*.py
-test_mock_*.py
-test_coloring_*.py
-test_illustrations.py
-test_interactive_story.py
-test_avatar_endpoint.py
-test_parser.py
+/test_gemini_*.py
+/test_mock_*.py
+/test_coloring_*.py
+/test_illustrations.py
+/test_interactive_story.py
+/test_avatar_endpoint.py
+/test_parser.py
 debug_*.py
 tests/test_backend_*.py
 
