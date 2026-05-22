@@ -2,9 +2,18 @@
 
 **Source audit:** `06-accessibility-20260521.md`
 **Date drafted:** 2026-05-21
+**Decisions locked:** 2026-05-22 (see "Decisions Locked" section below)
 **Target:** WCAG 2.2 Level AA conformance, plus AAA-level upgrades to Learning-to-read mode.
-**Estimated total effort:** 7–9 engineering weeks (AA), +1–2 weeks (LTR upgrades), +1 week (verification & sign-off).
-**Suggested track:** one engineer with ~20% of an a11y-consultant time-share for live AT testing.
+**Estimated total effort:** ~8 engineering weeks (AA), +1–2 weeks (LTR upgrades), +1 week (self-run verification).
+**Suggested track:** one engineer, self-run AT verification (no consultant in initial scope).
+
+## Decisions Locked (2026-05-22)
+
+1. **Web a11y:** Start with a ~1-day investigation spike to characterise what NVDA/VoiceOver actually reach on the current Flutter build before committing to any architecture. No dual-build commitment yet. (Phase 3 rewritten.)
+2. **Sprout CTA contrast:** Keep the bright `#E65100`; make Sprout CTAs ≥18 pt bold so the 3:1 large-text threshold applies. A test asserts Sprout button text stays large+bold. (Phase 1.1.)
+3. **Lexend:** Default story font for Sprout and Explorer bands everywhere; Merriweather stays default for Adventurer/Creator/Adolescent/Adult; per-child override in both directions. (Phase 6.1.)
+4. **Parental consent (A11Y-005):** Removed from this plan. Folded into the pre-launch consent rework (the workstream that re-enables the COPPA email round-trip), so the consent flow is reviewed once.
+5. **Phase 7 verification:** Self-run using the audit checklist and recipe. A paid third-party accessibility verification is deferred until a specific grant application requires an external attestation.
 
 ## Strategy
 
@@ -19,12 +28,14 @@ Group fixes by *risk class* and *workflow*, not by criterion. Three sweeps (icon
 | 0 | Foundation: lint rules, AT harness, GitHub project | Week 1 | 3 | No |
 | 1 | Quick blockers (theme contrast, name label, TTS stop) | Week 1–2 | 3 | No (theme can ship straight) |
 | 2 | Icon-label sweep + Motion sweep + Selection-cue sweep | Week 2–4 | 13 | No, but per-PR |
-| 3 | Web CanvasKit a11y resolution | Week 4–5 | 5 | Yes (renderer choice) |
-| 4 | Forms / error identification sweep | Week 5–6 | 3 | No |
+| 3 | Web a11y: investigation spike, then scoped follow-up | Week 4–5 | 1 + (1–4 TBD) | Decided by spike |
+| 4 | Forms / error identification sweep | Week 5 | 3 | No |
 | 5 | Generated illustration captions (backend + frontend) | Week 5–7 | 3 | Yes (backend feature flag) |
-| 6 | Learning-to-read upgrades (Lexend, settings, syllables) | Week 6–9 | 10 | Yes (child profile pref) |
-| 7 | Live AT verification, reflow, focus-order, sign-off | Week 9–10 | 5 | No |
-| **Total** | | **~10 weeks** | **~45 days** | |
+| 6 | Learning-to-read upgrades (Lexend, settings, syllables) | Week 6–9 | 10 | Lexend per-band default; syllables behind child pref |
+| 7 | Self-run AT verification, reflow, focus-order, sign-off | Week 9–10 | 5 | No |
+| **Total** | | **~8–9 weeks** | **~41–44 days** | |
+
+Note: A11Y-005 (parental-consent scroll gate) was removed from Phase 4 — it is folded into the pre-launch consent rework.
 
 ## Phase 0 — Foundation (3 days)
 
@@ -67,25 +78,40 @@ Acceptance: CI fails on new violations; existing violations enumerated as TODOs.
 
 Three single-file fixes that ship the biggest user-visible improvements per engineering hour.
 
-### 1.1 A11Y-001 — CTA contrast fix (1 day)
+### 1.1 A11Y-001 — CTA contrast fix — DONE 2026-05-22
 
-File: `lib/theme/age_band_theme.dart`
+Two distinct fixes — Adult is a color change, Sprout is a type-size change (decision #2). Both landed; regression tests in `test/accessibility_test.dart` (group "A11Y-001 — age band CTA contrast").
+
+**Adult band** — `lib/theme/age_band_theme.dart` (applied):
 
 ```dart
-// Adult — replace primary so white text reaches 4.5:1
-primary: Color(0xFF8C7240),       // was #BFA45A (2.44:1)
-primaryLight: Color(0xFFBFA45A),  // promote old primary to light
-primaryDark: Color(0xFF6E5832),
-
-// Sprout — same idea or change foreground globally for Sprout
-primary: Color(0xFFBF360C),       // was #E65100 (3.79:1) — passes at 5.6:1
-primaryLight: Color(0xFFE65100),
-primaryDark: Color(0xFF8B2A05),
+// primary darkened so white button text reaches WCAG AA — measured 5.2:1
+primary: Color(0xFF806A38),       // was #BFA45A (2.44:1)
+primaryLight: Color(0xFFBFA45A),  // brand amber-gold preserved here
+primaryDark: Color(0xFF5E4F2A),
 ```
 
-Verify after change with a quick contrast calculator. Update visual snapshots if any reference the old colors. No API changes.
+**Sprout band** — keep `primary: #E65100`. Instead, guarantee Sprout CTA text qualifies as WCAG "large text" (≥18 pt, or ≥14 pt bold) so the 3:1 threshold applies and the existing 3.79:1 passes.
 
-**Acceptance:** measured contrast ≥ 4.5:1 in `light()` ElevatedButton theme for every band; verify via unit test that computes contrast from `effectivePrimary` vs `Colors.white`.
+`lib/theme/app_theme.dart` builds the global `ElevatedButton` text style at `fontSize: 16 * band.bodyScale, fontWeight: FontWeight.w600`. For Sprout (`bodyScale: 1.1`) that is 17.6 px w600 — just under the 18 pt large-text line. Bump it:
+
+```dart
+// In AppTheme.light(), elevatedButtonTheme textStyle:
+textStyle: TextStyle(
+  // Sprout: force >=18pt bold so CTA text is WCAG "large text" (3:1 applies).
+  fontSize: band.band == AgeBand.sprout
+      ? 18.0
+      : 16 * band.bodyScale,
+  fontWeight: band.band == AgeBand.sprout
+      ? FontWeight.bold
+      : FontWeight.w600,
+),
+```
+
+**Acceptance:**
+- Unit test computes contrast from `effectivePrimary` vs `Colors.white` for every band; Adult ≥ 4.5:1.
+- Unit/golden test asserts the Sprout `ElevatedButton` resolved text style is `fontSize >= 18 && fontWeight >= FontWeight.bold` — this is the guardrail that keeps the large-text compliance argument from silently breaking.
+- Update any visual snapshots referencing the old Adult color.
 
 ### 1.2 A11Y-004 — Welcome name field label (0.5 day)
 
@@ -232,48 +258,43 @@ Semantics(
 - [ ] Each PR includes at least one semantics golden test
 - [ ] Sweeps merged in order: 2.1 → 2.2 → 2.3 (so the icon-label-tree assumptions hold for the rest)
 
-## Phase 3 — Web CanvasKit Resolution (5 days)
+## Phase 3 — Web a11y: Investigation Spike, then Scoped Follow-up (1 day spike + 1–4 days TBD)
 
-The hardest finding because the right answer is architectural.
+Decision #1: do not commit to an architecture up front. The Flutter web a11y story has moved fast, and the standalone HTML renderer has been progressively deprecated — assuming it exists on the current build is unsafe. Characterise reality first.
 
-### 3.1 Decision: choose renderer strategy
+### 3.1 Investigation spike (1 day)
 
-Three viable options:
+Produce a short findings memo: `audit-reports/06-accessibility-2026MMDD-web-spike.md`.
 
-| Option | Pros | Cons | Effort |
-|---|---|---|---|
-| A. Ship HTML renderer for web | Real DOM, screen-readers work natively, axe-core results actionable | Slower paint, font-rendering differences, ~30% bundle size hit | 2d |
-| B. Stay on CanvasKit + auto-promote semantics-placeholder | One codebase | Still partial — known buttons unreachable | 1d |
-| C. Dual-build: HTML for accessibility config, CanvasKit default | Best of both | Two build pipelines, two deploy paths in nginx | 4d |
+Establish:
+1. **Flutter version and available renderers.** `flutter --version`; check whether `--web-renderer html` is still accepted or whether the build is CanvasKit/skwasm-only.
+2. **What AT actually reaches today.** Build the web app, run NVDA + Chrome and VoiceOver + Safari against `welcome`, `parental_consent`, `wizard_story` step 1, `story_reader`. Click the `flt-semantics-placeholder` to enable semantics first (see memory `playwright_canvaskit_technique.md`). Record: which controls are announced, which are silent, whether focus order works, whether the name field is reachable.
+3. **Auto-promote feasibility.** Test whether enabling semantics on first user gesture (rather than requiring the placeholder click) is configurable or needs a shim.
+4. **Web traffic share.** Pull analytics — what fraction of sessions are web vs iOS/Android. This sizes how much the web gap actually matters.
 
-**Recommendation:** Option C, gated on a `?renderer=html` query parameter for now, defaulting to CanvasKit. If usage data shows web a11y matters at scale, flip the default.
+### 3.2 Decision gate
 
-### 3.2 Implementation
+The spike memo ends with a recommendation picking one of:
+- **Coverage already acceptable** → just fill in `Semantics()` wrappers as part of the Phase 2 sweeps; no extra web work. (0 extra days.)
+- **Fixable with a semantics shim** → auto-promote semantics + targeted wrappers. (~1–2 days.)
+- **HTML renderer still available and gap is severe + web traffic material** → dual-build at `/a/`. (~4 days; reapply the CSP gstatic fix per memory `flutter_web_csp_gstatic.md`.)
+- **Gap severe but web traffic immaterial** → document iOS/Android as the supported AT surface, add a "best on the mobile app" note for screen-reader users, log as accepted limitation. (~0.5 day.)
 
-- Build config: `flutter build web --web-renderer html` produces a second output to `build/web-html/`.
-- Nginx route: serve `/a/*` from the HTML build, `/*` from CanvasKit.
-- Update `web/index.html` to detect `?renderer=html` and redirect to `/a/`.
-- Document the AT user path in support content: "if you use a screen reader, please use [link]/a/".
-- Reapply the CSP `connect-src` gstatic fix (see memory note `flutter_web_csp_gstatic.md`) to the HTML build's `index.html`.
+Bring the recommendation back before starting the follow-up work.
 
 ### 3.3 Reflow at 200% (A11Y-013)
 
-Once HTML renderer is on `/a/`, run:
-```bash
-playwright test --grep "reflow 200%"
-```
-Add a test that opens each critical screen at `deviceScaleFactor: 1, viewport: 640x800` with `--force-prefers-reduced-motion` and `--force-device-scale-factor=2`. Assert no horizontal scroll.
-
-**Acceptance:** NVDA + Chrome on `/a/welcome` announces "Your name, edit box"; can complete wizard step 1 with keyboard only.
+Independent of the renderer decision. Add a Playwright test that opens each critical screen with `--force-device-scale-factor=2` at a 1280 px viewport and asserts no horizontal scroll. Run against whatever web build the spike settles on.
 
 ## Phase 4 — Forms Sweep (3 days)
 
+A11Y-005 (parental-consent scroll gate) is **not** in this phase — per decision #4 it is folded into the pre-launch consent rework. The consent screen's own form inputs (email, verification code) are also handled there, so they are excluded from the 4.1 scope below to avoid touching that screen twice.
+
 ### 4.1 A11Y-010 — Error identification
 
-**Scope:** every `TextFormField` and `TextField` with validation. Audit list:
+**Scope:** every `TextFormField` and `TextField` with validation, excluding `parental_consent_screen.dart`. Audit list:
 - `byok_setup_wizard.dart` — API key inputs
 - `character_creation_screen*.dart` — character name
-- `parental_consent_screen.dart` — email + verification code
 - `settings_screen.dart` — settings inputs
 
 **Pattern:**
@@ -296,13 +317,11 @@ TextFormField(
 
 Couple with a `SemanticsService.announce(_emailError ?? '', TextDirection.ltr)` when an error first appears so screen readers catch it.
 
-### 4.2 A11Y-005 — Parental consent scroll gate AT path
+### 4.2 A11Y-005 — handed off to the pre-launch consent rework
 
-Add a non-scroll path that satisfies CMP-6 for AT users:
-- Render 3 section checkboxes ("I have read: Data Collection / Sharing / Rights"). All three checked + the existing `_consentGiven` checkbox = consent given.
-- Track via `consent_method: 'sections_acknowledged_at'`. Still records that all three were touched (timestamps + UA hint), so it has no less rigor than scroll.
+Not done here. The recommended approach is carried forward as a requirement for that workstream:
 
-Coordinate with legal — this is a change to consent flow and may need wording review. Do not weaken the parental-gate multiplication challenge (that is the COPPA §312.5 mechanism, not the readability gate).
+> Add an AT-accessible alternative to the scroll-to-bottom gate — three section-acknowledgement checkboxes ("I have read: Data Collection / Sharing / Rights"), tracked as `consent_method: 'sections_acknowledged'` with per-section timestamps. Checkboxes are keyboard/screen-reader operable and are arguably stronger evidence of review than a scroll position. Do not weaken the parental-gate multiplication challenge (the COPPA §312.5 mechanism). Get the consent-flow wording reviewed when the email round-trip is re-enabled.
 
 ## Phase 5 — Generated Illustration Captions (3 days)
 
@@ -345,13 +364,21 @@ The highest-leverage user-facing improvement.
 
 ### 6.1 A11Y-LTR-01 — Lexend font (2 days)
 
-- `pubspec.yaml`: add `google_fonts: ^6.x` is already present; switch to `GoogleFonts.lexend(...)` and bundle the font for offline (Lexend is Apache-2.0).
-- `lib/theme/age_band_theme.dart`: add `dyslexiaFriendlyStoryFontFamily: 'Lexend'` per band.
-- `lib/services/child_profile_service.dart`: add `preferredReadingFont: String? // null = default, 'lexend' = on`.
-- `lib/story_reader_screen.dart` + `story_result_screen.dart`: read profile pref; build storybook text style with Lexend when set.
-- Parent controls: toggle with explainer "Some readers find Lexend easier — especially helpful for dyslexia."
+Decision #3: Lexend is the **default** story font for Sprout and Explorer bands everywhere; Merriweather stays default for Adventurer/Creator/Adolescent/Adult. A per-child profile preference can override in either direction.
 
-**Acceptance:** toggle in parent controls → story renders Lexend immediately on next open; persists across launches.
+- `lib/theme/age_band_theme.dart`:
+  - Add `'Lexend'` cases to `_googleFontCreator` and `_googleFontTextThemeCreator` (Lexend is OFL/Apache-compatible; `GoogleFonts.lexend`).
+  - `sproutTheme` and `explorerTheme`: change `storyFontFamily` from `'Merriweather'` to `'Lexend'`.
+  - `adventurerTheme`, `creatorTheme`, `adolescentTheme`, `adultTheme`: keep `storyFontFamily: 'Merriweather'`.
+- `lib/services/child_profile_service.dart`: add `preferredReadingFont: String?` — `null` means "use the band default", `'lexend'` / `'merriweather'` force a choice.
+- `lib/story_reader_screen.dart` + `story_result_screen.dart`: resolve the effective story font as `profile.preferredReadingFont ?? band.storyFontFamily`; build the storybook text style from that.
+- `lib/screens/parent_controls_screen.dart`: add a three-way control — "Reading font: Default / Lexend (easier for many readers) / Classic serif" — with an explainer that Lexend is research-designed to support reading fluency and can help readers with dyslexia.
+- Bundle Lexend for offline use so cached/offline stories render correctly.
+
+**Acceptance:**
+- Fresh Sprout or Explorer profile renders stories in Lexend with no setting changed.
+- Fresh Adventurer+ profile renders stories in Merriweather.
+- Overriding `preferredReadingFont` in parent controls flips the font on next story open and persists across launches; offline stories also respect it.
 
 ### 6.2 A11Y-LTR-02 — Syllable segmentation (5 days)
 
@@ -379,12 +406,17 @@ Wrap the resume banner reveal in `Semantics(liveRegion: true)` and announce via 
 
 ## Phase 7 — Verification & Sign-off (5 days)
 
-### 7.1 Live AT pass
+### 7.1 Self-run AT pass
 
-- TalkBack (Android 14+) on a physical Pixel: walk the critical journey once per band.
-- VoiceOver (iOS 18) on iPhone: same walk.
-- NVDA 2025.x + Chrome on `/a/` HTML build: same walk.
-- Each pass produces a recording archived to `audit-reports/06-accessibility-20260521-at-recordings/`.
+Decision #5: run this yourself against the audit checklist; no consultant in initial scope.
+
+- TalkBack (Android 14+) on a physical or emulated device: walk the critical journey once per band.
+- VoiceOver (iOS 18) on iPhone or simulator: same walk.
+- NVDA 2025.x + Chrome on whatever web build the Phase 3 spike settled on: same walk.
+- Use the screen-by-screen checklist in `06-accessibility-20260521.md` as the script — each Partial-status criterion in the conformance matrix is a specific thing to confirm.
+- Each pass produces a screen recording archived to `audit-reports/06-accessibility-20260521-at-recordings/`.
+- Log anything the audit did not predict as a new A11Y-### finding; the 2-day buffer in this phase absorbs follow-up fixes.
+- A paid third-party verification is deferred until a grant application requires an external attestation — at that point this recording archive plus the conformance matrix is the handoff package.
 
 ### 7.2 Reflow + zoom (A11Y-013)
 
@@ -430,29 +462,25 @@ Produce `audit-reports/06-accessibility-2026MMDD-conformance-statement.md` — a
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Phase 3 Option C doubles deploy complexity | Medium | Medium | Decide before starting; document nginx route in runbook |
+| Phase 3 spike concludes a dual-build is needed, doubling deploy complexity | Low | Medium | Spike sizes web traffic first; dual-build only chosen if traffic is material; document nginx route in runbook if so |
 | Backend caption costs balloon | Low | Low | Already ~$0.002/image, cap at one caption per illustration, no retries |
 | Lexend bundle increases initial paint | Low | Medium | Lazy-load; only when profile pref is on |
 | AT pass uncovers issues not in this plan | Medium | Medium | Reserve 2 days in Phase 7 for follow-up fixes |
 | Sweep PRs introduce regressions | Medium | High | Golden semantics tests in each PR; lint rules prevent silent regressions |
 | Phase 4.2 parental-consent change needs legal review | High | Medium | Open the legal-review ticket on Day 1 of Phase 4 in parallel |
-| Sprout band darker primary loses "playful" feel | Medium | Low | Show two options to design before merging; consider keeping #E65100 but switching to dark text |
+| Sprout large-text compliance silently breaks if a CTA ships below 18pt bold | Medium | Medium | Golden test asserts Sprout ElevatedButton text stays >=18pt bold (Phase 1.1); custom lint can extend to flag raw Sprout buttons |
 
 ## Rollout Strategy
 
 - **Phase 1** (contrast, label, TTS stop): straight-to-main, no flag. These are bug fixes.
 - **Phase 2** (sweeps): straight-to-main per PR; each PR small enough to revert.
-- **Phase 3** (web): the HTML renderer build behind `/a/` path is itself the rollout mechanism. No flag needed.
+- **Phase 3** (web): rollout mechanism depends on the spike outcome — either no change (sweeps cover it), a semantics shim, a documented limitation, or a dual-build. Decided at the section 3.2 gate.
 - **Phase 5** (captions): backend behind `ILLUSTRATION_CAPTIONS_ENABLED` env var on Railway; flip per environment. Frontend can call old API safely if the field is missing (`state.caption ?? 'Story illustration'`).
-- **Phase 6** (Learning-to-read): per-child-profile preference. Off by default for existing profiles; surfaced on parent-controls page with an explainer. No global flag needed since opt-in per child.
+- **Phase 6** (Learning-to-read): Lexend is a band-default change (Sprout/Explorer) — it ships on for those bands with no per-profile action, and `preferredReadingFont` lets any child override either way. Existing Sprout/Explorer profiles get Lexend on next launch. Syllable mode stays a child-profile preference, default off, surfaced only for Sprout/Explorer.
 
 ## Open Questions for the User
 
-1. **Web a11y posture:** is `/a/` HTML-renderer path the right call, or do you want to push to single-codebase CanvasKit + hope Flutter improves the semantics tree?
-2. **Sprout primary CTA color:** keep `#E65100` and switch foreground to dark for that one band, or darken to `#BF360C`? Affects the "playful sunset" feel.
-3. **Lexend default:** opt-in only, or on by default for Sprout/Explorer where dyslexia prevalence is highest in the demographic?
-4. **Parental consent scroll gate:** is legal/CMP-6 review willing to accept section checkboxes as an equivalent acknowledgement path? Required for Phase 4.2.
-5. **AT consultant time-share:** does Anthropic have an a11y consultant retainer, or should we budget for a contractor on Phase 7?
+All five planning questions were resolved on 2026-05-22 — see "Decisions Locked" near the top of this document. The only decision still pending is internal to Phase 3: the renderer/coverage choice produced by the investigation spike (section 3.2), which returns for review before any web follow-up work begins.
 
 ## Tracking
 

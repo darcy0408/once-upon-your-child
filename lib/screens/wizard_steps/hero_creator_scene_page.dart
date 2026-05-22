@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
@@ -93,26 +93,26 @@ class HeroScenePage extends StatelessWidget {
       SceneButtonData(
         id: 'vanishing_colors',
         label: scenarioById('vanishing_colors')?.titleForAge(age) ?? 'Vanishing Colors',
-        normalAsset: 'assets/images/scenarios/rainbow_land_btn.png',
-        pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/rainbow_land_btn.webp',
+        pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('vanishing_colors'),
       ),
       SceneButtonData(
         id: 'crystal_cavern',
         label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
         normalAsset: band.band == AgeBand.sprout
-            ? 'assets/images/ui/sprout/tiles/ocean.png'
-            : 'assets/images/scenarios/crystal_cave_btn.png',
+            ? 'assets/images/ui/sprout/tiles/ocean.webp'
+            : 'assets/images/scenarios/crystal_cave_btn.webp',
         pressedAsset: band.band == AgeBand.sprout
-            ? 'assets/images/ui/sprout/tiles/ocean.png'
-            : 'assets/images/scenarios/crystal_cave_btn_pressed.png',
+            ? 'assets/images/ui/sprout/tiles/ocean.webp'
+            : 'assets/images/scenarios/crystal_cave_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('crystal_cavern'),
       ),
       SceneButtonData(
         id: 'volcano_dragons',
         label: scenarioById('volcano_dragons')?.titleForAge(age) ?? 'Volcano Dragons',
-        normalAsset: 'assets/images/scenarios/dragon_friends_btn.png',
-        pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/dragon_friends_btn.webp',
+        pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('volcano_dragons'),
       ),
       // Big Feelings tile is shown for ALL bands. Tapping it opens the cloud
@@ -124,8 +124,8 @@ class HeroScenePage extends StatelessWidget {
       SceneButtonData(
         id: 'big_feelings_quest',
         label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
-        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
-        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.webp',
+        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('big_feelings_quest'),
       ),
     ];

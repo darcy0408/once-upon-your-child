@@ -198,8 +198,14 @@ class AppTheme {
           ),
           minimumSize: Size(0, band.touchTargetMin),
           textStyle: TextStyle(
-            fontSize: 16 * band.bodyScale,
-            fontWeight: FontWeight.w600,
+            // A11Y-001: Sprout CTAs are forced to >=18pt bold so the button
+            // text qualifies as WCAG "large text" (3:1 ratio) — Sprout's
+            // #E65100 primary is 3.79:1, which passes for large text but
+            // not for normal-size text.
+            fontSize: band.band == AgeBand.sprout ? 18.0 : 16 * band.bodyScale,
+            fontWeight: band.band == AgeBand.sprout
+                ? FontWeight.bold
+                : FontWeight.w600,
           ),
         ),
       ),

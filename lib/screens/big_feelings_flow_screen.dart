@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1327,8 +1327,8 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
       bandPath: ageBand != null
           ? AgeBandAssetResolver.feelingPath(ageBand!, lId)
           : null,
-      genderedPath: 'assets/images/feelings/$bandFolder/$lId.png',
-      flatPath: 'assets/feelings_faces/$lId.png',
+      genderedPath: 'assets/images/feelings/$bandFolder/$lId.webp',
+      flatPath: 'assets/feelings_faces/$lId.webp',
       emoji: option.emoji,
     );
   }
@@ -1545,8 +1545,8 @@ class _SproutFeelingCardState extends State<_SproutFeelingCard>
     return _TieredFeelingImage(
       bandPath: AgeBandAssetResolver.feelingPath(widget.ageBand, lId),
       genderedPath:
-          'assets/images/feelings/${widget.bandFolder}/$lId.png',
-      flatPath: 'assets/feelings_faces/$lId.png',
+          'assets/images/feelings/${widget.bandFolder}/$lId.webp',
+      flatPath: 'assets/feelings_faces/$lId.webp',
       emoji: widget.option.emoji,
       fillHeight: true,
     );

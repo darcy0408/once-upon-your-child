@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'magical_float.dart';
 import 'safe_asset_image.dart';
 
@@ -43,13 +43,13 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
   String _getImagePath(String type) {
     switch (type) {
       case 'quick':
-        return 'assets/images/ui/clean/quick_orb.png';
+        return 'assets/images/ui/clean/quick_orb.webp';
       case 'classic':
-        return 'assets/images/ui/clean/classic_orb.png';
+        return 'assets/images/ui/clean/classic_orb.webp';
       case 'epic':
-        return 'assets/images/ui/clean/epic_orb.png';
+        return 'assets/images/ui/clean/epic_orb.webp';
       default:
-        return 'assets/images/ui/clean/classic_orb.png';
+        return 'assets/images/ui/clean/classic_orb.webp';
     }
   }
 

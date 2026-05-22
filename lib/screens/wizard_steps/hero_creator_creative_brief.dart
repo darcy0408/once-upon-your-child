@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
@@ -224,22 +224,22 @@ class CreativeBriefWidget extends StatelessWidget {
     final String girlAsset;
     switch (ageBand) {
       case AgeBand.adolescent:
-        boyAsset = 'assets/images/archetypes/adolescent/master_creator_boy.png';
-        girlAsset = 'assets/images/archetypes/adolescent/master_creator_girl.png';
+        boyAsset = 'assets/images/archetypes/adolescent/master_creator_boy.webp';
+        girlAsset = 'assets/images/archetypes/adolescent/master_creator_girl.webp';
         break;
       case AgeBand.adult:
-        boyAsset = 'assets/images/ui/adult/man_character_white.png';
-        girlAsset = 'assets/images/ui/adult/woman_character_white.png';
+        boyAsset = 'assets/images/ui/adult/man_character_white.webp';
+        girlAsset = 'assets/images/ui/adult/woman_character_white.webp';
         break;
       case AgeBand.creator:
-        boyAsset = 'assets/images/ui/creator/creator_white.png';
-        girlAsset = 'assets/images/ui/creator/creator_white.png';
+        boyAsset = 'assets/images/ui/creator/creator_white.webp';
+        girlAsset = 'assets/images/ui/creator/creator_white.webp';
         break;
       case AgeBand.sprout:
       case AgeBand.explorer:
       case AgeBand.adventurer:
-        boyAsset = 'assets/images/ui/creator/creator_white.png';
-        girlAsset = 'assets/images/ui/creator/creator_white.png';
+        boyAsset = 'assets/images/ui/creator/creator_white.webp';
+        girlAsset = 'assets/images/ui/creator/creator_white.webp';
     }
 
     final gender = wizardData.characterGender;

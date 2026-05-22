@@ -43,9 +43,21 @@ $Targets = @(
 $repo       = 'C:\dev\story-weaver-app'
 $backupRoot = Join-Path $repo 'assets\.png-backup'
 
-$cwebp = Get-Command cwebp -ErrorAction SilentlyContinue
+$wingetDir = "C:\Users\Darcy\AppData\Local\Microsoft\WinGet\Packages\Google.Libwebp_Microsoft.Winget.Source_8wekyb3d8bbwe\libwebp-1.6.0-windows-x64\bin"
+$cwebpExe = Join-Path $wingetDir "cwebp.exe"
+
+$cwebp = $null
+if (Test-Path $cwebpExe) {
+  $cwebp = $cwebpExe
+} else {
+  $cmd = Get-Command cwebp -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $cwebp = $cmd.Definition
+  }
+}
+
 if (-not $cwebp -and -not $DryRun) {
-  Write-Error "cwebp not found on PATH. Install libwebp from https://developers.google.com/speed/webp/download and add its bin/ to PATH."
+  Write-Error "cwebp not found. Install libwebp from https://developers.google.com/speed/webp/download and add its bin/ to PATH."
 }
 
 $pngs = foreach ($t in $Targets) {
@@ -91,8 +103,15 @@ foreach ($f in $pngs) {
   Copy-Item $f.FullName $backupDst -Force
 
   # cwebp emits to stderr regardless of success; -quiet suppresses progress.
-  & cwebp -quiet -q $Quality -- $f.FullName -o $webpPath 2>$null
-  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $webpPath)) {
+  # Temporarily disable ErrorActionPreference Stop to prevent stderr progress from triggering NativeCommandError
+  $origPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'SilentlyContinue'
+
+  & $cwebp -quiet -q $Quality -o $webpPath -- $f.FullName 2>$null
+
+  $ErrorActionPreference = $origPreference
+
+  if (-not (Test-Path $webpPath) -or (Get-Item $webpPath).Length -eq 0) {
     $failed.Add($rel)
     # Roll back: keep the original, drop any partial webp.
     if (Test-Path $webpPath) { Remove-Item $webpPath -Force }

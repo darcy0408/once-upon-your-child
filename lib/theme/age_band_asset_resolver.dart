@@ -1,4 +1,4 @@
-// lib/theme/age_band_asset_resolver.dart
+﻿// lib/theme/age_band_asset_resolver.dart
 //
 // Single source of truth for resolving paths inside assets/images/.
 // All image consumers should call these methods rather than constructing
@@ -31,12 +31,12 @@ class AgeBandAssetResolver {
 
   /// Feeling face image. Core 8: angry, calm, confused, excited, happy, sad, scared, surprised.
   static String feelingPath(AgeBand band, String feelingName) =>
-      'assets/images/feelings/${_folder(band)}/$feelingName.png';
+      'assets/images/feelings/${_folder(band)}/$feelingName.webp';
 
   /// Progress orb: pass [done]=true for the completed-step variant.
   static String orbPath(AgeBand band, {bool done = false}) {
     final state = done ? 'progress_done' : 'progress_active';
-    return 'assets/images/orbs/${_folder(band)}/$state.png';
+    return 'assets/images/orbs/${_folder(band)}/$state.webp';
   }
 
   /// UI element — buttons, character silhouettes, frames.

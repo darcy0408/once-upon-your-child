@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/age_band_theme.dart';
@@ -56,7 +56,7 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
-    const asset = 'assets/images/scenarios/imagine_it_btn_pressed.png';
+    const asset = 'assets/images/scenarios/imagine_it_btn_pressed.webp';
 
     return Semantics(
       button: true,

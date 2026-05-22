@@ -1,4 +1,4 @@
-// lib/widgets/coping_practice_sheet.dart
+﻿// lib/widgets/coping_practice_sheet.dart
 //
 // Guided animated practice sheet for a CopingTechnique. Used by both the
 // Coping Toolbox tile and the in-story "Try it with [hero]!" break.
@@ -49,10 +49,10 @@ class CopingPracticeSheet {
 /// tiny and keeping it local avoids a new shared file just for 4 strings.
 String _buddyAssetPath(SproutFriend f) {
   switch (f) {
-    case SproutFriend.pup:   return 'assets/images/feelings/sprout/happy.png';
-    case SproutFriend.bunny: return 'assets/images/feelings/sprout/sad.png';
-    case SproutFriend.lion:  return 'assets/images/feelings/sprout/mad.png';
-    case SproutFriend.mouse: return 'assets/images/feelings/sprout/scared.png';
+    case SproutFriend.pup:   return 'assets/images/feelings/sprout/happy.webp';
+    case SproutFriend.bunny: return 'assets/images/feelings/sprout/sad.webp';
+    case SproutFriend.lion:  return 'assets/images/feelings/sprout/mad.webp';
+    case SproutFriend.mouse: return 'assets/images/feelings/sprout/scared.webp';
   }
 }
 

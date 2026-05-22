@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-22 | 11:59 | 85c1 | main | WebP Illustration Asset Conversion and Play Store Size Optimization | [link](docs/sessions/2026-05-22-1159-85c1.md) |
 | 2026-05-22 | 11:58 | a60f | main | App summary + launch-blocker rundown + README staleness fixes | [link](docs/sessions/2026-05-22-1158-a60f.md) |
 | 2026-05-22 | 01:26 | dacf | main | Helped answer Chrome Built-in AI EPP Pulse Check survey | [link](docs/sessions/2026-05-22-0126-dacf.md) |
 | 2026-05-22 | 01:21 | 35d1 | main | P0 fix: nginx CSP missing gstatic blanked prod 2 days | [link](docs/sessions/2026-05-22-0121-35d1.md) |

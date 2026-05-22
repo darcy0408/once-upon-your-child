@@ -1,4 +1,4 @@
-// lib/data/mood_lantern_data.dart
+﻿// lib/data/mood_lantern_data.dart
 /// Mood Lantern data for the enchanted floating mood selector.
 ///
 /// Each lantern represents a core emotion with magical framing.
@@ -120,7 +120,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFFFFB300), // Amber gold
     emoji: '☀️',
     storyMagic: 'Stories full of sunshine and smiles',
-    imagePath: 'assets/mood_lanterns/sunshine.png',
+    imagePath: 'assets/mood_lanterns/sunshine.webp',
     matureName: 'Triumph',
     matureStoryMagic: 'Stories of victory and achievement',
   ),
@@ -132,7 +132,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFFE64A19), // Deep orange-red
     emoji: '🔥',
     storyMagic: 'Stories where heroes stand up for what\'s right',
-    imagePath: 'assets/mood_lanterns/ember.png',
+    imagePath: 'assets/mood_lanterns/ember.webp',
     matureName: 'Fury',
     matureStoryMagic: 'Stories of righteous anger and fighting back',
   ),
@@ -144,7 +144,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFF1565C0), // Deep blue
     emoji: '💧',
     storyMagic: 'Stories with gentle comfort and understanding',
-    imagePath: 'assets/mood_lanterns/raindrop.png',
+    imagePath: 'assets/mood_lanterns/raindrop.webp',
     matureName: 'Melancholy',
     matureStoryMagic: 'Stories that understand loss and healing',
   ),
@@ -156,7 +156,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFF7B1FA2), // Deep purple
     emoji: '🌙',
     storyMagic: 'Stories where courage conquers fear',
-    imagePath: 'assets/mood_lanterns/moonbeam.png',
+    imagePath: 'assets/mood_lanterns/moonbeam.webp',
     matureName: 'Dread',
     matureStoryMagic: 'Stories of facing the darkness within',
   ),
@@ -168,7 +168,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFF2E7D32), // Forest green
     emoji: '🤭',
     storyMagic: 'Stories bursting with giggles and surprises',
-    imagePath: 'assets/mood_lanterns/giggle.png',
+    imagePath: 'assets/mood_lanterns/giggle.webp',
     matureName: 'Mischief',
     matureStoryMagic: 'Stories of chaos, pranks, and clever schemes',
   ),
@@ -180,7 +180,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFF00ACC1), // Cyan teal
     emoji: '🍃',
     storyMagic: 'Stories as peaceful as a quiet forest',
-    imagePath: 'assets/mood_lanterns/dewdrop.png',
+    imagePath: 'assets/mood_lanterns/dewdrop.webp',
     matureName: 'Serenity',
     matureStoryMagic: 'Stories of inner peace and clarity',
   ),
@@ -192,7 +192,7 @@ const List<MoodLantern> kMoodLanterns = [
     color: Color(0xFFE91E63), // Rose pink
     emoji: '💖',
     storyMagic: 'Stories full of adventure and discovery',
-    imagePath: 'assets/mood_lanterns/heartglow.png',
+    imagePath: 'assets/mood_lanterns/heartglow.webp',
     matureName: 'Thrill',
     matureStoryMagic: 'Stories of adrenaline and high stakes',
   ),

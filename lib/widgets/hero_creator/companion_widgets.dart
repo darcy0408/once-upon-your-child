@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
@@ -163,14 +163,14 @@ const sproutCompanions = [
     id: 'sprout/pebble',
     name: 'Pebble',
     tagline: 'Brave hugs and sparkly sneezes.',
-    imagePathOverride: 'assets/images/companions/sprout/pebble.png',
+    imagePathOverride: 'assets/images/companions/sprout/pebble.webp',
     backgroundColor: Color(0xFF7E57C2),
   ),
   CompanionData(
     id: 'sprout/robin',
     name: 'Robin',
     tagline: 'Tiny bird, very loud love.',
-    imagePathOverride: 'assets/images/companions/sprout/robin.png',
+    imagePathOverride: 'assets/images/companions/sprout/robin.webp',
     backgroundColor: Color(0xFF388E3C),
   ),
   CompanionData(
@@ -184,7 +184,7 @@ const sproutCompanions = [
     id: 'sprout/sunny',
     name: 'Sunny',
     tagline: 'Glowy tail. Always there for you.',
-    imagePathOverride: 'assets/images/companions/sprout/sunny.png',
+    imagePathOverride: 'assets/images/companions/sprout/sunny.webp',
     backgroundColor: Color(0xFFF9A825),
   ),
 ];
@@ -194,7 +194,7 @@ const explorerCompanions = [
     id: 'ember',
     name: 'Ember',
     tagline: 'Every idea is the best idea she\'s heard.',
-    imagePathOverride: 'assets/images/companions/explorer/ember.png',
+    imagePathOverride: 'assets/images/companions/explorer/ember.webp',
     personality:
         'Ember (Brave Protector) leaves rainbow trails wherever she flies and cheers for every single one of your ideas. When she gets excited she accidentally shoots stars from her nose. She turns fear into a plan and stands between you and danger, voice steady and brave. Catchphrases: "That was brilliant!" / "We\'ve got this."',
   ),
@@ -202,7 +202,7 @@ const explorerCompanions = [
     id: 'robin',
     name: 'Robin',
     tagline: 'Loud warning system. Always on your side.',
-    imagePathOverride: 'assets/images/companions/explorer/robin.png',
+    imagePathOverride: 'assets/images/companions/explorer/robin.webp',
     personality:
         'Robin (Guardian) has a very clear warning system and has launched herself at harmless pinecones. Three chirps: stop. One whistle: safe. Two clicks: run. Checks you\'re okay before she\'d ever admit she was worried. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "(soft) You\'re okay. I\'ve got you."',
   ),
@@ -237,7 +237,7 @@ const adventurerCompanions = [
     id: 'robin',
     name: 'Rockin\' Robin',
     tagline: 'Fierce loyalty. Zero chill.',
-    imagePathOverride: 'assets/images/companions/adventurer/robin.png',
+    imagePathOverride: 'assets/images/companions/adventurer/robin.webp',
     personality:
         'Rockin\' Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
   ),
@@ -245,7 +245,7 @@ const adventurerCompanions = [
     id: 'nyx',
     name: 'Nyx',
     tagline: 'Sets boundaries. Finds the exit.',
-    imagePathOverride: 'assets/images/companions/adventurer/nyx.png',
+    imagePathOverride: 'assets/images/companions/adventurer/nyx.webp',
     personality:
         'Nyx (Boundary Guardian) is a sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. She helps you say no, spot pressure, and choose the cleanest way out. When she trusts you enough to speak first, the information is always worth waiting for. Catchphrases: "No is complete." / "We leave—now."',
   ),
@@ -288,7 +288,7 @@ const creatorCompanions = [
     id: 'lore',
     name: 'Lore',
     tagline: 'Thinks in systems. Keeps his word.',
-    imagePathOverride: 'assets/images/companions/creator/lore.png',
+    imagePathOverride: 'assets/images/companions/creator/lore.webp',
     personality:
         'Lore (Hope Engine) is a white wolf in a scholar\'s cloak who thinks in systems and keeps his word. When he pushes back on a plan he explains why once, clearly, then helps you build it the right way. Stays close and guides you forward even when the path is unclear. Catchphrases: "I know what you\'re building. I want to help." / "One more step."',
   ),
@@ -299,7 +299,7 @@ const adolescentCompanions = [
     id: 'zephyr',
     name: 'Zephyr',
     tagline: 'Already three moves ahead.',
-    imagePathOverride: 'assets/images/companions/adolescent/zephyr.png',
+    imagePathOverride: 'assets/images/companions/adolescent/zephyr.webp',
     personality:
         'Zephyr (Brave Protector) is a green hooded dragon who is already three moves ahead and usually right. Not trying to lead — trying to fly at the same altitude. Turns fear into a plan and stands between you and danger without making you feel small. Catchphrases: "Already saw it. Here\'s what we do." / "We\'ve got this."',
   ),
@@ -307,7 +307,7 @@ const adolescentCompanions = [
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Watches you more than the path.',
-    imagePathOverride: 'assets/images/companions/adolescent/rockin_robin.png',
+    imagePathOverride: 'assets/images/companions/adolescent/rockin_robin.webp',
     personality:
         'Rockin\' Robin (Guardian) is more precise now, watches the hero more than she scouts. Still loud. Still fearless. Has been wrong about things she was certain of, and it\'s only made her braver. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I\'m watching you more than the path right now. You okay?" / "I handled it."',
   ),
@@ -315,7 +315,7 @@ const adolescentCompanions = [
     id: 'shade',
     name: 'Shade',
     tagline: 'Reads the room as closely as she reads you.',
-    imagePathOverride: 'assets/images/companions/adolescent/shade.png',
+    imagePathOverride: 'assets/images/companions/adolescent/shade.webp',
     personality:
         'Shade (Boundary Guardian) is a black panther wreathed in purple energy who reads the room as closely as she reads you. Her loyalty was built deliberately and she knows exactly when. Spots pressure, spots manipulation, helps you choose the cleanest exit. Catchphrases: "That\'s not what you actually believe, is it?" / "No is complete." / "We leave—now."',
   ),
@@ -323,7 +323,7 @@ const adolescentCompanions = [
     id: 'frost',
     name: 'Frost',
     tagline: 'Three moves ahead. Trusts you to aim him right.',
-    imagePathOverride: 'assets/images/companions/adolescent/frost.png',
+    imagePathOverride: 'assets/images/companions/adolescent/frost.webp',
     personality:
         'Frost (Hope Engine) is a blue-eyed wolf in a dark cloak who is already moving and trusts you to aim him right. Watches your signals as closely as the terrain. Stays close, lifts your mood in the hardest moments, and never gives up on you. Catchphrases: "Three moves ahead. Redirect me if I\'m wrong." / "I\'m right here."',
   ),
@@ -334,7 +334,7 @@ const adultCompanions = [
     id: 'tide',
     name: 'Tide',
     tagline: 'The pattern runs deep here.',
-    imagePathOverride: 'assets/images/companions/adult/tide.png',
+    imagePathOverride: 'assets/images/companions/adult/tide.webp',
     personality:
         'Tide (Pattern Seer) is an ancient teal dragon who has seen this before and knows which details actually matter. Gives counsel once, with precision, then steps back and lets it land. Speaks in short verdicts. Will not be rushed; slows the scene down when emotions spike. Catchphrases: "The pattern runs deep here. Let me show you." / "Look again."',
   ),
@@ -350,7 +350,7 @@ const adultCompanions = [
     id: 'onyx',
     name: 'Onyx',
     tagline: 'Names what the room is actually about.',
-    imagePathOverride: 'assets/images/companions/adult/onyx.png',
+    imagePathOverride: 'assets/images/companions/adult/onyx.webp',
     personality:
         'Onyx (Boundary Guardian) is a dark leopard with amber eyes who has made peace with patience. Names what the room is actually about, without drama, and waits for you to catch up. Has decided, after long consideration, that you are worth trusting. Catchphrases: "I know what\'s in the room. So do you." / "No is complete."',
   ),
@@ -358,7 +358,7 @@ const adultCompanions = [
     id: 'cinder',
     name: 'Cinder',
     tagline: 'Has outlasted most certainties.',
-    imagePathOverride: 'assets/images/companions/adult/cinder.png',
+    imagePathOverride: 'assets/images/companions/adult/cinder.webp',
     personality:
         'Cinder (Hope Engine) is a wolf by firelight who has outlasted most certainties. Gives counsel like a key — only when the door is already there. Simply still there after everything. Watches your signals closely and never gives up on you. Catchphrases: "Wind from the east. Here\'s what I see." / "I\'m right here."',
   ),

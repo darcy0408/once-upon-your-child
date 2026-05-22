@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -1128,12 +1128,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     final band = _ageBand;
     final g = gender == 'boy' ? 'boy' : 'girl';
     return switch (band) {
-      AgeBand.sprout     => 'assets/images/ui/gender/gender_sprout_$g.png',
-      AgeBand.explorer   => 'assets/images/ui/gender/gender_explorer_$g.png',
-      AgeBand.adventurer => 'assets/images/ui/gender/gender_adventurer_$g.png',
-      AgeBand.creator    => 'assets/images/ui/gender/gender_creator_$g.png',
-      AgeBand.adolescent => 'assets/images/ui/gender/gender_adolescent_$g.png',
-      AgeBand.adult      => 'assets/images/ui/gender/gender_adult_$g.png',
+      AgeBand.sprout     => 'assets/images/ui/gender/gender_sprout_$g.webp',
+      AgeBand.explorer   => 'assets/images/ui/gender/gender_explorer_$g.webp',
+      AgeBand.adventurer => 'assets/images/ui/gender/gender_adventurer_$g.webp',
+      AgeBand.creator    => 'assets/images/ui/gender/gender_creator_$g.webp',
+      AgeBand.adolescent => 'assets/images/ui/gender/gender_adolescent_$g.webp',
+      AgeBand.adult      => 'assets/images/ui/gender/gender_adult_$g.webp',
     };
   }
 

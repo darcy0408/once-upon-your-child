@@ -1,4 +1,4 @@
-import '../theme/age_band_theme.dart';
+﻿import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
 
 class ScenarioCard {
@@ -167,7 +167,7 @@ class ScenarioData {
       id: 'doorway_seasons',
       emoji: '🚪',
       title: 'The Doorway Between Seasons',
-      illustration: 'images/scenarios/magic_door.png',
+      illustration: 'images/scenarios/magic_door.webp',
       description:
           'Each magic door leads to a different season. Can you find your way home?',
       conflictHook:
@@ -199,7 +199,7 @@ class ScenarioData {
       adultWorldBible:
           'The Nexus exists between what was and what might have been — a liminal hall of doors that no longer open. Each is sealed: a summer that ended too soon, a winter you never got to finish, a season you left before you understood what it was teaching you. The Chronokeeper no longer maintains these doors — it mourns them, cataloguing what each closed door cost the traveller who walked through it. The seasons themselves are not weather here; they are states of a relationship, a career, a version of yourself you outgrew before you were ready. Some doors are warm to the touch. Some have grown cold. Physics: you can press your ear to any door and hear an echo of what was — but opening them is not the work. The work is learning why you are still standing in the hall.',
       adultThematicQuestion: "Which door do you keep coming back to?",
-      sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/space.webp',
       youngBandSceneId: 'star_village',
       olderBandSceneId: 'ruined_citadel',
     ),
@@ -207,7 +207,7 @@ class ScenarioData {
       id: 'volcano_dragons',
       emoji: '🐉',
       title: 'The Volcano of Sleeping Dragons',
-      illustration: 'images/scenarios/sleeping_dragon.png',
+      illustration: 'images/scenarios/sleeping_dragon.webp',
       description:
           'Wake the kindest dragon to stop the volcano from sneezing rainbow lava!',
       conflictHook:
@@ -239,7 +239,7 @@ class ScenarioData {
       adultWorldBible:
           'The last dragon colony carries wounds older than living memory — debts of fire, broken oaths, extinctions caused by pride. The elders sleep not from peace but from exhaustion: there is nothing left to prove and no one left to prove it to. The volcanic caldera is a graveyard of decisions that felt necessary at the time. Young dragons are born already knowing the names of ancestors who failed honourably. The Trial of Three still stands, but the elders know: the real trial is what you do with fire after you have used it wrong. The volcano does not threaten — it waits, patient as grief, for someone to stop trying to control it and start listening to what it is saying.',
       adultThematicQuestion: "What are you still carrying that was never yours to carry?",
-      sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.webp',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'tidal_shrine',
     ),
@@ -247,7 +247,7 @@ class ScenarioData {
       id: 'neon_jungle',
       emoji: '🌴',
       title: 'The Neon Jungle of Whispers',
-      illustration: 'images/scenarios/glowing_forest.png',
+      illustration: 'images/scenarios/glowing_forest.webp',
       description:
           'A jungle where the trees forget their colors at night unless you whisper to them.',
       conflictHook:
@@ -276,7 +276,7 @@ class ScenarioData {
       creatorTitle: 'The Part of You That Glows',
       creatorThematicQuestion: "What part of you is waiting to be seen?",
       adultTitle: 'The Light That Waits',
-      sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/forest.webp',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
     ),
@@ -284,7 +284,7 @@ class ScenarioData {
       id: 'crystal_cavern',
       emoji: '💎',
       title: 'The Crystal Cavern of Echoes',
-      illustration: 'images/scenarios/sparkle_cave.png',
+      illustration: 'images/scenarios/sparkle_cave.webp',
       description:
           'A cave where echoes steal voices if you are too loud. Speak in whispers!',
       conflictHook:
@@ -313,7 +313,7 @@ class ScenarioData {
       creatorTitle: 'The Echo Inside',
       creatorThematicQuestion: "What have you been telling yourself?",
       adultTitle: 'What Echoes Back',
-      sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.webp',
       youngBandSceneId: 'ocean_depths',
       olderBandSceneId: 'deep_archive',
     ),
@@ -321,7 +321,7 @@ class ScenarioData {
       id: 'storm_chaser_sky',
       emoji: '☁️',
       title: "The Storm-Chaser's Sky Fortress",
-      illustration: 'images/scenarios/cloud_castle.png',
+      illustration: 'images/scenarios/cloud_castle.webp',
       description:
           'A floating fortress racing through a sea of lightning clouds!',
       conflictHook:
@@ -351,7 +351,7 @@ class ScenarioData {
       creatorTitle: null,
       creatorThematicQuestion: "What storm are you running from?",
       adultTitle: 'The Storm You\'ve Been Feeding',
-      sproutIllustration: 'assets/images/ui/sprout/tiles/castle.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/castle.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'orbital_station',
     ),
@@ -359,7 +359,7 @@ class ScenarioData {
       id: 'vanishing_colors',
       emoji: '🌈',
       title: 'The Land of Vanishing Colors',
-      illustration: 'images/scenarios/rainbow_land.png',
+      illustration: 'images/scenarios/rainbow_land.webp',
       description:
           'Someone is erasing the world! Use your magic to paint it back to life.',
       conflictHook:
@@ -388,7 +388,7 @@ class ScenarioData {
       creatorTitle: 'When Everything Fades',
       creatorThematicQuestion: "What would you save if everything faded?",
       adultTitle: 'When Meaning Dissolves',
-      sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.png',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'ruined_citadel',
     ),
@@ -398,7 +398,7 @@ class ScenarioData {
       id: 'brave_friend',
       emoji: '🤝',
       title: 'The Brave Friend',
-      illustration: 'images/scenarios/making_friends.png',
+      illustration: 'images/scenarios/making_friends.webp',
       description: 'Learning to say hello and join in the fun with new people.',
       conflictHook:
           'A group of kids is playing a fun game, but asking to join feels like climbing a giant mountain.',
@@ -428,7 +428,7 @@ class ScenarioData {
       id: 'standing_tall',
       emoji: '🛡️',
       title: 'Standing Tall',
-      illustration: 'images/scenarios/confidence.png',
+      illustration: 'images/scenarios/confidence.webp',
       description:
           'When someone is being mean, your heart is your strongest shield.',
       conflictHook:
@@ -459,7 +459,7 @@ class ScenarioData {
       id: 'big_feelings_quest',
       emoji: '🌊',
       title: 'Life Quest',
-      illustration: 'images/scenarios/feelings_quest.png',
+      illustration: 'images/scenarios/feelings_quest.webp',
       description:
           'Riding the waves of being worried or mad without getting swept away.',
       conflictHook:
@@ -495,7 +495,7 @@ class ScenarioData {
       id: 'change_is_coming',
       emoji: '🦋',
       title: 'Change is Coming!',
-      illustration: 'images/scenarios/transitions.png',
+      illustration: 'images/scenarios/transitions.webp',
       description:
           'Moving to a new house or starting a new school is a cocoon turning into a butterfly.',
       conflictHook:
@@ -527,7 +527,7 @@ class ScenarioData {
       id: 'safe_space',
       emoji: '✨',
       title: 'Imagine It',
-      illustration: 'images/scenarios/safe_space.png',
+      illustration: 'images/scenarios/safe_space.webp',
       description:
           'Dream up any world you want. Tell us where your adventure should take place and we\'ll bring it to life.',
       conflictHook:
@@ -560,7 +560,7 @@ class ScenarioData {
       id: 'midnight_mystery',
       emoji: '🔍',
       title: 'The Midnight Mystery',
-      illustration: 'images/scenarios/mystery.png',
+      illustration: 'images/scenarios/mystery.webp',
       description:
           'Something has gone missing and only you can piece together the clues before dawn.',
       conflictHook:
@@ -586,7 +586,7 @@ class ScenarioData {
       id: 'survival_island',
       emoji: '🏝️',
       title: "Survival Island",
-      illustration: 'images/scenarios/survival.png',
+      illustration: 'images/scenarios/survival.webp',
       description:
           'Stranded somewhere wild, you must use your wits and grit to find a way through.',
       conflictHook:
@@ -618,7 +618,7 @@ class ScenarioData {
       id: 'superhero',
       emoji: '🦸',
       title: 'Superhero Story',
-      illustration: 'images/scenarios/my_big_feelings_btn.png',
+      illustration: 'images/scenarios/my_big_feelings_btn.webp',
       description:
           'A superhero adventure where the child is the hero.',
       conflictHook:

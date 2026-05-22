@@ -508,10 +508,13 @@ const adolescentTheme = AgeBandThemeData(
 /// adult-appropriate vocabulary. The most editorial and understated band.
 const adultTheme = AgeBandThemeData(
   band: AgeBand.adult,
-  // Deep slate with warm amber-gold
-  primary: Color(0xFFBFA45A), // Warm amber-gold
-  primaryLight: Color(0xFFD4B97A), // Light amber
-  primaryDark: Color(0xFF8C7240), // Deep amber
+  // Deep slate with warm amber-gold.
+  // A11Y-001: `primary` darkened to #806A38 so white button text reaches
+  // WCAG AA (5.2:1) — the prior #BFA45A measured 2.44:1. The brand
+  // amber-gold is preserved in `accent` and `primaryLight`.
+  primary: Color(0xFF806A38), // Deep amber — AA-contrast CTA background
+  primaryLight: Color(0xFFBFA45A), // Brand amber-gold (hover / glow)
+  primaryDark: Color(0xFF5E4F2A), // Deepest amber
   gradientStart: Color(0xFF08080E), // Near-black
   gradientMid: Color(0xFF100E18), // Very dark purple-black
   gradientEnd: Color(0xFF0A0A12), // Near-black

@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -78,7 +78,7 @@ class _TherapeuticFeelingsWheelState extends State<TherapeuticFeelingsWheel>
   Future<void> _loadFaceImage(String emotionName) async {
     final key = _sanitizeKey(emotionName);
     try {
-      final data = await rootBundle.load('assets/feelings_faces/$key.png');
+      final data = await rootBundle.load('assets/feelings_faces/$key.webp');
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       final frame = await codec.getNextFrame();
       _faceImages[key] = frame.image;

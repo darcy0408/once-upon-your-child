@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
@@ -263,7 +263,7 @@ class _TraitChip extends StatelessWidget {
 class CharacterArchetypes {
   static const thinker = ArchetypeData(
     icon: '🦁',
-    imagePath: 'assets/images/archetypes/quiz_whiz_framed.png',
+    imagePath: 'assets/images/archetypes/quiz_whiz_framed.webp',
     name: 'The Quiz Whiz',
     description: 'Solves tricky puzzles and brain teasers',
     traits: ['Smart', 'Modest', 'Curious'],
@@ -297,7 +297,7 @@ class CharacterArchetypes {
 
   static const artist = ArchetypeData(
     icon: '🎨',
-    imagePath: 'assets/images/archetypes/master_creator_framed.png',
+    imagePath: 'assets/images/archetypes/master_creator_framed.webp',
     name: 'The Master Creator',
     description: 'Magic paintbrush brings drawings to life',
     traits: ['Creative', 'Expressive', 'Imaginative'],
@@ -323,7 +323,7 @@ class CharacterArchetypes {
 
   static const athlete = ArchetypeData(
     icon: '⚡',
-    imagePath: 'assets/images/archetypes/lightning_runner_framed.png',
+    imagePath: 'assets/images/archetypes/lightning_runner_framed.webp',
     name: 'The Lightning Runner',
     description: 'Moves faster than sound, leaves stardust trails',
     traits: ['Energetic', 'Fast', 'Determined'],
@@ -349,7 +349,7 @@ class CharacterArchetypes {
 
   static const shyOne = ArchetypeData(
     icon: '🦉',
-    imagePath: 'assets/images/archetypes/animal_whisperer_framed.png',
+    imagePath: 'assets/images/archetypes/animal_whisperer_framed.webp',
     name: 'The Animal Whisperer',
     description: 'Talks to animals and hears nature\'s secrets',
     traits: ['Kind', 'Observant', 'Gentle'],
@@ -523,7 +523,7 @@ class ArchetypeData {
     if (gender != null && gender.isNotEmpty) {
       final id = genderedImageIdPerBand?[band] ?? genderedImageId;
       if (id != null) {
-        return 'assets/images/archetypes/${band.name}/${id}_${gender.toLowerCase()}.png';
+        return 'assets/images/archetypes/${band.name}/${id}_${gender.toLowerCase()}.webp';
       }
     }
     if (band == AgeBand.sprout && sproutImageId != null) {

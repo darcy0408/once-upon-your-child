@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../services/app_tts_service.dart';
@@ -2580,11 +2580,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final String girlAsset;
     switch (ageBand) {
       case AgeBand.sprout:
-        boyAsset = 'assets/images/ui/gender/gender_sprout_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_sprout_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_sprout_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_sprout_girl.webp';
       case AgeBand.explorer:
-        boyAsset = 'assets/images/ui/gender/gender_explorer_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_explorer_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_explorer_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_explorer_girl.webp';
       case AgeBand.adventurer:
         boyAsset = 'assets/images/ui/gender/gender_adventurer_boy.jpg';
         girlAsset = 'assets/images/ui/gender/gender_adventurer_girl.jpg';
@@ -2592,11 +2592,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         boyAsset = 'assets/images/ui/gender/gender_creator_boy.jpg';
         girlAsset = 'assets/images/ui/gender/gender_creator_girl.jpg';
       case AgeBand.adolescent:
-        boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.webp';
       case AgeBand.adult:
-        boyAsset = 'assets/images/ui/gender/gender_adult_boy.png';
-        girlAsset = 'assets/images/ui/gender/gender_adult_girl.png';
+        boyAsset = 'assets/images/ui/gender/gender_adult_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_adult_girl.webp';
     }
 
     final gender = widget.wizardData.characterGender;

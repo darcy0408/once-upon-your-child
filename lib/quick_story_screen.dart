@@ -1,4 +1,4 @@
-// lib/quick_story_screen.dart
+﻿// lib/quick_story_screen.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -36,32 +36,32 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   final List<Map<String, String>> _quickThemes = [
     {
       'name': 'Adventure',
-      'image': 'images/themes/adventure.png',
+      'image': 'images/themes/adventure.webp',
       'description': 'Mysterious doors and exciting journeys',
     },
     {
       'name': 'Magic',
-      'image': 'images/themes/magic.png',
+      'image': 'images/themes/magic.webp',
       'description': 'Sparkling crystals and enchanted caves',
     },
     {
       'name': 'Friendship',
-      'image': 'images/themes/friendship.png',
+      'image': 'images/themes/friendship.webp',
       'description': 'Rainbow adventures with best friends',
     },
     {
       'name': 'Forest',
-      'image': 'images/themes/forest.png',
+      'image': 'images/themes/forest.webp',
       'description': 'Magical mushrooms and woodland wonders',
     },
     {
       'name': 'Animals',
-      'image': 'images/themes/animals.png',
+      'image': 'images/themes/animals.webp',
       'description': 'Adorable creatures and sweet companions',
     },
     {
       'name': 'Princess',
-      'image': 'images/themes/princess.png',
+      'image': 'images/themes/princess.webp',
       'description': 'Dreamy castles in the clouds',
     },
   ];

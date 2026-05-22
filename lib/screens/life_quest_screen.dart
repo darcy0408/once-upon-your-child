@@ -1,4 +1,4 @@
-// lib/screens/life_quest_screen.dart
+﻿// lib/screens/life_quest_screen.dart
 //
 // Self-contained screen for playing pre-built Life Quest scenarios.
 // No AI generation, no backend calls — reads from static quest data
@@ -430,7 +430,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             children: [
               Expanded(
                 child: Image.asset(
-                  'assets/images/feelings/sprout/${friend.assetName}.png',
+                  'assets/images/feelings/sprout/${friend.assetName}.webp',
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => Center(
                     child: Text(

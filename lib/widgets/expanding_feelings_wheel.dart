@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -137,7 +137,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     int failed = 0;
     for (final key in _availableFaces) {
       try {
-        final data = await rootBundle.load('assets/feelings_faces/$key.png');
+        final data = await rootBundle.load('assets/feelings_faces/$key.webp');
         final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
         final frame = await codec.getNextFrame();
         _faceImages[key] = frame.image;

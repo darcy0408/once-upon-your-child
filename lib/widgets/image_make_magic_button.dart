@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../utils/motion_utils.dart';
@@ -47,13 +47,13 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   String get _assetNormal {
     final band = widget.ageBand;
     if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal.png');
-    return 'assets/images/ui/clean/make_magic_button.png';
+    return 'assets/images/ui/clean/make_magic_button.webp';
   }
 
   String get _assetPressed {
     final band = widget.ageBand;
     if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal_clicked.png');
-    return 'assets/images/ui/clean/make_magic_button_pressed.png';
+    return 'assets/images/ui/clean/make_magic_button_pressed.webp';
   }
 
   @override

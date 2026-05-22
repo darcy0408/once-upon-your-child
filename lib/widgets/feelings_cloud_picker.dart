@@ -1,4 +1,4 @@
-// lib/widgets/feelings_cloud_picker.dart
+﻿// lib/widgets/feelings_cloud_picker.dart
 //
 // Shared cloud-card emotion picker used in:
 //   - FeelingsQuestModal  (pre-story full-screen)
@@ -703,7 +703,7 @@ class _FaceImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>()?.band;
-    final flatPath = 'assets/feelings_faces/$id.png';
+    final flatPath = 'assets/feelings_faces/$id.webp';
 
     // Try band-specific artwork first; fall back to global flat library; then emoji.
     if (band != null) {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../theme/age_band_theme.dart';
@@ -87,10 +87,10 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
     final band = widget.ageBand;
     final normalAsset = band != null
         ? AgeBandAssetResolver.uiPath(band, 'continue_button.png')
-        : 'assets/images/ui/continue_btn_codex.png';
+        : 'assets/images/ui/continue_btn_codex.webp';
     final pressedAsset = band != null
         ? AgeBandAssetResolver.uiPath(band, 'continue_button_clicked.png')
-        : 'assets/images/ui/continue_btn_pressed.png';
+        : 'assets/images/ui/continue_btn_pressed.webp';
 
     return Semantics(
       button: true,

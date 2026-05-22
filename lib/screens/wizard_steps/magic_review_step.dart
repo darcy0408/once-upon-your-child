@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -148,7 +148,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             : 'assets/${scenario.illustration}';
       }
     }
-    return 'assets/images/scenarios/magic_door.png';
+    return 'assets/images/scenarios/magic_door.webp';
   }
 
   String? get _companionImage {
@@ -171,14 +171,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       }
       // IDs like 'sprout/fluffy_dragon' already embed their band subfolder.
       if (firstComp.contains('/')) {
-        return 'assets/images/companions/$firstComp.png';
+        return 'assets/images/companions/$firstComp.webp';
       }
       // Band-specific bare IDs (e.g. 'ember_dragon', 'moon_owl') — derive band
       // from the character's age.
       if (!firstComp.startsWith('character_') &&
           !widget.wizardData.petPhotos.containsKey(firstComp)) {
         final band = ageBandFromAge(widget.wizardData.characterAge);
-        return 'assets/images/companions/${band.name}/$firstComp.png';
+        return 'assets/images/companions/${band.name}/$firstComp.webp';
       }
     }
     if (widget.wizardData.companionNames.isNotEmpty &&
