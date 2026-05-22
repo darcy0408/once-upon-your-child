@@ -68,7 +68,7 @@ JUDGE_SYSTEM = (
 )
 
 # Cache one client per judge identifier so we don't re-auth per call.
-_JUDGE_CLIENTS: dict[str, providers.GitHubModelsClient] = {}
+_JUDGE_CLIENTS: dict[str, object] = {}
 
 
 def _extract_json(text: str) -> dict:
@@ -87,31 +87,36 @@ def _extract_json(text: str) -> dict:
         raise
 
 
-def _call_judge(judge_name: str, prompt: str) -> dict:
-    """Dispatch a judge call by identifier.
+def _judge_client(judge_name: str):
+    """Build (and cache) the provider client for a judge identifier.
 
-    Supported today:
-      github-models             -> GitHub Models, default judge model (gpt-4.1)
-      github-models:<model>     -> GitHub Models, explicit model id
-    Stubbed (gated on the Gemini budget decision):
-      gemini / gemini-pro       -> Gemini API judge
+      github-models[:<model>]  -> GitHub Models (default gpt-4.1)
+      gemini[:<model>]         -> Gemini API   (default gemini-2.5-flash)
+      gemini-pro               -> Gemini API   (gemini-2.5-pro)
     """
+    if judge_name in _JUDGE_CLIENTS:
+        return _JUDGE_CLIENTS[judge_name]
     base, _, variant = judge_name.partition(":")
     if base == "github-models":
-        if judge_name not in _JUDGE_CLIENTS:
-            model = ("openai/" + variant) if variant else providers.GITHUB_JUDGE_MODEL
-            _JUDGE_CLIENTS[judge_name] = providers.GitHubModelsClient(model=model)
-        client = _JUDGE_CLIENTS[judge_name]
-        result = client.complete(system=JUDGE_SYSTEM, user=prompt, max_tokens=512)
-        if result.error:
-            raise RuntimeError(f"{judge_name} judge call failed: {result.error}")
-        return _extract_json(result.text)
-    if base in ("gemini", "gemini-pro"):
-        raise NotImplementedError(
-            "Gemini judge is gated on the Gemini budget decision. "
-            "Use a github-models judge for the free pass."
-        )
-    raise ValueError(f"Unknown judge identifier: {judge_name}")
+        model = ("openai/" + variant) if variant else providers.GITHUB_JUDGE_MODEL
+        client = providers.GitHubModelsClient(model=model)
+    elif base == "gemini":
+        client = providers.GeminiClient(model=variant or providers.GEMINI_JUDGE_MODEL)
+    elif base == "gemini-pro":
+        client = providers.GeminiClient(model="gemini-2.5-pro")
+    else:
+        raise ValueError(f"Unknown judge identifier: {judge_name}")
+    _JUDGE_CLIENTS[judge_name] = client
+    return client
+
+
+def _call_judge(judge_name: str, prompt: str) -> dict:
+    """Dispatch a judge call by identifier and return parsed rubric scores."""
+    client = _judge_client(judge_name)
+    result = client.complete(system=JUDGE_SYSTEM, user=prompt, max_tokens=512)
+    if result.error:
+        raise RuntimeError(f"{judge_name} judge call failed: {result.error}")
+    return _extract_json(result.text)
 
 
 def _inter_judge_agreement(scores_a: dict, scores_b: dict) -> float:
@@ -185,17 +190,11 @@ def score_run(run_id: str, judges: list[str]) -> int:
 
 def ping(judge_name: str) -> int:
     """One trivial call to confirm a judge's credentials and endpoint work."""
-    base, _, variant = judge_name.partition(":")
-    if base != "github-models":
-        print(f"[judge] --ping only supports github-models judges, got {judge_name}",
-              file=sys.stderr)
-        return 1
-    model = ("openai/" + variant) if variant else providers.GITHUB_JUDGE_MODEL
     try:
-        client = providers.GitHubModelsClient(model=model)
+        client = _judge_client(judge_name)
         result = client.ping()
     except Exception as exc:  # noqa: BLE001
-        print(f"[judge] ping FAILED: {exc}", file=sys.stderr)
+        print(f"[judge] ping FAILED ({judge_name}): {exc}", file=sys.stderr)
         return 1
     if result.error:
         print(f"[judge] ping FAILED ({model}): {result.error}", file=sys.stderr)

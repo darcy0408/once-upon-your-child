@@ -50,6 +50,12 @@ def load_env() -> None:
                 os.environ.setdefault(k.strip(), v.strip())
 
 
+# Gemini judge model. Pro is the strongest but has the tightest free-tier
+# rate limit; flash is the throughput-friendly default. Override per call
+# with a `gemini:<model>` judge identifier.
+GEMINI_JUDGE_MODEL = "gemini-2.5-flash"
+
+
 @dataclass
 class CompletionResult:
     text: str
@@ -122,5 +128,63 @@ class GitHubModelsClient:
             model=self.model,
             input_tokens=getattr(usage, "prompt_tokens", None),
             output_tokens=getattr(usage, "completion_tokens", None),
+            latency_ms=int((time.time() - start) * 1000),
+        )
+
+
+class GeminiClient:
+    """Gemini judge client. Uses the same GEMINI_API_KEY as generation, with
+    JSON response mode so rubric scores parse cleanly.
+
+    Default model is flash (throughput); pass model="gemini-2.5-pro" for the
+    stronger but rate-limit-tighter judge.
+    """
+
+    def __init__(self, model: str = GEMINI_JUDGE_MODEL):
+        load_env()
+        key = os.environ.get("GEMINI_API_KEY")
+        if not key:
+            raise RuntimeError("GEMINI_API_KEY not found in backend/.env")
+        try:
+            from google import genai
+        except ImportError as exc:
+            raise RuntimeError("google-genai is required for the Gemini judge.") from exc
+        self._genai = genai
+        self._client = genai.Client(api_key=key)
+        self.model = model
+
+    def ping(self) -> CompletionResult:
+        return self.complete(
+            system="You are a connectivity check. Reply with exactly: OK",
+            user="ping", max_tokens=5,
+        )
+
+    def complete(self, system: str, user: str, max_tokens: int = 1024,
+                 temperature: float = 0.0) -> CompletionResult:
+        from google.genai import types
+        start = time.time()
+        try:
+            resp = self._client.models.generate_content(
+                model=self.model,
+                contents=user,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                    response_mime_type="application/json",
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001
+            return CompletionResult(
+                text="", model=self.model, input_tokens=None,
+                output_tokens=None, latency_ms=int((time.time() - start) * 1000),
+                error=f"{type(exc).__name__}: {exc}",
+            )
+        usage = getattr(resp, "usage_metadata", None)
+        return CompletionResult(
+            text=(getattr(resp, "text", None) or "").strip(),
+            model=self.model,
+            input_tokens=getattr(usage, "prompt_token_count", None),
+            output_tokens=getattr(usage, "candidates_token_count", None),
             latency_ms=int((time.time() - start) * 1000),
         )
