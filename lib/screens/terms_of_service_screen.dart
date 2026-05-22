@@ -48,7 +48,7 @@ By using Story Weaver, you agree to these terms. If you are under 13, a parent o
               content: '''
 - First month: full refund if not satisfied
 - After first month: no refunds for partial months
-- Contact onceuponyourchild@gmail.com for help
+- Contact darcy@onceuponyourchild.app for help
 ''',
             ),
             _buildSection(
@@ -85,7 +85,7 @@ We may suspend or terminate accounts that violate these terms or abuse the servi
             _buildSection(
               title: 'Contact',
               content: '''
-Questions? Contact onceuponyourchild@gmail.com
+Questions? Contact darcy@onceuponyourchild.app
 Last updated: $lastUpdated
 ''',
             ),

@@ -57,7 +57,7 @@ What this means for families:
 - **AI output can be imperfect.** AI is creative but not always accurate. It can occasionally produce content that is unexpected, factually wrong, or not quite right for your child. We apply safety filters, but no filter is perfect.
 - **It is for entertainment, not advice.** Once Upon YOUR Child is a storytelling app. AI-generated stories are not reviewed by a teacher, doctor, or other professional, and are not a substitute for professional care.
 - **In-app labelling.** AI-generated stories and images carry a visible "Created with AI" label so it is always clear the content was produced by a machine.
-- **Reporting content.** If you see AI-generated content that seems wrong or unsafe, you can report it from the story screen ("Report this content") or by emailing onceuponyourchild@gmail.com.
+- **Reporting content.** If you see AI-generated content that seems wrong or unsafe, you can report it from the story screen ("Report this content") or by emailing darcy@onceuponyourchild.app.
 
 We encourage parents and guardians to review the stories their child creates.
 
@@ -99,7 +99,7 @@ Parents and guardians have complete control over their child's data:
 
 - **Access**: View all data collected about their child
 - **Correction**: Update or correct information
-- **Deletion**: Request removal of data. To delete your child's data: open the app → tap the menu → **Parent Controls** → scroll to **Data & Privacy** → tap **Delete All My Data**. This permanently deletes your child's stories, characters and profile data and anonymizes your account so it can no longer be identified. You may also email onceuponyourchild@gmail.com to request deletion.
+- **Deletion**: Request removal of data. To delete your child's data: open the app → tap the menu → **Parent Controls** → scroll to **Data & Privacy** → tap **Delete All My Data**. This permanently deletes your child's stories, characters and profile data and anonymizes your account so it can no longer be identified. You may also email darcy@onceuponyourchild.app to request deletion.
 - **Export**: Request a copy of your child's data
 - **Consent**: Control sharing and third-party access
 
@@ -175,7 +175,7 @@ This app is operated by:
 - **Operator (legal entity)**: Darcy VanPelt
 - **Postal address**: 2816 Orchard Ave, Grand Junction, CO 81501
 - **Phone**: 970-640-2011
-- **Email**: onceuponyourchild@gmail.com
+- **Email**: darcy@onceuponyourchild.app
 
 For privacy questions or concerns, or to review, delete, or stop further
 collection of your child's information, contact us using the details above.

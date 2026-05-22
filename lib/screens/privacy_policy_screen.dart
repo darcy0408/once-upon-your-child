@@ -62,7 +62,7 @@ Stories, illustrations, and character avatars in Once Upon YOUR Child are genera
 - AI output can be imperfect. AI is creative but not always accurate; it can occasionally produce content that is unexpected, wrong, or not quite right for your child. We apply safety filters, but no filter is perfect.
 - It is for entertainment, not advice. Once Upon YOUR Child is a storytelling app. AI-generated stories are not reviewed by a teacher, doctor, or other professional, and are not a substitute for professional care.
 - AI-generated stories and images carry a visible "Created with AI" label in the app.
-- If you see AI content that seems wrong or unsafe, report it from the story screen ("Report this content") or email onceuponyourchild@gmail.com.
+- If you see AI content that seems wrong or unsafe, report it from the story screen ("Report this content") or email darcy@onceuponyourchild.app.
 
 We encourage parents and guardians to review the stories their child creates.
 ''',
@@ -131,7 +131,7 @@ Parents and guardians have complete control over their child's data. You can:
 To delete your child's data: open the app → menu → Parent Controls → Data & Privacy → Delete All My Data. This permanently deletes your child's stories, characters and profile data and anonymizes your account so it can no longer be identified.
 
 To exercise these rights, contact us at:
-onceuponyourchild@gmail.com
+darcy@onceuponyourchild.app
 ''',
             ),
             _buildSection(
@@ -142,7 +142,7 @@ This app is operated by:
 - Operator (legal entity): Darcy VanPelt
 - Postal address: 2816 Orchard Ave, Grand Junction, CO 81501
 - Phone: 970-640-2011
-- Email: onceuponyourchild@gmail.com
+- Email: darcy@onceuponyourchild.app
 
 As required by COPPA, contact us using the details above to review, delete, or stop further collection of your child's information.
 ''',

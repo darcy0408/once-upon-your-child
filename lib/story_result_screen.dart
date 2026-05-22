@@ -1725,7 +1725,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       'Story ID: ${widget.storyId ?? 'unsaved'}\n',
     );
     final uri = Uri.parse(
-        'mailto:onceuponyourchild@gmail.com?subject=$subject&body=$body');
+        'mailto:darcy@onceuponyourchild.app?subject=$subject&body=$body');
     bool opened = false;
     try {
       opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -1735,12 +1735,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     if (!mounted) return;
     if (!opened) {
       await Clipboard.setData(
-          const ClipboardData(text: 'onceuponyourchild@gmail.com'));
+          const ClipboardData(text: 'darcy@onceuponyourchild.app'));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Email onceuponyourchild@gmail.com to report this content '
+              'Email darcy@onceuponyourchild.app to report this content '
               '(address copied to clipboard).'),
         ),
       );

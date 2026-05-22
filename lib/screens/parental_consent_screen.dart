@@ -346,7 +346,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       '• Phone: 970-640-2011',
                                       style: textWhite70),
                                   const Text(
-                                      '• Email: onceuponyourchild@gmail.com',
+                                      '• Email: darcy@onceuponyourchild.app',
                                       style: textWhite70),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
