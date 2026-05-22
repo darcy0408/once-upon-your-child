@@ -48,7 +48,7 @@ Criterion,Level,Status,Evidence,Affected Screens,Remediation
 3.2.4 Consistent Identification,AA,Pass,Same iconography reused consistently (mic / play / settings),—,—
 3.2.6 Consistent Help,A,Pass,Help/contact pathway consistent in settings,settings_screen,—
 3.3.1 Error Identification,A,Partial,89 TextField vs 11 errorText hits; many validators do not surface errorText,byok_setup_wizard; character_creation; parental_consent code; settings,A11Y-010
-3.3.2 Labels or Instructions,A,Fail,welcome_screen name TextField has no labelText,welcome_screen,A11Y-004
+3.3.2 Labels or Instructions,A,Pass,welcome_screen name TextField is wrapped in a Semantics textField widget exposing a programmatic name — audit A11Y-004 was a false positive (verified 2026-05-22),welcome_screen,None
 3.3.3 Error Suggestion,AA,Partial,Email-format validation gives boolean only; no suggestion text on parental_consent,parental_consent,A11Y-010
 3.3.4 Error Prevention (Legal Financial Data),AA,Pass,Stripe checkout handled by Stripe-hosted page; consent has a parent gate,subscription; parental_consent,—
 3.3.7 Redundant Entry,A,Pass,New in 2.2; child name persisted via SharedPreferences; not re-asked,—,—

@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../providers/highlight_color_provider.dart';
 import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
@@ -578,6 +579,9 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   _buildBigFeelingsSection(),
                   const SizedBox(height: AppSpacing.lg),
+                  const _SectionHeader(title: 'Reading'),
+                  _buildHighlightColorTile(),
+                  const SizedBox(height: AppSpacing.lg),
                   const _SectionHeader(title: 'Subscription'),
                   Container(
                     decoration: BoxDecoration(
@@ -1124,6 +1128,57 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     );
   }
 
+  /// A11Y-LTR-03: lets a parent pick the word-highlight color used by the
+  /// Learning-to-read story reader.
+  Widget _buildHighlightColorTile() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Word highlight color',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'The color used to highlight each word as a story is read aloud.',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Consumer(
+            builder: (context, ref, _) {
+              final selected = ref.watch(highlightColorProvider);
+              return Row(
+                children: [
+                  for (final option in kHighlightColorOptions)
+                    Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: _HighlightSwatch(
+                        option: option,
+                        selected: option.color == selected,
+                        onTap: () => ref
+                            .read(highlightColorProvider.notifier)
+                            .setColor(option.color),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBigFeelingsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1613,6 +1668,47 @@ class _SectionHeader extends StatelessWidget {
           color: const Color(0xFFFFD700),
           fontSize: 18,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable highlight-color swatch. Selection is shown with a white ring
+/// AND a checkmark, so it does not rely on color alone (WCAG 1.4.1).
+class _HighlightSwatch extends StatelessWidget {
+  const _HighlightSwatch({
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final HighlightColorOption option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${option.label} highlight color',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: option.color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? Colors.white : Colors.white24,
+              width: selected ? 3 : 1,
+            ),
+          ),
+          child: selected
+              ? const Icon(Icons.check, color: Colors.black87, size: 22)
+              : null,
         ),
       ),
     );

@@ -113,43 +113,39 @@ textStyle: TextStyle(
 - Unit/golden test asserts the Sprout `ElevatedButton` resolved text style is `fontSize >= 18 && fontWeight >= FontWeight.bold` — this is the guardrail that keeps the large-text compliance argument from silently breaking.
 - Update any visual snapshots referencing the old Adult color.
 
-### 1.2 A11Y-004 — Welcome name field label (0.5 day)
+### 1.2 A11Y-004 — Welcome name field label — VERIFIED 2026-05-22, no change needed
 
-File: `lib/screens/welcome_screen.dart`
+Re-checked `lib/screens/welcome_screen.dart`. The name `TextField` is already
+wrapped in `Semantics(label: "Enter your name", textField: true)` — it exposes
+a programmatic accessible name to screen readers. **A11Y-004 was a false
+positive**: the audit grep matched only `labelText:` and missed the `Semantics`
+wrapper. SC 3.3.2 passes for this field. No code change.
 
-Find the `TextField(controller: _nameController, ...)` and add:
+### 1.3 A11Y-006 — TTS stop control on auto-play — VERIFIED 2026-05-22, no change needed
 
-```dart
-TextField(
-  controller: _nameController,
-  decoration: const InputDecoration(
-    labelText: 'Your name',
-    hintText: 'What should we call you?',
-  ),
-  textInputAction: TextInputAction.next,
-  autofillHints: const [AutofillHints.givenName],
-  // ...existing
-)
-```
+Re-checked `lib/story_reader_screen.dart`. A `Stop` button (`Icons.stop_rounded`,
+label `'Stop'`) and a Play/Pause button are rendered in the reader controls;
+each is wrapped by `_buildControlButton` in `Semantics(button: true, label:)`.
+The ambience-mute `IconButton` also carries a `tooltip:`. SC 1.4.2 (Audio
+Control) is satisfied — a labelled, reachable stop/pause mechanism is present.
+No code change.
 
-**Acceptance:** TalkBack swipe over the field announces "Your name, edit box."
+### 1.4 A11Y-LTR-03 — Highlight color setting — DONE 2026-05-22
 
-### 1.3 A11Y-006 — TTS stop control on auto-play (0.5 day)
+Implemented and tested:
+- `lib/providers/highlight_color_provider.dart` (new) — a manual
+  `NotifierProvider<Color>` persisting the choice to SharedPreferences; four
+  presets (Gold default, Sky blue, Mint green, Soft pink).
+- `lib/story_reader_screen.dart` — `_buildSpans()` watches the provider and
+  uses the chosen color for both the highlight background and the underline.
+- `lib/screens/parent_controls_screen.dart` — new "Reading" section with a
+  swatch picker; selection shown via white ring + checkmark, not color alone
+  (SC 1.4.1).
+- `test/accessibility_test.dart` — provider default/persist/restore tests.
 
-File: `lib/story_reader_screen.dart`
-
-Confirm a Stop / Pause button is in the widget tree at first frame, has `Semantics(button: true, label: 'Stop reading')`, and is the first focusable control. If absent, add ahead of any `_tts.speak()` call in `_onFirstFrame`.
-
-**Acceptance:** open story with `autoPlay: true` on Sprout → screen reader's first announcement includes "Stop reading, button."
-
-### 1.4 A11Y-LTR-03 — Highlight color setting (1 day)
-
-Files:
-- `lib/services/child_profile_service.dart` — add `preferredHighlightColor: Color`.
-- `lib/screens/parent_controls_screen.dart` — add color picker.
-- `lib/story_reader_screen.dart:1131-1147` — replace `AppColors.gold` with `profile.preferredHighlightColor`.
-
-**Acceptance:** changing the color in parent controls persists and renders next time the story opens.
+Implemented as an app-wide preference (mirrors the voice-preference pattern),
+not a per-`ChildProfile` field as the original sketch suggested — simpler and
+consistent with the existing reader settings.
 
 ## Phase 2 — Three Sweeps (13 days)
 

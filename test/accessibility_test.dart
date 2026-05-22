@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/providers/highlight_color_provider.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
@@ -110,10 +113,39 @@ void main() {
         reason: 'Sprout CTA text must be >=18pt to qualify as WCAG large text',
       );
       expect(
-        style.fontWeight!.index,
-        greaterThanOrEqualTo(FontWeight.bold.index),
+        style.fontWeight!.value,
+        greaterThanOrEqualTo(FontWeight.bold.value),
         reason: 'Sprout CTA text must be bold for the 3:1 large-text threshold',
       );
+    });
+  });
+
+  // A11Y-LTR-03 — the Learning-to-read word-highlight color is configurable.
+  group('A11Y-LTR-03 — configurable highlight color', () {
+    test('defaults to gold and persists a new selection', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(highlightColorProvider), AppColors.gold);
+
+      const skyBlue = Color(0xFF4FC3F7);
+      await container.read(highlightColorProvider.notifier).setColor(skyBlue);
+      expect(container.read(highlightColorProvider), skyBlue);
+    });
+
+    test('restores a saved color on next launch', () async {
+      const mint = Color(0xFF81C784);
+      SharedPreferences.setMockInitialValues({
+        'reader_highlight_color': mint.toARGB32(),
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // First read returns the default; _load() resolves asynchronously.
+      container.read(highlightColorProvider);
+      await pumpEventQueue();
+      expect(container.read(highlightColorProvider), mint);
     });
   });
 }
