@@ -81,7 +81,15 @@ def aggregate(run_dir: Path) -> dict:
     by_cell_scores: dict[str, list[dict]] = defaultdict(list)
     judges_seen: set[str] = set()
     for row in score_rows:
+        # Flat schema (one row per cell+sample+judge)
+        if "judge" in row and isinstance(row.get("scores"), dict):
+            judges_seen.add(row["judge"])
+            by_cell_scores[row["cell_id"]].append({"judge": row["judge"], **row["scores"]})
+            continue
+        # Legacy nested schema (one row per cell with scores={judge: {...}})
         per_judge = row.get("scores", {})
+        if not isinstance(per_judge, dict):
+            continue
         judges_seen.update(per_judge.keys())
         for judge, s in per_judge.items():
             if isinstance(s, dict):
