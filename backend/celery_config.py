@@ -30,8 +30,11 @@ celery = Celery(
     include=[
         "backend.tasks.story_tasks",
         # CMP-5 / PP-13: data-retention purge task. Must be in `include` so the
-        # worker (and the embedded beat scheduler) can resolve it by name.
+        # worker and the celery-beat scheduler can resolve it by name.
         "backend.tasks.retention_tasks",
+        # SE1: scheduled reliability monitoring (Celery queue depth + the
+        # data-retention purge heartbeat). Also resolved by name via beat.
+        "backend.tasks.monitoring_tasks",
     ],
 )
 
@@ -65,6 +68,13 @@ celery.conf.update(
         "data-retention-purge-inactive-accounts": {
             "task": "backend.tasks.retention_tasks.purge_inactive_accounts_task",
             "schedule": crontab(hour=3, minute=30),
+        },
+        # SE1: reliability monitor — checks Celery queue depth and the
+        # data-retention purge heartbeat every 10 minutes and raises an
+        # alertable Sentry warning when a threshold is breached.
+        "system-reliability-monitor": {
+            "task": "backend.tasks.monitoring_tasks.system_monitor_task",
+            "schedule": crontab(minute="*/10"),
         },
     },
 )

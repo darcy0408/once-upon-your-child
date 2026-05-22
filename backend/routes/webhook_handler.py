@@ -239,21 +239,51 @@ def _advance_cursor(user_id: Optional[str], event_created: Optional[datetime],
 def handle_webhook():
     payload = request.data
     sig_header = request.headers.get("Stripe-Signature", "")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-    if not webhook_secret:
+
+    # --- Signature verification with dual-secret rotation support (S2) -------
+    # We verify the payload against TWO candidate signing secrets:
+    #   * STRIPE_WEBHOOK_SECRET      — the primary (current) secret.
+    #   * STRIPE_WEBHOOK_SECRET_OLD  — an optional secondary secret.
+    # The secondary secret exists purely to make secret rotation zero-downtime:
+    # while a rotation is in progress, in-flight webhooks may have been signed
+    # with either the old or the new secret. Accepting both means no event is
+    # rejected with a 401 during the rotation window. When no rotation is
+    # underway, STRIPE_WEBHOOK_SECRET_OLD is simply unset and this behaves
+    # exactly like single-secret verification.
+    # See docs/RUNBOOK_STRIPE_WEBHOOK_SECRET_ROTATION.md for the procedure.
+    candidate_secrets = [
+        secret
+        for secret in (
+            os.getenv("STRIPE_WEBHOOK_SECRET", ""),
+            os.getenv("STRIPE_WEBHOOK_SECRET_OLD", ""),
+        )
+        if secret
+    ]
+    if not candidate_secrets:
         current_app.logger.error("STRIPE_WEBHOOK_SECRET not configured")
         return jsonify({'error': 'Webhook not configured'}), 500
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload=payload,
-            sig_header=sig_header,
-            secret=webhook_secret,
-        )
-    except ValueError:
-        current_app.logger.warning("Stripe webhook payload could not be parsed")
-        return jsonify({"error": "Invalid payload"}), 400
-    except stripe.SignatureVerificationError:
+    event = None
+    for secret in candidate_secrets:
+        try:
+            event = stripe.Webhook.construct_event(
+                payload=payload,
+                sig_header=sig_header,
+                secret=secret,
+            )
+            break
+        except ValueError:
+            # A malformed payload is bad regardless of which secret we try, so
+            # short-circuit immediately rather than falling through.
+            current_app.logger.warning("Stripe webhook payload could not be parsed")
+            return jsonify({"error": "Invalid payload"}), 400
+        except stripe.SignatureVerificationError:
+            # This secret didn't verify the signature — fall through and try the
+            # next candidate (supports the old/new overlap during a rotation).
+            continue
+
+    if event is None:
+        # Every candidate secret raised SignatureVerificationError.
         current_app.logger.warning("Stripe webhook signature verification failed")
         return jsonify({"error": "Invalid signature"}), 401
 

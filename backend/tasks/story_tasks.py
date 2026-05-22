@@ -1213,6 +1213,30 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             validation_ms = max(validation_loop_ms - ai_call_ms, 0.0)
             logger.debug("perf phase=validation ms=%.1f", validation_ms)
 
+            # SE1/G2: provider_name == "static" means BOTH Gemini and
+            # OpenRouter failed and the child received the generic canned
+            # fallback story. This is invisible to the user, so surface it as
+            # an alertable Sentry signal — a spike means an all-providers-down
+            # outage that no exception would otherwise report.
+            if provider_name == "static":
+                logger.error(
+                    "story_generation_static_fallback theme=%s user_tier=%s sequence=%s",
+                    theme, user_tier, provider_sequence,
+                )
+                try:
+                    import sentry_sdk
+                    with sentry_sdk.push_scope() as _scope:
+                        _scope.set_tag("reliability_signal", "static_fallback")
+                        _scope.set_tag("user_tier", user_tier or "unknown")
+                        _scope.set_context(
+                            "provider_sequence", {"attempts": provider_sequence}
+                        )
+                        sentry_sdk.capture_message(
+                            "story_generation_static_fallback", level="warning"
+                        )
+                except Exception:  # noqa: BLE001 — never break generation on telemetry
+                    logger.debug("Sentry static-fallback signal failed", exc_info=True)
+
             if learning_to_read_mode and not is_ltr_format_ok:
                 _ltr_target = ltr_expected_pages or 5
                 pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
