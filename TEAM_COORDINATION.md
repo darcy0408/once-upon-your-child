@@ -11,6 +11,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-22 | 15:18 | 1738 | main | WCAG 2.2 AA a11y audit + remediation Phases 0-1 | [link](docs/sessions/2026-05-22-1518-1738.md) |
+| 2026-05-22 | 15:18 | 2102 | reliability-hardening | Verify Gemini TTS fallback locally (MT-178) | [link](docs/sessions/2026-05-22-1518-2102.md) |
 | 2026-05-22 | 12:49 | 6360 | main | MT-174 brand verify surfaced + fixed P0 custom-domain outage (CSP fonts + CORS) | [link](docs/sessions/2026-05-22-1249-6360.md) |
 | 2026-05-22 | 12:41 | 653a | main | Strip BOM from WebP-rewrite dart files; delegate MT-173/178 | [link](docs/sessions/2026-05-22-1241-653a.md) |
 | 2026-05-22 | 11:59 | 85c1 | main | WebP Illustration Asset Conversion and Play Store Size Optimization | [link](docs/sessions/2026-05-22-1159-85c1.md) |
