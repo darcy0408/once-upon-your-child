@@ -19,6 +19,15 @@ class Story(db.Model):
     characters_featured = db.Column(db.JSON, default=list)
     emotional_arc = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    # R2: the Celery task id this story was generated under. Lets /task-status
+    # recover a finished story from the DB after the Celery result expires
+    # (result_expires=1h). Indexed for the recovery lookup. Nullable for
+    # legacy rows that predate R2.
+    task_id = db.Column(db.String(64), nullable=True, index=True)
+    # R2: the full story payload returned to the client (title, story_text,
+    # pages, adventure_steps, etc.). Persisting it means a successfully
+    # generated story survives Celery result expiry. Nullable for legacy rows.
+    content = db.Column(db.JSON, nullable=True)
 
     def to_dict(self):
         return {

@@ -1,21 +1,23 @@
 import pytest
 from backend.routes import story_routes
 
-def test_generate_story_enqueues_task_and_returns_poll_url(client, auth_headers, monkeypatch):
-    # Use a character name (no DB lookup) so the test is not coupled to fixture
-    # session scoping; the async-polling logic is what we're testing here.
-    captured_kwargs = {}
+def test_generate_story_returns_poll_url_on_sync_timeout(client, auth_headers, monkeypatch):
+    # A3: when synchronous generation overruns the timeout, the route returns a
+    # server-generated recovery task id for polling. The in-flight generation
+    # keeps running and persists its Story row under that id; the route does
+    # NOT dispatch a second task (the old behaviour double-generated).
+    delay_called = []
 
     class _FakeTask:
         def __init__(self):
             self.id = "task-123"
 
         def delay(self, **kwargs):
-            captured_kwargs.update(kwargs)
+            delay_called.append(kwargs)
             return self
 
-        def apply(self, kwargs=None):
-            # Force timeout to trigger async path
+        def apply(self, kwargs=None, task_id=None):
+            # Force timeout to trigger the A3 recovery path
             from celery.exceptions import TimeoutError
             raise TimeoutError("Simulated timeout")
 
@@ -30,11 +32,12 @@ def test_generate_story_enqueues_task_and_returns_poll_url(client, auth_headers,
 
     assert response.status_code == 202
     payload = response.get_json()
-    assert payload["task_id"] == "task-123"
     assert payload["status"] == "processing"
-    assert payload["poll_url"].endswith("task-123")
-    assert captured_kwargs["character"] == "Luna"
-    assert captured_kwargs["theme"] == "Courage"
+    # task_id is a server-generated recovery id, and the poll URL points at it.
+    assert payload["task_id"]
+    assert payload["poll_url"].endswith(payload["task_id"])
+    # A3: no second task is dispatched on a sync timeout.
+    assert delay_called == []
 
 def test_generate_story_falls_back_when_queue_fails(client, auth_headers, monkeypatch):
     class _FakeResult:
@@ -51,7 +54,7 @@ def test_generate_story_falls_back_when_queue_fails(client, auth_headers, monkey
         def delay(self, **kwargs):
             raise RuntimeError("queue unavailable")
 
-        def apply(self, kwargs=None):
+        def apply(self, kwargs=None, task_id=None):
             return _FakeResult(
                 {
                     "status": "complete",

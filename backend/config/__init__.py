@@ -91,12 +91,16 @@ class Config:
     else:
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        # Database connection pooling for PostgreSQL
+        # Database connection pooling for PostgreSQL.
+        # Each process opens up to pool_size + max_overflow connections (15
+        # here). Multiple processes share the database — 2 gunicorn workers
+        # plus the Celery worker and celery-beat — so the per-process total
+        # must stay well under Postgres's ~100-connection default limit.
         SQLALCHEMY_ENGINE_OPTIONS = {
-            'pool_size': 10,
+            'pool_size': 5,
             'pool_recycle': 3600,
             'pool_pre_ping': True,
-            'max_overflow': 20,
+            'max_overflow': 10,
             'pool_timeout': 30,
         }
         logger.info(f"Using PostgreSQL database: {database_url[:30]}...")

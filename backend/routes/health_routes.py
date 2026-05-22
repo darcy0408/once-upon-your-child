@@ -12,13 +12,25 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
 
     @health_bp.route("/health", methods=["GET"])
     def health_check():
-        """Public liveness probe.
+        """Public liveness probe — also Railway's deploy healthcheck.
 
-        Intentionally minimal: returns only status + version. Detailed
-        diagnostics (DB/Gemini/Stripe config, environment, raw errors) are
-        not exposed to unauthenticated callers — see /health/detailed.
+        Intentionally minimal in its response: returns only status + version.
+        Detailed diagnostics (DB/Gemini/Stripe config, environment, raw
+        errors) are not exposed to unauthenticated callers — see
+        /health/detailed.
+
+        Includes a lightweight DB connectivity probe (SELECT 1) so a deploy
+        with a broken database connection fails the healthcheck and never
+        goes live. Raw exception detail is logged server-side only.
         """
-        return jsonify({"status": "ok", "version": app_version}), 200
+        try:
+            from sqlalchemy import text
+
+            db.session.execute(text("SELECT 1"))
+            return jsonify({"status": "ok", "version": app_version}), 200
+        except Exception:
+            logger.exception("Health check: database probe failed")
+            return jsonify({"status": "degraded", "version": app_version}), 503
 
     @health_bp.route("/version", methods=["GET"])
     def version():

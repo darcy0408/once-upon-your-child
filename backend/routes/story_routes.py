@@ -4,8 +4,10 @@ import hashlib
 import io
 import os
 import re
+import uuid
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
+from sqlalchemy.exc import SQLAlchemyError
 from flask import Blueprint, jsonify, request, g
 from PIL import Image
 
@@ -14,6 +16,7 @@ from ..gemini_image_generator import GeminiImageGenerator
 from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
 from ..models import Character, ParentHiddenContext
+from ..models.story import Story
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
 from ..routes.subscription_routes import require_premium
@@ -323,15 +326,67 @@ def _augment_therapeutic_prompt(
     return " | ".join(parts)
 
 
-def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout):
+def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
+    """Run story generation in a bounded worker thread under an explicit task id.
+
+    The generation runs as an eager Celery task with `task_id` so that, if it
+    overruns `sync_story_timeout`, the still-running thread is NOT abandoned: it
+    keeps running to completion and persists its Story row keyed by `task_id`.
+    The caller returns that id for polling and /task-status recovers the
+    finished story from the DB (R2). This replaces the previous behaviour where
+    a timed-out sync run was orphaned with no handle AND a second async task
+    was dispatched — producing two full generations and duplicate Story rows
+    (A3).
+    """
     executor = ThreadPoolExecutor(max_workers=1)
     # Important: use current generate_story_task which might be mocked in tests
-    future = executor.submit(generate_story_task.apply, kwargs=task_kwargs)
+    future = executor.submit(
+        generate_story_task.apply, kwargs=task_kwargs, task_id=task_id
+    )
     try:
         eager_result = future.result(timeout=sync_story_timeout)
         return eager_result.get()
     finally:
-        executor.shutdown(wait=False, cancel_futures=True)
+        # wait=False lets a timed-out generation finish in the background so
+        # its Story row is persisted for /task-status DB recovery. Do NOT pass
+        # cancel_futures — the in-flight generation must be allowed to complete.
+        executor.shutdown(wait=False)
+
+
+def _recover_story_from_db(task_id: str, current_user_id) -> tuple[dict, int] | None:
+    """R2: reconstruct a completed-task response from the persisted Story row.
+
+    `generate_story_task` persists the full story payload to the Story row
+    keyed by `task_id`. When the Celery result has expired (result_expires=1h)
+    this lets /task-status still return the finished story. Returns:
+      - (complete-response, 200) when the owning user's finished story is found
+      - ({"error": "Access denied"}, 403) when the row belongs to another user
+      - None when no Story row exists for this task_id (task genuinely pending)
+    """
+    if not task_id:
+        return None
+    try:
+        story = Story.query.filter_by(task_id=task_id).first()
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.warning("DB story-recovery lookup failed for task %s", task_id, exc_info=True)
+        return None
+    if story is None or not story.content:
+        return None
+    if str(story.user_id) != str(current_user_id):
+        logger.warning(
+            "IDOR attempt: user %s tried task %s owned by %s (DB recovery)",
+            current_user_id, task_id, story.user_id,
+        )
+        return {"error": "Access denied"}, 403
+    return {
+        "status": "complete",
+        "result": {
+            "status": "complete",
+            "story": story.content,
+            "user_id": str(story.user_id),
+        },
+    }, 200
 
 
 def _companion_count(task_kwargs: dict) -> int:
@@ -643,10 +698,17 @@ def create_story_blueprint(
         # client falls back to a canned scaffold story.
         effective_sync_timeout = _sync_timeout_for(task_kwargs, sync_story_timeout)
 
+        # A3: pre-allocate the id the sync generation runs under so a
+        # generation that overruns the timeout stays pollable instead of being
+        # orphaned. See the timeout handler below and /task-status (R2).
+        recovery_task_id = str(uuid.uuid4())
+
         # Try synchronous execution first (to bypass polling issues on Railway)
         try:
             # Run synchronous task in a bounded worker thread so timeout is enforced.
-            sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
+            sync_result = _run_sync_story_task_with_timeout(
+                task_kwargs, effective_sync_timeout, recovery_task_id
+            )
 
             # Debugging: Log the result type
             logger.info(f"Sync task result type: {type(sync_result)}")
@@ -670,41 +732,31 @@ def create_story_blueprint(
             return jsonify(response_payload), 200
 
         except (FuturesTimeoutError, CeleryTimeoutError) as exc:
+            # A3: the synchronous generation overran the timeout. Its worker
+            # thread is NOT abandoned — it keeps running in the background and
+            # will persist a Story row keyed by `recovery_task_id`. Return that
+            # id for polling; /task-status recovers the finished story from the
+            # DB (R2). We deliberately do NOT dispatch a second task here: the
+            # previous code left the sync thread orphaned AND queued an async
+            # task, producing two full generations and duplicate Story rows.
             logger.warning(
-                "Synchronous story generation timed out after %ss, switching to async fallback.",
+                "Synchronous story generation exceeded %ss; returning poll id %s "
+                "for the in-flight generation.",
                 effective_sync_timeout,
+                recovery_task_id,
             )
-            logger.error(f"Full task_kwargs that timed out: {task_kwargs}")
-            if _celery_runs_eagerly():
-                logger.warning(
-                    "Celery task_always_eager is enabled; async fallback would still block. Returning timeout response."
-                )
-                return (
-                    jsonify(
-                        {
-                            "error": "STORY_TIMEOUT",
-                            "message": "Story generation took too long. Please try again.",
-                        }
-                    ),
-                    504,
-                )
-            try:
-                task = generate_story_task.delay(**task_kwargs)
-                _cache_task_owner(cache, task.id, user_id)
-                return (
-                    jsonify(
-                        {
-                            "task_id": task.id,
-                            "status": "processing",
-                            "message": "Story generation timed out in sync mode; switched to async processing.",
-                            "poll_url": f"/task-status/{task.id}",
-                        }
-                    ),
-                    202,
-                )
-            except Exception as async_exc:
-                logger.exception("Async fallback after sync timeout also failed: %s", async_exc)
-                return jsonify({"error": "STORY_TIMEOUT", "message": "Story generation took too long. Please try again."}), 500
+            _cache_task_owner(cache, recovery_task_id, user_id)
+            return (
+                jsonify(
+                    {
+                        "task_id": recovery_task_id,
+                        "status": "processing",
+                        "message": "Story generation is taking a little longer — poll for the result.",
+                        "poll_url": f"/task-status/{recovery_task_id}",
+                    }
+                ),
+                202,
+            )
 
         except Exception as exc:
             logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
@@ -713,7 +765,6 @@ def create_story_blueprint(
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
                 return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
 
-            logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             if _celery_runs_eagerly():
                 logger.warning(
                     "Celery task_always_eager is enabled; async fallback would still block. Returning error response."
@@ -724,6 +775,11 @@ def create_story_blueprint(
                         "message": "Something went wrong generating your story. Please try again.",
                     }
                 ), 500
+            # X2: exactly one async retry. The sync attempt above already
+            # failed without producing a story, so this is the second (and
+            # final) generation attempt. The previous code kept an additional
+            # "last resort" synchronous retry after this, so a single failed
+            # request could trigger up to three full generations.
             try:
                 task = generate_story_task.delay(**task_kwargs)
                 _cache_task_owner(cache, task.id, user_id)
@@ -732,7 +788,7 @@ def create_story_blueprint(
                         {
                             "task_id": task.id,
                             "status": "processing",
-                            "message": "Story generation started (Async fallback)",
+                            "message": "Story generation started (async fallback)",
                             "poll_url": f"/task-status/{task.id}",
                         }
                     ),
@@ -740,30 +796,10 @@ def create_story_blueprint(
                 )
             except Exception as async_exc:
                 if "429" in str(async_exc) or "ResourceExhausted" in str(async_exc) or "Quota exceeded" in str(async_exc):
-                     logger.warning(f"Quota exceeded in async generation: {async_exc}")
-                     return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
-
+                    logger.warning(f"Quota exceeded in async generation: {async_exc}")
+                    return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
                 logger.exception("Async fallback also failed: %s", async_exc)
-                # Last resort: retry synchronously before giving up entirely
-                logger.warning("Retrying synchronous story generation after async failure")
-                try:
-                    sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
-                    story_payload = (sync_result or {}).get("story", {})
-                    response_payload = {
-                        "status": sync_result.get("status", "complete"),
-                        "title": story_payload.get("title"),
-                        "story": story_payload.get("story_text"),
-                        "story_text": story_payload.get("story_text"),
-                        "task_id": None,
-                        "theme": story_payload.get("theme"),
-                        "wisdom_gem": story_payload.get("wisdom_gem"),
-                        "async_illustrations": payload.get("async_illustrations", False),
-                    }
-                    audit_log('story_generated', user_id=user_id, data={'tier': user_tier, 'mode': 'async_fallback'})
-                    return jsonify(response_payload), 200
-                except Exception as fallback_exc:
-                    logger.exception("Synchronous retry also failed: %s", fallback_exc)
-                    return jsonify({"error": "STORY_FAILED", "message": "Something went wrong generating your story. Please try again."}), 500
+                return jsonify({"error": "STORY_FAILED", "message": "Something went wrong generating your story. Please try again."}), 500
 
     @story_bp.route("/generate-story-mock", methods=["POST"])
     def generate_story_mock_endpoint():
@@ -812,6 +848,19 @@ def create_story_blueprint(
     @require_auth
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
+
+        # R2: once a completed task's Celery result expires (result_expires=1h)
+        # its state reads as PENDING and the story would look lost. The full
+        # payload is also persisted to the Story row keyed by task_id — recover
+        # it from the DB so an expired result never loses a generated story.
+        # This also covers a sync generation that overran its timeout (A3): the
+        # background thread persists the Story row under recovery_task_id.
+        if task.state == "PENDING":
+            recovered = _recover_story_from_db(task_id, request.current_user.id)
+            if recovered is not None:
+                payload, status_code = recovered
+                return jsonify(payload), status_code
+
         task_owner_id = _resolve_task_owner(cache, task_id, task)
 
         # Security: verify resource ownership

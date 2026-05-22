@@ -715,7 +715,19 @@ def _enforce_sprout_word_cap(
     return truncated_body, truncated_pages, info
 
 
-@celery.task(bind=True, name="tasks.generate_story")
+@celery.task(
+    bind=True,
+    name="tasks.generate_story",
+    # W1: survive a worker restart mid-task. With the default acks_late=False
+    # a task is acked when picked up, so a redeploy/OOM between ack and
+    # completion silently loses it and the client polls PENDING forever.
+    # acks_late defers the ack until completion, and reject_on_worker_lost
+    # requeues a task whose worker died — so a lost story is redelivered
+    # instead of vanishing. task_time_limit (600s) stays well under the Redis
+    # broker visibility timeout, so a slow task is not double-delivered.
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
     Async story generation task.
@@ -1550,6 +1562,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         themes=_themes,
                         characters_featured=_characters,
                         emotional_arc=_arc,
+                        # R2: persist the Celery task id and the full story
+                        # payload so /task-status can recover a finished story
+                        # from the DB once the Celery result expires (1h).
+                        task_id=self.request.id,
+                        content=story_payload,
                     ))
                     db.session.commit()
                     logger.info(

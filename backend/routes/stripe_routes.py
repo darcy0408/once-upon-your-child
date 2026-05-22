@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from flask import Blueprint, request, jsonify
 import stripe
@@ -92,7 +93,13 @@ def create_checkout_session():
             session_params['subscription_data']['trial_period_days'] = trial_days
             logger.info(f"Trial enabled: {trial_days} days for tier '{tier}'")
 
-        checkout_session = stripe.checkout.Session.create(**session_params)
+        # Idempotency key: a client retry within the same coarse 5-minute
+        # bucket dedupes to the same Stripe checkout session, while a
+        # genuinely new checkout later (next bucket) still creates one.
+        idempotency_key = f"checkout:{user_id}:{tier}:{int(time.time() // 300)}"
+        checkout_session = stripe.checkout.Session.create(
+            **session_params, idempotency_key=idempotency_key
+        )
         return jsonify({
             'id': checkout_session.id,
             'checkout_url': checkout_session.url
