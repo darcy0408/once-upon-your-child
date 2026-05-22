@@ -87,8 +87,25 @@ dev_dependencies:
   riverpod_generator: ^2.4.0
   isar_generator: ^3.1.0
 
+  # Accessibility (WCAG 2.2 AA) lint runner + local custom rule plugin.
+  # Pinned to custom_lint 0.6.0/0.6.1 — those releases let custom_lint_builder
+  # accept analyzer < 6.4 (needed; see the analyzer pin in dependency_overrides).
+  custom_lint: '>=0.6.0 <0.6.2'
+  a11y_lint:
+    path: tools/a11y_lint
+
 dependency_overrides:
   meta: 1.15.0
+  # A11Y Phase 0: pinned to analyzer 6.3.0 — the one version that satisfies
+  # every constraint at once:
+  #  * `custom_lint` (tools/a11y_lint plugin) needs custom_lint_builder 0.6.x;
+  #    builder 0.6.0/0.6.1 accept `analyzer >=5.12.0 <7.0.0`.
+  #  * `isar_generator` 3.1.0 caps `analyzer <6.0.0` (stale cap; Isar 3.x
+  #    codegen runs fine on 6.x — verified here with build_runner), overridden.
+  #  * `analyzer_plugin` 0.11.2 (a custom_lint dep) calls `enclosingElement3`,
+  #    which analyzer 6.4.x REMOVED — so analyzer must stay < 6.4.0.
+  # 6.3.0 is the intersection. Revisit when Isar / custom_lint are upgraded.
+  analyzer: 6.3.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

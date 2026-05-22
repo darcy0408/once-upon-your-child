@@ -1,0 +1,24 @@
+name: a11y_lint
+description: >-
+  Custom analyzer lint rules for the Story Weaver / "Once Upon YOUR Child"
+  app that flag common WCAG 2.2 AA accessibility regressions at author time.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+# NOTE on version pinning:
+# Pinned to the custom_lint 0.6.x line: `riverpod_generator` 2.4.0 (a host-app
+# dev dependency) needs `analyzer ^6.5.0`-or-`custom_lint_core ^0.6.0`, so the
+# 0.5.x line is unsolvable against the host app.
+# `analyzer` is held at `>=6.0.0 <6.4.0`: analyzer 6.4.x removed the
+# `enclosingElement3` getter that `analyzer_plugin` 0.11.2 still calls, which
+# crashes the custom_lint analysis server. The host app's dependency_overrides
+# pins analyzer to exactly 6.3.0; keep these ranges consistent.
+dependencies:
+  analyzer: '>=6.0.0 <6.4.0'
+  custom_lint_builder: '>=0.6.0 <0.6.2'
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

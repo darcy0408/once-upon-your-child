@@ -10,6 +10,12 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  # Accessibility (WCAG 2.2 AA) custom lint rules — see tools/a11y_lint/.
+  # Provides: no_unlabelled_icon_button, no_unlabelled_form_field,
+  # no_unguarded_repeat. These run via `dart run custom_lint` and surface in
+  # the IDE. They are NOT run by plain `flutter analyze`.
+  plugins:
+    - custom_lint
   exclude:
     - '**/*.g.dart'
     - 'story_weaver_core/**'
@@ -39,6 +45,14 @@ linter:
   rules:
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    #
+    # Accessibility note: the WCAG 2.2 AA author-time checks
+    # (unlabelled IconButton / form field, unguarded looping animations)
+    # are NOT plain analyzer lints — they are implemented as a `custom_lint`
+    # plugin under tools/a11y_lint/ and run via `dart run custom_lint`.
+    # No flutter_lints rules are added/disabled here: the codebase currently
+    # passes `flutter analyze` clean and enabling extra core rules would
+    # flood it, so a11y enforcement is deliberately kept in the plugin.
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

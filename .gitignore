@@ -174,7 +174,14 @@ avatar_system_dependencies.yaml
 # Temporary folders and files
 feelings wheel images/
 /images/
-tools/
+tools/*
+# Exception: the a11y_lint custom_lint plugin is real source and must be
+# tracked so `dart run custom_lint` works for everyone cloning the repo.
+!tools/a11y_lint/
+tools/a11y_lint/.dart_tool/
+tools/a11y_lint/build/
+tools/a11y_lint/pubspec.lock
+tools/a11y_lint/custom_lint.log
 ng
 check_java.ps1
 *.code-workspace
