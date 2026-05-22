@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-22 | 12:49 | 6360 | main | MT-174 brand verify surfaced + fixed P0 custom-domain outage (CSP fonts + CORS) | [link](docs/sessions/2026-05-22-1249-6360.md) |
 | 2026-05-22 | 12:41 | 653a | main | Strip BOM from WebP-rewrite dart files; delegate MT-173/178 | [link](docs/sessions/2026-05-22-1241-653a.md) |
 | 2026-05-22 | 11:59 | 85c1 | main | WebP Illustration Asset Conversion and Play Store Size Optimization | [link](docs/sessions/2026-05-22-1159-85c1.md) |
 | 2026-05-22 | 11:58 | a60f | main | App summary + launch-blocker rundown + README staleness fixes | [link](docs/sessions/2026-05-22-1158-a60f.md) |
