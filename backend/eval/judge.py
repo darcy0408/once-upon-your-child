@@ -16,10 +16,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
-from . import rubrics, test_set
+from . import providers, rubrics, test_set
 from .harness import RESULTS_ROOT
 
 JUDGE_SYSTEM_PROMPT_TEMPLATE = """You are an evaluation judge for an AI-generated
@@ -61,12 +62,56 @@ def build_judge_prompt(generation_row: dict, story_text: str, t: test_set.TestIn
     )
 
 
+JUDGE_SYSTEM = (
+    "You are a strict evaluation judge. You output ONLY a single JSON object "
+    "of rubric scores. No prose, no code fences, no refusals."
+)
+
+# Cache one client per judge identifier so we don't re-auth per call.
+_JUDGE_CLIENTS: dict[str, providers.GitHubModelsClient] = {}
+
+
+def _extract_json(text: str) -> dict:
+    """Pull the first JSON object out of a model response."""
+    text = text.strip()
+    # Strip ```json fences if present.
+    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        raise
+
+
 def _call_judge(judge_name: str, prompt: str) -> dict:
-    """Stub. Replace with provider call once authorized."""
-    raise NotImplementedError(
-        "Judge calls gated behind budget authorization. "
-        "Implement against the same provider clients the harness uses."
-    )
+    """Dispatch a judge call by identifier.
+
+    Supported today:
+      github-models             -> GitHub Models, default judge model (gpt-4.1)
+      github-models:<model>     -> GitHub Models, explicit model id
+    Stubbed (gated on the Gemini budget decision):
+      gemini / gemini-pro       -> Gemini API judge
+    """
+    base, _, variant = judge_name.partition(":")
+    if base == "github-models":
+        if judge_name not in _JUDGE_CLIENTS:
+            model = ("openai/" + variant) if variant else providers.GITHUB_JUDGE_MODEL
+            _JUDGE_CLIENTS[judge_name] = providers.GitHubModelsClient(model=model)
+        client = _JUDGE_CLIENTS[judge_name]
+        result = client.complete(system=JUDGE_SYSTEM, user=prompt, max_tokens=512)
+        if result.error:
+            raise RuntimeError(f"{judge_name} judge call failed: {result.error}")
+        return _extract_json(result.text)
+    if base in ("gemini", "gemini-pro"):
+        raise NotImplementedError(
+            "Gemini judge is gated on the Gemini budget decision. "
+            "Use a github-models judge for the free pass."
+        )
+    raise ValueError(f"Unknown judge identifier: {judge_name}")
 
 
 def _inter_judge_agreement(scores_a: dict, scores_b: dict) -> float:
@@ -138,13 +183,46 @@ def score_run(run_id: str, judges: list[str]) -> int:
     return 0
 
 
+def ping(judge_name: str) -> int:
+    """One trivial call to confirm a judge's credentials and endpoint work."""
+    base, _, variant = judge_name.partition(":")
+    if base != "github-models":
+        print(f"[judge] --ping only supports github-models judges, got {judge_name}",
+              file=sys.stderr)
+        return 1
+    model = ("openai/" + variant) if variant else providers.GITHUB_JUDGE_MODEL
+    try:
+        client = providers.GitHubModelsClient(model=model)
+        result = client.ping()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[judge] ping FAILED: {exc}", file=sys.stderr)
+        return 1
+    if result.error:
+        print(f"[judge] ping FAILED ({model}): {result.error}", file=sys.stderr)
+        return 1
+    print(f"[judge] ping OK  model={result.model}  "
+          f"reply={result.text!r}  latency={result.latency_ms}ms")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--run-id", required=True)
-    p.add_argument("--judges", default="gemini,openrouter-claude-sonnet",
+    p.add_argument("--run-id", help="Run id under results/ to score.")
+    p.add_argument("--judges", default="github-models",
                    help="Comma-separated judge identifiers.")
+    p.add_argument("--ping", action="store_true",
+                   help="Connectivity check only; one trivial call, no scoring.")
     args = p.parse_args(argv if argv is not None else sys.argv[1:])
-    return score_run(args.run_id, [j.strip() for j in args.judges.split(",") if j.strip()])
+    judges = [j.strip() for j in args.judges.split(",") if j.strip()]
+    if args.ping:
+        rc = 0
+        for j in judges:
+            rc |= ping(j)
+        return rc
+    if not args.run_id:
+        print("[judge] --run-id is required unless --ping is used", file=sys.stderr)
+        return 1
+    return score_run(args.run_id, judges)
 
 
 if __name__ == "__main__":

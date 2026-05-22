@@ -1,0 +1,14 @@
+# Eval-harness dependencies (audit 05). Separate from backend/requirements.txt
+# so the production lockfile is untouched.
+#
+#   pip install -r backend/eval/requirements.txt
+#
+# Already satisfied on Darcy's machine (openai 2.38.0, python-dotenv 1.2.2).
+
+openai>=1.50          # GitHub Models judge — OpenAI-compatible client
+python-dotenv>=1.0     # loads backend/.env for GITHUB_MODELS_TOKEN
+
+# Used later, once a generation budget is authorized — already in
+# backend/requirements.txt, listed here for completeness:
+#   google-genai       # Gemini generation + Pro judge
+#   requests           # OpenRouter fallback-parity pass
