@@ -279,6 +279,11 @@ scrolled-down.png
 /p3-*.png
 /flutter_*.png
 
+# WebP conversion rollback backup (MT-175) — working artifact, never commit
+/assets/.png-backup/
+# Verification evidence screenshots — working artifact, never commit
+/docs/verify/
+
 # Claude Code session lock (per-session, never commit)
 .claude/scheduled_tasks.lock
 /curr*.yml

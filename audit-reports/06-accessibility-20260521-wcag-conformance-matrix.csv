@@ -1,0 +1,58 @@
+Criterion,Level,Status,Evidence,Affected Screens,Remediation
+1.1.1 Non-text Content,A,Partial,"Some Image.memory in per_page_illustration.dart:52 has no semanticLabel; SafeAssetImage supports semanticLabel but few callers set it; 53 Semantics wrappers vs 1456 onTap occurrences",story_result; story_reader; illustrated_story_viewer; character_*; avatar_*,A11Y-008 generate caption at generation time; A11Y-003 add labels to icon-only buttons
+1.2.1 Audio-only and Video-only (Prerecorded),A,N/A,No prerecorded audio-only or video-only content; TTS is generated and synced to highlighted text,—,—
+1.2.2 Captions (Prerecorded),A,N/A,No prerecorded video,—,—
+1.2.3 Audio Description or Media Alternative,A,N/A,No prerecorded video,—,—
+1.2.4 Captions (Live),AA,N/A,No live media,—,—
+1.2.5 Audio Description (Prerecorded),AA,N/A,No prerecorded video,—,—
+1.3.1 Info and Relationships,A,Partial,"Material widgets emit semantics; bespoke cards use Semantics() (archetype_card:57, feelings_badge_grid:159) inconsistently; selection often color-only",feelings_badge_grid; archetype_card; hero_creator/*; companion_widgets,A11Y-014 pair selection color with non-color cue
+1.3.2 Meaningful Sequence,A,Partial,DOM-equivalent order on web is canvas-rendered — semantics tree partial on CanvasKit,web build (all),A11Y-002
+1.3.3 Sensory Characteristics,A,Pass,Instructions reference labels not shape/position,—,—
+1.3.4 Orientation,AA,Pass,No orientation lock found in MaterialApp config,—,—
+1.3.5 Identify Input Purpose,AA,Partial,"TextField inputs lack autofillHints in welcome, byok_setup_wizard, character_creation",welcome_screen; byok_setup_wizard; character_creation_*,Add autofillHints for name/email
+1.4.1 Use of Color,A,Partial,"Word highlight uses underline + bg color (pass) at story_reader_screen.dart:1140; selected-card states often color-only",story_reader (pass); feelings_badge_grid; archetype_card,A11Y-014
+1.4.2 Audio Control,A,Partial,Auto-play TTS for Sprout/Explorer; stop control presence on first frame not verified,story_reader,A11Y-006
+1.4.3 Contrast (Minimum),AA,Fail,"Adult primary #BFA45A + white = 2.44:1; Sprout primary #E65100 + white = 3.79:1 on 16px body button text",Adult; Sprout (all screens),A11Y-001 darken primary or use dark foreground
+1.4.4 Resize Text,AA,Partial,Flutter Text honors MediaQuery.textScaler by default; not verified at 200% on long-content screens for overflow,parental_consent; story_reader; story_result,A11Y-013
+1.4.5 Images of Text,AA,Pass,No images of text observed; titles are rendered Text widgets,—,—
+1.4.10 Reflow,AA,Partial,CanvasKit web reflow at 320 CSS px not verified,web build (all),A11Y-013
+1.4.11 Non-text Contrast,AA,Partial,"Progress indicator gold on dark gradient ~9:1 pass; selected-card border vs unselected contrast not all verified; subscription_status_banner color contrast not measured",parental_consent (pass); selectable cards; banners,A11Y-018; sample remaining surfaces
+1.4.12 Text Spacing,AA,Pass,"AppTextStyles.storyBody uses height: 1.8 letterSpacing: 0.3; band themes set line-height >=1.5",story_reader; story_result,—
+1.4.13 Content on Hover or Focus,AA,Partial,Tooltips used in 32 files; dismissibility/persistence not verified on every surface,multiple,Audit tooltip behavior
+2.1.1 Keyboard,A,Partial,"Mobile native; web CanvasKit semantics partial means keyboard navigation may not reach every control",web build,A11Y-002
+2.1.2 No Keyboard Trap,A,Pass,No focus-trap dialogs found that lack a close affordance,—,—
+2.1.4 Character Key Shortcuts,A,Pass,No single-character keyboard shortcuts found,—,—
+2.2.1 Timing Adjustable,A,Partial,times_up_screen.dart enforces a screen-time limit; per CMP scope this is parental intent — verify pause/extend by parent is documented,times_up_screen,Document parental override path
+2.2.2 Pause Stop Hide,A,Partial,"Welcome 'Tap me!' pulse loops unconditionally; avatar-generation loading band animations run 20-40s without pause UI",welcome_screen; avatar_loading_bands/*,A11Y-007
+2.3.1 Three Flashes or Below Threshold,A,Pass,Animations are gentle pulses/sparkles; no >3 flash/s content found,—,—
+2.3.3 Animation from Interactions,AAA,Partial,"MotionPrefs exists; 21/62 controller sites honor it; treated as AA-relevant via 2.2.2",multiple,A11Y-007
+2.4.1 Bypass Blocks,A,Pass,Material AppBar provides leading-back; no large repeated blocks requiring skip,—,—
+2.4.2 Page Titled,A,Pass,"Per memory note brand_name.md and recent commit e58c9085 set web/index.html title; screens have AppBar titles",—,—
+2.4.3 Focus Order,A,Partial,"Multi-step wizard focus order not verified on AT; per band touchTarget changes may affect order",wizard_steps/*,A11Y-012
+2.4.4 Link Purpose (In Context),A,Pass,Text links in privacy_policy/terms have descriptive labels,privacy_policy; terms_of_service,—
+2.4.5 Multiple Ways,AA,Partial,App is goal-directed; bottom nav + search in saved_stories provides multiple paths,saved_stories,—
+2.4.6 Headings and Labels,AA,Partial,"Welcome name field missing labelText; story_reader controls largely labelled",welcome_screen,A11Y-004
+2.4.7 Focus Visible,AA,Partial,Material default focus ring honored; verify on bespoke GestureDetector cards,bespoke cards,Confirm Focus ring on all cards
+2.4.11 Focus Not Obscured (Minimum),AA,Partial,New in WCAG 2.2; sticky bottom CTA on wizard pages may obscure focused field — not verified,wizard_steps/*,Verify and adjust scroll padding
+2.5.1 Pointer Gestures,A,Pass,No path-based gestures; swipes used in PageView have button alternatives (Next/Back),page_flip_book_view; pick_a_path_adventure,—
+2.5.2 Pointer Cancellation,A,Pass,Material InkWell follows on-up activation,—,—
+2.5.3 Label in Name,A,Partial,Visible button text vs Semantics label drift not audited globally,multiple,Sweep
+2.5.4 Motion Actuation,A,Pass,No device-motion-triggered actions,—,—
+2.5.7 Dragging Movements,AA,Pass,Avatar tweak panel has buttons in addition to drag,avatar_tweak_panel,—
+2.5.8 Target Size (Minimum),AA,Pass,"All band touchTargetMin >= 48dp; meets WCAG 2.5.8 24dp minimum with margin",—,A11Y-011 watch Adult band
+3.1.1 Language of Page,A,Pass,Flutter sets locale via MaterialApp; web build has lang=en in index.html,—,—
+3.1.2 Language of Parts,AA,N/A,Single-language content today,—,A11Y-016 when i18n ships
+3.2.1 On Focus,A,Pass,No context change on focus observed,—,—
+3.2.2 On Input,A,Pass,No unexpected context change on input,—,—
+3.2.3 Consistent Navigation,AA,Pass,AppBar back / bottom nav consistent across screens,—,—
+3.2.4 Consistent Identification,AA,Pass,Same iconography reused consistently (mic / play / settings),—,—
+3.2.6 Consistent Help,A,Pass,Help/contact pathway consistent in settings,settings_screen,—
+3.3.1 Error Identification,A,Partial,89 TextField vs 11 errorText hits; many validators do not surface errorText,byok_setup_wizard; character_creation; parental_consent code; settings,A11Y-010
+3.3.2 Labels or Instructions,A,Fail,welcome_screen name TextField has no labelText,welcome_screen,A11Y-004
+3.3.3 Error Suggestion,AA,Partial,Email-format validation gives boolean only; no suggestion text on parental_consent,parental_consent,A11Y-010
+3.3.4 Error Prevention (Legal Financial Data),AA,Pass,Stripe checkout handled by Stripe-hosted page; consent has a parent gate,subscription; parental_consent,—
+3.3.7 Redundant Entry,A,Pass,New in 2.2; child name persisted via SharedPreferences; not re-asked,—,—
+3.3.8 Accessible Authentication (Minimum),AA,Partial,New in 2.2; parental gate uses multiplication challenge; this is a cognitive function test (failure mode in 3.3.8) but explicitly required by COPPA §312.5,parental_consent,Acceptable per safety protocol — COPPA compliance overrides
+4.1.1 Parsing,A,N/A,Obsolete in WCAG 2.2,—,—
+4.1.2 Name Role Value,A,Partial,"Material widgets pass; bespoke GestureDetector icons often missing role/name; CanvasKit web partial",web; icon-only buttons,A11Y-002; A11Y-003
+4.1.3 Status Messages,AA,Partial,avatar_generating_view.dart:233 uses liveRegion correctly; not replicated on story generation / payment / verification code result,story_result; subscription_*; parental_consent,A11Y-015
