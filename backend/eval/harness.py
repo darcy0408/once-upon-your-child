@@ -132,24 +132,58 @@ def _hash_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
-def _call_provider(cell: Cell, t: test_set.TestInput, provider: str) -> dict:
-    """Stub. Replace with real provider call once budget is authorized.
+# provider id -> Gemini subscription tier passed to the generation layer.
+_PROVIDER_TIER = {
+    "gemini": "premium",            # full gemini-2.5-flash
+    "gemini-flash-lite": "free",    # gemini-2.5-flash-lite (free-tier model)
+}
 
-    The real implementation will:
-      1. Build the assembled prompt by calling the prompt_service / story_service
-         builders directly with the test input + cell metadata. This must NOT
-         go through Celery; the harness must call the builder functions in-process
-         to capture the full assembled prompt before send.
-      2. Call the provider (Gemini or OpenRouter) with that prompt.
-      3. Capture latency, input/output tokens, cost (from response or estimate),
-         the raw response, and any provider-side error.
-      4. Return a dict that the row-writer serializes to JSONL.
+
+def story_filename(cell: Cell, sample_idx: int) -> str:
+    """Per-sample artifact name. sample_idx keeps drift-pair duplicates
+    (identical cell_id, run twice) from overwriting each other."""
+    return f"{cell.cell_id.replace('|', '_')}_s{sample_idx}"
+
+
+def _call_provider(cell: Cell, t: test_set.TestInput, provider: str,
+                   run_dir: Path, sample_idx: int) -> dict:
+    """Build the assembled prompt, run one generation, persist artifacts.
+
+    Story text is written to run_dir/stories/<cell>_s<idx>.txt and the
+    assembled prompt to run_dir/prompts/<cell>_s<idx>.txt so the judge pass
+    can read them later. Returns a dict the row-writer serializes to JSONL.
     """
-    raise NotImplementedError(
-        "Real provider calls are gated behind budget authorization. "
-        "Use --dry-run to validate the cell-iteration plan; once a budget "
-        "is set, implement this stub and re-run."
-    )
+    from . import generation
+
+    if provider not in _PROVIDER_TIER:
+        raise NotImplementedError(
+            f"Provider '{provider}' not wired for generation yet. "
+            f"Supported: {sorted(_PROVIDER_TIER)}. OpenRouter is the "
+            "fallback-parity pass and comes later."
+        )
+    tier = _PROVIDER_TIER[provider]
+    out = generation.generate(cell.mode, cell.age_band, t, user_tier=tier)
+
+    safe = story_filename(cell, sample_idx)
+    stories_dir = run_dir / "stories"
+    prompts_dir = run_dir / "prompts"
+    stories_dir.mkdir(parents=True, exist_ok=True)
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    (stories_dir / f"{safe}.txt").write_text(out.text, encoding="utf-8")
+    (prompts_dir / f"{safe}.txt").write_text(out.prompt, encoding="utf-8")
+
+    return {
+        "provider": provider,
+        "model": out.model,
+        "input_tokens": out.input_tokens,
+        "output_tokens": out.output_tokens,
+        "cost_usd": out.cost_usd,
+        "output": out.text,
+        "refused": out.refused,
+        "fell_back_to_static": False,
+        "prompt_hash": _hash_text(out.prompt),
+        "error": out.error,
+    }
 
 
 def _write_row(jsonl: Path, row: dict) -> None:
@@ -197,7 +231,7 @@ def run(cfg: RunConfig) -> int:
         t = test_set.by_id(cell.test_id)
         start = time.time()
         try:
-            result = _call_provider(cell, t, cfg.provider)
+            result = _call_provider(cell, t, cfg.provider, run_dir, i)
         except NotImplementedError as exc:
             print(f"[harness] {exc}", file=sys.stderr)
             return 2

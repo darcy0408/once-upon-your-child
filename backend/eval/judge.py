@@ -156,10 +156,10 @@ def score_run(run_id: str, judges: list[str]) -> int:
                 continue
             if row.get("status") != "complete":
                 continue
-            # The harness stores output_hash, not raw text — for scoring we need
-            # raw text. Once the harness is implemented, also persist a per-cell
-            # generations/<cell>.txt under the run dir (gitignored) and read it here.
-            story_path = run_dir / "stories" / (row["cell_id"].replace("|", "_") + ".txt")
+            # The harness persists raw story text per sample under stories/.
+            # Filename matches harness.story_filename(): <cell_id>_s<sample_idx>.txt
+            story_path = (run_dir / "stories"
+                          / f"{row['cell_id'].replace('|', '_')}_s{row['sample_idx']}.txt")
             if not story_path.exists():
                 print(f"[judge] skipping {row['cell_id']} — story text missing", file=sys.stderr)
                 continue
