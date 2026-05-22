@@ -1,4 +1,4 @@
-﻿// lib/widgets/feelings_cloud_picker.dart
+// lib/widgets/feelings_cloud_picker.dart
 //
 // Shared cloud-card emotion picker used in:
 //   - FeelingsQuestModal  (pre-story full-screen)

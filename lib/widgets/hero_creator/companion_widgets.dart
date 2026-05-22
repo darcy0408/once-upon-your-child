@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';

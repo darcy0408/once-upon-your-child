@@ -1,4 +1,4 @@
-﻿// lib/screens/life_quest_screen.dart
+// lib/screens/life_quest_screen.dart
 //
 // Self-contained screen for playing pre-built Life Quest scenarios.
 // No AI generation, no backend calls — reads from static quest data

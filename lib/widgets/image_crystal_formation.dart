@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'magical_float.dart';
 import 'safe_asset_image.dart';
 

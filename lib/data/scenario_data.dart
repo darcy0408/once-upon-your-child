@@ -1,4 +1,4 @@
-﻿import '../theme/age_band_theme.dart';
+import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
 
 class ScenarioCard {

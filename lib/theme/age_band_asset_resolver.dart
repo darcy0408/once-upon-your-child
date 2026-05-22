@@ -1,4 +1,4 @@
-﻿// lib/theme/age_band_asset_resolver.dart
+// lib/theme/age_band_asset_resolver.dart
 //
 // Single source of truth for resolving paths inside assets/images/.
 // All image consumers should call these methods rather than constructing

@@ -1,4 +1,4 @@
-﻿// lib/quick_story_screen.dart
+// lib/quick_story_screen.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';

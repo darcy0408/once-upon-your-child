@@ -1,4 +1,4 @@
-﻿// lib/widgets/coping_practice_sheet.dart
+// lib/widgets/coping_practice_sheet.dart
 //
 // Guided animated practice sheet for a CopingTechnique. Used by both the
 // Coping Toolbox tile and the in-story "Try it with [hero]!" break.

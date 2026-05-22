@@ -1,4 +1,4 @@
-﻿// lib/data/mood_lantern_data.dart
+// lib/data/mood_lantern_data.dart
 /// Mood Lantern data for the enchanted floating mood selector.
 ///
 /// Each lantern represents a core emotion with magical framing.
