@@ -6,7 +6,7 @@
 
 > Built by a solo developer on a mission to make therapeutic tools accessible to every family. See [`BUSINESS_PLAN.md`](./BUSINESS_PLAN.md) for the full monetization strategy.
 
-**Production backend:** `https://story-weaver-app-production.up.railway.app`
+**Live app:** `https://onceuponyourchild.app` · **Production backend:** `https://story-weaver-app-production.up.railway.app`
 
 ## What This App Does
 
@@ -170,7 +170,7 @@ lib/
 ```
 
 **Key Technologies:**
-- Flutter 3.22+ / Dart 3.8+
+- Flutter 3.24+ / Dart 3.5+
 - **Riverpod** (`flutter_riverpod`) for all state management
 - **Isar** for local story/character cache (web stub + native implementations)
 - **flutter_secure_storage** for BYOK API keys
@@ -293,7 +293,7 @@ Optional: `STRIPE_API_KEY`, `SENTRY_DSN`, `REDIS_URL`, `ELEVENLABS_API_KEY`
 ## Quick Start
 
 ### Prerequisites
-- Flutter SDK 3.22+
+- Flutter SDK 3.24+
 - Python 3.11+
 - Google Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
@@ -352,11 +352,12 @@ cd backend && railway up
 # Gunicorn: gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app
 ```
 
-**Frontend → Netlify:**
+**Frontend → Railway (`grand-light` service):**
+Built and served via `Dockerfile.frontend` (nginx) — live at `https://onceuponyourchild.app`.
 ```bash
 flutter build web --release --dart-define=FLAVOR=production
-# Deploy build/web/ to Netlify
 ```
+The same `build/web/` bundle can alternatively be deployed to Netlify (`netlify.toml`).
 
 CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backend-lint.yml`
 
