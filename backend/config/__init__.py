@@ -163,6 +163,10 @@ class Config:
             # Railway web-frontend service (production)
             # Set RAILWAY_FRONTEND_URL env var in Railway to override without a code change.
             "https://grand-light-production-68d9.up.railway.app",
+
+            # Customer-facing custom domain (the canonical production frontend).
+            "https://onceuponyourchild.app",
+            "https://www.onceuponyourchild.app",
         ]
 
         # Allow a specific preview or alternate deploy URL via env var.
