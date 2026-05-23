@@ -69,7 +69,15 @@ def _numeric(scores: list[dict], rubric: str) -> list[float]:
     return out
 
 
-def aggregate(run_dir: Path) -> dict:
+def aggregate(run_dir: Path, primary_judge: str | None = None) -> dict:
+    """Compute per-cell distributions.
+
+    When `primary_judge` is set, the per-cell table reflects only that
+    judge's scores (so N == unique samples). Other judges' scores still
+    feed inter-judge agreement. If `primary_judge` is None, the judge
+    with the most rows wins automatically — typically the 100%-complete
+    judge.
+    """
     generations = _read_jsonl(run_dir / "generations.jsonl")
     score_rows = _read_jsonl(run_dir / "scores.jsonl")
     agreement_rows = _read_jsonl(run_dir / "agreement.jsonl")
@@ -79,21 +87,25 @@ def aggregate(run_dir: Path) -> dict:
 
     # cell_id -> list of per-judge score dicts (one entry per scored sample)
     by_cell_scores: dict[str, list[dict]] = defaultdict(list)
-    judges_seen: set[str] = set()
+    judges_seen: dict[str, int] = defaultdict(int)
     for row in score_rows:
         # Flat schema (one row per cell+sample+judge)
         if "judge" in row and isinstance(row.get("scores"), dict):
-            judges_seen.add(row["judge"])
+            judges_seen[row["judge"]] += 1
             by_cell_scores[row["cell_id"]].append({"judge": row["judge"], **row["scores"]})
             continue
         # Legacy nested schema (one row per cell with scores={judge: {...}})
         per_judge = row.get("scores", {})
         if not isinstance(per_judge, dict):
             continue
-        judges_seen.update(per_judge.keys())
         for judge, s in per_judge.items():
             if isinstance(s, dict):
+                judges_seen[judge] += 1
                 by_cell_scores[row["cell_id"]].append({"judge": judge, **s})
+
+    # Pick the primary judge: explicit arg, else the one with most rows.
+    if primary_judge is None and judges_seen:
+        primary_judge = max(judges_seen.items(), key=lambda kv: kv[1])[0]
 
     # cell_id -> (mode, age_band)
     cell_meta: dict[str, tuple[str, str]] = {}
@@ -114,7 +126,8 @@ def aggregate(run_dir: Path) -> dict:
         "generations_complete": len(completed),
         "generations_errored": len(errored),
         "scored_samples": len(score_rows),
-        "judges": sorted(judges_seen),
+        "judges": dict(sorted(judges_seen.items())),
+        "primary_judge": primary_judge,
         "cells": {},
         "critical": [],
         "agreement": None,
@@ -131,6 +144,8 @@ def aggregate(run_dir: Path) -> dict:
 
     for (mode, band), bucket in sorted(cells.items()):
         scores = bucket["scores"]
+        if primary_judge:
+            scores = [s for s in scores if s.get("judge") == primary_judge]
         narr_m, narr_ci = _mean_ci(_numeric(scores, "narrative_coherence"))
         age_vals = _numeric(scores, "age_band_fit")
         age_m, age_ci = _mean_ci(age_vals)
@@ -166,14 +181,17 @@ def render(summary: dict) -> str:
     complete = summary["generations_complete"]
     total = summary["generations_total"]
     scored = summary["scored_samples"]
+    primary = summary["primary_judge"]
     L.append("## Coverage\n")
     L.append(f"- Generations: **{complete}/{total} complete**, "
              f"{summary['generations_errored']} errored")
-    L.append(f"- Scored samples: **{scored}**")
-    L.append(f"- Judges: {', '.join(summary['judges']) or 'none yet'}")
-    if scored < complete:
-        L.append(f"- NOTE: judging is **partial** — {scored}/{complete} "
-                 "generations scored. Per-cell numbers below cover the scored subset.")
+    L.append(f"- Scored rows: **{scored}** across judges:")
+    for judge, n in summary["judges"].items():
+        marker = " (primary)" if judge == primary else ""
+        L.append(f"  - {judge}: {n}/{complete} ({100*n/max(1,complete):.1f}%){marker}")
+    if primary:
+        L.append(f"- Per-cell distributions below use **{primary}** "
+                 "(highest coverage). Other judges feed inter-judge agreement only.")
     L.append("")
 
     L.append("## Critical Cells\n")
@@ -246,6 +264,9 @@ def render(summary: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--run-id", required=True)
+    p.add_argument("--judge", default=None,
+                   help="Filter the per-cell table to this judge. Default: the "
+                        "judge with the most rows (typically the 100%-complete one).")
     p.add_argument("--out", default=None,
                    help="Output path. Default: audit-reports/05-ai-quality-<date>.md")
     args = p.parse_args(argv if argv is not None else sys.argv[1:])
@@ -253,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     if not run_dir.exists():
         print(f"[report] no run dir at {run_dir}", file=sys.stderr)
         return 1
-    summary = aggregate(run_dir)
+    summary = aggregate(run_dir, primary_judge=args.judge)
     md = render(summary)
     out = Path(args.out) if args.out else Path(
         f"audit-reports/05-ai-quality-{time.strftime('%Y%m%d')}.md")
