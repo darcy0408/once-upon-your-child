@@ -159,20 +159,30 @@ class GeminiClient:
             user="ping", max_tokens=5,
         )
 
-    def complete(self, system: str, user: str, max_tokens: int = 1024,
+    def complete(self, system: str, user: str, max_tokens: int = 2048,
                  temperature: float = 0.0) -> CompletionResult:
         from google.genai import types
         start = time.time()
+        # Gemini 2.5 enables "thinking" by default; thinking tokens count
+        # against max_output_tokens, often consuming the whole budget before
+        # the JSON answer emits. Disable thinking for the judge — rubric
+        # scoring is direct enough to not need it.
+        cfg_kwargs = dict(
+            system_instruction=system,
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+            response_mime_type="application/json",
+        )
+        try:
+            cfg_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+        except (AttributeError, TypeError):
+            # ThinkingConfig not present in older SDKs — fall back silently.
+            pass
         try:
             resp = self._client.models.generate_content(
                 model=self.model,
                 contents=user,
-                config=types.GenerateContentConfig(
-                    system_instruction=system,
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                    response_mime_type="application/json",
-                ),
+                config=types.GenerateContentConfig(**cfg_kwargs),
             )
         except Exception as exc:  # noqa: BLE001
             return CompletionResult(

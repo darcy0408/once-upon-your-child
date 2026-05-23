@@ -18,6 +18,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 from . import providers, rubrics, test_set
@@ -172,7 +173,7 @@ def _existing_scores(scores_path: Path) -> tuple[set[tuple[str, int, str]], dict
     return done, by_sample
 
 
-def score_run(run_id: str, judges: list[str]) -> int:
+def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
     """Score a generation run. Resume-safe: skips (cell, sample, judge) pairs
     already in scores.jsonl. Per-judge errors (rate limits, JSON parse) are
     logged and the loop continues; cells are revisited on the next run.
@@ -247,6 +248,8 @@ def score_run(run_id: str, judges: list[str]) -> int:
             by_sample.setdefault((cell_id, sample_idx), {})[judge] = s
             done.add(key)
             counts["scored"] += 1
+            if throttle_sec > 0:
+                time.sleep(throttle_sec)
 
         # Agreement: emit when 2+ judges have scored this sample and not yet
         # logged.
@@ -290,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
                    help="Comma-separated judge identifiers.")
     p.add_argument("--ping", action="store_true",
                    help="Connectivity check only; one trivial call, no scoring.")
+    p.add_argument("--throttle-sec", type=float, default=4.0,
+                   help="Sleep between cells to stay under per-minute rate limits.")
     args = p.parse_args(argv if argv is not None else sys.argv[1:])
     judges = [j.strip() for j in args.judges.split(",") if j.strip()]
     if args.ping:
@@ -300,7 +305,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.run_id:
         print("[judge] --run-id is required unless --ping is used", file=sys.stderr)
         return 1
-    return score_run(args.run_id, judges)
+    return score_run(args.run_id, judges, throttle_sec=args.throttle_sec)
 
 
 if __name__ == "__main__":
