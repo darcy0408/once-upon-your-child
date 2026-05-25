@@ -380,6 +380,7 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 HARD RULES — these are non-negotiable:
 - MAXIMUM 130 words TOTAL. Count and STOP at 130.
 - TARGET 100–130 words. Anything under 90 is too short.
+- Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words.
 - Sentences: 3–7 words each. Short and punchy.
 - Vocabulary: ONLY very simple words a 3–5 year old knows.
 - Use the hero's name AT LEAST TWICE and the identity tag "{identity_tag}" AT LEAST TWICE.
@@ -397,12 +398,18 @@ Strictly return valid JSON with this structure:
   "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
   "pages": [
     {{
-      "text": "The full story as one continuous picture-book passage (no 'PAGE X' labels, no beat numbers)."
+      "text": "Page 1 — 1 to 3 short sentences (5-25 words)."
+    }},
+    {{
+      "text": "Page 2 — 1 to 3 short sentences."
+    }},
+    {{
+      "text": "...continue until the cheer-beat, aiming for 8-12 pages total."
     }}
   ]
 }}
 
-Begin now. Stop at 130 words inside the page text.
+Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
 """
 
     # ------------------------------------------------------------------
