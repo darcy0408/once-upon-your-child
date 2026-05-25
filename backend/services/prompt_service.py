@@ -383,7 +383,7 @@ HARD RULES — these are non-negotiable:
 - Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words.
 - Sentences: 3–7 words each. Short and punchy.
 - Vocabulary: ONLY very simple words a 3–5 year old knows.
-- Use the hero's name AT LEAST TWICE and the identity tag "{identity_tag}" AT LEAST TWICE.
+- Use the hero's name ONCE or TWICE in your own narration, then refer to them by pronoun (he/she/they) — the beat templates already include the name, so do NOT pile on extra mentions. Use the identity tag "{identity_tag}" ONCE.
 - Include ONE repeated sensory phrase (a sound, a color, or a texture) for early-reader memorability — repeat it once for rhythm.
 - NO violence, NO weapons, NO scary descriptions, NO monsters chasing.
 - The villain is SILLY, never frightening. They soften, say sorry, or join in — they are NEVER defeated by force.

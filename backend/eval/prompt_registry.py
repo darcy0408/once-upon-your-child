@@ -140,7 +140,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="db3c19c60f44ac95",
+        content_hash="adcb430286569025",
         source_file="backend/services/prompt_service.py",
         line_start=284,
         line_end=417,
@@ -157,7 +157,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="f23efcafd6cea63f",
+        content_hash="75b8159d5f6784c8",
         source_file="backend/services/prompt_service.py",
         line_start=418,
         line_end=577,
