@@ -1194,16 +1194,40 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         )
         format_instruction = "Each page 1 short sentence. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
+        use_prose = False
     elif age <= 6:
         vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words. Fun sound words (whoosh, zippity, boing) encouraged."
         format_instruction = "Each page 1-2 short bouncy sentences in Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, and AABB rhyme couplets. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
-    else:
-        # Older reluctant readers: funny connected limericks
+        use_prose = False
+    elif age <= 12:
+        # Older reluctant readers (7-12): funny connected limericks.
+        # Audit 05 found this band scores age_fit 4.0+; limericks are working here.
         vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
         format_instruction = "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
         rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
         use_limericks = True
+        use_prose = False
+    else:
+        # Teen + adult learn-to-read (13+): decodable prose, NO rhyme.
+        # Audit 05 found limericks at this age read as infantile (age_fit 2.10-2.67,
+        # 60-77% Critical failure). Switch to phonics-friendly short prose.
+        vocab_instruction = (
+            "Phonics-friendly words familiar to a teen or adult learner: high-frequency "
+            "sight words, predictable decodable patterns, multi-syllable words OK if the "
+            "patterns are common (e.g. -tion, -ing, -ed). AVOID idioms, jargon, "
+            "low-frequency words, archaic phrasing, or anything that requires cultural "
+            "context to decode. The tone should respect the reader's age — no baby talk, "
+            "no Seussian rhythm, no nursery cadence."
+        )
+        format_instruction = (
+            "Each page is 1-2 short declarative sentences (target 10-18 words per page). "
+            "NO rhyme. Read like decodable prose, not poetry. Use periods, not exclamation "
+            "marks, for most sentences."
+        )
+        rhyme_scheme_instruction = "No rhyme — decodable prose only."
+        use_limericks = False
+        use_prose = True
 
     # Build companion context
     companion_sections = []
@@ -1304,6 +1328,41 @@ Of cookies — she'd do it again!           (A)
 Each page is exactly one limerick. Return {num_pages} pages total. The themes / characters_featured / emotional_arc keys MUST appear. No other extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}
 """
+    if use_prose:
+        # Teen / adult decodable prose branch — no rhyme, no Seussian rhythm,
+        # respects the reader's age. Audit 05 fix for ltr_seussian|13-15/15-18/adult.
+        return f"""
+Create a LEARN TO READ story for {character_name} (age {age}).
+This reader is a teen or adult who is learning to read fluently. Treat them as the age they are — do NOT use rhyme, nursery rhythm, or baby talk. The story should be respectful and engaging.
+Theme: {theme}
+STRICT FORMAT (FOLLOW EXACTLY):
+- Return EXACTLY {num_pages} pages — no more, no fewer.
+- Each page MUST be 25 words or fewer (target 10-18).
+- Total story must be {num_pages * 25} words or fewer.
+- The final page closes the story with a clear ending.
+
+Page format: {format_instruction}
+Vocabulary: {vocab_instruction}
+Style: Decodable short-prose with adult/teen-appropriate themes and tone. Think early-chapter-book pacing, not picture-book. NO RHYME — write in plain prose. Sentences should be simple in structure (subject-verb-object), short, and concrete.
+Requirements: Clear scene progression. Each page advances the story by one beat. One moment where {character_name} faces a small problem and resolves it through their own action.
+Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST appear).
+Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general adventure if none provided). Weave the spirit and themes in age-appropriately.
+{SAFETY_GUARDRAILS}
+**OUTPUT FORMAT**: Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "rhyme_scheme": "{rhyme_scheme_instruction}",
+  "themes": ["3-6 short lowercase tags a parent would recognise; avoid generic tags like 'story', 'reading'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<starting feeling> → <ending feeling>",
+  "pages": [
+    {{"text": "Page 1: short declarative sentence."}},
+    {{"text": "Page 2: short declarative sentence."}},
+    ...
+  ]
+}}
+Return EXACTLY {num_pages} page objects. The themes / characters_featured / emotional_arc keys MUST appear. No other extra keys. No prose outside the JSON.
+{STRICT_OUTPUT_CONSTRAINTS}"""
     else:
         return f"""
 Create a LEARN TO READ story for {character_name} (age {age}) in the style of Dr. Seuss — bouncy anapestic rhythm, playful made-up sound words, joyful repetition, and clear AABB end-rhymes.

@@ -73,7 +73,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="a4cfef301ab55f21",
+        content_hash="d8818642f8222d1b",
         source_file="backend/services/story_service.py",
         line_start=1268,
         line_end=1306,
@@ -89,7 +89,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="1b102c5638049c1a",
+        content_hash="8eeb3caa95bf3cf0",
         source_file="backend/services/story_service.py",
         line_start=1308,
         line_end=1354,
@@ -106,7 +106,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="9255c50fc20ab829",
+        content_hash="ae634bd4d2230df5",
         source_file="backend/services/story_service.py",
         line_start=1510,
         line_end=1542,
@@ -124,7 +124,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="9c50e9e35bfc9aee",
+        content_hash="66a8028826ce6799",
         source_file="backend/services/story_service.py",
         line_start=1691,
         line_end=1753,
