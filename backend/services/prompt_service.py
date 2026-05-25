@@ -333,12 +333,15 @@ Create the rhyming learning-to-read story about {character_name} now:
             f"{character} put on the {color} suit. Today, {character} "
             f"is {identity_tag}!"
         )
-        beat2 = f"Oh no! {villain['name']} came to {villain['action']}."
-        beat3 = f"{character} said, 'I can help!'"
-        beat4 = (
-            f"{character} used {power_verb} to {problem['verb']} "
-            f"({problem['summary']})."
+        # Bug 1 fix (audit 05): the matrix's villain['action'] is a finite-verb
+        # clause (e.g. "won't share the slide"), so the old "came to {action}"
+        # produced "came to won't share". Split the introduction from the action
+        # — this also satisfies the "use name 2x" rule the prompt already wants.
+        beat2 = (
+            f"Oh no! {villain['name']} is here. "
+            f"{villain['name']} {villain['action']}."
         )
+        beat3 = f"{character} said, 'I can help!'"
         beat5 = f"{villain['name']} {villain['softens']}."
         beat6 = f"Everyone cheered. {character} saved the day!"
 
@@ -370,7 +373,7 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 1. HERO INTRO  — Open with: "{beat1}"
 2. TROUBLE     — Then: "{beat2}"
 3. HERO RESPONDS — Then: "{beat3}"
-4. POWER USED  — Show {character} using {power_name} to {problem['verb']} the situation. Reference beat 4 idea: "{beat4}" (rewrite naturally; do NOT use the bracketed summary in the prose).
+4. POWER USED  — Show {character} using {power_name} in a kind way so that {villain['name']} wants to {problem['verb']}. For example, if the power is a friendly smile, {character} might smile so brightly that {villain['name']} smiles back. Write this beat in your own words — do NOT copy this example sentence.
 5. RESOLUTION  — End the conflict like this: "{beat5}"
 6. CHEER       — Close with: "{beat6}"
 

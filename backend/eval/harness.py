@@ -63,6 +63,7 @@ class RunConfig:
     budget_usd: float
     calibration: bool
     dry_run: bool
+    filter: str | None = None
 
 
 def all_cells() -> Iterator[Cell]:
@@ -198,6 +199,8 @@ def run(cfg: RunConfig) -> int:
 
     completed = _existing_completed_cells(run_dir)
     cells = list(calibration_cells() if cfg.calibration else all_cells())
+    if cfg.filter:
+        cells = [c for c in cells if cfg.filter in c.cell_id]
     total = len(cells)
     print(f"[harness] run_id={cfg.run_id} provider={cfg.provider} "
           f"budget=${cfg.budget_usd:.2f} cells={total} "
@@ -280,6 +283,9 @@ def _parse_args(argv: list[str]) -> RunConfig:
                    default="gemini")
     p.add_argument("--calibration", action="store_true",
                    help="10-cell slice across modes + 4 trauma/drift cells.")
+    p.add_argument("--filter", type=str, default=None,
+                   help="Substring match against cell_id "
+                        "(e.g. 'superhero|3-4' to re-run one cell after a fix).")
     p.add_argument("--dry-run", action="store_true",
                    help="Print the plan and exit; no API calls, no spend.")
     p.add_argument("--resume", type=str, default=None,
@@ -292,6 +298,7 @@ def _parse_args(argv: list[str]) -> RunConfig:
         budget_usd=args.budget,
         calibration=args.calibration,
         dry_run=args.dry_run,
+        filter=args.filter,
     )
 
 
