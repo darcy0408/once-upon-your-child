@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-27 | 07:18 | a339 | main | Triage stranded parallel-session work + rescue commit | [link](docs/sessions/2026-05-27-0718-a339.md) |
 | 2026-05-27 | 07:14 | d003 | reliability-hardening | Audit 05 end-to-end: harness, run, RCAs, fixes, rubric finding | [link](docs/sessions/2026-05-27-0714-d003.md) |
 | 2026-05-24 | 21:30 | 0db7 | reliability-hardening | Audit 05 Superhero prompt fixes + Python 3.13 TTS verify | [link](docs/sessions/2026-05-24-2130-0db7.md) |
 | 2026-05-22 | 15:18 | 1738 | main | WCAG 2.2 AA a11y audit + remediation Phases 0-1 | [link](docs/sessions/2026-05-22-1518-1738.md) |
