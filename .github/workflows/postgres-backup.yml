@@ -12,6 +12,11 @@ name: Postgres Backup
 #   R2_ACCESS_KEY_ID      — R2 API token access key
 #   R2_SECRET_ACCESS_KEY  — R2 API token secret
 #   R2_BUCKET             — target bucket name (e.g. story-weaver-pg-backups)
+#
+# Retention: dumps older than RETENTION_DAYS (default 30) are pruned from R2
+# at the end of each run so the bucket stays within the free 10 GB tier.
+# Smoke check: each dump is verified to be a parseable pg_dump archive before
+# upload (FMEA finding P2 — untested backups are not backups).
 on:
   schedule:
     - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
@@ -42,6 +47,21 @@ jobs:
             exit 1
           fi
 
+      - name: Verify dump is readable (closes FMEA finding P2)
+        run: |
+          set -euo pipefail
+          # 1. gzip integrity — catches a truncated upload mid-dump.
+          gzip -t "$DUMP_FILE"
+          echo "gzip archive integrity: ok"
+          # 2. Content sanity — a real pg_dump archive begins with the
+          # "PostgreSQL database dump" banner. Anything else (e.g. a
+          # captured error page) fails here loudly.
+          if ! gunzip -c "$DUMP_FILE" | head -50 | grep -q "PostgreSQL database dump"; then
+            echo "::error::Dump does not contain the expected pg_dump header — aborting before upload."
+            exit 1
+          fi
+          echo "Dump banner check: ok"
+
       - name: Upload to Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -55,3 +75,34 @@ jobs:
           aws s3 cp "$DUMP_FILE" "s3://${{ secrets.R2_BUCKET }}/postgres/$DUMP_FILE" \
             --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
           echo "Uploaded postgres/$DUMP_FILE to R2 bucket ${{ secrets.R2_BUCKET }}"
+
+      - name: Prune dumps older than RETENTION_DAYS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          RETENTION_DAYS: '30'
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          cutoff_ts=$(date -u -d "${RETENTION_DAYS} days ago" +%s)
+          echo "Pruning postgres/ dumps older than ${RETENTION_DAYS} days (cutoff=$(date -u -d "@${cutoff_ts}" -Iseconds))"
+          # `aws s3api list-objects-v2` returns ISO timestamps GNU date can parse.
+          # Stay defensive: an empty bucket yields no output and the loop is a no-op.
+          aws s3api list-objects-v2 \
+            --bucket "${{ secrets.R2_BUCKET }}" \
+            --prefix postgres/ \
+            --endpoint-url "$R2_ENDPOINT" \
+            --query 'Contents[].[Key,LastModified]' \
+            --output text 2>/dev/null \
+          | while read -r key last_modified; do
+              [ -z "${key:-}" ] && continue
+              obj_ts=$(date -u -d "$last_modified" +%s)
+              if [ "$obj_ts" -lt "$cutoff_ts" ]; then
+                echo "  prune: $key (lastModified=$last_modified)"
+                aws s3 rm "s3://${{ secrets.R2_BUCKET }}/$key" --endpoint-url "$R2_ENDPOINT"
+              fi
+            done
+          echo "Prune complete."
