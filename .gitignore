@@ -288,3 +288,8 @@ scrolled-down.png
 .claude/scheduled_tasks.lock
 /curr*.yml
 /current.yml
+
+# Antigravity
+.antigravity/
+.windsurf/
+*.antigravity-workspace
