@@ -452,6 +452,32 @@ def _cache_task_owner(cache, task_id: str, user_id: str) -> None:
         logger.warning("Failed to cache task owner for %s", task_id, exc_info=True)
 
 
+def _read_partial_story(task_id: str | None) -> str | None:
+    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+
+    Returns the partial text the Gemini stream consumer wrote (see
+    `_emit_partial_story` in story_tasks.py), or None if nothing is
+    available. Best-effort: any Redis hiccup returns None so /task-status
+    degrades to the same response shape it had pre-PERF-01.
+    """
+    if not task_id:
+        return None
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+    if not redis_url:
+        return None
+    try:
+        import redis as redis_lib
+        client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        value = client.get(f"partial_story:{task_id}")
+        if value is None:
+            return None
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", errors="replace")
+        return value or None
+    except Exception:
+        return None
+
+
 def _resolve_task_owner(cache, task_id: str, task) -> str | None:
     if not task_id:
         return None
@@ -886,6 +912,13 @@ def create_story_blueprint(
                 "status": "pending",
                 "message": "Task is waiting to start",
             }
+            # PERF-01 slice 3: a sync-path task may already be mid-stream
+            # before Celery has flipped to PROCESSING. If partial text is
+            # in Redis, surface it so the client can render early.
+            partial_text = _read_partial_story(task_id)
+            if partial_text:
+                response["status"] = "processing"
+                response["partial_text"] = partial_text
         elif task.state == "PROCESSING":
             meta = task.info or {}
             status_message = meta.get("status") if isinstance(meta, dict) else str(meta)
@@ -893,6 +926,12 @@ def create_story_blueprint(
                 "status": "processing",
                 "message": status_message or "Generating story...",
             }
+            # PERF-01 slice 3: include the accumulated streamed text when
+            # available so the client can render the in-flight story
+            # instead of just a spinner.
+            partial_text = _read_partial_story(task_id)
+            if partial_text:
+                response["partial_text"] = partial_text
         elif task.state == "SUCCESS":
             result = task.result or {}
             response = {
@@ -911,6 +950,39 @@ def create_story_blueprint(
             }
 
         return jsonify(response), 200
+
+    @story_bp.route("/cancel-task/<task_id>", methods=["POST"])
+    @require_auth
+    def cancel_task(task_id):
+        """PERF-04: signal an in-flight generation to abandon further work.
+
+        The flag is checked by the worker at the start of generation and (in
+        future slices) between phases. Best-effort:
+          - 202 when the cancel flag was written to Redis.
+          - 503 when Redis is unreachable (no signal sent).
+          - 403 on ownership mismatch (same gate as /task-status).
+          - 202 with status='accepted' for unknown task ids — UUIDs make
+            cross-task interference impossible, and replying 404 would let
+            a client probe other users' task ids.
+        """
+        from ..utils.task_cancellation import request_cancellation
+
+        task = celery.AsyncResult(task_id)
+        task_owner_id = _resolve_task_owner(cache, task_id, task)
+        if task_owner_id and str(task_owner_id) != str(request.current_user.id):
+            logger.warning(
+                "IDOR attempt: user %s tried to cancel task %s owned by %s",
+                request.current_user.id, task_id, task_owner_id,
+            )
+            return jsonify({"error": "Access denied"}), 403
+
+        if task_owner_id is None:
+            # Unknown task — accept silently rather than disclose ownership.
+            return jsonify({"status": "accepted"}), 202
+
+        if request_cancellation(task_id):
+            return jsonify({"status": "accepted"}), 202
+        return jsonify({"status": "redis_unavailable"}), 503
 
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for interactive story start

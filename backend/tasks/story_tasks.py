@@ -115,13 +115,89 @@ def _resolve_story_provider() -> str:
     return provider
 
 
-def _try_gemini(prompt: str, user_tier: str | None, provider_sequence: list[str]) -> str | None:
+# PERF-01 slice 2: per-story partial-state emission for /task-status polling.
+# As Gemini's stream API yields chunks, the accumulated story text is written
+# to Redis under `partial_story:<task_id>`. Slice 3 will surface it through
+# /task-status so clients see story progress within ~5s of the model starting
+# to respond instead of waiting for the full ~55-110s generation.
+# Best-effort: a Redis hiccup never aborts generation.
+_PARTIAL_STORY_TTL_SECONDS = 600  # outlives the longest plausible generation
+
+
+def _get_partial_story_redis():
+    """Connect to Redis using the same env-var pattern as ai_quota._get_redis."""
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+    if not redis_url:
+        return None
+    try:
+        import redis as redis_lib
+        client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        client.ping()
+        return client
+    except Exception as exc:
+        logger.warning("partial-story Redis unavailable (%s); streaming will be silent", exc)
+        return None
+
+
+def _emit_partial_story(task_id: str | None, accumulated_text: str) -> None:
+    """Write accumulated streamed text for `task_id` to Redis. Best-effort."""
+    if not task_id:
+        return
+    client = _get_partial_story_redis()
+    if client is None:
+        return
+    try:
+        client.setex(f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, accumulated_text)
+    except Exception as exc:
+        logger.debug("partial-story write skipped (%s)", exc)
+
+
+def _clear_partial_story(task_id: str | None) -> None:
+    """Drop the partial-state key. Best-effort — TTL would clean up otherwise."""
+    if not task_id:
+        return
+    client = _get_partial_story_redis()
+    if client is None:
+        return
+    try:
+        client.delete(f"partial_story:{task_id}")
+    except Exception as exc:
+        logger.debug("partial-story clear skipped (%s)", exc)
+
+
+def _try_gemini(
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
+) -> str | None:
     """Attempt Gemini story generation. Returns text on success, None on failure
-    (any failure mode appends a tagged entry to provider_sequence)."""
+    (any failure mode appends a tagged entry to provider_sequence).
+
+    When `task_id` is provided, uses the streaming API and emits accumulated
+    text to Redis as each chunk arrives — clients polling /task-status see
+    partial progress (PERF-01). Without `task_id`, uses the single blocking
+    call (legacy/regeneration call sites without a task context).
+    """
     try:
         logger.info("Attempting story generation with Gemini...")
         gemini_generator = StoryGenerationService(user_tier=user_tier)
-        story_text = gemini_generator.generate_story(prompt)
+        if task_id:
+            chunks: list[str] = []
+            for chunk in gemini_generator.generate_story_stream(prompt):
+                chunks.append(chunk)
+                _emit_partial_story(task_id, ''.join(chunks))
+            story_text = ''.join(chunks) or None
+            if not story_text:
+                # Stream produced nothing (safety block or empty model output).
+                # Drop the stale partial key and fall through to the
+                # non-streaming call so existing retry / fallback semantics
+                # still apply.
+                _clear_partial_story(task_id)
+                logger.info("Stream returned empty; falling back to non-streaming call")
+                story_text = gemini_generator.generate_story(prompt)
+        else:
+            story_text = gemini_generator.generate_story(prompt)
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with Gemini.")
             provider_sequence.append("gemini(success)")
@@ -173,6 +249,7 @@ def _generate_story_text_with_metadata(
     character_name: str,
     companion: str = None,
     user_tier: str | None = None,
+    task_id: str | None = None,
 ) -> tuple[str, str, list[str]]:
     """Generate story text with tier-aware provider sequencing (MT-171 Phase 1).
 
@@ -180,6 +257,10 @@ def _generate_story_text_with_metadata(
         'gemini'     — Gemini -> OpenRouter -> static  (legacy default)
         'openrouter' — OpenRouter -> static            (skip Gemini; ToS-compliant)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
+
+    `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
+    Gemini uses its streaming API and writes partial story text to Redis.
+    OpenRouter generation is not streamed (slice 2 scope).
 
     The returned ``provider_sequence`` list traces every attempt for observability
     (success/fail reasons surface in the audit_log + Sentry breadcrumbs).
@@ -202,13 +283,13 @@ def _generate_story_text_with_metadata(
         if text is not None:
             return text, "openrouter", provider_sequence
 
-        text = _try_gemini(prompt, user_tier, provider_sequence)
+        text = _try_gemini(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "gemini", provider_sequence
 
     else:
         # 'gemini' — legacy default: Gemini first, OpenRouter as soft fallback.
-        text = _try_gemini(prompt, user_tier, provider_sequence)
+        text = _try_gemini(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "gemini", provider_sequence
 
@@ -745,6 +826,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character: Optional character name fallback when no ID is provided
     """
     with get_flask_app().app_context():
+        # PERF-04: bail before any expensive work if the client already
+        # cancelled (e.g., they navigated away in the gap between dispatch
+        # and worker pickup). Fail-open — a Redis hiccup just lets the
+        # generation proceed.
+        from ..utils.task_cancellation import is_cancelled
+        if is_cancelled(self.request.id):
+            logger.info(
+                "Task %s cancelled before work began; skipping generation.",
+                self.request.id,
+            )
+            return {
+                "status": "cancelled",
+                "user_id": str(kwargs.get("user_id") or "anonymous"),
+            }
+
         total_task_start = time.perf_counter()
         prompt_build_ms = 0.0
         ai_call_ms = 0.0
@@ -1064,6 +1160,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     character_name,
                     companion,
                     user_tier=user_tier,
+                    # PERF-01 slice 2: forward the Celery task id so Gemini
+                    # streaming can write partial state to Redis under
+                    # `partial_story:<task_id>` as chunks arrive.
+                    task_id=self.request.id,
                 )
                 attempt_ai_call_ms = (time.perf_counter() - ai_call_start) * 1000.0
                 ai_call_ms += attempt_ai_call_ms
