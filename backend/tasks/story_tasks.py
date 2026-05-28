@@ -21,6 +21,7 @@ from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
 from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band, _build_prior_adventures_block, pseudonymize_hero_name, restore_hero_name
 from backend.services.prompt_service import PromptService
+from backend.services.prompt_versioning import resolve as _resolve_prompt_version
 from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 
 
@@ -992,6 +993,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # M-7: final boundary scrub before the prompt leaves for any provider.
             prompt = _scrub_real_name(prompt)
 
+            # F-01 (MT-187): resolve the template id + live revision hash so we
+            # can persist them on the Story row. Derived from the same mode
+            # flags that the if/elif chain above branched on.
+            if superhero_meta is not None:
+                _pv_mode = "superhero"
+            elif bedtime_mode:
+                _pv_mode = "bedtime"
+            elif learning_to_read_mode:
+                _pv_mode = "ltr"
+            elif rhyme_time_mode:
+                _pv_mode = "rhyme_time"
+            else:
+                _pv_mode = "standard"
+            prompt_template_id, prompt_revision_hash = _resolve_prompt_version(
+                mode=_pv_mode, age=age,
+            )
+
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
             logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
 
@@ -1411,6 +1429,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Fallback path replaces story body; metadata must follow or
                     # we'd be tagging the new story with the flagged story's themes.
                     story_metadata = fallback_metadata
+                    # F-01: the safety fallback always uses the standard prompt
+                    # builder regardless of the original mode — re-tag so the
+                    # row reflects what actually produced the persisted body.
+                    prompt_template_id, prompt_revision_hash = _resolve_prompt_version(
+                        mode="standard", age=age,
+                    )
 
             # --- End output content moderation ---
 
@@ -1591,6 +1615,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         # from the DB once the Celery result expires (1h).
                         task_id=self.request.id,
                         content=story_payload,
+                        # F-01 (MT-187): tag the row with which prompt template
+                        # produced it (sha256[:16] of the builder's live source).
+                        prompt_template_id=prompt_template_id,
+                        prompt_revision_hash=prompt_revision_hash,
                     ))
                     db.session.commit()
                     logger.info(

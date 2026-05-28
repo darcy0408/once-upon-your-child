@@ -28,6 +28,13 @@ class Story(db.Model):
     # pages, adventure_steps, etc.). Persisting it means a successfully
     # generated story survives Celery result expiry. Nullable for legacy rows.
     content = db.Column(db.JSON, nullable=True)
+    # F-01 (MT-187): which registered prompt template produced this story, and
+    # the sha256[:16] of the builder's source at generation time. Lets a future
+    # regression be a one-query investigation (group by template+hash, diff
+    # quality scores) instead of forensic git-log archaeology. Nullable: legacy
+    # rows, anonymous-path generations, and the offline-fallback path don't set.
+    prompt_template_id = db.Column(db.String(40), nullable=True)
+    prompt_revision_hash = db.Column(db.String(16), nullable=True)
 
     def to_dict(self):
         return {
@@ -40,4 +47,6 @@ class Story(db.Model):
             'characters_featured': self.characters_featured or [],
             'emotional_arc': self.emotional_arc,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'prompt_template_id': self.prompt_template_id,
+            'prompt_revision_hash': self.prompt_revision_hash,
         }
