@@ -208,6 +208,10 @@ class StoryIllustrationService {
     String? heroPower,
   }) async {
     final illHeaders = await ApiServiceManager.authHeaders();
+    // Route the cover/inline illustration through the BYOK key when one is
+    // configured, so it matches the Gemini quality of the per-page prefetch
+    // (per_page_illustration_prefetcher.dart) instead of being server-Flux.
+    final userApiKey = await ApiServiceManager.getUserApiKey();
     final response = await http.post(
       Uri.parse('${Environment.backendUrl}/generate-illustrations'),
       headers: illHeaders,
@@ -222,6 +226,8 @@ class StoryIllustrationService {
           'character_appearance': characterAppearance,
         if (companions != null) 'companions': companions,
         if (heroPower != null && heroPower.isNotEmpty) 'power_id': heroPower,
+        if (userApiKey != null && userApiKey.isNotEmpty)
+          'user_api_key': userApiKey,
       }),
     );
 
