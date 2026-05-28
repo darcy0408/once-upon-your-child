@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-27 | 22:44 | 275f | mt-187-prompt-versioning | MT-144 keystore runbook delivered; MT-175 AAB re-verified at 82MB | [link](docs/sessions/2026-05-27-2244-275f.md) |
 | 2026-05-27 | 07:22 | 28f5 | reliability-hardening | LinkedIn Company Page kit for Once Upon YOUR Child (no code) | [link](docs/sessions/2026-05-27-0722-28f5.md) |
 | 2026-05-27 | 07:22 | 9c35 | reliability-hardening | Briefing + A11Y-LTR-03 inspect — work absorbed by parallel | [link](docs/sessions/2026-05-27-0722-9c35.md) |
 | 2026-05-27 | 07:18 | a339 | main | Triage stranded parallel-session work + rescue commit | [link](docs/sessions/2026-05-27-0718-a339.md) |
