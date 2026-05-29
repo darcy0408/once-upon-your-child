@@ -287,9 +287,14 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                         child: avatar,
                       )
                     : avatar;
-                return GestureDetector(
-                  onTap: () => _selectAvatar(assetPath),
-                  child: child,
+                return Semantics(
+                  button: true,
+                  selected: isSelected,
+                  label: 'Avatar option ${index + 1}',
+                  child: GestureDetector(
+                    onTap: () => _selectAvatar(assetPath),
+                    child: child,
+                  ),
                 );
               });
             },

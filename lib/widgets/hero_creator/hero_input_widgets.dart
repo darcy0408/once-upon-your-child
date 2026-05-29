@@ -356,14 +356,18 @@ class _PressableArrowButtonState extends State<PressableArrowButton> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTapDown:
-                widget.enabled ? (_) => setState(() => _pressed = true) : null,
-            onTapUp:
-                widget.enabled ? (_) => setState(() => _pressed = false) : null,
-            onTapCancel: () => setState(() => _pressed = false),
-            onTap: widget.enabled ? widget.onTap : null,
-            child: AnimatedScale(
+          Semantics(
+            button: true,
+            enabled: widget.enabled,
+            label: widget.hint ?? 'Next',
+            child: GestureDetector(
+              onTapDown:
+                  widget.enabled ? (_) => setState(() => _pressed = true) : null,
+              onTapUp:
+                  widget.enabled ? (_) => setState(() => _pressed = false) : null,
+              onTapCancel: () => setState(() => _pressed = false),
+              onTap: widget.enabled ? widget.onTap : null,
+              child: AnimatedScale(
               scale: _pressed ? 0.86 : 1.0,
               duration: const Duration(milliseconds: 80),
               child: AnimatedContainer(
@@ -389,6 +393,7 @@ class _PressableArrowButtonState extends State<PressableArrowButton> {
                 child: Icon(Icons.arrow_forward_rounded,
                     color: Colors.white, size: btnSize * 0.5),
               ),
+            ),
             ),
           ),
           if (widget.hint != null) ...[
