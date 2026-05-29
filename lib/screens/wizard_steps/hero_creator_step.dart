@@ -87,6 +87,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late PageController _heroPageController;
   late PageController _sproutCarouselController;
   int _heroPage = 0;
+  /// Guards the story-type page (Page 6) against double-advance. A Sprout may
+  /// tap several mode cards in quick succession, each scheduling an
+  /// auto-advance — only the first should cross into the next wizard step.
+  bool _storyTypeAdvancing = false;
   String? _selectedArchetypeId;
   late TextEditingController _nameController;
   final FocusNode _nameFocusNode = FocusNode();
@@ -463,6 +467,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         if (mounted) unawaited(_speakPagePrompt(_heroPage));
       });
     }
+  }
+
+  /// Advances out of the Hero Creator from the story-type page (Page 6).
+  /// Idempotent: Sprout mode cards schedule a delayed call after each tap, so
+  /// this may fire more than once — only the first crosses into the next step.
+  void _advanceFromStoryType() {
+    if (_storyTypeAdvancing || !mounted) return;
+    _storyTypeAdvancing = true;
+    widget.onNext();
+    // Reopen the latch once the tap-burst window has elapsed. Burst timers all
+    // fire within ~700ms of their tap, so 2s safely swallows the burst while
+    // still letting a later return to this page advance again.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) _storyTypeAdvancing = false;
+    });
   }
 
   /// Plays shimmer chime + shows a brief star-burst particle overlay.
@@ -3214,7 +3233,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     listeningFor: _listeningFor,
                     speechAvailable: _speechAvailable,
                     onChanged: () => setState(() {}),
-                    onContinue: widget.onNext,
+                    onContinue: _advanceFromStoryType,
                     onToggleListening: _toggleListening,
                     onSpeakForSprout: _speakForSprout,
                     illustrationsEnabled: _isPremium,

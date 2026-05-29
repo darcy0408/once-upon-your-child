@@ -88,6 +88,30 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     if (_fireworks.length > 5) _fireworks.removeAt(0);
   }
 
+  /// Spawns one Sprout loading star. It enters just off the left or right
+  /// edge, in the purple band above or below the centred companion, and
+  /// drifts slowly to the far side — so stars glide across the sky instead
+  /// of piling up on top of the companion.
+  _TapTarget _spawnSproutStar(DateTime now) {
+    final fromLeft = _random.nextBool();
+    final alongTop = _random.nextBool();
+    // Lane clear of the companion, which sits at the centre of the stage.
+    final y = alongTop
+        ? 0.04 + _random.nextDouble() * 0.14 // 0.04–0.18, above the companion
+        : 0.82 + _random.nextDouble() * 0.14; // 0.82–0.96, below it
+    // Calm, trackable pace — a full edge-to-edge crossing takes ~5–6.5s.
+    final speed = 0.20 + _random.nextDouble() * 0.06; // stage-widths / second
+    const travel = 1.28; // -0.14 -> 1.14: just off one edge to just off the far
+    return _TapTarget(
+      x: fromLeft ? -0.14 : 1.14,
+      y: y,
+      vx: fromLeft ? speed : -speed,
+      born: now,
+      ttlMs: (travel / speed * 1000).round(),
+      spawnRotation: _random.nextDouble() * 2 * pi,
+    );
+  }
+
   Widget _buildFirework(_Firework fw) {
     const stageSize = 220.0;
     return Positioned(
@@ -184,7 +208,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     // cadence (slower spawn, longer-lived stars) tuned for little fingers.
     final spawnIntervalMs = widget.isSproutBand ? 2800 : 2000;
     final maxTargetsLive = 3;
-    final baseTtlMs = widget.isSproutBand ? 4000 : 2400;
+    final baseTtlMs = 2400; // non-sprout lifetime; sprout: see _spawnSproutStar
     _targetSpawnTimer =
         Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (!mounted) return;
@@ -197,13 +221,17 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 now.difference(_tapTargets.last.born).inMilliseconds >=
                     spawnIntervalMs);
         if (shouldSpawn) {
-          _tapTargets.add(_TapTarget(
-            x: 0.1 + _random.nextDouble() * 0.8,
-            y: 0.05 + _random.nextDouble() * 0.75,
-            born: now,
-            ttlMs: baseTtlMs + _random.nextInt(1200),
-            spawnRotation: _random.nextDouble() * 2 * pi,
-          ));
+          _tapTargets.add(
+            widget.isSproutBand
+                ? _spawnSproutStar(now)
+                : _TapTarget(
+                    x: 0.1 + _random.nextDouble() * 0.8,
+                    y: 0.05 + _random.nextDouble() * 0.75,
+                    born: now,
+                    ttlMs: baseTtlMs + _random.nextInt(1200),
+                    spawnRotation: _random.nextDouble() * 2 * pi,
+                  ),
+          );
         }
       });
     });
@@ -746,151 +774,161 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
           child: SizedBox(
             height: stageSize,
             width: stageSize,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Bouncing companion — centerpiece of the stage
-                if (_bounceController != null)
-                  AnimatedBuilder(
-                    animation: _bounceController!,
-                    builder: (context, _) {
-                      final hop = -18.0 * _bounceController!.value;
-                      return Transform.translate(
-                        offset: Offset(0, hop),
-                        child: ClipOval(
-                          child: SizedBox(
-                            width: 110,
-                            height: 110,
-                            child: widget.companionImagePath != null
-                                ? _loadCompanionImage(
-                                    widget.companionImagePath!)
-                                : const ColoredBox(
-                                    color: Color(0xFF3A1060),
-                                    child: Icon(Icons.auto_awesome,
-                                        size: 64, color: Color(0xFF9E6CFF)),
-                                  ),
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                else
-                  const Icon(Icons.auto_awesome,
-                      size: 64, color: Color(0xFF9E6CFF)),
-
-                // Drifting tap targets — visibly star-shaped, with a soft
-                // pulsing halo behind them so they read as "tap me" rather
-                // than as decorative orbs. Slow rotation adds life without
-                // making them hard to track for little fingers.
-                ..._tapTargets.where((t) => !t.isExpired).map((target) {
-                  final age = target.ageMs;
-                  final ttl = target.ttlMs;
-                  final opacity = age < 300
-                      ? (age / 300.0).clamp(0.0, 1.0)
-                      : age > ttl - 400
-                          ? ((ttl - age) / 400.0).clamp(0.0, 1.0)
-                          : 1.0;
-                  return Positioned(
-                    left: target.x * stageSize - targetSize / 2,
-                    top: target.y * stageSize - targetSize / 2,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!mounted) return;
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _tapTargets.remove(target);
-                          _tapCount++;
-                          _spawnFirework(Offset(
-                            target.x * stageSize,
-                            target.y * stageSize,
-                          ));
-                        });
-                      },
-                      child: Opacity(
-                        opacity: opacity,
-                        child: TweenAnimationBuilder<double>(
-                          key: ValueKey(target.born),
-                          tween: Tween(begin: 0.85, end: 1.15),
-                          duration: const Duration(milliseconds: 850),
-                          curve: Curves.easeInOut,
-                          builder: (_, scale, __) => Transform.scale(
-                            scale: scale,
-                            child: AnimatedBuilder(
-                              animation: Listenable.merge(
-                                  [_pulseController, _rotationController]),
-                              builder: (context, _) {
-                                final pulse = _pulseController.value;
-                                final rotation =
-                                    _rotationController.value * 2 * pi * 0.25 +
-                                        target.spawnRotation;
-                                final haloSize =
-                                    targetSize * (0.95 + 0.20 * pulse);
-                                return SizedBox(
-                                  width: targetSize,
-                                  height: targetSize,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Container(
-                                        width: haloSize,
-                                        height: haloSize,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          gradient: RadialGradient(
-                                            colors: [
-                                              AppColors.gold.withValues(
-                                                  alpha: 0.22 + 0.20 * pulse),
-                                              AppColors.gold
-                                                  .withValues(alpha: 0.0),
-                                            ],
-                                            stops: const [0.0, 1.0],
+            // Repaints every frame (the rotation controller loops forever) so
+            // drifting stars glide smoothly between the 100ms spawn ticks.
+            child: AnimatedBuilder(
+              animation: _rotationController,
+              builder: (context, _) => Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Drifting tap-target stars — built first so they render
+                  // behind the companion: a star crossing the stage slides
+                  // behind the robin rather than piling up on top of it.
+                  ..._tapTargets.where((t) => !t.isExpired).map((target) {
+                    final age = target.ageMs;
+                    final ttl = target.ttlMs;
+                    final opacity = age < 300
+                        ? (age / 300.0).clamp(0.0, 1.0)
+                        : age > ttl - 400
+                            ? ((ttl - age) / 400.0).clamp(0.0, 1.0)
+                            : 1.0;
+                    return Positioned(
+                      left: target.driftX * stageSize - targetSize / 2,
+                      top: target.y * stageSize - targetSize / 2,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!mounted) return;
+                          HapticFeedback.lightImpact();
+                          setState(() {
+                            _tapTargets.remove(target);
+                            _tapCount++;
+                            _spawnFirework(Offset(
+                              target.driftX * stageSize,
+                              target.y * stageSize,
+                            ));
+                          });
+                        },
+                        child: Opacity(
+                          opacity: opacity,
+                          child: TweenAnimationBuilder<double>(
+                            key: ValueKey(target.born),
+                            tween: Tween(begin: 0.85, end: 1.15),
+                            duration: const Duration(milliseconds: 850),
+                            curve: Curves.easeInOut,
+                            builder: (_, scale, __) => Transform.scale(
+                              scale: scale,
+                              child: AnimatedBuilder(
+                                animation: Listenable.merge(
+                                    [_pulseController, _rotationController]),
+                                builder: (context, _) {
+                                  final pulse = _pulseController.value;
+                                  final rotation =
+                                      _rotationController.value *
+                                              2 *
+                                              pi *
+                                              0.25 +
+                                          target.spawnRotation;
+                                  final haloSize =
+                                      targetSize * (0.95 + 0.20 * pulse);
+                                  return SizedBox(
+                                    width: targetSize,
+                                    height: targetSize,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Container(
+                                          width: haloSize,
+                                          height: haloSize,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: RadialGradient(
+                                              colors: [
+                                                AppColors.gold.withValues(
+                                                    alpha: 0.22 +
+                                                        0.20 * pulse),
+                                                AppColors.gold
+                                                    .withValues(alpha: 0.0),
+                                              ],
+                                              stops: const [0.0, 1.0],
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      Transform.rotate(
-                                        angle: rotation,
-                                        child: Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.star_rounded,
-                                              size: targetSize * 0.95,
-                                              color: AppColors.gold
-                                                  .withValues(alpha: 0.40),
-                                            ),
-                                            const Icon(
-                                              Icons.star_rounded,
-                                              size: 56,
-                                              color: AppColors.gold,
-                                            ),
-                                            Icon(
-                                              Icons.star_rounded,
-                                              size: 28,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.92),
-                                            ),
-                                          ],
+                                        Transform.rotate(
+                                          angle: rotation,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.star_rounded,
+                                                size: targetSize * 0.95,
+                                                color: AppColors.gold
+                                                    .withValues(alpha: 0.40),
+                                              ),
+                                              const Icon(
+                                                Icons.star_rounded,
+                                                size: 56,
+                                                color: AppColors.gold,
+                                              ),
+                                              Icon(
+                                                Icons.star_rounded,
+                                                size: 28,
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.92),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
 
-                // Firework bursts — sparkle particles radiate outward, clearly
-                // distinct from the idle star shape so kids never confuse a
-                // celebration for a new tappable target.
-                ..._fireworks
-                    .where((fw) => !fw.isExpired)
-                    .map(_buildFirework),
-              ],
+                  // Bouncing companion — centerpiece of the stage, drawn
+                  // after the stars so it always stays clear on top.
+                  if (_bounceController != null)
+                    AnimatedBuilder(
+                      animation: _bounceController!,
+                      builder: (context, _) {
+                        final hop = -18.0 * _bounceController!.value;
+                        return Transform.translate(
+                          offset: Offset(0, hop),
+                          child: ClipOval(
+                            child: SizedBox(
+                              width: 110,
+                              height: 110,
+                              child: widget.companionImagePath != null
+                                  ? _loadCompanionImage(
+                                      widget.companionImagePath!)
+                                  : const ColoredBox(
+                                      color: Color(0xFF3A1060),
+                                      child: Icon(Icons.auto_awesome,
+                                          size: 64,
+                                          color: Color(0xFF9E6CFF)),
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    const Icon(Icons.auto_awesome,
+                        size: 64, color: Color(0xFF9E6CFF)),
+
+                  // Firework bursts — sparkle particles radiate outward,
+                  // clearly distinct from the idle star shape so kids never
+                  // confuse a celebration for a new tappable target.
+                  ..._fireworks
+                      .where((fw) => !fw.isExpired)
+                      .map(_buildFirework),
+                ],
+              ),
             ),
           ),
         ),
@@ -1226,8 +1264,9 @@ class _MagicLoomPainter extends CustomPainter {
 /// A drifting sparkle target that the user can tap to earn points.
 /// Position is expressed as fractions of the stage area (0..1).
 class _TapTarget {
-  final double x;
-  final double y;
+  final double x; // spawn x, as a fraction of the stage (0..1)
+  final double y; // y, as a fraction of the stage (0..1)
+  final double vx; // horizontal drift, stage-fractions per second
   final DateTime born;
   final int ttlMs; // How long before auto-expiry (ms)
   final double spawnRotation; // 0..2π — varies the idle-star starting angle
@@ -1235,6 +1274,7 @@ class _TapTarget {
   _TapTarget({
     required this.x,
     required this.y,
+    this.vx = 0.0,
     required this.born,
     required this.ttlMs,
     required this.spawnRotation,
@@ -1242,6 +1282,10 @@ class _TapTarget {
 
   int get ageMs => DateTime.now().difference(born).inMilliseconds;
   bool get isExpired => ageMs >= ttlMs;
+
+  /// Current x after horizontal drift. Equals [x] when [vx] is 0, so the
+  /// non-sprout loom view (which spawns stationary targets) is unaffected.
+  double get driftX => x + vx * (ageMs / 1000.0);
 }
 
 /// A celebration burst spawned at a tap point. Holds pre-randomized particle

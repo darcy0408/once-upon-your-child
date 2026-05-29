@@ -168,6 +168,16 @@ class HeroStoryTypePage extends StatelessWidget {
     );
   }
 
+  /// Auto-advance after a Sprout taps a mode card. The brief delay lets the
+  /// check-circle animation settle and the spoken label start playing before
+  /// the page transition — a 3–5 year-old needs that confirmation beat, and
+  /// it removes the redundant second step of hunting for the arrow.
+  /// [onContinue] is guarded against double-fire by the parent, so rapid taps
+  /// across multiple cards still advance exactly once.
+  void _autoAdvanceForSprout() {
+    Future.delayed(const Duration(milliseconds: 700), onContinue);
+  }
+
   String _getReadingLabel(AgeBand band) {
     switch (band) {
       case AgeBand.sprout:
@@ -418,6 +428,7 @@ class HeroStoryTypePage extends StatelessWidget {
                   onTap: () {
                     setStoryMode('tales');
                     onChanged();
+                    _autoAdvanceForSprout();
                   },
                 ),
                 const SizedBox(height: 14),
@@ -431,6 +442,7 @@ class HeroStoryTypePage extends StatelessWidget {
                   onTap: () {
                     setStoryMode('rhyme');
                     onChanged();
+                    _autoAdvanceForSprout();
                   },
                 ),
                 const SizedBox(height: 14),
@@ -444,6 +456,7 @@ class HeroStoryTypePage extends StatelessWidget {
                   onTap: () {
                     setStoryMode('reading');
                     onChanged();
+                    _autoAdvanceForSprout();
                   },
                 ),
               ],
@@ -626,9 +639,14 @@ class HeroStoryTypePage extends StatelessWidget {
             _buildWishPromptButtons(band)
           else if (band.band != AgeBand.sprout)
             _buildWishTextInput(band),
-          SizedBox(height: band.space(32)),
-          PressableArrowButton(
-              enabled: true, onTap: onContinue, hint: band.wizardNextHint),
+          // Sprout cards auto-advance on tap, making the arrow redundant — and
+          // a second "go" control is just noise for a 3–5 year-old. Older
+          // bands still get the explicit arrow.
+          if (band.band != AgeBand.sprout) ...[
+            SizedBox(height: band.space(32)),
+            PressableArrowButton(
+                enabled: true, onTap: onContinue, hint: band.wizardNextHint),
+          ],
           SizedBox(height: band.space(20)),
         ],
       ),
