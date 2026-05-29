@@ -146,7 +146,7 @@ class TestPromptContractsAcrossAgesAndCategories:
         [
             pytest.param(
                 4,
-                ["Write a full rhyming story", "Very short sentences (4-6 words per line)", "Consistent AABB rhyme scheme"],
+                ["bouncy rhyming story", "4-6 words per line", "AABB rhyme scheme"],
                 [],
                 id="age4_rhyme_time_simple",
             ),
