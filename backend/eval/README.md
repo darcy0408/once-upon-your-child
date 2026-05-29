@@ -35,21 +35,44 @@ backend/eval/
 ## How a run works (when authorized)
 
 ```
+# 0) One-time: confirm the GitHub Models judge token works (free, trivial call)
+python -m backend.eval.judge --ping --judges github-models
+
 # 1) Validate the prompt registry hashes match current source
 python -m backend.eval.snapshot --verify
 
 # 2) Dry-run: print every (template, age_band, mode, test_input) cell and exit
 python -m backend.eval.harness --dry-run
 
-# 3) Calibration slice — ~$0.50 across 10 cells, validates the pipeline
+# 3) Calibration slice — ~$0.01 across 10 cells, validates the pipeline
 python -m backend.eval.harness --budget 5 --calibration
 
 # 4) Full run within a hard cap
 python -m backend.eval.harness --budget 25 --provider gemini
 
-# 5) Score with two judges (only after generations exist)
-python -m backend.eval.judge --run-id <run-id> --judges gemini,openrouter
+# 5) Score with the GitHub Models judge (free; after generations exist)
+python -m backend.eval.judge --run-id <run-id> --judges github-models
 ```
+
+## Judges
+
+The audit spec wants a two-judge ensemble from different model families to
+reduce single-judge bias. As wired:
+
+- **Judge A — GitHub Models / `gpt-4.1`.** Free for Student/Pro accounts via
+  the GitHub Models marketplace. Authenticated by `GITHUB_MODELS_TOKEN` in
+  `backend/.env`. `gpt-4.1-mini` is the rate-limit-friendly fallback.
+  Status: **live and ping-verified.**
+- **Judge B — Gemini 2.5 Pro.** Uses the existing `GEMINI_API_KEY`.
+  Status: **stubbed**, gated on the Gemini budget decision.
+
+A single-judge pass with `--judges github-models` is free and works today
+once generations exist. Add Gemini Pro as the second judge once the Gemini
+budget is settled — that gives the full ensemble at ~$0–8.
+
+GitHub Models is **judge-only**. Story generation must stay on Gemini /
+OpenRouter because the audit measures *Story Weaver's actual pipeline* —
+generating with GPT-4.1 would measure the wrong product.
 
 The harness writes **one JSONL line per cell** to `results/<run-id>/generations.jsonl` and resumes from the last complete line on re-run. Crashes do not waste budget.
 
@@ -66,7 +89,7 @@ Per-generation rough cost (2k input tokens, 3k output):
 
 The audit spec's $15–$40 estimate assumed Sonnet-class judging on top of generation; expect generation alone to land near the lower end when using Gemini Flash.
 
-Judging adds another pass: 1080 cells × ~$0.002 per judge × 2 judges = ~$4.30.
+Judging: the GitHub Models judge (`gpt-4.1`) is **free** for Student/Pro accounts — a full 1020-cell judge pass costs $0, bounded only by daily rate limits (expect a multi-day drip; `--resume` handles it). Adding Gemini 2.5 Pro as the second judge costs ~$8 on paid tier, or $0 on the Gemini free tier within quota.
 
 The `--budget` flag is enforced as a hard ceiling. The harness tracks cumulative cost from API responses (where available) or from a fallback per-token estimate, and halts with a partial-coverage report if it would exceed the cap.
 

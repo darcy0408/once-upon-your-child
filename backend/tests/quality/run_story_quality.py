@@ -32,54 +32,84 @@ _REPO_ROOT = os.path.abspath(os.path.join(_BACKEND_DIR, ".."))
 _ENV_FILE = os.path.join(_BACKEND_DIR, ".env")
 if os.path.exists(_ENV_FILE):
     from dotenv import load_dotenv
+
     load_dotenv(dotenv_path=_ENV_FILE, override=False)
 
 sys.path.insert(0, _REPO_ROOT)
 
 # ── ANSI colour helpers ───────────────────────────────────────────────────────
-_G = "\033[92m"; _R = "\033[91m"; _Y = "\033[93m"
-_C = "\033[96m"; _B = "\033[1m";  _X = "\033[0m"
-ok   = lambda s: f"{_G}✓{_X} {s}"
+_G = "\033[92m"
+_R = "\033[91m"
+_Y = "\033[93m"
+_C = "\033[96m"
+_B = "\033[1m"
+_X = "\033[0m"
+ok = lambda s: f"{_G}✓{_X} {s}"
 fail = lambda s: f"{_R}✗{_X} {s}"
 warn = lambda s: f"{_Y}⚠{_X} {s}"
 
 # ── Word-count targets for story_length="standard" (= medium in AGE_CONSTRAINTS)
 # (absolute_minimum, expected_low, expected_high)
 WORD_TARGETS = {
-    "sprout":     (100,  300,   750),
-    "explorer":   (300,  650,  1400),
-    "adventurer": (600, 1200,  2600),
-    "creator":    (800, 1800,  3600),
-    "adolescent": (800, 2400,  4800),
-    "adult":      (400, 1200,  4800),
+    "sprout": (100, 300, 750),
+    "explorer": (300, 650, 1400),
+    "adventurer": (600, 1200, 2600),
+    "creator": (800, 1800, 3600),
+    "adolescent": (800, 2400, 4800),
+    "adult": (400, 1200, 4800),
 }
 
 # ── Safety: words that must never appear ─────────────────────────────────────
 UNIVERSAL_RED_FLAGS = [
-    "pornograph", "explicit sex", "graphic sex",
-    "sexual assault", "rape", "child abuse",
+    "pornograph",
+    "explicit sex",
+    "graphic sex",
+    "sexual assault",
+    "rape",
+    "child abuse",
 ]
 # Additional bans for child-band stories (sprout / explorer / adventurer)
 CHILD_RED_FLAGS = [
-    "blood", "corpse", "murder", "stabbed", "decapitat",
-    "nude", "naked body",
+    "blood",
+    "corpse",
+    "murder",
+    "stabbed",
+    "decapitat",
+    "nude",
+    "naked body",
 ]
 
 # ── Therapeutic / emotional vocabulary ───────────────────────────────────────
 FEELING_WORDS = [
-    "feel", "feeling", "heart", "brave", "courage", "scared",
-    "worried", "happy", "sad", "angry", "calm", "safe", "love",
-    "friend", "together", "hope", "trust", "help", "kind",
+    "feel",
+    "feeling",
+    "heart",
+    "brave",
+    "courage",
+    "scared",
+    "worried",
+    "happy",
+    "sad",
+    "angry",
+    "calm",
+    "safe",
+    "love",
+    "friend",
+    "together",
+    "hope",
+    "trust",
+    "help",
+    "kind",
 ]
 
 # ── Band-specific tone markers ────────────────────────────────────────────────
 BAND_TONE = {
-    "sprout":     ["sparkle", "glow", "hug", "soft", "warm", "giggle", "bright", "cozy"],
-    "explorer":   ["discover", "magical", "quest", "wonder", "mysterious", "adventure"],
+    "sprout": ["sparkle", "glow", "hug", "soft", "warm", "giggle", "bright", "cozy"],
+    "explorer": ["discover", "magical", "quest", "wonder", "mysterious", "adventure"],
     "adventurer": ["challenge", "mystery", "secret", "power", "brave", "ancient"],
-    "creator":    ["create", "imagine", "decide", "design", "clever", "art", "story"],
+    "creator": ["create", "imagine", "decide", "design", "clever", "art", "story"],
     "adolescent": ["reflect", "real", "matter", "alone", "understand", "choice"],
-    "adult":      ["reflect", "journey", "meaning", "wisdom", "grown", "learn"],
+    "adult": ["reflect", "journey", "meaning", "wisdom", "grown", "learn"],
 }
 
 # ── Test cases: one per band ──────────────────────────────────────────────────
@@ -113,7 +143,9 @@ TEST_CASES = [
         "character": "Zoe",
         "theme": "Crystal Cave",
         "companion_pets": [],
-        "companion_characters": [{"name": "Finn", "description": "a brave explorer friend"}],
+        "companion_characters": [
+            {"name": "Finn", "description": "a brave explorer friend"}
+        ],
         "story_length": "standard",
         "expected_companion": "Finn",
     },
@@ -124,7 +156,9 @@ TEST_CASES = [
         "character": "Sam",
         "theme": "Art Gallery Mystery",
         "companion_pets": [],
-        "companion_characters": [{"name": "Jordan", "description": "creative partner and best friend"}],
+        "companion_characters": [
+            {"name": "Jordan", "description": "creative partner and best friend"}
+        ],
         "story_length": "standard",
         "expected_companion": "Jordan",
     },
@@ -135,7 +169,12 @@ TEST_CASES = [
         "character": "Alex",
         "theme": "Midnight Observatory",
         "companion_pets": [],
-        "companion_characters": [{"name": "River", "description": "trusted friend with a different perspective"}],
+        "companion_characters": [
+            {
+                "name": "River",
+                "description": "trusted friend with a different perspective",
+            }
+        ],
         "story_length": "standard",
         "expected_companion": "River",
     },
@@ -154,21 +193,29 @@ TEST_CASES = [
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 
+
 def word_count(text: str) -> int:
-    return len(re.findall(r'\b\w+\b', text))
+    return len(re.findall(r"\b\w+\b", text))
+
 
 def avg_sentence_length(text: str) -> float:
-    sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
     if not sentences:
         return 0.0
-    return sum(len(re.findall(r'\b\w+\b', s)) for s in sentences) / len(sentences)
+    return sum(len(re.findall(r"\b\w+\b", s)) for s in sentences) / len(sentences)
+
 
 def red_flag_check(text: str, band: str) -> list:
     low = text.lower()
-    hits = [w for w in UNIVERSAL_RED_FLAGS if re.search(r'\b' + re.escape(w) + r'\b', low)]
+    hits = [
+        w for w in UNIVERSAL_RED_FLAGS if re.search(r"\b" + re.escape(w) + r"\b", low)
+    ]
     if band in ("sprout", "explorer", "adventurer"):
-        hits += [w for w in CHILD_RED_FLAGS if re.search(r'\b' + re.escape(w) + r'\b', low)]
+        hits += [
+            w for w in CHILD_RED_FLAGS if re.search(r"\b" + re.escape(w) + r"\b", low)
+        ]
     return hits
+
 
 def evaluate(tc: dict, story_text: str, title: str) -> dict:
     """Return {check_name: (passed: bool, detail: str)}."""
@@ -209,11 +256,17 @@ def evaluate(tc: dict, story_text: str, title: str) -> dict:
         wc_pass, wc_tag = True, "↑ high"
     else:
         wc_pass, wc_tag = True, "✓"
-    checks["word_count"] = (wc_pass, f"{wc:,} words (target {lo_ok:,}–{hi_ok:,}) {wc_tag}")
+    checks["word_count"] = (
+        wc_pass,
+        f"{wc:,} words (target {lo_ok:,}–{hi_ok:,}) {wc_tag}",
+    )
 
     # 6. No red flags
     flags = red_flag_check(story_text, band)
-    checks["no_red_flags"] = (not flags, "clean" if not flags else f"FLAGGED: {', '.join(flags)}")
+    checks["no_red_flags"] = (
+        not flags,
+        "clean" if not flags else f"FLAGGED: {', '.join(flags)}",
+    )
 
     # 7. Therapeutic vocabulary
     hits = [w for w in FEELING_WORDS if w in story_text.lower()]
@@ -225,7 +278,10 @@ def evaluate(tc: dict, story_text: str, title: str) -> dict:
     # 8. Sentence simplicity (Sprout only — target ≤14 avg words/sentence)
     if band == "sprout":
         avg = avg_sentence_length(story_text)
-        checks["sentence_simplicity"] = (avg <= 14, f"avg {avg:.1f} words/sent (target ≤14)")
+        checks["sentence_simplicity"] = (
+            avg <= 14,
+            f"avg {avg:.1f} words/sent (target ≤14)",
+        )
 
     # 9. Band tone words
     tone_words = BAND_TONE.get(band, [])
@@ -233,14 +289,18 @@ def evaluate(tc: dict, story_text: str, title: str) -> dict:
         tone_hits = [w for w in tone_words if w in story_text.lower()]
         checks["band_tone"] = (
             len(tone_hits) >= 1,
-            (f"{len(tone_hits)} matches: {', '.join(tone_hits[:4])}{'…' if len(tone_hits) > 4 else ''}"
-             if tone_hits else "none found"),
+            (
+                f"{len(tone_hits)} matches: {', '.join(tone_hits[:4])}{'…' if len(tone_hits) > 4 else ''}"
+                if tone_hits
+                else "none found"
+            ),
         )
 
     return checks
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
 
 def main():
     print(f"\n{_B}{_C}╔══════════════════════════════════════════════════════════╗{_X}")
@@ -276,7 +336,9 @@ def main():
     for idx, tc in enumerate(TEST_CASES, 1):
         companion = tc.get("expected_companion") or "—"
         comp_note = f"  companion: {_B}{companion}{_X}" if companion != "—" else ""
-        print(f"\n[{idx}/{len(TEST_CASES)}] {_B}{tc['label']}{_X}  \"{tc['theme']}\"{comp_note}")
+        print(
+            f"\n[{idx}/{len(TEST_CASES)}] {_B}{tc['label']}{_X}  \"{tc['theme']}\"{comp_note}"
+        )
 
         t0 = time.time()
         story_text = title = ""
@@ -300,7 +362,9 @@ def main():
             if not raw or "wasn't able" in raw[:80] or raw.startswith("Sorry"):
                 raise ValueError(f"AI returned non-story response: {raw[:100]}")
 
-            title, _, story_text, pages, _, _ = _safe_extract_title_and_gem(raw, tc["theme"])
+            title, _, story_text, pages, _, _ = _safe_extract_title_and_gem(
+                raw, tc["theme"]
+            )
             if not story_text and pages:
                 story_text = "\n\n".join(pages)
 
@@ -310,7 +374,11 @@ def main():
             checks = evaluate(tc, story_text, title)
             for name, (passed, detail) in checks.items():
                 label = name.replace("_", " ")
-                line = ok(f"{label:<28} {detail}") if passed else fail(f"{label:<28} {detail}")
+                line = (
+                    ok(f"{label:<28} {detail}")
+                    if passed
+                    else fail(f"{label:<28} {detail}")
+                )
                 print(f"    {line}")
 
         except Exception as exc:
@@ -318,20 +386,24 @@ def main():
             error = str(exc)
             print(f"    {fail('FAILED')} ({elapsed:.1f}s) — {error[:140]}")
 
-        all_results.append({
-            "band":          tc["band"],
-            "age":           tc["age"],
-            "character":     tc["character"],
-            "theme":         tc["theme"],
-            "companion":     companion,
-            "error":         error,
-            "title":         title,
-            "word_count":    word_count(story_text) if story_text else 0,
-            "page_count":    len(pages),
-            "story_preview": story_text[:500] if story_text else "",
-            "elapsed_s":     round(time.time() - t0, 1),
-            "checks": {k: {"passed": v[0], "detail": v[1]} for k, v in checks.items()},
-        })
+        all_results.append(
+            {
+                "band": tc["band"],
+                "age": tc["age"],
+                "character": tc["character"],
+                "theme": tc["theme"],
+                "companion": companion,
+                "error": error,
+                "title": title,
+                "word_count": word_count(story_text) if story_text else 0,
+                "page_count": len(pages),
+                "story_preview": story_text[:500] if story_text else "",
+                "elapsed_s": round(time.time() - t0, 1),
+                "checks": {
+                    k: {"passed": v[0], "detail": v[1]} for k, v in checks.items()
+                },
+            }
+        )
 
     # ── Summary ───────────────────────────────────────────────────────────────
     total_elapsed = time.time() - run_start
@@ -340,8 +412,7 @@ def main():
     generated = sum(1 for r in all_results if not r["error"])
     total_checks = sum(len(r["checks"]) for r in all_results)
     passed_checks = sum(
-        sum(1 for v in r["checks"].values() if v["passed"])
-        for r in all_results
+        sum(1 for v in r["checks"].values() if v["passed"]) for r in all_results
     )
     all_clean = all(
         not r["error"] and all(v["passed"] for v in r["checks"].values())

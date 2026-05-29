@@ -70,8 +70,13 @@ class CloudflareImageGenerator:
         except ImportError:
             from replicate_image_generator import ReplicateImageGenerator
         prompt = ReplicateImageGenerator()._build_prompt(
-            scene_description, character_name, style, age,
-            therapeutic_focus, character_appearance, companions,
+            scene_description,
+            character_name,
+            style,
+            age,
+            therapeutic_focus,
+            character_appearance,
+            companions,
             power_id=power_id,
         )
 
@@ -97,7 +102,8 @@ class CloudflareImageGenerator:
                 if resp.status_code != 200:
                     logger.warning(
                         "Cloudflare Flux HTTP %d: %s",
-                        resp.status_code, resp.text[:200],
+                        resp.status_code,
+                        resp.text[:200],
                     )
                     break
                 body = resp.json()
@@ -109,28 +115,29 @@ class CloudflareImageGenerator:
                 if not b64:
                     logger.warning("Cloudflare Flux returned no image data")
                     break
-                images.append({
-                    "id": f"{uuid.uuid4()}_{i}",
-                    "prompt": prompt,
-                    "image_data": b64,
-                    "format": "jpeg",
-                    "generated_at": datetime.now().isoformat(),
-                    "provider": "cloudflare-flux-schnell",
-                })
+                images.append(
+                    {
+                        "id": f"{uuid.uuid4()}_{i}",
+                        "prompt": prompt,
+                        "image_data": b64,
+                        "format": "jpeg",
+                        "generated_at": datetime.now().isoformat(),
+                        "provider": "cloudflare-flux-schnell",
+                    }
+                )
 
             self._log_cost_event(len(images) > 0, len(images), user_id, age)
             if images:
                 logger.info(
                     "Cloudflare Flux %d image(s) in %.1fs",
-                    len(images), time.time() - t0,
+                    len(images),
+                    time.time() - t0,
                 )
             return images
 
         except Exception as e:
             logger.exception("Cloudflare Flux error: %s", e)
-            self._log_cost_event(
-                False, num_images, user_id, age, error=str(e)[:120]
-            )
+            self._log_cost_event(False, num_images, user_id, age, error=str(e)[:120])
             return images
 
     def _log_cost_event(
@@ -148,18 +155,19 @@ class CloudflareImageGenerator:
         """
         try:
             from backend.services.cost_tracker import log_api_cost
+
             log_api_cost(
-                provider='cloudflare',
-                feature='story_illustration',
+                provider="cloudflare",
+                feature="story_illustration",
                 cost_usd=0.0,
                 user_id=user_id,
                 units=num_images if success else 0,
-                unit_kind='images',
+                unit_kind="images",
                 success=success,
                 extra={
-                    'model': 'flux-1-schnell',
-                    'age': age,
-                    **({'error': error} if error else {}),
+                    "model": "flux-1-schnell",
+                    "age": age,
+                    **({"error": error} if error else {}),
                 },
             )
         except Exception:

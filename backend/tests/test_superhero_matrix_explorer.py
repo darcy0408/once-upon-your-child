@@ -3,6 +3,7 @@
 Parallel to test_superhero_matrix.py — exercises the same invariants
 against the EXPLORER_* tables plus the band-aware pick_pairing path.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -35,15 +36,15 @@ def test_explorer_reuses_sprout_power_ids_plus_two():
 
 def test_explorer_power_specs_reference_real_villains():
     for power_id, spec in EXPLORER_POWERS.items():
-        assert spec["ideal"] in EXPLORER_VILLAINS, (
-            f"{power_id}.ideal must reference a real Explorer villain"
-        )
+        assert (
+            spec["ideal"] in EXPLORER_VILLAINS
+        ), f"{power_id}.ideal must reference a real Explorer villain"
         also = spec.get("also", [])
         assert len(also) >= 4, f"{power_id} needs >=4 also-works villains"
         for v in also:
-            assert v in EXPLORER_VILLAINS, (
-                f"{power_id}.also contains unknown villain '{v}'"
-            )
+            assert (
+                v in EXPLORER_VILLAINS
+            ), f"{power_id}.also contains unknown villain '{v}'"
         assert spec["ideal"] not in also, f"{power_id}.ideal duplicated in .also"
 
 
@@ -51,20 +52,21 @@ def test_explorer_villain_problem_entries_reference_real_problems():
     for villain_id, problem_list in EXPLORER_VILLAIN_PROBLEMS.items():
         assert len(problem_list) >= 1
         for p in problem_list:
-            assert p in EXPLORER_PROBLEMS, (
-                f"{villain_id} references unknown problem '{p}'"
-            )
+            assert (
+                p in EXPLORER_PROBLEMS
+            ), f"{villain_id} references unknown problem '{p}'"
 
 
 def test_explorer_villains_and_problems_are_namespaced_distinct_from_sprout():
     """No accidental ID collisions — Sprout and Explorer share the schema
     but never share an ID for villains or problems."""
-    assert not (set(EXPLORER_VILLAINS) & set(VILLAINS)), (
-        "Sprout/Explorer villain IDs collide — rename one set"
-    )
+    assert not (
+        set(EXPLORER_VILLAINS) & set(VILLAINS)
+    ), "Sprout/Explorer villain IDs collide — rename one set"
     # Problems intentionally do NOT collide either; the IDs are different
     # phrases (e.g. clean_up vs restore_what_taken).
     from backend.data.superhero_matrix import PROBLEMS as SPROUT_PROBLEMS
+
     assert not (set(EXPLORER_PROBLEMS) & set(SPROUT_PROBLEMS))
 
 
@@ -72,12 +74,10 @@ def test_pick_pairing_explorer_returns_sensible_pair_for_each_power():
     for power_id, spec in EXPLORER_POWERS.items():
         allowed = {spec["ideal"], *spec.get("also", [])}
         for seed in range(10):
-            villain_id, problem_id = pick_pairing(
-                power_id, seed=seed, band="explorer"
-            )
-            assert villain_id in allowed, (
-                f"{power_id} returned villain={villain_id} not in {allowed}"
-            )
+            villain_id, problem_id = pick_pairing(power_id, seed=seed, band="explorer")
+            assert (
+                villain_id in allowed
+            ), f"{power_id} returned villain={villain_id} not in {allowed}"
             assert problem_id in EXPLORER_VILLAIN_PROBLEMS[villain_id], (
                 f"villain={villain_id} returned problem={problem_id} "
                 f"not in {EXPLORER_VILLAIN_PROBLEMS[villain_id]}"

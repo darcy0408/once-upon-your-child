@@ -5,6 +5,7 @@ Adds kid-friendly stage label for storybook-style progress indicator.
 Run this migration with:
     python -m backend.migrations.add_stage_label_to_segments
 """
+
 from backend.app import create_app
 from backend.database import db
 from sqlalchemy import text
@@ -15,17 +16,20 @@ def run_migration():
     print("Starting stage_label migration...")
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():
         try:
             # Check if column already exists
             inspector = db.inspect(db.engine)
-            existing_columns = [col['name'] for col in inspector.get_columns('story_segment')]
+            existing_columns = [
+                col["name"] for col in inspector.get_columns("story_segment")
+            ]
 
             # Add stage_label column if it doesn't exist
-            if 'stage_label' not in existing_columns:
+            if "stage_label" not in existing_columns:
                 print("Adding stage_label column to story_segment...")
                 db.session.execute(text("""
                     ALTER TABLE story_segment
@@ -55,7 +59,8 @@ def rollback_migration():
         return
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():

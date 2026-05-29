@@ -1,5 +1,6 @@
 import json
 
+
 class EmotionService:
     @staticmethod
     def extract_current_feeling(payload: dict) -> dict:
@@ -7,26 +8,26 @@ class EmotionService:
         if not isinstance(payload, dict):
             return None
 
-        feeling = payload.get('current_feeling') or payload.get('currentFeeling')
+        feeling = payload.get("current_feeling") or payload.get("currentFeeling")
         if not feeling or not isinstance(feeling, dict):
             return None
 
         # Handle feelings wheel structure
         emotion_name = (
-            EmotionService._clean(feeling.get('emotion_name'))
-            or EmotionService._clean(feeling.get('tertiary_emotion'))
-            or EmotionService._clean(feeling.get('secondary_emotion'))
-            or EmotionService._clean(feeling.get('core_emotion'))
+            EmotionService._clean(feeling.get("emotion_name"))
+            or EmotionService._clean(feeling.get("tertiary_emotion"))
+            or EmotionService._clean(feeling.get("secondary_emotion"))
+            or EmotionService._clean(feeling.get("core_emotion"))
         )
 
         normalized = {
-            'emotion_id': EmotionService._clean(
-                feeling.get('tertiary_emotion') or feeling.get('emotion_id')
+            "emotion_id": EmotionService._clean(
+                feeling.get("tertiary_emotion") or feeling.get("emotion_id")
             ),
-            'emotion_name': emotion_name,
-            'emotion_emoji': EmotionService._clean(feeling.get('emotion_emoji')),
-            'intensity': EmotionService._normalize_intensity(feeling.get('intensity')),
-            'what_happened': EmotionService._clean(feeling.get('what_happened')),
+            "emotion_name": emotion_name,
+            "emotion_emoji": EmotionService._clean(feeling.get("emotion_emoji")),
+            "intensity": EmotionService._normalize_intensity(feeling.get("intensity")),
+            "what_happened": EmotionService._clean(feeling.get("what_happened")),
         }
 
         # Only return if has meaningful data
@@ -57,9 +58,9 @@ class EmotionService:
         if not feeling:
             return ""
 
-        emotion_name = feeling.get('emotion_name', 'a big feeling')
-        intensity = feeling.get('intensity')
-        what_happened = feeling.get('what_happened')
+        emotion_name = feeling.get("emotion_name", "a big feeling")
+        intensity = feeling.get("intensity")
+        what_happened = feeling.get("what_happened")
 
         lines = [
             f"CURRENT EMOTIONAL STATE:",
@@ -72,16 +73,19 @@ class EmotionService:
         if what_happened:
             lines.append(f"- Context: {what_happened}")
 
-        lines.extend([
-            f"\nSTORY REQUIREMENTS:",
-            f"1. Acknowledge {character_name} feels {emotion_name}",
-            f"2. Validate the feeling (all feelings are okay)",
-            f"3. Show character processing the emotion",
-            f"4. Include coping strategies naturally",
-            f"5. End with hopeful reflection"
-        ])
+        lines.extend(
+            [
+                f"\nSTORY REQUIREMENTS:",
+                f"1. Acknowledge {character_name} feels {emotion_name}",
+                f"2. Validate the feeling (all feelings are okay)",
+                f"3. Show character processing the emotion",
+                f"4. Include coping strategies naturally",
+                f"5. End with hopeful reflection",
+            ]
+        )
 
         return "\n".join(lines)
+
 
 def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""

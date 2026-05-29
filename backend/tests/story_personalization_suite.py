@@ -74,7 +74,11 @@ def _build_prompt_for_scenario(s: Scenario) -> str:
         companion_pets=s.companion_pets,
         companion_characters=s.companion_characters,
         spark_tool="Moon Compass",
-        mood_physics={"mood": "Wonder", "worldRule": "Songs open doors", "sensoryChange": "Starlight hums"},
+        mood_physics={
+            "mood": "Wonder",
+            "worldRule": "Songs open doors",
+            "sensoryChange": "Starlight hums",
+        },
         conflict_hook="A lost map needs solving.",
         sensory_palette="Warm light, soft wind, cinnamon air.",
         custom_elements=s.custom_elements,
@@ -281,7 +285,9 @@ def run_suite(live: bool, max_cases: int | None = None) -> Dict[str, Any]:
     }
 
 
-def _write_reports(report: Dict[str, Any], output_prefix: str | None) -> Tuple[str, str]:
+def _write_reports(
+    report: Dict[str, Any], output_prefix: str | None
+) -> Tuple[str, str]:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     base = output_prefix or f"reports/story_personalization_report_{timestamp}"
     json_path = f"{base}.json"
@@ -331,12 +337,18 @@ def _write_reports(report: Dict[str, Any], output_prefix: str | None) -> Tuple[s
 def main() -> None:
     parser = argparse.ArgumentParser(description="Story personalization test suite.")
     parser.add_argument("--live", action="store_true", help="Call live model (Gemini).")
-    parser.add_argument("--max-cases", type=int, default=None, help="Limit scenario count.")
-    parser.add_argument("--output-prefix", type=str, default=None, help="Report path prefix.")
+    parser.add_argument(
+        "--max-cases", type=int, default=None, help="Limit scenario count."
+    )
+    parser.add_argument(
+        "--output-prefix", type=str, default=None, help="Report path prefix."
+    )
     args = parser.parse_args()
 
     if args.live and not os.getenv("GEMINI_API_KEY"):
-        raise SystemExit("GEMINI_API_KEY is not set. Run without --live or set the key.")
+        raise SystemExit(
+            "GEMINI_API_KEY is not set. Run without --live or set the key."
+        )
 
     report = run_suite(live=args.live, max_cases=args.max_cases)
     json_path, md_path = _write_reports(report, args.output_prefix)

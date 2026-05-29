@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 try:
     from elevenlabs.client import ElevenLabs
     from elevenlabs import VoiceSettings
+
     ELEVENLABS_AVAILABLE = True
 except ImportError:
     ELEVENLABS_AVAILABLE = False
@@ -24,6 +25,7 @@ except ImportError:
 
 try:
     from pydub import AudioSegment
+
     PYDUB_AVAILABLE = True
 except ImportError:
     PYDUB_AVAILABLE = False
@@ -221,7 +223,9 @@ def _make_silence_mp3(duration_ms: int = 600) -> bytes:
 
 def _is_quota_exceeded(exc: Exception) -> bool:
     msg = str(exc)
-    return "quota_exceeded" in msg or ("status_code: 401" in msg and "quota" in msg.lower())
+    return "quota_exceeded" in msg or (
+        "status_code: 401" in msg and "quota" in msg.lower()
+    )
 
 
 def clean_text_for_tts(text: str) -> str:
@@ -282,9 +286,7 @@ class ElevenLabsTTSService:
             )
         key = api_key or os.environ.get("ELEVENLABS_API_KEY")
         if not key:
-            raise ValueError(
-                "ELEVENLABS_API_KEY not set. Add it to backend/.env"
-            )
+            raise ValueError("ELEVENLABS_API_KEY not set. Add it to backend/.env")
         self.client = ElevenLabs(api_key=key)
         logger.info("ElevenLabs TTS initialised")
 
@@ -390,7 +392,9 @@ class ElevenLabsTTSService:
                     model_id=model_id,
                 )
                 combined.write(audio_bytes)
-                logger.debug("Chunk %d/%d synthesized (%d chars)", i + 1, len(chunks), len(chunk))
+                logger.debug(
+                    "Chunk %d/%d synthesized (%d chars)", i + 1, len(chunks), len(chunk)
+                )
             except Exception as e:
                 logger.error("Chunk %d/%d synthesis failed: %s", i + 1, len(chunks), e)
                 raise
@@ -428,21 +432,29 @@ class ElevenLabsTTSService:
             # Fast path — same as single-voice synthesis
             if len(text) > 5000:
                 return self.generate_speech_chunked(
-                    text=text, voice_id=narrator_voice_id,
-                    stability=stability, similarity_boost=similarity_boost,
-                    style=style, model_id=model_id,
+                    text=text,
+                    voice_id=narrator_voice_id,
+                    stability=stability,
+                    similarity_boost=similarity_boost,
+                    style=style,
+                    model_id=model_id,
                 )
             return self.generate_speech(
-                text=text, voice_id=narrator_voice_id,
-                stability=stability, similarity_boost=similarity_boost,
-                style=style, model_id=model_id,
+                text=text,
+                voice_id=narrator_voice_id,
+                stability=stability,
+                similarity_boost=similarity_boost,
+                style=style,
+                model_id=model_id,
             )
 
         silence = _make_silence_mp3(inter_segment_pause_ms)
         combined = io.BytesIO()
         logger.info(
             "Dialogue synthesis: %d segments, narrator=%s character=%s",
-            len(segments), narrator_voice_id, character_voice_id,
+            len(segments),
+            narrator_voice_id,
+            character_voice_id,
         )
 
         for i, (seg_text, seg_type) in enumerate(segments):
@@ -453,15 +465,21 @@ class ElevenLabsTTSService:
 
             if len(seg_text) > 4500:
                 audio = self.generate_speech_chunked(
-                    text=seg_text, voice_id=voice,
-                    stability=stability, similarity_boost=similarity_boost,
-                    style=style, model_id=model_id,
+                    text=seg_text,
+                    voice_id=voice,
+                    stability=stability,
+                    similarity_boost=similarity_boost,
+                    style=style,
+                    model_id=model_id,
                 )
             else:
                 audio = self.generate_speech(
-                    text=seg_text, voice_id=voice,
-                    stability=stability, similarity_boost=similarity_boost,
-                    style=style, model_id=model_id,
+                    text=seg_text,
+                    voice_id=voice,
+                    stability=stability,
+                    similarity_boost=similarity_boost,
+                    style=style,
+                    model_id=model_id,
                 )
             combined.write(audio)
 
@@ -492,7 +510,10 @@ class ElevenLabsTTSService:
             if is_space:
                 if in_word:
                     word_timestamps.append(
-                        {"start_ms": int(word_start * 1000), "end_ms": int(word_end * 1000)}
+                        {
+                            "start_ms": int(word_start * 1000),
+                            "end_ms": int(word_end * 1000),
+                        }
                     )
                     word_start = None
                     word_end = None
@@ -568,7 +589,8 @@ class ElevenLabsTTSService:
             )
             logger.info(
                 "with-timestamps: %d words for %d chars",
-                len(word_timestamps), len(cleaned),
+                len(word_timestamps),
+                len(cleaned),
             )
             return audio_bytes, word_timestamps
         except Exception as e:
@@ -576,9 +598,13 @@ class ElevenLabsTTSService:
                 raise
             logger.warning("with-timestamps failed, falling back: %s", e)
             audio_bytes = self.generate_speech(
-                text=text, voice_id=voice_id,
-                stability=stability, similarity_boost=similarity_boost,
-                style=style, model_id=model_id, speed=speed,
+                text=text,
+                voice_id=voice_id,
+                stability=stability,
+                similarity_boost=similarity_boost,
+                style=style,
+                model_id=model_id,
+                speed=speed,
             )
             return audio_bytes, []
 
@@ -595,11 +621,15 @@ class MockElevenLabsTTSService:
         return b""
 
     def generate_speech_chunked(self, text: str, **kwargs) -> bytes:
-        logger.info("[MockElevenLabsTTS] Would generate chunked speech for %d chars", len(text))
+        logger.info(
+            "[MockElevenLabsTTS] Would generate chunked speech for %d chars", len(text)
+        )
         return b""
 
     def generate_speech_with_dialogue(self, text: str, **kwargs) -> bytes:
-        logger.info("[MockElevenLabsTTS] Would generate dialogue speech for %d chars", len(text))
+        logger.info(
+            "[MockElevenLabsTTS] Would generate dialogue speech for %d chars", len(text)
+        )
         return b""
 
     @staticmethod

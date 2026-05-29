@@ -14,6 +14,7 @@ Auto-created at boot by `db.create_all()` (the model is imported by
 exists for explicit/managed runs; a fresh Railway deploy does not need it run
 manually.
 """
+
 from datetime import datetime, timezone
 
 from ..database import db
@@ -22,7 +23,7 @@ from ..database import db
 class IllustrationCache(db.Model):
     """One row per unique (inputs -> generated image) pair."""
 
-    __tablename__ = 'illustration_cache'
+    __tablename__ = "illustration_cache"
 
     id = db.Column(db.Integer, primary_key=True)
     # sha256 hex of the normalized illustration inputs — the lookup key.
@@ -45,14 +46,14 @@ class IllustrationCache(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'cache_key': self.cache_key,
-            'image_data': self.image_data,
-            'image_format': self.image_format,
-            'provider': self.provider,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'last_accessed_at': (
+            "id": self.id,
+            "cache_key": self.cache_key,
+            "image_data": self.image_data,
+            "image_format": self.image_format,
+            "provider": self.provider,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_accessed_at": (
                 self.last_accessed_at.isoformat() if self.last_accessed_at else None
             ),
-            'hit_count': self.hit_count,
+            "hit_count": self.hit_count,
         }

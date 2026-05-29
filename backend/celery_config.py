@@ -5,11 +5,13 @@ from celery.schedules import crontab
 # Get Redis URL from environment
 # If not present, default to memory/cache to avoid connection errors on localhost
 
+
 def _fix_redis_scheme(url: str | None) -> str | None:
     """Normalize non-standard Redis URL schemes (e.g. rredis://) to redis://."""
     if url and url.startswith("rredis://"):
-        return "redis://" + url[len("rredis://"):]
+        return "redis://" + url[len("rredis://") :]
     return url
+
 
 REDIS_URL = _fix_redis_scheme(os.getenv("REDIS_URL"))
 CELERY_BROKER_URL = _fix_redis_scheme(os.getenv("CELERY_BROKER_URL"))
@@ -22,6 +24,7 @@ def _as_bool(name: str, default: bool = False) -> bool:
         return default
     return str(value).strip().lower() in ("1", "true", "yes", "on")
 
+
 # Initialize Celery app
 celery = Celery(
     "story_weaver",
@@ -30,8 +33,11 @@ celery = Celery(
     include=[
         "backend.tasks.story_tasks",
         # CMP-5 / PP-13: data-retention purge task. Must be in `include` so the
-        # worker (and the embedded beat scheduler) can resolve it by name.
+        # worker and the celery-beat scheduler can resolve it by name.
         "backend.tasks.retention_tasks",
+        # SE1: scheduled reliability monitoring (Celery queue depth + the
+        # data-retention purge heartbeat). Also resolved by name via beat.
+        "backend.tasks.monitoring_tasks",
     ],
 )
 
@@ -44,10 +50,10 @@ celery.conf.update(
     # broker_url and result_backend are set via REDIS_URL or config.py
     # broker_url='redis://localhost:6379/0',
     # result_backend='redis://localhost:6379/0',
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='UTC',
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
     enable_utc=True,
     task_always_eager=task_always_eager,
     task_eager_propagates=task_eager_propagates,
@@ -58,12 +64,20 @@ celery.conf.update(
     # CMP-5 / PP-13: Celery-beat schedule. The data-retention purge runs once
     # daily at 03:30 UTC (low-traffic window). The actual inactivity window is
     # configured separately via DATA_RETENTION_INACTIVE_DAYS (default 730).
-    # Beat must be running for this to fire — the worker is started with the
-    # embedded beat scheduler (`celery worker -B`); see railway.toml.
+    # Beat must be running for this to fire. Beat is NOT embedded in the worker
+    # (the worker runs `--pool=solo`, which is incompatible with `-B`) — it runs
+    # as its own dedicated `celery-beat` Railway service declared in railway.toml.
     beat_schedule={
         "data-retention-purge-inactive-accounts": {
             "task": "backend.tasks.retention_tasks.purge_inactive_accounts_task",
             "schedule": crontab(hour=3, minute=30),
+        },
+        # SE1: reliability monitor — checks Celery queue depth and the
+        # data-retention purge heartbeat every 10 minutes and raises an
+        # alertable Sentry warning when a threshold is breached.
+        "system-reliability-monitor": {
+            "task": "backend.tasks.monitoring_tasks.system_monitor_task",
+            "schedule": crontab(minute="*/10"),
         },
     },
 )

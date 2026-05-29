@@ -1,6 +1,7 @@
 """
 Tests for achievement backend functionality
 """
+
 import pytest
 import json
 from unittest.mock import patch
@@ -13,13 +14,16 @@ def _setup_account_and_token(client):
     removed the hardcoded credential), so the password must be read back from
     the setup response rather than assumed.
     """
-    setup_response = client.post('/setup-test-account')
-    password = setup_response.get_json()['password']
-    login_response = client.post('/auth/login', json={
-        'username': 'testuser',
-        'password': password,
-    })
-    return login_response.get_json()['token']
+    setup_response = client.post("/setup-test-account")
+    password = setup_response.get_json()["password"]
+    login_response = client.post(
+        "/auth/login",
+        json={
+            "username": "testuser",
+            "password": password,
+        },
+    )
+    return login_response.get_json()["token"]
 
 
 def test_sync_achievement_progress(client):
@@ -29,37 +33,40 @@ def test_sync_achievement_progress(client):
 
     # Prepare achievement sync data
     sync_data = {
-        'achievements': [
+        "achievements": [
             {
-                'type': 'firstStory',
-                'current_value': 1,
-                'target_value': 1,
-                'is_unlocked': True,
-                'unlocked_at': '2024-01-01T10:00:00.000Z',
-                'is_new': False
+                "type": "firstStory",
+                "current_value": 1,
+                "target_value": 1,
+                "is_unlocked": True,
+                "unlocked_at": "2024-01-01T10:00:00.000Z",
+                "is_new": False,
             }
         ],
-        'stats': {
-            'total_stories': 5,
-            'theme_counts': {'Adventure': 3, 'Friendship': 2},
-            'characters_created': 2,
-            'current_streak': 2,
-            'longest_streak': 3,
-            'last_story_date_iso': '2024-01-01',
-            'earned_early_bird': False,
-            'earned_night_owl': True,
-            'unique_emotions_logged': 8
-        }
+        "stats": {
+            "total_stories": 5,
+            "theme_counts": {"Adventure": 3, "Friendship": 2},
+            "characters_created": 2,
+            "current_streak": 2,
+            "longest_streak": 3,
+            "last_story_date_iso": "2024-01-01",
+            "earned_early_bird": False,
+            "earned_night_owl": True,
+            "unique_emotions_logged": 8,
+        },
     }
 
     # Sync achievements
-    response = client.post('/achievement/sync',
-                          json=sync_data,
-                          headers={'Authorization': f'Bearer {token}'})
+    response = client.post(
+        "/achievement/sync",
+        json=sync_data,
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data['status'] == 'success'
+    assert data["status"] == "success"
+
 
 def test_get_achievement_data(client):
     """Test getting achievement data for a user."""
@@ -67,15 +74,17 @@ def test_get_achievement_data(client):
     token = _setup_account_and_token(client)
 
     # Get achievement data
-    response = client.get('/achievement/data',
-                         headers={'Authorization': f'Bearer {token}'})
+    response = client.get(
+        "/achievement/data", headers={"Authorization": f"Bearer {token}"}
+    )
 
     assert response.status_code == 200
     data = response.get_json()
-    assert 'achievements' in data
-    assert 'stats' in data
-    assert isinstance(data['achievements'], list)
-    assert isinstance(data['stats'], dict)
+    assert "achievements" in data
+    assert "stats" in data
+    assert isinstance(data["achievements"], list)
+    assert isinstance(data["stats"], dict)
+
 
 def test_record_story_creation(client):
     """Test recording story creation."""
@@ -83,14 +92,17 @@ def test_record_story_creation(client):
     token = _setup_account_and_token(client)
 
     # Record story creation
-    response = client.post('/achievement/record/story',
-                          json={'theme': 'Adventure'},
-                          headers={'Authorization': f'Bearer {token}'})
+    response = client.post(
+        "/achievement/record/story",
+        json={"theme": "Adventure"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data['status'] == 'success'
-    assert 'new_unlocks' in data
+    assert data["status"] == "success"
+    assert "new_unlocks" in data
+
 
 def test_record_character_creation(client):
     """Test recording character creation."""
@@ -98,13 +110,15 @@ def test_record_character_creation(client):
     token = _setup_account_and_token(client)
 
     # Record character creation
-    response = client.post('/achievement/record/character',
-                          headers={'Authorization': f'Bearer {token}'})
+    response = client.post(
+        "/achievement/record/character", headers={"Authorization": f"Bearer {token}"}
+    )
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data['status'] == 'success'
-    assert 'new_unlocks' in data
+    assert data["status"] == "success"
+    assert "new_unlocks" in data
+
 
 def test_get_achievement_stats(client):
     """Test getting achievement statistics."""
@@ -112,15 +126,16 @@ def test_get_achievement_stats(client):
     token = _setup_account_and_token(client)
 
     # Get achievement stats
-    response = client.get('/achievement/stats',
-                         headers={'Authorization': f'Bearer {token}'})
+    response = client.get(
+        "/achievement/stats", headers={"Authorization": f"Bearer {token}"}
+    )
 
     assert response.status_code == 200
     data = response.get_json()
-    assert 'total_stories' in data
-    assert 'characters_created' in data
-    assert 'current_streak' in data
-    assert 'longest_streak' in data
+    assert "total_stories" in data
+    assert "characters_created" in data
+    assert "current_streak" in data
+    assert "longest_streak" in data
 
 
 def test_record_story_returns_500_when_service_raises(client, mocker):
@@ -128,17 +143,17 @@ def test_record_story_returns_500_when_service_raises(client, mocker):
     token = _setup_account_and_token(client)
 
     mocker.patch(
-        'backend.routes.achievement_routes.AchievementService.record_story_created',
-        side_effect=RuntimeError('forced failure'),
+        "backend.routes.achievement_routes.AchievementService.record_story_created",
+        side_effect=RuntimeError("forced failure"),
     )
 
     response = client.post(
-        '/achievement/record/story',
-        json={'theme': 'Adventure'},
-        headers={'Authorization': f'Bearer {token}'}
+        "/achievement/record/story",
+        json={"theme": "Adventure"},
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 500
     data = response.get_json()
-    assert data['status'] == 'error'
-    assert data['message'] == 'Failed to record story'
+    assert data["status"] == "error"
+    assert data["message"] == "Failed to record story"

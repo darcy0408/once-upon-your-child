@@ -36,8 +36,7 @@ _PAID_TEXT_TIERS = frozenset({"premium", "family", "byok"})
 
 
 _SAFETY_FALLBACK = (
-    "I wasn't able to create that story right now. "
-    "Let's try a different adventure!"
+    "I wasn't able to create that story right now. " "Let's try a different adventure!"
 )
 
 
@@ -219,19 +218,35 @@ class OpenRouterStoryGenerator:
                 if e.response.status_code == 429:
                     if attempt < max_retries - 1:
                         # Use exponential backoff, OpenRouter might have its own retry-after header
-                        retry_after = int(e.response.headers.get("Retry-After", base_delay * (2 ** attempt)))
-                        logger.warning(f"OpenRouter rate limit exceeded. Retrying in {retry_after} seconds...")
+                        retry_after = int(
+                            e.response.headers.get(
+                                "Retry-After", base_delay * (2**attempt)
+                            )
+                        )
+                        logger.warning(
+                            f"OpenRouter rate limit exceeded. Retrying in {retry_after} seconds..."
+                        )
                         time.sleep(retry_after)
                     else:
-                        logger.error(f"OpenRouter story generation failed after {max_retries} retries due to rate limiting.", exc_info=True)
+                        logger.error(
+                            f"OpenRouter story generation failed after {max_retries} retries due to rate limiting.",
+                            exc_info=True,
+                        )
                         return "Sorry, the story generator is currently busy. Please try again in a few minutes."
                 else:
                     # For other HTTP errors, fail immediately
-                    logger.error(f"OpenRouter API error: {e.response.status_code} - {e.response.text}", exc_info=True)
+                    logger.error(
+                        f"OpenRouter API error: {e.response.status_code} - {e.response.text}",
+                        exc_info=True,
+                    )
                     return f"Sorry, there was a server error ({e.response.status_code}) while generating the story."
             except Exception as e:
-                logger.error(f"An unexpected error occurred with OpenRouter: {e}", exc_info=True)
+                logger.error(
+                    f"An unexpected error occurred with OpenRouter: {e}", exc_info=True
+                )
                 # For other exceptions, don't retry
-                return "Sorry, an unexpected error occurred while generating your story."
+                return (
+                    "Sorry, an unexpected error occurred while generating your story."
+                )
 
         return "Sorry, there was an error generating your story after multiple retries. Please try again later."

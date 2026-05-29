@@ -16,7 +16,9 @@ def init_request_logging(app, logger):
     @app.after_request
     def _log_request_details(response):
         try:
-            latency_ms = (time.time() - getattr(g, "request_start", time.time())) * 1000.0
+            latency_ms = (
+                time.time() - getattr(g, "request_start", time.time())
+            ) * 1000.0
             size = request.content_length or 0
             path = request.path
             method = request.method

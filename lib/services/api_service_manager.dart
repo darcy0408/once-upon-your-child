@@ -673,6 +673,11 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    // PERF-01 slice 4: optional consumer of accumulated streamed story
+    // text from /task-status. Called whenever a poll returns `partial_text`;
+    // each call is a fresh snapshot of the full accumulated story so far.
+    // Existing callers that don't pass this are unaffected.
+    void Function(String)? onPartial,
     List<String>? progressPhases,
     // Age-appropriate story parameters
     String? therapeuticPrompt,
@@ -773,6 +778,7 @@ class ApiServiceManager {
           bedtimeMood: bedtimeMood,
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
+          onPartial: onPartial,
           progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
@@ -1042,6 +1048,11 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    // PERF-01 slice 4: optional consumer of accumulated streamed story
+    // text from /task-status. Called whenever a poll returns `partial_text`;
+    // each call is a fresh snapshot of the full accumulated story so far.
+    // Existing callers that don't pass this are unaffected.
+    void Function(String)? onPartial,
     List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
@@ -1093,6 +1104,7 @@ class ApiServiceManager {
           bedtimeMood: bedtimeMood,
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
+          onPartial: onPartial,
           progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
@@ -1159,6 +1171,11 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    // PERF-01 slice 4: optional consumer of accumulated streamed story
+    // text from /task-status. Called whenever a poll returns `partial_text`;
+    // each call is a fresh snapshot of the full accumulated story so far.
+    // Existing callers that don't pass this are unaffected.
+    void Function(String)? onPartial,
     List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
@@ -1328,6 +1345,18 @@ class ApiServiceManager {
 
         final statusData = jsonDecode(statusResponse.body);
         final status = statusData['status'] as String;
+
+        // PERF-01 slice 4: surface accumulated streamed text to the optional
+        // onPartial callback. Each emit is a fresh snapshot of the full
+        // story so far (not a delta), so the consumer can just replace its
+        // displayed text. No-op when the caller didn't supply a consumer or
+        // when the backend isn't streaming this generation.
+        final partialText = statusData['partial_text'];
+        if (onPartial != null &&
+            partialText is String &&
+            partialText.isNotEmpty) {
+          onPartial(partialText);
+        }
 
         if (status == 'complete') {
           final result = statusData['result'];

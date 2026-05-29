@@ -3,9 +3,10 @@ import sys
 import os
 
 # Add backend to path to allow imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from backend.services.story_service import AdvancedStoryEngine
+
 
 class TestCinematicFeatures(unittest.TestCase):
     def setUp(self):
@@ -15,7 +16,7 @@ class TestCinematicFeatures(unittest.TestCase):
         # Test Data
         character_name = "Leo"
         theme = "The Lost City"
-        
+
         # Enhanced Companion Data
         companion_characters = [
             {
@@ -24,7 +25,7 @@ class TestCinematicFeatures(unittest.TestCase):
                 "signaturePower": "Bubble Shield",
                 "powerConstraint": "Pops if he laughs",
                 "sensoryTell": "Smell of bubblegum",
-                "description": "A cheerful boy who loves gum."
+                "description": "A cheerful boy who loves gum.",
             }
         ]
 
@@ -35,13 +36,11 @@ class TestCinematicFeatures(unittest.TestCase):
         mood_physics = {
             "mood": "Stormy",
             "worldRule": "Gravity is wobbly when thunder rolls.",
-            "sensoryChange": "Static makes hair stand up."
+            "sensoryChange": "Static makes hair stand up.",
         }
 
         # Character Details with Special Ability
-        character_details = {
-            "specialAbility": "Can jump over clouds"
-        }
+        character_details = {"specialAbility": "Can jump over clouds"}
 
         # Generate Prompt
         prompt = self.engine.generate_enhanced_prompt(
@@ -50,7 +49,7 @@ class TestCinematicFeatures(unittest.TestCase):
             companion_characters=companion_characters,
             spark_tool=spark_tool,
             mood_physics=mood_physics,
-            character_details=character_details
+            character_details=character_details,
         )
 
         # Assertions
@@ -75,7 +74,7 @@ class TestCinematicFeatures(unittest.TestCase):
             character=character_name,
             theme=theme,
             conflict_hook=conflict_hook,
-            sensory_palette=sensory_palette
+            sensory_palette=sensory_palette,
         )
 
         # Assertions
@@ -90,28 +89,22 @@ class TestCinematicFeatures(unittest.TestCase):
 
         # Test 'quick' length
         prompt_quick = self.engine.generate_enhanced_prompt(
-            character=character_name,
-            theme=theme,
-            story_length='quick'
+            character=character_name, theme=theme, story_length="quick"
         )
         self.assertIn("Approximately 450-650 words", prompt_quick)
 
         # Test 'epic' length
         prompt_epic = self.engine.generate_enhanced_prompt(
-            character=character_name,
-            theme=theme,
-            story_length='epic'
+            character=character_name, theme=theme, story_length="epic"
         )
         self.assertIn("Approximately 900-1200 words", prompt_epic)
 
         # Test 'standard' (default) length
         prompt_standard = self.engine.generate_enhanced_prompt(
-            character=character_name,
-            theme=theme,
-            story_length='standard'
+            character=character_name, theme=theme, story_length="standard"
         )
         self.assertIn("Approximately 650-900 words", prompt_standard)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

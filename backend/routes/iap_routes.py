@@ -22,6 +22,7 @@ TODOs and a feature flag — the real calls need owner-provided credentials
 this task's scope. Without them, `IAP_VERIFICATION_ENABLED` defaults off and
 the endpoints return 503 rather than silently granting entitlement.
 """
+
 import logging
 import os
 from datetime import datetime, timezone
@@ -33,6 +34,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 try:
     from ..database import db
     from ..models.user import User
+
     # Importing the IAP models at module level registers them with SQLAlchemy
     # before db.create_all() runs, so the tables auto-create on a fresh DB.
     from ..models.iap_event import (
@@ -90,7 +92,10 @@ def _verification_enabled() -> bool:
     verify endpoints must NOT grant entitlement off an unverified receipt.
     """
     return os.getenv("IAP_VERIFICATION_ENABLED", "false").strip().lower() in (
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     )
 
 
@@ -103,6 +108,7 @@ def _tier_for_product(product_id: Optional[str]) -> Optional[str]:
 # ===========================================================================
 # Receipt verification endpoints
 # ===========================================================================
+
 
 @iap_routes.route("/iap/apple/verify", methods=["POST"])
 @require_auth
@@ -143,7 +149,9 @@ def _handle_verify(*, store: str):
     if body_user_id and body_user_id != user.id:
         logger.warning(
             "IAP verify: body user_id %s != authenticated user %s — using "
-            "authenticated identity", body_user_id, user.id,
+            "authenticated identity",
+            body_user_id,
+            user.id,
         )
 
     if not verification_data:
@@ -161,12 +169,18 @@ def _handle_verify(*, store: str):
         # an unverified receipt.
         logger.error(
             "IAP verify called but IAP_VERIFICATION_ENABLED is off — "
-            "store credentials not yet provisioned (store=%s)", store,
+            "store credentials not yet provisioned (store=%s)",
+            store,
         )
-        return jsonify({
-            "error": "In-app purchases are not yet available",
-            "code": "iap_not_configured",
-        }), 503
+        return (
+            jsonify(
+                {
+                    "error": "In-app purchases are not yet available",
+                    "code": "iap_not_configured",
+                }
+            ),
+            503,
+        )
 
     # --- Verify the receipt with the store --------------------------------
     try:
@@ -183,12 +197,19 @@ def _handle_verify(*, store: str):
     if not verified.get("valid"):
         logger.warning(
             "IAP %s receipt rejected for user %s: %s",
-            store, user.id, verified.get("reason"),
+            store,
+            user.id,
+            verified.get("reason"),
         )
-        return jsonify({
-            "error": "Receipt could not be verified",
-            "code": "receipt_invalid",
-        }), 400
+        return (
+            jsonify(
+                {
+                    "error": "Receipt could not be verified",
+                    "code": "receipt_invalid",
+                }
+            ),
+            400,
+        )
 
     expires_at = verified.get("expires_at")
     status = verified.get("status", "active")
@@ -208,7 +229,9 @@ def _handle_verify(*, store: str):
         )
         apply_entitlement(
             user,
-            tier=tier if status in ("active", "trialing", "grace_period") else FREE_TIER,
+            tier=(
+                tier if status in ("active", "trialing", "grace_period") else FREE_TIER
+            ),
             status=status,
             period_end=expires_at,
             source=store,
@@ -219,18 +242,25 @@ def _handle_verify(*, store: str):
         logger.exception("IAP verify: DB error applying entitlement")
         return jsonify({"error": "Could not record purchase"}), 500
 
-    return jsonify({
-        "status": "verified",
-        "tier": user.subscription_tier,
-        "subscription_status": user.subscription_status,
-        "current_period_end":
-            expires_at.isoformat() if isinstance(expires_at, datetime) else None,
-    }), 200
+    return (
+        jsonify(
+            {
+                "status": "verified",
+                "tier": user.subscription_tier,
+                "subscription_status": user.subscription_status,
+                "current_period_end": (
+                    expires_at.isoformat() if isinstance(expires_at, datetime) else None
+                ),
+            }
+        ),
+        200,
+    )
 
 
 # ===========================================================================
 # Server-to-server notification endpoints (renewals / cancels / refunds)
 # ===========================================================================
+
 
 @iap_routes.route("/iap/apple/notifications", methods=["POST"])
 def apple_server_notifications():
@@ -262,9 +292,14 @@ def apple_server_notifications():
         verify_apple_jws(signed_payload)
     except IapVerificationConfigError:
         logger.error("Apple S2S notification: verification not configured")
-        return jsonify({
-            "error": "notification verification not configured",
-        }), 503
+        return (
+            jsonify(
+                {
+                    "error": "notification verification not configured",
+                }
+            ),
+            503,
+        )
     except IapVerificationError as exc:
         logger.warning("Apple S2S notification rejected: %s", exc)
         return jsonify({"error": "notification verification failed"}), 403
@@ -301,9 +336,14 @@ def google_server_notifications():
         verify_google_pubsub_oidc(request)
     except IapVerificationConfigError:
         logger.error("Google S2S notification: verification not configured")
-        return jsonify({
-            "error": "notification verification not configured",
-        }), 503
+        return (
+            jsonify(
+                {
+                    "error": "notification verification not configured",
+                }
+            ),
+            503,
+        )
     except IapVerificationError as exc:
         logger.warning("Google S2S notification rejected: %s", exc)
         return jsonify({"error": "notification verification failed"}), 403
@@ -332,6 +372,7 @@ def _handle_notification_stub(*, store: str):
 # ===========================================================================
 # Store verification helpers — Phase 1 stubs
 # ===========================================================================
+
 
 def _verify_with_apple(receipt_data: str) -> Dict[str, Any]:
     """Validate a StoreKit receipt with Apple.
@@ -383,6 +424,7 @@ def _verify_with_google(purchase_token: str, product_id: str) -> Dict[str, Any]:
 # ===========================================================================
 # Persistence helpers
 # ===========================================================================
+
 
 def _upsert_iap_purchase(
     *,
@@ -445,7 +487,8 @@ def _upsert_iap_purchase(
         ):
             logger.warning(
                 "IAP upsert: dropping stale event for txn %s "
-                "(event predates last applied state)", store_transaction_id,
+                "(event predates last applied state)",
+                store_transaction_id,
             )
             return record
         record.user_id = user_id

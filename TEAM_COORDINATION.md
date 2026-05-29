@@ -11,6 +11,17 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-28 | 13:52 | 875f | reliability-hardening | MT-187 F-01 prompt-template versioning shipped + prod Postgres migrated | [link](docs/sessions/2026-05-28-1352-875f.md) |
+| 2026-05-28 | 13:52 | 7c1c | reliability-hardening | Perf: PERF-01 streaming backend + PERF-04 cancel foundation | [link](docs/sessions/2026-05-28-1352-7c1c.md) |
+| 2026-05-28 | 13:52 | 83c8 | reliability-hardening | Backup workflow hardened + R2 walkthrough; P1/P2 path corrected | [link](docs/sessions/2026-05-28-1352-83c8.md) |
+| 2026-05-27 | 22:44 | 275f | mt-187-prompt-versioning | MT-144 keystore runbook delivered; MT-175 AAB re-verified at 82MB | [link](docs/sessions/2026-05-27-2244-275f.md) |
+| 2026-05-27 | 07:22 | 28f5 | reliability-hardening | LinkedIn Company Page kit for Once Upon YOUR Child (no code) | [link](docs/sessions/2026-05-27-0722-28f5.md) |
+| 2026-05-27 | 07:22 | 9c35 | reliability-hardening | Briefing + A11Y-LTR-03 inspect — work absorbed by parallel | [link](docs/sessions/2026-05-27-0722-9c35.md) |
+| 2026-05-27 | 07:18 | a339 | main | Triage stranded parallel-session work + rescue commit | [link](docs/sessions/2026-05-27-0718-a339.md) |
+| 2026-05-27 | 07:14 | d003 | reliability-hardening | Audit 05 end-to-end: harness, run, RCAs, fixes, rubric finding | [link](docs/sessions/2026-05-27-0714-d003.md) |
+| 2026-05-24 | 21:30 | 0db7 | reliability-hardening | Audit 05 Superhero prompt fixes + Python 3.13 TTS verify | [link](docs/sessions/2026-05-24-2130-0db7.md) |
+| 2026-05-22 | 15:18 | 1738 | main | WCAG 2.2 AA a11y audit + remediation Phases 0-1 | [link](docs/sessions/2026-05-22-1518-1738.md) |
+| 2026-05-22 | 15:18 | 2102 | reliability-hardening | Verify Gemini TTS fallback locally (MT-178) | [link](docs/sessions/2026-05-22-1518-2102.md) |
 | 2026-05-22 | 12:49 | 6360 | main | MT-174 brand verify surfaced + fixed P0 custom-domain outage (CSP fonts + CORS) | [link](docs/sessions/2026-05-22-1249-6360.md) |
 | 2026-05-22 | 12:41 | 653a | main | Strip BOM from WebP-rewrite dart files; delegate MT-173/178 | [link](docs/sessions/2026-05-22-1241-653a.md) |
 | 2026-05-22 | 11:59 | 85c1 | main | WebP Illustration Asset Conversion and Play Store Size Optimization | [link](docs/sessions/2026-05-22-1159-85c1.md) |

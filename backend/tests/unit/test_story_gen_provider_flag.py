@@ -13,6 +13,7 @@ Covers:
   empty content, max_tokens truncation, content_filter blocks, and the
   Claude-style content-block list shape.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -29,7 +30,6 @@ from backend.services.openrouter_story_generator import (
 )
 from backend.tasks import story_tasks
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -40,7 +40,9 @@ _OK_STORY = (
 )
 
 
-def _ok_openrouter_response(content: str = _OK_STORY, finish_reason: str = "stop") -> MagicMock:
+def _ok_openrouter_response(
+    content: str = _OK_STORY, finish_reason: str = "stop"
+) -> MagicMock:
     """Build a successful OpenRouter chat-completion HTTP response mock."""
     resp = MagicMock()
     resp.status_code = 200
@@ -271,6 +273,7 @@ class TestProviderFlagSequencing:
         monkeypatch.setenv("STORY_GEN_PROVIDER", "openrouter")
         # Make OpenRouter raise a non-retryable HTTP error.
         import requests as _real_requests
+
         bad = MagicMock()
         bad.status_code = 500
         bad.text = "internal server error"
@@ -411,6 +414,7 @@ class TestProviderFlagSequencing:
         # which the orchestrator classifies as a fail and tries the next
         # provider in the chain.
         import requests as _real_requests
+
         bad = MagicMock()
         bad.status_code = 500
         bad.text = "internal server error"

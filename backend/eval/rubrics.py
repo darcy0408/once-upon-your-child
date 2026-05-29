@@ -70,9 +70,7 @@ AGE_BAND_FIT = Rubric(
 MODE_ADHERENCE = Rubric(
     name="mode_adherence",
     scale="0 or 1",
-    description=(
-        "Did the output follow the structural rules of the requested mode?"
-    ),
+    description=("Did the output follow the structural rules of the requested mode?"),
     judge_prompt=(
         "The requested mode is {mode}. Score binary:\n"
         "1 = mode rules followed (e.g., rhyme present for LTR/Rhyme Time, "

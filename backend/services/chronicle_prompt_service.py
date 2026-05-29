@@ -2,6 +2,7 @@
 Chronicle Prompt Service
 Builds Gemini prompts for chapter summarization and arc compression.
 """
+
 import json
 import logging
 import os
@@ -154,9 +155,7 @@ Return ONLY valid JSON matching this exact schema:
         summaries_text = ""
         for i, mem in enumerate(chapter_summaries):
             ch_num = chapter_start + i
-            bullets = "\n".join(
-                f"  - {b}" for b in (mem.get("summary_bullets") or [])
-            )
+            bullets = "\n".join(f"  - {b}" for b in (mem.get("summary_bullets") or []))
             summaries_text += f"\nChapter {ch_num}:\n{bullets}\n"
 
         prompt = f"""{self.COMPRESS_SYSTEM}

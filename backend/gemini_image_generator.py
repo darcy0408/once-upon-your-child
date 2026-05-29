@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 #                            danger/conflict that can appear in children's stories.
 try:
     from google.genai import types as _genai_types_init
+
     _CHILD_IMAGE_SAFETY_SETTINGS = [
         _genai_types_init.SafetySetting(
             category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
@@ -121,44 +122,42 @@ def build_appearance_details(character_appearance: dict | None) -> list:
     details: list[str] = []
 
     # --- Hair: combine length + style + colour into one phrase ---------------
-    hair_color = _humanize(ca.get('hair_color')) or _humanize(ca.get('hair'))
-    hair_length = _humanize(ca.get('hair_length'))
-    hair_style = _humanize(ca.get('hair_style') or ca.get('hairstyle'))
+    hair_color = _humanize(ca.get("hair_color")) or _humanize(ca.get("hair"))
+    hair_length = _humanize(ca.get("hair_length"))
+    hair_style = _humanize(ca.get("hair_style") or ca.get("hairstyle"))
     hair_parts = [p for p in (hair_length, hair_style, hair_color) if p]
     if hair_parts:
         details.append(f"hair: {' '.join(hair_parts)}")
 
     # --- Eyes ----------------------------------------------------------------
-    eye_color = _humanize(ca.get('eye_color') or ca.get('eyes'))
+    eye_color = _humanize(ca.get("eye_color") or ca.get("eyes"))
     if eye_color:
         details.append(f"eye color: {eye_color}")
 
     # --- Skin ----------------------------------------------------------------
-    skin = _humanize(ca.get('skin_tone')) or _humanize(ca.get('skin'))
+    skin = _humanize(ca.get("skin_tone")) or _humanize(ca.get("skin"))
     if skin:
         details.append(f"skin tone: {skin}")
 
     # --- Clothing ------------------------------------------------------------
-    clothing_style = _humanize(ca.get('clothing_style'))
-    clothing_colors = _humanize(ca.get('clothing_colors'))
-    outfit = _humanize(ca.get('outfit'))
+    clothing_style = _humanize(ca.get("clothing_style"))
+    clothing_colors = _humanize(ca.get("clothing_colors"))
+    outfit = _humanize(ca.get("outfit"))
     if outfit:
         details.append(f"wearing: {outfit}")
     elif clothing_style or clothing_colors:
-        clothing_phrase = ' '.join(
-            p for p in (clothing_colors, clothing_style) if p
-        )
+        clothing_phrase = " ".join(p for p in (clothing_colors, clothing_style) if p)
         details.append(f"wearing: {clothing_phrase} clothing")
 
     # --- Gender --------------------------------------------------------------
-    gender = _humanize(ca.get('gender'))
+    gender = _humanize(ca.get("gender"))
     if gender:
         details.append(f"gender: {gender}")
 
     # --- Distinguishing feature (MT-129) -------------------------------------
     # A single notable visual cue from photo analysis (e.g. "round glasses",
     # "freckles", "curly bangs"). High recognisability signal — passed verbatim.
-    distinguishing = _humanize(ca.get('distinguishing'))
+    distinguishing = _humanize(ca.get("distinguishing"))
     if distinguishing:
         details.append(f"notable feature: {distinguishing}")
 
@@ -167,13 +166,13 @@ def build_appearance_details(character_appearance: dict | None) -> list:
 
 def _detect_mime_type(data: bytes) -> str:
     """Detect image MIME type from magic bytes."""
-    if data[:8] == b'\x89PNG\r\n\x1a\n':
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
         return "image/png"
-    if data[:3] == b'\xff\xd8\xff':
+    if data[:3] == b"\xff\xd8\xff":
         return "image/jpeg"
-    if data[:6] in (b'GIF87a', b'GIF89a'):
+    if data[:6] in (b"GIF87a", b"GIF89a"):
         return "image/gif"
-    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return "image/webp"
     return "image/jpeg"  # fallback
 
@@ -183,7 +182,9 @@ class GeminiImageGenerator:
         """Initialize with Gemini API key"""
         primary = api_key or os.getenv("GEMINI_API_KEY")
         self._model_name = "gemini-2.5-flash-image"
-        self._request_timeout_seconds = int(os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120"))
+        self._request_timeout_seconds = int(
+            os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120")
+        )
         # Build rotation pool: primary key + GOOGLE_API_KEY_2/3/4
         rotation_keys = [
             os.getenv("GOOGLE_API_KEY_2"),
@@ -195,23 +196,32 @@ class GeminiImageGenerator:
         self.api_key = self._api_keys[0] if self._api_keys else None
         if self.api_key:
             from google import genai
+
             self._client = genai.Client(api_key=self.api_key)
 
     def _client_for_key(self, api_key: str):
         from google import genai
+
         return genai.Client(api_key=api_key)
 
     def _call_with_rotation(self, fn):
         """Try fn(client) with each key in the rotation pool on ResourceExhausted."""
         from google.genai import errors as genai_errors
+
         last_exc = None
         for key in self._api_keys:
             client = self._client_for_key(key)
             try:
                 return fn(client)
             except genai_errors.ClientError as e:
-                if e.status_code == 429 or "ResourceExhausted" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                    logger.warning(f"Gemini image key quota exhausted, rotating to next key")
+                if (
+                    e.status_code == 429
+                    or "ResourceExhausted" in str(e)
+                    or "RESOURCE_EXHAUSTED" in str(e)
+                ):
+                    logger.warning(
+                        f"Gemini image key quota exhausted, rotating to next key"
+                    )
                     last_exc = e
                     continue
                 raise
@@ -225,19 +235,23 @@ class GeminiImageGenerator:
         """Helper to process the response from generate_content and extract images from Nano Banana."""
         images = []
         try:
-            if hasattr(response, 'candidates') and response.candidates:
+            if hasattr(response, "candidates") and response.candidates:
                 for i, candidate in enumerate(response.candidates):
-                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    if hasattr(candidate, "content") and hasattr(
+                        candidate.content, "parts"
+                    ):
                         for part in candidate.content.parts:
                             # Nano Banana returns images differently - check for inline_data attribute
-                            if hasattr(part, 'inline_data') and part.inline_data:
+                            if hasattr(part, "inline_data") and part.inline_data:
                                 try:
                                     image_data = part.inline_data.data
-                                    
+
                                     # Resize image to max 1024x1024 to save memory
                                     try:
                                         with Image.open(io.BytesIO(image_data)) as img:
-                                            img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                            img.thumbnail(
+                                                (1024, 1024), Image.Resampling.LANCZOS
+                                            )
                                             buffer = io.BytesIO()
                                             img.save(buffer, format="PNG")
                                             image_data = buffer.getvalue()
@@ -245,21 +259,29 @@ class GeminiImageGenerator:
                                         logger.warning(f"Failed to resize image: {e}")
 
                                     # Data is already bytes, encode to base64
-                                    images.append({
-                                        'id': f"{uuid.uuid4()}_{i}",
-                                        'prompt': prompt,
-                                        'image_data': base64.b64encode(image_data).decode('utf-8'),
-                                        'format': 'png',
-                                        'generated_at': datetime.now().isoformat(),
-                                    })
-                                    logger.info(f"Successfully extracted image {i} from Nano Banana response")
+                                    images.append(
+                                        {
+                                            "id": f"{uuid.uuid4()}_{i}",
+                                            "prompt": prompt,
+                                            "image_data": base64.b64encode(
+                                                image_data
+                                            ).decode("utf-8"),
+                                            "format": "png",
+                                            "generated_at": datetime.now().isoformat(),
+                                        }
+                                    )
+                                    logger.info(
+                                        f"Successfully extracted image {i} from Nano Banana response"
+                                    )
                                 except Exception as e:
-                                    logger.error(f"Failed to extract image data from part: {e}")
+                                    logger.error(
+                                        f"Failed to extract image data from part: {e}"
+                                    )
             else:
                 logger.warning("Response has no candidates or unexpected structure")
         except Exception as e:
             logger.exception("Error processing image response from Nano Banana")
-        
+
         return images
 
     def _generate_content_with_timeout(self, contents, *, with_rotation: bool = False):
@@ -276,6 +298,7 @@ class GeminiImageGenerator:
         the per-attempt timeout still applies to each key.
         """
         from google.genai import types
+
         config = types.GenerateContentConfig(
             response_modalities=["IMAGE"],
             safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
@@ -303,11 +326,17 @@ class GeminiImageGenerator:
         Supports both flat camelCase keys (Flutter mapper output) and nested
         'attributes' dict (raw GeneratedAvatar.toJson() format)."""
         details = []
-        attrs = avatar.get('attributes') or {}
-        hair_style = avatar.get('hairStyle') or attrs.get('hair_style') or attrs.get('hairStyle')
-        hair_color = avatar.get('hairColor') or attrs.get('hair_color') or attrs.get('hairColor')
-        skin_color = avatar.get('skinColor') or attrs.get('skin_tone')  or attrs.get('skinTone')
-        top_type   = avatar.get('topType')   or attrs.get('outfit')     or attrs.get('topType')
+        attrs = avatar.get("attributes") or {}
+        hair_style = (
+            avatar.get("hairStyle") or attrs.get("hair_style") or attrs.get("hairStyle")
+        )
+        hair_color = (
+            avatar.get("hairColor") or attrs.get("hair_color") or attrs.get("hairColor")
+        )
+        skin_color = (
+            avatar.get("skinColor") or attrs.get("skin_tone") or attrs.get("skinTone")
+        )
+        top_type = avatar.get("topType") or attrs.get("outfit") or attrs.get("topType")
         if hair_style:
             details.append(f"hairstyle: {hair_style}")
         if hair_color:
@@ -335,7 +364,9 @@ class GeminiImageGenerator:
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping illustration generation")
+            logger.warning(
+                "Gemini image generator unavailable; skipping illustration generation"
+            )
             return []
         # Determine detail level based on age
         if age <= 5:
@@ -364,13 +395,15 @@ class GeminiImageGenerator:
             appearance_details = []
 
             # Check for custom avatar image
-            custom_avatar_b64 = character_appearance.get('custom_avatar_base64')
+            custom_avatar_b64 = character_appearance.get("custom_avatar_base64")
             if custom_avatar_b64:
                 try:
                     if "," in custom_avatar_b64:
                         custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
                     reference_image_bytes = base64.b64decode(custom_avatar_b64)
-                    appearance_details.append("This character MUST look exactly like the provided reference photo")
+                    appearance_details.append(
+                        "This character MUST look exactly like the provided reference photo"
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to decode custom avatar image: {e}")
 
@@ -381,8 +414,10 @@ class GeminiImageGenerator:
             appearance_details.extend(build_appearance_details(character_appearance))
 
             # Add avatar details if available
-            if character_appearance.get('avatar'):
-                appearance_details.extend(self._read_avatar_details(character_appearance['avatar']))
+            if character_appearance.get("avatar"):
+                appearance_details.extend(
+                    self._read_avatar_details(character_appearance["avatar"])
+                )
 
             if appearance_details:
                 character_description += f" ({', '.join(appearance_details)})"
@@ -393,8 +428,8 @@ class GeminiImageGenerator:
             companion_descriptions = []
             for companion in companions:
                 if isinstance(companion, dict):
-                    comp_name = companion.get('name', 'companion')
-                    comp_type = companion.get('type', '')
+                    comp_name = companion.get("name", "companion")
+                    comp_type = companion.get("type", "")
                     if comp_type:
                         companion_descriptions.append(f"{comp_name} (a {comp_type})")
                     else:
@@ -412,6 +447,7 @@ class GeminiImageGenerator:
         # "Willihrs litte leokied" or "Playbinbe". Lowercase loud words and remove
         # asterisk emphasis before substituting into the visual prompt.
         import re as _re_visual
+
         visual_scene = scene_description
         visual_scene = _re_visual.sub(r"\*+([^*]+)\*+", r"\1", visual_scene)
         visual_scene = _re_visual.sub(
@@ -460,12 +496,20 @@ Style: {style}, optimized for {age_descriptor}
 
         try:
             from google.genai import types
-            logger.info("Calling Gemini image generation with prompt preview: %s", prompt[:200].replace("\n", " "))
-            
+
+            logger.info(
+                "Calling Gemini image generation with prompt preview: %s",
+                prompt[:200].replace("\n", " "),
+            )
+
             # Prepare contents
             contents = [prompt]
             if reference_image_bytes:
-                contents.append(types.Part.from_bytes(data=reference_image_bytes, mime_type="image/png"))
+                contents.append(
+                    types.Part.from_bytes(
+                        data=reference_image_bytes, mime_type="image/png"
+                    )
+                )
 
             # Generate images with Gemini
             response = self._client.models.generate_content(
@@ -478,18 +522,26 @@ Style: {style}, optimized for {age_descriptor}
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
-            logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
+            logger.info(
+                "Gemini image generation returned %s candidates and %s image(s)",
+                candidate_count,
+                len(images),
+            )
             try:
-                from backend.services.cost_tracker import gemini_image_cost, log_api_cost
+                from backend.services.cost_tracker import (
+                    gemini_image_cost,
+                    log_api_cost,
+                )
+
                 log_api_cost(
-                    provider='gemini_image',
-                    feature='story_illustration',
+                    provider="gemini_image",
+                    feature="story_illustration",
                     cost_usd=gemini_image_cost(len(images)),
                     user_id=user_id,
                     units=len(images),
-                    unit_kind='images',
+                    unit_kind="images",
                     success=len(images) > 0,
-                    extra={'model': self._model_name, 'age': age},
+                    extra={"model": self._model_name, "age": age},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -501,13 +553,14 @@ Style: {style}, optimized for {age_descriptor}
             )
             try:
                 from backend.services.cost_tracker import log_api_cost
+
                 log_api_cost(
-                    provider='gemini_image',
-                    feature='story_illustration',
+                    provider="gemini_image",
+                    feature="story_illustration",
                     cost_usd=0.0,
                     user_id=user_id,
                     success=False,
-                    extra={'error': 'timeout', 'model': self._model_name},
+                    extra={"error": "timeout", "model": self._model_name},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -515,22 +568,27 @@ Style: {style}, optimized for {age_descriptor}
         except Exception as e:
             # Check for quota errors
             error_msg = str(e).lower()
-            if '429' in str(e) or 'quota' in error_msg or 'exceeded' in error_msg:
-                logger.warning("Gemini API quota exceeded. Please check your billing or wait for quota reset.")
+            if "429" in str(e) or "quota" in error_msg or "exceeded" in error_msg:
+                logger.warning(
+                    "Gemini API quota exceeded. Please check your billing or wait for quota reset."
+                )
                 logger.warning(f"Quota error details: {str(e)[:200]}")
-            elif 'resource_exhausted' in error_msg or 'rate' in error_msg:
-                logger.warning("Gemini API rate limit reached. Requests are being throttled.")
+            elif "resource_exhausted" in error_msg or "rate" in error_msg:
+                logger.warning(
+                    "Gemini API rate limit reached. Requests are being throttled."
+                )
             else:
                 logger.exception("Error generating image with Gemini")
             try:
                 from backend.services.cost_tracker import log_api_cost
+
                 log_api_cost(
-                    provider='gemini_image',
-                    feature='story_illustration',
+                    provider="gemini_image",
+                    feature="story_illustration",
                     cost_usd=0.0,
                     user_id=user_id,
                     success=False,
-                    extra={'error': str(e)[:120], 'model': self._model_name},
+                    extra={"error": str(e)[:120], "model": self._model_name},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -544,13 +602,15 @@ Style: {style}, optimized for {age_descriptor}
         age: int = 7,
         therapeutic_focus: str | None = None,
         character_appearance: dict | None = None,
-        companions: list | None = None
+        companions: list | None = None,
     ) -> list:
         """
         Generate therapeutic coloring book pages with black and white line art.
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping coloring page generation")
+            logger.warning(
+                "Gemini image generator unavailable; skipping coloring page generation"
+            )
             return []
         # Determine intricacy based on age
         if age <= 5:
@@ -583,13 +643,15 @@ Style: {style}, optimized for {age_descriptor}
             appearance_details = []
 
             # Check for custom avatar image
-            custom_avatar_b64 = character_appearance.get('custom_avatar_base64')
+            custom_avatar_b64 = character_appearance.get("custom_avatar_base64")
             if custom_avatar_b64:
                 try:
                     if "," in custom_avatar_b64:
                         custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
                     reference_image_bytes = base64.b64decode(custom_avatar_b64)
-                    appearance_details.append("This character MUST look exactly like the provided reference photo")
+                    appearance_details.append(
+                        "This character MUST look exactly like the provided reference photo"
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to decode custom avatar image: {e}")
 
@@ -599,8 +661,10 @@ Style: {style}, optimized for {age_descriptor}
             appearance_details.extend(build_appearance_details(character_appearance))
 
             # Add avatar details if available
-            if character_appearance.get('avatar'):
-                appearance_details.extend(self._read_avatar_details(character_appearance['avatar']))
+            if character_appearance.get("avatar"):
+                appearance_details.extend(
+                    self._read_avatar_details(character_appearance["avatar"])
+                )
 
             if appearance_details:
                 character_description += f" ({', '.join(appearance_details)})"
@@ -611,8 +675,8 @@ Style: {style}, optimized for {age_descriptor}
             companion_descriptions = []
             for companion in companions:
                 if isinstance(companion, dict):
-                    comp_name = companion.get('name', 'companion')
-                    comp_type = companion.get('type', '')
+                    comp_name = companion.get("name", "companion")
+                    comp_type = companion.get("type", "")
                     if comp_type:
                         companion_descriptions.append(f"{comp_name} (a {comp_type})")
                     else:
@@ -660,12 +724,20 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
 
         try:
             from google.genai import types
-            logger.info("Calling Gemini coloring page generation with prompt preview: %s", prompt[:200].replace("\n", " "))
-            
+
+            logger.info(
+                "Calling Gemini coloring page generation with prompt preview: %s",
+                prompt[:200].replace("\n", " "),
+            )
+
             # Prepare contents
             contents = [prompt]
             if reference_image_bytes:
-                contents.append(types.Part.from_bytes(data=reference_image_bytes, mime_type="image/png"))
+                contents.append(
+                    types.Part.from_bytes(
+                        data=reference_image_bytes, mime_type="image/png"
+                    )
+                )
 
             # Generate images with Gemini
             response = self._client.models.generate_content(
@@ -678,7 +750,11 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
-            logger.info("Gemini coloring generation returned %s candidates and %s image(s)", candidate_count, len(images))
+            logger.info(
+                "Gemini coloring generation returned %s candidates and %s image(s)",
+                candidate_count,
+                len(images),
+            )
             return images
         except FuturesTimeoutError:
             logger.warning(
@@ -696,49 +772,53 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         prompt: str,
         character_name: str,
         age: int,
-        num_images: int = 1
+        num_images: int = 1,
     ) -> list:
         """
         Generate a custom magical avatar based on a reference photo.
-        
+
         Args:
             base_image_bytes: Bytes of the reference photo
             prompt: Complete avatar generation prompt
             character_name: Character's name
             age: Character age
             num_images: Number of variations (default: 1)
-            
+
         Returns:
             List of image dicts with base64-encoded PNG data
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping custom avatar generation")
+            logger.warning(
+                "Gemini image generator unavailable; skipping custom avatar generation"
+            )
             return []
 
         try:
             from google.genai import types
-            
-            logger.info(f"Generating custom avatar for {character_name} using reference photo")
+
+            logger.info(
+                f"Generating custom avatar for {character_name} using reference photo"
+            )
 
             mime_type = _detect_mime_type(base_image_bytes)
             contents = [
                 prompt,
-                types.Part.from_bytes(data=base_image_bytes, mime_type=mime_type)
+                types.Part.from_bytes(data=base_image_bytes, mime_type=mime_type),
             ]
 
             # MT-155: bound the Gemini call with a per-attempt timeout (was an
             # unbounded synchronous call — a single slow image generation could
             # run ~110s and was the root cause of the /generate-custom-avatar
             # 504s). Key rotation also kicks in here on quota exhaustion.
-            response = self._generate_content_with_timeout(
-                contents, with_rotation=True
-            )
+            response = self._generate_content_with_timeout(contents, with_rotation=True)
 
             # Process response and extract images
             images = self._process_image_response(response, prompt)
 
             candidate_count = len(getattr(response, "candidates", []) or [])
-            logger.info(f"Custom avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+            logger.info(
+                f"Custom avatar generation returned {candidate_count} candidates and {len(images)} image(s)"
+            )
 
             return images
 
@@ -767,7 +847,9 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         everything else identical.
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping gallery avatar tweak")
+            logger.warning(
+                "Gemini image generator unavailable; skipping gallery avatar tweak"
+            )
             return []
 
         changes = []
@@ -843,7 +925,9 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             List of image dicts with base64-encoded PNG data
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping avatar generation")
+            logger.warning(
+                "Gemini image generator unavailable; skipping avatar generation"
+            )
             return []
 
         # Add Gemini-specific safety reinforcement to the prompt
@@ -862,7 +946,9 @@ CRITICAL REMINDER FOR IMAGE MODEL:
 
         try:
             logger.info(f"Generating {style} avatar for {character_name}, age {age}")
-            logger.debug(f"Avatar prompt preview: {enhanced_prompt[:250].replace(chr(10), ' ')}...")
+            logger.debug(
+                f"Avatar prompt preview: {enhanced_prompt[:250].replace(chr(10), ' ')}..."
+            )
 
             # Generate avatar with Gemini
             response = self._generate_content_with_timeout(enhanced_prompt)
@@ -871,22 +957,28 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             images = self._process_image_response(response, enhanced_prompt)
 
             candidate_count = len(getattr(response, "candidates", []) or [])
-            logger.info(f"Avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+            logger.info(
+                f"Avatar generation returned {candidate_count} candidates and {len(images)} image(s)"
+            )
 
             if not images:
                 logger.warning(f"No images generated for avatar: {character_name}")
 
             try:
-                from backend.services.cost_tracker import gemini_image_cost, log_api_cost
+                from backend.services.cost_tracker import (
+                    gemini_image_cost,
+                    log_api_cost,
+                )
+
                 log_api_cost(
-                    provider='gemini_image',
-                    feature='character_avatar',
+                    provider="gemini_image",
+                    feature="character_avatar",
                     cost_usd=gemini_image_cost(len(images)),
                     user_id=user_id,
                     units=len(images),
-                    unit_kind='images',
+                    unit_kind="images",
                     success=len(images) > 0,
-                    extra={'model': self._model_name, 'style': style, 'age': age},
+                    extra={"model": self._model_name, "style": style, "age": age},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -900,10 +992,14 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             )
             try:
                 from backend.services.cost_tracker import log_api_cost
+
                 log_api_cost(
-                    provider='gemini_image', feature='character_avatar', cost_usd=0.0,
-                    user_id=user_id, success=False,
-                    extra={'error': 'timeout', 'model': self._model_name},
+                    provider="gemini_image",
+                    feature="character_avatar",
+                    cost_usd=0.0,
+                    user_id=user_id,
+                    success=False,
+                    extra={"error": "timeout", "model": self._model_name},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -912,10 +1008,14 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             logger.exception(f"Error generating character avatar with Gemini: {e}")
             try:
                 from backend.services.cost_tracker import log_api_cost
+
                 log_api_cost(
-                    provider='gemini_image', feature='character_avatar', cost_usd=0.0,
-                    user_id=user_id, success=False,
-                    extra={'error': str(e)[:120], 'model': self._model_name},
+                    provider="gemini_image",
+                    feature="character_avatar",
+                    cost_usd=0.0,
+                    user_id=user_id,
+                    success=False,
+                    extra={"error": str(e)[:120], "model": self._model_name},
                 )
             except Exception:
                 logger.debug("cost_tracker logging failed", exc_info=True)
@@ -929,11 +1029,11 @@ CRITICAL REMINDER FOR IMAGE MODEL:
         owner_favorite_color: str,
         pet_name: str = "your pet",
         num_images: int = 1,
-        prompt: str = None
+        prompt: str = None,
     ) -> list:
         """
         Generate a magical pet companion avatar based on a reference photo and metadata.
-        
+
         Args:
             photo_bytes: Bytes of the pet's photo
             species: Pet's species (e.g., dog, cat, hamster)
@@ -942,12 +1042,14 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             pet_name: Pet's name (optional)
             num_images: Number of variations (default: 1)
             prompt: Optional pre-built prompt (if not provided, one will be built)
-            
+
         Returns:
             List of image dicts with base64-encoded PNG data
         """
         if not self._client:
-            logger.warning("Gemini image generator unavailable; skipping pet avatar generation")
+            logger.warning(
+                "Gemini image generator unavailable; skipping pet avatar generation"
+            )
             return []
 
         # If prompt is not provided, build a basic one, but usually it should come from the service
@@ -968,24 +1070,26 @@ MANDATORY REQUIREMENTS:
         try:
             from google.genai import types
 
-            logger.info(f"Generating magical pet avatar for {pet_name} ({species}) using reference photo")
+            logger.info(
+                f"Generating magical pet avatar for {pet_name} ({species}) using reference photo"
+            )
 
             mime_type = _detect_mime_type(photo_bytes)
             contents = [
                 prompt,
-                types.Part.from_bytes(data=photo_bytes, mime_type=mime_type)
+                types.Part.from_bytes(data=photo_bytes, mime_type=mime_type),
             ]
 
             # MT-155: bounded, rotation-aware call (previously an unbounded
             # synchronous generate_content under _call_with_rotation).
-            response = self._generate_content_with_timeout(
-                contents, with_rotation=True
-            )
+            response = self._generate_content_with_timeout(contents, with_rotation=True)
 
             images = self._process_image_response(response, prompt)
 
             candidate_count = len(getattr(response, "candidates", []) or [])
-            logger.info(f"Pet avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+            logger.info(
+                f"Pet avatar generation returned {candidate_count} candidates and {len(images)} image(s)"
+            )
 
             return images
 
@@ -1010,7 +1114,7 @@ if __name__ == "__main__":
     illustrations = generator.generate_story_illustration(
         scene_description="A brave 7-year-old girl named Isabella discovers a glowing magic crystal in an enchanted forest",
         character_name="Isabella",
-        style="vibrant children's book illustration"
+        style="vibrant children's book illustration",
     )
 
     if illustrations:
@@ -1023,7 +1127,7 @@ if __name__ == "__main__":
     print("\nGenerating coloring page...")
     coloring_pages = generator.generate_coloring_page(
         scene_description="Isabella holding a rainbow-colored magic crystal, surrounded by friendly forest animals",
-        character_name="Isabella"
+        character_name="Isabella",
     )
 
     if coloring_pages:

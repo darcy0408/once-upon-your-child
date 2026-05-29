@@ -1,0 +1,13 @@
+Segment,p50,p95,p99,Sample Size,Date,Environment
+App cold start (warm backend; subsequent launch),1.8s,3.2s,4.5s,0,2026-05-22,Code-derived estimate (no device profiling)
+App cold start (first-ever launch; with SharedPrefs->Isar migration),2.6s,4.8s,7.0s,0,2026-05-22,Code-derived estimate (no device profiling)
+Wizard screen frame build,12ms,22ms,40ms,0,2026-05-22,Code-derived estimate (no DevTools timeline)
+Story generation - happy path (single Gemini call passes validation),55s,110s,160s,0,2026-05-22,Code-derived estimate (no synthetic load)
+Story generation - unhappy path (sync timeout then async retry),130s,240s,300s,0,2026-05-22,Code-derived estimate (no synthetic load)
+LLM content moderation (post-generation),15s,30s,45s,0,2026-05-22,Code-derived estimate (no synthetic load)
+Illustration - per image (Gemini),30s,90s,110s,0,2026-05-22,Code-derived estimate (no synthetic load)
+Illustration - per image (Cloudflare Flux),6s,8s,12s,0,2026-05-22,Code-derived estimate (no synthetic load)
+Illustration - 4-image set (sequential),90s,300s,360s,0,2026-05-22,Code-derived estimate (no synthetic load)
+Isar story-list query (load + filter in Dart),50ms,100ms,180ms,0,2026-05-22,Code-derived estimate (no profiling)
+Flask request - non-generation endpoint (auth/subscription),120ms,400ms,1200ms,0,2026-05-22,Code-derived estimate (no synthetic load)
+Railway container cold start,UNMEASURED,UNMEASURED,UNMEASURED,0,2026-05-22,Not measurable without Railway metrics access

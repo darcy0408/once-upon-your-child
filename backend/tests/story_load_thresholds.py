@@ -5,6 +5,7 @@ Exits with:
 - 0 when all thresholds pass
 - 1 when one or more thresholds are breached
 """
+
 from __future__ import annotations
 
 import json
@@ -12,7 +13,6 @@ import os
 import sys
 from pathlib import Path
 from typing import List
-
 
 DEFAULT_AUDIT_PATH = "backend/tests/artifacts/story_load_audit_latest.json"
 DEFAULT_SUMMARY_PATH = "backend/tests/artifacts/story_load_threshold_summary.md"
@@ -81,20 +81,30 @@ def _build_checks(report: dict) -> List[str]:
             )
 
     status_counts = report["scenarios"]["timeout_async_fallback"]["status_counts"]
-    if status_counts != {"202": report["scenarios"]["timeout_async_fallback"]["total_requests"]}:
+    if status_counts != {
+        "202": report["scenarios"]["timeout_async_fallback"]["total_requests"]
+    }:
         failures.append(
             "timeout_async_fallback status counts are unexpected; expected all 202 responses"
         )
 
     quota_counts = report["scenarios"]["quota_error_429"]["status_counts"]
-    if quota_counts != {"429": report["scenarios"]["quota_error_429"]["total_requests"]}:
-        failures.append("quota_error_429 status counts are unexpected; expected all 429 responses")
+    if quota_counts != {
+        "429": report["scenarios"]["quota_error_429"]["total_requests"]
+    }:
+        failures.append(
+            "quota_error_429 status counts are unexpected; expected all 429 responses"
+        )
 
     reset = report.get("reset_check", {})
     if reset.get("initial_statuses") != [200, 200, 429]:
-        failures.append(f"reset_check.initial_statuses unexpected: {reset.get('initial_statuses')}")
+        failures.append(
+            f"reset_check.initial_statuses unexpected: {reset.get('initial_statuses')}"
+        )
     if reset.get("after_wait_status") != 200:
-        failures.append(f"reset_check.after_wait_status unexpected: {reset.get('after_wait_status')}")
+        failures.append(
+            f"reset_check.after_wait_status unexpected: {reset.get('after_wait_status')}"
+        )
 
     return failures
 

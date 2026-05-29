@@ -11,7 +11,7 @@ from .interactive_story import (
     StorySegment,
     StoryChoice,
     InventoryItem,
-    StoryState
+    StoryState,
 )
 from .stripe_event import StripeWebhookEvent, StripeSubscriptionCursor
 from .illustration_cache import IllustrationCache

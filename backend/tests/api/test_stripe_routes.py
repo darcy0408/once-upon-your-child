@@ -8,7 +8,12 @@ from backend.models.user import User
 
 
 def _create_user(user_id: str, tier: str = "free") -> User:
-    user = User(id=user_id, username=user_id, email=f"{user_id}@example.com", subscription_tier=tier)
+    user = User(
+        id=user_id,
+        username=user_id,
+        email=f"{user_id}@example.com",
+        subscription_tier=tier,
+    )
     user.set_password("test-password")
     db.session.add(user)
     db.session.commit()
@@ -38,13 +43,15 @@ def test_create_checkout_session_success(client, app, mocker):
     )
     create_mock = mocker.patch(
         "backend.routes.stripe_routes.stripe.checkout.Session.create",
-        return_value=SimpleNamespace(id="cs_test_123", url="https://checkout.stripe.com/pay/cs_test_123"),
+        return_value=SimpleNamespace(
+            id="cs_test_123", url="https://checkout.stripe.com/pay/cs_test_123"
+        ),
     )
 
     response = client.post(
         "/api/stripe/create-checkout-session",
         json={"tier": "premium", "user_id": "u-1"},
-        headers=_auth_headers("u-1")
+        headers=_auth_headers("u-1"),
     )
 
     assert response.status_code == 200
@@ -64,7 +71,7 @@ def test_create_checkout_session_invalid_tier_returns_400(client, app):
     response = client.post(
         "/api/stripe/create-checkout-session",
         json={"tier": "starter"},
-        headers=_auth_headers("u-2")
+        headers=_auth_headers("u-2"),
     )
 
     assert response.status_code == 400
@@ -76,9 +83,7 @@ def test_create_checkout_session_missing_tier_returns_400(client, app):
         _create_user("u-3")
 
     response = client.post(
-        "/api/stripe/create-checkout-session",
-        json={},
-        headers=_auth_headers("u-3")
+        "/api/stripe/create-checkout-session", json={}, headers=_auth_headers("u-3")
     )
 
     assert response.status_code == 400
@@ -103,7 +108,10 @@ def test_create_checkout_session_stripe_failure_returns_500(client, app, mocker)
     with app.app_context():
         _create_user("u-5")
 
-    mocker.patch("backend.routes.stripe_routes.get_price_ids", return_value={"premium": "price_premium_123"})
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123"},
+    )
     mocker.patch(
         "backend.routes.stripe_routes.stripe.checkout.Session.create",
         side_effect=Exception("stripe outage"),
@@ -112,11 +120,14 @@ def test_create_checkout_session_stripe_failure_returns_500(client, app, mocker)
     response = client.post(
         "/api/stripe/create-checkout-session",
         json={"tier": "premium"},
-        headers=_auth_headers("u-5")
+        headers=_auth_headers("u-5"),
     )
 
     assert response.status_code == 500
-    assert response.get_json()["error"] == "Failed to create checkout session. Please try again."
+    assert (
+        response.get_json()["error"]
+        == "Failed to create checkout session. Please try again."
+    )
 
 
 def test_get_subscription_status_returns_active_for_owner(client, app, mocker):
@@ -128,7 +139,11 @@ def test_get_subscription_status_returns_active_for_owner(client, app, mocker):
     mocker.patch(
         "backend.routes.stripe_routes.stripe.Subscription.list",
         return_value=SimpleNamespace(
-            data=[SimpleNamespace(current_period_end=1735689600, cancel_at_period_end=False)]
+            data=[
+                SimpleNamespace(
+                    current_period_end=1735689600, cancel_at_period_end=False
+                )
+            ]
         ),
     )
 
@@ -145,7 +160,9 @@ def test_get_subscription_status_returns_active_for_owner(client, app, mocker):
     assert body["cancel_at_period_end"] is False
 
 
-def test_get_subscription_status_returns_own_data_regardless_of_url_user_id(client, app):
+def test_get_subscription_status_returns_own_data_regardless_of_url_user_id(
+    client, app
+):
     # @require_owner was removed: the endpoint always returns request.current_user's
     # subscription (URL user_id is ignored).  An authenticated user calling another
     # user's URL gets their OWN data — no data leaks, no false 403s.

@@ -4,6 +4,7 @@ These tests exercise ``PromptService._build_superhero_prompt_explorer`` and
 the age-based routing in ``PromptService.build_story_prompt``. They do NOT
 hit Gemini, the Flask app, or the database — only the pure prompt module.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -35,9 +36,9 @@ def test_explorer_prompt_includes_hero_name_three_times_and_identity_tag_twice()
         problem_id="restore_what_taken",
     )
     # Hero name "Maya" should appear at least 3 times.
-    assert prompt.count("Maya") >= 3, (
-        f"Hero name 'Maya' appears only {prompt.count('Maya')} time(s); need >=3"
-    )
+    assert (
+        prompt.count("Maya") >= 3
+    ), f"Hero name 'Maya' appears only {prompt.count('Maya')} time(s); need >=3"
     # Identity tag "Lightning Speed Maya" (Explorer power name + hero name).
     identity_tag = "Lightning Speed Maya"
     assert prompt.count(identity_tag) >= 2, (
@@ -83,9 +84,9 @@ def test_explorer_prompt_pins_full_canonical_villain_roster():
     # Every canonical Explorer villain name must appear in the roster line.
     required_names = [v["name"] for v in EXPLORER_VILLAINS.values()]
     for name in required_names:
-        assert name in prompt, (
-            f"Canonical villain '{name}' missing from Explorer prompt roster"
-        )
+        assert (
+            name in prompt
+        ), f"Canonical villain '{name}' missing from Explorer prompt roster"
 
 
 def test_explorer_prompt_uses_must_language_for_villain_constraint():
@@ -239,9 +240,9 @@ def test_explorer_prompt_derives_villain_and_problem_when_missing():
     )
     # Some Explorer villain name must appear in the prompt.
     villain_names = [v["name"] for v in EXPLORER_VILLAINS.values()]
-    assert any(name in prompt for name in villain_names), (
-        f"Expected one of {villain_names} to appear in prompt"
-    )
+    assert any(
+        name in prompt for name in villain_names
+    ), f"Expected one of {villain_names} to appear in prompt"
     # Some Explorer problem verb must appear.
     problem_verbs = [p["verb"] for p in EXPLORER_PROBLEMS.values()]
     assert any(verb in prompt for verb in problem_verbs)
@@ -356,9 +357,9 @@ def test_explorer_prompt_renders_explorer_only_powers(power_id, expected_name):
         villain_id=None,
         problem_id=None,
     )
-    assert expected_name in prompt, (
-        f"Explorer power '{power_id}' should display as '{expected_name}'"
-    )
+    assert (
+        expected_name in prompt
+    ), f"Explorer power '{power_id}' should display as '{expected_name}'"
     identity_tag = f"{expected_name} Kai"
     assert prompt.count(identity_tag) >= 2, (
         f"Identity tag '{identity_tag}' should appear at least 2x for "

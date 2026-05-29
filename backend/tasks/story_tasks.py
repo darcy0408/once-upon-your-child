@@ -19,14 +19,27 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt, AGE_CONSTRAINTS, _get_age_band, _build_prior_adventures_block, pseudonymize_hero_name, restore_hero_name
+from backend.services.story_service import (
+    AdvancedStoryEngine,
+    _safe_extract_title_and_gem,
+    _build_learning_to_read_prompt,
+    _build_rhyme_time_prompt,
+    _build_bedtime_prompt,
+    AGE_CONSTRAINTS,
+    _get_age_band,
+    _build_prior_adventures_block,
+    pseudonymize_hero_name,
+    restore_hero_name,
+)
 from backend.services.prompt_service import PromptService
+from backend.services.prompt_versioning import resolve as _resolve_prompt_version
 from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 
 
 def _is_superhero_theme(theme: str | None) -> bool:
     """True when the request is for the ages-3-5 Superhero Mode chain."""
     return isinstance(theme, str) and theme.strip().lower() == "superhero"
+
 
 logger = get_task_logger(__name__)
 MAX_CUSTOM_ELEMENTS = 5
@@ -35,11 +48,13 @@ MAX_CUSTOM_ELEMENT_LENGTH = 80
 # Lazy app initialization to avoid circular imports
 _flask_app = None
 
+
 def get_flask_app():
     """Lazy initialization of Flask app to avoid circular imports."""
     global _flask_app
     if _flask_app is None:
         from backend.app import create_app  # lazy import to break circular dependency
+
         _config_name = os.getenv("FLASK_CONFIG") or "dev"
         if _config_name not in {"dev", "prod", "production", "testing"}:
             _config_name = "dev"
@@ -47,7 +62,9 @@ def get_flask_app():
     return _flask_app
 
 
-def _fallback_story(theme: str, character_name: str | dict, companion: str = None) -> str:
+def _fallback_story(
+    theme: str, character_name: str | dict, companion: str = None
+) -> str:
     """Local fallback when all AI providers fail — returns valid JSON so tags never leak to the UI."""
     if isinstance(character_name, dict):
         name = character_name.get("name", "Hero")
@@ -58,18 +75,30 @@ def _fallback_story(theme: str, character_name: str | dict, companion: str = Non
     theme_title = theme.rstrip("! ").title()
     comp = f" with their friend {companion}" if companion else ""
 
-    return json.dumps({
-        "title": f"The {theme_title} Adventure",
-        "pages": [
-            {"text": f"One bright morning, {name}{comp} set off on a wonderful {theme_plain} adventure. The sun was warm and anything felt possible."},
-            {"text": f"{name} took a deep breath and walked forward with a brave and curious heart. Every step brought something new and exciting to discover."},
-            {"text": f"Along the way{comp}, {name} found that the best adventures happen when you are kind and brave. Challenges became fun puzzles to solve together."},
-            {"text": f"When the adventure was done, {name} came home with a happy heart. Tomorrow there would be a whole new adventure waiting — and {name} could not wait!"},
-        ],
-    })
+    return json.dumps(
+        {
+            "title": f"The {theme_title} Adventure",
+            "pages": [
+                {
+                    "text": f"One bright morning, {name}{comp} set off on a wonderful {theme_plain} adventure. The sun was warm and anything felt possible."
+                },
+                {
+                    "text": f"{name} took a deep breath and walked forward with a brave and curious heart. Every step brought something new and exciting to discover."
+                },
+                {
+                    "text": f"Along the way{comp}, {name} found that the best adventures happen when you are kind and brave. Challenges became fun puzzles to solve together."
+                },
+                {
+                    "text": f"When the adventure was done, {name} came home with a happy heart. Tomorrow there would be a whole new adventure waiting — and {name} could not wait!"
+                },
+            ],
+        }
+    )
 
 
-def _classify_provider_failure(exc: Exception | None = None, message: str | None = None) -> str:
+def _classify_provider_failure(
+    exc: Exception | None = None, message: str | None = None
+) -> str:
     raw_text = ""
     if exc is not None:
         raw_text = str(exc).strip()
@@ -77,9 +106,18 @@ def _classify_provider_failure(exc: Exception | None = None, message: str | None
         raw_text = str(message).strip()
 
     lowered = raw_text.lower()
-    if isinstance(exc, google_exceptions.ResourceExhausted) or "quota" in lowered or "resourceexhausted" in lowered:
+    if (
+        isinstance(exc, google_exceptions.ResourceExhausted)
+        or "quota" in lowered
+        or "resourceexhausted" in lowered
+    ):
         return "429"
-    if "401" in lowered or "unauthorized" in lowered or "invalid api key" in lowered or "api key not valid" in lowered:
+    if (
+        "401" in lowered
+        or "unauthorized" in lowered
+        or "invalid api key" in lowered
+        or "api key not valid" in lowered
+    ):
         return "401"
     if "openrouter_api_key not set" in lowered:
         return "no_key"
@@ -99,6 +137,7 @@ def _resolve_story_provider() -> str:
     """
     try:
         from flask import current_app  # local import; Celery may not have app context
+
         provider = current_app.config.get("STORY_GEN_PROVIDER")
     except Exception:
         provider = None
@@ -114,13 +153,94 @@ def _resolve_story_provider() -> str:
     return provider
 
 
-def _try_gemini(prompt: str, user_tier: str | None, provider_sequence: list[str]) -> str | None:
+# PERF-01 slice 2: per-story partial-state emission for /task-status polling.
+# As Gemini's stream API yields chunks, the accumulated story text is written
+# to Redis under `partial_story:<task_id>`. Slice 3 will surface it through
+# /task-status so clients see story progress within ~5s of the model starting
+# to respond instead of waiting for the full ~55-110s generation.
+# Best-effort: a Redis hiccup never aborts generation.
+_PARTIAL_STORY_TTL_SECONDS = 600  # outlives the longest plausible generation
+
+
+def _get_partial_story_redis():
+    """Connect to Redis using the same env-var pattern as ai_quota._get_redis."""
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+    if not redis_url:
+        return None
+    try:
+        import redis as redis_lib
+
+        client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        client.ping()
+        return client
+    except Exception as exc:
+        logger.warning(
+            "partial-story Redis unavailable (%s); streaming will be silent", exc
+        )
+        return None
+
+
+def _emit_partial_story(task_id: str | None, accumulated_text: str) -> None:
+    """Write accumulated streamed text for `task_id` to Redis. Best-effort."""
+    if not task_id:
+        return
+    client = _get_partial_story_redis()
+    if client is None:
+        return
+    try:
+        client.setex(
+            f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, accumulated_text
+        )
+    except Exception as exc:
+        logger.debug("partial-story write skipped (%s)", exc)
+
+
+def _clear_partial_story(task_id: str | None) -> None:
+    """Drop the partial-state key. Best-effort — TTL would clean up otherwise."""
+    if not task_id:
+        return
+    client = _get_partial_story_redis()
+    if client is None:
+        return
+    try:
+        client.delete(f"partial_story:{task_id}")
+    except Exception as exc:
+        logger.debug("partial-story clear skipped (%s)", exc)
+
+
+def _try_gemini(
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
+) -> str | None:
     """Attempt Gemini story generation. Returns text on success, None on failure
-    (any failure mode appends a tagged entry to provider_sequence)."""
+    (any failure mode appends a tagged entry to provider_sequence).
+
+    When `task_id` is provided, uses the streaming API and emits accumulated
+    text to Redis as each chunk arrives — clients polling /task-status see
+    partial progress (PERF-01). Without `task_id`, uses the single blocking
+    call (legacy/regeneration call sites without a task context).
+    """
     try:
         logger.info("Attempting story generation with Gemini...")
         gemini_generator = StoryGenerationService(user_tier=user_tier)
-        story_text = gemini_generator.generate_story(prompt)
+        if task_id:
+            chunks: list[str] = []
+            for chunk in gemini_generator.generate_story_stream(prompt):
+                chunks.append(chunk)
+                _emit_partial_story(task_id, "".join(chunks))
+            story_text = "".join(chunks) or None
+            if not story_text:
+                # Stream produced nothing (safety block or empty model output).
+                # Drop the stale partial key and fall through to the
+                # non-streaming call so existing retry / fallback semantics
+                # still apply.
+                _clear_partial_story(task_id)
+                logger.info("Stream returned empty; falling back to non-streaming call")
+                story_text = gemini_generator.generate_story(prompt)
+        else:
+            story_text = gemini_generator.generate_story(prompt)
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with Gemini.")
             provider_sequence.append("gemini(success)")
@@ -139,7 +259,9 @@ def _try_gemini(prompt: str, user_tier: str | None, provider_sequence: list[str]
     return None
 
 
-def _try_openrouter(prompt: str, user_tier: str | None, provider_sequence: list[str]) -> str | None:
+def _try_openrouter(
+    prompt: str, user_tier: str | None, provider_sequence: list[str]
+) -> str | None:
     """Attempt OpenRouter story generation. Returns text on success, None on
     failure (any failure mode appends a tagged entry to provider_sequence)."""
     if not os.getenv("OPENROUTER_API_KEY"):
@@ -162,7 +284,9 @@ def _try_openrouter(prompt: str, user_tier: str | None, provider_sequence: list[
         )
     except Exception as exc:
         logger.exception("OpenRouter failed.")
-        provider_sequence.append(f"openrouter(fail:{_classify_provider_failure(exc=exc)})")
+        provider_sequence.append(
+            f"openrouter(fail:{_classify_provider_failure(exc=exc)})"
+        )
     return None
 
 
@@ -172,6 +296,7 @@ def _generate_story_text_with_metadata(
     character_name: str,
     companion: str = None,
     user_tier: str | None = None,
+    task_id: str | None = None,
 ) -> tuple[str, str, list[str]]:
     """Generate story text with tier-aware provider sequencing (MT-171 Phase 1).
 
@@ -179,6 +304,10 @@ def _generate_story_text_with_metadata(
         'gemini'     — Gemini -> OpenRouter -> static  (legacy default)
         'openrouter' — OpenRouter -> static            (skip Gemini; ToS-compliant)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
+
+    `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
+    Gemini uses its streaming API and writes partial story text to Redis.
+    OpenRouter generation is not streamed (slice 2 scope).
 
     The returned ``provider_sequence`` list traces every attempt for observability
     (success/fail reasons surface in the audit_log + Sentry breadcrumbs).
@@ -201,13 +330,13 @@ def _generate_story_text_with_metadata(
         if text is not None:
             return text, "openrouter", provider_sequence
 
-        text = _try_gemini(prompt, user_tier, provider_sequence)
+        text = _try_gemini(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "gemini", provider_sequence
 
     else:
         # 'gemini' — legacy default: Gemini first, OpenRouter as soft fallback.
-        text = _try_gemini(prompt, user_tier, provider_sequence)
+        text = _try_gemini(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "gemini", provider_sequence
 
@@ -215,10 +344,15 @@ def _generate_story_text_with_metadata(
         if text is not None:
             return text, "openrouter", provider_sequence
 
-    logger.warning("All story generation providers failed. Returning local static fallback.")
+    logger.warning(
+        "All story generation providers failed. Returning local static fallback."
+    )
     provider_sequence.append("static")
-    return _fallback_story(theme, character_name, companion), "static", provider_sequence
-
+    return (
+        _fallback_story(theme, character_name, companion),
+        "static",
+        provider_sequence,
+    )
 
 
 def _generate_story_text(
@@ -243,15 +377,18 @@ def _generate_story_text(
     )
     return story_text
 
+
 def _normalize_text_for_match(text: str) -> str:
     text = text.lower()
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
+
 def _normalize_phrase(phrase: str) -> str:
     phrase = phrase.strip().strip(".,;:!?")
     phrase = re.sub(r"\s+", " ", phrase)
     return phrase.lower()
+
 
 def _parse_custom_elements(raw: str | None) -> list[str]:
     if not raw:
@@ -265,7 +402,9 @@ def _parse_custom_elements(raw: str | None) -> list[str]:
     for match in re.finditer(r"\"([^\"]+)\"|'([^']+)'|[^,\n;]+", raw):
         token = match.group(1) or match.group(2) or match.group(0)
         token = token.strip()
-        if (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")):
+        if (token.startswith('"') and token.endswith('"')) or (
+            token.startswith("'") and token.endswith("'")
+        ):
             token = token[1:-1].strip()
         if token:
             elements.append(token)
@@ -288,6 +427,7 @@ def _parse_custom_elements(raw: str | None) -> list[str]:
             break
 
     return normalized
+
 
 def _find_missing_custom_elements(required: list[str], story_text: str) -> list[str]:
     if not required:
@@ -329,7 +469,7 @@ def _extract_sentence_end_words(page_text: str) -> list[str]:
 def _rhyme_key(word: str) -> str:
     """Get a simple phonetic-ish tail used for lightweight rhyme matching."""
     clean = re.sub(r"[^a-z]", "", word.lower())
-    clean = clean.replace("y", "i") # Normalize y to i for phonetic matching
+    clean = clean.replace("y", "i")  # Normalize y to i for phonetic matching
     if len(clean) < 2:
         return clean
     if clean.endswith("e") and len(clean) > 3:
@@ -356,7 +496,9 @@ def _is_ltr_rhyme_quality_ok(pages: list[str], min_pair_ratio: float = 0.6) -> b
     1) cross-page ending couplets (pages 1&2, 3&4, ...), or
     2) strong within-page sentence-ending rhymes.
     """
-    end_words = [_extract_page_end_word(page) for page in pages if page and page.strip()]
+    end_words = [
+        _extract_page_end_word(page) for page in pages if page and page.strip()
+    ]
     if len(end_words) < 2:
         return False
 
@@ -379,7 +521,9 @@ def _is_ltr_rhyme_quality_ok(pages: list[str], min_pair_ratio: float = 0.6) -> b
         if _words_rhyme(sentence_end_words[-2], sentence_end_words[-1]):
             in_page_hits += 1
 
-    in_page_ok = in_page_checks > 0 and (in_page_hits / in_page_checks) >= min_pair_ratio
+    in_page_ok = (
+        in_page_checks > 0 and (in_page_hits / in_page_checks) >= min_pair_ratio
+    )
     return cross_page_ok or in_page_ok
 
 
@@ -404,9 +548,7 @@ def _post_process_ltr_pages(
     if not body:
         return pages
 
-    sentence_parts = re.split(
-        r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body
-    )
+    sentence_parts = re.split(r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body)
     sentences = [s.strip() for s in sentence_parts if s.strip()]
     if not sentences:
         return pages
@@ -442,9 +584,8 @@ def _post_process_ltr_pages(
             " ".join(sentences[i : i + spp]).strip()
             for i in range(0, len(sentences), spp)
         ]
-        if (
-            len(grouped) >= target_pages
-            and all(len(g.split()) <= max_words for g in grouped)
+        if len(grouped) >= target_pages and all(
+            len(g.split()) <= max_words for g in grouped
         ):
             return grouped
 
@@ -494,9 +635,7 @@ def _post_process_sprout_pages(
     if not body:
         return pages
 
-    sentence_parts = re.split(
-        r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body
-    )
+    sentence_parts = re.split(r"(?<=[.!?])(?=\s)|(?<=[.!?][\"')\]])(?=\s)", body)
     sentences = [s.strip() for s in sentence_parts if s.strip()]
     if not sentences:
         return pages
@@ -609,7 +748,7 @@ def _truncate_to_word_cap(text: str, cap: int, hero_name: str) -> str:
     truncated = " ".join(kept).strip()
     if not truncated:
         # Fallback: hard word slice + period if no sentence fits at all.
-        words = body.split()[:max(1, effective_cap)]
+        words = body.split()[: max(1, effective_cap)]
         truncated = " ".join(words).rstrip(",;:") + "."
 
     # Re-append cheer beat if the original had one and it was cut off.
@@ -676,15 +815,21 @@ def _enforce_sprout_word_cap(
     try:
         regen_text = regen_fn(regen_prompt)
     except Exception:  # noqa: BLE001 — never crash the user-visible path
-        logger.exception("%s word-cap regen call failed; falling back to truncate.", band_label)
+        logger.exception(
+            "%s word-cap regen call failed; falling back to truncate.", band_label
+        )
         regen_text = None
 
     if regen_text:
         info["regen_used"] = True
         try:
-            r_title, _, r_body, r_pages, r_post, _ = _safe_extract_title_and_gem(regen_text, theme)
+            r_title, _, r_body, r_pages, r_post, _ = _safe_extract_title_and_gem(
+                regen_text, theme
+            )
         except Exception:  # noqa: BLE001
-            logger.exception("%s word-cap regen parse failed; ignoring regen.", band_label)
+            logger.exception(
+                "%s word-cap regen parse failed; ignoring regen.", band_label
+            )
             r_body, r_pages, r_title, r_post = None, None, None, None
 
         if r_body and r_pages:
@@ -692,7 +837,10 @@ def _enforce_sprout_word_cap(
             if regen_words <= cap:
                 logger.info(
                     "%s word-cap regen succeeded: theme=%s %s→%s words.",
-                    band_label, theme, total_words, regen_words,
+                    band_label,
+                    theme,
+                    total_words,
+                    regen_words,
                 )
                 info["final_words"] = regen_words
                 return r_body, r_pages, info
@@ -710,12 +858,28 @@ def _enforce_sprout_word_cap(
     info["final_words"] = _count_words(truncated_body)
     logger.warning(
         "%s word-cap truncation applied: theme=%s original=%s regen_used=%s final=%s words.",
-        band_label, theme, info["original_words"], info["regen_used"], info["final_words"],
+        band_label,
+        theme,
+        info["original_words"],
+        info["regen_used"],
+        info["final_words"],
     )
     return truncated_body, truncated_pages, info
 
 
-@celery.task(bind=True, name="tasks.generate_story")
+@celery.task(
+    bind=True,
+    name="tasks.generate_story",
+    # W1: survive a worker restart mid-task. With the default acks_late=False
+    # a task is acked when picked up, so a redeploy/OOM between ack and
+    # completion silently loses it and the client polls PENDING forever.
+    # acks_late defers the ack until completion, and reject_on_worker_lost
+    # requeues a task whose worker died — so a lost story is redelivered
+    # instead of vanishing. task_time_limit (600s) stays well under the Redis
+    # broker visibility timeout, so a slow task is not double-delivered.
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
     Async story generation task.
@@ -732,6 +896,22 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character: Optional character name fallback when no ID is provided
     """
     with get_flask_app().app_context():
+        # PERF-04: bail before any expensive work if the client already
+        # cancelled (e.g., they navigated away in the gap between dispatch
+        # and worker pickup). Fail-open — a Redis hiccup just lets the
+        # generation proceed.
+        from ..utils.task_cancellation import is_cancelled
+
+        if is_cancelled(self.request.id):
+            logger.info(
+                "Task %s cancelled before work began; skipping generation.",
+                self.request.id,
+            )
+            return {
+                "status": "cancelled",
+                "user_id": str(kwargs.get("user_id") or "anonymous"),
+            }
+
         total_task_start = time.perf_counter()
         prompt_build_ms = 0.0
         ai_call_ms = 0.0
@@ -751,8 +931,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
         bedtime_mode = kwargs.get("bedtime_mode", False)
-        story_length = kwargs.get("story_length", "standard")  # 'quick', 'standard', or 'epic' (legacy)
-        story_duration = kwargs.get("story_duration")  # NEW: '5_minutes' or '10_minutes'
+        story_length = kwargs.get(
+            "story_length", "standard"
+        )  # 'quick', 'standard', or 'epic' (legacy)
+        story_duration = kwargs.get(
+            "story_duration"
+        )  # NEW: '5_minutes' or '10_minutes'
         age = kwargs.get("age", 5)  # User's age
         companion = kwargs.get("companion")  # Legacy support
         character_name_raw = kwargs.get("character") or "a brave adventurer"
@@ -760,17 +944,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             character_name = character_name_raw.get("name", "Hero")
         else:
             character_name = str(character_name_raw)
-            
+
         char_details = kwargs.get("character_details") or {}
-        custom_elements = kwargs.get("custom_elements", "")  # Free-form custom story requests
+        custom_elements = kwargs.get(
+            "custom_elements", ""
+        )  # Free-form custom story requests
         required_custom_elements = _parse_custom_elements(custom_elements)
 
         # NEW: Extract structured companion data
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
-        companion_characters = kwargs.get("companion_characters", [])  # List of character names
+        companion_characters = kwargs.get(
+            "companion_characters", []
+        )  # List of character names
 
         try:
-            character = db.session.get(Character, character_id) if character_id else None
+            character = (
+                db.session.get(Character, character_id) if character_id else None
+            )
             if character:
                 character_name = character.name
             elif character_id:
@@ -792,13 +982,19 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     return text
                 return re.sub(
                     r"\b" + re.escape(str(real_hero_name).strip()) + r"\b",
-                    character_name, text, flags=re.IGNORECASE,
+                    character_name,
+                    text,
+                    flags=re.IGNORECASE,
                 )
 
             try:
-                self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+                self.update_state(
+                    state="PROCESSING", meta={"status": "Generating story..."}
+                )
             except Exception as e:
-                logger.warning(f"Failed to update task state (Redis likely unavailable): {e}")
+                logger.warning(
+                    f"Failed to update task state (Redis likely unavailable): {e}"
+                )
 
             # Fetch companion character details from database or use provided dicts
             companion_character_details = []
@@ -812,17 +1008,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         char_name = str(char_data)
                         char_record = Character.query.filter_by(name=char_name).first()
                         if char_record:
-                            companion_character_details.append({
-                                'name': char_record.name,
-                                'age': char_record.age,
-                                'role': char_record.role,
-                                'gender': char_record.gender,
-                            })
-                            logger.info(f"Found companion character: {char_name} (age {char_record.age}, {char_record.role})")
+                            companion_character_details.append(
+                                {
+                                    "name": char_record.name,
+                                    "age": char_record.age,
+                                    "role": char_record.role,
+                                    "gender": char_record.gender,
+                                }
+                            )
+                            logger.info(
+                                f"Found companion character: {char_name} (age {char_record.age}, {char_record.role})"
+                            )
                         else:
                             # Character not found in database, just pass the name
-                            logger.warning(f"Companion character '{char_name}' not found in database")
-                            companion_character_details.append({'name': char_name})
+                            logger.warning(
+                                f"Companion character '{char_name}' not found in database"
+                            )
+                            companion_character_details.append({"name": char_name})
 
             engine = AdvancedStoryEngine()
 
@@ -862,7 +1064,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # universally-safe default rather than 500ing the request.
                     # super_smile exists in both Sprout and Explorer tables.
                     sh_villain_id, sh_problem_id = _superhero_pick_pairing(
-                        "super_smile", band=sh_band,
+                        "super_smile",
+                        band=sh_band,
                     )
 
                 superhero_meta = {
@@ -894,7 +1097,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # Use specialized prompts based on story mode flags
             elif bedtime_mode:
                 logger.info(f"Using Bedtime prompt (length: {story_length})")
-                extra_chars = kwargs.get("additional_characters") or char_details.get("additionalCharacters")
+                extra_chars = kwargs.get("additional_characters") or char_details.get(
+                    "additionalCharacters"
+                )
                 prompt = _build_bedtime_prompt(
                     character_name=character_name,
                     age=age,
@@ -918,7 +1123,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion=companion,
                     companion_pets=companion_pets,
                     companion_characters=companion_characters,
-                    extra_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
+                    extra_characters=kwargs.get("additional_characters")
+                    or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
                 )
@@ -932,7 +1138,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     character_details=char_details,
                     companion_pets=companion_pets,
                     companion_characters=companion_character_details,
-                    extra_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
+                    extra_characters=kwargs.get("additional_characters")
+                    or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
                     world_bible=kwargs.get("world_bible", ""),
@@ -942,25 +1149,28 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 logger.info(f"Full prompt for rhyme time mode: {prompt}")
             else:
                 # Standard enhanced prompt
-                logger.info(f"Using standard enhanced prompt (length: {story_length}, duration: {story_duration})")
+                logger.info(
+                    f"Using standard enhanced prompt (length: {story_length}, duration: {story_duration})"
+                )
                 prompt = engine.generate_enhanced_prompt(
                     character=character_name,
                     theme=theme,
                     companion=companion,  # Legacy: keep for backward compatibility
                     companion_pets=companion_pets,  # NEW: List of pet companions
                     companion_characters=companion_character_details,  # NEW: List of character companion DETAILS
-                    spark_tool=kwargs.get("spark_tool"), # NEW
-                    mood_physics=kwargs.get("mood_physics"), # NEW
-                    conflict_hook=kwargs.get("conflict_hook"), # NEW
-                    sensory_palette=kwargs.get("sensory_palette"), # NEW
+                    spark_tool=kwargs.get("spark_tool"),  # NEW
+                    mood_physics=kwargs.get("mood_physics"),  # NEW
+                    conflict_hook=kwargs.get("conflict_hook"),  # NEW
+                    sensory_palette=kwargs.get("sensory_palette"),  # NEW
                     custom_elements=custom_elements,  # NEW: Free-form custom story requests
-                    additional_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
+                    additional_characters=kwargs.get("additional_characters")
+                    or char_details.get("additionalCharacters"),
                     therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
                     feelings_prompt=kwargs.get("feelings_prompt"),
                     character_details=char_details,
                     story_length=story_length,  # Legacy: Story length option
                     story_duration=story_duration,  # NEW: Duration-based generation
-                    age=age,   # NEW: Pass age for calibration
+                    age=age,  # NEW: Pass age for calibration
                 )
             # Recall loop: inject this character's prior themes / supporting cast so
             # the model varies or builds on past adventures instead of looping the
@@ -974,11 +1184,30 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # themes-recall with no production-observable signal.
                 logger.warning(
                     "prior_adventures injected for character_id=%s (block_len=%d)",
-                    character_id, len(prior_block),
+                    character_id,
+                    len(prior_block),
                 )
 
             # M-7: final boundary scrub before the prompt leaves for any provider.
             prompt = _scrub_real_name(prompt)
+
+            # F-01 (MT-187): resolve the template id + live revision hash so we
+            # can persist them on the Story row. Derived from the same mode
+            # flags that the if/elif chain above branched on.
+            if superhero_meta is not None:
+                _pv_mode = "superhero"
+            elif bedtime_mode:
+                _pv_mode = "bedtime"
+            elif learning_to_read_mode:
+                _pv_mode = "ltr"
+            elif rhyme_time_mode:
+                _pv_mode = "rhyme_time"
+            else:
+                _pv_mode = "standard"
+            prompt_template_id, prompt_revision_hash = _resolve_prompt_version(
+                mode=_pv_mode,
+                age=age,
+            )
 
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
             logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
@@ -990,19 +1219,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # Collect mandatory names for validation
             mandatory_names = [character_name]
             for p in companion_pets:
-                if isinstance(p, dict) and p.get('name'):
-                    mandatory_names.append(p['name'])
+                if isinstance(p, dict) and p.get("name"):
+                    mandatory_names.append(p["name"])
             for c in companion_character_details:
-                if isinstance(c, dict) and c.get('name'):
-                    mandatory_names.append(c['name'])
-            
-            extra_chars = kwargs.get("additional_characters") or char_details.get("additionalCharacters")
+                if isinstance(c, dict) and c.get("name"):
+                    mandatory_names.append(c["name"])
+
+            extra_chars = kwargs.get("additional_characters") or char_details.get(
+                "additionalCharacters"
+            )
             if extra_chars:
                 for ec in extra_chars:
-                    name = ec.get('name') if isinstance(ec, dict) else str(ec)
+                    name = ec.get("name") if isinstance(ec, dict) else str(ec)
                     if name:
                         mandatory_names.append(name)
-            
+
             logger.info(f"Mandatory names for validation: {mandatory_names}")
 
             # Tier-aware retry cap: free tier gets 2 attempts (not 3) to bound
@@ -1010,8 +1241,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # The tier is normally passed in via task kwargs (from the route);
             # fall back to a DB lookup for legacy callers that omit it.
             if user_tier is None:
-                resolved_tier = 'free'
-                if user_id and user_id != 'anonymous':
+                resolved_tier = "free"
+                if user_id and user_id != "anonymous":
                     try:
                         _u = User.query.filter_by(id=user_id).first()
                         if _u and _u.subscription_tier:
@@ -1019,21 +1250,29 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     except Exception:
                         logger.debug("could not resolve user tier", exc_info=True)
                 user_tier = resolved_tier
-            max_attempts = 2 if user_tier == 'free' else 3
+            max_attempts = 2 if user_tier == "free" else 3
             attempt = 0
             validation_loop_start = time.perf_counter()
             while attempt < max_attempts:
                 attempt += 1
                 validation_attempts = attempt
-                logger.info(f"Generation attempt {attempt}/{max_attempts} (tier={user_tier})")
+                logger.info(
+                    f"Generation attempt {attempt}/{max_attempts} (tier={user_tier})"
+                )
 
                 ai_call_start = time.perf_counter()
-                story_text, provider_name, provider_sequence = _generate_story_text_with_metadata(
-                    prompt,
-                    theme,
-                    character_name,
-                    companion,
-                    user_tier=user_tier,
+                story_text, provider_name, provider_sequence = (
+                    _generate_story_text_with_metadata(
+                        prompt,
+                        theme,
+                        character_name,
+                        companion,
+                        user_tier=user_tier,
+                        # PERF-01 slice 2: forward the Celery task id so Gemini
+                        # streaming can write partial state to Redis under
+                        # `partial_story:<task_id>` as chunks arrive.
+                        task_id=self.request.id,
+                    )
                 )
                 attempt_ai_call_ms = (time.perf_counter() - ai_call_start) * 1000.0
                 ai_call_ms += attempt_ai_call_ms
@@ -1042,16 +1281,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     provider_name,
                     attempt_ai_call_ms,
                 )
-                title, _, story_body, pages, post_story, story_metadata = _safe_extract_title_and_gem(story_text, theme)
-                
+                title, _, story_body, pages, post_story, story_metadata = (
+                    _safe_extract_title_and_gem(story_text, theme)
+                )
+
                 # Validation Logic (Content Sanitizer)
                 is_clean = True
                 validation_error = None
                 forbidden_patterns = ["REQUEST SUMMARY", "SIGNATURE POWER", "CRITICAL:"]
                 page_pattern = re.compile(r"\bPAGE\s+\d+\b", re.IGNORECASE)
-                
+
                 for page in pages:
-                    if any(p in page for p in forbidden_patterns) or page_pattern.search(page):
+                    if any(
+                        p in page for p in forbidden_patterns
+                    ) or page_pattern.search(page):
                         is_clean = False
                         validation_error = "Meta leakage detected"
                         break
@@ -1061,7 +1304,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Basic case-insensitive check for name in story
                     if name.lower() not in story_body.lower():
                         missing_names.append(name)
-                
+
                 if missing_names:
                     is_clean = False
                     validation_error = f"Missing characters: {', '.join(missing_names)}"
@@ -1095,7 +1338,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     sprout_over_word_pages = [
                         i for i, p in enumerate(pages) if len(p.split()) > 25
                     ]
-                    if sprout_pages_count < 8 or sprout_pages_count > 12 or sprout_over_word_pages:
+                    if (
+                        sprout_pages_count < 8
+                        or sprout_pages_count > 12
+                        or sprout_over_word_pages
+                    ):
                         is_sprout_format_ok = False
                         sprout_format_error = (
                             f"Sprout format check failed: {sprout_pages_count} pages "
@@ -1106,20 +1353,24 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 if learning_to_read_mode:
                     is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
                     if not is_rhyme_quality_ok:
-                        validation_error = "Learning-to-read story did not meet rhyme quality checks"
+                        validation_error = (
+                            "Learning-to-read story did not meet rhyme quality checks"
+                        )
 
                     # Compute expected page count for this age/length to match prompt floor.
                     try:
                         _ltr_band = _get_age_band(age)
-                        _ltr_cfg = AGE_CONSTRAINTS[_ltr_band]['ltr']
-                        if story_length in ('short', 'quick'):
-                            _ltr_len_key = 'short'
-                        elif story_length in ('long', 'epic'):
-                            _ltr_len_key = 'long'
+                        _ltr_cfg = AGE_CONSTRAINTS[_ltr_band]["ltr"]
+                        if story_length in ("short", "quick"):
+                            _ltr_len_key = "short"
+                        elif story_length in ("long", "epic"):
+                            _ltr_len_key = "long"
                         else:
-                            _ltr_len_key = 'medium'
+                            _ltr_len_key = "medium"
                         ltr_expected_pages = max(5, _ltr_cfg[_ltr_len_key])
-                    except Exception:  # noqa: BLE001 — defensive, never break generation
+                    except (
+                        Exception
+                    ):  # noqa: BLE001 — defensive, never break generation
                         ltr_expected_pages = 5
 
                     ltr_pages_count = len(pages)
@@ -1143,8 +1394,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
                     # Determine minimum words based on age and mode
                     min_words_threshold = 0
-                    is_long_mode = (story_duration == '10_minutes' or story_length == 'epic')
-                    is_standard_mode = (story_length == 'standard')
+                    is_long_mode = (
+                        story_duration == "10_minutes" or story_length == "epic"
+                    )
+                    is_standard_mode = story_length == "standard"
 
                     if age <= 5:
                         min_words_threshold = 250 if is_standard_mode else 100
@@ -1154,24 +1407,35 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         min_words_threshold = 1300 if is_long_mode else 700
                     elif age <= 12:
                         min_words_threshold = 1700 if is_long_mode else 1100
-                    else: # 13+
+                    else:  # 13+
                         min_words_threshold = 2400 if is_long_mode else 1700
 
                     if total_words < min_words_threshold:
                         is_long_enough = False
                         validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
-                
-                if is_clean and is_long_enough and is_rhyme_quality_ok and is_ltr_format_ok and is_sprout_format_ok:
+
+                if (
+                    is_clean
+                    and is_long_enough
+                    and is_rhyme_quality_ok
+                    and is_ltr_format_ok
+                    and is_sprout_format_ok
+                ):
                     logger.info("Story passed validation.")
                     break
                 else:
-                    logger.warning(f"Validation failed on attempt {attempt}: {validation_error}")
+                    logger.warning(
+                        f"Validation failed on attempt {attempt}: {validation_error}"
+                    )
                     if attempt < max_attempts:
                         # Append feedback to prompt for next attempt
                         if not is_clean:
                             prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
                             if missing_names:
-                                prompt += "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: " + ", ".join(missing_names)
+                                prompt += (
+                                    "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: "
+                                    + ", ".join(missing_names)
+                                )
                         if not is_long_enough:
                             prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
                         if not is_rhyme_quality_ok:
@@ -1201,6 +1465,33 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             validation_ms = max(validation_loop_ms - ai_call_ms, 0.0)
             logger.debug("perf phase=validation ms=%.1f", validation_ms)
 
+            # SE1/G2: provider_name == "static" means BOTH Gemini and
+            # OpenRouter failed and the child received the generic canned
+            # fallback story. This is invisible to the user, so surface it as
+            # an alertable Sentry signal — a spike means an all-providers-down
+            # outage that no exception would otherwise report.
+            if provider_name == "static":
+                logger.error(
+                    "story_generation_static_fallback theme=%s user_tier=%s sequence=%s",
+                    theme,
+                    user_tier,
+                    provider_sequence,
+                )
+                try:
+                    import sentry_sdk
+
+                    with sentry_sdk.push_scope() as _scope:
+                        _scope.set_tag("reliability_signal", "static_fallback")
+                        _scope.set_tag("user_tier", user_tier or "unknown")
+                        _scope.set_context(
+                            "provider_sequence", {"attempts": provider_sequence}
+                        )
+                        sentry_sdk.capture_message(
+                            "story_generation_static_fallback", level="warning"
+                        )
+                except Exception:  # noqa: BLE001 — never break generation on telemetry
+                    logger.debug("Sentry static-fallback signal failed", exc_info=True)
+
             if learning_to_read_mode and not is_ltr_format_ok:
                 _ltr_target = ltr_expected_pages or 5
                 pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
@@ -1221,7 +1512,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # boundaries (same pattern as LTR post-process above).
             if _is_sprout_nonltr and not is_sprout_format_ok:
                 pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
-                pages = _post_process_sprout_pages(pages, min_pages=8, max_pages=12, max_words=25)
+                pages = _post_process_sprout_pages(
+                    pages, min_pages=8, max_pages=12, max_words=25
+                )
                 story_body = "\n\n".join(pages)
                 post_split = [(i, len(p.split())) for i, p in enumerate(pages)]
                 logger.warning(
@@ -1268,11 +1561,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # helper with cap=350. Only fires for the Superhero theme on Explorer
             # ages, where the prompt targets 250-350 words and the model still
             # occasionally overshoots.
-            elif (
-                _sprout_age >= 6
-                and _sprout_age <= 8
-                and _is_superhero_theme(theme)
-            ):
+            elif _sprout_age >= 6 and _sprout_age <= 8 and _is_superhero_theme(theme):
                 story_body, pages, _explorer_info = _enforce_sprout_word_cap(
                     age=_sprout_age,
                     theme=theme,
@@ -1289,7 +1578,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     band_label="Explorer",
                     age_max=8,
                 )
-                if _explorer_info.get("original_words", 0) > EXPLORER_SUPERHERO_WORD_CAP:
+                if (
+                    _explorer_info.get("original_words", 0)
+                    > EXPLORER_SUPERHERO_WORD_CAP
+                ):
                     logger.info(
                         "explorer_superhero_word_cap event=enforced theme=%s original=%s regen=%s "
                         "truncated=%s final=%s",
@@ -1329,16 +1621,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     _mod_age = 5
                 _fail_closed = _mod_age <= 12 or provider_name == "openrouter"
                 # Moderate title + body together (F-13).
-                _moderation_text = (
-                    f"{title}\n\n{story_body}" if title else story_body
-                )
+                _moderation_text = f"{title}\n\n{story_body}" if title else story_body
                 llm_safe, llm_flag_reason = moderate_story_content(
                     _moderation_text, age, fail_closed=_fail_closed
                 )
                 llm_flagged = not llm_safe
 
             if keyword_flagged or llm_flagged:
-                flag_source = "keyword filter" if keyword_flagged else f"LLM classifier ({llm_flag_reason})"
+                flag_source = (
+                    "keyword filter"
+                    if keyword_flagged
+                    else f"LLM classifier ({llm_flag_reason})"
+                )
                 logger.warning(
                     f"Story flagged by {flag_source} for age {age} — "
                     f"substituting safe fallback story."
@@ -1352,7 +1646,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion_pets=companion_pets,
                     companion_characters=companion_character_details,
                     custom_elements="",  # Strip custom elements for fallback
-                    additional_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
+                    additional_characters=kwargs.get("additional_characters")
+                    or char_details.get("additionalCharacters"),
                     therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
                     feelings_prompt=kwargs.get("feelings_prompt"),
                     character_details=char_details,
@@ -1362,11 +1657,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 )
                 fallback_prompt = _scrub_real_name(fallback_prompt)  # M-7
                 fallback_text = _generate_story_text(
-                    fallback_prompt, theme, character_name, companion, user_tier=user_tier
+                    fallback_prompt,
+                    theme,
+                    character_name,
+                    companion,
+                    user_tier=user_tier,
                 )
-                fallback_title, _, fallback_body, fallback_pages, fallback_post, fallback_metadata = _safe_extract_title_and_gem(
-                    fallback_text, theme
-                )
+                (
+                    fallback_title,
+                    _,
+                    fallback_body,
+                    fallback_pages,
+                    fallback_post,
+                    fallback_metadata,
+                ) = _safe_extract_title_and_gem(fallback_text, theme)
                 if fallback_body:
                     title = fallback_title
                     story_body = fallback_body
@@ -1375,6 +1679,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Fallback path replaces story body; metadata must follow or
                     # we'd be tagging the new story with the flagged story's themes.
                     story_metadata = fallback_metadata
+                    # F-01: the safety fallback always uses the standard prompt
+                    # builder regardless of the original mode — re-tag so the
+                    # row reflects what actually produced the persisted body.
+                    prompt_template_id, prompt_revision_hash = _resolve_prompt_version(
+                        mode="standard",
+                        age=age,
+                    )
 
             # --- End output content moderation ---
 
@@ -1387,7 +1698,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 try:
                     from backend.services.story_duration_service import (
                         AdventureStepGenerator,
-                        DurationConfig
+                        DurationConfig,
                     )
 
                     # Get configuration
@@ -1396,9 +1707,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Use pages from LLM if it returned at least min_pages; otherwise re-split.
                     # Models routinely under-paginate (3 dense pages instead of 5-8), leaving a
                     # tiny tail page or unbalanced pacing — PageSplitter rebalances on word counts.
-                    _min_pages = max(2, int(config.get('min_pages', 2)))
+                    _min_pages = max(2, int(config.get("min_pages", 2)))
                     if not pages or len(pages) < _min_pages:
                         from backend.services.story_duration_service import PageSplitter
+
                         if pages:
                             logger.info(
                                 "Under-paginated: model returned %d pages, "
@@ -1408,28 +1720,25 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                             )
                         pages = PageSplitter.split_into_pages(
                             story_body,
-                            target_words_per_page=config['words_per_page'],
-                            min_pages=config['min_pages'],
-                            max_pages=config['max_pages']
+                            target_words_per_page=config["words_per_page"],
+                            min_pages=config["min_pages"],
+                            max_pages=config["max_pages"],
                         )
 
                     # Generate adventure step labels
                     adventure_steps = AdventureStepGenerator.generate_steps(
-                        story_duration,
-                        age,
-                        len(pages)
+                        story_duration, age, len(pages)
                     )
 
                     # Validate story
                     from backend.services.story_duration_service import StoryValidator
+
                     is_valid, issues = StoryValidator.validate_story(
-                        story_body,
-                        pages,
-                        story_duration,
-                        age
+                        story_body, pages, story_duration, age
                     )
 
                     from backend.services.story_duration_service import PageSplitter
+
                     total_words = sum(len(p.split()) for p in pages)
 
                     if not is_valid:
@@ -1539,26 +1848,43 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # Persist Story row (skipped for anonymous — Story.user_id is NOT NULL
             # and references user.id). Failure must not break the response — the
             # story is already generated and the client expects it.
-            if user_id and user_id != 'anonymous':
+            if user_id and user_id != "anonymous":
                 try:
-                    db.session.add(Story(
-                        id=story_id,
-                        user_id=str(user_id),
-                        character_id=character_id if character_id else None,
-                        title=title[:200] if title else None,
-                        theme=theme[:100] if theme else None,
-                        themes=_themes,
-                        characters_featured=_characters,
-                        emotional_arc=_arc,
-                    ))
+                    db.session.add(
+                        Story(
+                            id=story_id,
+                            user_id=str(user_id),
+                            character_id=character_id if character_id else None,
+                            title=title[:200] if title else None,
+                            theme=theme[:100] if theme else None,
+                            themes=_themes,
+                            characters_featured=_characters,
+                            emotional_arc=_arc,
+                            # R2: persist the Celery task id and the full story
+                            # payload so /task-status can recover a finished story
+                            # from the DB once the Celery result expires (1h).
+                            task_id=self.request.id,
+                            content=story_payload,
+                            # F-01 (MT-187): tag the row with which prompt template
+                            # produced it (sha256[:16] of the builder's live source).
+                            prompt_template_id=prompt_template_id,
+                            prompt_revision_hash=prompt_revision_hash,
+                        )
+                    )
                     db.session.commit()
                     logger.info(
                         "story_persisted id=%s character_id=%s themes=%s chars=%s arc=%s",
-                        story_id, character_id, _themes, _characters, _arc,
+                        story_id,
+                        character_id,
+                        _themes,
+                        _characters,
+                        _arc,
                     )
                 except Exception:  # noqa: BLE001
                     db.session.rollback()
-                    logger.exception("Failed to persist Story row (story still returned to caller).")
+                    logger.exception(
+                        "Failed to persist Story row (story still returned to caller)."
+                    )
 
             return {
                 "status": "complete",
@@ -1589,5 +1915,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     meta={"error": error_msg, "traceback": traceback.format_exc()},
                 )
             except Exception as e:
-                logger.warning(f"Failed to update task state (Redis likely unavailable): {e}")
+                logger.warning(
+                    f"Failed to update task state (Redis likely unavailable): {e}"
+                )
             raise

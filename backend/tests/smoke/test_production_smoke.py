@@ -11,7 +11,6 @@ import uuid
 import pytest
 import requests
 
-
 BASE_URL = os.environ.get(
     "SMOKE_TEST_URL",
     "https://story-weaver-app-production.up.railway.app",
@@ -51,9 +50,9 @@ def auth_headers(session_client: requests.Session) -> dict[str, str]:
         json={"client_id": client_id},
         timeout=REQUEST_TIMEOUT,
     )
-    assert response.status_code == 200, (
-        f"Anonymous auth failed: status={response.status_code} body={response.text[:500]!r}"
-    )
+    assert (
+        response.status_code == 200
+    ), f"Anonymous auth failed: status={response.status_code} body={response.text[:500]!r}"
     payload = _assert_json_response(response)
     token = payload.get("token") or payload.get("access_token")
     assert token, f"Auth response missing token: {payload!r}"
@@ -78,9 +77,9 @@ def character_factory(session_client: requests.Session, auth_headers: dict[str, 
             headers=auth_headers,
             timeout=REQUEST_TIMEOUT,
         )
-        assert response.status_code == 201, (
-            f"Character creation failed: status={response.status_code} body={response.text[:500]!r}"
-        )
+        assert (
+            response.status_code == 201
+        ), f"Character creation failed: status={response.status_code} body={response.text[:500]!r}"
         body = _assert_json_response(response)
         assert body["name"] == payload["name"]
         assert body["age"] == payload["age"]
@@ -118,7 +117,9 @@ class TestHealthSmoke:
         assert "database" not in data
         assert "has_api_key" not in data
 
-    def test_detailed_health(self, session_client: requests.Session, auth_headers: dict[str, str]):
+    def test_detailed_health(
+        self, session_client: requests.Session, auth_headers: dict[str, str]
+    ):
         """Detailed health is admin-only (M-12).
 
         Unauthenticated callers get 401. With a (non-admin) anonymous token
@@ -126,7 +127,9 @@ class TestHealthSmoke:
         the smoke suite has no admin credentials, so it only asserts the
         endpoint is gated, not the body.
         """
-        response = session_client.get(f"{BASE_URL}/health/detailed", timeout=REQUEST_TIMEOUT)
+        response = session_client.get(
+            f"{BASE_URL}/health/detailed", timeout=REQUEST_TIMEOUT
+        )
         assert response.status_code == 401
 
         response = session_client.get(
@@ -148,9 +151,13 @@ class TestAPIContractSmoke:
         )
         assert response.status_code in [401, 422]
 
-    def test_unauthenticated_characters_rejected(self, session_client: requests.Session):
+    def test_unauthenticated_characters_rejected(
+        self, session_client: requests.Session
+    ):
         """Character listing requires authentication"""
-        response = session_client.get(f"{BASE_URL}/get-characters", timeout=REQUEST_TIMEOUT)
+        response = session_client.get(
+            f"{BASE_URL}/get-characters", timeout=REQUEST_TIMEOUT
+        )
         assert response.status_code in [401, 422]
 
     def test_invalid_token_rejected(self, session_client: requests.Session):
@@ -283,9 +290,10 @@ class TestAuthenticatedCriticalFlows:
         )
         elapsed = time.time() - started_at
 
-        assert response.status_code in (200, 202), (
-            f"Story generation failed: status={response.status_code} body={response.text[:1000]!r}"
-        )
+        assert response.status_code in (
+            200,
+            202,
+        ), f"Story generation failed: status={response.status_code} body={response.text[:1000]!r}"
         data = _assert_json_response(response)
 
         if response.status_code == 202:
@@ -298,6 +306,8 @@ class TestAuthenticatedCriticalFlows:
         story = data.get("story") or {}
         assert isinstance(story, dict), f"Unexpected story payload: {data!r}"
         assert story.get("title"), f"Missing story title: {data!r}"
-        story_text = story.get("story_text") or data.get("story_text") or data.get("story")
+        story_text = (
+            story.get("story_text") or data.get("story_text") or data.get("story")
+        )
         assert isinstance(story_text, str) and len(story_text.strip()) > 20
         assert elapsed < 180

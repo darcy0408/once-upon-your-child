@@ -48,6 +48,7 @@ def _get_tts_service():
             return None
 
     import os
+
     try:
         _tts_service = ElevenLabsTTSService()
         logger.info("ElevenLabs TTS initialised successfully")
@@ -178,7 +179,14 @@ def create_tts_blueprint(limiter, require_auth):
 
     @tts_bp.route("/tts/synthesize", methods=["POST"])
     @require_auth
-    @limiter.limit("500 per hour", key_func=lambda: request.current_user.id if hasattr(request, 'current_user') and request.current_user else request.remote_addr)
+    @limiter.limit(
+        "500 per hour",
+        key_func=lambda: (
+            request.current_user.id
+            if hasattr(request, "current_user") and request.current_user
+            else request.remote_addr
+        ),
+    )
     def synthesize():
         """
         Generate ElevenLabs MP3 narration for a story text.
@@ -187,11 +195,17 @@ def create_tts_blueprint(limiter, require_auth):
         to on-device TTS.
         """
         import os
+
         if os.environ.get("TTS_DISABLED", "").lower() in ("1", "true", "yes"):
-            return jsonify({
-                "error": "TTS service unavailable",
-                "message": "TTS is temporarily disabled.",
-            }), 503
+            return (
+                jsonify(
+                    {
+                        "error": "TTS service unavailable",
+                        "message": "TTS is temporarily disabled.",
+                    }
+                ),
+                503,
+            )
 
         service = _get_tts_service()
         elevenlabs_ok = service is not None
@@ -214,18 +228,31 @@ def create_tts_blueprint(limiter, require_auth):
             )
             from utils.audit import audit_log
 
-        user_id = request.current_user.id if hasattr(request, 'current_user') and request.current_user else None
-        user_tier = getattr(request.current_user, 'subscription_tier', 'free') or 'free'
+        user_id = (
+            request.current_user.id
+            if hasattr(request, "current_user") and request.current_user
+            else None
+        )
+        user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
         if user_id:
             allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
             if not allowed:
-                audit_log('tts_quota_exceeded', user_id=user_id, data={'tier': user_tier, 'count': tts_count, 'limit': tts_limit})
-                return jsonify({
-                    "error": "Daily narration limit reached",
-                    "code": "TTS_QUOTA_EXCEEDED",
-                    "daily_limit": tts_limit,
-                    "syntheses_used": tts_count,
-                }), 429
+                audit_log(
+                    "tts_quota_exceeded",
+                    user_id=user_id,
+                    data={"tier": user_tier, "count": tts_count, "limit": tts_limit},
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "Daily narration limit reached",
+                            "code": "TTS_QUOTA_EXCEEDED",
+                            "daily_limit": tts_limit,
+                            "syntheses_used": tts_count,
+                        }
+                    ),
+                    429,
+                )
 
         data = request.get_json(force=True, silent=True) or {}
         text = (data.get("text") or "").strip()
@@ -237,17 +264,19 @@ def create_tts_blueprint(limiter, require_auth):
         # through to the free Edge TTS voice so narration still sounds natural.
         if user_id and elevenlabs_ok:
             chars_req = len(text)
-            ok, cap_reason, used, limit = check_tts_chars_quota(user_id, user_tier, chars_req)
+            ok, cap_reason, used, limit = check_tts_chars_quota(
+                user_id, user_tier, chars_req
+            )
             if not ok:
                 audit_log(
-                    'tts_chars_cap_exceeded',
+                    "tts_chars_cap_exceeded",
                     user_id=user_id,
                     data={
-                        'tier': user_tier,
-                        'reason': cap_reason,
-                        'used': used,
-                        'limit': limit,
-                        'requested': chars_req,
+                        "tier": user_tier,
+                        "reason": cap_reason,
+                        "used": used,
+                        "limit": limit,
+                        "requested": chars_req,
                     },
                 )
                 elevenlabs_ok = False
@@ -283,7 +312,9 @@ def create_tts_blueprint(limiter, require_auth):
                     # Timestamps not supported across multi-voice segments.
                     logger.info(
                         "Dialogue synthesis (%d chars) — narrator=%s character=%s",
-                        len(text), voice_id, character_voice_id,
+                        len(text),
+                        voice_id,
+                        character_voice_id,
                     )
                     audio_bytes = service.generate_speech_with_dialogue(
                         text=text,
@@ -293,19 +324,27 @@ def create_tts_blueprint(limiter, require_auth):
                 elif len(text) > 5000:
                     # Long story — chunked synthesis to avoid ElevenLabs truncation.
                     # Timestamps not supported for chunked mode.
-                    logger.info("Long story (%d chars) — using chunked synthesis", len(text))
-                    audio_bytes = service.generate_speech_chunked(text=text, voice_id=voice_id)
+                    logger.info(
+                        "Long story (%d chars) — using chunked synthesis", len(text)
+                    )
+                    audio_bytes = service.generate_speech_chunked(
+                        text=text, voice_id=voice_id
+                    )
                 else:
                     # Short story — use with-timestamps endpoint for accurate word highlighting.
-                    audio_bytes, word_timestamps = service.generate_speech_with_timestamps(
-                        text=text, voice_id=voice_id, speed=speed
+                    audio_bytes, word_timestamps = (
+                        service.generate_speech_with_timestamps(
+                            text=text, voice_id=voice_id, speed=speed
+                        )
                     )
-                provider = 'elevenlabs'
+                provider = "elevenlabs"
             except Exception as e:
                 # Any ElevenLabs failure (exhausted credits, network, API
                 # error) falls through to the free Edge TTS voice rather than
                 # failing the request.
-                logger.error("ElevenLabs TTS synthesis error — using Edge fallback: %s", e)
+                logger.error(
+                    "ElevenLabs TTS synthesis error — using Edge fallback: %s", e
+                )
                 elevenlabs_ok = False
                 audio_bytes = None
 
@@ -317,7 +356,7 @@ def create_tts_blueprint(limiter, require_auth):
             gemini_result = _gemini_synthesize(text, voice_id, speed)
             if gemini_result is not None and gemini_result[0]:
                 audio_bytes, word_timestamps = gemini_result
-                provider = 'gemini'
+                provider = "gemini"
 
         # Free Edge TTS fallback — used when both ElevenLabs and Gemini are
         # unavailable, e.g. no GEMINI_API_KEY configured, or Gemini errored.
@@ -325,57 +364,76 @@ def create_tts_blueprint(limiter, require_auth):
             edge_result = _edge_synthesize(text, voice_id, speed)
             if edge_result is None or not edge_result[0]:
                 # No TTS available — client falls back to its on-device voice.
-                return jsonify({
-                    "error": "TTS service unavailable",
-                    "message": "Narration is unavailable right now.",
-                }), 503
+                return (
+                    jsonify(
+                        {
+                            "error": "TTS service unavailable",
+                            "message": "Narration is unavailable right now.",
+                        }
+                    ),
+                    503,
+                )
             audio_bytes, word_timestamps = edge_result
-            provider = 'edge'
+            provider = "edge"
 
         if user_id:
             increment_tts_quota(user_id, user_tier)
             # Character budget and cost tracking apply only to paid ElevenLabs use.
-            if provider == 'elevenlabs':
+            if provider == "elevenlabs":
                 increment_tts_chars(user_id, user_tier, len(text))
                 try:
-                    from backend.services.cost_tracker import elevenlabs_tts_cost, log_api_cost
+                    from backend.services.cost_tracker import (
+                        elevenlabs_tts_cost,
+                        log_api_cost,
+                    )
+
                     log_api_cost(
-                        provider='elevenlabs',
-                        feature='tts',
+                        provider="elevenlabs",
+                        feature="tts",
                         cost_usd=elevenlabs_tts_cost(len(text)),
                         user_id=user_id,
                         units=len(text),
-                        unit_kind='chars',
+                        unit_kind="chars",
                         success=True,
-                        extra={'voice_id': voice_id, 'tier': user_tier},
+                        extra={"voice_id": voice_id, "tier": user_tier},
                     )
                 except Exception:
                     logger.debug("cost_tracker logging failed", exc_info=True)
-            elif provider == 'gemini':
+            elif provider == "gemini":
                 # Don't increment the ElevenLabs char budget — Gemini is the
                 # overflow tier that exists *because* that budget is exhausted.
                 try:
-                    from backend.services.cost_tracker import gemini_tts_cost, log_api_cost
+                    from backend.services.cost_tracker import (
+                        gemini_tts_cost,
+                        log_api_cost,
+                    )
+
                     log_api_cost(
-                        provider='gemini',
-                        feature='tts',
+                        provider="gemini",
+                        feature="tts",
                         cost_usd=gemini_tts_cost(len(text)),
                         user_id=user_id,
                         units=len(text),
-                        unit_kind='chars',
+                        unit_kind="chars",
                         success=True,
-                        extra={'voice_id': voice_id, 'tier': user_tier, 'model': 'gemini-3.1-flash-tts-preview'},
+                        extra={
+                            "voice_id": voice_id,
+                            "tier": user_tier,
+                            "model": "gemini-3.1-flash-tts-preview",
+                        },
                     )
                 except Exception:
                     logger.debug("cost_tracker logging failed", exc_info=True)
 
-        return jsonify({
-            "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
-            "format": "mp3",
-            "voice_id": voice_id,
-            "provider": provider,  # 'elevenlabs' or 'edge'
-            "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
-        })
+        return jsonify(
+            {
+                "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
+                "format": "mp3",
+                "voice_id": voice_id,
+                "provider": provider,  # 'elevenlabs' or 'edge'
+                "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
+            }
+        )
 
     @tts_bp.route("/tts/transcribe", methods=["POST"])
     @require_auth
@@ -390,7 +448,15 @@ def create_tts_blueprint(limiter, require_auth):
 
         api_key = os.environ.get("ELEVENLABS_API_KEY")
         if not api_key:
-            return jsonify({"error": "STT service unavailable", "message": "ELEVENLABS_API_KEY not configured"}), 503
+            return (
+                jsonify(
+                    {
+                        "error": "STT service unavailable",
+                        "message": "ELEVENLABS_API_KEY not configured",
+                    }
+                ),
+                503,
+            )
 
         if "audio" not in request.files:
             return jsonify({"error": "audio file required"}), 400
@@ -402,6 +468,7 @@ def create_tts_blueprint(limiter, require_auth):
 
         try:
             from elevenlabs.client import ElevenLabs
+
             client = ElevenLabs(api_key=api_key)
             result = client.speech_to_text.convert(
                 audio=audio_bytes,
@@ -411,6 +478,14 @@ def create_tts_blueprint(limiter, require_auth):
             return jsonify({"text": text.strip()})
         except Exception as e:
             logger.error("ElevenLabs STT error: %s", e)
-            return jsonify({"error": "STT_FAILED", "message": "Voice transcription is unavailable right now. Please try again in a moment."}), 500
+            return (
+                jsonify(
+                    {
+                        "error": "STT_FAILED",
+                        "message": "Voice transcription is unavailable right now. Please try again in a moment.",
+                    }
+                ),
+                500,
+            )
 
     return tts_bp

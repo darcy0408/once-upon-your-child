@@ -42,22 +42,22 @@ def build_avatar_prompt(template: dict) -> str:
     """Build detailed prompt for avatar generation"""
 
     style_details = {
-        'pixar': 'Pixar 3D animation style with rounded features, expressive large eyes, smooth rendering, vibrant colors, professional Disney/Pixar quality',
-        'watercolor': 'Soft watercolor illustration style with gentle brush strokes, pastel colors, artistic and dreamy, hand-painted quality',
-        'cartoon': '2D cartoon animation style with bold outlines, vibrant colors, dynamic and expressive, professional animated series quality',
-        'clay': 'Claymation style with textured appearance, playful 3D modeling, tactile and charming, stop-motion animation quality'
+        "pixar": "Pixar 3D animation style with rounded features, expressive large eyes, smooth rendering, vibrant colors, professional Disney/Pixar quality",
+        "watercolor": "Soft watercolor illustration style with gentle brush strokes, pastel colors, artistic and dreamy, hand-painted quality",
+        "cartoon": "2D cartoon animation style with bold outlines, vibrant colors, dynamic and expressive, professional animated series quality",
+        "clay": "Claymation style with textured appearance, playful 3D modeling, tactile and charming, stop-motion animation quality",
     }
 
     age_descriptors = {
-        (1, 6): 'very young child',
-        (7, 9): 'young child',
-        (10, 12): 'pre-teen child',
-        (13, 17): 'young teenager'
+        (1, 6): "very young child",
+        (7, 9): "young child",
+        (10, 12): "pre-teen child",
+        (13, 17): "young teenager",
     }
 
-    age_desc = 'child'
+    age_desc = "child"
     for age_range, desc in age_descriptors.items():
-        if age_range[0] <= template['age'] <= age_range[1]:
+        if age_range[0] <= template["age"] <= age_range[1]:
             age_desc = desc
             break
 
@@ -112,15 +112,15 @@ def generate_avatar(template: dict, image_generator: GeminiImageGenerator) -> by
         # Use the character avatar generation method
         result = image_generator.generate_character_avatar(
             prompt=prompt,
-            character_name=template['name'],
-            age=template['age'],
-            style=template['style'],
-            num_images=1
+            character_name=template["name"],
+            age=template["age"],
+            style=template["style"],
+            num_images=1,
         )
 
         if result and len(result) > 0:
             # Extract base64 image
-            image_base64 = result[0]['base64']
+            image_base64 = result[0]["base64"]
             # Decode to bytes
             image_bytes = base64.b64decode(image_base64)
             return image_bytes
@@ -137,7 +137,7 @@ def save_avatar_images(template_id: str, image_bytes: bytes):
 
     # Save full-size image
     full_path = AVATAR_LIBRARY_DIR / f"{template_id}.png"
-    with open(full_path, 'wb') as f:
+    with open(full_path, "wb") as f:
         f.write(image_bytes)
     print(f"  ✅ Saved full-size: {full_path}")
 
@@ -176,32 +176,36 @@ def generate_all_avatars(start_from: int = 0, limit: int = None):
 
     for idx, template in enumerate(templates_to_generate, start=1):
         print(f"[{idx}/{total}] Generating: {template['id']} - {template['name']}")
-        print(f"  Style: {template['style']} | Age: {template['age']} | {template['gender']}")
+        print(
+            f"  Style: {template['style']} | Age: {template['age']} | {template['gender']}"
+        )
 
         # Generate the avatar
         image_bytes = generate_avatar(template, image_generator)
 
         if image_bytes:
             # Save images
-            save_avatar_images(template['id'], image_bytes)
+            save_avatar_images(template["id"], image_bytes)
 
             # Add to metadata
-            generated_metadata.append({
-                "id": template['id'],
-                "filename": f"{template['id']}.png",
-                "thumbnail": f"thumbs/{template['id']}.png",
-                "name": template['name'],
-                "style": template['style'],
-                "age": template['age'],
-                "gender": template['gender'],
-                "skin_tone": template['skin_tone'],
-                "hair_style": template['hair_style'],
-                "hair_color": template['hair_color'],
-                "outfit": template['outfit'],
-                "expression": template['expression'],
-                "tags": template['tags'],
-                "generated_at": datetime.now().isoformat()
-            })
+            generated_metadata.append(
+                {
+                    "id": template["id"],
+                    "filename": f"{template['id']}.png",
+                    "thumbnail": f"thumbs/{template['id']}.png",
+                    "name": template["name"],
+                    "style": template["style"],
+                    "age": template["age"],
+                    "gender": template["gender"],
+                    "skin_tone": template["skin_tone"],
+                    "hair_style": template["hair_style"],
+                    "hair_color": template["hair_color"],
+                    "outfit": template["outfit"],
+                    "expression": template["expression"],
+                    "tags": template["tags"],
+                    "generated_at": datetime.now().isoformat(),
+                }
+            )
 
             print(f"  ✅ Complete!\n")
         else:
@@ -209,6 +213,7 @@ def generate_all_avatars(start_from: int = 0, limit: int = None):
 
         # Small delay to avoid rate limiting
         import time
+
         if idx < total:
             print(f"  Waiting 5 seconds before next generation...")
             time.sleep(5)
@@ -219,10 +224,10 @@ def generate_all_avatars(start_from: int = 0, limit: int = None):
         "version": "1.0",
         "generated_at": datetime.now().isoformat(),
         "total_avatars": len(generated_metadata),
-        "avatars": generated_metadata
+        "avatars": generated_metadata,
     }
 
-    with open(metadata_path, 'w', encoding='utf-8') as f:
+    with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2, ensure_ascii=False)
 
     print(f"\n{'='*60}")
@@ -263,7 +268,7 @@ def test_single_avatar(template_index: int = 0):
         test_dir.mkdir(exist_ok=True)
 
         test_path = test_dir / f"test_{template['id']}.png"
-        with open(test_path, 'wb') as f:
+        with open(test_path, "wb") as f:
             f.write(image_bytes)
 
         print(f"\n✅ Test successful!")
@@ -277,10 +282,14 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Generate Avatar Library")
-    parser.add_argument('--test', action='store_true', help='Test with a single avatar')
-    parser.add_argument('--index', type=int, default=0, help='Template index for test mode')
-    parser.add_argument('--start', type=int, default=0, help='Start from this index')
-    parser.add_argument('--limit', type=int, default=None, help='Generate only this many')
+    parser.add_argument("--test", action="store_true", help="Test with a single avatar")
+    parser.add_argument(
+        "--index", type=int, default=0, help="Template index for test mode"
+    )
+    parser.add_argument("--start", type=int, default=0, help="Start from this index")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Generate only this many"
+    )
 
     args = parser.parse_args()
 

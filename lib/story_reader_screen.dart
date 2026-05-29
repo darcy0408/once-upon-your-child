@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/models/elevenlabs_voice.dart';
 import 'package:story_weaver_app/providers/age_band_provider.dart';
+import 'package:story_weaver_app/providers/highlight_color_provider.dart';
 import 'package:story_weaver_app/providers/voice_preference_provider.dart';
 import 'package:story_weaver_app/services/audio_ambience_service.dart';
 import 'package:story_weaver_app/services/tts_api_service.dart';
@@ -1121,6 +1122,8 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   }
 
   List<InlineSpan> _buildSpans() {
+    // A11Y-LTR-03: the word-highlight color is parent-configurable.
+    final highlightColor = ref.watch(highlightColorProvider);
     final spans = <InlineSpan>[];
     for (var i = 0; i < _tokens.length; i++) {
       final token = _tokens[i];
@@ -1135,12 +1138,12 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
               ? null
               : TextStyle(
                   backgroundColor: isHighlighted
-                      ? AppColors.gold.withValues(alpha: 0.4)
+                      ? highlightColor.withValues(alpha: 0.4)
                       : null,
-                  decoration: isHighlighted 
-                      ? TextDecoration.underline 
+                  decoration: isHighlighted
+                      ? TextDecoration.underline
                       : null,
-                  decorationColor: AppColors.gold,
+                  decorationColor: highlightColor,
                   decorationThickness: 2,
                   fontWeight:
                       isHighlighted ? FontWeight.w700 : FontWeight.normal,

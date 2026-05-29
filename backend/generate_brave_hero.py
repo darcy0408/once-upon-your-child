@@ -7,6 +7,7 @@ import base64
 import os
 import sys
 
+
 def main():
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -46,11 +47,11 @@ def main():
 
     # Extract image bytes from response
     image_bytes = None
-    if hasattr(response, 'candidates') and response.candidates:
+    if hasattr(response, "candidates") and response.candidates:
         for candidate in response.candidates:
-            if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+            if hasattr(candidate, "content") and hasattr(candidate.content, "parts"):
                 for part in candidate.content.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data:
+                    if hasattr(part, "inline_data") and part.inline_data:
                         image_bytes = part.inline_data.data
                         break
             if image_bytes:
@@ -64,13 +65,21 @@ def main():
     # Convert to JPEG and save
     from PIL import Image
     import io
+
     img = Image.open(io.BytesIO(image_bytes))
     img = img.convert("RGB")
 
-    out_path = os.path.normpath(os.path.join(
-        os.path.dirname(__file__),
-        "..", "assets", "images", "archetypes", "sprout", "brave_explorer.jpg"
-    ))
+    out_path = os.path.normpath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "assets",
+            "images",
+            "archetypes",
+            "sprout",
+            "brave_explorer.jpg",
+        )
+    )
     img.save(out_path, "JPEG", quality=92)
     print(f"\nSaved to: {out_path}")
 

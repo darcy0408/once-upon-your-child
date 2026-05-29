@@ -25,16 +25,48 @@ logger = logging.getLogger(__name__)
 # builder), adds no API cost or latency, and mirrors the blocklist approach
 # already used for avatar prompts (AvatarPromptService.AVATAR_UNSAFE_CONTENT_*).
 _IMAGE_UNSAFE_TERMS = [
-    'scary', 'frightening', 'horror', 'creepy', 'disturbing', 'nightmare',
-    'violent', 'violence', 'weapon', 'gun', 'knife', 'blood', 'bloody',
-    'gore', 'gory', 'injury', 'wound', 'corpse', 'dead body', 'death',
-    'kill', 'murder', 'torture', 'abuse',
-    'inappropriate', 'suggestive', 'explicit', 'sexual', 'sexy', 'erotic',
-    'nude', 'naked', 'undressed', 'revealing', 'lingerie', 'underwear',
-    'drug', 'alcohol', 'cigarette',
+    "scary",
+    "frightening",
+    "horror",
+    "creepy",
+    "disturbing",
+    "nightmare",
+    "violent",
+    "violence",
+    "weapon",
+    "gun",
+    "knife",
+    "blood",
+    "bloody",
+    "gore",
+    "gory",
+    "injury",
+    "wound",
+    "corpse",
+    "dead body",
+    "death",
+    "kill",
+    "murder",
+    "torture",
+    "abuse",
+    "inappropriate",
+    "suggestive",
+    "explicit",
+    "sexual",
+    "sexy",
+    "erotic",
+    "nude",
+    "naked",
+    "undressed",
+    "revealing",
+    "lingerie",
+    "underwear",
+    "drug",
+    "alcohol",
+    "cigarette",
 ]
 _IMAGE_UNSAFE_PATTERN = re.compile(
-    r'\b(' + '|'.join(re.escape(t) for t in _IMAGE_UNSAFE_TERMS) + r')\b',
+    r"\b(" + "|".join(re.escape(t) for t in _IMAGE_UNSAFE_TERMS) + r")\b",
     re.IGNORECASE,
 )
 
@@ -60,7 +92,8 @@ def _vet_flux_prompt(prompt: str) -> str:
     if match:
         logger.warning(
             "Flux prompt failed image safety vet (term %r) — substituting "
-            "safe templated prompt", match.group(0),
+            "safe templated prompt",
+            match.group(0),
         )
         return _SAFE_FALLBACK_IMAGE_PROMPT
     return prompt
@@ -76,7 +109,9 @@ class ReplicateImageGenerator:
 
     def _ensure_api_key(self):
         if not self.api_key:
-            raise RuntimeError("REPLICATE_API_TOKEN not set. Get one at https://replicate.com/account/api-tokens")
+            raise RuntimeError(
+                "REPLICATE_API_TOKEN not set. Get one at https://replicate.com/account/api-tokens"
+            )
 
     def generate_story_illustration(
         self,
@@ -100,11 +135,15 @@ class ReplicateImageGenerator:
         """
         # Skip image generation in mock/testing mode to avoid costs
         if self.mock_mode:
-            logger.info("MOCK_TESTING_MODE enabled - skipping image generation (no cost)")
+            logger.info(
+                "MOCK_TESTING_MODE enabled - skipping image generation (no cost)"
+            )
             return []
 
         if not self.api_key:
-            logger.warning("Replicate API token not set; skipping illustration generation")
+            logger.warning(
+                "Replicate API token not set; skipping illustration generation"
+            )
             return []
 
         # Build the prompt
@@ -138,13 +177,15 @@ class ReplicateImageGenerator:
                         "num_outputs": num_images,
                         "scheduler": "K_EULER",
                         "num_inference_steps": 4,  # Lightning is optimized for 4 steps
-                    }
+                    },
                 },
-                timeout=30
+                timeout=30,
             )
 
             if response.status_code != 201:
-                logger.error(f"Replicate API error: {response.status_code} - {response.text}")
+                logger.error(
+                    f"Replicate API error: {response.status_code} - {response.text}"
+                )
                 return []
 
             prediction = response.json()
@@ -154,12 +195,13 @@ class ReplicateImageGenerator:
             max_attempts = 30
             for attempt in range(max_attempts):
                 import time
+
                 time.sleep(1)
 
                 status_response = requests.get(
                     f"https://api.replicate.com/v1/predictions/{prediction_id}",
                     headers={"Authorization": f"Bearer {self.api_key}"},
-                    timeout=10
+                    timeout=10,
                 )
 
                 if status_response.status_code != 200:
@@ -219,15 +261,16 @@ class ReplicateImageGenerator:
         char_desc = character_name
         if character_appearance:
             details = []
-            if character_appearance.get('age'):
+            if character_appearance.get("age"):
                 details.append(f"{character_appearance['age']} years old")
             try:
                 from backend.gemini_image_generator import build_appearance_details
+
                 details.extend(build_appearance_details(character_appearance))
             except Exception:
                 # Fallback: at least keep gender if the helper is unavailable.
-                if character_appearance.get('gender'):
-                    details.append(str(character_appearance['gender']))
+                if character_appearance.get("gender"):
+                    details.append(str(character_appearance["gender"]))
             if details:
                 char_desc = f"{character_name} ({', '.join(details)})"
 
@@ -237,8 +280,8 @@ class ReplicateImageGenerator:
             comp_names = []
             for comp in companions:
                 if isinstance(comp, dict):
-                    name = comp.get('name', 'companion')
-                    species = comp.get('species', '')
+                    name = comp.get("name", "companion")
+                    species = comp.get("species", "")
                     if species:
                         comp_names.append(f"{name} the {species}")
                     else:
@@ -261,6 +304,7 @@ class ReplicateImageGenerator:
         if power_id:
             try:
                 from backend.gemini_image_generator import _power_visual_block
+
                 block = _power_visual_block(power_id)
             except Exception:
                 block = ""
@@ -293,15 +337,17 @@ class ReplicateImageGenerator:
 
                 # Convert to base64
                 image_data = img_response.content
-                base64_data = base64.b64encode(image_data).decode('utf-8')
+                base64_data = base64.b64encode(image_data).decode("utf-8")
 
-                images.append({
-                    'id': f"{uuid.uuid4()}_{i}",
-                    'prompt': prompt,
-                    'image_data': base64_data,
-                    'format': 'png',
-                    'generated_at': datetime.now().isoformat(),
-                })
+                images.append(
+                    {
+                        "id": f"{uuid.uuid4()}_{i}",
+                        "prompt": prompt,
+                        "image_data": base64_data,
+                        "format": "png",
+                        "generated_at": datetime.now().isoformat(),
+                    }
+                )
 
                 logger.info(f"Successfully downloaded and encoded image {i}")
 
@@ -342,11 +388,17 @@ class ReplicateImageGenerator:
             return []
 
         prompt = self._build_prompt(
-            scene_description, character_name, style, age,
-            therapeutic_focus, character_appearance, companions,
+            scene_description,
+            character_name,
+            style,
+            age,
+            therapeutic_focus,
+            character_appearance,
+            companions,
             power_id=power_id,
         )
         import time
+
         t0 = time.time()
 
         try:
@@ -371,10 +423,16 @@ class ReplicateImageGenerator:
             if create.status_code not in (200, 201):
                 logger.warning(
                     "Flux Schnell create failed: %d %s",
-                    create.status_code, create.text[:200],
+                    create.status_code,
+                    create.text[:200],
                 )
-                self._log_cost_event(False, num_images, user_id, age,
-                                     error=f"create {create.status_code}")
+                self._log_cost_event(
+                    False,
+                    num_images,
+                    user_id,
+                    age,
+                    error=f"create {create.status_code}",
+                )
                 return []
 
             body = create.json()
@@ -390,8 +448,13 @@ class ReplicateImageGenerator:
                     )
                     if poll.status_code != 200:
                         logger.warning("Flux Schnell poll failed: %d", poll.status_code)
-                        self._log_cost_event(False, num_images, user_id, age,
-                                             error=f"poll {poll.status_code}")
+                        self._log_cost_event(
+                            False,
+                            num_images,
+                            user_id,
+                            age,
+                            error=f"poll {poll.status_code}",
+                        )
                         return []
                     body = poll.json()
                     if body.get("status") == "succeeded":
@@ -399,31 +462,42 @@ class ReplicateImageGenerator:
                     if body.get("status") in ("failed", "canceled"):
                         logger.warning(
                             "Flux Schnell %s: %s",
-                            body.get("status"), body.get("error"),
+                            body.get("status"),
+                            body.get("error"),
                         )
-                        self._log_cost_event(False, num_images, user_id, age,
-                                             error=str(body.get("status")))
+                        self._log_cost_event(
+                            False,
+                            num_images,
+                            user_id,
+                            age,
+                            error=str(body.get("status")),
+                        )
                         return []
                 else:
                     logger.warning("Flux Schnell prediction timed out")
-                    self._log_cost_event(False, num_images, user_id, age,
-                                         error="timeout")
+                    self._log_cost_event(
+                        False, num_images, user_id, age, error="timeout"
+                    )
                     return []
 
             output = body.get("output") or []
-            urls = output if isinstance(output, list) else [output] if isinstance(output, str) else []
+            urls = (
+                output
+                if isinstance(output, list)
+                else [output] if isinstance(output, str) else []
+            )
             urls = [u for u in urls if u]
             if not urls:
                 logger.warning("Flux Schnell returned no output URLs")
-                self._log_cost_event(False, num_images, user_id, age,
-                                     error="no_output")
+                self._log_cost_event(False, num_images, user_id, age, error="no_output")
                 return []
 
             images = self._download_images(urls, prompt)
             self._log_cost_event(len(images) > 0, len(images), user_id, age)
             logger.info(
                 "Flux Schnell %d image(s) in %.1fs",
-                len(images), time.time() - t0,
+                len(images),
+                time.time() - t0,
             )
             return images
 
@@ -443,18 +517,19 @@ class ReplicateImageGenerator:
         """Forward a Flux Schnell call to cost_tracker. Never raises."""
         try:
             from backend.services.cost_tracker import log_api_cost
+
             log_api_cost(
-                provider='replicate',
-                feature='story_illustration',
+                provider="replicate",
+                feature="story_illustration",
                 cost_usd=0.003 * num_images if success else 0.0,
                 user_id=user_id,
                 units=num_images if success else 0,
-                unit_kind='images',
+                unit_kind="images",
                 success=success,
                 extra={
-                    'model': 'flux-schnell',
-                    'age': age,
-                    **({'error': error} if error else {}),
+                    "model": "flux-schnell",
+                    "age": age,
+                    **({"error": error} if error else {}),
                 },
             )
         except Exception:
@@ -468,7 +543,7 @@ class ReplicateImageGenerator:
         age: int = 7,
         therapeutic_focus: str | None = None,
         character_appearance: dict | None = None,
-        companions: list | None = None
+        companions: list | None = None,
     ) -> list:
         """
         Generate coloring pages (black and white line art).
@@ -484,7 +559,7 @@ class ReplicateImageGenerator:
             age=age,
             therapeutic_focus=therapeutic_focus,
             character_appearance=character_appearance,
-            companions=companions
+            companions=companions,
         )
 
     def generate_custom_avatar(
@@ -542,7 +617,9 @@ class ReplicateImageGenerator:
             "Prefer": "wait",
         }
 
-        resp = requests.post(create_url, headers=headers, json={"input": payload["input"]}, timeout=70)
+        resp = requests.post(
+            create_url, headers=headers, json={"input": payload["input"]}, timeout=70
+        )
         resp.raise_for_status()
         prediction = resp.json()
 
@@ -553,6 +630,7 @@ class ReplicateImageGenerator:
             poll_headers = {"Authorization": f"Token {self.api_key}"}
             while datetime.now().timestamp() < deadline:
                 import time
+
                 time.sleep(3)
                 poll_resp = requests.get(
                     f"https://api.replicate.com/v1/predictions/{pred_id}",
@@ -565,7 +643,9 @@ class ReplicateImageGenerator:
                 if status == "succeeded":
                     break
                 if status in ("failed", "canceled"):
-                    raise RuntimeError(f"Replicate prediction {status}: {prediction.get('error')}")
+                    raise RuntimeError(
+                        f"Replicate prediction {status}: {prediction.get('error')}"
+                    )
             else:
                 raise TimeoutError(f"Replicate prediction {pred_id} timed out")
 
@@ -581,20 +661,26 @@ class ReplicateImageGenerator:
                     dl.raise_for_status()
                     image_b64 = base64.b64encode(dl.content).decode("utf-8")
                 elif isinstance(image_url, str):
-                    image_b64 = image_url.split(",", 1)[-1] if "," in image_url else image_url
+                    image_b64 = (
+                        image_url.split(",", 1)[-1] if "," in image_url else image_url
+                    )
                 else:
                     continue
 
-                results.append({
-                    "id": f"{uuid.uuid4()}_{i}",
-                    "prompt": prompt,
-                    "image_data": image_b64,
-                    "format": "png",
-                    "generated_at": datetime.now().isoformat(),
-                    "provider": "replicate-photomaker-style",
-                })
+                results.append(
+                    {
+                        "id": f"{uuid.uuid4()}_{i}",
+                        "prompt": prompt,
+                        "image_data": image_b64,
+                        "format": "png",
+                        "generated_at": datetime.now().isoformat(),
+                        "provider": "replicate-photomaker-style",
+                    }
+                )
             except Exception as e:
                 logger.error(f"Replicate: failed to process output image {i}: {e}")
 
-        logger.info(f"Replicate PhotoMaker: generated {len(results)} avatar(s) for {character_name}")
+        logger.info(
+            f"Replicate PhotoMaker: generated {len(results)} avatar(s) for {character_name}"
+        )
         return results

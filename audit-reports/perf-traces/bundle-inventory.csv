@@ -1,0 +1,16 @@
+Artifact,Size,Measured,Date,Note
+app-release.aab,114.4 MiB (120005846 bytes),Empirical,2026-05-22,Android App Bundle; large - target under 50 MiB
+mapping.txt (R8),39.8 MiB,Empirical,2026-05-22,Obfuscation map; not shipped
+assets/ total on disk,468 MiB,Empirical,2026-05-22,Includes non-bundled directories
+assets/.png-backup,358 MiB,Empirical,2026-05-22,NOT registered in pubspec - repo bloat only
+assets/BoyGirl images,28 MiB,Empirical,2026-05-22,NOT registered in pubspec - repo bloat only
+assets/images (bundled),63 MiB,Empirical,2026-05-22,Registered in pubspec assets - shipped
+assets/sounds (bundled),6.0 MiB,Empirical,2026-05-22,Registered in pubspec assets - shipped
+assets/feelings_faces (bundled),3.3 MiB,Empirical,2026-05-22,Registered in pubspec assets - shipped
+assets/avatars (partial bundled),2.5 MiB,Empirical,2026-05-22,Only avatars/midjourney subtree registered
+Estimated total bundled assets,~73 MiB,Derived,2026-05-22,Sum of registered asset directories
+Web JS bundle (main.dart.js),15.2 MiB (15968069 bytes) uncompressed,Empirical,2026-05-22,flutter build web --release; ~3-4 MiB gzipped over the wire
+Web CanvasKit,32 MiB,Empirical,2026-05-22,Skia/CanvasKit renderer payload
+Web build total (build/web),107 MiB,Empirical,2026-05-22,Includes bundled image assets - same set PERF-07 targets
+APK (per-ABI),UNMEASURED,N/A,2026-05-22,Only AAB built; no split APK to measure
+IPA,UNMEASURED,N/A,2026-05-22,No iOS build artifact present

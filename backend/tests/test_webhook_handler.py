@@ -105,7 +105,9 @@ def test_subscription_updated_changes_status(client, monkeypatch):
         user = _create_user(subscription_tier="free", subscription_status="inactive")
         user_id = user.id
 
-    new_period_end = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    new_period_end = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(
+        days=60
+    )
     event = _build_event(
         "customer.subscription.updated",
         {

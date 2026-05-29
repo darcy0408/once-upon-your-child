@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 try:
     from google import genai
     from google.genai import types as genai_types
+
     GEMINI_GENAI_AVAILABLE = True
 except ImportError:
     GEMINI_GENAI_AVAILABLE = False
@@ -29,6 +30,7 @@ except ImportError:
 
 try:
     from pydub import AudioSegment
+
     PYDUB_AVAILABLE = True
 except ImportError:
     PYDUB_AVAILABLE = False
@@ -112,20 +114,22 @@ DEFAULT_VOICE_ID = "Leda"
 # closest Gemini prebuilt voice, so a user's selected voice survives a fallback
 # from ElevenLabs to Gemini without surprising them.
 _ELEVENLABS_TO_GEMINI = {
-    "XrExE9yKIg1WjnnlVkGX": "Leda",        # Matilda → warm female
-    "21m00Tcm4TlvDq8ikWAM": "Aoede",       # Rachel → calm female
-    "ThT5KcBeYPX3keUQqHPh": "Aoede",       # Dorothy (British) → calm female
+    "XrExE9yKIg1WjnnlVkGX": "Leda",  # Matilda → warm female
+    "21m00Tcm4TlvDq8ikWAM": "Aoede",  # Rachel → calm female
+    "ThT5KcBeYPX3keUQqHPh": "Aoede",  # Dorothy (British) → calm female
     "jBpfuIE2acCO8z3wKNLl": "Callirrhoe",  # Gigi (childlike) → playful female
-    "JBFqnCBsd6RMkjVDRZzb": "Charon",      # George (British) → deep male
-    "IKne3meq5aSn9XLyUdCD": "Zephyr",      # Charlie (Australian) → warm male
-    "N2lVS1w4EtoT3dr4eOWO": "Puck",        # Callum → lively male
-    "D38z5RcWu1voky8WS1ja": "Charon",      # Fin (Irish) → deep male
+    "JBFqnCBsd6RMkjVDRZzb": "Charon",  # George (British) → deep male
+    "IKne3meq5aSn9XLyUdCD": "Zephyr",  # Charlie (Australian) → warm male
+    "N2lVS1w4EtoT3dr4eOWO": "Puck",  # Callum → lively male
+    "D38z5RcWu1voky8WS1ja": "Charon",  # Fin (Irish) → deep male
 }
 
 
 def gemini_voice_for(elevenlabs_voice_id: str) -> str:
     """Map an ElevenLabs voice ID to the closest Gemini prebuilt voice."""
-    return _ELEVENLABS_TO_GEMINI.get((elevenlabs_voice_id or "").strip(), DEFAULT_VOICE_ID)
+    return _ELEVENLABS_TO_GEMINI.get(
+        (elevenlabs_voice_id or "").strip(), DEFAULT_VOICE_ID
+    )
 
 
 def _pcm_to_mp3(pcm_bytes: bytes, sample_rate: int = 24000) -> bytes:
@@ -262,8 +266,13 @@ class MockGeminiTTSService:
         logger.info("[MockGeminiTTS] Would generate speech for %d chars", len(text))
         return b""
 
-    def generate_speech_with_timestamps(self, text: str, **kwargs) -> Tuple[bytes, List[dict]]:
-        logger.info("[MockGeminiTTS] Would generate speech (with-timestamps) for %d chars", len(text))
+    def generate_speech_with_timestamps(
+        self, text: str, **kwargs
+    ) -> Tuple[bytes, List[dict]]:
+        logger.info(
+            "[MockGeminiTTS] Would generate speech (with-timestamps) for %d chars",
+            len(text),
+        )
         return b"", []
 
     @staticmethod
@@ -273,10 +282,37 @@ class MockGeminiTTSService:
 
 # Set of valid Gemini prebuilt voice names (the 30 documented options). Used by
 # generate_speech() to distinguish a Gemini voice name from an ElevenLabs ID.
-_GEMINI_VOICE_NAMES = frozenset({
-    "Zephyr", "Puck", "Charon", "Kore", "Fenrir", "Leda", "Orus", "Aoede",
-    "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba",
-    "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar",
-    "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi",
-    "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat",
-})
+_GEMINI_VOICE_NAMES = frozenset(
+    {
+        "Zephyr",
+        "Puck",
+        "Charon",
+        "Kore",
+        "Fenrir",
+        "Leda",
+        "Orus",
+        "Aoede",
+        "Callirrhoe",
+        "Autonoe",
+        "Enceladus",
+        "Iapetus",
+        "Umbriel",
+        "Algieba",
+        "Despina",
+        "Erinome",
+        "Algenib",
+        "Rasalgethi",
+        "Laomedeia",
+        "Achernar",
+        "Alnilam",
+        "Schedar",
+        "Gacrux",
+        "Pulcherrima",
+        "Achird",
+        "Zubenelgenubi",
+        "Vindemiatrix",
+        "Sadachbia",
+        "Sadaltager",
+        "Sulafat",
+    }
+)

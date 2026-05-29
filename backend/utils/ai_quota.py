@@ -118,6 +118,7 @@ def _get_redis():
         return None
     try:
         import redis as redis_lib
+
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
         return client
@@ -137,6 +138,7 @@ def _get_redis():
 # All DB access is best-effort and lazy-imported so this module stays usable
 # outside an app context (e.g. unit tests of the Redis path).
 # ---------------------------------------------------------------------------
+
 
 def _load_user(user_id: str):
     """Best-effort fetch of the User row. Returns (db, user) or (None, None)."""
@@ -171,6 +173,7 @@ def _maybe_reset_monthly(db, user) -> None:
             user.illustrations_generated_this_month = 0
             # Reset on the 1st of next month.
             from datetime import timedelta
+
             next_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
             user.usage_reset_date = next_month.replace(
                 hour=0, minute=0, second=0, microsecond=0, tzinfo=None
@@ -221,19 +224,26 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
             logger.error(
                 "ALERT ai_quota: Redis DOWN and DB counter unavailable for "
                 "user=%s tier=%s — story cost is UNMETERED this request",
-                user_id, user_tier,
+                user_id,
+                user_tier,
             )
             return True, 0, limit
         logger.error(
             "ALERT ai_quota: Redis DOWN — cost breaker on DB fallback for "
             "user=%s tier=%s count=%d emergency_cap=%d",
-            user_id, user_tier, db_count, emergency_cap,
+            user_id,
+            user_tier,
+            db_count,
+            emergency_cap,
         )
         if db_count >= emergency_cap:
             logger.warning(
                 "ai_quota: user=%s tier=%s DB count=%d >= emergency_cap=%d "
                 "— blocked while Redis down",
-                user_id, user_tier, db_count, emergency_cap,
+                user_id,
+                user_tier,
+                db_count,
+                emergency_cap,
             )
             return False, db_count, emergency_cap
         return True, db_count, emergency_cap
@@ -244,7 +254,10 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
         if current >= limit:
             logger.warning(
                 "ai_quota: user=%s tier=%s count=%d limit=%d — quota exceeded",
-                user_id, user_tier, current, limit,
+                user_id,
+                user_tier,
+                current,
+                limit,
             )
             return False, current, limit
         return True, current, limit
@@ -260,7 +273,8 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
         if db_count is None or emergency_cap is None:
             logger.error(
                 "ALERT ai_quota: Redis errored and DB counter unavailable for "
-                "user=%s — story cost is UNMETERED this request", user_id,
+                "user=%s — story cost is UNMETERED this request",
+                user_id,
             )
             return True, 0, limit
         if db_count >= emergency_cap:
@@ -289,13 +303,15 @@ def increment_daily_quota(user_id: str, user_tier: str) -> None:
     if user is not None:
         try:
             _maybe_reset_monthly(db, user)
-            user.stories_generated_this_month = int(
-                getattr(user, "stories_generated_this_month", 0) or 0
-            ) + 1
+            user.stories_generated_this_month = (
+                int(getattr(user, "stories_generated_this_month", 0) or 0) + 1
+            )
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            logger.warning("ai_quota: DB counter increment failed for %s (%s)", user_id, exc)
+            logger.warning(
+                "ai_quota: DB counter increment failed for %s (%s)", user_id, exc
+            )
 
     r = _get_redis()
     if r is None:
@@ -331,32 +347,32 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
     month_used = _db_story_count(user_id) or 0
     if limit is None:
         return {
-            'tier': user_tier,
-            'daily_used': 0,
-            'daily_limit': None,
-            'month_used': month_used,
-            'source': 'unlimited',
+            "tier": user_tier,
+            "daily_used": 0,
+            "daily_limit": None,
+            "month_used": month_used,
+            "source": "unlimited",
         }
     r = _get_redis()
     if r is not None:
         try:
             daily_used = int(r.get(_redis_key(user_id)) or 0)
             return {
-                'tier': user_tier,
-                'daily_used': daily_used,
-                'daily_limit': limit,
-                'month_used': month_used,
-                'source': 'redis',
+                "tier": user_tier,
+                "daily_used": daily_used,
+                "daily_limit": limit,
+                "month_used": month_used,
+                "source": "redis",
             }
         except Exception:
             pass
     # Redis unavailable — report the DB fallback view.
     return {
-        'tier': user_tier,
-        'daily_used': month_used,
-        'daily_limit': _get_emergency_cap(user_tier),
-        'month_used': month_used,
-        'source': 'db',
+        "tier": user_tier,
+        "daily_used": month_used,
+        "daily_limit": _get_emergency_cap(user_tier),
+        "month_used": month_used,
+        "source": "db",
     }
 
 
@@ -415,12 +431,17 @@ def check_tts_quota(user_id: str, user_tier: str) -> tuple[bool, int, int]:
         if current >= limit:
             logger.warning(
                 "tts_quota: user=%s tier=%s count=%d limit=%d — quota exceeded",
-                user_id, user_tier, current, limit,
+                user_id,
+                user_tier,
+                current,
+                limit,
             )
             return False, current, limit
         return True, current, limit
     except Exception as exc:
-        logger.warning("tts_quota: Redis error during check (%s) — allowing request", exc)
+        logger.warning(
+            "tts_quota: Redis error during check (%s) — allowing request", exc
+        )
         return True, 0, limit
 
 
@@ -454,10 +475,10 @@ def increment_tts_quota(user_id: str, user_tier: str) -> None:
 
 # Monthly TTS character limits per tier. 0 = TTS locked, fall back to flutter_tts.
 _TTS_MONTHLY_CHAR_LIMITS: dict[str, int] = {
-    "free": 0,        # flutter_tts only
+    "free": 0,  # flutter_tts only
     "premium": 15_000,  # bumped from 10k 2026-05-11 after #5 char-baseline verification
-    "family": 35_000,   # bumped from 25k 2026-05-11
-    "byok": 0,        # BYOK doesn't unlock TTS (no per-user ElevenLabs voice rights)
+    "family": 35_000,  # bumped from 25k 2026-05-11
+    "byok": 0,  # BYOK doesn't unlock TTS (no per-user ElevenLabs voice rights)
 }
 
 _ENV_TTS_CHAR_OVERRIDES = {
@@ -519,7 +540,7 @@ def check_tts_chars_quota(
     """
     user_limit = _get_tts_char_limit(user_tier)
     if user_limit <= 0:
-        return False, 'tier_locked', 0, 0
+        return False, "tier_locked", 0, 0
 
     r = _get_redis()
     if r is None:
@@ -532,9 +553,13 @@ def check_tts_chars_quota(
         if user_used + chars_requested > user_limit:
             logger.warning(
                 "tts_chars: user=%s tier=%s used=%d req=%d limit=%d — user cap",
-                user_id, user_tier, user_used, chars_requested, user_limit,
+                user_id,
+                user_tier,
+                user_used,
+                chars_requested,
+                user_limit,
             )
-            return False, 'user_cap_exceeded', user_used, user_limit
+            return False, "user_cap_exceeded", user_used, user_limit
 
         global_budget = _get_global_tts_budget()
         global_key = _tts_chars_global_key()
@@ -542,9 +567,11 @@ def check_tts_chars_quota(
         if global_used + chars_requested > global_budget:
             logger.warning(
                 "tts_chars: GLOBAL used=%d req=%d budget=%d — global cap",
-                global_used, chars_requested, global_budget,
+                global_used,
+                chars_requested,
+                global_budget,
             )
-            return False, 'global_cap_exceeded', global_used, global_budget
+            return False, "global_cap_exceeded", global_used, global_budget
 
         return True, None, user_used, user_limit
     except Exception as exc:
@@ -596,20 +623,20 @@ def increment_tts_chars(user_id: str, user_tier: str, chars: int) -> None:
 # ---------------------------------------------------------------------------
 
 _ILLUSTRATION_MONTHLY_LIMITS: dict[str, int] = {
-    "free": 10,       # ~2 illustrated stories at 5 pages each
-    "premium": 100,   # ~20 illustrated stories at 5 pages each
-    "family": 200,    # ~40 illustrated stories at 5 pages each
-    "byok": 0,        # BYOK uses user's Google key (Sentinel; route should
-                      # bypass the quota check entirely for BYOK)
+    "free": 10,  # ~2 illustrated stories at 5 pages each
+    "premium": 100,  # ~20 illustrated stories at 5 pages each
+    "family": 200,  # ~40 illustrated stories at 5 pages each
+    "byok": 0,  # BYOK uses user's Google key (Sentinel; route should
+    # bypass the quota check entirely for BYOK)
 }
 
 # Sprout (age <=5) caps — generous because a Sprout picture book is ~10
 # images each and per-page art is core to the 3-5 experience.
 _ILLUSTRATION_SPROUT_MONTHLY_LIMITS: dict[str, int] = {
-    "free": 60,       # ~6 Sprout picture books at 10 pages each
-    "premium": 250,   # ~25 Sprout picture books at 10 pages each
-    "family": 500,    # ~50 Sprout picture books at 10 pages each
-    "byok": 0,        # BYOK sentinel — route bypasses the check entirely
+    "free": 60,  # ~6 Sprout picture books at 10 pages each
+    "premium": 250,  # ~25 Sprout picture books at 10 pages each
+    "family": 500,  # ~50 Sprout picture books at 10 pages each
+    "byok": 0,  # BYOK sentinel — route bypasses the check entirely
 }
 
 _ENV_ILLUSTRATION_OVERRIDES = {
@@ -702,7 +729,11 @@ def _db_illustration_count(user_id: str) -> int | None:
 
 
 def _illustration_db_fallback(
-    user_id: str, user_tier: str, num_images: int, is_sprout: bool, redis_limit: int,
+    user_id: str,
+    user_tier: str,
+    num_images: int,
+    is_sprout: bool,
+    redis_limit: int,
     reason: str,
 ) -> tuple[bool, int, int]:
     """Shared fail-CLOSED path for `check_illustration_quota` (MT-169).
@@ -720,19 +751,33 @@ def _illustration_db_fallback(
         logger.error(
             "ALERT illustration_quota: %s and DB counter unavailable for "
             "user=%s tier=%s sprout=%s — image cost is UNMETERED this request",
-            reason, user_id, user_tier, is_sprout,
+            reason,
+            user_id,
+            user_tier,
+            is_sprout,
         )
         return True, 0, redis_limit
     logger.error(
         "ALERT illustration_quota: %s — cost breaker on DB fallback for "
         "user=%s tier=%s sprout=%s count=%d emergency_cap=%d req=%d",
-        reason, user_id, user_tier, is_sprout, db_count, emergency_cap, num_images,
+        reason,
+        user_id,
+        user_tier,
+        is_sprout,
+        db_count,
+        emergency_cap,
+        num_images,
     )
     if db_count + max(1, num_images) > emergency_cap:
         logger.warning(
             "illustration_quota: user=%s tier=%s sprout=%s DB count=%d req=%d "
             "> emergency_cap=%d — blocked while Redis down",
-            user_id, user_tier, is_sprout, db_count, num_images, emergency_cap,
+            user_id,
+            user_tier,
+            is_sprout,
+            db_count,
+            num_images,
+            emergency_cap,
         )
         return False, db_count, emergency_cap
     return True, db_count, emergency_cap
@@ -764,7 +809,11 @@ def check_illustration_quota(
     r = _get_redis()
     if r is None:
         return _illustration_db_fallback(
-            user_id, user_tier, num_images, is_sprout, limit,
+            user_id,
+            user_tier,
+            num_images,
+            is_sprout,
+            limit,
             reason="Redis DOWN",
         )
 
@@ -773,7 +822,12 @@ def check_illustration_quota(
         if used + max(1, num_images) > limit:
             logger.warning(
                 "illustration_quota: user=%s tier=%s sprout=%s used=%d req=%d limit=%d — capped",
-                user_id, user_tier, is_sprout, used, num_images, limit,
+                user_id,
+                user_tier,
+                is_sprout,
+                used,
+                num_images,
+                limit,
             )
             return False, used, limit
         return True, used, limit
@@ -781,12 +835,18 @@ def check_illustration_quota(
         # Redis pinged OK but GET errored — treat like an outage and fall back
         # to the DB cost breaker rather than allowing blindly.
         return _illustration_db_fallback(
-            user_id, user_tier, num_images, is_sprout, limit,
+            user_id,
+            user_tier,
+            num_images,
+            is_sprout,
+            limit,
             reason=f"Redis error during check ({exc})",
         )
 
 
-def increment_illustration_quota(user_id: str, user_tier: str, num_images: int = 1) -> None:
+def increment_illustration_quota(
+    user_id: str, user_tier: str, num_images: int = 1
+) -> None:
     """Bump per-user monthly illustration counter after success.
 
     Dual-writes (MT-169):
@@ -807,15 +867,17 @@ def increment_illustration_quota(user_id: str, user_tier: str, num_images: int =
     if user is not None:
         try:
             _maybe_reset_monthly(db, user)
-            user.illustrations_generated_this_month = int(
-                getattr(user, "illustrations_generated_this_month", 0) or 0
-            ) + num_images
+            user.illustrations_generated_this_month = (
+                int(getattr(user, "illustrations_generated_this_month", 0) or 0)
+                + num_images
+            )
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
             logger.warning(
                 "illustration_quota: DB counter increment failed for %s (%s)",
-                user_id, exc,
+                user_id,
+                exc,
             )
 
     r = _get_redis()

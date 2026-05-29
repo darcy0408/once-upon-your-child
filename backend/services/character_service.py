@@ -9,15 +9,48 @@ from ..utils.validators import validate_age, sanitize_text
 logger = logging.getLogger(__name__)
 
 PERSONALITY_SLIDER_DEFINITIONS = {
-    "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},
-    "assertiveness": {"label": "Voice Style", "left_label": "Bold Voice", "right_label": "Soft Voice"},
-    "sociability": {"label": "Social Energy", "left_label": "Jump-Right-In", "right_label": "Warm-Up-First"},
-    "adventure": {"label": "Adventure Level", "left_label": "Let's Explore!", "right_label": "Careful Steps"},
-    "expressiveness": {"label": "Energy Level", "left_label": "Mega Energy", "right_label": "Calm Breeze"},
-    "feelings_sharing": {"label": "Feelings Expression", "left_label": "Heart-On-Sleeve", "right_label": "Quiet Feelings"},
-    "problem_solving": {"label": "Problem-Solving Style", "left_label": "Brainy Builder", "right_label": "Imagination Wiz"},
-    "play_preference": {"label": "Play Preference", "left_label": "Caring & Nurturing", "right_label": "Building & Action"},
+    "organization_planning": {
+        "label": "Organization & Planning",
+        "left_label": "Tidy Planner",
+        "right_label": "Messy Freestyle",
+    },
+    "assertiveness": {
+        "label": "Voice Style",
+        "left_label": "Bold Voice",
+        "right_label": "Soft Voice",
+    },
+    "sociability": {
+        "label": "Social Energy",
+        "left_label": "Jump-Right-In",
+        "right_label": "Warm-Up-First",
+    },
+    "adventure": {
+        "label": "Adventure Level",
+        "left_label": "Let's Explore!",
+        "right_label": "Careful Steps",
+    },
+    "expressiveness": {
+        "label": "Energy Level",
+        "left_label": "Mega Energy",
+        "right_label": "Calm Breeze",
+    },
+    "feelings_sharing": {
+        "label": "Feelings Expression",
+        "left_label": "Heart-On-Sleeve",
+        "right_label": "Quiet Feelings",
+    },
+    "problem_solving": {
+        "label": "Problem-Solving Style",
+        "left_label": "Brainy Builder",
+        "right_label": "Imagination Wiz",
+    },
+    "play_preference": {
+        "label": "Play Preference",
+        "left_label": "Caring & Nurturing",
+        "right_label": "Building & Action",
+    },
 }
+
 
 def _clamp_slider_value(value):
     if value is None:
@@ -44,10 +77,11 @@ def _sanitize_personality_sliders(raw_value):
             sanitized[key] = clamped
     return sanitized
 
+
 def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""
     if isinstance(v, list):
-        return [sanitize_text(str(x)) for x in v] # Sanitize items
+        return [sanitize_text(str(x)) for x in v]  # Sanitize items
     if v in (None, "", []):
         return []
     if isinstance(v, str):
@@ -57,7 +91,11 @@ def _as_list(v):
         if s.startswith("[") and s.endswith("]"):
             try:
                 parsed = json.loads(s)
-                return [sanitize_text(str(x)) for x in parsed] if isinstance(parsed, list) else [sanitize_text(s)]
+                return (
+                    [sanitize_text(str(x)) for x in parsed]
+                    if isinstance(parsed, list)
+                    else [sanitize_text(s)]
+                )
             except Exception:
                 pass
         return [sanitize_text(part) for part in s.split(",") if part.strip()]
@@ -82,6 +120,7 @@ def _sanitize_pets(pets_data):
         if sanitized_pet:
             sanitized_pets.append(sanitized_pet)
     return sanitized_pets
+
 
 def create_character(data: dict):
     logger.debug(f"create_character: received data: {data}")
@@ -109,29 +148,39 @@ def create_character(data: dict):
     new_character.role = sanitize_text(data.get("role"))
     new_character.magic_type = sanitize_text(data.get("magic_type"))
     new_character.challenge = sanitize_text(data.get("challenge"))
-    new_character.character_type = sanitize_text(data.get("character_type", "Everyday Kid"))
+    new_character.character_type = sanitize_text(
+        data.get("character_type", "Everyday Kid")
+    )
     new_character.superhero_name = sanitize_text(data.get("superhero_name"))
     new_character.mission = sanitize_text(data.get("mission"))
     new_character.hair = sanitize_text(data.get("hair"))
     new_character.eyes = sanitize_text(data.get("eyes"))
     new_character.outfit = sanitize_text(data.get("outfit"))
     new_character.personality_traits = _as_list(data.get("traits", []))
-    new_character.personality_sliders = _sanitize_personality_sliders(data.get("personality_sliders"))
+    new_character.personality_sliders = _sanitize_personality_sliders(
+        data.get("personality_sliders")
+    )
     new_character.likes = _as_list(data.get("likes", []))
     new_character.dislikes = _as_list(data.get("dislikes", []))
     new_character.fears = _as_list(data.get("fears", []))
     new_character.strengths = _as_list(data.get("strengths", []))
     new_character.goals = _as_list(data.get("goals", []))
     new_character.pets = _sanitize_pets(data.get("pets", []))
-    
+
     new_character.comfort_item = sanitize_text(data.get("comfort_item"))
-    new_character.user_id = data.get("user_id") # UUID, sanitizing might break if strictly formatted strings but sanitize_text is safe
+    new_character.user_id = data.get(
+        "user_id"
+    )  # UUID, sanitizing might break if strictly formatted strings but sanitize_text is safe
 
     # Avataaars customization (DiceBear)
-    new_character.avatar_params = data.get("avatar_params") # JSON/Dict
+    new_character.avatar_params = data.get("avatar_params")  # JSON/Dict
 
     # AI-generated avatar data
-    avatar_data = data.get("avatar_data") or data.get("generated_avatar") or data.get("generatedAvatar")
+    avatar_data = (
+        data.get("avatar_data")
+        or data.get("generated_avatar")
+        or data.get("generatedAvatar")
+    )
     if avatar_data:
         new_character.avatar_data = avatar_data
 
@@ -143,6 +192,7 @@ def create_character(data: dict):
 
     return new_character.to_dict(), 201
 
+
 def get_characters(user_id: str = None):
     """
     Return a list of characters.
@@ -152,14 +202,16 @@ def get_characters(user_id: str = None):
         chars = character_repository.get_characters_by_user(user_id)
     else:
         chars = character_repository.get_all_characters()
-    
+
     return [c.to_dict() for c in chars], 200
+
 
 def get_character(char_id: str):
     char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
     return char.to_dict(), 200
+
 
 def update_character(char_id: str, data: dict):
     """Partial update allowed."""
@@ -195,7 +247,9 @@ def update_character(char_id: str, data: dict):
     if "fears" in data:
         char.fears = _as_list(data["fears"])
     if "personality_traits" in data or "traits" in data:
-        char.personality_traits = _as_list(data.get("personality_traits", data.get("traits", [])))
+        char.personality_traits = _as_list(
+            data.get("personality_traits", data.get("traits", []))
+        )
     if "personality_sliders" in data:
         raw_sliders = data.get("personality_sliders")
         if raw_sliders is None:
@@ -246,6 +300,7 @@ def update_character(char_id: str, data: dict):
     logger.debug(f"update_character: after save, pets: {char.pets}")
 
     return char.to_dict(), 200
+
 
 def delete_character(char_id: str):
     char = character_repository.get_character_by_id(char_id)

@@ -2,6 +2,7 @@
 API Key Management Routes for BYOK (Bring Your Own API Key) feature.
 Allows users to securely save, validate, and remove their Gemini API keys.
 """
+
 from flask import Blueprint, request, jsonify
 import logging
 from datetime import datetime, timedelta, timezone
@@ -13,8 +14,9 @@ from ..encryption_utils import (
     decrypt_user_api_key,
     is_legacy_encrypted,
     validate_gemini_api_key_format,
-    test_gemini_api_key
+    test_gemini_api_key,
 )
+
 try:
     from backend.middleware.auth import require_auth
 except ImportError:
@@ -25,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 def create_api_key_blueprint(limiter=None):
     """Factory function to create API key blueprint with rate limiting."""
-    api_key_routes = Blueprint('api_key_routes', __name__)
+    api_key_routes = Blueprint("api_key_routes", __name__)
 
-    @api_key_routes.route('/api/user/settings/api-key', methods=['POST'])
+    @api_key_routes.route("/api/user/settings/api-key", methods=["POST"])
     @require_auth
     @limiter.limit("5 per hour")  # Strict limit on API key saves
     def save_api_key():
@@ -51,25 +53,35 @@ def create_api_key_blueprint(limiter=None):
 
             # Parse request
             data = request.get_json(silent=True) or {}
-            api_key = data.get('api_key', '').strip()
+            api_key = data.get("api_key", "").strip()
 
             if not api_key:
                 return jsonify({"error": "API key is required"}), 400
 
             # Validate format
             if not validate_gemini_api_key_format(api_key):
-                return jsonify({
-                    "error": "Invalid API key format. Gemini API keys should start with 'AIza' and be 39 characters long."
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid API key format. Gemini API keys should start with 'AIza' and be 39 characters long."
+                        }
+                    ),
+                    400,
+                )
 
             # Test the API key with Gemini
             is_valid, error_message = test_gemini_api_key(api_key)
             if not is_valid:
-                return jsonify({
-                    "error": "API key validation failed",
-                    "details": error_message,
-                    "valid": False
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "API key validation failed",
+                            "details": error_message,
+                            "valid": False,
+                        }
+                    ),
+                    400,
+                )
 
             # Encrypt and save
             encrypted_key = encrypt_api_key(api_key)
@@ -93,19 +105,24 @@ def create_api_key_blueprint(limiter=None):
 
             logger.info(f"User {user.id} successfully configured BYOK")
 
-            return jsonify({
-                "success": True,
-                "byok_enabled": True,
-                "message": "API key saved successfully. You now have unlimited story and illustration generation!",
-                "valid": True
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "byok_enabled": True,
+                        "message": "API key saved successfully. You now have unlimited story and illustration generation!",
+                        "valid": True,
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Failed to save API key: {e}")
             db.session.rollback()
             return jsonify({"error": "Failed to save API key"}), 500
 
-    @api_key_routes.route('/api/user/settings/api-key', methods=['DELETE'])
+    @api_key_routes.route("/api/user/settings/api-key", methods=["DELETE"])
     @require_auth
     @limiter.limit("10 per hour")  # Limit on API key removal
     def remove_api_key():
@@ -130,18 +147,23 @@ def create_api_key_blueprint(limiter=None):
 
             logger.info(f"User {user.id} removed BYOK API key")
 
-            return jsonify({
-                "success": True,
-                "byok_enabled": False,
-                "message": "API key removed successfully. Free tier limits now apply."
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "byok_enabled": False,
+                        "message": "API key removed successfully. Free tier limits now apply.",
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Failed to remove API key: {e}")
             db.session.rollback()
             return jsonify({"error": "Failed to remove API key"}), 500
 
-    @api_key_routes.route('/api/user/settings/validate-api-key', methods=['POST'])
+    @api_key_routes.route("/api/user/settings/validate-api-key", methods=["POST"])
     @require_auth
     @limiter.limit("10 per minute")  # Allow testing but prevent abuse
     def validate_api_key():
@@ -164,40 +186,52 @@ def create_api_key_blueprint(limiter=None):
         """
         try:
             data = request.get_json(silent=True) or {}
-            api_key = data.get('api_key', '').strip()
+            api_key = data.get("api_key", "").strip()
 
             if not api_key:
                 return jsonify({"valid": False, "message": "API key is required"}), 400
 
             # Validate format
             if not validate_gemini_api_key_format(api_key):
-                return jsonify({
-                    "valid": False,
-                    "message": "Invalid API key format. Gemini API keys should start with 'AIza' and be 39 characters long."
-                }), 200  # Return 200 but valid=false
+                return (
+                    jsonify(
+                        {
+                            "valid": False,
+                            "message": "Invalid API key format. Gemini API keys should start with 'AIza' and be 39 characters long.",
+                        }
+                    ),
+                    200,
+                )  # Return 200 but valid=false
 
             # Test with Gemini API
             is_valid, error_message = test_gemini_api_key(api_key)
 
             if is_valid:
-                return jsonify({
-                    "valid": True,
-                    "message": "API key is valid and working!"
-                }), 200
+                return (
+                    jsonify(
+                        {"valid": True, "message": "API key is valid and working!"}
+                    ),
+                    200,
+                )
             else:
-                return jsonify({
-                    "valid": False,
-                    "message": error_message
-                }), 200  # Return 200 but valid=false
+                return (
+                    jsonify({"valid": False, "message": error_message}),
+                    200,
+                )  # Return 200 but valid=false
 
         except Exception as e:
             logger.exception(f"API key validation error: {e}")
-            return jsonify({
-                "valid": False,
-                "message": "Validation failed due to a server error. Please try again later."
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "valid": False,
+                        "message": "Validation failed due to a server error. Please try again later.",
+                    }
+                ),
+                500,
+            )
 
-    @api_key_routes.route('/api/user/usage', methods=['GET'])
+    @api_key_routes.route("/api/user/usage", methods=["GET"])
     @require_auth
     @limiter.limit("60 per minute")  # Higher limit for usage checks
     def get_usage():
@@ -253,20 +287,29 @@ def create_api_key_blueprint(limiter=None):
                 db.session.commit()
                 logger.info(f"Reset monthly usage for user {user.id}")
 
-            return jsonify({
-                "tier": tier,
-                "stories": {
-                    "used": user.stories_generated_this_month,
-                    "limit": story_limit,
-                    "unlimited": story_limit is None
-                },
-                "illustrations": {
-                    "used": user.illustrations_generated_this_month,
-                    "limit": illustration_limit,
-                    "unlimited": illustration_limit is None
-                },
-                "reset_date": user.usage_reset_date.isoformat() if user.usage_reset_date else None
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "tier": tier,
+                        "stories": {
+                            "used": user.stories_generated_this_month,
+                            "limit": story_limit,
+                            "unlimited": story_limit is None,
+                        },
+                        "illustrations": {
+                            "used": user.illustrations_generated_this_month,
+                            "limit": illustration_limit,
+                            "unlimited": illustration_limit is None,
+                        },
+                        "reset_date": (
+                            user.usage_reset_date.isoformat()
+                            if user.usage_reset_date
+                            else None
+                        ),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Failed to get usage: {e}")

@@ -15,6 +15,7 @@ def create_admin_blueprint(logger, limiter=None):
             if limiter:
                 return limiter.limit(limit_string)(f)
             return f
+
         return decorator
 
     @admin_bp.route("/admin/run-db-optimization", methods=["POST"])
@@ -42,7 +43,11 @@ def create_admin_blueprint(logger, limiter=None):
                     try:
                         conn.execute(text(sql))
                         conn.commit()
-                        index_name = sql.split("idx_")[1].split(" ")[0] if "idx_" in sql else "unknown"
+                        index_name = (
+                            sql.split("idx_")[1].split(" ")[0]
+                            if "idx_" in sql
+                            else "unknown"
+                        )
                         created_indexes.append(f"idx_{index_name}")
                         logger.info(f"✓ Created index: idx_{index_name}")
                     except Exception as e:
@@ -63,7 +68,10 @@ def create_admin_blueprint(logger, limiter=None):
 
         except Exception as e:
             logger.exception("Failed to run database optimization")
-            return jsonify({"error": "Database optimization failed. Check server logs."}), 500
+            return (
+                jsonify({"error": "Database optimization failed. Check server logs."}),
+                500,
+            )
 
     @admin_bp.route("/admin/add-missing-columns", methods=["POST"])
     @require_auth
@@ -176,7 +184,9 @@ def create_admin_blueprint(logger, limiter=None):
                     try:
                         conn.execute(text(sql))
                         conn.commit()
-                        applied_migrations.append(sql.split("ADD COLUMN")[1].strip().split(" ")[0])
+                        applied_migrations.append(
+                            sql.split("ADD COLUMN")[1].strip().split(" ")[0]
+                        )
                         logger.info("Applied migration: %s", sql)
                     except Exception as e:
                         logger.warning(f"Migration warning: {str(e)}")
@@ -194,6 +204,9 @@ def create_admin_blueprint(logger, limiter=None):
 
         except Exception as e:
             logger.exception("Failed to run database migrations")
-            return jsonify({"error": "Database migration failed. Check server logs."}), 500
+            return (
+                jsonify({"error": "Database migration failed. Check server logs."}),
+                500,
+            )
 
     return admin_bp

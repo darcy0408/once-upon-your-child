@@ -13,6 +13,7 @@ gets a picture.
 Also covers the BYOK override (user_api_key forces Gemini regardless of age)
 and the FLUX_SCHNELL_DISABLED kill-switch env var.
 """
+
 from __future__ import annotations
 
 import os
@@ -52,13 +53,18 @@ class TestHybridImageDispatch:
                 "yes",
             ):
                 ReplicateImageGenerator().generate_story_illustration_flux_schnell(
-                    scene_description="x", character_name="y", style="z",
-                    num_images=1, age=age, therapeutic_focus=None,
-                    character_appearance=None, companions=None,
+                    scene_description="x",
+                    character_name="y",
+                    style="z",
+                    num_images=1,
+                    age=age,
+                    therapeutic_focus=None,
+                    character_appearance=None,
+                    companions=None,
                 )
-            assert flux_call.call_count == 1, (
-                "Flux Schnell must be the primary provider for age <= 5"
-            )
+            assert (
+                flux_call.call_count == 1
+            ), "Flux Schnell must be the primary provider for age <= 5"
 
     def test_sprout_falls_back_to_gemini_when_flux_empty(self):
         """Sprout (age <= 5): when Flux Schnell yields no image, Gemini-via-
@@ -72,13 +78,18 @@ class TestHybridImageDispatch:
         illustrations = []  # Flux produced nothing
         if not illustrations and gemini_mock is not None:
             illustrations = gemini_mock.generate_story_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=age, therapeutic_focus=None,
-                character_appearance=None, companions=None,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=age,
+                therapeutic_focus=None,
+                character_appearance=None,
+                companions=None,
             )
-        assert gemini_mock.generate_story_illustration.call_count == 1, (
-            "Gemini-via-OpenRouter must fire as the Sprout fallback when Flux is empty"
-        )
+        assert (
+            gemini_mock.generate_story_illustration.call_count == 1
+        ), "Gemini-via-OpenRouter must fire as the Sprout fallback when Flux is empty"
         assert illustrations, "Sprout fallback must yield an illustration"
 
     def test_sprout_no_gemini_fallback_when_flux_succeeds(self):
@@ -93,13 +104,18 @@ class TestHybridImageDispatch:
         illustrations = [_make_image_dict("flux")]  # Flux succeeded
         if not illustrations and gemini_mock is not None:
             gemini_mock.generate_story_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=age, therapeutic_focus=None,
-                character_appearance=None, companions=None,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=age,
+                therapeutic_focus=None,
+                character_appearance=None,
+                companions=None,
             )
-        assert gemini_mock.generate_story_illustration.call_count == 0, (
-            "Gemini fallback must not fire when Flux already produced art"
-        )
+        assert (
+            gemini_mock.generate_story_illustration.call_count == 0
+        ), "Gemini fallback must not fire when Flux already produced art"
 
     def test_age_6_routes_to_flux_schnell(self):
         """Explorer band (age 6) must call Flux Schnell first."""
@@ -169,13 +185,18 @@ class TestHybridImageDispatch:
                 "yes",
             ):
                 ReplicateImageGenerator().generate_story_illustration_flux_schnell(
-                    scene_description="x", character_name="y", style="z",
-                    num_images=1, age=age, therapeutic_focus=None,
-                    character_appearance=None, companions=None,
+                    scene_description="x",
+                    character_name="y",
+                    style="z",
+                    num_images=1,
+                    age=age,
+                    therapeutic_focus=None,
+                    character_appearance=None,
+                    companions=None,
                 )
-            assert flux_call.call_count == 0, (
-                "Flux Schnell must not fire when FLUX_SCHNELL_DISABLED=true"
-            )
+            assert (
+                flux_call.call_count == 0
+            ), "Flux Schnell must not fire when FLUX_SCHNELL_DISABLED=true"
 
 
 class TestIllustrationQuota:
@@ -187,19 +208,23 @@ class TestIllustrationQuota:
 
     def test_free_tier_has_10_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("free") == 10
 
     def test_premium_tier_has_100_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("premium") == 100
 
     def test_family_tier_has_200_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("family") == 200
 
     def test_byok_tier_returns_zero_sentinel(self):
         """BYOK returns 0 so callers must skip the quota check (user pays Google)."""
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("byok") == 0
 
     def test_check_quota_blocks_byok_via_zero_limit(self):
@@ -208,6 +233,7 @@ class TestIllustrationQuota:
         this just documents the safe behavior if it's called anyway.
         """
         from backend.utils.ai_quota import check_illustration_quota
+
         allowed, _, limit = check_illustration_quota("user-x", "byok", 1)
         assert allowed is False
         assert limit == 0
@@ -223,6 +249,7 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         from backend.utils.ai_quota import check_illustration_quota
+
         allowed, _, limit = check_illustration_quota("user-x", "free", 1)
         assert allowed is True
         assert limit == 10
@@ -237,6 +264,7 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
+
         # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
         # DB count 5 + req 1 = 6 ≤ 30 → allow.
         monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 5)
@@ -255,6 +283,7 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
+
         # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
         # DB count 30 + req 1 = 31 > 30 → block.
         monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
@@ -269,6 +298,7 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         monkeypatch.setenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", "1")
         from backend.utils import ai_quota
+
         # multiplier 1 → emergency_cap = 10 (the base monthly cap).
         monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 10)
         allowed, _, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
@@ -298,10 +328,14 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
+
         # sprout free base = 60, multiplier 3 → emergency_cap = 180.
         monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 100)
         allowed, used, limit = ai_quota.check_illustration_quota(
-            "user-x", "free", 1, is_sprout=True,
+            "user-x",
+            "free",
+            1,
+            is_sprout=True,
         )
         assert allowed is True
         assert used == 100
@@ -315,6 +349,7 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         from backend.utils.ai_quota import check_illustration_quota
+
         allowed, _, limit = check_illustration_quota("user-x", "byok", 1)
         assert allowed is False
         assert limit == 0
@@ -322,6 +357,7 @@ class TestIllustrationQuota:
     def test_env_override_changes_free_limit(self, monkeypatch):
         monkeypatch.setenv("ILLUSTRATIONS_FREE", "25")
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("free") == 25
 
     # --- Sprout (age <=5) monthly cap (cost-reduction 2026-05-17) ---
@@ -329,24 +365,29 @@ class TestIllustrationQuota:
     def test_sprout_free_tier_has_60_image_cap(self):
         """Sprout free cap is generous — ~6 picture books at 10 images each."""
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("free", is_sprout=True) == 60
 
     def test_sprout_premium_tier_has_250_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("premium", is_sprout=True) == 250
 
     def test_sprout_family_tier_has_500_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("family", is_sprout=True) == 500
 
     def test_sprout_byok_returns_zero_sentinel(self):
         """Sprout BYOK still resolves to the 0 bypass sentinel."""
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("byok", is_sprout=True) == 0
 
     def test_sprout_cap_does_not_change_ages6_caps(self):
         """The Sprout caps must not regress the existing ages-6+ caps."""
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("free", is_sprout=False) == 10
         assert _get_illustration_limit("premium", is_sprout=False) == 100
         assert _get_illustration_limit("family", is_sprout=False) == 200
@@ -354,6 +395,7 @@ class TestIllustrationQuota:
     def test_sprout_env_override_changes_free_limit(self, monkeypatch):
         monkeypatch.setenv("ILLUSTRATIONS_SPROUT_FREE", "120")
         from backend.utils.ai_quota import _get_illustration_limit
+
         assert _get_illustration_limit("free", is_sprout=True) == 120
 
     def test_check_quota_uses_sprout_cap_when_is_sprout(self, monkeypatch):
@@ -361,8 +403,12 @@ class TestIllustrationQuota:
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         from backend.utils.ai_quota import check_illustration_quota
+
         allowed, _, limit = check_illustration_quota(
-            "user-x", "free", 1, is_sprout=True,
+            "user-x",
+            "free",
+            1,
+            is_sprout=True,
         )
         assert allowed is True
         assert limit == 60
@@ -388,10 +434,13 @@ class TestFluxSchnellGenerator:
         """MOCK_TESTING_MODE=true must return [] without hitting Replicate."""
         monkeypatch.setenv("MOCK_TESTING_MODE", "true")
         from backend.replicate_image_generator import ReplicateImageGenerator
+
         gen = ReplicateImageGenerator()
         result = gen.generate_story_illustration_flux_schnell(
-            scene_description="anything", character_name="Hero",
-            num_images=1, age=8,
+            scene_description="anything",
+            character_name="Hero",
+            num_images=1,
+            age=8,
         )
         assert result == []
 
@@ -400,11 +449,14 @@ class TestFluxSchnellGenerator:
         monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
         monkeypatch.setenv("MOCK_TESTING_MODE", "false")
         from backend.replicate_image_generator import ReplicateImageGenerator
+
         gen = ReplicateImageGenerator(api_key=None)
         gen.mock_mode = False
         result = gen.generate_story_illustration_flux_schnell(
-            scene_description="anything", character_name="Hero",
-            num_images=1, age=8,
+            scene_description="anything",
+            character_name="Hero",
+            num_images=1,
+            age=8,
         )
         assert result == []
 
@@ -429,10 +481,14 @@ class TestCloudflareFluxGenerator:
         monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
         monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
         from backend.cloudflare_image_generator import CloudflareImageGenerator
+
         gen = CloudflareImageGenerator()
-        assert gen.generate_story_illustration_flux(
-            scene_description="anything", character_name="Hero", age=8
-        ) == []
+        assert (
+            gen.generate_story_illustration_flux(
+                scene_description="anything", character_name="Hero", age=8
+            )
+            == []
+        )
 
     def test_returns_empty_without_credentials(self, monkeypatch):
         """Missing account id / token must return [] not raise."""
@@ -440,11 +496,15 @@ class TestCloudflareFluxGenerator:
         monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
         monkeypatch.setenv("MOCK_TESTING_MODE", "false")
         from backend.cloudflare_image_generator import CloudflareImageGenerator
+
         gen = CloudflareImageGenerator()
         gen.mock_mode = False
-        assert gen.generate_story_illustration_flux(
-            scene_description="anything", character_name="Hero", age=8
-        ) == []
+        assert (
+            gen.generate_story_illustration_flux(
+                scene_description="anything", character_name="Hero", age=8
+            )
+            == []
+        )
 
     def test_parses_workers_ai_response_to_image_dict(self, monkeypatch):
         """A successful Workers AI response normalizes to the shared dict shape."""
@@ -466,7 +526,9 @@ class TestCloudflareFluxGenerator:
             return_value=fake_resp,
         ):
             out = gen.generate_story_illustration_flux(
-                scene_description="a cave", character_name="Hero", age=8,
+                scene_description="a cave",
+                character_name="Hero",
+                age=8,
             )
         assert len(out) == 1
         img = out[0]
@@ -495,8 +557,11 @@ class TestFluxProviderPrecedence:
                 _make_image_dict("cloudflare")
             ]
             result = _generate_flux_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=8,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=8,
             )
             assert cf.return_value.generate_story_illustration_flux.call_count == 1
             assert (
@@ -521,8 +586,11 @@ class TestFluxProviderPrecedence:
                 _make_image_dict("flux")
             ]
             result = _generate_flux_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=8,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=8,
             )
             assert cf.return_value.generate_story_illustration_flux.call_count == 1
             assert (
@@ -546,8 +614,11 @@ class TestFluxProviderPrecedence:
                 _make_image_dict("flux")
             ]
             result = _generate_flux_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=8,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=8,
             )
             assert cf.return_value.generate_story_illustration_flux.call_count == 0
             assert (
@@ -568,8 +639,11 @@ class TestFluxProviderPrecedence:
             "backend.replicate_image_generator.ReplicateImageGenerator"
         ) as rep:
             result = _generate_flux_illustration(
-                scene_description="x", character_name="y", style="z",
-                num_images=1, age=8,
+                scene_description="x",
+                character_name="y",
+                style="z",
+                num_images=1,
+                age=8,
             )
             assert result == []
             assert cf.return_value.generate_story_illustration_flux.call_count == 0
@@ -584,6 +658,7 @@ class TestPowerVisualOverride:
 
     def test_feeling_sense_injects_empathy_glow(self):
         from backend.gemini_image_generator import _power_visual_block
+
         block = _power_visual_block("feeling_sense")
         assert "soft pastel halo" in block.lower()
         assert "empathy glow" in block.lower()
@@ -591,12 +666,14 @@ class TestPowerVisualOverride:
 
     def test_invisibility_injects_translucent_wisp(self):
         from backend.gemini_image_generator import _power_visual_block
+
         block = _power_visual_block("invisibility")
         assert "translucent" in block.lower()
         assert "wisp-edged" in block.lower()
 
     def test_no_power_id_returns_empty(self):
         from backend.gemini_image_generator import _power_visual_block
+
         assert _power_visual_block(None) == ""
         assert _power_visual_block("") == ""
         assert _power_visual_block("super_speed") == ""  # not overridden
@@ -604,6 +681,7 @@ class TestPowerVisualOverride:
     def test_gemini_generate_threads_override_into_prompt(self):
         from unittest.mock import MagicMock
         from backend.gemini_image_generator import GeminiImageGenerator
+
         gen = GeminiImageGenerator(api_key="fake")
         gen._client = MagicMock()
         gen._client.models.generate_content.return_value = MagicMock(candidates=[])
@@ -613,7 +691,9 @@ class TestPowerVisualOverride:
             age=7,
             power_id="feeling_sense",
         )
-        sent_prompt = gen._client.models.generate_content.call_args.kwargs["contents"][0]
+        sent_prompt = gen._client.models.generate_content.call_args.kwargs["contents"][
+            0
+        ]
         assert "soft pastel halo" in sent_prompt.lower()
 
 
@@ -624,6 +704,7 @@ class TestBuildAppearanceDetails:
 
     def test_empty_appearance_yields_no_details(self):
         from backend.gemini_image_generator import build_appearance_details
+
         # No appearance → empty list. (The fabrication bug lived on the Flutter
         # side; this guards the backend never invents one from a bare dict.)
         assert build_appearance_details(None) == []
@@ -631,6 +712,7 @@ class TestBuildAppearanceDetails:
 
     def test_only_supplied_fields_are_emitted(self):
         from backend.gemini_image_generator import build_appearance_details
+
         details = build_appearance_details({"skin_tone": "deep", "gender": "boy"})
         joined = " | ".join(details)
         assert "skin tone: deep" in joined
@@ -641,19 +723,20 @@ class TestBuildAppearanceDetails:
 
     def test_photo_hair_style_phrase_is_passed_through(self):
         from backend.gemini_image_generator import build_appearance_details
+
         # The custom-photo pipeline returns hair as one combined phrase.
-        details = build_appearance_details(
-            {"hair_style": "wavy black shoulder-length"}
-        )
+        details = build_appearance_details({"hair_style": "wavy black shoulder-length"})
         assert any("wavy black shoulder-length" in d for d in details)
 
     def test_distinguishing_feature_is_emitted(self):
         from backend.gemini_image_generator import build_appearance_details
+
         details = build_appearance_details({"distinguishing": "round glasses"})
         assert any("notable feature: round glasses" in d for d in details)
 
     def test_legacy_flat_keys_still_read(self):
         from backend.gemini_image_generator import build_appearance_details
+
         details = build_appearance_details(
             {"hair": "red", "skin": "fair", "outfit": "blue raincoat"}
         )

@@ -14,36 +14,53 @@ from ..utils.validators import sanitize_text
 # Only these exact values are accepted for structured fields.  Anything else
 # is rejected at the API boundary so arbitrary text never reaches the prompt.
 
-_ALLOWED_TRIGGERS = frozenset({
-    "a limit is set",
-    "a sibling conflict starts",
-    "a friendship bump happens",
-    "nighttime feels uncertain",
-    "a transition happens",
-    "meltdown when stuck",
-})
+_ALLOWED_TRIGGERS = frozenset(
+    {
+        "a limit is set",
+        "a sibling conflict starts",
+        "a friendship bump happens",
+        "nighttime feels uncertain",
+        "a transition happens",
+        "meltdown when stuck",
+    }
+)
 
-_ALLOWED_COPING_TOOLS = frozenset({
-    "dragon breaths",
-    "a quiet pause",
-    "asking for help",
-    "gentle try-again words",
-})
+_ALLOWED_COPING_TOOLS = frozenset(
+    {
+        "dragon breaths",
+        "a quiet pause",
+        "asking for help",
+        "gentle try-again words",
+    }
+)
 
-_ALLOWED_REPAIR_GOALS = frozenset({
-    "say sorry simply",
-    "help fix what happened",
-    "use gentle words",
-    "try again with warmth",
-})
+_ALLOWED_REPAIR_GOALS = frozenset(
+    {
+        "say sorry simply",
+        "help fix what happened",
+        "use gentle words",
+        "try again with warmth",
+    }
+)
 
-_ALLOWED_FEELINGS = frozenset({
-    "frustrated", "worried", "sad", "angry", "embarrassed",
-})
+_ALLOWED_FEELINGS = frozenset(
+    {
+        "frustrated",
+        "worried",
+        "sad",
+        "angry",
+        "embarrassed",
+    }
+)
 
-_ALLOWED_BODY_SIGNALS = frozenset({
-    "a hot face", "a tight tummy", "fast feet and hands", "a quick heartbeat",
-})
+_ALLOWED_BODY_SIGNALS = frozenset(
+    {
+        "a hot face",
+        "a tight tummy",
+        "fast feet and hands",
+        "a quick heartbeat",
+    }
+)
 
 _ALLOWLIST_MAP: dict[str, frozenset[str]] = {
     "trigger": _ALLOWED_TRIGGERS,
@@ -66,7 +83,6 @@ def _contains_disallowed_pii(value: str | None) -> bool:
         r"https?://",
     ]
     return any(re.search(pattern, value) for pattern in patterns)
-
 
 
 def _validate_allowlisted_field(
@@ -125,6 +141,7 @@ def _sanitize_parent_hidden_payload(data: dict) -> tuple[dict | None, str | None
 
     return sanitized, None
 
+
 def create_character_blueprint(limiter, logger):
     character_bp = Blueprint("character", __name__)
 
@@ -135,8 +152,8 @@ def create_character_blueprint(limiter, logger):
         logger.info("POST /create-character called")
         data = request.get_json(silent=True) or {}
         # Enforce user ownership
-        data['user_id'] = request.current_user.id
-        
+        data["user_id"] = request.current_user.id
+
         response, status_code = character_service.create_character(data)
         logger.info(f"Character creation result: {status_code}")
         return jsonify(response), status_code
@@ -146,14 +163,14 @@ def create_character_blueprint(limiter, logger):
     @require_auth
     def update_character_endpoint(char_id: str):
         logger.info(f"PATCH/PUT /characters/{char_id} called")
-        
+
         # Ownership check
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):
-             return jsonify({'error': 'Unauthorized'}), 403
-            
+            return jsonify({"error": "Unauthorized"}), 403
+
         data = request.get_json(silent=True) or {}
         response, status_code = character_service.update_character(char_id, data)
         logger.info(f"Character update result: {status_code}")
@@ -164,13 +181,13 @@ def create_character_blueprint(limiter, logger):
     @require_auth
     def delete_character_endpoint(char_id: str):
         logger.info(f"DELETE /characters/{char_id} called")
-        
+
         # Ownership check
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):
-             return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({"error": "Unauthorized"}), 403
 
         response, status_code = character_service.delete_character(char_id)
         logger.info(f"Character deletion result: {status_code}")
@@ -180,11 +197,11 @@ def create_character_blueprint(limiter, logger):
     @require_auth
     def get_characters_endpoint():
         logger.info("GET /get-characters called")
-        
+
         # Filter by current user ID at the service/database level
         user_id = request.current_user.id
         response, status_code = character_service.get_characters(user_id=user_id)
-        
+
         logger.info(f"Get characters result: {status_code}")
         return jsonify(response), status_code
 
@@ -192,19 +209,21 @@ def create_character_blueprint(limiter, logger):
     @require_auth
     def get_character_endpoint(char_id: str):
         logger.info(f"GET /characters/{char_id} called")
-        
+
         # Ownership check
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):
-             return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({"error": "Unauthorized"}), 403
 
         response, status_code = character_service.get_character(char_id)
         logger.info(f"Get character result: {status_code}")
         return jsonify(response), status_code
 
-    @character_bp.route("/child-profiles/<string:profile_id>/parent-hidden-context", methods=["GET"])
+    @character_bp.route(
+        "/child-profiles/<string:profile_id>/parent-hidden-context", methods=["GET"]
+    )
     @require_auth
     def get_parent_hidden_context_endpoint(profile_id: str):
         logger.info(f"GET /child-profiles/{profile_id}/parent-hidden-context called")
@@ -212,10 +231,15 @@ def create_character_blueprint(limiter, logger):
             user_id=request.current_user.id,
             child_profile_id=profile_id,
         ).first()
-        return jsonify({"parent_hidden_context": context.to_dict() if context else None}), 200
+        return (
+            jsonify({"parent_hidden_context": context.to_dict() if context else None}),
+            200,
+        )
 
     @limiter.limit("20 per hour")
-    @character_bp.route("/child-profiles/<string:profile_id>/parent-hidden-context", methods=["PUT"])
+    @character_bp.route(
+        "/child-profiles/<string:profile_id>/parent-hidden-context", methods=["PUT"]
+    )
     @require_auth
     def save_parent_hidden_context_endpoint(profile_id: str):
         logger.info(f"PUT /child-profiles/{profile_id}/parent-hidden-context called")

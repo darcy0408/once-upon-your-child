@@ -21,6 +21,7 @@ state into them are scaffolded with TODOs in `routes/iap_routes.py` — wiring
 the actual Apple/Google notification parsing is a later phase and needs
 owner-provided credentials.
 """
+
 import uuid
 from datetime import datetime, timezone
 
@@ -31,8 +32,8 @@ except ImportError:  # pragma: no cover
 
 
 # Store identifiers — kept as plain strings so a row is human-readable.
-STORE_APPLE = 'apple'
-STORE_GOOGLE = 'google'
+STORE_APPLE = "apple"
+STORE_GOOGLE = "google"
 
 
 class IapNotificationEvent(db.Model):
@@ -43,7 +44,7 @@ class IapNotificationEvent(db.Model):
     equivalent of `StripeWebhookEvent`.
     """
 
-    __tablename__ = 'iap_notification_event'
+    __tablename__ = "iap_notification_event"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     # 'apple' | 'google'.
@@ -61,13 +62,14 @@ class IapNotificationEvent(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'store': self.store,
-            'notification_id': self.notification_id,
-            'notification_type': self.notification_type,
-            'notification_time':
-                self.notification_time.isoformat() if self.notification_time else None,
-            'received_at': self.received_at.isoformat() if self.received_at else None,
+            "id": self.id,
+            "store": self.store,
+            "notification_id": self.notification_id,
+            "notification_type": self.notification_type,
+            "notification_time": (
+                self.notification_time.isoformat() if self.notification_time else None
+            ),
+            "received_at": self.received_at.isoformat() if self.received_at else None,
         }
 
 
@@ -80,7 +82,7 @@ class IapPurchase(db.Model):
     resolves precedence; this table just records the raw store facts.
     """
 
-    __tablename__ = 'iap_purchase'
+    __tablename__ = "iap_purchase"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.String(36), nullable=False, index=True)
@@ -99,7 +101,7 @@ class IapPurchase(db.Model):
     # Store-reported status: 'active' | 'expired' | 'canceled' | 'refunded' |
     # 'grace_period' | 'on_hold'. Resolved to a Story Weaver subscription_status
     # by the entitlement service.
-    status = db.Column(db.String(50), nullable=False, default='active')
+    status = db.Column(db.String(50), nullable=False, default="active")
     # Current paid-through date (UTC). Drives whether access is still valid.
     expires_at = db.Column(db.DateTime, nullable=True)
     # Ordering guard: store event time of the last applied state change. An
@@ -109,22 +111,25 @@ class IapPurchase(db.Model):
         db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'store': self.store,
-            'product_id': self.product_id,
-            'tier': self.tier,
-            'store_transaction_id': self.store_transaction_id,
-            'status': self.status,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
-            'last_event_time':
-                self.last_event_time.isoformat() if self.last_event_time else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            "id": self.id,
+            "user_id": self.user_id,
+            "store": self.store,
+            "product_id": self.product_id,
+            "tier": self.tier,
+            "store_transaction_id": self.store_transaction_id,
+            "status": self.status,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "last_event_time": (
+                self.last_event_time.isoformat() if self.last_event_time else None
+            ),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

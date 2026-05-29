@@ -19,6 +19,7 @@ except ImportError:
         get_band_tables as _sh_get_band_tables,
     )
 
+
 class PromptService:
     @staticmethod
     def build_story_prompt(
@@ -87,20 +88,24 @@ class PromptService:
         # Base story setup
         sections.append(f"Create a story for {character} (age {age})")
         sections.append(f"Theme: {theme}")
-        
+
         # Companion Setup (Enhanced)
         if companion_characters:
-            sections.append(PromptService._build_companion_section(companion_characters))
+            sections.append(
+                PromptService._build_companion_section(companion_characters)
+            )
         elif companion:
-             sections.append(f"Companion: {companion}")
+            sections.append(f"Companion: {companion}")
 
         # Spark Tool Instruction
         if spark_tool:
-            sections.append(f"HERO TOOL: The hero has a special tool called '{spark_tool}'. It MUST be used exactly once, either at the midpoint or the climax, to help solve a specific problem.")
+            sections.append(
+                f"HERO TOOL: The hero has a special tool called '{spark_tool}'. It MUST be used exactly once, either at the midpoint or the climax, to help solve a specific problem."
+            )
 
         # Mood Physics (World Rules)
         if mood_physics:
-             sections.append(f"""
+            sections.append(f"""
              WORLD PHYSICS RULE (The world bends to the mood '{mood_physics.get('mood_name')}'):
              - RULE: {mood_physics.get('world_rule')}
              - SENSORY CHANGE: {mood_physics.get('sensory_change')}
@@ -133,15 +138,17 @@ class PromptService:
 
         # Mode-specific instructions
         if learning_to_read_mode:
-            sections.append(PromptService._get_learning_to_read_instructions(character, theme, age, companion, character_details))
+            sections.append(
+                PromptService._get_learning_to_read_instructions(
+                    character, theme, age, companion, character_details
+                )
+            )
         elif rhyme_time_mode:
             sections.append(PromptService._get_rhyme_time_instructions(age))
 
         # Character details
         if character_details:
-            details_section = PromptService._build_character_details(
-                character_details
-            )
+            details_section = PromptService._build_character_details(character_details)
             sections.append(details_section)
 
         # Character evolution
@@ -204,7 +211,13 @@ class PromptService:
             """
 
     @staticmethod
-    def _get_learning_to_read_instructions(character_name: str, theme: str, age: int, companion: str | None, character_details: dict | None) -> str:
+    def _get_learning_to_read_instructions(
+        character_name: str,
+        theme: str,
+        age: int,
+        companion: str | None,
+        character_details: dict | None,
+    ) -> str:
         companion_text = f"Include {companion} as a gentle helper." if companion else ""
         return f"""
 You are creating a LEARNING TO READ rhyming story for a {age}-year-old named {character_name}.
@@ -240,33 +253,35 @@ Create the rhyming learning-to-read story about {character_name} now:
         """Build detailed companion section with powers/constraints"""
         lines = ["COMPANIONS:"]
         for comp in companion_characters:
-            if isinstance(comp, dict) and 'signature_power' in comp:
+            if isinstance(comp, dict) and "signature_power" in comp:
                 lines.append(f"- Name: {comp.get('name')}")
                 lines.append(f"  Description: {comp.get('description')}")
                 lines.append(f"  Signature Power: {comp.get('signature_power')}")
                 lines.append(f"  Constraint: {comp.get('power_constraint')}")
                 lines.append(f"  Sensory Tell: {comp.get('sensory_tell')}")
             elif isinstance(comp, dict):
-                 lines.append(f"- {comp.get('name')}")
+                lines.append(f"- {comp.get('name')}")
             else:
-                 lines.append(f"- {comp}")
+                lines.append(f"- {comp}")
         return "\n".join(lines)
 
     @staticmethod
     def _build_character_details(character_details: dict) -> str:
         """Build character details section for prompt"""
         details = ["CHARACTER DETAILS:"]
-        
-        if 'special_ability' in character_details:
+
+        if "special_ability" in character_details:
             details.append(f"SPECIAL ABILITY: {character_details['special_ability']}")
-            
-        if 'personality_sliders' in character_details:
-             details.append(f"Personality: {character_details['personality_sliders']}")
+
+        if "personality_sliders" in character_details:
+            details.append(f"Personality: {character_details['personality_sliders']}")
 
         return "\n".join(details)
 
     @staticmethod
-    def _build_character_evolution_context(character_name: str, character_evolution: dict) -> str:
+    def _build_character_evolution_context(
+        character_name: str, character_evolution: dict
+    ) -> str:
         """Build character evolution context for prompt"""
         # This would be more complex, extracting development stage, therapeutic progress, etc.
         return ""
@@ -308,8 +323,12 @@ Create the rhyming learning-to-read story about {character_name} now:
         power_verb = power_spec["verb"]
 
         # --- Resolve villain + problem (server-picked, fallback if missing) ---
-        if not villain_id or villain_id not in _SH_VILLAINS \
-                or not problem_id or problem_id not in _SH_PROBLEMS:
+        if (
+            not villain_id
+            or villain_id not in _SH_VILLAINS
+            or not problem_id
+            or problem_id not in _SH_PROBLEMS
+        ):
             villain_id, problem_id = _sh_pick_pairing(power_id)
         villain = _SH_VILLAINS[villain_id]
         problem = _SH_PROBLEMS[problem_id]
@@ -333,12 +352,15 @@ Create the rhyming learning-to-read story about {character_name} now:
             f"{character} put on the {color} suit. Today, {character} "
             f"is {identity_tag}!"
         )
-        beat2 = f"Oh no! {villain['name']} came to {villain['action']}."
-        beat3 = f"{character} said, 'I can help!'"
-        beat4 = (
-            f"{character} used {power_verb} to {problem['verb']} "
-            f"({problem['summary']})."
+        # Bug 1 fix (audit 05): the matrix's villain['action'] is a finite-verb
+        # clause (e.g. "won't share the slide"), so the old "came to {action}"
+        # produced "came to won't share". Split the introduction from the action
+        # — this also satisfies the "use name 2x" rule the prompt already wants.
+        beat2 = (
+            f"Oh no! {villain['name']} is here. "
+            f"{villain['name']} {villain['action']}."
         )
+        beat3 = f"{character} said, 'I can help!'"
         beat5 = f"{villain['name']} {villain['softens']}."
         beat6 = f"Everyone cheered. {character} saved the day!"
 
@@ -370,16 +392,17 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 1. HERO INTRO  — Open with: "{beat1}"
 2. TROUBLE     — Then: "{beat2}"
 3. HERO RESPONDS — Then: "{beat3}"
-4. POWER USED  — Show {character} using {power_name} to {problem['verb']} the situation. Reference beat 4 idea: "{beat4}" (rewrite naturally; do NOT use the bracketed summary in the prose).
+4. POWER USED  — Show {character} using {power_name} in a kind way so that {villain['name']} wants to {problem['verb']}. For example, if the power is a friendly smile, {character} might smile so brightly that {villain['name']} smiles back. Write this beat in your own words — do NOT copy this example sentence.
 5. RESOLUTION  — End the conflict like this: "{beat5}"
 6. CHEER       — Close with: "{beat6}"
 
 HARD RULES — these are non-negotiable:
 - MAXIMUM 130 words TOTAL. Count and STOP at 130.
 - TARGET 100–130 words. Anything under 90 is too short.
+- Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words.
 - Sentences: 3–7 words each. Short and punchy.
 - Vocabulary: ONLY very simple words a 3–5 year old knows.
-- Use the hero's name AT LEAST TWICE and the identity tag "{identity_tag}" AT LEAST TWICE.
+- Use the hero's name ONCE or TWICE in your own narration, then refer to them by pronoun (he/she/they) — the beat templates already include the name, so do NOT pile on extra mentions. Use the identity tag "{identity_tag}" ONCE.
 - Include ONE repeated sensory phrase (a sound, a color, or a texture) for early-reader memorability — repeat it once for rhythm.
 - NO violence, NO weapons, NO scary descriptions, NO monsters chasing.
 - The villain is SILLY, never frightening. They soften, say sorry, or join in — they are NEVER defeated by force.
@@ -394,12 +417,18 @@ Strictly return valid JSON with this structure:
   "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
   "pages": [
     {{
-      "text": "The full story as one continuous picture-book passage (no 'PAGE X' labels, no beat numbers)."
+      "text": "Page 1 — 1 to 3 short sentences (5-25 words)."
+    }},
+    {{
+      "text": "Page 2 — 1 to 3 short sentences."
+    }},
+    {{
+      "text": "...continue until the cheer-beat, aiming for 8-12 pages total."
     }}
   ]
 }}
 
-Begin now. Stop at 130 words inside the page text.
+Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
 """
 
     # ------------------------------------------------------------------
@@ -432,7 +461,9 @@ Begin now. Stop at 130 words inside the page text.
         (including the Sprout-only fallback case) fall back to ``super_smile``,
         a power ID both bands share.
         """
-        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables("explorer")
+        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
+            "explorer"
+        )
 
         # --- Resolve power (with safe fallback to super_smile) ---
         power_id = (hero_power or "").strip().lower() or "super_smile"
@@ -472,9 +503,7 @@ Begin now. Stop at 130 words inside the page text.
         # rather than inventing an abstract puzzle/landscape antagonist.
         # MT-121: Explorer stories were drifting into puzzle motifs
         # ("Whispering Rainbow Mountain") because the villain wasn't pinned.
-        canonical_villain_names = [
-            v["name"] for v in villains_t.values()
-        ]
+        canonical_villain_names = [v["name"] for v in villains_t.values()]
         canonical_villain_list = ", ".join(canonical_villain_names)
 
         # --- Section markers in plain language (the model fills in the prose) ---
@@ -571,4 +600,3 @@ Strictly return valid JSON with this structure:
 
 Begin now. Stop at 350 words across all pages combined.
 """
-

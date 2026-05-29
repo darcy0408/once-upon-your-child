@@ -4,8 +4,10 @@ import hashlib
 import io
 import os
 import re
+import uuid
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
+from sqlalchemy.exc import SQLAlchemyError
 from flask import Blueprint, jsonify, request, g
 from PIL import Image
 
@@ -14,6 +16,7 @@ from ..gemini_image_generator import GeminiImageGenerator
 from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
 from ..models import Character, ParentHiddenContext
+from ..models.story import Story
 from ..database import db
 from ..middleware.auth import require_auth, require_parental_consent
 from ..routes.subscription_routes import require_premium
@@ -28,6 +31,7 @@ from ..utils.validators import (
     validate_story_modes,
     sanitize_text,
 )
+
 
 def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
     """
@@ -49,7 +53,7 @@ def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
         age = max(2, min(120, int(raw_age)))
     except (TypeError, ValueError):
         age = default
-    cap = getattr(g, 'minor_age_cap', None)
+    cap = getattr(g, "minor_age_cap", None)
     if cap is not None:
         age = min(age, cap)
     # M-6: clamp upward to the verified anchor — client-declared age may only
@@ -75,12 +79,12 @@ def _verified_age_anchor(character=None) -> int | None:
     only the existing under-13 minor cap.
     """
     if character is not None:
-        char_age = getattr(character, 'age', None)
+        char_age = getattr(character, "age", None)
         if char_age is not None:
             return char_age
-    current_user = getattr(request, 'current_user', None)
+    current_user = getattr(request, "current_user", None)
     if current_user is not None:
-        return getattr(current_user, 'declared_age', None)
+        return getattr(current_user, "declared_age", None)
     return None
 
 
@@ -201,7 +205,9 @@ def _build_feelings_prompt_text(
         current_feeling = {}
 
     emotion_name = _clean_prompt_value(current_feeling.get("emotion_name"))
-    emotion_description = _clean_prompt_value(current_feeling.get("emotion_description"))
+    emotion_description = _clean_prompt_value(
+        current_feeling.get("emotion_description")
+    )
     trigger = (
         _clean_prompt_value(current_feeling.get("what_happened"))
         or _clean_prompt_value(current_feeling.get("trigger"))
@@ -220,7 +226,9 @@ def _build_feelings_prompt_text(
         or _clean_prompt_value(payload.get("repairGoal"))
         or _clean_prompt_value((transformed_guidance or {}).get("repair_goal"))
     )
-    story_guidance = _clean_prompt_value((transformed_guidance or {}).get("story_guidance"))
+    story_guidance = _clean_prompt_value(
+        (transformed_guidance or {}).get("story_guidance")
+    )
     age = payload.get("age") or payload.get("character_age") or 5
 
     if not emotion_name:
@@ -269,29 +277,35 @@ def _build_feelings_prompt_text(
 
     if numeric_age >= 15:
         # Adolescent / Adult — mature emotional register
-        lines.extend([
-            f"1. Open with the feeling already present in the character's body or thoughts — not announced like a lesson.",
-            "2. Keep the stakes life-sized — real relationships, real consequences, real ambiguity.",
-            "3. Honour the feeling without rushing to resolve it; complexity and contradiction are valid.",
-            "4. Show the body clue somatically and specifically — not as a diagram but as lived experience.",
-            "5. The coping gesture is a starting point, not a solution; it may land imperfectly or only partially help.",
-            "6. End with integration, not resolution — the feeling can still be present at the close; a character who has simply named and held something difficult is enough.",
-            "7. Never moralise or summarise the emotional lesson. The story IS the lesson.",
-        ])
+        lines.extend(
+            [
+                f"1. Open with the feeling already present in the character's body or thoughts — not announced like a lesson.",
+                "2. Keep the stakes life-sized — real relationships, real consequences, real ambiguity.",
+                "3. Honour the feeling without rushing to resolve it; complexity and contradiction are valid.",
+                "4. Show the body clue somatically and specifically — not as a diagram but as lived experience.",
+                "5. The coping gesture is a starting point, not a solution; it may land imperfectly or only partially help.",
+                "6. End with integration, not resolution — the feeling can still be present at the close; a character who has simply named and held something difficult is enough.",
+                "7. Never moralise or summarise the emotional lesson. The story IS the lesson.",
+            ]
+        )
     else:
-        lines.extend([
-            f"1. Open by naming the feeling in the first lines, like: \"{opening_example}\"",
-            "2. Keep the problem child-sized and concrete.",
-            "3. Validate the feeling without shaming it or trying to erase it.",
-            "4. Show the body clue early and naturally.",
-            "5. Let the helper action change what happens next.",
-            "6. If the hero makes a messy choice, include a gentle repair and reconnect moment.",
-        ])
+        lines.extend(
+            [
+                f'1. Open by naming the feeling in the first lines, like: "{opening_example}"',
+                "2. Keep the problem child-sized and concrete.",
+                "3. Validate the feeling without shaming it or trying to erase it.",
+                "4. Show the body clue early and naturally.",
+                "5. Let the helper action change what happens next.",
+                "6. If the hero makes a messy choice, include a gentle repair and reconnect moment.",
+            ]
+        )
         if numeric_age <= 5:
-            lines.extend([
-                "7. Use very simple feeling words: mad, sad, scared, frustrated.",
-                "8. Use short concrete sentences and warm reassuring imagery only.",
-            ])
+            lines.extend(
+                [
+                    "7. Use very simple feeling words: mad, sad, scared, frustrated.",
+                    "8. Use short concrete sentences and warm reassuring imagery only.",
+                ]
+            )
 
     return "\n".join(lines)
 
@@ -301,7 +315,11 @@ def _augment_therapeutic_prompt(
     base_prompt: str,
     transformed_guidance: dict | None = None,
 ) -> str:
-    parts = [base_prompt.strip()] if isinstance(base_prompt, str) and base_prompt.strip() else []
+    parts = (
+        [base_prompt.strip()]
+        if isinstance(base_prompt, str) and base_prompt.strip()
+        else []
+    )
 
     current_feeling = payload.get("current_feeling")
     if isinstance(current_feeling, dict):
@@ -310,28 +328,90 @@ def _augment_therapeutic_prompt(
         if normalized == "mad":
             parts.append("Emotion focus: anger and calming without shame.")
         elif normalized == "scared":
-            parts.append("Emotion focus: fear/anxiety and feeling safe enough to take one small step.")
+            parts.append(
+                "Emotion focus: fear/anxiety and feeling safe enough to take one small step."
+            )
         elif normalized == "sad":
             parts.append("Emotion focus: sadness, comfort, and connection.")
         elif normalized == "frustrated":
-            parts.append("Emotion focus: frustration, trying again, and asking for help.")
+            parts.append(
+                "Emotion focus: frustration, trying again, and asking for help."
+            )
 
-    guidance_line = _clean_prompt_value((transformed_guidance or {}).get("story_guidance"))
+    guidance_line = _clean_prompt_value(
+        (transformed_guidance or {}).get("story_guidance")
+    )
     if guidance_line:
         parts.append(f"Parent-guided Big Feelings scaffolding: {guidance_line}")
 
     return " | ".join(parts)
 
 
-def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout):
+def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
+    """Run story generation in a bounded worker thread under an explicit task id.
+
+    The generation runs as an eager Celery task with `task_id` so that, if it
+    overruns `sync_story_timeout`, the still-running thread is NOT abandoned: it
+    keeps running to completion and persists its Story row keyed by `task_id`.
+    The caller returns that id for polling and /task-status recovers the
+    finished story from the DB (R2). This replaces the previous behaviour where
+    a timed-out sync run was orphaned with no handle AND a second async task
+    was dispatched — producing two full generations and duplicate Story rows
+    (A3).
+    """
     executor = ThreadPoolExecutor(max_workers=1)
     # Important: use current generate_story_task which might be mocked in tests
-    future = executor.submit(generate_story_task.apply, kwargs=task_kwargs)
+    future = executor.submit(
+        generate_story_task.apply, kwargs=task_kwargs, task_id=task_id
+    )
     try:
         eager_result = future.result(timeout=sync_story_timeout)
         return eager_result.get()
     finally:
-        executor.shutdown(wait=False, cancel_futures=True)
+        # wait=False lets a timed-out generation finish in the background so
+        # its Story row is persisted for /task-status DB recovery. Do NOT pass
+        # cancel_futures — the in-flight generation must be allowed to complete.
+        executor.shutdown(wait=False)
+
+
+def _recover_story_from_db(task_id: str, current_user_id) -> tuple[dict, int] | None:
+    """R2: reconstruct a completed-task response from the persisted Story row.
+
+    `generate_story_task` persists the full story payload to the Story row
+    keyed by `task_id`. When the Celery result has expired (result_expires=1h)
+    this lets /task-status still return the finished story. Returns:
+      - (complete-response, 200) when the owning user's finished story is found
+      - ({"error": "Access denied"}, 403) when the row belongs to another user
+      - None when no Story row exists for this task_id (task genuinely pending)
+    """
+    if not task_id:
+        return None
+    try:
+        story = Story.query.filter_by(task_id=task_id).first()
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.warning(
+            "DB story-recovery lookup failed for task %s", task_id, exc_info=True
+        )
+        return None
+    if story is None or not story.content:
+        return None
+    if str(story.user_id) != str(current_user_id):
+        logger.warning(
+            "IDOR attempt: user %s tried task %s owned by %s (DB recovery)",
+            current_user_id,
+            task_id,
+            story.user_id,
+        )
+        return {"error": "Access denied"}, 403
+    return {
+        "status": "complete",
+        "result": {
+            "status": "complete",
+            "story": story.content,
+            "user_id": str(story.user_id),
+        },
+    }, 200
 
 
 def _companion_count(task_kwargs: dict) -> int:
@@ -397,6 +477,33 @@ def _cache_task_owner(cache, task_id: str, user_id: str) -> None:
         logger.warning("Failed to cache task owner for %s", task_id, exc_info=True)
 
 
+def _read_partial_story(task_id: str | None) -> str | None:
+    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+
+    Returns the partial text the Gemini stream consumer wrote (see
+    `_emit_partial_story` in story_tasks.py), or None if nothing is
+    available. Best-effort: any Redis hiccup returns None so /task-status
+    degrades to the same response shape it had pre-PERF-01.
+    """
+    if not task_id:
+        return None
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+    if not redis_url:
+        return None
+    try:
+        import redis as redis_lib
+
+        client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        value = client.get(f"partial_story:{task_id}")
+        if value is None:
+            return None
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", errors="replace")
+        return value or None
+    except Exception:
+        return None
+
+
 def _resolve_task_owner(cache, task_id: str, task) -> str | None:
     if not task_id:
         return None
@@ -452,7 +559,9 @@ def _generate_flux_illustration(**kwargs) -> list:
             from ..replicate_image_generator import ReplicateImageGenerator
         except ImportError:
             from replicate_image_generator import ReplicateImageGenerator
-        images = ReplicateImageGenerator().generate_story_illustration_flux_schnell(**kwargs)
+        images = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
+            **kwargs
+        )
     return images
 
 
@@ -472,7 +581,11 @@ def create_story_blueprint(
     logger,
 ):
     story_bp = Blueprint("story", __name__)
-    disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in ("1", "true", "yes")
+    disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "120"))
 
     @story_bp.route("/get-story-themes", methods=["GET"])
@@ -495,9 +608,12 @@ def create_story_blueprint(
     @story_bp.route("/generate-story", methods=["POST"])
     @require_auth
     @require_parental_consent
-    @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
+    @limiter.limit(
+        lambda: get_tier_limits() or "1000/minute"
+    )  # BYOK users get high limit
     def generate_story_endpoint():
         from ..utils.sanitizer import sanitize_story_request
+
         payload = request.get_json(silent=True) or {}
         payload = sanitize_story_request(payload)
 
@@ -509,19 +625,28 @@ def create_story_blueprint(
         theme = payload.get("theme") or "Adventure"
         # Enforce authenticated user ID
         user_id = request.current_user.id
-        user_tier = getattr(request.current_user, 'subscription_tier', 'free') or 'free'
+        user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
 
         # Daily AI generation quota — circuit breaker against unbounded Gemini spend.
         allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
         if not allowed:
-            audit_log('ai_quota_exceeded', user_id=user_id, data={'tier': user_tier, 'count': current_count, 'limit': daily_limit})
-            return jsonify({
-                "error": "Daily story limit reached",
-                "code": "QUOTA_EXCEEDED",
-                "limit": daily_limit,
-                "used": current_count,
-                "message": "You've reached your story limit for today. Come back tomorrow!",
-            }), 429
+            audit_log(
+                "ai_quota_exceeded",
+                user_id=user_id,
+                data={"tier": user_tier, "count": current_count, "limit": daily_limit},
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Daily story limit reached",
+                        "code": "QUOTA_EXCEEDED",
+                        "limit": daily_limit,
+                        "used": current_count,
+                        "message": "You've reached your story limit for today. Come back tomorrow!",
+                    }
+                ),
+                429,
+            )
 
         # Validate character ownership
         character_id = payload.get("character_id")
@@ -531,7 +656,9 @@ def create_story_blueprint(
             if not char:
                 return jsonify({"error": "Character not found"}), 404
             if char.user_id and str(char.user_id) != str(user_id):
-                logger.warning(f"IDOR attempt: User {user_id} tried to generate story for character {character_id}")
+                logger.warning(
+                    f"IDOR attempt: User {user_id} tried to generate story for character {character_id}"
+                )
                 return jsonify({"error": "Unauthorized"}), 403
             owned_character = char
 
@@ -557,7 +684,9 @@ def create_story_blueprint(
 
         # Extract character_details to get additional_characters if available
         character_details = payload.get("character_details") or {}
-        additional_chars = payload.get("additional_characters") or character_details.get("additionalCharacters")
+        additional_chars = payload.get(
+            "additional_characters"
+        ) or character_details.get("additionalCharacters")
 
         # Extract companion data (new structured format)
         companion_pets = payload.get("companion_pets", [])
@@ -603,15 +732,18 @@ def create_story_blueprint(
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
             "bedtime_mode": payload.get("bedtime_mode", False),
             "bedtime_mood": payload.get("bedtime_mood", "calming"),
-            "companion": payload.get("companion") or payload.get("companion_name"),  # Legacy support
+            "companion": payload.get("companion")
+            or payload.get("companion_name"),  # Legacy support
             "companion_pets": companion_pets,  # NEW: List of pet companions with species
             "companion_characters": companion_characters,  # NEW: List of character companions
-            "spark_tool": payload.get("sparkTool"), # NEW: Spark Tool
-            "mood_physics": payload.get("moodPhysics"), # NEW: Mood Physics
-            "conflict_hook": payload.get("conflictHook"), # NEW: Plot Driver
-            "sensory_palette": payload.get("sensoryPalette"), # NEW: Atmosphere
-            "world_bible": payload.get("worldBible", ""), # World consistency guide
-            "custom_elements": payload.get("customElements", ""), # NEW: Free-form custom story requests
+            "spark_tool": payload.get("sparkTool"),  # NEW: Spark Tool
+            "mood_physics": payload.get("moodPhysics"),  # NEW: Mood Physics
+            "conflict_hook": payload.get("conflictHook"),  # NEW: Plot Driver
+            "sensory_palette": payload.get("sensoryPalette"),  # NEW: Atmosphere
+            "world_bible": payload.get("worldBible", ""),  # World consistency guide
+            "custom_elements": payload.get(
+                "customElements", ""
+            ),  # NEW: Free-form custom story requests
             "therapeutic_prompt": _augment_therapeutic_prompt(
                 payload,
                 payload.get("therapeutic_prompt", ""),
@@ -643,87 +775,112 @@ def create_story_blueprint(
         # client falls back to a canned scaffold story.
         effective_sync_timeout = _sync_timeout_for(task_kwargs, sync_story_timeout)
 
+        # A3: pre-allocate the id the sync generation runs under so a
+        # generation that overruns the timeout stays pollable instead of being
+        # orphaned. See the timeout handler below and /task-status (R2).
+        recovery_task_id = str(uuid.uuid4())
+
         # Try synchronous execution first (to bypass polling issues on Railway)
         try:
             # Run synchronous task in a bounded worker thread so timeout is enforced.
-            sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
+            sync_result = _run_sync_story_task_with_timeout(
+                task_kwargs, effective_sync_timeout, recovery_task_id
+            )
 
             # Debugging: Log the result type
             logger.info(f"Sync task result type: {type(sync_result)}")
             if isinstance(sync_result, str):
-                logger.error(f"Sync task returned string instead of dict: {sync_result[:200]}...")
+                logger.error(
+                    f"Sync task returned string instead of dict: {sync_result[:200]}..."
+                )
                 raise Exception(f"Task returned invalid format (str): {sync_result}")
 
             # Extract story payload from the task result
             story_payload = (sync_result or {}).get("story", {})
             if not story_payload:
-                 story_payload = (sync_result or {}).get("story_text", {})
+                story_payload = (sync_result or {}).get("story_text", {})
 
             response_payload = {
                 "status": sync_result.get("status", "complete"),
                 "story": story_payload,
-                "task_id": "sync_task", # No task ID needed
+                "task_id": "sync_task",  # No task ID needed
                 "async_illustrations": payload.get("async_illustrations", False),
             }
             increment_daily_quota(user_id, user_tier)
-            audit_log('story_generated', user_id=user_id, data={'tier': user_tier, 'mode': 'sync'})
+            audit_log(
+                "story_generated",
+                user_id=user_id,
+                data={"tier": user_tier, "mode": "sync"},
+            )
             return jsonify(response_payload), 200
 
         except (FuturesTimeoutError, CeleryTimeoutError) as exc:
+            # A3: the synchronous generation overran the timeout. Its worker
+            # thread is NOT abandoned — it keeps running in the background and
+            # will persist a Story row keyed by `recovery_task_id`. Return that
+            # id for polling; /task-status recovers the finished story from the
+            # DB (R2). We deliberately do NOT dispatch a second task here: the
+            # previous code left the sync thread orphaned AND queued an async
+            # task, producing two full generations and duplicate Story rows.
             logger.warning(
-                "Synchronous story generation timed out after %ss, switching to async fallback.",
+                "Synchronous story generation exceeded %ss; returning poll id %s "
+                "for the in-flight generation.",
                 effective_sync_timeout,
+                recovery_task_id,
             )
-            logger.error(f"Full task_kwargs that timed out: {task_kwargs}")
-            if _celery_runs_eagerly():
-                logger.warning(
-                    "Celery task_always_eager is enabled; async fallback would still block. Returning timeout response."
-                )
-                return (
-                    jsonify(
-                        {
-                            "error": "STORY_TIMEOUT",
-                            "message": "Story generation took too long. Please try again.",
-                        }
-                    ),
-                    504,
-                )
-            try:
-                task = generate_story_task.delay(**task_kwargs)
-                _cache_task_owner(cache, task.id, user_id)
-                return (
-                    jsonify(
-                        {
-                            "task_id": task.id,
-                            "status": "processing",
-                            "message": "Story generation timed out in sync mode; switched to async processing.",
-                            "poll_url": f"/task-status/{task.id}",
-                        }
-                    ),
-                    202,
-                )
-            except Exception as async_exc:
-                logger.exception("Async fallback after sync timeout also failed: %s", async_exc)
-                return jsonify({"error": "STORY_TIMEOUT", "message": "Story generation took too long. Please try again."}), 500
+            _cache_task_owner(cache, recovery_task_id, user_id)
+            return (
+                jsonify(
+                    {
+                        "task_id": recovery_task_id,
+                        "status": "processing",
+                        "message": "Story generation is taking a little longer — poll for the result.",
+                        "poll_url": f"/task-status/{recovery_task_id}",
+                    }
+                ),
+                202,
+            )
 
         except Exception as exc:
-            logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
+            logger.exception(
+                "Synchronous story generation failed, attempting async fallback: %s",
+                exc,
+            )
 
-            if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
+            if (
+                "429" in str(exc)
+                or "ResourceExhausted" in str(exc)
+                or "Quota exceeded" in str(exc)
+            ):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
-                return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
+                return (
+                    jsonify(
+                        {
+                            "error": "QUOTA_EXCEEDED",
+                            "message": "Google Gemini API quota exceeded. Please try again later.",
+                        }
+                    ),
+                    429,
+                )
 
-            logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             if _celery_runs_eagerly():
                 logger.warning(
                     "Celery task_always_eager is enabled; async fallback would still block. Returning error response."
                 )
-                return jsonify(
-                    {
-                        "error": "STORY_FAILED",
-                        "message": "Something went wrong generating your story. Please try again.",
-                    }
-                ), 500
+                return (
+                    jsonify(
+                        {
+                            "error": "STORY_FAILED",
+                            "message": "Something went wrong generating your story. Please try again.",
+                        }
+                    ),
+                    500,
+                )
+            # X2: exactly one async retry. The sync attempt above already
+            # failed without producing a story, so this is the second (and
+            # final) generation attempt. The previous code kept an additional
+            # "last resort" synchronous retry after this, so a single failed
+            # request could trigger up to three full generations.
             try:
                 task = generate_story_task.delay(**task_kwargs)
                 _cache_task_owner(cache, task.id, user_id)
@@ -732,38 +889,38 @@ def create_story_blueprint(
                         {
                             "task_id": task.id,
                             "status": "processing",
-                            "message": "Story generation started (Async fallback)",
+                            "message": "Story generation started (async fallback)",
                             "poll_url": f"/task-status/{task.id}",
                         }
                     ),
                     202,
                 )
             except Exception as async_exc:
-                if "429" in str(async_exc) or "ResourceExhausted" in str(async_exc) or "Quota exceeded" in str(async_exc):
-                     logger.warning(f"Quota exceeded in async generation: {async_exc}")
-                     return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later."}), 429
-
+                if (
+                    "429" in str(async_exc)
+                    or "ResourceExhausted" in str(async_exc)
+                    or "Quota exceeded" in str(async_exc)
+                ):
+                    logger.warning(f"Quota exceeded in async generation: {async_exc}")
+                    return (
+                        jsonify(
+                            {
+                                "error": "QUOTA_EXCEEDED",
+                                "message": "Google Gemini API quota exceeded. Please try again later.",
+                            }
+                        ),
+                        429,
+                    )
                 logger.exception("Async fallback also failed: %s", async_exc)
-                # Last resort: retry synchronously before giving up entirely
-                logger.warning("Retrying synchronous story generation after async failure")
-                try:
-                    sync_result = _run_sync_story_task_with_timeout(task_kwargs, effective_sync_timeout)
-                    story_payload = (sync_result or {}).get("story", {})
-                    response_payload = {
-                        "status": sync_result.get("status", "complete"),
-                        "title": story_payload.get("title"),
-                        "story": story_payload.get("story_text"),
-                        "story_text": story_payload.get("story_text"),
-                        "task_id": None,
-                        "theme": story_payload.get("theme"),
-                        "wisdom_gem": story_payload.get("wisdom_gem"),
-                        "async_illustrations": payload.get("async_illustrations", False),
-                    }
-                    audit_log('story_generated', user_id=user_id, data={'tier': user_tier, 'mode': 'async_fallback'})
-                    return jsonify(response_payload), 200
-                except Exception as fallback_exc:
-                    logger.exception("Synchronous retry also failed: %s", fallback_exc)
-                    return jsonify({"error": "STORY_FAILED", "message": "Something went wrong generating your story. Please try again."}), 500
+                return (
+                    jsonify(
+                        {
+                            "error": "STORY_FAILED",
+                            "message": "Something went wrong generating your story. Please try again.",
+                        }
+                    ),
+                    500,
+                )
 
     @story_bp.route("/generate-story-mock", methods=["POST"])
     def generate_story_mock_endpoint():
@@ -798,20 +955,36 @@ def create_story_blueprint(
                     "story_text": f"This is a sample story about {character_name} and a grand adventure about {theme.lower()}. In a land of pixels and placeholders, our hero discovered that the best treasure is a good friend. They met a friendly dragon who, instead of breathing fire, brewed the best tea in the kingdom. Together, they shared stories and laughed until the sun set, painting the sky in shades of orange and purple.",
                     "theme": theme,
                     "wisdom_gem": "A shared cup of tea is better than a lonely treasure.",
-                    "include_illustrations": payload.get("include_illustrations", False),
+                    "include_illustrations": payload.get(
+                        "include_illustrations", False
+                    ),
                     "rhyme_time_mode": payload.get("rhyme_time_mode", False),
-                    "learning_to_read_mode": payload.get("learning_to_read_mode", False),
-                }
-            }
+                    "learning_to_read_mode": payload.get(
+                        "learning_to_read_mode", False
+                    ),
+                },
+            },
         }
         # The frontend expects the result of the task, not the task object itself
         return jsonify(mock_story), 200
-
 
     @story_bp.route("/task-status/<task_id>", methods=["GET"])
     @require_auth
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
+
+        # R2: once a completed task's Celery result expires (result_expires=1h)
+        # its state reads as PENDING and the story would look lost. The full
+        # payload is also persisted to the Story row keyed by task_id — recover
+        # it from the DB so an expired result never loses a generated story.
+        # This also covers a sync generation that overran its timeout (A3): the
+        # background thread persists the Story row under recovery_task_id.
+        if task.state == "PENDING":
+            recovered = _recover_story_from_db(task_id, request.current_user.id)
+            if recovered is not None:
+                payload, status_code = recovered
+                return jsonify(payload), status_code
+
         task_owner_id = _resolve_task_owner(cache, task_id, task)
 
         # Security: verify resource ownership
@@ -837,6 +1010,13 @@ def create_story_blueprint(
                 "status": "pending",
                 "message": "Task is waiting to start",
             }
+            # PERF-01 slice 3: a sync-path task may already be mid-stream
+            # before Celery has flipped to PROCESSING. If partial text is
+            # in Redis, surface it so the client can render early.
+            partial_text = _read_partial_story(task_id)
+            if partial_text:
+                response["status"] = "processing"
+                response["partial_text"] = partial_text
         elif task.state == "PROCESSING":
             meta = task.info or {}
             status_message = meta.get("status") if isinstance(meta, dict) else str(meta)
@@ -844,6 +1024,12 @@ def create_story_blueprint(
                 "status": "processing",
                 "message": status_message or "Generating story...",
             }
+            # PERF-01 slice 3: include the accumulated streamed text when
+            # available so the client can render the in-flight story
+            # instead of just a spinner.
+            partial_text = _read_partial_story(task_id)
+            if partial_text:
+                response["partial_text"] = partial_text
         elif task.state == "SUCCESS":
             result = task.result or {}
             response = {
@@ -862,6 +1048,41 @@ def create_story_blueprint(
             }
 
         return jsonify(response), 200
+
+    @story_bp.route("/cancel-task/<task_id>", methods=["POST"])
+    @require_auth
+    def cancel_task(task_id):
+        """PERF-04: signal an in-flight generation to abandon further work.
+
+        The flag is checked by the worker at the start of generation and (in
+        future slices) between phases. Best-effort:
+          - 202 when the cancel flag was written to Redis.
+          - 503 when Redis is unreachable (no signal sent).
+          - 403 on ownership mismatch (same gate as /task-status).
+          - 202 with status='accepted' for unknown task ids — UUIDs make
+            cross-task interference impossible, and replying 404 would let
+            a client probe other users' task ids.
+        """
+        from ..utils.task_cancellation import request_cancellation
+
+        task = celery.AsyncResult(task_id)
+        task_owner_id = _resolve_task_owner(cache, task_id, task)
+        if task_owner_id and str(task_owner_id) != str(request.current_user.id):
+            logger.warning(
+                "IDOR attempt: user %s tried to cancel task %s owned by %s",
+                request.current_user.id,
+                task_id,
+                task_owner_id,
+            )
+            return jsonify({"error": "Access denied"}), 403
+
+        if task_owner_id is None:
+            # Unknown task — accept silently rather than disclose ownership.
+            return jsonify({"status": "accepted"}), 202
+
+        if request_cancellation(task_id):
+            return jsonify({"status": "accepted"}), 202
+        return jsonify({"status": "redis_unavailable"}), 503
 
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
@@ -882,6 +1103,7 @@ def create_story_blueprint(
         """
         logger.info("POST /generate-interactive-story called")
         from ..utils.sanitizer import sanitize_story_request
+
         payload = request.get_json(silent=True) or {}
         # Sanitize every free-text field (worldBible, conflictHook, sensoryPalette,
         # etc.) before it reaches the interactive prompt builder — same defense
@@ -898,7 +1120,7 @@ def create_story_blueprint(
 
         # Enforce authenticated user ID
         user_id = request.current_user.id
-        
+
         character_id = payload.get("character_id")
 
         # Validate character ownership
@@ -908,7 +1130,9 @@ def create_story_blueprint(
             if not char:
                 return jsonify({"error": "Character not found"}), 404
             if char.user_id and str(char.user_id) != str(user_id):
-                logger.warning(f"IDOR attempt: User {user_id} tried to generate interactive story for character {character_id}")
+                logger.warning(
+                    f"IDOR attempt: User {user_id} tried to generate interactive story for character {character_id}"
+                )
                 return jsonify({"error": "Unauthorized"}), 403
             owned_character = char
 
@@ -981,27 +1205,37 @@ def create_story_blueprint(
                 is_sprout_band,
                 build_safe_fallback_segment,
             )
-            segment_content = result['segment']['content']
+
+            segment_content = result["segment"]["content"]
             filtered_content, flagged = filter_story_content(segment_content, age)
-            result['segment']['content'] = filtered_content
+            result["segment"]["content"] = filtered_content
 
             # F-01: widen moderation input to cover the segment title and every
             # choice-button label — children see/tap these, not just the body.
-            moderation_input = "\n".join([
-                filtered_content,
-                result['segment'].get('title', ''),
-                *[c.get('text', '') for c in result['segment'].get('choices', [])],
-            ])
+            moderation_input = "\n".join(
+                [
+                    filtered_content,
+                    result["segment"].get("title", ""),
+                    *[c.get("text", "") for c in result["segment"].get("choices", [])],
+                ]
+            )
             _, title_choices_flagged = filter_story_content(
-                "\n".join([
-                    result['segment'].get('title', ''),
-                    *[c.get('text', '') for c in result['segment'].get('choices', [])],
-                ]),
+                "\n".join(
+                    [
+                        result["segment"].get("title", ""),
+                        *[
+                            c.get("text", "")
+                            for c in result["segment"].get("choices", [])
+                        ],
+                    ]
+                ),
                 age,
             )
             if title_choices_flagged:
                 flagged = True
-                logger.warning("Interactive story opening title/choices flagged by content filter")
+                logger.warning(
+                    "Interactive story opening title/choices flagged by content filter"
+                )
 
             if flagged:
                 logger.warning("Interactive story opening flagged by content filter")
@@ -1030,11 +1264,11 @@ def create_story_blueprint(
             # F-02: also replace choices so unsafe button labels are never shown.
             if flagged:
                 fallback = build_safe_fallback_segment(segment_number=1)
-                result['segment']['content'] = fallback['content']
-                result['segment']['title'] = fallback['title']
-                result['segment']['image_description'] = fallback['image_description']
-                result['segment']['choices'] = fallback['choices']
-                result['segment']['image_url'] = None
+                result["segment"]["content"] = fallback["content"]
+                result["segment"]["title"] = fallback["title"]
+                result["segment"]["image_description"] = fallback["image_description"]
+                result["segment"]["choices"] = fallback["choices"]
+                result["segment"]["image_url"] = None
                 logger.warning(
                     "Interactive story opening replaced with safe fallback segment "
                     f"(story {result.get('story_id')})"
@@ -1055,12 +1289,15 @@ def create_story_blueprint(
                 },
             )
             logger.exception("Interactive story generation failed")
-            return jsonify(
-                {
-                    "error": str(e),
-                    "hint": "Interactive story generation failed on the backend.",
-                }
-            ), 500
+            return (
+                jsonify(
+                    {
+                        "error": str(e),
+                        "hint": "Interactive story generation failed on the backend.",
+                    }
+                ),
+                500,
+            )
 
     @story_bp.route("/continue-interactive-story", methods=["POST"])
     @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
@@ -1076,6 +1313,7 @@ def create_story_blueprint(
         """
         logger.info("POST /continue-interactive-story called")
         from ..utils.sanitizer import sanitize_for_prompt, wrap_user_input
+
         payload = request.get_json(silent=True) or {}
 
         story_id = payload.get("story_id")
@@ -1087,7 +1325,12 @@ def create_story_blueprint(
             return jsonify({"error": "story_id and choice_id are required"}), 400
 
         if choice_id == "custom" and not raw_custom_text:
-            return jsonify({"error": "custom_text is required when choice_id is 'custom'"}), 400
+            return (
+                jsonify(
+                    {"error": "custom_text is required when choice_id is 'custom'"}
+                ),
+                400,
+            )
 
         # The "Something Else" free-text choice flows straight into the
         # continuation prompt. Strip injection/HTML/delimiter tokens, hard-cap
@@ -1097,21 +1340,26 @@ def create_story_blueprint(
         if choice_id == "custom":
             cleaned_custom = sanitize_for_prompt(raw_custom_text, 200)
             if not cleaned_custom:
-                return jsonify(
-                    {"error": "custom_text is required when choice_id is 'custom'"}
-                ), 400
+                return (
+                    jsonify(
+                        {"error": "custom_text is required when choice_id is 'custom'"}
+                    ),
+                    400,
+                )
             custom_text = wrap_user_input(cleaned_custom, "player_choice")
 
         try:
             from backend.models import InteractiveStory
-            
+
             # Ownership check
             story = db.session.get(InteractiveStory, story_id)
             if not story:
                 return jsonify({"error": f"Story {story_id} not found"}), 404
-            
+
             if str(story.user_id) != str(request.current_user.id):
-                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to continue story {story_id}")
+                logger.warning(
+                    f"IDOR attempt: User {request.current_user.id} tried to continue story {story_id}"
+                )
                 return jsonify({"error": "Access denied"}), 403
 
             # Initialize service
@@ -1119,9 +1367,7 @@ def create_story_blueprint(
 
             # Continue story — pass custom_text so the service can use it
             result = service.continue_story(
-                story_id=story_id,
-                choice_id=choice_id,
-                custom_text=custom_text or None
+                story_id=story_id, choice_id=choice_id, custom_text=custom_text or None
             )
 
             # Two-layer output moderation — same as the main story path.
@@ -1137,35 +1383,47 @@ def create_story_blueprint(
                 is_sprout_band,
                 build_safe_fallback_segment,
             )
-            story_age = getattr(story, 'age', None) or 5
-            segment_content = result['segment']['content']
+
+            story_age = getattr(story, "age", None) or 5
+            segment_content = result["segment"]["content"]
             filtered_content, flagged = filter_story_content(segment_content, story_age)
-            result['segment']['content'] = filtered_content
+            result["segment"]["content"] = filtered_content
 
             # F-01: widen moderation input to cover the segment title and every
             # choice-button label — children see/tap these, not just the body.
-            moderation_input = "\n".join([
-                filtered_content,
-                result['segment'].get('title', ''),
-                *[c.get('text', '') for c in result['segment'].get('choices', [])],
-            ])
+            moderation_input = "\n".join(
+                [
+                    filtered_content,
+                    result["segment"].get("title", ""),
+                    *[c.get("text", "") for c in result["segment"].get("choices", [])],
+                ]
+            )
             _, title_choices_flagged = filter_story_content(
-                "\n".join([
-                    result['segment'].get('title', ''),
-                    *[c.get('text', '') for c in result['segment'].get('choices', [])],
-                ]),
+                "\n".join(
+                    [
+                        result["segment"].get("title", ""),
+                        *[
+                            c.get("text", "")
+                            for c in result["segment"].get("choices", [])
+                        ],
+                    ]
+                ),
                 story_age,
             )
             if title_choices_flagged:
                 flagged = True
-                logger.warning("Interactive continuation title/choices flagged by content filter")
+                logger.warning(
+                    "Interactive continuation title/choices flagged by content filter"
+                )
 
             if flagged:
                 logger.warning("Interactive continuation flagged by content filter")
             else:
                 try:
                     llm_safe, llm_reason = moderate_story_content(
-                        moderation_input, story_age, fail_closed=is_sprout_band(story_age)
+                        moderation_input,
+                        story_age,
+                        fail_closed=is_sprout_band(story_age),
                     )
                     if not llm_safe:
                         flagged = True
@@ -1185,20 +1443,22 @@ def create_story_blueprint(
             # F-02: also replace choices so unsafe button labels are never shown.
             if flagged:
                 fallback = build_safe_fallback_segment(
-                    segment_number=result['segment'].get('segment_number', 1),
+                    segment_number=result["segment"].get("segment_number", 1),
                     is_opening=False,
                 )
-                result['segment']['content'] = fallback['content']
-                result['segment']['title'] = fallback['title']
-                result['segment']['image_description'] = fallback['image_description']
-                result['segment']['choices'] = fallback['choices']
-                result['segment']['image_url'] = None
+                result["segment"]["content"] = fallback["content"]
+                result["segment"]["title"] = fallback["title"]
+                result["segment"]["image_description"] = fallback["image_description"]
+                result["segment"]["choices"] = fallback["choices"]
+                result["segment"]["image_url"] = None
                 logger.warning(
                     f"Interactive continuation replaced with safe fallback segment "
                     f"(story {story_id})"
                 )
 
-            logger.info(f"Story {story_id} continued to segment {result['segment']['segment_number']}")
+            logger.info(
+                f"Story {story_id} continued to segment {result['segment']['segment_number']}"
+            )
             return jsonify(result), 200
 
         except ValueError as e:
@@ -1217,12 +1477,15 @@ def create_story_blueprint(
                     "error_class": e.__class__.__name__,
                 },
             )
-            return jsonify(
-                {
-                    "error": str(e),
-                    "hint": "Continuing interactive story failed on the backend.",
-                }
-            ), 500
+            return (
+                jsonify(
+                    {
+                        "error": str(e),
+                        "hint": "Continuing interactive story failed on the backend.",
+                    }
+                ),
+                500,
+            )
 
     @story_bp.route("/interactive-story/<story_id>", methods=["GET"])
     @require_auth
@@ -1234,14 +1497,16 @@ def create_story_blueprint(
 
         try:
             from backend.models import InteractiveStory
-            
+
             # Ownership check
             story = db.session.get(InteractiveStory, story_id)
             if not story:
                 return jsonify({"error": f"Story {story_id} not found"}), 404
-            
+
             if str(story.user_id) != str(request.current_user.id):
-                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to read story {story_id}")
+                logger.warning(
+                    f"IDOR attempt: User {request.current_user.id} tried to read story {story_id}"
+                )
                 return jsonify({"error": "Access denied"}), 403
 
             # Initialize service
@@ -1279,7 +1544,9 @@ def create_story_blueprint(
 
             # Ownership check
             if str(story.user_id) != str(request.current_user.id):
-                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to resume story {story_id}")
+                logger.warning(
+                    f"IDOR attempt: User {request.current_user.id} tried to resume story {story_id}"
+                )
                 return jsonify({"error": "Access denied"}), 403
 
             if story.is_completed:
@@ -1294,13 +1561,16 @@ def create_story_blueprint(
                 return jsonify({"error": "Current segment not found"}), 404
 
             result = {
-                'story_id': story.id,
-                'title': story.title,
-                'current_segment_number': story.current_segment_number,
-                'segment': current_segment.to_dict(),
-                'inventory': [item.to_dict() for item in story.inventory.filter_by(is_active=True).all()],
-                'state': story.state.to_dict() if story.state else None,
-                'is_completed': story.is_completed
+                "story_id": story.id,
+                "title": story.title,
+                "current_segment_number": story.current_segment_number,
+                "segment": current_segment.to_dict(),
+                "inventory": [
+                    item.to_dict()
+                    for item in story.inventory.filter_by(is_active=True).all()
+                ],
+                "state": story.state.to_dict() if story.state else None,
+                "is_completed": story.is_completed,
             }
 
             return jsonify(result), 200
@@ -1318,27 +1588,42 @@ def create_story_blueprint(
         reason = (data.get("reason") or "").strip() or "No reason provided"
         snippet = (data.get("story_preview") or "")[:200]
 
-        logger.warning(f"⚠️ CONTENT REPORT - Story ID: {story_id}, Reason: {reason}, Preview: {snippet}")
+        logger.warning(
+            f"⚠️ CONTENT REPORT - Story ID: {story_id}, Reason: {reason}, Preview: {snippet}"
+        )
 
-        return jsonify({"status": "reported", "message": "Thank you for your report"}), 200
+        return (
+            jsonify({"status": "reported", "message": "Thank you for your report"}),
+            200,
+        )
 
     @story_bp.route("/generate-illustrations", methods=["POST"])
     @require_auth
     @require_parental_consent
-    @limiter.limit(lambda: get_tier_limits("expensive") or "100/hour")  # BYOK users get high limit
+    @limiter.limit(
+        lambda: get_tier_limits("expensive") or "100/hour"
+    )  # BYOK users get high limit
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
         try:
             data = request.get_json(silent=True) or {}
-            scene_description = sanitize_text(data.get("scene_description", ""), max_length=2000, allow_newlines=True)
-            character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
-            style = sanitize_text(data.get("style", "children's book illustration"), max_length=200)
+            scene_description = sanitize_text(
+                data.get("scene_description", ""), max_length=2000, allow_newlines=True
+            )
+            character_name = sanitize_text(
+                data.get("character_name", "the hero"), max_length=100
+            )
+            style = sanitize_text(
+                data.get("style", "children's book illustration"), max_length=200
+            )
             num_images = validate_num_images(data.get("num_images", 1), max_allowed=4)
             try:
                 age = validate_age(data.get("age", 7))
             except ValueError:
                 age = 7  # Default to 7 if invalid
-            therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
+            therapeutic_focus = (
+                sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
+            )
             user_api_key = data.get("user_api_key")  # BYOK support
 
             # MT-107: Optional power_id triggers per-power visual signature in
@@ -1349,7 +1634,9 @@ def create_story_blueprint(
                 power_id = sanitize_text(str(power_id), max_length=64) or None
 
             # Get character appearance/avatar details
-            character_appearance = data.get("character_appearance") or data.get("appearance")
+            character_appearance = data.get("character_appearance") or data.get(
+                "appearance"
+            )
 
             # Get companions (could be magical companions, pets, or friends)
             companions = data.get("companions") or data.get("companion_pets") or []
@@ -1362,7 +1649,10 @@ def create_story_blueprint(
             # client can POST an arbitrary scene_description directly. On a flag,
             # fall back to a known-safe generic scene.
             from ..utils.app_helpers import make_filter_story_content
-            _, _scene_flagged = make_filter_story_content(logger)(scene_description, age)
+
+            _, _scene_flagged = make_filter_story_content(logger)(
+                scene_description, age
+            )
             if _scene_flagged:
                 logger.warning(
                     "Illustration scene_description flagged by keyword filter; "
@@ -1391,8 +1681,10 @@ def create_story_blueprint(
             using_user_key = False
             using_flux_schnell = False
             served_from_cache = False
-            current_user = getattr(request, 'current_user', None)
-            current_user_id = getattr(current_user, 'id', None) if current_user else None
+            current_user = getattr(request, "current_user", None)
+            current_user_id = (
+                getattr(current_user, "id", None) if current_user else None
+            )
             # Sprout band (age <=5) uses the generous Sprout illustration cap.
             is_sprout = age <= 5
 
@@ -1400,7 +1692,9 @@ def create_story_blueprint(
                 generator = GeminiImageGenerator(api_key=user_api_key)
                 using_user_key = True
             elif user_api_key and disable_gemini_image:
-                logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations.")
+                logger.info(
+                    "DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations."
+                )
 
             illustrations = []
             quota_exhausted = False
@@ -1436,19 +1730,25 @@ def create_story_blueprint(
                 cached = get_cached_illustration(cache_key)
                 if cached and cached.get("image_data"):
                     from datetime import datetime as _dt, timezone as _tz
+
                     served_from_cache = True
-                    using_flux_schnell = str(cached.get("provider") or "").startswith("flux")
-                    illustrations = [{
-                        "id": f"cache-{cache_key[:12]}",
-                        "prompt": scene_description,
-                        "image_data": cached["image_data"],
-                        "format": cached.get("format", "png"),
-                        "provider": cached.get("provider"),
-                        "generated_at": _dt.now(_tz.utc).isoformat(),
-                    }]
+                    using_flux_schnell = str(cached.get("provider") or "").startswith(
+                        "flux"
+                    )
+                    illustrations = [
+                        {
+                            "id": f"cache-{cache_key[:12]}",
+                            "prompt": scene_description,
+                            "image_data": cached["image_data"],
+                            "format": cached.get("format", "png"),
+                            "provider": cached.get("provider"),
+                            "generated_at": _dt.now(_tz.utc).isoformat(),
+                        }
+                    ]
                     logger.info(
                         "Illustration cache HIT key=%s provider=%s — skipping provider + quota",
-                        cache_key[:12], cached.get("provider"),
+                        cache_key[:12],
+                        cached.get("provider"),
                     )
 
             if served_from_cache:
@@ -1478,31 +1778,41 @@ def create_story_blueprint(
                         from ..utils.ai_quota import check_illustration_quota
                     except ImportError:
                         from utils.ai_quota import check_illustration_quota
-                    user_tier = getattr(current_user, 'subscription_tier', 'free') or 'free'
+                    user_tier = (
+                        getattr(current_user, "subscription_tier", "free") or "free"
+                    )
                     allowed, quota_used, quota_limit = check_illustration_quota(
-                        current_user_id, user_tier.lower(), num_images,
+                        current_user_id,
+                        user_tier.lower(),
+                        num_images,
                         is_sprout=is_sprout,
                     )
                     if not allowed:
                         quota_exhausted = True
                         logger.info(
                             "Illustration quota exhausted for user=%s tier=%s sprout=%s used=%d/%d",
-                            current_user_id, user_tier, is_sprout, quota_used, quota_limit,
+                            current_user_id,
+                            user_tier,
+                            is_sprout,
+                            quota_used,
+                            quota_limit,
                         )
 
                 if quota_exhausted:
                     return (
-                        jsonify({
-                            "illustrations": [],
-                            "count": 0,
-                            "code": "ILLUSTRATION_QUOTA_EXCEEDED",
-                            "quota_used": quota_used,
-                            "quota_limit": quota_limit,
-                            "message": (
-                                "You've used all your free illustrations this month. "
-                                "Upgrade for more, or wait until next month."
-                            ),
-                        }),
+                        jsonify(
+                            {
+                                "illustrations": [],
+                                "count": 0,
+                                "code": "ILLUSTRATION_QUOTA_EXCEEDED",
+                                "quota_used": quota_used,
+                                "quota_limit": quota_limit,
+                                "message": (
+                                    "You've used all your free illustrations this month. "
+                                    "Upgrade for more, or wait until next month."
+                                ),
+                            }
+                        ),
                         200,
                     )
 
@@ -1544,7 +1854,9 @@ def create_story_blueprint(
                     )
 
             if not illustrations:
-                logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
+                logger.warning(
+                    f"No illustrations generated for scene: {scene_description[:50]}..."
+                )
                 # Return success with empty illustrations instead of error
                 return (
                     jsonify(
@@ -1576,7 +1888,9 @@ def create_story_blueprint(
                             new_img["image_data"] = image_data
 
                     # If it's a data URI, extract the raw base64 for 'image_data'
-                    if not new_img.get("image_data") and image_url.startswith("data:image"):
+                    if not new_img.get("image_data") and image_url.startswith(
+                        "data:image"
+                    ):
                         try:
                             # Split 'data:image/png;base64,.....'
                             base64_part = image_url.split(",", 1)[1]
@@ -1587,17 +1901,21 @@ def create_story_blueprint(
                         # Download image and convert to base64
                         # Download image with size limit protection
                         try:
-                            logger.info(f"Downloading illustration from {image_url[:50]}...")
+                            logger.info(
+                                f"Downloading illustration from {image_url[:50]}..."
+                            )
                             # Stream the response to check size before loading into memory
                             img_resp = requests.get(image_url, stream=True, timeout=10)
                             img_resp.raise_for_status()
 
                             # Enforce 5MB limit via Content-Length header if available
-                            content_length = img_resp.headers.get('Content-Length')
+                            content_length = img_resp.headers.get("Content-Length")
                             MAX_SIZE = 5 * 1024 * 1024  # 5MB
-                            
+
                             if content_length and int(content_length) > MAX_SIZE:
-                                logger.warning(f"Image too large directly from headers: {content_length}")
+                                logger.warning(
+                                    f"Image too large directly from headers: {content_length}"
+                                )
                                 continue
 
                             # Stream content to enforce limit physically
@@ -1605,9 +1923,11 @@ def create_story_blueprint(
                             for chunk in img_resp.iter_content(chunk_size=8192):
                                 image_bytes.extend(chunk)
                                 if len(image_bytes) > MAX_SIZE:
-                                    logger.warning("Image exceeded 5MB limit during download")
+                                    logger.warning(
+                                        "Image exceeded 5MB limit during download"
+                                    )
                                     break
-                            
+
                             if len(image_bytes) > MAX_SIZE:
                                 continue
 
@@ -1621,19 +1941,29 @@ def create_story_blueprint(
                             # Resize downloaded image to max 1024x1024
                             try:
                                 with Image.open(io.BytesIO(image_bytes)) as img:
-                                    img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                    img.thumbnail(
+                                        (1024, 1024), Image.Resampling.LANCZOS
+                                    )
                                     buffer = io.BytesIO()
                                     img.save(buffer, format="PNG")
                                     image_bytes = buffer.getvalue()
                             except Exception as resize_err:
-                                logger.warning(f"Failed to resize downloaded image: {resize_err}")
+                                logger.warning(
+                                    f"Failed to resize downloaded image: {resize_err}"
+                                )
 
                             b64_data = base64.b64encode(image_bytes).decode("utf-8")
                             new_img["image_data"] = b64_data
-                            logger.info("Successfully converted image URL to base64 data")
+                            logger.info(
+                                "Successfully converted image URL to base64 data"
+                            )
                         except Exception as e:
-                            logger.error(f"Error processing illustration image data: {str(e)}")
-                    elif not new_img.get("image_data") and _looks_like_base64_image(image_url):
+                            logger.error(
+                                f"Error processing illustration image data: {str(e)}"
+                            )
+                    elif not new_img.get("image_data") and _looks_like_base64_image(
+                        image_url
+                    ):
                         new_img["image_data"] = re.sub(r"\s+", "", image_url)
 
                     # Ensure image_id is present (frontend expects it)
@@ -1645,7 +1975,9 @@ def create_story_blueprint(
                         new_img["scene_description"] = img["prompt"]
 
                     if not new_img.get("image_data"):
-                        logger.warning("Illustration missing image_data after normalization; skipping entry")
+                        logger.warning(
+                            "Illustration missing image_data after normalization; skipping entry"
+                        )
                         continue
 
                     transformed_illustrations.append(new_img)
@@ -1667,14 +1999,22 @@ def create_story_blueprint(
                 img_data = first.get("image_data")
                 if img_data:
                     try:
-                        from ..services.illustration_cache_service import store_illustration
+                        from ..services.illustration_cache_service import (
+                            store_illustration,
+                        )
                     except ImportError:
-                        from services.illustration_cache_service import store_illustration
+                        from services.illustration_cache_service import (
+                            store_illustration,
+                        )
                     store_illustration(
                         cache_key,
                         img_data,
                         image_format=first.get("format"),
-                        provider="flux_schnell" if using_flux_schnell else "gemini_openrouter",
+                        provider=(
+                            "flux_schnell"
+                            if using_flux_schnell
+                            else "gemini_openrouter"
+                        ),
                     )
 
             # Increment monthly quota for ALL non-BYOK ages (Sprout included).
@@ -1691,10 +2031,11 @@ def create_story_blueprint(
                 except ImportError:
                     from utils.ai_quota import increment_illustration_quota
                 user_tier_for_increment = (
-                    getattr(current_user, 'subscription_tier', 'free') or 'free'
+                    getattr(current_user, "subscription_tier", "free") or "free"
                 ).lower()
                 increment_illustration_quota(
-                    current_user_id, user_tier_for_increment,
+                    current_user_id,
+                    user_tier_for_increment,
                     len(transformed_illustrations),
                 )
 
@@ -1706,13 +2047,20 @@ def create_story_blueprint(
                         "count": len(transformed_illustrations),
                         "used_user_key": using_user_key,
                         "cached": served_from_cache,
-                        "provider": "flux_schnell" if using_flux_schnell else (
-                            "gemini_byok" if using_user_key else "gemini_openrouter"
+                        "provider": (
+                            "flux_schnell"
+                            if using_flux_schnell
+                            else (
+                                "gemini_byok" if using_user_key else "gemini_openrouter"
+                            )
                         ),
-                        "quota_used": quota_used + len(transformed_illustrations) if _meter_in_response else None,
+                        "quota_used": (
+                            quota_used + len(transformed_illustrations)
+                            if _meter_in_response
+                            else None
+                        ),
                         "quota_limit": quota_limit if _meter_in_response else None,
-                        "debug_info": {
-                        },
+                        "debug_info": {},
                     }
                 ),
                 200,
@@ -1720,7 +2068,15 @@ def create_story_blueprint(
 
         except Exception as exc:
             logger.exception("Illustration generation failed")
-            return jsonify({"error": str(exc), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
+            return (
+                jsonify(
+                    {
+                        "error": str(exc),
+                        "hint": "Image generation failed. Check your API key quota or try again later.",
+                    }
+                ),
+                500,
+            )
 
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
     @require_auth
@@ -1733,7 +2089,9 @@ def create_story_blueprint(
             data = request.get_json(silent=True) or {}
 
             # Support both singular 'scene_description' and plural 'scenes'
-            scene_description = sanitize_text(data.get("scene_description", ""), max_length=2000, allow_newlines=True)
+            scene_description = sanitize_text(
+                data.get("scene_description", ""), max_length=2000, allow_newlines=True
+            )
             scenes = data.get("scenes", [])
 
             # If scenes list is provided, use it, otherwise fall back to scene_description
@@ -1741,9 +2099,14 @@ def create_story_blueprint(
                 scenes = [{"description": scene_description}]
 
             if not scenes:
-                return jsonify({"error": "Scene description or scenes list is required"}), 400
+                return (
+                    jsonify({"error": "Scene description or scenes list is required"}),
+                    400,
+                )
 
-            character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
+            character_name = sanitize_text(
+                data.get("character_name", "the hero"), max_length=100
+            )
 
             # Enforce single image generation for coloring pages
             num_images_per_scene = 1
@@ -1756,6 +2119,7 @@ def create_story_blueprint(
             # F-10: keyword-screen every scene description before it reaches the
             # image model. On a flag, substitute a known-safe generic scene.
             from ..utils.app_helpers import make_filter_story_content
+
             _coloring_filter = make_filter_story_content(logger)
             _SAFE_COLORING_SCENE = (
                 "a gentle children's coloring page of a sunny meadow with "
@@ -1764,7 +2128,9 @@ def create_story_blueprint(
             for _scene in scenes:
                 if not isinstance(_scene, dict):
                     continue
-                _desc = _scene.get("description") or _scene.get("scene_description") or ""
+                _desc = (
+                    _scene.get("description") or _scene.get("scene_description") or ""
+                )
                 _, _scene_flagged = _coloring_filter(_desc, age)
                 if _scene_flagged:
                     logger.warning(
@@ -1775,11 +2141,15 @@ def create_story_blueprint(
                         _scene["description"] = _SAFE_COLORING_SCENE
                     if "scene_description" in _scene:
                         _scene["scene_description"] = _SAFE_COLORING_SCENE
-            therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
+            therapeutic_focus = (
+                sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
+            )
             user_api_key = data.get("user_api_key")
 
             # Get character appearance/avatar details
-            character_appearance = data.get("character_appearance") or data.get("appearance")
+            character_appearance = data.get("character_appearance") or data.get(
+                "appearance"
+            )
 
             # Get companions (could be magical companions, pets, or friends)
             companions = data.get("companions") or data.get("companion_pets") or []
@@ -1791,11 +2161,18 @@ def create_story_blueprint(
                 except Exception as e:
                     logger.exception("Failed to init user-provided image generator")
                     return (
-                        jsonify({"error": "Invalid or unavailable image API key", "hint": str(e)}),
+                        jsonify(
+                            {
+                                "error": "Invalid or unavailable image API key",
+                                "hint": str(e),
+                            }
+                        ),
                         400,
                     )
             elif user_api_key and disable_gemini_image:
-                logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for coloring pages.")
+                logger.info(
+                    "DISABLE_GEMINI_IMAGE active; ignoring user_api_key for coloring pages."
+                )
             elif image_generator is not None:
                 generator = image_generator
             else:
@@ -1814,11 +2191,19 @@ def create_story_blueprint(
             for scene_item in scenes:
                 # Handle both string and dict in scenes list
                 if isinstance(scene_item, str):
-                    current_desc = sanitize_text(scene_item, max_length=2000, allow_newlines=True)
+                    current_desc = sanitize_text(
+                        scene_item, max_length=2000, allow_newlines=True
+                    )
                     scene_title = "Coloring Page"
                 else:
-                    current_desc = sanitize_text(scene_item.get("description", ""), max_length=2000, allow_newlines=True)
-                    scene_title = sanitize_text(scene_item.get("title", "Coloring Page"), max_length=100)
+                    current_desc = sanitize_text(
+                        scene_item.get("description", ""),
+                        max_length=2000,
+                        allow_newlines=True,
+                    )
+                    scene_title = sanitize_text(
+                        scene_item.get("title", "Coloring Page"), max_length=100
+                    )
 
                 if not current_desc:
                     continue
@@ -1856,21 +2241,29 @@ def create_story_blueprint(
                                 pass
                         elif image_url.startswith("http"):
                             try:
-                                logger.info(f"Downloading coloring page from {image_url[:50]}...")
-                                img_resp = requests.get(image_url, stream=True, timeout=10)
+                                logger.info(
+                                    f"Downloading coloring page from {image_url[:50]}..."
+                                )
+                                img_resp = requests.get(
+                                    image_url, stream=True, timeout=10
+                                )
                                 img_resp.raise_for_status()
 
-                                content_length = img_resp.headers.get('Content-Length')
+                                content_length = img_resp.headers.get("Content-Length")
                                 MAX_SIZE = 5 * 1024 * 1024  # 5MB
                                 if content_length and int(content_length) > MAX_SIZE:
-                                    logger.warning(f"Coloring page too large from headers: {content_length}")
+                                    logger.warning(
+                                        f"Coloring page too large from headers: {content_length}"
+                                    )
                                     continue
 
                                 image_bytes = bytearray()
                                 for chunk in img_resp.iter_content(chunk_size=8192):
                                     image_bytes.extend(chunk)
                                     if len(image_bytes) > MAX_SIZE:
-                                        logger.warning("Coloring page exceeded 5MB limit during download")
+                                        logger.warning(
+                                            "Coloring page exceeded 5MB limit during download"
+                                        )
                                         break
                                 if len(image_bytes) > MAX_SIZE:
                                     continue
@@ -1878,40 +2271,62 @@ def create_story_blueprint(
                                 try:
                                     validate_image_size(image_bytes)
                                 except ValueError as size_err:
-                                    logger.warning(f"Coloring page validation failed: {size_err}")
+                                    logger.warning(
+                                        f"Coloring page validation failed: {size_err}"
+                                    )
                                     continue
 
                                 # Resize to max 1024x1024 for consistency
                                 try:
                                     with Image.open(io.BytesIO(image_bytes)) as img:
-                                        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                        img.thumbnail(
+                                            (1024, 1024), Image.Resampling.LANCZOS
+                                        )
                                         buffer = io.BytesIO()
                                         img.save(buffer, format="PNG")
                                         image_bytes = buffer.getvalue()
                                 except Exception as resize_err:
-                                    logger.warning(f"Failed to resize coloring page: {resize_err}")
+                                    logger.warning(
+                                        f"Failed to resize coloring page: {resize_err}"
+                                    )
 
-                                page["image_data"] = base64.b64encode(image_bytes).decode("utf-8")
-                                logger.info("Successfully converted coloring page URL to base64 data")
+                                page["image_data"] = base64.b64encode(
+                                    image_bytes
+                                ).decode("utf-8")
+                                logger.info(
+                                    "Successfully converted coloring page URL to base64 data"
+                                )
                             except Exception as e:
-                                logger.error(f"Error processing coloring page image data: {str(e)}")
+                                logger.error(
+                                    f"Error processing coloring page image data: {str(e)}"
+                                )
                         elif _looks_like_base64_image(image_url):
                             page["image_data"] = re.sub(r"\s+", "", image_url)
 
                     if not page.get("image_data"):
-                        logger.warning("Coloring page missing image_data after normalization; skipping entry")
+                        logger.warning(
+                            "Coloring page missing image_data after normalization; skipping entry"
+                        )
                         continue
 
                     all_coloring_pages.append(page)
 
-            return jsonify({
-                "coloring_pages": all_coloring_pages, 
-                "count": len(all_coloring_pages)
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "coloring_pages": all_coloring_pages,
+                        "count": len(all_coloring_pages),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception("Coloring page generation failed")
-            return jsonify({"error": "Failed to generate coloring pages", "hint": str(e)}), 500
+            return (
+                jsonify({"error": "Failed to generate coloring pages", "hint": str(e)}),
+                500,
+            )
 
     @story_bp.route("/generate-illustrations-mock", methods=["POST"])
     def generate_illustrations_mock_endpoint():
@@ -1931,12 +2346,14 @@ def create_story_blueprint(
             character_name = data.get("character_name", "Hero")
             num_images = min(int(data.get("num_images", 1)), 4)
 
-            logger.info(f"[MOCK] Generating {num_images} illustration(s) for: {scene_description[:50]}...")
+            logger.info(
+                f"[MOCK] Generating {num_images} illustration(s) for: {scene_description[:50]}..."
+            )
 
             illustrations = []
             for i in range(num_images):
                 # Create simple placeholder image
-                img = Image.new('RGB', (1024, 768), color='#FFE4B5')  # Moccasin color
+                img = Image.new("RGB", (1024, 768), color="#FFE4B5")  # Moccasin color
                 draw = ImageDraw.Draw(img)
 
                 # Try to load font
@@ -1951,44 +2368,52 @@ def create_story_blueprint(
                 title = f"Illustration {i+1}"
                 bbox = draw.textbbox((0, 0), title, font=font_title)
                 x = (1024 - (bbox[2] - bbox[0])) // 2
-                draw.text((x, 100), title, fill='#8B4513', font=font_title)
+                draw.text((x, 100), title, fill="#8B4513", font=font_title)
 
                 # Draw scene description (truncated)
-                desc = scene_description[:60] + "..." if len(scene_description) > 60 else scene_description
+                desc = (
+                    scene_description[:60] + "..."
+                    if len(scene_description) > 60
+                    else scene_description
+                )
                 bbox_desc = draw.textbbox((0, 0), desc, font=font_desc)
                 x_desc = (1024 - (bbox_desc[2] - bbox_desc[0])) // 2
-                draw.text((x_desc, 200), desc, fill='#654321', font=font_desc)
+                draw.text((x_desc, 200), desc, fill="#654321", font=font_desc)
 
                 # Draw character name
                 char_text = f"Starring: {character_name}"
                 bbox_char = draw.textbbox((0, 0), char_text, font=font_desc)
                 x_char = (1024 - (bbox_char[2] - bbox_char[0])) // 2
-                draw.text((x_char, 300), char_text, fill='#654321', font=font_desc)
+                draw.text((x_char, 300), char_text, fill="#654321", font=font_desc)
 
                 # Draw MOCK watermark
                 bbox_mock = draw.textbbox((0, 0), "MOCK ILLUSTRATION", font=font_desc)
                 x_mock = (1024 - (bbox_mock[2] - bbox_mock[0])) // 2
-                draw.text((x_mock, 700), "MOCK ILLUSTRATION", fill='#A0522D', font=font_desc)
+                draw.text(
+                    (x_mock, 700), "MOCK ILLUSTRATION", fill="#A0522D", font=font_desc
+                )
 
                 # Convert to base64
                 buffer = io.BytesIO()
-                img.save(buffer, format='PNG')
-                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                img.save(buffer, format="PNG")
+                img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-                illustrations.append({
-                    'id': f"mock-illust-{uuid.uuid4()}",
-                    'image_data': img_base64,
-                    'format': 'png',
-                    'prompt': scene_description,
-                    'generated_at': datetime.now().isoformat(),
-                    'is_mock': True,
-                    'cost': 0.0
-                })
+                illustrations.append(
+                    {
+                        "id": f"mock-illust-{uuid.uuid4()}",
+                        "image_data": img_base64,
+                        "format": "png",
+                        "prompt": scene_description,
+                        "generated_at": datetime.now().isoformat(),
+                        "is_mock": True,
+                        "cost": 0.0,
+                    }
+                )
 
-            return jsonify({
-                'illustrations': illustrations,
-                'count': len(illustrations)
-            }), 200
+            return (
+                jsonify({"illustrations": illustrations, "count": len(illustrations)}),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Error in mock illustration generation: {e}")
@@ -2015,12 +2440,17 @@ def create_story_blueprint(
                 scenes = [{"description": scene_description, "title": "Coloring Page"}]
 
             if not scenes:
-                return jsonify({"error": "Scene description or scenes list is required"}), 400
+                return (
+                    jsonify({"error": "Scene description or scenes list is required"}),
+                    400,
+                )
 
             character_name = data.get("character_name", "Hero")
             num_images_per_scene = min(int(data.get("num_images", 1)), 3)
 
-            logger.info(f"[MOCK] Generating {num_images_per_scene} coloring page(s) per scene, {len(scenes)} scene(s)")
+            logger.info(
+                f"[MOCK] Generating {num_images_per_scene} coloring page(s) per scene, {len(scenes)} scene(s)"
+            )
 
             all_coloring_pages = []
             for scene_item in scenes:
@@ -2037,7 +2467,7 @@ def create_story_blueprint(
 
                 for i in range(num_images_per_scene):
                     # Create black & white coloring page style
-                    img = Image.new('RGB', (1024, 1024), color='white')
+                    img = Image.new("RGB", (1024, 1024), color="white")
                     draw = ImageDraw.Draw(img)
 
                     # Try to load font
@@ -2050,49 +2480,69 @@ def create_story_blueprint(
 
                     # Draw simple shapes (outlines only - coloring page style)
                     # Circle
-                    draw.ellipse([200, 200, 400, 400], outline='black', width=5)
+                    draw.ellipse([200, 200, 400, 400], outline="black", width=5)
                     # Star shape (simplified)
-                    draw.polygon([(512, 100), (550, 200), (650, 200), (570, 270),
-                                  (600, 370), (512, 310), (424, 370), (454, 270),
-                                  (374, 200), (474, 200)], outline='black', width=4)
+                    draw.polygon(
+                        [
+                            (512, 100),
+                            (550, 200),
+                            (650, 200),
+                            (570, 270),
+                            (600, 370),
+                            (512, 310),
+                            (424, 370),
+                            (454, 270),
+                            (374, 200),
+                            (474, 200),
+                        ],
+                        outline="black",
+                        width=4,
+                    )
                     # Rectangle with character name
-                    draw.rectangle([100, 500, 924, 650], outline='black', width=5)
+                    draw.rectangle([100, 500, 924, 650], outline="black", width=5)
 
                     # Draw title
                     title = f"{scene_title} {i+1}"
                     bbox = draw.textbbox((0, 0), title, font=font_title)
                     x = (1024 - (bbox[2] - bbox[0])) // 2
-                    draw.text((x, 700), title, fill='black', font=font_title)
+                    draw.text((x, 700), title, fill="black", font=font_title)
 
                     # Draw character name
                     char_text = f"{character_name}"
                     bbox_char = draw.textbbox((0, 0), char_text, font=font_small)
                     x_char = (1024 - (bbox_char[2] - bbox_char[0])) // 2
-                    draw.text((x_char, 560), char_text, fill='black', font=font_small)
+                    draw.text((x_char, 560), char_text, fill="black", font=font_small)
 
                     # Draw MOCK label
-                    draw.text((850, 20), "MOCK", fill='black', font=font_small)
+                    draw.text((850, 20), "MOCK", fill="black", font=font_small)
 
                     # Convert to base64
                     buffer = io.BytesIO()
-                    img.save(buffer, format='PNG')
-                    img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                    img.save(buffer, format="PNG")
+                    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-                    all_coloring_pages.append({
-                        'id': f"mock-color-{uuid.uuid4()}",
-                        'image_data': img_base64,
-                        'format': 'png',
-                        'prompt': current_desc,
-                        'scene_title': scene_title,
-                        'generated_at': datetime.now().isoformat(),
-                        'is_mock': True,
-                        'cost': 0.0
-                    })
+                    all_coloring_pages.append(
+                        {
+                            "id": f"mock-color-{uuid.uuid4()}",
+                            "image_data": img_base64,
+                            "format": "png",
+                            "prompt": current_desc,
+                            "scene_title": scene_title,
+                            "generated_at": datetime.now().isoformat(),
+                            "is_mock": True,
+                            "cost": 0.0,
+                        }
+                    )
 
-            return jsonify({
-                'coloring_pages': all_coloring_pages,
-                'count': len(all_coloring_pages)
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "coloring_pages": all_coloring_pages,
+                        "count": len(all_coloring_pages),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Error in mock coloring page generation: {e}")

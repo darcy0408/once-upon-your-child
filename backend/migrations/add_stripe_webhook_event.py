@@ -19,16 +19,18 @@ the canonical migration record and for explicit/managed runs.
 Usage:
     python -m backend.migrations.add_stripe_webhook_event
 """
+
 import os
 import sys
 
 # Allow running as a script: add repo root to path.
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from sqlalchemy import inspect  # noqa: E402
 
 from backend.app import create_app  # noqa: E402
 from backend.database import db  # noqa: E402
+
 # Importing the models ensures both tables are registered before create_all().
 from backend.models.stripe_event import (  # noqa: E402,F401
     StripeWebhookEvent,
@@ -38,7 +40,7 @@ from backend.models.stripe_event import (  # noqa: E402,F401
 
 def run_migration():
     """Apply the Stripe webhook idempotency schema changes idempotently."""
-    env = os.environ.get('FLASK_ENV', 'production')
+    env = os.environ.get("FLASK_ENV", "production")
     app = create_app(env)
 
     with app.app_context():
@@ -46,7 +48,7 @@ def run_migration():
         inspector = inspect(db.engine)
         existing_tables = set(inspector.get_table_names())
 
-        for table in ('stripe_webhook_event', 'stripe_subscription_cursor'):
+        for table in ("stripe_webhook_event", "stripe_subscription_cursor"):
             if table in existing_tables:
                 print(f"  - {table} table already exists; skipping.")
             else:
@@ -58,7 +60,7 @@ def run_migration():
         return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("Database Migration: Stripe webhook idempotency (M-3)")
     print("=" * 60)

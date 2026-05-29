@@ -4,7 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from backend.services.interactive_adventure_prompt_builder import InteractiveAdventurePromptBuilder
+from backend.services.interactive_adventure_prompt_builder import (
+    InteractiveAdventurePromptBuilder,
+)
 from backend.services.story_service import (
     AGE_CONSTRAINTS,
     AdvancedStoryEngine,
@@ -13,7 +15,6 @@ from backend.services.story_service import (
     _get_age_band,
 )
 from backend.tasks.story_tasks import _is_ltr_rhyme_quality_ok, generate_story_task
-
 
 AGE_BANDS = [4, 6, 9, 12, 14, 17, 25]
 
@@ -57,11 +58,17 @@ class TestPromptContractsAcrossAgesAndCategories:
     @pytest.mark.parametrize(
         ("age", "scene"),
         [
-            pytest.param(age, scene, id=f"{_get_age_band(age)}_{scene['category'].replace(' ', '_').lower()}")
+            pytest.param(
+                age,
+                scene,
+                id=f"{_get_age_band(age)}_{scene['category'].replace(' ', '_').lower()}",
+            )
             for age, scene in itertools.product(AGE_BANDS, SCENARIO_CATEGORIES)
         ],
     )
-    def test_standard_prompt_carries_scene_companions_and_length_contract(self, engine, age, scene):
+    def test_standard_prompt_carries_scene_companions_and_length_contract(
+        self, engine, age, scene
+    ):
         prompt = engine.generate_enhanced_prompt(
             character="Avery",
             theme=scene["theme"],
@@ -97,7 +104,12 @@ class TestPromptContractsAcrossAgesAndCategories:
         [
             pytest.param(
                 5,
-                ["LEARN TO READ story", "Dr. Seuss", "AABB", "Every page MUST end with a clear rhyming word"],
+                [
+                    "LEARN TO READ story",
+                    "Dr. Seuss",
+                    "AABB",
+                    "Every page MUST end with a clear rhyming word",
+                ],
                 ["Each page = one complete limerick"],
                 id="age5_easy_reader_dr_seuss",
             ),
@@ -109,19 +121,29 @@ class TestPromptContractsAcrossAgesAndCategories:
             ),
             pytest.param(
                 7,
-                ["funny, connected limericks", "AABBA rhyme scheme", "Each page is exactly one limerick"],
+                [
+                    "funny, connected limericks",
+                    "AABBA rhyme scheme",
+                    "Each page is exactly one limerick",
+                ],
                 ["Dr. Seuss"],
                 id="age7_easy_reader_switches_to_limerick",
             ),
             pytest.param(
                 10,
-                ["funny, connected limericks", "AABBA rhyme scheme", "Each page is exactly one limerick"],
+                [
+                    "funny, connected limericks",
+                    "AABBA rhyme scheme",
+                    "Each page is exactly one limerick",
+                ],
                 ["Dr. Seuss"],
                 id="age10_easy_reader_stays_limerick",
             ),
         ],
     )
-    def test_learning_to_read_style_progression(self, age, expected_markers, forbidden_markers):
+    def test_learning_to_read_style_progression(
+        self, age, expected_markers, forbidden_markers
+    ):
         prompt = _build_learning_to_read_prompt(
             character_name="Avery",
             theme="Adventure",
@@ -146,25 +168,36 @@ class TestPromptContractsAcrossAgesAndCategories:
         [
             pytest.param(
                 4,
-                ["Write a full rhyming story", "Very short sentences (4-6 words per line)", "Consistent AABB rhyme scheme"],
+                ["bouncy rhyming story", "4-6 words per line", "AABB rhyme scheme"],
                 [],
                 id="age4_rhyme_time_simple",
             ),
             pytest.param(
                 7,
-                ["fun, bouncy rhyming story", "Use AABBA limerick or simple AABB couplets"],
+                [
+                    "fun, bouncy rhyming story",
+                    "Use AABBA limerick or simple AABB couplets",
+                ],
                 [],
                 id="age7_rhyme_time_bouncy",
             ),
             pytest.param(
                 10,
-                ["ballad-style rhyming story", "No sing-song bouncy limericks", "Use ABCB ballad scheme or rhyming couplets"],
+                [
+                    "ballad-style rhyming story",
+                    "No sing-song bouncy limericks",
+                    "Use ABCB ballad scheme or rhyming couplets",
+                ],
                 ["free verse OR sonnet"],
                 id="age10_rhyme_time_ballad",
             ),
             pytest.param(
                 12,
-                ["narrative poem or epic ballad", "No limericks", "Use ABAB or ABCB narrative ballad form"],
+                [
+                    "narrative poem or epic ballad",
+                    "No limericks",
+                    "Use ABAB or ABCB narrative ballad form",
+                ],
                 ["free verse OR sonnet"],
                 id="age12_rhyme_time_narrative_poem",
             ),
@@ -176,7 +209,9 @@ class TestPromptContractsAcrossAgesAndCategories:
             ),
         ],
     )
-    def test_rhyme_time_style_progression(self, age, expected_markers, forbidden_markers):
+    def test_rhyme_time_style_progression(
+        self, age, expected_markers, forbidden_markers
+    ):
         prompt = _build_rhyme_time_prompt(
             character_name="Avery",
             theme="Adventure",
@@ -200,8 +235,12 @@ class TestPromptContractsAcrossAgesAndCategories:
 
 
 class TestStoryGenerationRoutingAndValidation:
-    def test_generate_story_route_forwards_scene_and_companion_payload(self, client, auth_headers, mocker):
-        task_apply = mocker.patch("backend.routes.story_routes.generate_story_task.apply")
+    def test_generate_story_route_forwards_scene_and_companion_payload(
+        self, client, auth_headers, mocker
+    ):
+        task_apply = mocker.patch(
+            "backend.routes.story_routes.generate_story_task.apply"
+        )
         eager_result = MagicMock()
         eager_result.get.return_value = {
             "status": "complete",
@@ -254,7 +293,9 @@ class TestStoryGenerationRoutingAndValidation:
             f'[USER_INPUT field="worldBible"]{payload["worldBible"]}[/USER_INPUT]'
         )
 
-    def test_task_retries_when_story_omits_companions_or_custom_requests(self, app, mocker):
+    def test_task_retries_when_story_omits_companions_or_custom_requests(
+        self, app, mocker
+    ):
         mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)
         # M-7 pseudonymization (deadeb10) replaces the hero name with HERO_1
         # before validation, so the mock stories must contain HERO_1 (or we
@@ -385,14 +426,26 @@ class TestBigFeelingsPromptAgeCalibration:
             ),
             pytest.param(
                 7,
-                ["AGES 6-8 BIG FEELINGS RULES", "supportive and warm", '"id": "choice_2"'],
+                [
+                    "AGES 6-8 BIG FEELINGS RULES",
+                    "supportive and warm",
+                    '"id": "choice_2"',
+                ],
                 ["PRESCHOOL PICK-A-PATH RULES", '"id": "choice_3"'],
                 id="age7_big_feelings_uses_6_to_8_branch",
             ),
             pytest.param(
                 10,
-                ["AGES 9-12 BIG FEELINGS RULES", "regaining choice", '"id": "choice_2"'],
-                ["AGES 13-15 BIG FEELINGS RULES", "PRESCHOOL PICK-A-PATH RULES", '"id": "choice_3"'],
+                [
+                    "AGES 9-12 BIG FEELINGS RULES",
+                    "regaining choice",
+                    '"id": "choice_2"',
+                ],
+                [
+                    "AGES 13-15 BIG FEELINGS RULES",
+                    "PRESCHOOL PICK-A-PATH RULES",
+                    '"id": "choice_3"',
+                ],
                 id="age10_big_feelings_uses_9_to_12_branch",
             ),
             pytest.param(
@@ -403,7 +456,9 @@ class TestBigFeelingsPromptAgeCalibration:
             ),
         ],
     )
-    def test_big_feelings_prompt_progression(self, age, expected_markers, forbidden_markers):
+    def test_big_feelings_prompt_progression(
+        self, age, expected_markers, forbidden_markers
+    ):
         prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
             child_name="Avery",
             age=age,
@@ -414,34 +469,54 @@ class TestBigFeelingsPromptAgeCalibration:
             big_feelings_context={
                 "current_feeling": {
                     "emotion_name": (
-                        "Embarrassed" if age == 7
-                        else "Overwhelmed" if age == 10
-                        else "Humiliated" if age == 14
-                        else "Mad"
+                        "Embarrassed"
+                        if age == 7
+                        else (
+                            "Overwhelmed"
+                            if age == 10
+                            else "Humiliated" if age == 14 else "Mad"
+                        )
                     ),
                     "physical_signs": (
-                        "Warm cheeks" if age == 7
-                        else "Buzzing hands" if age == 10
-                        else "Hot face and locked jaw" if age == 14
-                        else "Hot face"
+                        "Warm cheeks"
+                        if age == 7
+                        else (
+                            "Buzzing hands"
+                            if age == 10
+                            else "Hot face and locked jaw" if age == 14 else "Hot face"
+                        )
                     ),
                 },
                 "trigger": (
-                    "someone laughed at my mistake" if age in {7, 5}
-                    else "my friend group switched plans without telling me" if age == 10
-                    else "a screenshot of my message got passed around"
+                    "someone laughed at my mistake"
+                    if age in {7, 5}
+                    else (
+                        "my friend group switched plans without telling me"
+                        if age == 10
+                        else "a screenshot of my message got passed around"
+                    )
                 ),
                 "body_signal": (
-                    "Warm cheeks" if age == 7
-                    else "Buzzing hands" if age == 10
-                    else "Hot face and locked jaw" if age == 14
-                    else "Hot face"
+                    "Warm cheeks"
+                    if age == 7
+                    else (
+                        "Buzzing hands"
+                        if age == 10
+                        else "Hot face and locked jaw" if age == 14 else "Hot face"
+                    )
                 ),
                 "coping_tool": (
-                    "Take one breath and steady your face" if age == 7
-                    else "Step back by the wall and get your next move on purpose" if age == 10
-                    else "Take space until you can decide what response you actually want" if age == 14
-                    else "Take a dragon breath"
+                    "Take one breath and steady your face"
+                    if age == 7
+                    else (
+                        "Step back by the wall and get your next move on purpose"
+                        if age == 10
+                        else (
+                            "Take space until you can decide what response you actually want"
+                            if age == 14
+                            else "Take a dragon breath"
+                        )
+                    )
                 ),
                 "repair_goal": "Ask for a do-over",
             },

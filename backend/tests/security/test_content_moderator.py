@@ -11,10 +11,10 @@ These tests use mocked Gemini clients so no real API calls are made.
 import pytest
 from unittest.mock import MagicMock, patch
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_gemini_response(text: str):
     """Build a mock genai response object returning the given text."""
@@ -28,12 +28,14 @@ def _mock_gemini_response(text: str):
 # Layer 1: age-band-aware keyword filter
 # ---------------------------------------------------------------------------
 
+
 class TestKeywordFilter:
     """Tests for the upgraded make_filter_story_content() in app_helpers."""
 
     def _make_filter(self):
         import logging
         from backend.utils.app_helpers import make_filter_story_content
+
         return make_filter_story_content(logging.getLogger("test"))
 
     def test_safe_story_not_flagged(self):
@@ -70,8 +72,12 @@ class TestKeywordFilter:
         _, flagged_explorer = fn(story, age=7)
         _, flagged_adventurer = fn(story, age=11)
         assert flagged_sprout, "Violence not flagged for Sprout (age 5)"
-        assert not flagged_explorer, "Mild violence incorrectly flagged for Explorer (age 7)"
-        assert not flagged_adventurer, "Age-appropriate conflict incorrectly flagged for age 11"
+        assert (
+            not flagged_explorer
+        ), "Mild violence incorrectly flagged for Explorer (age 7)"
+        assert (
+            not flagged_adventurer
+        ), "Age-appropriate conflict incorrectly flagged for age 11"
 
     def test_monster_not_keyword_flagged_for_any_age(self):
         """'Monster' is intentionally NOT a keyword for any age band.
@@ -120,16 +126,22 @@ class TestKeywordFilter:
 # Layer 2: LLM-based content classifier
 # ---------------------------------------------------------------------------
 
+
 class TestContentModerator:
     """Tests for content_moderator.moderate_story_content()."""
 
     def test_safe_story_passes(self):
         """LLM returns safe=true → story is passed through."""
         from backend.utils.content_moderator import moderate_story_content
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response('{"safe": true}')
 
-        is_safe, reason = moderate_story_content("A lovely story about rabbits.", age=6, client=mock_client)
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = _mock_gemini_response(
+            '{"safe": true}'
+        )
+
+        is_safe, reason = moderate_story_content(
+            "A lovely story about rabbits.", age=6, client=mock_client
+        )
 
         assert is_safe is True
         assert reason == ""
@@ -137,12 +149,15 @@ class TestContentModerator:
     def test_unsafe_story_flagged(self):
         """LLM returns safe=false → story is flagged with reason."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.return_value = _mock_gemini_response(
             '{"safe": false, "reason": "graphic violence"}'
         )
 
-        is_safe, reason = moderate_story_content("A violent story.", age=7, client=mock_client)
+        is_safe, reason = moderate_story_content(
+            "A violent story.", age=7, client=mock_client
+        )
 
         assert is_safe is False
         assert "violence" in reason
@@ -150,10 +165,15 @@ class TestContentModerator:
     def test_classifier_exception_fails_open(self):
         """When the classifier raises an exception, the function fails open (safe=True)."""
         from backend.utils.content_moderator import moderate_story_content
-        mock_client = MagicMock()
-        mock_client.models.generate_content.side_effect = RuntimeError("API unavailable")
 
-        is_safe, reason = moderate_story_content("Any story text.", age=8, client=mock_client)
+        mock_client = MagicMock()
+        mock_client.models.generate_content.side_effect = RuntimeError(
+            "API unavailable"
+        )
+
+        is_safe, reason = moderate_story_content(
+            "Any story text.", age=8, client=mock_client
+        )
 
         assert is_safe is True
         assert reason == ""
@@ -161,26 +181,35 @@ class TestContentModerator:
     def test_malformed_json_fails_open(self):
         """When classifier returns non-JSON, the function fails open."""
         from backend.utils.content_moderator import moderate_story_content
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response("not json at all")
 
-        is_safe, reason = moderate_story_content("Any story text.", age=8, client=mock_client)
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = _mock_gemini_response(
+            "not json at all"
+        )
+
+        is_safe, reason = moderate_story_content(
+            "Any story text.", age=8, client=mock_client
+        )
 
         assert is_safe is True
 
     def test_empty_response_fails_open(self):
         """When classifier returns empty text, the function fails open."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.return_value = _mock_gemini_response("")
 
-        is_safe, reason = moderate_story_content("Any story text.", age=8, client=mock_client)
+        is_safe, reason = moderate_story_content(
+            "Any story text.", age=8, client=mock_client
+        )
 
         assert is_safe is True
 
     def test_empty_story_skips_classifier(self):
         """Empty story text returns safe without calling the client."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
 
         is_safe, reason = moderate_story_content("", age=5, client=mock_client)
@@ -191,41 +220,51 @@ class TestContentModerator:
     def test_markdown_wrapped_json_parsed(self):
         """Classifier response wrapped in markdown code fences is handled."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.return_value = _mock_gemini_response(
             '```json\n{"safe": false, "reason": "PII detected"}\n```'
         )
 
-        is_safe, reason = moderate_story_content("Story with Emma at Lakeside School.", age=9, client=mock_client)
+        is_safe, reason = moderate_story_content(
+            "Story with Emma at Lakeside School.", age=9, client=mock_client
+        )
 
         assert is_safe is False
         assert "PII" in reason
 
-    @pytest.mark.parametrize("age,expected_label", [
-        (5, "young child aged 3-7"),
-        (10, "child aged 8-12"),
-        (15, "teenager aged 13-17"),
-        (25, "adult"),
-    ])
+    @pytest.mark.parametrize(
+        "age,expected_label",
+        [
+            (5, "young child aged 3-7"),
+            (10, "child aged 8-12"),
+            (15, "teenager aged 13-17"),
+            (25, "adult"),
+        ],
+    )
     def test_age_band_label_in_prompt(self, age, expected_label):
         """The classifier prompt includes the correct age-band description."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response('{"safe": true}')
+        mock_client.models.generate_content.return_value = _mock_gemini_response(
+            '{"safe": true}'
+        )
 
         moderate_story_content("A story.", age=age, client=mock_client)
 
         call_args = mock_client.models.generate_content.call_args
         # call_args.kwargs is the kwargs dict; fall back to string representation
         prompt_sent = call_args.kwargs.get("contents", "") or str(call_args)
-        assert expected_label in prompt_sent, (
-            f"Expected age label '{expected_label}' not found in classifier prompt for age {age}"
-        )
+        assert (
+            expected_label in prompt_sent
+        ), f"Expected age label '{expected_label}' not found in classifier prompt for age {age}"
 
 
 # ---------------------------------------------------------------------------
 # Integration: both layers together
 # ---------------------------------------------------------------------------
+
 
 class TestTwoLayerModeration:
     """Verify the keyword filter and LLM classifier work as a combined defence."""
@@ -234,6 +273,7 @@ class TestTwoLayerModeration:
         """Keyword filter catches clear violations without needing LLM call."""
         import logging
         from backend.utils.app_helpers import make_filter_story_content
+
         fn = make_filter_story_content(logging.getLogger("test"))
         story = "The hero was suicidal and wanted to end their life."
         _, flagged = fn(story, age=10)
@@ -265,17 +305,20 @@ class TestTwoLayerModeration:
 # F-03: chunked full-text moderation
 # ---------------------------------------------------------------------------
 
+
 class TestChunkedModeration:
     """The classifier must inspect the whole story, not just the first 3000
     characters (audit finding F-03)."""
 
     def test_short_story_is_one_chunk(self):
         from backend.utils.content_moderator import _split_into_chunks
+
         chunks = _split_into_chunks("A short safe story about rabbits.")
         assert len(chunks) == 1
 
     def test_long_story_splits_into_multiple_chunks(self):
         from backend.utils.content_moderator import _split_into_chunks, _CHUNK_SIZE
+
         long_text = "word " * 6000  # ~30000 chars
         chunks = _split_into_chunks(long_text)
         assert len(chunks) > 1
@@ -283,6 +326,7 @@ class TestChunkedModeration:
 
     def test_chunk_count_capped(self):
         from backend.utils.content_moderator import _split_into_chunks, _MAX_CHUNKS
+
         huge_text = "word " * 100000  # far past the cap
         chunks = _split_into_chunks(huge_text)
         assert len(chunks) <= _MAX_CHUNKS
@@ -290,12 +334,15 @@ class TestChunkedModeration:
     def test_unsafe_content_in_later_chunk_is_caught(self):
         """A violation past the old 3000-char window must still be flagged."""
         from backend.utils.content_moderator import moderate_story_content
+
         long_story = "word " * 6000  # forces >1 chunk
         mock_client = MagicMock()
         # First chunk classified safe, second chunk classified unsafe.
         mock_client.models.generate_content.side_effect = [
             _mock_gemini_response('{"safe": true}'),
-            _mock_gemini_response('{"safe": false, "reason": "graphic violence in finale"}'),
+            _mock_gemini_response(
+                '{"safe": false, "reason": "graphic violence in finale"}'
+            ),
         ]
 
         is_safe, reason = moderate_story_content(long_story, age=14, client=mock_client)
@@ -306,9 +353,12 @@ class TestChunkedModeration:
 
     def test_long_safe_story_passes_all_chunks(self):
         from backend.utils.content_moderator import moderate_story_content
+
         long_story = "word " * 6000
         mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response('{"safe": true}')
+        mock_client.models.generate_content.return_value = _mock_gemini_response(
+            '{"safe": true}'
+        )
 
         is_safe, reason = moderate_story_content(long_story, age=14, client=mock_client)
 
@@ -320,11 +370,13 @@ class TestChunkedModeration:
 # F-04 / F-05: fail-closed moderation
 # ---------------------------------------------------------------------------
 
+
 class TestFailClosed:
     """fail_closed=True must treat an un-verifiable story as UNSAFE."""
 
     def test_fail_closed_on_exception(self):
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.side_effect = RuntimeError("API down")
 
@@ -337,6 +389,7 @@ class TestFailClosed:
 
     def test_fail_closed_on_empty_response(self):
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.return_value = _mock_gemini_response("")
 
@@ -349,6 +402,7 @@ class TestFailClosed:
     def test_fail_open_remains_default(self):
         """Without fail_closed, a classifier error still fails open."""
         from backend.utils.content_moderator import moderate_story_content
+
         mock_client = MagicMock()
         mock_client.models.generate_content.side_effect = RuntimeError("API down")
 
@@ -361,12 +415,14 @@ class TestFailClosed:
 # F-18: safe-fallback segment shape
 # ---------------------------------------------------------------------------
 
+
 class TestSafeFallbackSegment:
     """The interactive safe-fallback segment must carry safe choices so the
     fallback substitution (F-02) can fully replace an unsafe segment."""
 
     def test_fallback_segment_has_safe_choices(self):
         from backend.utils.content_moderator import build_safe_fallback_segment
+
         seg = build_safe_fallback_segment(segment_number=3)
         assert seg["segment_number"] == 3
         assert isinstance(seg["choices"], list) and len(seg["choices"]) >= 1
@@ -376,14 +432,22 @@ class TestSafeFallbackSegment:
 
     def test_fallback_segment_has_required_fields(self):
         from backend.utils.content_moderator import build_safe_fallback_segment
+
         seg = build_safe_fallback_segment()
-        for field in ("title", "content", "image_description", "output_type",
-                      "choices", "is_ending"):
+        for field in (
+            "title",
+            "content",
+            "image_description",
+            "output_type",
+            "choices",
+            "is_ending",
+        ):
             assert field in seg, f"fallback segment missing {field!r}"
 
     def test_fallback_segment_is_a_fresh_copy(self):
         """Mutating one fallback segment must not corrupt the next."""
         from backend.utils.content_moderator import build_safe_fallback_segment
+
         a = build_safe_fallback_segment(segment_number=1)
         a["choices"].append({"id": "x", "text": "mutated"})
         b = build_safe_fallback_segment(segment_number=2)

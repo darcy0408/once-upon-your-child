@@ -13,11 +13,14 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def run_migration():
     """Add avatar_params column if it doesn't exist"""
 
     # Path to the database
-    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'app.db')
+    db_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "instance", "app.db"
+    )
 
     if not os.path.exists(db_path):
         print(f"[ERROR] Database not found at {db_path}")
@@ -32,7 +35,7 @@ def run_migration():
         cursor.execute("PRAGMA table_info(character)")
         columns = [row[1] for row in cursor.fetchall()]
 
-        if 'avatar_params' in columns:
+        if "avatar_params" in columns:
             print("[OK] Column 'avatar_params' already exists. No migration needed.")
             return True
 
@@ -63,7 +66,8 @@ def run_migration():
         if conn:
             conn.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print("=" * 60)
     print("Database Migration: Add avatar_params to character")
     print("=" * 60)

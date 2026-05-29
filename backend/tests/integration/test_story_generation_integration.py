@@ -6,7 +6,6 @@ import pytest
 from backend.database import db
 from backend.models import InteractiveStory, User
 
-
 AGE_BANDS = [4, 7, 9, 12, 16]
 STORY_MODES = ["standard", "rhyme", "learning_to_read"]
 STORY_LENGTHS = ["quick", "standard", "epic"]
@@ -85,7 +84,9 @@ def mock_interactive_service(mocker):
             ],
         },
     }
-    mocker.patch("backend.routes.story_routes.InteractiveAdventureService", return_value=service)
+    mocker.patch(
+        "backend.routes.story_routes.InteractiveAdventureService", return_value=service
+    )
     return service
 
 

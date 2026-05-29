@@ -22,6 +22,7 @@ Phase 1 status:
     this function. It is deliberately NOT done in Phase 1 to avoid destabilising
     the working, well-tested Stripe path.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -93,7 +94,10 @@ def apply_entitlement(
         logger.error(
             "apply_entitlement: unknown tier '%s' from source '%s' for user "
             "%s — failing closed to '%s'",
-            tier, source, getattr(user, "id", "?"), FREE_TIER,
+            tier,
+            source,
+            getattr(user, "id", "?"),
+            FREE_TIER,
         )
         norm_tier = FREE_TIER
 
@@ -114,5 +118,8 @@ def apply_entitlement(
 
     logger.info(
         "Entitlement applied for user %s via %s: tier=%s status=%s",
-        getattr(user, "id", "?"), source, norm_tier, user.subscription_status,
+        getattr(user, "id", "?"),
+        source,
+        norm_tier,
+        user.subscription_status,
     )

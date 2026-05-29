@@ -16,6 +16,7 @@ Design rules:
   invite, calm, find, repair. Villains soften / say sorry / join in —
   never get defeated. This is a Sprout-band (ages 3-5) story chain.
 """
+
 from __future__ import annotations
 
 import random
@@ -150,7 +151,12 @@ POWERS: dict[str, dict] = {
         "name": "Super Speed",
         "verb": "zoom",
         "ideal": "sock_goblin",
-        "also": ["lost_things_sprite", "mess_monster", "bedtime_bandit", "sticky_mcgoo"],
+        "also": [
+            "lost_things_sprite",
+            "mess_monster",
+            "bedtime_bandit",
+            "sticky_mcgoo",
+        ],
         "primary_problem": "get_back",
     },
     "flying": {
@@ -345,21 +351,36 @@ EXPLORER_POWERS: dict[str, dict] = {
         "name": "Keen Ears",
         "verb": "listen close",
         "ideal": "echo_bandit",
-        "also": ["glitchworm", "shadow_trickster", "forgetting_fog", "the_grumblestorm"],
+        "also": [
+            "glitchworm",
+            "shadow_trickster",
+            "forgetting_fog",
+            "the_grumblestorm",
+        ],
         "primary_problem": "decode_signal",
     },
     "super_smile": {
         "name": "Bright Smile",
         "verb": "beam bright",
         "ideal": "the_grumblestorm",
-        "also": ["captain_boast", "shadow_trickster", "wishing_thief", "forgetting_fog"],
+        "also": [
+            "captain_boast",
+            "shadow_trickster",
+            "wishing_thief",
+            "forgetting_fog",
+        ],
         "primary_problem": "calm_the_storm",
     },
     "super_hugs": {
         "name": "Big Heart Hug",
         "verb": "hug warmly",
         "ideal": "captain_boast",
-        "also": ["the_grumblestorm", "shadow_trickster", "forgetting_fog", "wishing_thief"],
+        "also": [
+            "the_grumblestorm",
+            "shadow_trickster",
+            "forgetting_fog",
+            "wishing_thief",
+        ],
         "primary_problem": "bridge_the_divide",
     },
     "super_whisper": {

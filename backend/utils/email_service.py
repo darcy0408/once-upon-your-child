@@ -13,6 +13,7 @@ Design notes:
   - SECURITY: never log the verification code value or the recipient email at
     INFO level. The API key is never logged.
 """
+
 import logging
 import os
 
@@ -26,7 +27,7 @@ _REQUEST_TIMEOUT_SECONDS = 15
 
 def _get_resend_api_key():
     """Return the Resend API key, or None if not configured (optional config)."""
-    return os.environ.get('RESEND_API_KEY') or None
+    return os.environ.get("RESEND_API_KEY") or None
 
 
 def _get_consent_email_from():
@@ -36,8 +37,8 @@ def _get_consent_email_from():
     sending domain must be verified in the Resend dashboard for delivery.
     """
     return (
-        os.environ.get('CONSENT_EMAIL_FROM')
-        or 'Once Upon YOUR Child <no-reply@storyweaver.app>'
+        os.environ.get("CONSENT_EMAIL_FROM")
+        or "Once Upon YOUR Child <no-reply@storyweaver.app>"
     )
 
 
@@ -54,17 +55,17 @@ def _send_email(to_address, subject, html_body, text_body):
     api_key = _get_resend_api_key()
     if not api_key:
         logger.error(
-            'email_service: RESEND_API_KEY is not configured — cannot send '
-            'transactional email. Set RESEND_API_KEY in the environment.'
+            "email_service: RESEND_API_KEY is not configured — cannot send "
+            "transactional email. Set RESEND_API_KEY in the environment."
         )
         return False
 
     payload = {
-        'from': _get_consent_email_from(),
-        'to': [to_address],
-        'subject': subject,
-        'html': html_body,
-        'text': text_body,
+        "from": _get_consent_email_from(),
+        "to": [to_address],
+        "subject": subject,
+        "html": html_body,
+        "text": text_body,
     }
 
     try:
@@ -72,26 +73,27 @@ def _send_email(to_address, subject, html_body, text_body):
             RESEND_API_URL,
             json=payload,
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             timeout=_REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         # Do not log the recipient address.
-        logger.error('email_service: request to Resend failed: %s', exc)
+        logger.error("email_service: request to Resend failed: %s", exc)
         return False
 
     if resp.status_code in (200, 201):
-        logger.info('email_service: transactional email accepted by Resend')
+        logger.info("email_service: transactional email accepted by Resend")
         return True
 
     # Resend returns JSON error details; log status + body but never the
     # recipient. Body may contain a generic error message, not secrets.
-    body_snippet = (resp.text or '')[:300]
+    body_snippet = (resp.text or "")[:300]
     logger.error(
-        'email_service: Resend rejected send (HTTP %s): %s',
-        resp.status_code, body_snippet,
+        "email_service: Resend rejected send (HTTP %s): %s",
+        resp.status_code,
+        body_snippet,
     )
     return False
 
@@ -109,7 +111,7 @@ def send_consent_verification_email(parent_email, code, expiry_minutes):
         True if Resend accepted the message, False otherwise (caller must then
         leave consent pending and surface a 503-style error).
     """
-    subject = 'Verify your consent for your child’s Once Upon YOUR Child account'
+    subject = "Verify your consent for your child’s Once Upon YOUR Child account"
 
     text_body = (
         "Hello,\n\n"

@@ -15,6 +15,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class OpenRouterImageGenerator:
     def __init__(self, api_key=None):
         """Initialize with OpenRouter API key"""
@@ -42,10 +43,16 @@ class OpenRouterImageGenerator:
         # If content is string, only accept if it's a URL or large base64
         if isinstance(content, str):
             content = content.strip()
-            if content.startswith("data:image/") or content.startswith("http") or self._looks_like_base64(content):
+            if (
+                content.startswith("data:image/")
+                or content.startswith("http")
+                or self._looks_like_base64(content)
+            ):
                 return content
             else:
-                logger.info(f"OpenRouter: Content is text, not image: {content[:50]}...")
+                logger.info(
+                    f"OpenRouter: Content is text, not image: {content[:50]}..."
+                )
 
         if isinstance(content, list):
             for item in content:
@@ -68,11 +75,17 @@ class OpenRouterImageGenerator:
                     if url:
                         return url
 
-        raw_images = message.get("images") or choice.get("images") or data.get("images") or []
+        raw_images = (
+            message.get("images") or choice.get("images") or data.get("images") or []
+        )
         if isinstance(raw_images, list) and raw_images:
             img_data = raw_images[0]
             if isinstance(img_data, str):
-                if img_data.startswith("data:image/") or img_data.startswith("http") or self._looks_like_base64(img_data):
+                if (
+                    img_data.startswith("data:image/")
+                    or img_data.startswith("http")
+                    or self._looks_like_base64(img_data)
+                ):
                     return img_data
             if isinstance(img_data, dict):
                 if "url" in img_data:
@@ -123,19 +136,19 @@ class OpenRouterImageGenerator:
         if not character_appearance:
             return ""
         labels = {
-            'hair_color': 'hair color',
-            'hair_length': 'hair length',
-            'hair_style': 'hair style',
-            'eye_color': 'eye color',
-            'skin_tone': 'skin tone',
-            'clothing_style': 'wearing',
-            'clothing_colors': 'clothing color',
+            "hair_color": "hair color",
+            "hair_length": "hair length",
+            "hair_style": "hair style",
+            "eye_color": "eye color",
+            "skin_tone": "skin tone",
+            "clothing_style": "wearing",
+            "clothing_colors": "clothing color",
         }
         parts = []
         for key, label in labels.items():
             value = character_appearance.get(key)
             if value:
-                readable = re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', str(value)).lower()
+                readable = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", str(value)).lower()
                 parts.append(f"{label}: {readable}")
         return "; ".join(parts)
 
@@ -149,7 +162,7 @@ class OpenRouterImageGenerator:
         therapeutic_focus: str | None = None,
         companions: list | None = None,
         character_appearance: dict | None = None,
-        **_: dict
+        **_: dict,
     ) -> list:
         """
         Generate story illustrations using Stable Diffusion via OpenRouter
@@ -167,17 +180,21 @@ class OpenRouterImageGenerator:
             List of dicts with image URLs or base64 data
         """
         audience = f"ages {age}" if age else "children"
-        therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        therapy = (
+            f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        )
         companion_line = ""
         if companions:
             companion_names = []
             for companion in companions:
                 if isinstance(companion, dict):
-                    companion_names.append(companion.get('name', 'companion'))
+                    companion_names.append(companion.get("name", "companion"))
                 else:
                     companion_names.append(str(companion))
             if companion_names:
-                companion_line = f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+                companion_line = (
+                    f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+                )
 
         # Character likeness: a reference avatar image (preferred) keeps the
         # character visually consistent page-to-page; the text attributes are
@@ -185,13 +202,15 @@ class OpenRouterImageGenerator:
         appearance_text = self._build_appearance_text(character_appearance)
         reference_data_uri = None
         if character_appearance:
-            raw_avatar = character_appearance.get('custom_avatar_base64')
+            raw_avatar = character_appearance.get("custom_avatar_base64")
             if raw_avatar:
                 normalized = self._normalize_image_to_base64(raw_avatar)
                 if normalized:
                     reference_data_uri = f"data:image/png;base64,{normalized}"
 
-        character_line = f"Main character (must match selected character): {character_name}"
+        character_line = (
+            f"Main character (must match selected character): {character_name}"
+        )
         if appearance_text:
             character_line += f"\nCharacter appearance: {appearance_text}"
 
@@ -234,7 +253,8 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
             try:
                 logger.info(
                     "OpenRouter story_illustration: Sending request (reference_image=%s) prompt (first 100 chars): %s...",
-                    bool(reference_data_uri), prompt[:100],
+                    bool(reference_data_uri),
+                    prompt[:100],
                 )
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
@@ -260,30 +280,46 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                 if response.status_code == 200:
                     data = response.json()
                     # Log full response structure (truncated content) for debugging
-                    logger.info(f"OpenRouter story_illustration: Response keys: {data.keys()}")
-                    if 'choices' in data and len(data['choices']) > 0:
-                         logger.info(f"OpenRouter story_illustration: Choice keys: {data['choices'][0].keys()}")
-                         if 'message' in data['choices'][0]:
-                             logger.info(f"OpenRouter story_illustration: Message keys: {data['choices'][0]['message'].keys()}")
+                    logger.info(
+                        f"OpenRouter story_illustration: Response keys: {data.keys()}"
+                    )
+                    if "choices" in data and len(data["choices"]) > 0:
+                        logger.info(
+                            f"OpenRouter story_illustration: Choice keys: {data['choices'][0].keys()}"
+                        )
+                        if "message" in data["choices"][0]:
+                            logger.info(
+                                f"OpenRouter story_illustration: Message keys: {data['choices'][0]['message'].keys()}"
+                            )
 
                     image_url = self._extract_image_payload(data)
 
                     if image_url:
-                        logger.info(f"OpenRouter story_illustration: Successfully extracted image data. Length: {len(image_url)}")
-                        images.append({
-                            'id': f"{uuid.uuid4()}_{i}",
-                            'prompt': prompt,
-                            'image_url': image_url,
-                            'format': 'png',
-                            'generated_at': datetime.now().isoformat(),
-                        })
+                        logger.info(
+                            f"OpenRouter story_illustration: Successfully extracted image data. Length: {len(image_url)}"
+                        )
+                        images.append(
+                            {
+                                "id": f"{uuid.uuid4()}_{i}",
+                                "prompt": prompt,
+                                "image_url": image_url,
+                                "format": "png",
+                                "generated_at": datetime.now().isoformat(),
+                            }
+                        )
                     else:
                         # If we couldn't find an image, log the raw content for debugging
-                        raw_content = str(data)[:1000] # Log first 1000 chars
-                        logger.warning(f"OpenRouter response did not contain a recognized image format. Raw response start: {raw_content}")
+                        raw_content = str(data)[:1000]  # Log first 1000 chars
+                        logger.warning(
+                            f"OpenRouter response did not contain a recognized image format. Raw response start: {raw_content}"
+                        )
                         # Don't append broken data, just log it
                 else:
-                    logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
+                    logger.warning(
+                        "OpenRouter API error: %s - %s",
+                        response.status_code,
+                        response.text,
+                    )
 
                 # Rate limiting
                 if i < num_images - 1:
@@ -302,7 +338,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
         age: int | None = None,
         therapeutic_focus: str | None = None,
         companions: list | None = None,
-        **_: dict
+        **_: dict,
     ) -> list:
         """
         Generate black and white line art for coloring
@@ -316,17 +352,21 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
             List of dicts with image URLs
         """
         audience = f"ages {age}" if age else "children"
-        therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        therapy = (
+            f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        )
         companion_line = ""
         if companions:
             companion_names = []
             for companion in companions:
                 if isinstance(companion, dict):
-                    companion_names.append(companion.get('name', 'companion'))
+                    companion_names.append(companion.get("name", "companion"))
                 else:
                     companion_names.append(str(companion))
             if companion_names:
-                companion_line = f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+                companion_line = (
+                    f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+                )
 
         prompt = f"""
 black and white line art coloring book page, children's coloring book style:
@@ -342,7 +382,9 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
         images = []
         for i in range(num_images):
             try:
-                logger.info(f"OpenRouter: Sending request for coloring page prompt (first 100 chars): {prompt[:100]}...")
+                logger.info(
+                    f"OpenRouter: Sending request for coloring page prompt (first 100 chars): {prompt[:100]}..."
+                )
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers={
@@ -357,7 +399,8 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
+                                "content": prompt
+                                + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation.",
                             }
                         ],
                     },
@@ -367,26 +410,38 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                 if response.status_code == 200:
                     data = response.json()
                     # Log full response structure (truncated content) for debugging
-                    logger.info(f"OpenRouter coloring_page: Response keys: {data.keys()}")
-                    
+                    logger.info(
+                        f"OpenRouter coloring_page: Response keys: {data.keys()}"
+                    )
+
                     image_url = None
-                    
+
                     image_url = self._extract_image_payload(data)
 
                     if image_url:
-                        logger.info(f"OpenRouter coloring_page: Successfully extracted image data. Length: {len(image_url)}")
-                        images.append({
-                            'id': f"{uuid.uuid4()}_{i}",
-                            'prompt': prompt,
-                            'image_url': image_url,
-                            'format': 'png',
-                            'generated_at': datetime.now().isoformat(),
-                        })
+                        logger.info(
+                            f"OpenRouter coloring_page: Successfully extracted image data. Length: {len(image_url)}"
+                        )
+                        images.append(
+                            {
+                                "id": f"{uuid.uuid4()}_{i}",
+                                "prompt": prompt,
+                                "image_url": image_url,
+                                "format": "png",
+                                "generated_at": datetime.now().isoformat(),
+                            }
+                        )
                     else:
                         raw_content = str(data)[:1000]
-                        logger.warning(f"OpenRouter response did not contain a recognized image format for coloring page. Raw response start: {raw_content}")
+                        logger.warning(
+                            f"OpenRouter response did not contain a recognized image format for coloring page. Raw response start: {raw_content}"
+                        )
                 else:
-                    logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
+                    logger.warning(
+                        "OpenRouter API error: %s - %s",
+                        response.status_code,
+                        response.text,
+                    )
 
                 if i < num_images - 1:
                     time.sleep(1)
@@ -403,7 +458,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
         age: int = 8,
         style: str = "pixar",
         num_images: int = 1,
-        **_: dict
+        **_: dict,
     ) -> list:
         """
         Generate character avatar portrait using Stable Diffusion via OpenRouter
@@ -421,8 +476,12 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
         images = []
         for i in range(num_images):
             try:
-                logger.info(f"OpenRouter avatar: Generating {style} avatar for {character_name}, age {age}")
-                logger.info(f"OpenRouter avatar: Using prompt (first 150 chars): {prompt[:150]}...")
+                logger.info(
+                    f"OpenRouter avatar: Generating {style} avatar for {character_name}, age {age}"
+                )
+                logger.info(
+                    f"OpenRouter avatar: Using prompt (first 150 chars): {prompt[:150]}..."
+                )
 
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
@@ -438,7 +497,8 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
+                                "content": prompt
+                                + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation.",
                             }
                         ],
                     },
@@ -447,29 +507,41 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
                 if response.status_code == 200:
                     data = response.json()
-                    logger.info(f"OpenRouter avatar: Response received, keys: {data.keys()}")
+                    logger.info(
+                        f"OpenRouter avatar: Response received, keys: {data.keys()}"
+                    )
 
                     image_url = self._extract_image_payload(data)
 
                     if image_url:
                         image_data_base64 = self._normalize_image_to_base64(image_url)
                         if image_data_base64:
-                            logger.info(f"OpenRouter avatar: Successfully generated avatar. Data length: {len(image_data_base64)}")
-                            images.append({
-                                'id': f"{uuid.uuid4()}_{i}",
-                                'prompt': prompt,
-                                'image_data': image_data_base64,  # Return as base64 string
-                                'format': 'png',
-                                'generated_at': datetime.now().isoformat(),
-                                'provider': 'openrouter-flux'
-                            })
+                            logger.info(
+                                f"OpenRouter avatar: Successfully generated avatar. Data length: {len(image_data_base64)}"
+                            )
+                            images.append(
+                                {
+                                    "id": f"{uuid.uuid4()}_{i}",
+                                    "prompt": prompt,
+                                    "image_data": image_data_base64,  # Return as base64 string
+                                    "format": "png",
+                                    "generated_at": datetime.now().isoformat(),
+                                    "provider": "openrouter-flux",
+                                }
+                            )
                         else:
-                            logger.warning("OpenRouter avatar image payload could not be normalized to base64")
+                            logger.warning(
+                                "OpenRouter avatar image payload could not be normalized to base64"
+                            )
                     else:
                         raw_content = str(data)[:1000]
-                        logger.warning(f"OpenRouter avatar response did not contain image. Raw response: {raw_content}")
+                        logger.warning(
+                            f"OpenRouter avatar response did not contain image. Raw response: {raw_content}"
+                        )
                 else:
-                    logger.error(f"OpenRouter avatar API error: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"OpenRouter avatar API error: {response.status_code} - {response.text}"
+                    )
 
                 # Rate limiting
                 if i < num_images - 1:
@@ -487,7 +559,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
         character_name: str = "the hero",
         age: int = 8,
         num_images: int = 1,
-        **_: dict
+        **_: dict,
     ) -> list:
         """
         Generate a custom avatar using a reference photo + text prompt.
@@ -500,7 +572,9 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
         for i in range(num_images):
             try:
-                logger.info(f"OpenRouter custom avatar: Generating for {character_name}, age {age}")
+                logger.info(
+                    f"OpenRouter custom avatar: Generating for {character_name}, age {age}"
+                )
 
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
@@ -525,7 +599,8 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                                     },
                                     {
                                         "type": "text",
-                                        "text": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation.",
+                                        "text": prompt
+                                        + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation.",
                                     },
                                 ],
                             }
@@ -541,22 +616,32 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     if image_url:
                         image_data_base64 = self._normalize_image_to_base64(image_url)
                         if image_data_base64:
-                            logger.info(f"OpenRouter custom avatar: Success. Data length: {len(image_data_base64)}")
-                            images.append({
-                                'id': f"{uuid.uuid4()}_{i}",
-                                'prompt': prompt,
-                                'image_data': image_data_base64,
-                                'format': 'png',
-                                'generated_at': datetime.now().isoformat(),
-                                'provider': 'openrouter-custom-avatar'
-                            })
+                            logger.info(
+                                f"OpenRouter custom avatar: Success. Data length: {len(image_data_base64)}"
+                            )
+                            images.append(
+                                {
+                                    "id": f"{uuid.uuid4()}_{i}",
+                                    "prompt": prompt,
+                                    "image_data": image_data_base64,
+                                    "format": "png",
+                                    "generated_at": datetime.now().isoformat(),
+                                    "provider": "openrouter-custom-avatar",
+                                }
+                            )
                         else:
-                            logger.warning("OpenRouter custom avatar: image payload could not be normalized")
+                            logger.warning(
+                                "OpenRouter custom avatar: image payload could not be normalized"
+                            )
                     else:
                         raw_content = str(data)[:1000]
-                        logger.warning(f"OpenRouter custom avatar: no image in response. Raw: {raw_content}")
+                        logger.warning(
+                            f"OpenRouter custom avatar: no image in response. Raw: {raw_content}"
+                        )
                 else:
-                    logger.error(f"OpenRouter custom avatar API error: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"OpenRouter custom avatar API error: {response.status_code} - {response.text}"
+                    )
 
                 if i < num_images - 1:
                     time.sleep(1)
@@ -580,7 +665,7 @@ if __name__ == "__main__":
     illustrations = generator.generate_story_illustration(
         scene_description="A brave 7-year-old girl named Isabella with short brown hair and pink highlights discovers a glowing rainbow-colored magic crystal in an enchanted forest",
         character_name="Isabella",
-        style="vibrant watercolor children's book illustration"
+        style="vibrant watercolor children's book illustration",
     )
 
     if illustrations:
@@ -594,7 +679,7 @@ if __name__ == "__main__":
     print("\n2. Generating coloring page...")
     coloring_pages = generator.generate_coloring_page(
         scene_description="Isabella holding a rainbow-colored magic crystal, surrounded by friendly forest animals including a rabbit and a deer",
-        character_name="Isabella"
+        character_name="Isabella",
     )
 
     if coloring_pages:

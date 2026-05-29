@@ -16,6 +16,7 @@ Band → representative test age mapping
 Run with:
     pytest backend/tests/integration/test_six_band_integration.py -v
 """
+
 import pytest
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -23,8 +24,9 @@ from datetime import datetime, timedelta, timezone
 from backend.database import db
 from backend.models import User
 from backend.services.story_service import AGE_CONSTRAINTS, _get_age_band
-from backend.services.interactive_adventure_prompt_builder import InteractiveAdventurePromptBuilder
-
+from backend.services.interactive_adventure_prompt_builder import (
+    InteractiveAdventurePromptBuilder,
+)
 
 # ---------------------------------------------------------------------------
 # Band definitions
@@ -32,20 +34,20 @@ from backend.services.interactive_adventure_prompt_builder import InteractiveAdv
 
 BANDS = [
     # (band_name,  test_age,  expected_backend_band_key,  expected_companion_count)
-    ("sprout",      4,  "3-4",    4),
-    ("explorer",    7,  "5-7",    4),
-    ("adventurer", 10,  "8-10",   4),
-    ("creator",    13,  "11-13",  4),
-    ("adolescent", 16,  "15-18",  4),
-    ("adult",      25,  "adult",  4),
+    ("sprout", 4, "3-4", 4),
+    ("explorer", 7, "5-7", 4),
+    ("adventurer", 10, "8-10", 4),
+    ("creator", 13, "11-13", 4),
+    ("adolescent", 16, "15-18", 4),
+    ("adult", 25, "adult", 4),
 ]
 
 BAND_IDS = [b[0] for b in BANDS]
 
 # Companion IDs expected for each Flutter band name (from companion_selector_step.dart)
 EXPECTED_COMPANION_IDS = {
-    "sprout":     {"fluffy_dragon", "magic_bunny", "shining_puppy", "robin"},
-    "explorer":   {"ember_dragon", "moon_owl", "star_fox", "robin"},
+    "sprout": {"fluffy_dragon", "magic_bunny", "shining_puppy", "robin"},
+    "explorer": {"ember_dragon", "moon_owl", "star_fox", "robin"},
     "adventurer": {"thunder_wolf", "shadow_panther", "crystal_phoenix", "robin"},
     # creator / adolescent / adult companions are less strictly band-locked in the codebase
 }
@@ -55,18 +57,19 @@ SPROUT_FEELING_IDS = {"happy", "sad", "angry", "fearful", "excited"}
 
 # TTS rate scale expected per band (from app_tts_service.dart / hero_creator_step.dart)
 BAND_TTS_RATE_SCALE = {
-    "sprout":     0.8,
-    "explorer":   1.0,
+    "sprout": 0.8,
+    "explorer": 1.0,
     "adventurer": 1.0,
-    "creator":    1.0,
+    "creator": 1.0,
     "adolescent": 1.0,
-    "adult":      1.0,
+    "adult": 1.0,
 }
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_user(user_id: str, tier: str = "free") -> str:
     """Create a DB user and return a signed JWT token."""
@@ -146,14 +149,15 @@ def _story_text_for_band(band_key: str, length: str = "short") -> str:
 # 1. Band mapping correctness
 # ---------------------------------------------------------------------------
 
+
 class TestBandMapping:
     """_get_age_band() must return the right key for every representative age."""
 
     @pytest.mark.parametrize("band_name,age,expected_key,_cc", BANDS, ids=BAND_IDS)
     def test_age_maps_to_correct_band_key(self, band_name, age, expected_key, _cc):
-        assert _get_age_band(age) == expected_key, (
-            f"Age {age} ({band_name}) should map to '{expected_key}'"
-        )
+        assert (
+            _get_age_band(age) == expected_key
+        ), f"Age {age} ({band_name}) should map to '{expected_key}'"
 
     def test_boundary_ages_resolve_correctly(self):
         """Verify every boundary age resolves to the expected band key."""
@@ -173,19 +177,19 @@ class TestBandMapping:
             (99, "adult"),
         ]
         for age, expected in boundaries:
-            assert _get_age_band(age) == expected, (
-                f"Boundary age {age} should map to '{expected}', got '{_get_age_band(age)}'"
-            )
+            assert (
+                _get_age_band(age) == expected
+            ), f"Boundary age {age} should map to '{expected}', got '{_get_age_band(age)}'"
 
     def test_all_six_flutter_bands_have_backend_constraint_entry(self):
         """Every Flutter AgeBand should correspond to at least one AGE_CONSTRAINTS key."""
         flutter_bands = {
-            "sprout":     [3, 4, 5],
-            "explorer":   [6, 7, 8],
+            "sprout": [3, 4, 5],
+            "explorer": [6, 7, 8],
             "adventurer": [9, 10, 11],
-            "creator":    [12, 13, 14],
+            "creator": [12, 13, 14],
             "adolescent": [15, 16, 17],
-            "adult":      [18, 25, 99],
+            "adult": [18, 25, 99],
         }
         for band_name, ages in flutter_bands.items():
             for age in ages:
@@ -200,6 +204,7 @@ class TestBandMapping:
 # 2. Word count ranges — AGE_CONSTRAINTS are internally consistent
 # ---------------------------------------------------------------------------
 
+
 class TestWordCountRanges:
     """AGE_CONSTRAINTS word count ranges must be defined, ordered, and non-overlapping."""
 
@@ -209,17 +214,21 @@ class TestWordCountRanges:
         for length in ("short", "medium", "long"):
             assert length in config, f"Band '{band_key}' missing 'regular.{length}'"
             lo, hi = config[length]
-            assert lo < hi, f"Band '{band_key}' {length}: min ({lo}) must be < max ({hi})"
+            assert (
+                lo < hi
+            ), f"Band '{band_key}' {length}: min ({lo}) must be < max ({hi})"
 
     @pytest.mark.parametrize("band_name,age,band_key,_cc", BANDS, ids=BAND_IDS)
-    def test_word_counts_increase_with_story_length(self, band_name, age, band_key, _cc):
+    def test_word_counts_increase_with_story_length(
+        self, band_name, age, band_key, _cc
+    ):
         reg = AGE_CONSTRAINTS[band_key]["regular"]
-        assert reg["short"][1] <= reg["medium"][0] or reg["short"][0] < reg["medium"][1], (
-            f"Band '{band_key}': 'short' max should be ≤ 'medium' min"
-        )
-        assert reg["medium"][1] <= reg["long"][0] or reg["medium"][0] < reg["long"][1], (
-            f"Band '{band_key}': 'medium' max should be ≤ 'long' min"
-        )
+        assert (
+            reg["short"][1] <= reg["medium"][0] or reg["short"][0] < reg["medium"][1]
+        ), f"Band '{band_key}': 'short' max should be ≤ 'medium' min"
+        assert (
+            reg["medium"][1] <= reg["long"][0] or reg["medium"][0] < reg["long"][1]
+        ), f"Band '{band_key}': 'medium' max should be ≤ 'long' min"
 
     def test_word_counts_increase_across_bands(self):
         """Older bands should have higher word count targets than younger bands."""
@@ -239,11 +248,14 @@ class TestWordCountRanges:
 # 3. Story generation API — all 6 bands
 # ---------------------------------------------------------------------------
 
+
 class TestStoryGenerationAllBands:
     """POST /generate-story returns 200 with correct structure for all 6 age bands."""
 
     @pytest.mark.parametrize("band_name,age,band_key,_cc", BANDS, ids=BAND_IDS)
-    def test_story_generation_returns_200(self, client, app, mocker, band_name, age, band_key, _cc):
+    def test_story_generation_returns_200(
+        self, client, app, mocker, band_name, age, band_key, _cc
+    ):
         with app.app_context():
             token = _make_user(f"story-{band_name}", "premium")
 
@@ -261,7 +273,9 @@ class TestStoryGenerationAllBands:
         )
 
     @pytest.mark.parametrize("band_name,age,band_key,_cc", BANDS, ids=BAND_IDS)
-    def test_story_response_has_required_fields(self, client, app, mocker, band_name, age, band_key, _cc):
+    def test_story_response_has_required_fields(
+        self, client, app, mocker, band_name, age, band_key, _cc
+    ):
         with app.app_context():
             token = _make_user(f"story-fields-{band_name}", "premium")
 
@@ -279,7 +293,9 @@ class TestStoryGenerationAllBands:
             assert field in story, f"Band '{band_name}': story missing '{field}'"
 
     @pytest.mark.parametrize("band_name,age,band_key,_cc", BANDS, ids=BAND_IDS)
-    def test_story_word_count_in_band_range(self, client, app, mocker, band_name, age, band_key, _cc):
+    def test_story_word_count_in_band_range(
+        self, client, app, mocker, band_name, age, band_key, _cc
+    ):
         """Mock story word count should fall within the band's short-story range."""
         with app.app_context():
             token = _make_user(f"story-wc-{band_name}", "premium")
@@ -304,7 +320,9 @@ class TestStoryGenerationAllBands:
         )
 
     @pytest.mark.parametrize("band_name,age,band_key,_cc", BANDS, ids=BAND_IDS)
-    def test_story_generation_rejects_missing_character(self, client, app, band_name, age, band_key, _cc):
+    def test_story_generation_rejects_missing_character(
+        self, client, app, band_name, age, band_key, _cc
+    ):
         with app.app_context():
             token = _make_user(f"story-no-char-{band_name}")
 
@@ -315,20 +333,24 @@ class TestStoryGenerationAllBands:
             json=payload,
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code in (400, 422), (
-            f"Band '{band_name}': missing character should return 400/422"
-        )
+        assert resp.status_code in (
+            400,
+            422,
+        ), f"Band '{band_name}': missing character should return 400/422"
 
 
 # ---------------------------------------------------------------------------
 # 4. Interactive adventure — all 6 bands
 # ---------------------------------------------------------------------------
 
+
 class TestInteractiveAdventureAllBands:
     """POST /generate-interactive-story returns 200 for all 6 bands."""
 
     @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
-    def test_interactive_story_returns_200(self, client, app, mocker, band_name, age, _bk, _cc):
+    def test_interactive_story_returns_200(
+        self, client, app, mocker, band_name, age, _bk, _cc
+    ):
         with app.app_context():
             token = _make_user(f"interactive-{band_name}", "premium")
 
@@ -364,38 +386,42 @@ class TestInteractiveAdventureAllBands:
 # 5. Interactive adventure prompt builder — AGE_BANDS coverage
 # ---------------------------------------------------------------------------
 
+
 class TestPromptBuilderAllBands:
     """InteractiveAdventurePromptBuilder.get_age_band() covers all 6 Flutter bands."""
 
     @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
     def test_get_age_band_returns_known_key(self, band_name, age, _bk, _cc):
         key = InteractiveAdventurePromptBuilder.get_age_band(age)
-        assert key in InteractiveAdventurePromptBuilder.AGE_BANDS, (
-            f"Band '{band_name}' (age {age}): prompt builder returned unknown key '{key}'"
-        )
+        assert (
+            key in InteractiveAdventurePromptBuilder.AGE_BANDS
+        ), f"Band '{band_name}' (age {age}): prompt builder returned unknown key '{key}'"
 
     def test_all_prompt_builder_bands_have_word_count_ranges(self):
         for key, config in InteractiveAdventurePromptBuilder.AGE_BANDS.items():
-            assert "word_count_ranges" in config, (
-                f"Prompt builder band '{key}' missing 'word_count_ranges'"
-            )
+            assert (
+                "word_count_ranges" in config
+            ), f"Prompt builder band '{key}' missing 'word_count_ranges'"
             for length in ("short", "medium", "long"):
-                assert length in config["word_count_ranges"], (
-                    f"Prompt builder band '{key}' missing length '{length}'"
-                )
+                assert (
+                    length in config["word_count_ranges"]
+                ), f"Prompt builder band '{key}' missing length '{length}'"
 
     @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
     def test_per_segment_word_count_returns_valid_tuple(self, band_name, age, _bk, _cc):
         key = InteractiveAdventurePromptBuilder.get_age_band(age)
-        lo, hi = InteractiveAdventurePromptBuilder._calculate_per_segment_word_count(key, "medium")
-        assert lo > 0 and hi > lo, (
-            f"Band '{band_name}': per-segment word count invalid ({lo}, {hi})"
+        lo, hi = InteractiveAdventurePromptBuilder._calculate_per_segment_word_count(
+            key, "medium"
         )
+        assert (
+            lo > 0 and hi > lo
+        ), f"Band '{band_name}': per-segment word count invalid ({lo}, {hi})"
 
 
 # ---------------------------------------------------------------------------
 # 6. Subscription status — accessible for all bands (no auth required)
 # ---------------------------------------------------------------------------
+
 
 class TestSubscriptionStatusAllBands:
     """GET /api/subscription/status returns a response for all 6 bands (anon + auth)."""
@@ -404,15 +430,19 @@ class TestSubscriptionStatusAllBands:
         """Anonymous requests should not 403 — they may 401/404 but must not crash."""
         resp = client.get("/api/subscription/status")
         # 200 = anon returns free default, 401 = auth required, 404 = route not mounted in test
-        assert resp.status_code in (200, 401, 404), (
-            f"Anonymous subscription status should be 200/401/404, got {resp.status_code}"
-        )
+        assert resp.status_code in (
+            200,
+            401,
+            404,
+        ), f"Anonymous subscription status should be 200/401/404, got {resp.status_code}"
         if resp.status_code == 200:
             data = resp.get_json()
             assert data.get("tier") in ("free", "inactive", None) or "status" in data
 
     @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
-    def test_authenticated_user_gets_subscription_status(self, client, app, band_name, age, _bk, _cc):
+    def test_authenticated_user_gets_subscription_status(
+        self, client, app, band_name, age, _bk, _cc
+    ):
         with app.app_context():
             token = _make_user(f"sub-{band_name}")
 
@@ -420,14 +450,16 @@ class TestSubscriptionStatusAllBands:
             "/api/subscription/status",
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code in (200, 404), (
-            f"Band '{band_name}': subscription status returned {resp.status_code}"
-        )
+        assert resp.status_code in (
+            200,
+            404,
+        ), f"Band '{band_name}': subscription status returned {resp.status_code}"
 
 
 # ---------------------------------------------------------------------------
 # 7. Avatar generation — rate limit headers per band
 # ---------------------------------------------------------------------------
+
 
 class TestAvatarRateLimitAllBands:
     """POST /avatar/generate-avatar returns correct rate-limit headers per band tier."""
@@ -445,17 +477,18 @@ class TestAvatarRateLimitAllBands:
             headers={"Authorization": f"Bearer {token}"},
         )
         # Even on 400 (service unavailable in tests) the rate-limit headers must be present
-        assert resp.headers.get("X-Avatar-RateLimit-Limit") == "5", (
-            f"Band '{band_name}': free user missing X-Avatar-RateLimit-Limit header"
-        )
-        assert resp.headers.get("X-Avatar-RateLimit-Tier") == "free", (
-            f"Band '{band_name}': free user missing X-Avatar-RateLimit-Tier header"
-        )
+        assert (
+            resp.headers.get("X-Avatar-RateLimit-Limit") == "5"
+        ), f"Band '{band_name}': free user missing X-Avatar-RateLimit-Limit header"
+        assert (
+            resp.headers.get("X-Avatar-RateLimit-Tier") == "free"
+        ), f"Band '{band_name}': free user missing X-Avatar-RateLimit-Tier header"
 
 
 # ---------------------------------------------------------------------------
 # 8. Age gate validation — server rejects out-of-range ages
 # ---------------------------------------------------------------------------
+
 
 class TestAgeGateValidation:
     """Story generation rejects ages outside the supported range (< 3 or > 99)."""
@@ -474,12 +507,14 @@ class TestAgeGateValidation:
             json=_story_payload(invalid_age),
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code != 200, (
-            f"Age {invalid_age} should not be accepted (got 200)"
-        )
+        assert (
+            resp.status_code != 200
+        ), f"Age {invalid_age} should not be accepted (got 200)"
 
     @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
-    def test_valid_band_age_is_accepted(self, client, app, mocker, band_name, age, _bk, _cc):
+    def test_valid_band_age_is_accepted(
+        self, client, app, mocker, band_name, age, _bk, _cc
+    ):
         with app.app_context():
             token = _make_user(f"agegate-valid-{band_name}", "premium")
 
@@ -490,14 +525,15 @@ class TestAgeGateValidation:
             json=_story_payload(age),
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp.status_code == 200, (
-            f"Valid age {age} ({band_name}) was rejected: {resp.status_code}"
-        )
+        assert (
+            resp.status_code == 200
+        ), f"Valid age {age} ({band_name}) was rejected: {resp.status_code}"
 
 
 # ---------------------------------------------------------------------------
 # 9. Content constraints — notes present and non-empty per band
 # ---------------------------------------------------------------------------
+
 
 class TestContentConstraints:
     """Each band must have age-appropriate content notes in AGE_CONSTRAINTS."""
@@ -510,24 +546,25 @@ class TestContentConstraints:
     def test_sprout_notes_avoid_irony_sarcasm(self):
         notes = AGE_CONSTRAINTS["3-4"]["notes"]
         assert "AVOID" in notes, "Sprout notes must include AVOID list"
-        avoid_section = notes[notes.index("AVOID"):]
+        avoid_section = notes[notes.index("AVOID") :]
         for forbidden in ("irony", "sarcasm", "abstract metaphor"):
-            assert forbidden.lower() in avoid_section.lower(), (
-                f"Sprout AVOID list should mention '{forbidden}'"
-            )
+            assert (
+                forbidden.lower() in avoid_section.lower()
+            ), f"Sprout AVOID list should mention '{forbidden}'"
 
     def test_adult_band_allows_literary_techniques(self):
         notes = AGE_CONSTRAINTS["adult"]["notes"]
         # Adult notes must acknowledge POV choice and literary craft
         for keyword in ("POV", "literary"):
-            assert keyword.lower() in notes.lower(), (
-                f"Adult band notes should mention '{keyword}'"
-            )
+            assert (
+                keyword.lower() in notes.lower()
+            ), f"Adult band notes should mention '{keyword}'"
 
 
 # ---------------------------------------------------------------------------
 # 10. Companion data (Python-accessible validation)
 # ---------------------------------------------------------------------------
+
 
 class TestCompanionBandData:
     """Validates companion band expectations against the Flutter source values
@@ -556,6 +593,7 @@ class TestCompanionBandData:
 # 11. Sprout-specific invariants
 # ---------------------------------------------------------------------------
 
+
 class TestSproutInvariants:
     """Sprout (ages 3–5) specific requirements from the UX audit."""
 
@@ -579,18 +617,18 @@ class TestSproutInvariants:
         assert SPROUT_FEELING_IDS == {"happy", "sad", "angry", "fearful", "excited"}
 
     def test_sprout_tts_rate_scale_below_one(self):
-        assert BAND_TTS_RATE_SCALE["sprout"] < 1.0, (
-            "Sprout TTS rate scale must be < 1.0 (speech is slowed for 3–5)"
-        )
-        assert BAND_TTS_RATE_SCALE["sprout"] >= 0.7, (
-            "Sprout TTS rate scale should not be below 0.7 (too slow)"
-        )
+        assert (
+            BAND_TTS_RATE_SCALE["sprout"] < 1.0
+        ), "Sprout TTS rate scale must be < 1.0 (speech is slowed for 3–5)"
+        assert (
+            BAND_TTS_RATE_SCALE["sprout"] >= 0.7
+        ), "Sprout TTS rate scale should not be below 0.7 (too slow)"
 
     def test_non_sprout_bands_use_full_tts_rate(self):
         for band in ("explorer", "adventurer", "creator", "adolescent", "adult"):
-            assert BAND_TTS_RATE_SCALE[band] == 1.0, (
-                f"Band '{band}' TTS rate scale should be 1.0"
-            )
+            assert (
+                BAND_TTS_RATE_SCALE[band] == 1.0
+            ), f"Band '{band}' TTS rate scale should be 1.0"
 
     def test_sprout_story_generation_returns_200(self, client, app, mocker):
         """End-to-end smoke test: sprout story goes through without errors."""

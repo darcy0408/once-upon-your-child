@@ -53,6 +53,28 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 # CELERY_BROKER_URL = "${{Redis.REDIS_URL}}"
 # CELERY_RESULT_BACKEND = "${{Redis.REDIS_URL}}"
 
+# Celery Beat Service (Scheduler)
+# Runs the celery-beat scheduler as its own dedicated service. Beat is NOT
+# embedded in the worker (-B is incompatible with the worker's --pool=solo),
+# so this service is what actually fires the scheduled jobs — notably the
+# daily data-retention purge (CMP-5 / PP-13) at 03:30 UTC. See MT-148.
+[[services]]
+name = "celery-beat"
+dockerfile = "Dockerfile.worker"
+startCommand = "celery -A backend.celery_config.celery beat --loglevel=info"
+
+# No healthcheck needed for beat (it's not a web service)
+# No public networking needed (beat connects to Redis privately)
+
+[services.env]
+SYNC_STORY_TIMEOUT_SECONDS = "75"
+GEMINI_REQUEST_TIMEOUT_SECONDS = "45"
+GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
+# Redis URLs - set these in Railway UI using ${{Redis.REDIS_URL}}
+# beat needs the broker URL to enqueue scheduled tasks
+# CELERY_BROKER_URL = "${{Redis.REDIS_URL}}"
+# CELERY_RESULT_BACKEND = "${{Redis.REDIS_URL}}"
+
 # Frontend Service (Flutter Web + nginx)
 [[services]]
 name = "frontend"

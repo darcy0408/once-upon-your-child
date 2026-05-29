@@ -24,29 +24,29 @@ def _create_user(user_id: str, tier: str) -> str:
     )
     db.session.add(user)
     db.session.commit()
-    
+
     payload = {
-        'user_id': user_id,
-        'sub': user_id,
-        'email': f"{user_id}@example.com",
-        'subscription_tier': tier,
-        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+        "user_id": user_id,
+        "sub": user_id,
+        "email": f"{user_id}@example.com",
+        "subscription_tier": tier,
+        "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
-    return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
+    return jwt.encode(payload, "dev-secret-key", algorithm="HS256")
 
 
 def test_avatar_generate_route_enforces_free_tier_limit(client, app):
     """Free users should hit the configured per-hour avatar route limit."""
     with app.app_context():
         token = _create_user("free-avatar-user", "free")
-    
+
     headers = {"Authorization": f"Bearer {token}"}
     statuses = []
     for _ in range(6):
         resp = client.post(
             "/avatar/generate-avatar",
             json={"character_name": "Luna", "age": 7, "style": "nope"},
-            headers=headers
+            headers=headers,
         )
         statuses.append(resp.status_code)
 
@@ -137,7 +137,9 @@ def test_generate_custom_avatar_accepts_age_99(client, app, monkeypatch):
     assert body["avatar"]["id"] == "avatar-test-99"
 
 
-def test_generate_custom_avatar_returns_400_for_out_of_range_age(client, app, monkeypatch):
+def test_generate_custom_avatar_returns_400_for_out_of_range_age(
+    client, app, monkeypatch
+):
     """Out-of-range custom avatar ages should return validation error with 400."""
     with app.app_context():
         token = _create_user("custom-avatar-user-err", "free")
@@ -175,6 +177,7 @@ def test_generate_custom_avatar_returns_400_for_out_of_range_age(client, app, mo
 # S-05 — avatar rate limiter is Redis-backed (shared across gunicorn workers)
 # with an in-process fallback that prunes stale hour-buckets.
 # ---------------------------------------------------------------------------
+
 
 class _FakeRedis:
     """
@@ -302,6 +305,7 @@ def test_avatar_rate_limit_fallback_prunes_stale_hour_buckets(app, monkeypatch):
 
 def test_avatar_rate_limit_redis_error_degrades_to_fallback(app, monkeypatch):
     """A Redis call that raises mid-request degrades to the in-process counter."""
+
     class _ExplodingRedis:
         def ping(self):
             return True
@@ -309,7 +313,9 @@ def test_avatar_rate_limit_redis_error_degrades_to_fallback(app, monkeypatch):
         def incr(self, key):
             raise ConnectionError("redis down")
 
-    monkeypatch.setattr(avatar_routes, "_get_avatar_rl_redis", lambda: _ExplodingRedis())
+    monkeypatch.setattr(
+        avatar_routes, "_get_avatar_rl_redis", lambda: _ExplodingRedis()
+    )
 
     with app.app_context():
         if hasattr(app, "_avatar_generate_counts"):
