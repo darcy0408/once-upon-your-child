@@ -10,10 +10,12 @@ import re
 # Try to import Google Cloud TTS, but don't fail if it's not available
 try:
     from google.cloud import texttospeech
+
     GOOGLE_TTS_AVAILABLE = True
 except ImportError:
     GOOGLE_TTS_AVAILABLE = False
     texttospeech = None  # Placeholder for type hints
+
 
 class TTSService:
     def __init__(self):
@@ -31,20 +33,20 @@ class TTSService:
         Makes the narration sound more human
         """
         # Add longer pause after periods (end of sentences)
-        text = re.sub(r'\.(\s+)', '.<break time="800ms"/>\\1', text)
+        text = re.sub(r"\.(\s+)", '.<break time="800ms"/>\\1', text)
 
         # Add pause after commas
-        text = re.sub(r',(\s+)', ',<break time="400ms"/>\\1', text)
+        text = re.sub(r",(\s+)", ',<break time="400ms"/>\\1', text)
 
         # Add pause after exclamation/question marks
-        text = re.sub(r'!(\s+)', '!<break time="800ms"/>\\1', text)
-        text = re.sub(r'\?(\s+)', '?<break time="800ms"/>\\1', text)
+        text = re.sub(r"!(\s+)", '!<break time="800ms"/>\\1', text)
+        text = re.sub(r"\?(\s+)", '?<break time="800ms"/>\\1', text)
 
         # Add emphasis to dialogue (words in quotes)
         text = re.sub(r'"([^"]+)"', r'<emphasis level="moderate">\1</emphasis>', text)
 
         # Wrap in SSML speak tags
-        ssml = f'<speak>{text}</speak>'
+        ssml = f"<speak>{text}</speak>"
         return ssml
 
     def generate_speech(
@@ -54,7 +56,7 @@ class TTSService:
         speaking_rate: float = 1.0,
         pitch: float = 0.0,
         use_ssml: bool = True,
-        output_path: Optional[str] = None
+        output_path: Optional[str] = None,
     ) -> bytes:
         """
         Generate speech audio from text

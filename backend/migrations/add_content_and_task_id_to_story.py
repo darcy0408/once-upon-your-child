@@ -30,6 +30,7 @@ Local SQLite dev database:
 
   python backend/migrations/add_content_and_task_id_to_story.py
 """
+
 import os
 import sys
 
@@ -92,7 +93,9 @@ def run_migration() -> bool:
                 print(f"  executing: {stmt}")
                 conn.execute(text(stmt))
 
-        print("[SUCCESS] migration complete — 'task_id' and 'content' are present on 'story'.")
+        print(
+            "[SUCCESS] migration complete — 'task_id' and 'content' are present on 'story'."
+        )
         return True
     except Exception as exc:  # noqa: BLE001 — surface any DDL failure clearly
         print(f"[ERROR] migration failed: {exc}")

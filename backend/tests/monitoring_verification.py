@@ -1,4 +1,3 @@
-
 import pytest
 from unittest.mock import patch, MagicMock
 from functools import wraps
@@ -6,7 +5,7 @@ import os
 import sys
 
 # Ensure backend module is importable
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from backend.app import create_app
 
@@ -18,11 +17,14 @@ def make_passthrough_decorator(*args, **kwargs):
     - @decorator("arg")  - returns decorator
     - @decorator         - returns decorator (if first arg is callable)
     """
+
     def decorator(f):
         @wraps(f)
         def wrapper(*a, **kw):
             return f(*a, **kw)
+
         return wrapper
+
     return decorator
 
 
@@ -48,22 +50,28 @@ def test_sentry_init_production():
     mock_limiter = create_mock_limiter()
     mock_cache = create_mock_cache()
 
-    with patch('backend.app.sentry_sdk') as mock_sentry:
-        with patch.dict(os.environ, {'SENTRY_DSN': 'https://fake@sentry.io/123', 'JWT_SECRET_KEY': 'test', 'SECRET_KEY': 'test'}):
-            with patch('backend.app.db'), \
-                 patch('backend.app.CORS'), \
-                 patch('backend.app.Limiter', return_value=mock_limiter), \
-                 patch('backend.app.Cache', return_value=mock_cache):
+    with patch("backend.app.sentry_sdk") as mock_sentry:
+        with patch.dict(
+            os.environ,
+            {
+                "SENTRY_DSN": "https://fake@sentry.io/123",
+                "JWT_SECRET_KEY": "test",
+                "SECRET_KEY": "test",
+            },
+        ):
+            with patch("backend.app.db"), patch("backend.app.CORS"), patch(
+                "backend.app.Limiter", return_value=mock_limiter
+            ), patch("backend.app.Cache", return_value=mock_cache):
 
-                create_app('production')
+                create_app("production")
 
                 mock_sentry.init.assert_called_once()
                 call_args = mock_sentry.init.call_args[1]
-                assert call_args['dsn'] == 'https://fake@sentry.io/123'
-                assert call_args['environment'] == 'production'
-                assert call_args['traces_sample_rate'] == 0.1
-                assert call_args['profiles_sample_rate'] == 0.0
-                assert call_args['before_send'] is not None
+                assert call_args["dsn"] == "https://fake@sentry.io/123"
+                assert call_args["environment"] == "production"
+                assert call_args["traces_sample_rate"] == 0.1
+                assert call_args["profiles_sample_rate"] == 0.0
+                assert call_args["before_send"] is not None
 
 
 def test_sentry_skip_testing():
@@ -71,13 +79,19 @@ def test_sentry_skip_testing():
     mock_limiter = create_mock_limiter()
     mock_cache = create_mock_cache()
 
-    with patch('backend.app.sentry_sdk') as mock_sentry:
-        with patch.dict(os.environ, {'SENTRY_DSN': 'https://fake@sentry.io/123', 'JWT_SECRET_KEY': 'test', 'SECRET_KEY': 'test'}):
-            with patch('backend.app.db'), \
-                 patch('backend.app.CORS'), \
-                 patch('backend.app.Limiter', return_value=mock_limiter), \
-                 patch('backend.app.Cache', return_value=mock_cache):
+    with patch("backend.app.sentry_sdk") as mock_sentry:
+        with patch.dict(
+            os.environ,
+            {
+                "SENTRY_DSN": "https://fake@sentry.io/123",
+                "JWT_SECRET_KEY": "test",
+                "SECRET_KEY": "test",
+            },
+        ):
+            with patch("backend.app.db"), patch("backend.app.CORS"), patch(
+                "backend.app.Limiter", return_value=mock_limiter
+            ), patch("backend.app.Cache", return_value=mock_cache):
 
-                create_app('testing')
+                create_app("testing")
 
                 mock_sentry.init.assert_not_called()

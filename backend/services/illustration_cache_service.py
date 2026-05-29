@@ -18,6 +18,7 @@ Design rules:
     appearance / custom avatar is hashed verbatim so a custom-avatar user
     still gets correct images (just a lower hit rate).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -141,6 +142,7 @@ def get_cached_illustration(cache_key: str) -> dict | None:
         logger.warning("illustration_cache: lookup failed, treating as miss (%s)", exc)
         try:
             from ..database import db
+
             db.session.rollback()
         except Exception:  # noqa: BLE001
             pass
@@ -190,6 +192,7 @@ def store_illustration(
         logger.warning("illustration_cache: store failed (%s)", exc)
         try:
             from ..database import db
+
             db.session.rollback()
         except Exception:  # noqa: BLE001
             pass

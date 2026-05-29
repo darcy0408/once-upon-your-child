@@ -6,6 +6,7 @@ tamper detection (S-03). Legacy keys encrypted with the older unauthenticated
 AES-256-CBC scheme are still decryptable for backward compatibility, and are
 lazily re-wrapped into GCM format on first access.
 """
+
 import os
 import base64
 import re
@@ -29,13 +30,13 @@ def _get_encryption_key() -> bytes:
     Get the encryption key from environment variable.
     The key should be a 32-byte (256-bit) random string.
     """
-    key_str = os.getenv('ENCRYPTION_KEY')
+    key_str = os.getenv("ENCRYPTION_KEY")
     if not key_str:
         raise ValueError(
             "ENCRYPTION_KEY environment variable not set. "
             "Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'"
         )
-    
+
     # Convert hex string to bytes (should be 64 hex chars = 32 bytes)
     try:
         key_bytes = bytes.fromhex(key_str)
@@ -81,9 +82,9 @@ def encrypt_api_key(plain_key: str) -> str:
 
     # AESGCM.encrypt returns ciphertext with the 16-byte auth tag appended
     aesgcm = AESGCM(key)
-    ciphertext = aesgcm.encrypt(nonce, plain_key.encode('utf-8'), None)
+    ciphertext = aesgcm.encrypt(nonce, plain_key.encode("utf-8"), None)
 
-    result = _GCM_PREFIX + base64.b64encode(nonce + ciphertext).decode('utf-8')
+    result = _GCM_PREFIX + base64.b64encode(nonce + ciphertext).decode("utf-8")
 
     logger.info("API key encrypted successfully (AES-256-GCM)")
     return result
@@ -93,14 +94,14 @@ def _decrypt_gcm(encrypted_key: str) -> str:
     """Decrypt a "gcm:"-prefixed AES-256-GCM blob."""
     key = _get_encryption_key()
 
-    blob = base64.b64decode(encrypted_key[len(_GCM_PREFIX):])
+    blob = base64.b64decode(encrypted_key[len(_GCM_PREFIX) :])
     nonce = blob[:_GCM_NONCE_BYTES]
     ciphertext = blob[_GCM_NONCE_BYTES:]
 
     aesgcm = AESGCM(key)
     # Raises cryptography.exceptions.InvalidTag if the blob was tampered with.
     plain = aesgcm.decrypt(nonce, ciphertext, None)
-    return plain.decode('utf-8')
+    return plain.decode("utf-8")
 
 
 def _decrypt_cbc_legacy(encrypted_key: str) -> str:
@@ -124,7 +125,7 @@ def _decrypt_cbc_legacy(encrypted_key: str) -> str:
     unpadder = padding.PKCS7(128).unpadder()
     plain_data = unpadder.update(padded_data) + unpadder.finalize()
 
-    return plain_data.decode('utf-8')
+    return plain_data.decode("utf-8")
 
 
 def decrypt_api_key(encrypted_key: str) -> str:
@@ -182,7 +183,7 @@ def decrypt_user_api_key(user, db_session=None) -> str:
         ValueError: if there is no stored key, or decryption fails (including
             a GCM tamper-detection failure).
     """
-    encrypted = getattr(user, 'gemini_api_key_encrypted', None)
+    encrypted = getattr(user, "gemini_api_key_encrypted", None)
     if not encrypted:
         raise ValueError("User has no stored API key")
 
@@ -219,26 +220,28 @@ def decrypt_user_api_key(user, db_session=None) -> str:
 def validate_gemini_api_key_format(key: str) -> bool:
     """
     Validate that an API key matches the expected Gemini API key format.
-    
+
     Gemini API keys typically start with 'AIza' and are 39 characters long.
     Example: AIzaSyAbc123...
-    
+
     Args:
         key: The API key to validate
-        
+
     Returns:
         True if the format is valid, False otherwise
     """
     if not key or not isinstance(key, str):
         return False
-    
+
     # Gemini API keys: AIza[A-Za-z0-9_-]{35}
-    pattern = r'^AIza[A-Za-z0-9_-]{35}$'
-    
+    pattern = r"^AIza[A-Za-z0-9_-]{35}$"
+
     if re.match(pattern, key):
         return True
-    
-    logger.warning(f"API key format validation failed. Length: {len(key)}, Starts with AIza: {key.startswith('AIza') if key else False}")
+
+    logger.warning(
+        f"API key format validation failed. Length: {len(key)}, Starts with AIza: {key.startswith('AIza') if key else False}"
+    )
     return False
 
 
@@ -272,7 +275,10 @@ def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
         if "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower():
             return (False, "Invalid API key. Please check your key and try again.")
         elif "quota" in error_msg.lower() or "429" in error_msg:
-            return (False, "API key is valid but quota exceeded. Please check your Google Cloud quota.")
+            return (
+                False,
+                "API key is valid but quota exceeded. Please check your Google Cloud quota.",
+            )
         elif "permission" in error_msg.lower() or "403" in error_msg:
             return (False, "API key doesn't have permission to use Gemini API.")
         else:

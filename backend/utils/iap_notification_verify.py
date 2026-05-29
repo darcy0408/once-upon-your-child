@@ -21,6 +21,7 @@ Dependencies: `cryptography` and `PyJWT` (already pinned in
 backend/requirements.txt); `google-auth` for the Google OIDC path (also already
 pinned). No new dependency is introduced by this module.
 """
+
 from __future__ import annotations
 
 import base64
@@ -41,6 +42,7 @@ logger = logging.getLogger("iap_notification_verify")
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
+
 
 class IapVerificationError(Exception):
     """The notification could not be proven authentic -> caller returns 403."""
@@ -171,10 +173,12 @@ def _validate_apple_chain(
     now = datetime.now(timezone.utc)
     for cert in x5c_certs:
         # cryptography >= 42 exposes the tz-aware *_utc accessors.
-        not_before = getattr(cert, "not_valid_before_utc", None) or \
-            cert.not_valid_before.replace(tzinfo=timezone.utc)
-        not_after = getattr(cert, "not_valid_after_utc", None) or \
-            cert.not_valid_after.replace(tzinfo=timezone.utc)
+        not_before = getattr(
+            cert, "not_valid_before_utc", None
+        ) or cert.not_valid_before.replace(tzinfo=timezone.utc)
+        not_after = getattr(
+            cert, "not_valid_after_utc", None
+        ) or cert.not_valid_after.replace(tzinfo=timezone.utc)
         if now < not_before or now > not_after:
             raise IapVerificationError(
                 "A certificate in the x5c chain is expired or not yet valid"
@@ -189,20 +193,14 @@ def _validate_apple_chain(
                 "x5c chain is not contiguous (issuer/subject mismatch)"
             )
         if not _public_key_matches(issuer.public_key(), child):
-            raise IapVerificationError(
-                "x5c chain link failed signature verification"
-            )
+            raise IapVerificationError("x5c chain link failed signature verification")
 
     # The top of the supplied chain must chain to the trusted Apple root.
     top = x5c_certs[-1]
     if top.issuer != root_ca.subject:
-        raise IapVerificationError(
-            "x5c chain does not terminate at the Apple root CA"
-        )
+        raise IapVerificationError("x5c chain does not terminate at the Apple root CA")
     if not _public_key_matches(root_ca.public_key(), top):
-        raise IapVerificationError(
-            "x5c chain top is not signed by the Apple root CA"
-        )
+        raise IapVerificationError("x5c chain top is not signed by the Apple root CA")
 
     return x5c_certs[0]
 
@@ -250,9 +248,7 @@ def verify_apple_jws(signed_payload: str) -> Dict[str, Any]:
 
     # --- Verify the JWS signature with the (now trusted) leaf key ---------
     leaf_pubkey = leaf.public_key()
-    leaf_pem = leaf_pubkey.public_bytes(
-        Encoding.PEM, PublicFormat.SubjectPublicKeyInfo
-    )
+    leaf_pem = leaf_pubkey.public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo)
     try:
         payload = jwt.decode(
             signed_payload,
@@ -275,6 +271,7 @@ def verify_apple_jws(signed_payload: str) -> Dict[str, Any]:
 # ===========================================================================
 # Google — Real-Time Developer Notifications (Pub/Sub push OIDC token)
 # ===========================================================================
+
 
 def _expected_google_audience() -> str:
     """Return the configured expected OIDC audience for the Pub/Sub push.
@@ -345,8 +342,6 @@ def verify_google_pubsub_oidc(request) -> Dict[str, Any]:
     # explicit so a future google-auth change can't silently relax it.
     issuer = claims.get("iss")
     if issuer not in ("https://accounts.google.com", "accounts.google.com"):
-        raise IapVerificationError(
-            "Google Pub/Sub OIDC token has an unexpected issuer"
-        )
+        raise IapVerificationError("Google Pub/Sub OIDC token has an unexpected issuer")
 
     return claims

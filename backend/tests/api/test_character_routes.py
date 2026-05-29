@@ -70,27 +70,39 @@ def test_create_character_missing_name_returns_400(client, auth_headers, test_us
 
 
 def test_create_character_missing_age_returns_400(client, auth_headers, test_user):
-    response = client.post("/create-character", json={"name": "NoAge"}, headers=auth_headers)
+    response = client.post(
+        "/create-character", json={"name": "NoAge"}, headers=auth_headers
+    )
 
     assert response.status_code == 400
     assert "age" in response.get_json()["error"]
 
 
 def test_create_character_invalid_age_returns_400(client, auth_headers, test_user):
-    response = client.post("/create-character", json={"name": "Luna", "age": 200}, headers=auth_headers)
+    response = client.post(
+        "/create-character", json={"name": "Luna", "age": 200}, headers=auth_headers
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Age must be between 0 and 120."
 
 
-def test_get_characters_returns_only_current_user_records(client, auth_headers, test_user, app):
+def test_get_characters_returns_only_current_user_records(
+    client, auth_headers, test_user, app
+):
     with app.app_context():
         other_user = _create_user("other-user")
         db.session.add_all(
             [
-                Character(id=str(uuid.uuid4()), user_id=test_user.id, name="Mine 1", age=8),
-                Character(id=str(uuid.uuid4()), user_id=test_user.id, name="Mine 2", age=9),
-                Character(id=str(uuid.uuid4()), user_id=other_user.id, name="Not Mine", age=10),
+                Character(
+                    id=str(uuid.uuid4()), user_id=test_user.id, name="Mine 1", age=8
+                ),
+                Character(
+                    id=str(uuid.uuid4()), user_id=test_user.id, name="Mine 2", age=9
+                ),
+                Character(
+                    id=str(uuid.uuid4()), user_id=other_user.id, name="Not Mine", age=10
+                ),
             ]
         )
         db.session.commit()
@@ -113,7 +125,9 @@ def test_get_characters_requires_auth(client):
 
 def test_get_character_by_id_success(client, auth_headers, test_user, app):
     with app.app_context():
-        character = Character(id="char-get-1", user_id=test_user.id, name="Scout", age=8)
+        character = Character(
+            id="char-get-1", user_id=test_user.id, name="Scout", age=8
+        )
         db.session.add(character)
         db.session.commit()
 
@@ -142,7 +156,9 @@ def test_get_character_requires_auth(client):
 def test_get_character_other_user_forbidden(client, auth_headers, test_user, app):
     with app.app_context():
         other_user = _create_user("other-user-2")
-        db.session.add(Character(id="char-locked", user_id=other_user.id, name="Secret", age=7))
+        db.session.add(
+            Character(id="char-locked", user_id=other_user.id, name="Secret", age=7)
+        )
         db.session.commit()
 
     response = client.get("/characters/char-locked", headers=auth_headers)
@@ -153,12 +169,18 @@ def test_get_character_other_user_forbidden(client, auth_headers, test_user, app
 
 def test_update_character_success(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-update-1", user_id=test_user.id, name="Old", age=5))
+        db.session.add(
+            Character(id="char-update-1", user_id=test_user.id, name="Old", age=5)
+        )
         db.session.commit()
 
     response = client.patch(
         "/characters/char-update-1",
-        json={"name": "New", "traits": ["smart"], "generatedAvatar": {"seed": "updated"}},
+        json={
+            "name": "New",
+            "traits": ["smart"],
+            "generatedAvatar": {"seed": "updated"},
+        },
         headers=auth_headers,
     )
 
@@ -172,7 +194,9 @@ def test_update_character_success(client, auth_headers, test_user, app):
 
 def test_update_character_put_success(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-update-put", user_id=test_user.id, name="Old", age=7))
+        db.session.add(
+            Character(id="char-update-put", user_id=test_user.id, name="Old", age=7)
+        )
         db.session.commit()
 
     response = client.put(
@@ -189,7 +213,9 @@ def test_update_character_put_success(client, auth_headers, test_user, app):
 
 def test_update_character_requires_auth(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-update-auth", user_id=test_user.id, name="Kid", age=5))
+        db.session.add(
+            Character(id="char-update-auth", user_id=test_user.id, name="Kid", age=5)
+        )
         db.session.commit()
 
     response = client.patch("/characters/char-update-auth", json={"name": "NoAuth"})
@@ -200,10 +226,14 @@ def test_update_character_requires_auth(client, auth_headers, test_user, app):
 
 def test_update_character_invalid_age_returns_400(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-update-2", user_id=test_user.id, name="Kid", age=5))
+        db.session.add(
+            Character(id="char-update-2", user_id=test_user.id, name="Kid", age=5)
+        )
         db.session.commit()
 
-    response = client.patch("/characters/char-update-2", json={"age": -1}, headers=auth_headers)
+    response = client.patch(
+        "/characters/char-update-2", json={"age": -1}, headers=auth_headers
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Age must be between 0 and 120."
@@ -212,7 +242,11 @@ def test_update_character_invalid_age_returns_400(client, auth_headers, test_use
 def test_update_character_other_user_forbidden(client, auth_headers, test_user, app):
     with app.app_context():
         other_user = _create_user("other-user-3")
-        db.session.add(Character(id="char-update-forbidden", user_id=other_user.id, name="Lock", age=8))
+        db.session.add(
+            Character(
+                id="char-update-forbidden", user_id=other_user.id, name="Lock", age=8
+            )
+        )
         db.session.commit()
 
     response = client.patch(
@@ -238,7 +272,9 @@ def test_update_character_not_found_returns_404(client, auth_headers, test_user)
 
 def test_delete_character_success(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-delete-1", user_id=test_user.id, name="Gone", age=9))
+        db.session.add(
+            Character(id="char-delete-1", user_id=test_user.id, name="Gone", age=9)
+        )
         db.session.commit()
 
     response = client.delete("/characters/char-delete-1", headers=auth_headers)
@@ -252,7 +288,9 @@ def test_delete_character_success(client, auth_headers, test_user, app):
 
 def test_delete_character_requires_auth(client, auth_headers, test_user, app):
     with app.app_context():
-        db.session.add(Character(id="char-delete-auth", user_id=test_user.id, name="Kid", age=7))
+        db.session.add(
+            Character(id="char-delete-auth", user_id=test_user.id, name="Kid", age=7)
+        )
         db.session.commit()
 
     response = client.delete("/characters/char-delete-auth")
@@ -264,7 +302,11 @@ def test_delete_character_requires_auth(client, auth_headers, test_user, app):
 def test_delete_character_other_user_forbidden(client, auth_headers, test_user, app):
     with app.app_context():
         other_user = _create_user("other-user-4")
-        db.session.add(Character(id="char-delete-forbidden", user_id=other_user.id, name="Safe", age=6))
+        db.session.add(
+            Character(
+                id="char-delete-forbidden", user_id=other_user.id, name="Safe", age=6
+            )
+        )
         db.session.commit()
 
     response = client.delete("/characters/char-delete-forbidden", headers=auth_headers)
@@ -318,8 +360,9 @@ def test_parent_hidden_context_requires_auth(client):
     assert response.get_json()["error"] == "Authentication required"
 
 
-
-def test_parent_hidden_context_rejects_non_allowlisted_trigger(client, auth_headers, test_user):
+def test_parent_hidden_context_rejects_non_allowlisted_trigger(
+    client, auth_headers, test_user
+):
     response = client.put(
         "/child-profiles/profile-1/parent-hidden-context",
         json={
@@ -332,7 +375,6 @@ def test_parent_hidden_context_rejects_non_allowlisted_trigger(client, auth_head
 
     assert response.status_code == 400
     assert "unrecognised values" in response.get_json()["error"]
-
 
 
 def test_parent_hidden_context_accepts_multi_trigger(client, auth_headers, test_user):

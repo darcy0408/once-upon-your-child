@@ -62,11 +62,27 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="AdvancedStoryEngine.generate_enhanced_prompt",
         output_format="json: title, themes, characters_featured, emotional_arc, pages[].text, pages[].image_prompt",
         interpolated_vars=(
-            "character", "age", "theme", "gender", "strengths", "special_ability",
-            "companion_name", "companion_kind", "custom_elements", "world_bible",
-            "conflict_hook", "sensory_palette", "mood_rules", "feelings_instruction",
-            "virtue_instruction", "word_range", "per_page_words", "word_ceiling_note",
-            "sprout_page_rule", "complexity_instruction", "hard_complexity_constraints",
+            "character",
+            "age",
+            "theme",
+            "gender",
+            "strengths",
+            "special_ability",
+            "companion_name",
+            "companion_kind",
+            "custom_elements",
+            "world_bible",
+            "conflict_hook",
+            "sensory_palette",
+            "mood_rules",
+            "feelings_instruction",
+            "virtue_instruction",
+            "word_range",
+            "per_page_words",
+            "word_ceiling_note",
+            "sprout_page_rule",
+            "complexity_instruction",
+            "hard_complexity_constraints",
             "young_delight_rules",
         ),
         description="Master Storyteller persona; 3-act arc; hero-centric; emotion/virtue modeling.",
@@ -82,8 +98,12 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_learning_to_read_prompt (limericks branch)",
         output_format="json: title, rhyme_scheme, themes, characters_featured, emotional_arc, pages[].text",
         interpolated_vars=(
-            "num_pages", "character_name", "theme", "comp_str",
-            "mandatory_names_str", "custom_elements",
+            "num_pages",
+            "character_name",
+            "theme",
+            "comp_str",
+            "mandatory_names_str",
+            "custom_elements",
         ),
         description="Connected limericks, AABBA rhyme, phonics-friendly, Seussian humor.",
     ),
@@ -98,9 +118,15 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_learning_to_read_prompt (non-limerick branch)",
         output_format="json: title, rhyme_scheme, themes, characters_featured, emotional_arc, pages[].text",
         interpolated_vars=(
-            "num_pages", "character_name", "theme", "comp_str",
-            "mandatory_names_str", "custom_elements", "format_instruction",
-            "vocab_instruction", "rhyme_scheme_instruction",
+            "num_pages",
+            "character_name",
+            "theme",
+            "comp_str",
+            "mandatory_names_str",
+            "custom_elements",
+            "format_instruction",
+            "vocab_instruction",
+            "rhyme_scheme_instruction",
         ),
         description="Dr. Seuss bouncy rhythm, AABB couplets, hard cap 25 words/page.",
     ),
@@ -115,10 +141,22 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_rhyme_time_prompt",
         output_format="json: title, themes, characters_featured, emotional_arc, pages[].text",
         interpolated_vars=(
-            "character_name", "gender_text", "age", "theme", "conflict_hook",
-            "world_bible", "sensory_palette", "strengths", "special_ability",
-            "age_instruction", "rhyme_scheme_instruction", "requirements_line",
-            "comp_str", "mandatory_names_str", "custom_elements", "config_notes",
+            "character_name",
+            "gender_text",
+            "age",
+            "theme",
+            "conflict_hook",
+            "world_bible",
+            "sensory_palette",
+            "strengths",
+            "special_ability",
+            "age_instruction",
+            "rhyme_scheme_instruction",
+            "requirements_line",
+            "comp_str",
+            "mandatory_names_str",
+            "custom_elements",
+            "config_notes",
         ),
         description="Narrative poetry; ballad/sonnet/limerick scaled by age band.",
     ),
@@ -133,8 +171,15 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_bedtime_prompt",
         output_format="json: title, themes, characters_featured, emotional_arc, pages[].text",
         interpolated_vars=(
-            "heroes_str", "all_mandatory", "comp_str", "world_desc", "tone_hint",
-            "age_notes", "word_range", "SAFETY_GUARDRAILS", "STRICT_OUTPUT_CONSTRAINTS",
+            "heroes_str",
+            "all_mandatory",
+            "comp_str",
+            "world_desc",
+            "tone_hint",
+            "age_notes",
+            "word_range",
+            "SAFETY_GUARDRAILS",
+            "STRICT_OUTPUT_CONSTRAINTS",
         ),
         description="Soothing prose; no chases/battles; cozy ending; sleep cues.",
     ),
@@ -149,9 +194,16 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_superhero_prompt",
         output_format="json: same shape as T1",
         interpolated_vars=(
-            "character", "age", "hero_costume_color", "hero_cape_style",
-            "hero_emblem", "hero_power", "villain_name", "villain_weakness",
-            "villain_problem_desc", "problem_consequence",
+            "character",
+            "age",
+            "hero_costume_color",
+            "hero_cape_style",
+            "hero_emblem",
+            "hero_power",
+            "villain_name",
+            "villain_weakness",
+            "villain_problem_desc",
+            "problem_consequence",
         ),
         description="6-beat villain matrix; 100-150 word cap; cheer-beat ending.",
     ),
@@ -166,9 +218,17 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         builder_function="_build_superhero_prompt_explorer",
         output_format="json: same shape as T1",
         interpolated_vars=(
-            "character", "age", "hero_costume_color", "hero_cape_style",
-            "hero_emblem", "hero_power", "villain_name", "villain_power",
-            "villain_weakness", "problem_desc", "problem_consequence",
+            "character",
+            "age",
+            "hero_costume_color",
+            "hero_cape_style",
+            "hero_emblem",
+            "hero_power",
+            "villain_name",
+            "villain_power",
+            "villain_weakness",
+            "problem_desc",
+            "problem_consequence",
         ),
         description="6-beat villain matrix; 250-350 word cap; richer prose than Sprout.",
     ),
@@ -246,11 +306,18 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
 # Templates that are directly sent to the LLM as a complete prompt.
 # T8/T9 (static injections) and T11/T12/T13 (conditional injections) are
 # fragments composed into T1 — they don't define independent cells.
-SENDABLE_TEMPLATE_IDS = frozenset({
-    "T1_STANDARD", "T2_LTR_LIMERICK", "T3_LTR_SEUSSIAN",
-    "T4_RHYME_TIME", "T5_BEDTIME",
-    "T6_SUPERHERO_SPROUT", "T7_SUPERHERO_EXPLORER",
-})
+SENDABLE_TEMPLATE_IDS = frozenset(
+    {
+        "T1_STANDARD",
+        "T2_LTR_LIMERICK",
+        "T3_LTR_SEUSSIAN",
+        "T4_RHYME_TIME",
+        "T5_BEDTIME",
+        "T6_SUPERHERO_SPROUT",
+        "T7_SUPERHERO_EXPLORER",
+    }
+)
+
 
 # Valid (mode, age_band) cells. Deduped — multiple fragments may share a mode.
 def _build_valid_cells() -> tuple[tuple[str, str], ...]:
@@ -274,7 +341,4 @@ def by_id(template_id: str) -> PromptTemplate:
 
 
 def for_cell(mode: str, age_band: str) -> tuple[PromptTemplate, ...]:
-    return tuple(
-        t for t in TEMPLATES
-        if t.mode == mode and age_band in t.age_bands
-    )
+    return tuple(t for t in TEMPLATES if t.mode == mode and age_band in t.age_bands)

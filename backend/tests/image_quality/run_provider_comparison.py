@@ -47,6 +47,7 @@ _REPO_ROOT = _BACKEND_DIR.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
 if _ENV_FILE.exists():
     from dotenv import load_dotenv
+
     load_dotenv(dotenv_path=_ENV_FILE, override=False)
 
 sys.path.insert(0, str(_REPO_ROOT))
@@ -106,7 +107,9 @@ TEST_CASES = [
             "outfit": "weathered leather adventurer jacket and goggles",
             "gender": "girl",
         },
-        "companions": [{"name": "Finn", "description": "a brave explorer friend with a torch"}],
+        "companions": [
+            {"name": "Finn", "description": "a brave explorer friend with a torch"}
+        ],
         "therapeutic_focus": "perseverance and teamwork",
         "pages": [
             "Zoe and Finn stand at the entrance of a vast crystal cave, raising a torch that reflects rainbow shards across the walls.",
@@ -155,9 +158,9 @@ TEST_CASES = [
 
 # ── Per-provider cost estimates (used for run accounting only) ──────────────
 PROVIDER_COSTS_USD = {
-    "gemini":       0.039,    # Gemini 2.5 Flash Image, billed per image
-    "sdxl":         0.003,    # bytedance/sdxl-lightning-4step (avg of 0.0017–0.003)
-    "flux_schnell": 0.003,    # black-forest-labs/flux-schnell
+    "gemini": 0.039,  # Gemini 2.5 Flash Image, billed per image
+    "sdxl": 0.003,  # bytedance/sdxl-lightning-4step (avg of 0.0017–0.003)
+    "flux_schnell": 0.003,  # black-forest-labs/flux-schnell
 }
 
 
@@ -216,9 +219,15 @@ def _build_companions_text(companions: list | None) -> str:
     return f" Companions in scene: {', '.join(parts)}." if parts else ""
 
 
-def build_prompt(scene: str, character_name: str, character_appearance: dict | None,
-                 companions: list | None, therapeutic_focus: str | None, age: int,
-                 style: str = "children's book illustration") -> str:
+def build_prompt(
+    scene: str,
+    character_name: str,
+    character_appearance: dict | None,
+    companions: list | None,
+    therapeutic_focus: str | None,
+    age: int,
+    style: str = "children's book illustration",
+) -> str:
     detail, audience = _age_descriptor(age)
     char_desc = _build_character_description(character_name, character_appearance)
     companions_text = _build_companions_text(companions)
@@ -270,20 +279,28 @@ def run_gemini(prompt: str, character_name: str, age: int) -> bytes:
     raise ProviderError("Gemini returned no inline_data image part")
 
 
-def _replicate_predict(model_version: str, input_payload: dict, timeout_s: int = 120) -> str:
+def _replicate_predict(
+    model_version: str, input_payload: dict, timeout_s: int = 120
+) -> str:
     import requests
+
     api_key = os.getenv("REPLICATE_API_TOKEN")
     if not api_key:
         raise ProviderError("REPLICATE_API_TOKEN not set in env")
 
     create = requests.post(
         "https://api.replicate.com/v1/predictions",
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
         json={"version": model_version, "input": input_payload},
         timeout=30,
     )
     if create.status_code not in (200, 201):
-        raise ProviderError(f"Replicate create failed: {create.status_code} {create.text[:300]}")
+        raise ProviderError(
+            f"Replicate create failed: {create.status_code} {create.text[:300]}"
+        )
     pid = create.json().get("id")
     if not pid:
         raise ProviderError(f"Replicate response missing id: {create.text[:300]}")
@@ -314,15 +331,19 @@ def _replicate_predict(model_version: str, input_payload: dict, timeout_s: int =
 
 def run_sdxl_lightning(prompt: str, character_name: str, age: int) -> bytes:
     import requests
+
     version = "5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637"  # bytedance/sdxl-lightning-4step
-    url = _replicate_predict(version, {
-        "prompt": prompt,
-        "width": 1024,
-        "height": 1024,
-        "num_outputs": 1,
-        "scheduler": "K_EULER",
-        "num_inference_steps": 4,
-    })
+    url = _replicate_predict(
+        version,
+        {
+            "prompt": prompt,
+            "width": 1024,
+            "height": 1024,
+            "num_outputs": 1,
+            "scheduler": "K_EULER",
+            "num_inference_steps": 4,
+        },
+    )
     r = requests.get(url, timeout=30)
     r.raise_for_status()
     return r.content
@@ -330,6 +351,7 @@ def run_sdxl_lightning(prompt: str, character_name: str, age: int) -> bytes:
 
 def run_flux_schnell(prompt: str, character_name: str, age: int) -> bytes:
     import requests
+
     api_key = os.getenv("REPLICATE_API_TOKEN")
     if not api_key:
         raise ProviderError("REPLICATE_API_TOKEN not set in env")
@@ -352,7 +374,9 @@ def run_flux_schnell(prompt: str, character_name: str, age: int) -> bytes:
         timeout=70,
     )
     if create.status_code not in (200, 201):
-        raise ProviderError(f"Flux create failed: {create.status_code} {create.text[:300]}")
+        raise ProviderError(
+            f"Flux create failed: {create.status_code} {create.text[:300]}"
+        )
     body = create.json()
     if body.get("status") not in ("succeeded", "starting", "processing", None):
         raise ProviderError(f"Flux unexpected status {body.get('status')}: {body}")
@@ -378,7 +402,11 @@ def run_flux_schnell(prompt: str, character_name: str, age: int) -> bytes:
             raise ProviderError("Flux prediction timed out")
 
     output = body.get("output") or []
-    url = output[0] if isinstance(output, list) and output else (output if isinstance(output, str) else None)
+    url = (
+        output[0]
+        if isinstance(output, list) and output
+        else (output if isinstance(output, str) else None)
+    )
     if not url:
         raise ProviderError(f"Flux returned no output: {body}")
     r = requests.get(url, timeout=30)
@@ -396,13 +424,20 @@ PROVIDER_RUNNERS = {
 # ─── Main orchestrator ──────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--providers", default="gemini,sdxl,flux_schnell",
-                        help="Comma-separated provider keys")
+    parser.add_argument(
+        "--providers",
+        default="gemini,sdxl,flux_schnell",
+        help="Comma-separated provider keys",
+    )
     parser.add_argument("--ages", default="all", help="Comma-separated bands or 'all'")
-    parser.add_argument("--pages", type=int, default=3,
-                        help="How many pages per band (1-3)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Build prompts and write prompts.json; skip API calls")
+    parser.add_argument(
+        "--pages", type=int, default=3, help="How many pages per band (1-3)"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build prompts and write prompts.json; skip API calls",
+    )
     args = parser.parse_args()
 
     providers = [p.strip() for p in args.providers.split(",") if p.strip()]
@@ -411,7 +446,9 @@ def main():
             print(f"Unknown provider: {p}", file=sys.stderr)
             sys.exit(2)
 
-    bands_filter = None if args.ages == "all" else {a.strip() for a in args.ages.split(",")}
+    bands_filter = (
+        None if args.ages == "all" else {a.strip() for a in args.ages.split(",")}
+    )
     cases = [c for c in TEST_CASES if not bands_filter or c["band"] in bands_filter]
     pages_per = max(1, min(args.pages, 3))
 
@@ -427,22 +464,26 @@ def main():
                 therapeutic_focus=case["therapeutic_focus"],
                 age=case["age"],
             )
-            prompts_record.append({
-                "band": case["band"],
-                "age": case["age"],
-                "page": i,
-                "scene": scene,
-                "character_name": case["character_name"],
-                "prompt": prompt,
-            })
+            prompts_record.append(
+                {
+                    "band": case["band"],
+                    "age": case["age"],
+                    "page": i,
+                    "scene": scene,
+                    "character_name": case["character_name"],
+                    "prompt": prompt,
+                }
+            )
 
     (RESULTS_DIR / "prompts.json").write_text(json.dumps(prompts_record, indent=2))
     print(f"Wrote {len(prompts_record)} prompts to {RESULTS_DIR / 'prompts.json'}")
 
     total_imgs = len(prompts_record) * len(providers)
     est_cost = sum(PROVIDER_COSTS_USD[p] for p in providers) * len(prompts_record)
-    print(f"Plan: {total_imgs} images across {len(providers)} provider(s), "
-          f"estimated cost ${est_cost:.3f}")
+    print(
+        f"Plan: {total_imgs} images across {len(providers)} provider(s), "
+        f"estimated cost ${est_cost:.3f}"
+    )
 
     if args.dry_run:
         print("Dry run — not calling APIs.")
@@ -482,8 +523,10 @@ def main():
                 entry["bytes"] = len(img_bytes)
                 entry["latency_s"] = round(time.time() - t0, 2)
                 entry["est_cost_usd"] = PROVIDER_COSTS_USD[provider]
-                print(f"  [OK]   {provider} {band} p{page}  {entry['latency_s']}s  "
-                      f"{len(img_bytes)//1024}KB")
+                print(
+                    f"  [OK]   {provider} {band} p{page}  {entry['latency_s']}s  "
+                    f"{len(img_bytes)//1024}KB"
+                )
             except Exception as e:
                 entry["status"] = "error"
                 entry["error"] = str(e)[:300]
@@ -495,16 +538,19 @@ def main():
 
     manifest["finished_at"] = datetime.now().isoformat()
     ok_count = sum(1 for r in manifest["results"] if r["status"] == "ok")
-    actual_cost = sum(r.get("est_cost_usd", 0) for r in manifest["results"]
-                      if r["status"] == "ok")
+    actual_cost = sum(
+        r.get("est_cost_usd", 0) for r in manifest["results"] if r["status"] == "ok"
+    )
     manifest["summary"] = {
         "total_attempts": len(manifest["results"]),
         "successful": ok_count,
         "actual_cost_usd_est": round(actual_cost, 4),
     }
     (RESULTS_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(f"\nDone: {ok_count}/{len(manifest['results'])} OK  "
-          f"~${actual_cost:.3f} estimated cost")
+    print(
+        f"\nDone: {ok_count}/{len(manifest['results'])} OK  "
+        f"~${actual_cost:.3f} estimated cost"
+    )
 
 
 if __name__ == "__main__":

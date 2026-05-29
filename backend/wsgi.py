@@ -1,6 +1,7 @@
 """
 WSGI entry point for Railway deployment.
 """
+
 import os
 import sys
 
@@ -11,7 +12,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from backend.app import create_app
 
 # Create the application instance
-config_name = os.getenv('FLASK_ENV', 'production')
+config_name = os.getenv("FLASK_ENV", "production")
 app = create_app(config_name)
 
 if __name__ == "__main__":

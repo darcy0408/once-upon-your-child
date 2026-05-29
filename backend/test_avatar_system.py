@@ -6,6 +6,7 @@ Tests:
 2. Avatar Generation Service - full generation flow
 3. Avatar API Endpoints - HTTP requests
 """
+
 import sys
 import os
 
@@ -13,14 +14,17 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from services.avatar_prompt_service import AvatarPromptService
-from services.avatar_generation_service import AvatarGenerationService, get_error_message
+from services.avatar_generation_service import (
+    AvatarGenerationService,
+    get_error_message,
+)
 
 
 def test_prompt_service():
     """Test AvatarPromptService"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 1: Avatar Prompt Service")
-    print("="*60)
+    print("=" * 60)
 
     service = AvatarPromptService()
 
@@ -34,8 +38,8 @@ def test_prompt_service():
             "hair_style": "Long Curly",
             "hair_color": "Brown",
             "skin_tone": "Medium Tan",
-            "outfit": "Explorer Jacket"
-        }
+            "outfit": "Explorer Jacket",
+        },
     )
 
     assert "Luna" in prompt
@@ -52,14 +56,11 @@ def test_prompt_service():
         "secondary": "Joyful",
         "eye_type": "Happy",
         "mouth_type": "Smile",
-        "intensity": 4
+        "intensity": 4,
     }
 
     prompt_with_emotion = service.build_avatar_prompt(
-        character_name="Luna",
-        age=8,
-        features={},
-        emotion_data=emotion_data
+        character_name="Luna", age=8, features={}, emotion_data=emotion_data
     )
 
     assert "Happy" in prompt_with_emotion
@@ -92,10 +93,13 @@ def test_prompt_service():
 
     # Test 1.5: All style anchors
     print("\n[1.5] Testing all style anchors...")
-    styles = ['pixar', 'watercolor', 'cartoon', 'clay']
+    styles = ["pixar", "watercolor", "cartoon", "clay"]
     for style in styles:
         prompt = service.build_avatar_prompt("Test", 7, style=style)
-        assert style.lower() in prompt.lower() or service.STYLE_ANCHORS[style].lower() in prompt.lower()
+        assert (
+            style.lower() in prompt.lower()
+            or service.STYLE_ANCHORS[style].lower() in prompt.lower()
+        )
         print(f"   [OK] {style.capitalize()} style works")
 
     print("\n[OK] All Avatar Prompt Service tests passed!")
@@ -103,9 +107,9 @@ def test_prompt_service():
 
 def test_generation_service():
     """Test AvatarGenerationService"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 2: Avatar Generation Service")
-    print("="*60)
+    print("=" * 60)
 
     service = AvatarGenerationService()
 
@@ -145,20 +149,22 @@ def test_generation_service():
     # Test 2.3: Fallback avatars
     print("\n[2.3] Testing fallback avatars...")
     fallbacks = service.get_fallback_avatars()
-    assert len(fallbacks) == 8, "Should have 8 fallback avatars (2 per style x 4 styles)"
+    assert (
+        len(fallbacks) == 8
+    ), "Should have 8 fallback avatars (2 per style x 4 styles)"
     print(f"[OK] Found {len(fallbacks)} fallback avatars")
 
     pixar_fallbacks = service.get_fallback_avatars(style="pixar")
     assert len(pixar_fallbacks) == 2
-    assert all(fb['style'] == 'pixar' for fb in pixar_fallbacks)
+    assert all(fb["style"] == "pixar" for fb in pixar_fallbacks)
     print(f"[OK] Style filtering works (Pixar: {len(pixar_fallbacks)})")
 
     # Test 2.4: Error messages
     print("\n[2.4] Testing error messages...")
-    for code in ['generation_failed', 'timeout', 'invalid_style']:
+    for code in ["generation_failed", "timeout", "invalid_style"]:
         message = get_error_message(code)
         assert len(message) > 0
-        assert '!' in message or '?' in message  # Kid-friendly messages
+        assert "!" in message or "?" in message  # Kid-friendly messages
         print(f"   [OK] {code}: {message[:50]}...")
 
     print("\n[OK] All Avatar Generation Service tests passed!")
@@ -166,9 +172,9 @@ def test_generation_service():
 
 def test_api_integration():
     """Test API endpoints (requires running Flask app)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 3: API Integration")
-    print("="*60)
+    print("=" * 60)
 
     print("\n[Info] To test API endpoints, run:")
     print("   1. Start Flask backend: python backend/run.py")
@@ -177,14 +183,14 @@ def test_api_integration():
     print("   3. Test avatar generation:")
     print("      curl -X POST http://localhost:5000/avatar/generate-avatar \\")
     print("        -H 'Content-Type: application/json' \\")
-    print("        -d '{\"character_name\":\"Luna\",\"age\":8,\"style\":\"pixar\"}'")
+    print('        -d \'{"character_name":"Luna","age":8,"style":"pixar"}\'')
 
 
 def main():
     """Run all tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("MAGICAL AVATAR SYSTEM - BACKEND TESTS")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # Test 1: Prompt Service
@@ -196,9 +202,9 @@ def main():
         # Test 3: API Integration Info
         test_api_integration()
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("[SUCCESS] ALL TESTS PASSED!")
-        print("="*60)
+        print("=" * 60)
         print("\nNext steps:")
         print("1. Set GEMINI_API_KEY environment variable for full testing")
         print("2. Start Flask backend to test API endpoints")
@@ -211,6 +217,7 @@ def main():
     except Exception as e:
         print(f"\n[ERROR] UNEXPECTED ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

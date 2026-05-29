@@ -10,7 +10,6 @@ from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
 
-
 CASES = [
     {
         "label": "mad",

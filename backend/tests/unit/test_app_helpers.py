@@ -5,6 +5,7 @@ expensive-tier rate-limit floors). The Flask request-context helpers are
 exercised via the existing API test suites; here we focus on the pure
 functions that do not require an app context.
 """
+
 from __future__ import annotations
 
 import logging
@@ -99,6 +100,7 @@ class TestExpensiveTierPerMinuteFloors:
 
         # Re-import the function to read its literal default dict via inspect.
         import inspect
+
         src = inspect.getsource(app_helpers.get_tier_limits)
         # Sanity: the block is small; just check the literal strings appear.
         return src

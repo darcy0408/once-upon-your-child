@@ -6,6 +6,7 @@ The resolver must:
   - Fall back to T1_STANDARD on unknown / malformed input rather than raise
     (persistence must never break story generation).
 """
+
 from __future__ import annotations
 
 import re
@@ -24,9 +25,9 @@ _HEX16 = re.compile(r"^[0-9a-f]{16}$")
         ("standard", 30, "T1_STANDARD"),
         ("bedtime", 6, "T5_BEDTIME"),
         ("rhyme_time", 4, "T4_RHYME_TIME"),
-        ("ltr", 4, "T3_LTR_SEUSSIAN"),   # ages <=5 CVC branch
-        ("ltr", 6, "T3_LTR_SEUSSIAN"),   # age-6 Dr Seuss branch
-        ("ltr", 7, "T2_LTR_LIMERICK"),   # limerick band lower edge
+        ("ltr", 4, "T3_LTR_SEUSSIAN"),  # ages <=5 CVC branch
+        ("ltr", 6, "T3_LTR_SEUSSIAN"),  # age-6 Dr Seuss branch
+        ("ltr", 7, "T2_LTR_LIMERICK"),  # limerick band lower edge
         ("ltr", 12, "T2_LTR_LIMERICK"),  # limerick band upper edge
         ("ltr", 13, "T3_LTR_SEUSSIAN"),  # 13+ prose branch (catch-all id)
         ("superhero", 4, "T6_SUPERHERO_SPROUT"),

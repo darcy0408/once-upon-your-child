@@ -14,13 +14,14 @@ data_deleted         — GDPR right-to-erasure executed
 Retention: rows older than 90 days can be purged by a scheduled job.
 The table is append-only — rows are never updated.
 """
+
 from datetime import datetime, timezone
 
 from ..database import db
 
 
 class AuditLog(db.Model):
-    __tablename__ = 'audit_log'
+    __tablename__ = "audit_log"
 
     id = db.Column(db.Integer, primary_key=True)
     # user_id is nullable — some events (e.g. failed auth) have no authenticated user
@@ -28,7 +29,7 @@ class AuditLog(db.Model):
     event_type = db.Column(db.String(50), nullable=False, index=True)
     # Structured metadata: keep small, no PII, no story content
     event_data = db.Column(db.JSON, nullable=True)
-    ip_address = db.Column(db.String(45), nullable=True)   # IPv4 or IPv6
+    ip_address = db.Column(db.String(45), nullable=True)  # IPv4 or IPv6
     created_at = db.Column(
         db.DateTime,
         nullable=False,
@@ -38,10 +39,10 @@ class AuditLog(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'event_type': self.event_type,
-            'event_data': self.event_data,
-            'ip_address': self.ip_address,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            "id": self.id,
+            "user_id": self.user_id,
+            "event_type": self.event_type,
+            "event_data": self.event_data,
+            "ip_address": self.ip_address,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

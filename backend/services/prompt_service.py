@@ -19,6 +19,7 @@ except ImportError:
         get_band_tables as _sh_get_band_tables,
     )
 
+
 class PromptService:
     @staticmethod
     def build_story_prompt(
@@ -87,20 +88,24 @@ class PromptService:
         # Base story setup
         sections.append(f"Create a story for {character} (age {age})")
         sections.append(f"Theme: {theme}")
-        
+
         # Companion Setup (Enhanced)
         if companion_characters:
-            sections.append(PromptService._build_companion_section(companion_characters))
+            sections.append(
+                PromptService._build_companion_section(companion_characters)
+            )
         elif companion:
-             sections.append(f"Companion: {companion}")
+            sections.append(f"Companion: {companion}")
 
         # Spark Tool Instruction
         if spark_tool:
-            sections.append(f"HERO TOOL: The hero has a special tool called '{spark_tool}'. It MUST be used exactly once, either at the midpoint or the climax, to help solve a specific problem.")
+            sections.append(
+                f"HERO TOOL: The hero has a special tool called '{spark_tool}'. It MUST be used exactly once, either at the midpoint or the climax, to help solve a specific problem."
+            )
 
         # Mood Physics (World Rules)
         if mood_physics:
-             sections.append(f"""
+            sections.append(f"""
              WORLD PHYSICS RULE (The world bends to the mood '{mood_physics.get('mood_name')}'):
              - RULE: {mood_physics.get('world_rule')}
              - SENSORY CHANGE: {mood_physics.get('sensory_change')}
@@ -133,15 +138,17 @@ class PromptService:
 
         # Mode-specific instructions
         if learning_to_read_mode:
-            sections.append(PromptService._get_learning_to_read_instructions(character, theme, age, companion, character_details))
+            sections.append(
+                PromptService._get_learning_to_read_instructions(
+                    character, theme, age, companion, character_details
+                )
+            )
         elif rhyme_time_mode:
             sections.append(PromptService._get_rhyme_time_instructions(age))
 
         # Character details
         if character_details:
-            details_section = PromptService._build_character_details(
-                character_details
-            )
+            details_section = PromptService._build_character_details(character_details)
             sections.append(details_section)
 
         # Character evolution
@@ -204,7 +211,13 @@ class PromptService:
             """
 
     @staticmethod
-    def _get_learning_to_read_instructions(character_name: str, theme: str, age: int, companion: str | None, character_details: dict | None) -> str:
+    def _get_learning_to_read_instructions(
+        character_name: str,
+        theme: str,
+        age: int,
+        companion: str | None,
+        character_details: dict | None,
+    ) -> str:
         companion_text = f"Include {companion} as a gentle helper." if companion else ""
         return f"""
 You are creating a LEARNING TO READ rhyming story for a {age}-year-old named {character_name}.
@@ -240,33 +253,35 @@ Create the rhyming learning-to-read story about {character_name} now:
         """Build detailed companion section with powers/constraints"""
         lines = ["COMPANIONS:"]
         for comp in companion_characters:
-            if isinstance(comp, dict) and 'signature_power' in comp:
+            if isinstance(comp, dict) and "signature_power" in comp:
                 lines.append(f"- Name: {comp.get('name')}")
                 lines.append(f"  Description: {comp.get('description')}")
                 lines.append(f"  Signature Power: {comp.get('signature_power')}")
                 lines.append(f"  Constraint: {comp.get('power_constraint')}")
                 lines.append(f"  Sensory Tell: {comp.get('sensory_tell')}")
             elif isinstance(comp, dict):
-                 lines.append(f"- {comp.get('name')}")
+                lines.append(f"- {comp.get('name')}")
             else:
-                 lines.append(f"- {comp}")
+                lines.append(f"- {comp}")
         return "\n".join(lines)
 
     @staticmethod
     def _build_character_details(character_details: dict) -> str:
         """Build character details section for prompt"""
         details = ["CHARACTER DETAILS:"]
-        
-        if 'special_ability' in character_details:
+
+        if "special_ability" in character_details:
             details.append(f"SPECIAL ABILITY: {character_details['special_ability']}")
-            
-        if 'personality_sliders' in character_details:
-             details.append(f"Personality: {character_details['personality_sliders']}")
+
+        if "personality_sliders" in character_details:
+            details.append(f"Personality: {character_details['personality_sliders']}")
 
         return "\n".join(details)
 
     @staticmethod
-    def _build_character_evolution_context(character_name: str, character_evolution: dict) -> str:
+    def _build_character_evolution_context(
+        character_name: str, character_evolution: dict
+    ) -> str:
         """Build character evolution context for prompt"""
         # This would be more complex, extracting development stage, therapeutic progress, etc.
         return ""
@@ -308,8 +323,12 @@ Create the rhyming learning-to-read story about {character_name} now:
         power_verb = power_spec["verb"]
 
         # --- Resolve villain + problem (server-picked, fallback if missing) ---
-        if not villain_id or villain_id not in _SH_VILLAINS \
-                or not problem_id or problem_id not in _SH_PROBLEMS:
+        if (
+            not villain_id
+            or villain_id not in _SH_VILLAINS
+            or not problem_id
+            or problem_id not in _SH_PROBLEMS
+        ):
             villain_id, problem_id = _sh_pick_pairing(power_id)
         villain = _SH_VILLAINS[villain_id]
         problem = _SH_PROBLEMS[problem_id]
@@ -442,7 +461,9 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         (including the Sprout-only fallback case) fall back to ``super_smile``,
         a power ID both bands share.
         """
-        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables("explorer")
+        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
+            "explorer"
+        )
 
         # --- Resolve power (with safe fallback to super_smile) ---
         power_id = (hero_power or "").strip().lower() or "super_smile"
@@ -482,9 +503,7 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         # rather than inventing an abstract puzzle/landscape antagonist.
         # MT-121: Explorer stories were drifting into puzzle motifs
         # ("Whispering Rainbow Mountain") because the villain wasn't pinned.
-        canonical_villain_names = [
-            v["name"] for v in villains_t.values()
-        ]
+        canonical_villain_names = [v["name"] for v in villains_t.values()]
         canonical_villain_list = ", ".join(canonical_villain_names)
 
         # --- Section markers in plain language (the model fills in the prose) ---
@@ -581,4 +600,3 @@ Strictly return valid JSON with this structure:
 
 Begin now. Stop at 350 words across all pages combined.
 """
-

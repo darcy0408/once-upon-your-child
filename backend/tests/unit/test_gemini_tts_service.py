@@ -17,6 +17,7 @@ Specifically:
   so a future voice rename in Gemini's API surfaces as a test failure rather
   than a 500 at runtime.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -30,7 +31,6 @@ from backend.gemini_tts_service import (
     gemini_voice_for,
 )
 
-
 # ---------------------------------------------------------------------------
 # gemini_voice_for() — ElevenLabs ID → Gemini prebuilt name mapping
 # ---------------------------------------------------------------------------
@@ -42,14 +42,14 @@ class TestGeminiVoiceFor:
     @pytest.mark.parametrize(
         ("elevenlabs_id", "expected_gemini_voice"),
         [
-            ("XrExE9yKIg1WjnnlVkGX", "Leda"),         # Matilda → warm female
-            ("21m00Tcm4TlvDq8ikWAM", "Aoede"),        # Rachel → calm female
-            ("ThT5KcBeYPX3keUQqHPh", "Aoede"),        # Dorothy (British) → calm
-            ("jBpfuIE2acCO8z3wKNLl", "Callirrhoe"),   # Gigi (childlike) → playful
-            ("JBFqnCBsd6RMkjVDRZzb", "Charon"),       # George (British) → deep male
-            ("IKne3meq5aSn9XLyUdCD", "Zephyr"),       # Charlie (Aus) → warm male
-            ("N2lVS1w4EtoT3dr4eOWO", "Puck"),         # Callum → lively male
-            ("D38z5RcWu1voky8WS1ja", "Charon"),       # Fin (Irish) → deep male
+            ("XrExE9yKIg1WjnnlVkGX", "Leda"),  # Matilda → warm female
+            ("21m00Tcm4TlvDq8ikWAM", "Aoede"),  # Rachel → calm female
+            ("ThT5KcBeYPX3keUQqHPh", "Aoede"),  # Dorothy (British) → calm
+            ("jBpfuIE2acCO8z3wKNLl", "Callirrhoe"),  # Gigi (childlike) → playful
+            ("JBFqnCBsd6RMkjVDRZzb", "Charon"),  # George (British) → deep male
+            ("IKne3meq5aSn9XLyUdCD", "Zephyr"),  # Charlie (Aus) → warm male
+            ("N2lVS1w4EtoT3dr4eOWO", "Puck"),  # Callum → lively male
+            ("D38z5RcWu1voky8WS1ja", "Charon"),  # Fin (Irish) → deep male
         ],
     )
     def test_known_elevenlabs_ids_map_to_curated_voices(
@@ -95,14 +95,14 @@ class TestAddEmotionTags:
             ("He whispers softly.", "[whispers]"),
             ("They were whispering nearby.", "[whispers]"),
             ('He shouted "Look out!"', "[loudly]"),
-            ('She yelled across the field.', "[loudly]"),
-            ('The crowd screamed in shock.', "[loudly]"),
-            ('The kids laughed at the joke.', "[laughs]"),
-            ('She giggled at the silly fox.', "[laughs]"),
-            ('He chuckled to himself.', "[laughs]"),
-            ('She gasped in surprise.', "[gasps]"),
-            ('The boy cried at bedtime.', "[sadly]"),
-            ('He sobbed into the pillow.', "[sadly]"),
+            ("She yelled across the field.", "[loudly]"),
+            ("The crowd screamed in shock.", "[loudly]"),
+            ("The kids laughed at the joke.", "[laughs]"),
+            ("She giggled at the silly fox.", "[laughs]"),
+            ("He chuckled to himself.", "[laughs]"),
+            ("She gasped in surprise.", "[gasps]"),
+            ("The boy cried at bedtime.", "[sadly]"),
+            ("He sobbed into the pillow.", "[sadly]"),
         ],
     )
     def test_each_cue_inserts_the_right_tag(

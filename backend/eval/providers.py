@@ -39,6 +39,7 @@ def load_env() -> None:
     if BACKEND_ENV.exists():
         try:
             from dotenv import load_dotenv
+
             load_dotenv(BACKEND_ENV, override=False)
         except ImportError:
             # Minimal fallback parser if python-dotenv is absent.
@@ -103,8 +104,9 @@ class GitHubModelsClient:
             max_tokens=5,
         )
 
-    def complete(self, system: str, user: str, max_tokens: int = 1024,
-                 temperature: float = 0.0) -> CompletionResult:
+    def complete(
+        self, system: str, user: str, max_tokens: int = 1024, temperature: float = 0.0
+    ) -> CompletionResult:
         start = time.time()
         try:
             resp = self._client.chat.completions.create(
@@ -116,10 +118,15 @@ class GitHubModelsClient:
                 max_tokens=max_tokens,
                 temperature=temperature,
             )
-        except Exception as exc:  # noqa: BLE001 - surface any provider error to the caller
+        except (
+            Exception
+        ) as exc:  # noqa: BLE001 - surface any provider error to the caller
             return CompletionResult(
-                text="", model=self.model, input_tokens=None,
-                output_tokens=None, latency_ms=int((time.time() - start) * 1000),
+                text="",
+                model=self.model,
+                input_tokens=None,
+                output_tokens=None,
+                latency_ms=int((time.time() - start) * 1000),
                 error=f"{type(exc).__name__}: {exc}",
             )
         usage = getattr(resp, "usage", None)
@@ -148,7 +155,9 @@ class GeminiClient:
         try:
             from google import genai
         except ImportError as exc:
-            raise RuntimeError("google-genai is required for the Gemini judge.") from exc
+            raise RuntimeError(
+                "google-genai is required for the Gemini judge."
+            ) from exc
         self._genai = genai
         self._client = genai.Client(api_key=key)
         self.model = model
@@ -156,12 +165,15 @@ class GeminiClient:
     def ping(self) -> CompletionResult:
         return self.complete(
             system="You are a connectivity check. Reply with exactly: OK",
-            user="ping", max_tokens=5,
+            user="ping",
+            max_tokens=5,
         )
 
-    def complete(self, system: str, user: str, max_tokens: int = 2048,
-                 temperature: float = 0.0) -> CompletionResult:
+    def complete(
+        self, system: str, user: str, max_tokens: int = 2048, temperature: float = 0.0
+    ) -> CompletionResult:
         from google.genai import types
+
         start = time.time()
         # Gemini 2.5 enables "thinking" by default; thinking tokens count
         # against max_output_tokens, often consuming the whole budget before
@@ -186,8 +198,11 @@ class GeminiClient:
             )
         except Exception as exc:  # noqa: BLE001
             return CompletionResult(
-                text="", model=self.model, input_tokens=None,
-                output_tokens=None, latency_ms=int((time.time() - start) * 1000),
+                text="",
+                model=self.model,
+                input_tokens=None,
+                output_tokens=None,
+                latency_ms=int((time.time() - start) * 1000),
                 error=f"{type(exc).__name__}: {exc}",
             )
         usage = getattr(resp, "usage_metadata", None)

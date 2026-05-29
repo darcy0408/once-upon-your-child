@@ -1,4 +1,5 @@
 """Server-side parental consent record for COPPA compliance."""
+
 import uuid
 from datetime import datetime, timezone
 from ..database import db
@@ -19,15 +20,20 @@ class ConsentRecord(db.Model):
     Stores a verifiable record of parental consent for COPPA compliance.
     One record per consent event (new consent, withdrawal, re-consent).
     """
-    __tablename__ = 'consent_record'
+
+    __tablename__ = "consent_record"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False, index=True)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("user.id"), nullable=False, index=True
+    )
     child_age = db.Column(db.Integer, nullable=False)
     parent_email = db.Column(db.String(120), nullable=True)
     # 'parent', 'self_attested', 'email_verified', 'email_pending', 'debug_bypass'
     consent_method = db.Column(db.String(50), nullable=False)
-    consent_given_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    consent_given_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     ip_address = db.Column(db.String(45), nullable=True)  # IPv4 or IPv6
     # Photo-avatar opt-in. Defaults False so the consent record fails safe:
     # an omitted field must never record the child as opted in (CMP-8).
@@ -42,21 +48,27 @@ class ConsentRecord(db.Model):
     # Nullable so rows created before this column existed (legacy) parse as
     # NULL — those are treated as stale by the gate. New records are stamped
     # with CURRENT_POLICY_VERSION at creation time.
-    policy_version = db.Column(db.Integer, nullable=True, default=CURRENT_POLICY_VERSION)
+    policy_version = db.Column(
+        db.Integer, nullable=True, default=CURRENT_POLICY_VERSION
+    )
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'child_age': self.child_age,
-            'parent_email': self.parent_email,
-            'consent_method': self.consent_method,
-            'consent_given_at': self.consent_given_at.isoformat() if self.consent_given_at else None,
-            'allow_photo_avatar': self.allow_photo_avatar,
-            'withdrawn': self.withdrawn,
-            'withdrawn_at': self.withdrawn_at.isoformat() if self.withdrawn_at else None,
-            'verified': self.verified,
-            'policy_version': self.policy_version,
+            "id": self.id,
+            "user_id": self.user_id,
+            "child_age": self.child_age,
+            "parent_email": self.parent_email,
+            "consent_method": self.consent_method,
+            "consent_given_at": (
+                self.consent_given_at.isoformat() if self.consent_given_at else None
+            ),
+            "allow_photo_avatar": self.allow_photo_avatar,
+            "withdrawn": self.withdrawn,
+            "withdrawn_at": (
+                self.withdrawn_at.isoformat() if self.withdrawn_at else None
+            ),
+            "verified": self.verified,
+            "policy_version": self.policy_version,
         }
 
 
@@ -75,13 +87,16 @@ class ConsentVerificationCode(db.Model):
 
     The code is stored only as a SHA-256 hex digest — never in plaintext.
     """
-    __tablename__ = 'consent_verification_code'
+
+    __tablename__ = "consent_verification_code"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False, index=True)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("user.id"), nullable=False, index=True
+    )
     # The ConsentRecord this code, once verified, promotes to email_verified.
     consent_record_id = db.Column(
-        db.String(36), db.ForeignKey('consent_record.id'), nullable=True
+        db.String(36), db.ForeignKey("consent_record.id"), nullable=True
     )
     # SHA-256 hex digest of the verification code. Never store plaintext.
     code_hash = db.Column(db.String(64), nullable=False)
@@ -107,11 +122,11 @@ class ConsentVerificationCode(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'consent_record_id': self.consent_record_id,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
-            'consumed': self.consumed,
-            'attempts': self.attempts,
+            "id": self.id,
+            "user_id": self.user_id,
+            "consent_record_id": self.consent_record_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "consumed": self.consumed,
+            "attempts": self.attempts,
         }

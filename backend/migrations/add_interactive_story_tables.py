@@ -6,6 +6,7 @@ inventory tracking, and persistent state management.
 Run this migration with:
     python -m backend.migrations.add_interactive_story_tables
 """
+
 from backend.app import create_app
 from backend.database import db
 from backend.models import (
@@ -13,7 +14,7 @@ from backend.models import (
     StorySegment,
     StoryChoice,
     InventoryItem,
-    StoryState
+    StoryState,
 )
 
 
@@ -22,7 +23,8 @@ def run_migration():
     print("Starting interactive story tables migration...")
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():
@@ -48,7 +50,8 @@ def rollback_migration():
         return
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():

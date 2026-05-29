@@ -1,10 +1,18 @@
 """
 Avatar Routes - API endpoints for magical avatar generation
 """
+
 import os
 import time
 import concurrent.futures
-from flask import Blueprint, request, jsonify, make_response, after_this_request, current_app
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    make_response,
+    after_this_request,
+    current_app,
+)
 import logging
 
 _AVATAR_TIMEOUT_SECONDS = 30
@@ -44,19 +52,22 @@ def get_avatar_service():
     global _avatar_service
     if _avatar_service is None:
         from backend.services.avatar_generation_service import AvatarGenerationService
+
         _avatar_service = AvatarGenerationService()
     return _avatar_service
 
 
 def _tier_limit(free, premium):
     """Return a dynamic limit callable for flask_limiter based on user tier."""
+
     def get_limit():
-        tier = (get_user_tier() or 'free').lower()
-        if tier == 'byok':
+        tier = (get_user_tier() or "free").lower()
+        if tier == "byok":
             return "10000 per hour"  # effectively unlimited
-        if tier in ('premium', 'family'):
+        if tier in ("premium", "family"):
             return f"{premium} per hour"
         return f"{free} per hour"
+
     return get_limit
 
 
@@ -71,11 +82,12 @@ def _get_avatar_rl_redis():
     ``redis.from_url(..., socket_connect_timeout=1)``, and verify it with a
     ``ping()`` so an unreachable Redis falls back instead of hanging.
     """
-    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
     try:
         import redis as redis_lib
+
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
         return client
@@ -91,7 +103,8 @@ def _warn_avatar_rl_fallback(reason: str) -> None:
         logger.warning(
             "Avatar rate limiter: Redis unavailable (%s) — falling back to "
             "per-process in-memory counter. Counts will under-count across "
-            "gunicorn workers.", reason,
+            "gunicorn workers.",
+            reason,
         )
 
 
@@ -103,7 +116,7 @@ def _prune_stale_avatar_buckets(counts: dict, current_hour: int) -> None:
     """
     stale = []
     for key in counts:
-        bucket_part = key.rsplit(':', 1)[-1]
+        bucket_part = key.rsplit(":", 1)[-1]
         try:
             if int(bucket_part) < current_hour:
                 stale.append(key)
@@ -160,7 +173,7 @@ def _check_avatar_rate_limit(user_key: str, limit: int) -> tuple[bool, int]:
     # --- Fallback path: per-process dict (pruned so it cannot leak) ---
     counter_key = f"{user_key}:{hour_bucket}"
 
-    if not hasattr(current_app, '_avatar_generate_counts'):
+    if not hasattr(current_app, "_avatar_generate_counts"):
         current_app._avatar_generate_counts = {}
 
     counts = current_app._avatar_generate_counts
@@ -227,9 +240,9 @@ def _is_valid_image(image_bytes: bytes) -> bool:
 
 
 def create_avatar_blueprint(limiter):
-    avatar_bp = Blueprint('avatar', __name__)
+    avatar_bp = Blueprint("avatar", __name__)
 
-    @avatar_bp.route('/generate-custom-avatar', methods=['POST'])
+    @avatar_bp.route("/generate-custom-avatar", methods=["POST"])
     @require_auth
     @require_parental_consent
     @limiter.limit(_tier_limit(free=3, premium=20))
@@ -246,66 +259,98 @@ def create_avatar_blueprint(limiter):
         """
         try:
             # Check if photo is present
-            if 'photo' not in request.files:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_PHOTO',
-                    'message': 'Photo is required'
-                }), 400
+            if "photo" not in request.files:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_PHOTO",
+                            "message": "Photo is required",
+                        }
+                    ),
+                    400,
+                )
 
-            photo_file = request.files['photo']
+            photo_file = request.files["photo"]
             _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
             photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
             if len(photo_bytes) > _MAX_PHOTO_BYTES:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'PHOTO_TOO_LARGE',
-                    'message': 'Photo must be under 10 MB',
-                }), 413
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "PHOTO_TOO_LARGE",
+                            "message": "Photo must be under 10 MB",
+                        }
+                    ),
+                    413,
+                )
 
             if not _is_valid_image(photo_bytes):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_PHOTO',
-                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_PHOTO",
+                            "message": "Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)",
+                        }
+                    ),
+                    400,
+                )
 
             # Extract other data from form
-            character_name = request.form.get('character_name')
-            age = request.form.get('age')
-            gender = request.form.get('gender')
-            eye_color = request.form.get('eye_color')
-            favorite_color = request.form.get('favorite_color')
-            refinement_note = (request.form.get('refinement_note') or '').strip() or None
+            character_name = request.form.get("character_name")
+            age = request.form.get("age")
+            gender = request.form.get("gender")
+            eye_color = request.form.get("eye_color")
+            favorite_color = request.form.get("favorite_color")
+            refinement_note = (
+                request.form.get("refinement_note") or ""
+            ).strip() or None
 
             # Refinement is BYOK-only: one free API call is expensive; BYOK users
             # supply their own key so the cost falls on them.
             if refinement_note:
-                tier = (get_user_tier() or 'free').lower()
-                if tier != 'byok':
-                    return jsonify({
-                        'status': 'error',
-                        'error_code': 'BYOK_REQUIRED',
-                        'message': 'Avatar refinement is available for BYOK subscribers. '
-                                   'Set up your own API key in Parent Controls to unlock this.'
-                    }), 403
+                tier = (get_user_tier() or "free").lower()
+                if tier != "byok":
+                    return (
+                        jsonify(
+                            {
+                                "status": "error",
+                                "error_code": "BYOK_REQUIRED",
+                                "message": "Avatar refinement is available for BYOK subscribers. "
+                                "Set up your own API key in Parent Controls to unlock this.",
+                            }
+                        ),
+                        403,
+                    )
 
             # Basic validation
             if not all([character_name, age, gender, eye_color, favorite_color]):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_DATA',
-                    'message': 'All fields (character_name, age, gender, eye_color, favorite_color) are required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_DATA",
+                            "message": "All fields (character_name, age, gender, eye_color, favorite_color) are required",
+                        }
+                    ),
+                    400,
+                )
 
             try:
                 age = int(age)
             except ValueError:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_AGE',
-                    'message': 'Age must be a number'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_AGE",
+                            "message": "Age must be a number",
+                        }
+                    ),
+                    400,
+                )
 
             # 1-free-avatar gate: every account gets one free AI photo-avatar
             # (the "magic moment"); after that it is a premium feature.
@@ -314,14 +359,21 @@ def create_avatar_blueprint(limiter):
             if not _user_is_premium(current_user):
                 used = current_user.custom_avatars_generated or 0
                 if used >= FREE_CUSTOM_AVATARS:
-                    return jsonify({
-                        'status': 'error',
-                        'error_code': 'UPGRADE_REQUIRED',
-                        'message': "You've already created your free magic avatar! "
-                                   'Upgrade to premium to create more.',
-                    }), 403
+                    return (
+                        jsonify(
+                            {
+                                "status": "error",
+                                "error_code": "UPGRADE_REQUIRED",
+                                "message": "You've already created your free magic avatar! "
+                                "Upgrade to premium to create more.",
+                            }
+                        ),
+                        403,
+                    )
 
-            logger.info(f"Custom avatar request: name={character_name}, age={age}, gender={gender}")
+            logger.info(
+                f"Custom avatar request: name={character_name}, age={age}, gender={gender}"
+            )
 
             service = get_avatar_service()
 
@@ -337,7 +389,9 @@ def create_avatar_blueprint(limiter):
                     refinement_note=refinement_note,
                 )
 
-                logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")
+                logger.info(
+                    f"Custom avatar generated successfully: {avatar_data['id']}"
+                )
 
                 # Count this generation against the 1-free allowance. Only
                 # non-premium users are metered; premium/BYOK are unlimited.
@@ -347,45 +401,63 @@ def create_avatar_blueprint(limiter):
                     ) + 1
                     db.session.commit()
 
-                return jsonify({
-                    'status': 'success',
-                    'avatar': avatar_data
-                }), 200
+                return jsonify({"status": "success", "avatar": avatar_data}), 200
 
             except concurrent.futures.TimeoutError:
                 logger.warning("Custom avatar generation timed out")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'TIMEOUT',
-                    'message': get_error_message('timeout'),
-                }), 504
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                        }
+                    ),
+                    504,
+                )
 
             except ValueError as e:
                 logger.warning(f"Custom avatar validation error: {e}")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'VALIDATION_ERROR',
-                    'message': str(e)
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "VALIDATION_ERROR",
+                            "message": str(e),
+                        }
+                    ),
+                    400,
+                )
 
             except Exception as e:
                 logger.error(f"Custom avatar generation failed: {e}")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'GENERATION_FAILED',
-                    'message': get_error_message('generation_failed')
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                        }
+                    ),
+                    500,
+                )
 
         except Exception as e:
-            logger.exception(f"Unexpected error in generate_custom_avatar endpoint: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': 'Something magical went wrong! Let\'s try again! ✨'
-            }), 500
+            logger.exception(
+                f"Unexpected error in generate_custom_avatar endpoint: {e}"
+            )
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/generate-pet-avatar', methods=['POST'])
+    @avatar_bp.route("/generate-pet-avatar", methods=["POST"])
     @require_auth
     @require_premium  # M-8: photo->cartoon companion creation is a premium capability (image-gen cost)
     @require_parental_consent
@@ -402,60 +474,85 @@ def create_avatar_blueprint(limiter):
         """
         try:
             # Check if photo is present
-            if 'photo' not in request.files:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_PHOTO',
-                    'message': 'Photo is required'
-                }), 400
+            if "photo" not in request.files:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_PHOTO",
+                            "message": "Photo is required",
+                        }
+                    ),
+                    400,
+                )
 
             # Extract other data from form
-            pet_name = request.form.get('pet_name')
-            species = request.form.get('species')
-            breed_description = request.form.get('breed_description')
-            owner_favorite_color = request.form.get('owner_favorite_color')
-            owner_age = request.form.get('owner_age', '0')
-            companion_type = request.form.get('companion_type', 'pet')  # 'human' or 'pet'
+            pet_name = request.form.get("pet_name")
+            species = request.form.get("species")
+            breed_description = request.form.get("breed_description")
+            owner_favorite_color = request.form.get("owner_favorite_color")
+            owner_age = request.form.get("owner_age", "0")
+            companion_type = request.form.get(
+                "companion_type", "pet"
+            )  # 'human' or 'pet'
 
             # Basic validation — required-field check runs BEFORE the photo
             # magic-byte validation so a request missing metadata gets the
             # more specific MISSING_DATA error rather than INVALID_PHOTO (L-3).
             if not all([pet_name, species, breed_description, owner_favorite_color]):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_DATA',
-                    'message': 'All fields (pet_name, species, breed_description, owner_favorite_color) are required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_DATA",
+                            "message": "All fields (pet_name, species, breed_description, owner_favorite_color) are required",
+                        }
+                    ),
+                    400,
+                )
 
-            photo_file = request.files['photo']
+            photo_file = request.files["photo"]
             _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
             photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
             if len(photo_bytes) > _MAX_PHOTO_BYTES:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'PHOTO_TOO_LARGE',
-                    'message': 'Photo must be under 10 MB',
-                }), 413
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "PHOTO_TOO_LARGE",
+                            "message": "Photo must be under 10 MB",
+                        }
+                    ),
+                    413,
+                )
 
             if not _is_valid_image(photo_bytes):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_PHOTO',
-                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_PHOTO",
+                            "message": "Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)",
+                        }
+                    ),
+                    400,
+                )
 
             try:
                 owner_age = int(owner_age)
             except (ValueError, TypeError):
                 owner_age = 0
 
-            logger.info(f"Companion avatar request: name={pet_name}, species={species}, type={companion_type}, owner_age={owner_age}")
+            logger.info(
+                f"Companion avatar request: name={pet_name}, species={species}, type={companion_type}, owner_age={owner_age}"
+            )
 
             service = get_avatar_service()
 
             try:
+
                 def _run_companion():
-                    if companion_type == 'human':
+                    if companion_type == "human":
                         return service.generate_human_companion_avatar(
                             name=pet_name,
                             appearance_description=breed_description,
@@ -474,55 +571,81 @@ def create_avatar_blueprint(limiter):
 
                 avatar_data = _run_with_timeout(_run_companion)
 
-                logger.info(f"Companion avatar generated successfully: {avatar_data['id']} (type={companion_type})")
+                logger.info(
+                    f"Companion avatar generated successfully: {avatar_data['id']} (type={companion_type})"
+                )
 
-                provider_used = avatar_data.get('provider_used')
-                transformation_applied = avatar_data.get('transformation_applied', True)
+                provider_used = avatar_data.get("provider_used")
+                transformation_applied = avatar_data.get("transformation_applied", True)
                 status_code = 200 if transformation_applied else 206
 
-                return jsonify({
-                    'status': 'success',
-                    'avatar': avatar_data,
-                    'provider_used': provider_used,
-                    'transformation_applied': transformation_applied,
-                }), status_code
+                return (
+                    jsonify(
+                        {
+                            "status": "success",
+                            "avatar": avatar_data,
+                            "provider_used": provider_used,
+                            "transformation_applied": transformation_applied,
+                        }
+                    ),
+                    status_code,
+                )
 
             except concurrent.futures.TimeoutError:
                 logger.warning("Companion avatar generation timed out")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'TIMEOUT',
-                    'message': get_error_message('timeout'),
-                }), 504
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                        }
+                    ),
+                    504,
+                )
 
             except ValueError as e:
                 # Raised by input validation and by the assembled-prompt
                 # safety check — reject with a clear 400, never proceed.
                 logger.warning(f"Pet/companion avatar validation error: {e}")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'VALIDATION_ERROR',
-                    'message': str(e)
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "VALIDATION_ERROR",
+                            "message": str(e),
+                        }
+                    ),
+                    400,
+                )
 
             except Exception as e:
                 logger.error(f"Pet avatar generation failed: {e}")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'GENERATION_FAILED',
-                    'message': get_error_message('generation_failed')
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                        }
+                    ),
+                    500,
+                )
 
         except Exception as e:
             logger.exception(f"Unexpected error in generate_pet_avatar endpoint: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': 'Something magical went wrong! Let\'s try again! ✨'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/generate-avatar', methods=['POST'])
+    @avatar_bp.route("/generate-avatar", methods=["POST"])
     @require_auth
     def generate_avatar():
         """
@@ -575,10 +698,10 @@ def create_avatar_blueprint(limiter):
         """
         # Manual per-user hourly rate limiting (independent of flask-limiter enabled state).
         # Counts ALL requests (including validation failures) so the limit is meaningful.
-        tier = (get_user_tier() or 'free').lower()
-        if tier == 'byok':
+        tier = (get_user_tier() or "free").lower()
+        if tier == "byok":
             rate_limit = None
-        elif tier in ('premium', 'family'):
+        elif tier in ("premium", "family"):
             rate_limit = 50
         else:
             rate_limit = 5
@@ -588,12 +711,17 @@ def create_avatar_blueprint(limiter):
             is_limited, _ = _check_avatar_rate_limit(user_key, rate_limit)
 
             if is_limited:
-                resp = make_response(jsonify({
-                    'error_code': 'RATE_LIMIT_EXCEEDED',
-                    'limit_per_hour': rate_limit,
-                    'retry_after_seconds': _seconds_until_next_hour(),
-                }), 429)
-                resp.headers['X-Avatar-RateLimit-Tier'] = tier
+                resp = make_response(
+                    jsonify(
+                        {
+                            "error_code": "RATE_LIMIT_EXCEEDED",
+                            "limit_per_hour": rate_limit,
+                            "retry_after_seconds": _seconds_until_next_hour(),
+                        }
+                    ),
+                    429,
+                )
+                resp.headers["X-Avatar-RateLimit-Tier"] = tier
                 return resp
 
             # Attach rate-limit headers to every non-429 response for this request.
@@ -602,8 +730,8 @@ def create_avatar_blueprint(limiter):
 
             @after_this_request
             def _add_rate_limit_headers(response):
-                response.headers['X-Avatar-RateLimit-Limit'] = str(_rl_limit)
-                response.headers['X-Avatar-RateLimit-Tier'] = _rl_tier
+                response.headers["X-Avatar-RateLimit-Limit"] = str(_rl_limit)
+                response.headers["X-Avatar-RateLimit-Tier"] = _rl_tier
                 return response
 
         try:
@@ -611,54 +739,81 @@ def create_avatar_blueprint(limiter):
             data = request.get_json()
 
             if not data:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_REQUEST',
-                    'message': 'Request body is required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_REQUEST",
+                            "message": "Request body is required",
+                        }
+                    ),
+                    400,
+                )
 
             # Extract and validate required fields
-            character_name = data.get('character_name')
-            age = data.get('age')
+            character_name = data.get("character_name")
+            age = data.get("age")
 
             if not character_name or not character_name.strip():
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_CHARACTER_NAME',
-                    'message': 'Character name is required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_CHARACTER_NAME",
+                            "message": "Character name is required",
+                        }
+                    ),
+                    400,
+                )
 
             if age is None or not isinstance(age, int):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_AGE',
-                    'message': get_error_message('invalid_age')
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_AGE",
+                            "message": get_error_message("invalid_age"),
+                        }
+                    ),
+                    400,
+                )
 
             if not (3 <= age <= 99):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'AGE_OUT_OF_RANGE',
-                    'message': get_error_message('invalid_age')
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "AGE_OUT_OF_RANGE",
+                            "message": get_error_message("invalid_age"),
+                        }
+                    ),
+                    400,
+                )
 
             # Extract optional fields
-            style = data.get('style', 'pixar').lower()
-            features = data.get('features', {})
-            emotion_data = data.get('emotion_data')
-            seed = data.get('seed')
+            style = data.get("style", "pixar").lower()
+            features = data.get("features", {})
+            emotion_data = data.get("emotion_data")
+            seed = data.get("seed")
 
             # Validate style
-            valid_styles = ['pixar', 'watercolor', 'cartoon', 'clay']
+            valid_styles = ["pixar", "watercolor", "cartoon", "clay"]
             if style not in valid_styles:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_STYLE',
-                    'message': get_error_message('invalid_style'),
-                    'valid_styles': valid_styles
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_STYLE",
+                            "message": get_error_message("invalid_style"),
+                            "valid_styles": valid_styles,
+                        }
+                    ),
+                    400,
+                )
 
-            logger.info(f"Avatar generation request: name={character_name}, age={age}, style={style}")
+            logger.info(
+                f"Avatar generation request: name={character_name}, age={age}, style={style}"
+            )
 
             # Get avatar service and generate
             service = get_avatar_service()
@@ -676,49 +831,65 @@ def create_avatar_blueprint(limiter):
 
                 logger.info(f"Avatar generated successfully: {avatar_data['id']}")
 
-                return jsonify({
-                    'status': 'success',
-                    'avatar': avatar_data
-                }), 200
+                return jsonify({"status": "success", "avatar": avatar_data}), 200
 
             except concurrent.futures.TimeoutError:
                 logger.warning("Avatar generation timed out")
                 fallback_avatars = service.get_fallback_avatars(style)
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'TIMEOUT',
-                    'message': get_error_message('timeout'),
-                    'fallback_avatars': fallback_avatars,
-                }), 504
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                            "fallback_avatars": fallback_avatars,
+                        }
+                    ),
+                    504,
+                )
 
             except ValueError as ve:
                 logger.warning(f"Avatar validation error: {ve}")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'VALIDATION_ERROR',
-                    'message': str(ve)
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "VALIDATION_ERROR",
+                            "message": str(ve),
+                        }
+                    ),
+                    400,
+                )
 
             except Exception as e:
                 logger.error(f"Avatar generation failed: {e}")
                 fallback_avatars = service.get_fallback_avatars(style)
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'GENERATION_FAILED',
-                    'message': get_error_message('generation_failed'),
-                    'fallback_avatars': fallback_avatars
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                            "fallback_avatars": fallback_avatars,
+                        }
+                    ),
+                    500,
+                )
 
         except Exception as e:
             logger.exception(f"Unexpected error in generate_avatar endpoint: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': 'Something magical went wrong! Let\'s try again! ✨'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/regenerate-avatar', methods=['POST'])
+    @avatar_bp.route("/regenerate-avatar", methods=["POST"])
     @require_auth
     @limiter.limit(_tier_limit(free=3, premium=30))
     def regenerate_avatar():
@@ -741,24 +912,31 @@ def create_avatar_blueprint(limiter):
             data = request.get_json()
 
             if not data:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_REQUEST',
-                    'message': 'Request body is required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_REQUEST",
+                            "message": "Request body is required",
+                        }
+                    ),
+                    400,
+                )
 
             # For re-roll, we generate a new avatar with the same parameters
             # This gives similar but different results
-            character_name = data.get('character_name')
-            age = data.get('age')
-            style = data.get('style', 'pixar')
-            features = data.get('features', {})
-            emotion_data = data.get('emotion_data')
+            character_name = data.get("character_name")
+            age = data.get("age")
+            style = data.get("style", "pixar")
+            features = data.get("features", {})
+            emotion_data = data.get("emotion_data")
 
             # Don't use the seed for re-roll - let it generate a new one
             # This creates variation while keeping same character attributes
 
-            logger.info(f"Avatar re-roll request: name={character_name}, age={age}, style={style}")
+            logger.info(
+                f"Avatar re-roll request: name={character_name}, age={age}, style={style}"
+            )
 
             service = get_avatar_service()
 
@@ -775,41 +953,52 @@ def create_avatar_blueprint(limiter):
 
                 logger.info(f"Avatar re-rolled successfully: {avatar_data['id']}")
 
-                return jsonify({
-                    'status': 'success',
-                    'avatar': avatar_data
-                }), 200
+                return jsonify({"status": "success", "avatar": avatar_data}), 200
 
             except concurrent.futures.TimeoutError:
                 logger.warning("Avatar re-roll timed out")
                 fallback_avatars = service.get_fallback_avatars(style)
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'TIMEOUT',
-                    'message': get_error_message('timeout'),
-                    'fallback_avatars': fallback_avatars,
-                }), 504
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                            "fallback_avatars": fallback_avatars,
+                        }
+                    ),
+                    504,
+                )
 
             except Exception as e:
                 logger.error(f"Avatar re-roll failed: {e}")
                 fallback_avatars = service.get_fallback_avatars(style)
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'REGENERATION_FAILED',
-                    'message': get_error_message('generation_failed'),
-                    'fallback_avatars': fallback_avatars
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "REGENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                            "fallback_avatars": fallback_avatars,
+                        }
+                    ),
+                    500,
+                )
 
         except Exception as e:
             logger.exception(f"Unexpected error in regenerate_avatar endpoint: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': 'Something magical went wrong! Let\'s try again! ✨'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/fallback-avatars', methods=['GET'])
+    @avatar_bp.route("/fallback-avatars", methods=["GET"])
     def get_fallback_avatars():
         """
         Get list of fallback preset avatars.
@@ -831,26 +1020,30 @@ def create_avatar_blueprint(limiter):
         }
         """
         try:
-            style = request.args.get('style')
+            style = request.args.get("style")
 
             service = get_avatar_service()
             fallback_avatars = service.get_fallback_avatars(style)
 
-            return jsonify({
-                'status': 'success',
-                'fallback_avatars': fallback_avatars
-            }), 200
+            return (
+                jsonify({"status": "success", "fallback_avatars": fallback_avatars}),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Error getting fallback avatars: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': 'Could not load fallback avatars'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Could not load fallback avatars",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/health', methods=['GET'])
+    @avatar_bp.route("/health", methods=["GET"])
     def health_check():
         """Health check endpoint for avatar service."""
         try:
@@ -859,21 +1052,22 @@ def create_avatar_blueprint(limiter):
             # Check if image generator is available
             has_generator = service.image_generator is not None
 
-            return jsonify({
-                'status': 'healthy',
-                'avatar_service': 'ready',
-                'image_generator': 'ready' if has_generator else 'unavailable'
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "healthy",
+                        "avatar_service": "ready",
+                        "image_generator": "ready" if has_generator else "unavailable",
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Health check failed: {e}")
-            return jsonify({
-                'status': 'unhealthy',
-                'error': str(e)
-            }), 500
+            return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
-
-    @avatar_bp.route('/tweak-gallery-avatar', methods=['POST'])
+    @avatar_bp.route("/tweak-gallery-avatar", methods=["POST"])
     @require_auth
     @limiter.limit(_tier_limit(free=1, premium=5))
     def tweak_gallery_avatar():
@@ -882,49 +1076,76 @@ def create_avatar_blueprint(limiter):
         Multipart form: image (WebP bytes), hair_length (opt), eye_color (opt).
         """
         # This feature is premium/byok only
-        tier = (get_user_tier() or 'free').lower()
-        if tier not in ('premium', 'family', 'byok'):
-            return jsonify({
-                'status': 'error',
-                'error_code': 'PREMIUM_REQUIRED',
-                'message': 'Gallery avatar tweaking requires a premium subscription'
-            }), 403
+        tier = (get_user_tier() or "free").lower()
+        if tier not in ("premium", "family", "byok"):
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "PREMIUM_REQUIRED",
+                        "message": "Gallery avatar tweaking requires a premium subscription",
+                    }
+                ),
+                403,
+            )
 
         try:
-            if 'image' not in request.files:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'MISSING_IMAGE',
-                    'message': 'Avatar image is required'
-                }), 400
+            if "image" not in request.files:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_IMAGE",
+                            "message": "Avatar image is required",
+                        }
+                    ),
+                    400,
+                )
 
             _MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
-            image_bytes = request.files['image'].read(_MAX_IMAGE_BYTES + 1)
+            image_bytes = request.files["image"].read(_MAX_IMAGE_BYTES + 1)
             if len(image_bytes) > _MAX_IMAGE_BYTES:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'IMAGE_TOO_LARGE',
-                    'message': 'Avatar image must be under 10 MB',
-                }), 413
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "IMAGE_TOO_LARGE",
+                            "message": "Avatar image must be under 10 MB",
+                        }
+                    ),
+                    413,
+                )
 
             if not _is_valid_image(image_bytes):
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_IMAGE',
-                    'message': 'Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)',
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_IMAGE",
+                            "message": "Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)",
+                        }
+                    ),
+                    400,
+                )
 
-            hair_length = request.form.get('hair_length') or None
-            eye_color = request.form.get('eye_color') or None
+            hair_length = request.form.get("hair_length") or None
+            eye_color = request.form.get("eye_color") or None
 
             if not hair_length and not eye_color:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'NO_CHANGES',
-                    'message': 'Please choose at least one thing to change (hair length or eye color)'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "NO_CHANGES",
+                            "message": "Please choose at least one thing to change (hair length or eye color)",
+                        }
+                    ),
+                    400,
+                )
 
-            logger.info(f"Gallery avatar tweak: hair_length={hair_length}, eye_color={eye_color}")
+            logger.info(
+                f"Gallery avatar tweak: hair_length={hair_length}, eye_color={eye_color}"
+            )
 
             try:
                 from backend.gemini_image_generator import GeminiImageGenerator
@@ -941,34 +1162,53 @@ def create_avatar_blueprint(limiter):
                 )
             except concurrent.futures.TimeoutError:
                 logger.warning("Gallery avatar tweak timed out")
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'TIMEOUT',
-                    'message': get_error_message('timeout'),
-                }), 504
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                        }
+                    ),
+                    504,
+                )
 
             if not images:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'GENERATION_FAILED',
-                    'message': get_error_message('generation_failed')
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                        }
+                    ),
+                    500,
+                )
 
-            return jsonify({
-                'status': 'success',
-                'tweaked_image_base64': images[0]['image_data']
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "tweaked_image_base64": images[0]["image_data"],
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Unexpected error in tweak_gallery_avatar: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'INTERNAL_ERROR',
-                'message': "Something magical went wrong! Let's try again! ✨"
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
 
-
-    @avatar_bp.route('/generate-avatar-mock', methods=['POST'])
+    @avatar_bp.route("/generate-avatar-mock", methods=["POST"])
     def generate_avatar_mock():
         """
         Mock avatar generation endpoint for testing and development.
@@ -985,19 +1225,26 @@ def create_avatar_blueprint(limiter):
             data = request.get_json()
 
             if not data:
-                return jsonify({
-                    'status': 'error',
-                    'error_code': 'INVALID_REQUEST',
-                    'message': 'Request body is required'
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_REQUEST",
+                            "message": "Request body is required",
+                        }
+                    ),
+                    400,
+                )
 
-            character_name = data.get('character_name', 'Hero')
-            age = data.get('age', 7)
-            style = data.get('style', 'pixar').lower()
-            features = data.get('features', {})
-            emotion_data = data.get('emotion_data', {})
+            character_name = data.get("character_name", "Hero")
+            age = data.get("age", 7)
+            style = data.get("style", "pixar").lower()
+            features = data.get("features", {})
+            emotion_data = data.get("emotion_data", {})
 
-            logger.info(f"[MOCK] Generating avatar for {character_name}, age {age}, style {style}")
+            logger.info(
+                f"[MOCK] Generating avatar for {character_name}, age {age}, style {style}"
+            )
 
             # Generate mock placeholder image
             img_base64 = _generate_mock_placeholder_avatar(character_name, age, style)
@@ -1007,56 +1254,58 @@ def create_avatar_blueprint(limiter):
             seed = f"mock-{avatar_id[:8]}"
 
             avatar_data = {
-                'id': avatar_id,
-                'image_base64': img_base64,
-                'seed': seed,
-                'style': style,
-                'attributes': {
-                    'character_name': character_name,
-                    'age': age,
-                    **features
+                "id": avatar_id,
+                "image_base64": img_base64,
+                "seed": seed,
+                "style": style,
+                "attributes": {
+                    "character_name": character_name,
+                    "age": age,
+                    **features,
                 },
-                'emotion_data': emotion_data,
-                'generated_at': datetime.now().isoformat(),
-                'generation_time_ms': 1,  # Instant!
-                'is_mock': True,  # Flag to indicate this is mock data
-                'cost': 0.0  # Free!
+                "emotion_data": emotion_data,
+                "generated_at": datetime.now().isoformat(),
+                "generation_time_ms": 1,  # Instant!
+                "is_mock": True,  # Flag to indicate this is mock data
+                "cost": 0.0,  # Free!
             }
 
-            return jsonify({
-                'status': 'success',
-                'avatar': avatar_data
-            }), 200
+            return jsonify({"status": "success", "avatar": avatar_data}), 200
 
         except Exception as e:
             logger.exception(f"Error in mock avatar generation: {e}")
-            return jsonify({
-                'status': 'error',
-                'error_code': 'MOCK_ERROR',
-                'message': str(e)
-            }), 500
+            return (
+                jsonify(
+                    {"status": "error", "error_code": "MOCK_ERROR", "message": str(e)}
+                ),
+                500,
+            )
 
     return avatar_bp
 
 
 # Error messages
 ERROR_MESSAGES = {
-    'generation_failed': "Oops! Our magic paintbrush needs a moment. Let's try a different magic spell! ✨",
-    'timeout': "The magic is taking longer than usual. Want to try a quick starter avatar instead? 🎨",
-    'safety_trigger': "Let's try different magic words to create your perfect avatar! 🌟",
-    'rate_limit': "You've created lots of magic today! Let's pick from our special collection! 🎁",
-    'invalid_style': "That magic style isn't available yet! Let's try Pixar, Watercolor, Cartoon, or Clay! 🎭",
-    'invalid_age': "Hmm, that age doesn't seem right. Can you check it? 🤔",
-    'no_generator': "Our magic art studio is taking a quick break. Try again in a moment! 🎨"
+    "generation_failed": "Oops! Our magic paintbrush needs a moment. Let's try a different magic spell! ✨",
+    "timeout": "The magic is taking longer than usual. Want to try a quick starter avatar instead? 🎨",
+    "safety_trigger": "Let's try different magic words to create your perfect avatar! 🌟",
+    "rate_limit": "You've created lots of magic today! Let's pick from our special collection! 🎁",
+    "invalid_style": "That magic style isn't available yet! Let's try Pixar, Watercolor, Cartoon, or Clay! 🎭",
+    "invalid_age": "Hmm, that age doesn't seem right. Can you check it? 🤔",
+    "no_generator": "Our magic art studio is taking a quick break. Try again in a moment! 🎨",
 }
 
 
 def get_error_message(error_code: str) -> str:
     """Get kid-friendly error message for error code."""
-    return ERROR_MESSAGES.get(error_code, "Something magical went wrong! Let's try again! ✨")
+    return ERROR_MESSAGES.get(
+        error_code, "Something magical went wrong! Let's try again! ✨"
+    )
 
 
-def _generate_mock_placeholder_avatar(character_name: str, age: int, style: str = "pixar") -> str:
+def _generate_mock_placeholder_avatar(
+    character_name: str, age: int, style: str = "pixar"
+) -> str:
     """
     Generate a simple placeholder avatar image as base64.
 
@@ -1069,20 +1318,20 @@ def _generate_mock_placeholder_avatar(character_name: str, age: int, style: str 
 
     # Color schemes by style
     colors = {
-        'pixar': ('#4A90E2', '#FFFFFF'),      # Blue background, white text
-        'watercolor': ('#B8E6B8', '#2C5F2C'), # Soft green, dark green text
-        'cartoon': ('#FFB6C1', '#8B008B'),    # Pink, dark magenta text
-        'clay': ('#D2B48C', '#8B4513')        # Tan, saddle brown text
+        "pixar": ("#4A90E2", "#FFFFFF"),  # Blue background, white text
+        "watercolor": ("#B8E6B8", "#2C5F2C"),  # Soft green, dark green text
+        "cartoon": ("#FFB6C1", "#8B008B"),  # Pink, dark magenta text
+        "clay": ("#D2B48C", "#8B4513"),  # Tan, saddle brown text
     }
 
-    bg_color, text_color = colors.get(style, colors['pixar'])
+    bg_color, text_color = colors.get(style, colors["pixar"])
 
     # Create image
-    img = Image.new('RGB', (512, 512), color=bg_color)
+    img = Image.new("RGB", (512, 512), color=bg_color)
     draw = ImageDraw.Draw(img)
 
     # Add character initial and age
-    initial = character_name[0].upper() if character_name else '?'
+    initial = character_name[0].upper() if character_name else "?"
     text = f"{initial}\n{age}"
 
     # Try to use a nice font, fall back to default
@@ -1114,7 +1363,7 @@ def _generate_mock_placeholder_avatar(character_name: str, age: int, style: str 
 
     # Convert to base64
     buffer = io.BytesIO()
-    img.save(buffer, format='PNG')
-    img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    img.save(buffer, format="PNG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     return img_base64

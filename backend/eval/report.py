@@ -92,7 +92,9 @@ def aggregate(run_dir: Path, primary_judge: str | None = None) -> dict:
         # Flat schema (one row per cell+sample+judge)
         if "judge" in row and isinstance(row.get("scores"), dict):
             judges_seen[row["judge"]] += 1
-            by_cell_scores[row["cell_id"]].append({"judge": row["judge"], **row["scores"]})
+            by_cell_scores[row["cell_id"]].append(
+                {"judge": row["judge"], **row["scores"]}
+            )
             continue
         # Legacy nested schema (one row per cell with scores={judge: {...}})
         per_judge = row.get("scores", {})
@@ -158,16 +160,24 @@ def aggregate(run_dir: Path, primary_judge: str | None = None) -> dict:
             "narrative_coherence": (round(narr_m, 2), round(narr_ci, 2)),
             "age_band_fit": (round(age_m, 2), round(age_ci, 2)),
             "age_fail_pct": round(age_fail_pct, 1),
-            "mode_adherence_pct": round(100.0 * statistics.fmean(mode_vals), 1) if mode_vals else None,
-            "refusal_pct": round(100.0 * statistics.fmean(refusal_vals), 1) if refusal_vals else None,
+            "mode_adherence_pct": (
+                round(100.0 * statistics.fmean(mode_vals), 1) if mode_vals else None
+            ),
+            "refusal_pct": (
+                round(100.0 * statistics.fmean(refusal_vals), 1)
+                if refusal_vals
+                else None
+            ),
         }
         summary["cells"][f"{mode}|{band}"] = cell
         if age_vals and age_fail_pct >= CRITICAL_FAIL_PCT:
-            summary["critical"].append({
-                "cell": f"{mode}|{band}",
-                "age_fail_pct": round(age_fail_pct, 1),
-                "n": len(age_vals),
-            })
+            summary["critical"].append(
+                {
+                    "cell": f"{mode}|{band}",
+                    "age_fail_pct": round(age_fail_pct, 1),
+                    "n": len(age_vals),
+                }
+            )
     return summary
 
 
@@ -183,21 +193,27 @@ def render(summary: dict) -> str:
     scored = summary["scored_samples"]
     primary = summary["primary_judge"]
     L.append("## Coverage\n")
-    L.append(f"- Generations: **{complete}/{total} complete**, "
-             f"{summary['generations_errored']} errored")
+    L.append(
+        f"- Generations: **{complete}/{total} complete**, "
+        f"{summary['generations_errored']} errored"
+    )
     L.append(f"- Scored rows: **{scored}** across judges:")
     for judge, n in summary["judges"].items():
         marker = " (primary)" if judge == primary else ""
         L.append(f"  - {judge}: {n}/{complete} ({100*n/max(1,complete):.1f}%){marker}")
     if primary:
-        L.append(f"- Per-cell distributions below use **{primary}** "
-                 "(highest coverage). Other judges feed inter-judge agreement only.")
+        L.append(
+            f"- Per-cell distributions below use **{primary}** "
+            "(highest coverage). Other judges feed inter-judge agreement only."
+        )
     L.append("")
 
     L.append("## Critical Cells\n")
     if summary["critical"]:
-        L.append(f"Cells where >= {CRITICAL_FAIL_PCT:.0f}% of outputs scored "
-                 f"age_band_fit < {AGE_FIT_FAIL_BELOW}:\n")
+        L.append(
+            f"Cells where >= {CRITICAL_FAIL_PCT:.0f}% of outputs scored "
+            f"age_band_fit < {AGE_FIT_FAIL_BELOW}:\n"
+        )
         L.append("| Cell | age-fit fail % | N |")
         L.append("|---|---|---|")
         for c in summary["critical"]:
@@ -213,10 +229,14 @@ def render(summary: dict) -> str:
     for cell_id, c in summary["cells"].items():
         narr = f"{c['narrative_coherence'][0]} ±{c['narrative_coherence'][1]}"
         age = f"{c['age_band_fit'][0]} ±{c['age_band_fit'][1]}"
-        mode_adh = "-" if c["mode_adherence_pct"] is None else f"{c['mode_adherence_pct']}"
+        mode_adh = (
+            "-" if c["mode_adherence_pct"] is None else f"{c['mode_adherence_pct']}"
+        )
         refusal = "-" if c["refusal_pct"] is None else f"{c['refusal_pct']}"
-        L.append(f"| {cell_id} | {c['n_scored']} | {narr} | {age} | "
-                 f"{c['age_fail_pct']} | {mode_adh} | {refusal} |")
+        L.append(
+            f"| {cell_id} | {c['n_scored']} | {narr} | {age} | "
+            f"{c['age_fail_pct']} | {mode_adh} | {refusal} |"
+        )
     L.append("")
 
     L.append("## Inter-Judge Agreement\n")
@@ -225,38 +245,52 @@ def render(summary: dict) -> str:
         L.append(f"- Mean agreement: **{ag['mean']:.1%}** across {ag['n']} cells")
         L.append(f"- Cells below the 80% calibration bar: {ag['below_80pct']}")
         if ag["mean"] < 0.8:
-            L.append("- WARNING: mean agreement < 80% — the rubric is ambiguous; "
-                     "revise judge prompts before locking final scores (audit spec).")
+            L.append(
+                "- WARNING: mean agreement < 80% — the rubric is ambiguous; "
+                "revise judge prompts before locking final scores (audit spec)."
+            )
     else:
-        L.append("Not computed — needs >= 2 judges. Re-run the judge pass with "
-                 "`--judges github-models,gemini`.")
+        L.append(
+            "Not computed — needs >= 2 judges. Re-run the judge pass with "
+            "`--judges github-models,gemini`."
+        )
     L.append("")
 
     L.append("## Drift Analysis\n")
-    L.append("Drift is measured from the E07 test input (a deliberate duplicate "
-             "of C01) and the calibration drift pair. Compare the scored E07 and "
-             "C01 rows for the same cell once both are judged. A 24-hour replay "
-             "of a 10% subsample under `--resume` extends this to time-drift.")
+    L.append(
+        "Drift is measured from the E07 test input (a deliberate duplicate "
+        "of C01) and the calibration drift pair. Compare the scored E07 and "
+        "C01 rows for the same cell once both are judged. A 24-hour replay "
+        "of a 10% subsample under `--resume` extends this to time-drift."
+    )
     L.append("")
 
     L.append("## Versioning Audit\n")
-    L.append("See `audit-reports/05-ai-quality-20260521-interim.md` finding F-01 "
-             "(Critical): no prompt-template version metadata exists in the "
-             "codebase. `backend/eval/prompt_registry.py` content-hashes are the "
-             "interim mitigation; `python -m backend.eval.snapshot --verify` "
-             "detects drift.")
+    L.append(
+        "See `audit-reports/05-ai-quality-20260521-interim.md` finding F-01 "
+        "(Critical): no prompt-template version metadata exists in the "
+        "codebase. `backend/eval/prompt_registry.py` content-hashes are the "
+        "interim mitigation; `python -m backend.eval.snapshot --verify` "
+        "detects drift."
+    )
     L.append("")
 
     L.append("## Recommendations\n")
     if summary["critical"]:
-        L.append(f"1. Address the {len(summary['critical'])} Critical cell(s) above "
-                 "— inspect the failing outputs and revise the cell's prompt template.")
+        L.append(
+            f"1. Address the {len(summary['critical'])} Critical cell(s) above "
+            "— inspect the failing outputs and revise the cell's prompt template."
+        )
     else:
         L.append("1. No Critical cells — quality bar met across all judged cells.")
-    L.append("2. Ship the F-01 versioning fix regardless (per-template version "
-             "constant persisted on every Story row).")
-    L.append("3. Establish the eval cadence: calibration set on every prompt "
-             "change (CI-gated), full pass quarterly with stored drift baseline.")
+    L.append(
+        "2. Ship the F-01 versioning fix regardless (per-template version "
+        "constant persisted on every Story row)."
+    )
+    L.append(
+        "3. Establish the eval cadence: calibration set on every prompt "
+        "change (CI-gated), full pass quarterly with stored drift baseline."
+    )
     L.append("")
     return "\n".join(L)
 
@@ -264,11 +298,17 @@ def render(summary: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--run-id", required=True)
-    p.add_argument("--judge", default=None,
-                   help="Filter the per-cell table to this judge. Default: the "
-                        "judge with the most rows (typically the 100%-complete one).")
-    p.add_argument("--out", default=None,
-                   help="Output path. Default: audit-reports/05-ai-quality-<date>.md")
+    p.add_argument(
+        "--judge",
+        default=None,
+        help="Filter the per-cell table to this judge. Default: the "
+        "judge with the most rows (typically the 100%-complete one).",
+    )
+    p.add_argument(
+        "--out",
+        default=None,
+        help="Output path. Default: audit-reports/05-ai-quality-<date>.md",
+    )
     args = p.parse_args(argv if argv is not None else sys.argv[1:])
     run_dir = RESULTS_ROOT / args.run_id
     if not run_dir.exists():
@@ -276,13 +316,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     summary = aggregate(run_dir, primary_judge=args.judge)
     md = render(summary)
-    out = Path(args.out) if args.out else Path(
-        f"audit-reports/05-ai-quality-{time.strftime('%Y%m%d')}.md")
+    out = (
+        Path(args.out)
+        if args.out
+        else Path(f"audit-reports/05-ai-quality-{time.strftime('%Y%m%d')}.md")
+    )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
-    print(f"[report] wrote {out}  "
-          f"({summary['generations_complete']} gens, {summary['scored_samples']} scored, "
-          f"{len(summary['critical'])} critical)")
+    print(
+        f"[report] wrote {out}  "
+        f"({summary['generations_complete']} gens, {summary['scored_samples']} scored, "
+        f"{len(summary['critical'])} critical)"
+    )
     return 0
 
 

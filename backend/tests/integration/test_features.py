@@ -37,7 +37,9 @@ def mock_story_task(mocker):
     return task
 
 
-def _post_story_and_get_task_kwargs(client, auth_headers, mock_story_task, **payload_overrides):
+def _post_story_and_get_task_kwargs(
+    client, auth_headers, mock_story_task, **payload_overrides
+):
     payload = {
         "character": "FeatureTester",
         "age": 10,
@@ -78,7 +80,9 @@ def test_feature_companion_pets_are_forwarded(client, auth_headers, mock_story_t
     assert forwarded["companion_pets"] == pets
 
 
-def test_feature_companion_characters_are_forwarded(client, auth_headers, mock_story_task):
+def test_feature_companion_characters_are_forwarded(
+    client, auth_headers, mock_story_task
+):
     companions = [{"name": "Zara"}, {"name": "Noah"}]
     forwarded = _post_story_and_get_task_kwargs(
         client,
@@ -151,7 +155,7 @@ def test_feature_illustration_generation_returns_images(client, auth_headers, mo
             "user_api_key": "test-key",
             "companion_pets": [{"name": "Milo", "species": "dog"}],
         },
-        headers=auth_headers
+        headers=auth_headers,
     )
 
     assert response.status_code == 200

@@ -9,6 +9,7 @@ flag is best-effort:
 - A Redis outage fails open (the generation proceeds) so an infrastructure
   hiccup never aborts a paying user's request.
 """
+
 import logging
 import os
 
@@ -24,6 +25,7 @@ def _get_redis():
         return None
     try:
         import redis as redis_lib
+
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
         return client

@@ -17,6 +17,7 @@ The hash is therefore the whole function — limerick vs non-limerick is
 distinguished by ``template_id`` (T2 vs T3); finer attribution would require
 splitting the function or threading the branch through the resolver.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -59,7 +60,9 @@ _REVISION_HASHES: dict[str, str] = {
     "T4_RHYME_TIME": _hash_source(_build_rhyme_time_prompt),
     "T5_BEDTIME": _hash_source(_build_bedtime_prompt),
     "T6_SUPERHERO_SPROUT": _hash_source(PromptService._build_superhero_prompt),
-    "T7_SUPERHERO_EXPLORER": _hash_source(PromptService._build_superhero_prompt_explorer),
+    "T7_SUPERHERO_EXPLORER": _hash_source(
+        PromptService._build_superhero_prompt_explorer
+    ),
 }
 
 
@@ -93,7 +96,9 @@ def resolve(*, mode: str, age: int | None) -> tuple[str, str]:
         template_id = "T4_RHYME_TIME"
     else:
         if mode != "standard":
-            logger.warning("prompt_versioning: unknown mode=%r — defaulting to T1_STANDARD", mode)
+            logger.warning(
+                "prompt_versioning: unknown mode=%r — defaulting to T1_STANDARD", mode
+            )
         template_id = "T1_STANDARD"
 
     return template_id, _REVISION_HASHES.get(template_id, "")

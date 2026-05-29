@@ -2,27 +2,60 @@ import re
 from typing import Dict, Any
 import math
 
+
 class StoryQualityService:
     """Service for scoring story quality based on multiple metrics"""
 
     # Therapeutic keywords to look for in stories
     THERAPEUTIC_KEYWORDS = {
-        'feel', 'emotion', 'happy', 'sad', 'angry', 'scared', 'brave', 'strong',
-        'friend', 'help', 'care', 'love', 'kind', 'share', 'together', 'family',
-        'learn', 'grow', 'change', 'better', 'try', 'courage', 'confidence',
-        'dream', 'hope', 'smile', 'laugh', 'hug', 'support', 'understand',
-        'listen', 'talk', 'share', 'feelings', 'emotions', 'heart', 'mind'
+        "feel",
+        "emotion",
+        "happy",
+        "sad",
+        "angry",
+        "scared",
+        "brave",
+        "strong",
+        "friend",
+        "help",
+        "care",
+        "love",
+        "kind",
+        "share",
+        "together",
+        "family",
+        "learn",
+        "grow",
+        "change",
+        "better",
+        "try",
+        "courage",
+        "confidence",
+        "dream",
+        "hope",
+        "smile",
+        "laugh",
+        "hug",
+        "support",
+        "understand",
+        "listen",
+        "talk",
+        "share",
+        "feelings",
+        "emotions",
+        "heart",
+        "mind",
     }
 
     # Age-appropriate word count targets (rough estimates)
     AGE_WORD_TARGETS = {
-        3: 150,   # 3-year-olds: ~150 words
-        4: 200,   # 4-year-olds: ~200 words
-        5: 250,   # 5-year-olds: ~250 words
-        6: 300,   # 6-year-olds: ~300 words
-        7: 350,   # 7-year-olds: ~350 words
-        8: 400,   # 8-year-olds: ~400 words
-        9: 450,   # 9-year-olds: ~450 words
+        3: 150,  # 3-year-olds: ~150 words
+        4: 200,  # 4-year-olds: ~200 words
+        5: 250,  # 5-year-olds: ~250 words
+        6: 300,  # 6-year-olds: ~300 words
+        7: 350,  # 7-year-olds: ~350 words
+        8: 400,  # 8-year-olds: ~400 words
+        9: 450,  # 9-year-olds: ~450 words
         10: 500,  # 10-year-olds: ~500 words
         11: 550,  # 11-year-olds: ~550 words
         12: 600,  # 12-year-olds: ~600 words
@@ -47,54 +80,60 @@ class StoryQualityService:
         """
         if not story_text or not story_text.strip():
             return {
-                'overall_score': 0,
-                'length_score': 0,
-                'therapeutic_score': 0,
-                'readability_score': 0,
-                'age_appropriateness_score': 0,
-                'word_count': 0,
-                'sentence_count': 0,
-                'avg_words_per_sentence': 0,
-                'grade_level': 0,
-                'quality_badge': 'Poor'
+                "overall_score": 0,
+                "length_score": 0,
+                "therapeutic_score": 0,
+                "readability_score": 0,
+                "age_appropriateness_score": 0,
+                "word_count": 0,
+                "sentence_count": 0,
+                "avg_words_per_sentence": 0,
+                "grade_level": 0,
+                "quality_badge": "Poor",
             }
 
         # Basic text analysis
         word_count = len(story_text.split())
-        sentences = re.split(r'[.!?]+', story_text)
+        sentences = re.split(r"[.!?]+", story_text)
         sentence_count = len([s for s in sentences if s.strip()])
         avg_words_per_sentence = word_count / max(sentence_count, 1)
 
         # Calculate component scores
         length_score = StoryQualityService._calculate_length_score(word_count, age)
         therapeutic_score = StoryQualityService._calculate_therapeutic_score(story_text)
-        readability_score = StoryQualityService._calculate_readability_score(story_text, age)
-        age_appropriateness_score = StoryQualityService._calculate_age_appropriateness_score(
-            story_text, age, avg_words_per_sentence
+        readability_score = StoryQualityService._calculate_readability_score(
+            story_text, age
+        )
+        age_appropriateness_score = (
+            StoryQualityService._calculate_age_appropriateness_score(
+                story_text, age, avg_words_per_sentence
+            )
         )
 
         # Weighted overall score
         overall_score = (
-            length_score * 0.25 +           # 25% - Length appropriateness
-            therapeutic_score * 0.35 +      # 35% - Therapeutic content
-            readability_score * 0.25 +      # 25% - Readability
-            age_appropriateness_score * 0.15  # 15% - Age appropriateness
+            length_score * 0.25  # 25% - Length appropriateness
+            + therapeutic_score * 0.35  # 35% - Therapeutic content
+            + readability_score * 0.25  # 25% - Readability
+            + age_appropriateness_score * 0.15  # 15% - Age appropriateness
         )
 
         # Determine quality badge
         quality_badge = StoryQualityService._get_quality_badge(overall_score)
 
         return {
-            'overall_score': round(overall_score),
-            'length_score': round(length_score),
-            'therapeutic_score': round(therapeutic_score),
-            'readability_score': round(readability_score),
-            'age_appropriateness_score': round(age_appropriateness_score),
-            'word_count': word_count,
-            'sentence_count': sentence_count,
-            'avg_words_per_sentence': round(avg_words_per_sentence, 1),
-            'grade_level': StoryQualityService._calculate_grade_level(avg_words_per_sentence),
-            'quality_badge': quality_badge
+            "overall_score": round(overall_score),
+            "length_score": round(length_score),
+            "therapeutic_score": round(therapeutic_score),
+            "readability_score": round(readability_score),
+            "age_appropriateness_score": round(age_appropriateness_score),
+            "word_count": word_count,
+            "sentence_count": sentence_count,
+            "avg_words_per_sentence": round(avg_words_per_sentence, 1),
+            "grade_level": StoryQualityService._calculate_grade_level(
+                avg_words_per_sentence
+            ),
+            "quality_badge": quality_badge,
         }
 
     @staticmethod
@@ -136,7 +175,9 @@ class StoryQualityService:
 
         # Boost score for higher ratios
         if keyword_ratio >= 0.15:  # 15% of keywords
-            return min(100.0, keyword_ratio * 120.0)  # Can exceed 100 for excellent coverage
+            return min(
+                100.0, keyword_ratio * 120.0
+            )  # Can exceed 100 for excellent coverage
         elif keyword_ratio >= 0.08:  # 8% of keywords
             return keyword_ratio * 100.0
         else:
@@ -146,7 +187,7 @@ class StoryQualityService:
     def _calculate_readability_score(story_text: str, age: int) -> float:
         """Calculate readability score using simplified Flesch-Kincaid"""
         word_count = len(story_text.split())
-        sentence_count = len(re.split(r'[.!?]+', story_text))
+        sentence_count = len(re.split(r"[.!?]+", story_text))
 
         if sentence_count == 0 or word_count == 0:
             return 50.0
@@ -157,7 +198,7 @@ class StoryQualityService:
         asl = word_count / sentence_count
 
         # Rough syllable approximation (vowels = syllables)
-        vowels = len(re.findall(r'[aeiouAEIOU]', story_text))
+        vowels = len(re.findall(r"[aeiouAEIOU]", story_text))
         asw = vowels / word_count if word_count > 0 else 0
 
         # Simplified formula: 206.835 - 1.015 × ASL - 84.6 × ASW
@@ -184,15 +225,19 @@ class StoryQualityService:
         return max(0.0, min(100.0, readability_score))
 
     @staticmethod
-    def _calculate_age_appropriateness_score(story_text: str, age: int, avg_words_per_sentence: float) -> float:
+    def _calculate_age_appropriateness_score(
+        story_text: str, age: int, avg_words_per_sentence: float
+    ) -> float:
         """Calculate how appropriate the content is for the target age"""
         score = 100.0
 
         # Check for age-inappropriate content (simplified check)
-        inappropriate_words = {'violence', 'death', 'scary', 'nightmare', 'monster'}
+        inappropriate_words = {"violence", "death", "scary", "nightmare", "monster"}
         text_lower = story_text.lower()
 
-        inappropriate_count = sum(1 for word in inappropriate_words if word in text_lower)
+        inappropriate_count = sum(
+            1 for word in inappropriate_words if word in text_lower
+        )
 
         if inappropriate_count > 0:
             # Penalize inappropriate content more for younger ages
@@ -205,10 +250,20 @@ class StoryQualityService:
         elif age <= 8 and avg_words_per_sentence > 12:
             score -= (avg_words_per_sentence - 12) * 2
         elif age >= 12 and avg_words_per_sentence < 10:
-            score -= (10 - avg_words_per_sentence) * 1.5  # Older kids can handle complexity
+            score -= (
+                10 - avg_words_per_sentence
+            ) * 1.5  # Older kids can handle complexity
 
         # Check for positive, developmental content
-        positive_indicators = {'learn', 'grow', 'help', 'friend', 'family', 'love', 'kind'}
+        positive_indicators = {
+            "learn",
+            "grow",
+            "help",
+            "friend",
+            "family",
+            "love",
+            "kind",
+        }
         positive_count = sum(1 for word in positive_indicators if word in text_lower)
 
         if positive_count >= 2:
@@ -226,12 +281,12 @@ class StoryQualityService:
     def _get_quality_badge(overall_score: float) -> str:
         """Convert numerical score to quality badge"""
         if overall_score >= 85:
-            return 'Excellent'
+            return "Excellent"
         elif overall_score >= 70:
-            return 'Great'
+            return "Great"
         elif overall_score >= 55:
-            return 'Good'
+            return "Good"
         elif overall_score >= 40:
-            return 'Fair'
+            return "Fair"
         else:
-            return 'Needs Improvement'
+            return "Needs Improvement"

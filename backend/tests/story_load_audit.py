@@ -7,6 +7,7 @@ Scenarios covered:
 3. 429 quota-exceeded behavior
 4. Rate-limit reset behavior (control route, fast window)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,7 +17,11 @@ import math
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+    TimeoutError as FuturesTimeoutError,
+)
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -41,7 +46,6 @@ for candidate in _PATH_CANDIDATES:
 from backend.app import create_app
 from backend.database import db
 from backend.models.user import User
-
 
 ARTIFACTS_DIR = Path(__file__).resolve().parent / "artifacts"
 LATEST_JSON = ARTIFACTS_DIR / "story_load_audit_latest.json"
@@ -152,7 +156,9 @@ def _ensure_audit_user(app) -> dict[str, str]:
     }
 
 
-def _run_request(app, payload: Dict[str, Any], headers: Dict[str, str]) -> RequestSample:
+def _run_request(
+    app, payload: Dict[str, Any], headers: Dict[str, str]
+) -> RequestSample:
     start = time.perf_counter()
     with app.test_client() as client:
         response = client.post("/generate-story", json=payload, headers=headers)
@@ -190,7 +196,9 @@ def _run_load(
     return samples
 
 
-def _scenario_report(samples: List[RequestSample], total: int, concurrency: int) -> Dict[str, Any]:
+def _scenario_report(
+    samples: List[RequestSample], total: int, concurrency: int
+) -> Dict[str, Any]:
     latencies = [s.latency_ms for s in samples]
     error_count = sum(1 for s in samples if s.status_code >= 400)
     errors = [
@@ -271,7 +279,9 @@ def measure_fallback_switchover(app, headers: Dict[str, str]) -> Dict[str, Any]:
     ), _patch_modules(
         TASK_PATCH_TARGETS,
         "StoryGenerationService",
-        return_value=MagicMock(generate_story=MagicMock(side_effect=Exception("401 Unauthorized"))),
+        return_value=MagicMock(
+            generate_story=MagicMock(side_effect=Exception("401 Unauthorized"))
+        ),
     ):
         sample = _run_request(app, _story_payload(0), headers)
 
@@ -302,7 +312,9 @@ def _run_concurrency_ramp(app, headers: Dict[str, str]) -> Dict[str, Any]:
         side_effect=_fake_sync_story_result,
     ):
         for concurrency in levels:
-            samples = _run_load(app, total_requests=24, concurrency=concurrency, headers=headers)
+            samples = _run_load(
+                app, total_requests=24, concurrency=concurrency, headers=headers
+            )
             scenario_name = f"concurrency_ramp_c{concurrency}"
             scenario_report = _scenario_report(samples, 24, concurrency)
             scenarios[scenario_name] = scenario_report
@@ -324,6 +336,7 @@ def _ensure_reset_probe_route(app) -> None:
     route_path = "/__audit__/rate-reset"
 
     if endpoint_name not in app.view_functions:
+
         @app.route(route_path, methods=["GET"], endpoint=endpoint_name)
         @app.limiter.limit("2 per second")
         def _rate_reset_probe():
@@ -462,7 +475,9 @@ def run_story_load_audit(enable_real_api: bool = False) -> Dict[str, Any]:
             "_run_sync_story_task_with_timeout",
             side_effect=_fake_sync_story_result,
         ):
-            samples = _run_load(app, total_requests=24, concurrency=6, headers=auth_headers)
+            samples = _run_load(
+                app, total_requests=24, concurrency=6, headers=auth_headers
+            )
             report["scenarios"]["sync_fast_path"] = _scenario_report(samples, 24, 6)
 
         # 2) Timeout -> async fallback
@@ -481,8 +496,12 @@ def run_story_load_audit(enable_real_api: bool = False) -> Dict[str, Any]:
             "generate_story_task.delay",
             return_value=fake_task,
         ):
-            samples = _run_load(app, total_requests=16, concurrency=4, headers=auth_headers)
-            report["scenarios"]["timeout_async_fallback"] = _scenario_report(samples, 16, 4)
+            samples = _run_load(
+                app, total_requests=16, concurrency=4, headers=auth_headers
+            )
+            report["scenarios"]["timeout_async_fallback"] = _scenario_report(
+                samples, 16, 4
+            )
 
         # 3) Quota 429 behavior
         with _patch_modules(
@@ -490,10 +509,15 @@ def run_story_load_audit(enable_real_api: bool = False) -> Dict[str, Any]:
             "_run_sync_story_task_with_timeout",
             side_effect=Exception("429 Quota exceeded"),
         ):
-            samples = _run_load(app, total_requests=12, concurrency=4, headers=auth_headers)
+            samples = _run_load(
+                app, total_requests=12, concurrency=4, headers=auth_headers
+            )
             report["scenarios"]["quota_error_429"] = _scenario_report(samples, 12, 4)
 
-        real_api_enabled = enable_real_api or os.getenv("RUN_REAL_API_TESTS", "").strip().lower() == "true"
+        real_api_enabled = (
+            enable_real_api
+            or os.getenv("RUN_REAL_API_TESTS", "").strip().lower() == "true"
+        )
         report["notes"]["real_api_enabled"] = real_api_enabled
         if real_api_enabled:
             if not os.getenv("GEMINI_API_KEY"):
@@ -510,7 +534,9 @@ def run_story_load_audit(enable_real_api: bool = False) -> Dict[str, Any]:
                     request_timeout_seconds=180.0,
                     headers=auth_headers,
                 )
-                report["scenarios"]["real_provider_baseline"] = _scenario_report(samples, 5, 1)
+                report["scenarios"]["real_provider_baseline"] = _scenario_report(
+                    samples, 5, 1
+                )
 
         report["fallback_switchover"] = measure_fallback_switchover(app, auth_headers)
         print(report["fallback_switchover"]["summary_line"])
@@ -529,7 +555,10 @@ def run_story_load_audit(enable_real_api: bool = False) -> Dict[str, Any]:
 
     with patch(
         "backend.app.config_by_name",
-        {k: _RateLimitTestingConfig for k in ("dev", "development", "prod", "production", "testing", "default")},
+        {
+            k: _RateLimitTestingConfig
+            for k in ("dev", "development", "prod", "production", "testing", "default")
+        },
     ):
         reset_app = create_app("testing")
 

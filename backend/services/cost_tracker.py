@@ -17,6 +17,7 @@ Cost estimates use 2025-2026 published list prices (Verified):
   Replicate SDXL-Lightning: $0.003/image
   OpenRouter (passthrough): provider rate × 1.05 markup
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---- Cost estimators (return USD as float) ----
+
 
 def gemini_text_cost(input_tokens: int, output_tokens: int) -> float:
     """Cost of a Gemini 2.5 Flash text generation call."""
@@ -66,6 +68,7 @@ def openrouter_passthrough_cost(base_cost: float) -> float:
 
 # ---- Public logging API ----
 
+
 def log_api_cost(
     *,
     provider: str,
@@ -92,16 +95,16 @@ def log_api_cost(
     Never raises — audit_log swallows failures.
     """
     payload: dict[str, Any] = {
-        'provider': provider,
-        'feature': feature,
-        'cost_usd': round(cost_usd, 6),
-        'success': success,
+        "provider": provider,
+        "feature": feature,
+        "cost_usd": round(cost_usd, 6),
+        "success": success,
     }
     if units is not None:
-        payload['units'] = units
+        payload["units"] = units
     if unit_kind is not None:
-        payload['unit_kind'] = unit_kind
+        payload["unit_kind"] = unit_kind
     if extra:
         payload.update(extra)
 
-    audit_log('api_cost_incurred', user_id=user_id, data=payload)
+    audit_log("api_cost_incurred", user_id=user_id, data=payload)

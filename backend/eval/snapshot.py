@@ -46,26 +46,34 @@ def _compute_hash(text: str) -> str:
 def verify() -> int:
     drift = 0
     missing = 0
-    print(f"snapshot verify @ git={prompt_registry.SNAPSHOT_GIT_SHA} "
-          f"date={prompt_registry.SNAPSHOT_DATE}")
+    print(
+        f"snapshot verify @ git={prompt_registry.SNAPSHOT_GIT_SHA} "
+        f"date={prompt_registry.SNAPSHOT_DATE}"
+    )
     for t in prompt_registry.TEMPLATES:
         src = _slice_source(t)
         if src is None:
-            print(f"  MISSING  {t.template_id:24s} {t.source_file}:{t.line_start}-{t.line_end}")
+            print(
+                f"  MISSING  {t.template_id:24s} {t.source_file}:{t.line_start}-{t.line_end}"
+            )
             missing += 1
             continue
         h = _compute_hash(src)
         if not t.content_hash:
-            print(f"  UNHASHED {t.template_id:24s} current={h}  "
-                  "(run --refresh to populate)")
+            print(
+                f"  UNHASHED {t.template_id:24s} current={h}  "
+                "(run --refresh to populate)"
+            )
             drift += 1
         elif h != t.content_hash:
             print(f"  DRIFT    {t.template_id:24s} stored={t.content_hash} current={h}")
             drift += 1
         else:
             print(f"  PASS     {t.template_id:24s} {t.content_hash}")
-    print(f"\nresult: {len(prompt_registry.TEMPLATES) - drift - missing} clean, "
-          f"{drift} drifted/unhashed, {missing} missing")
+    print(
+        f"\nresult: {len(prompt_registry.TEMPLATES) - drift - missing} clean, "
+        f"{drift} drifted/unhashed, {missing} missing"
+    )
     return 1 if (drift or missing) else 0
 
 
@@ -86,7 +94,7 @@ def refresh() -> int:
         )
         match = pattern.search(new_text)
         if match:
-            new_text = pattern.sub(rf'\g<1>{h}\g<2>', new_text)
+            new_text = pattern.sub(rf"\g<1>{h}\g<2>", new_text)
             updates += 1
             print(f"  UPDATE {t.template_id} -> {h}")
         else:

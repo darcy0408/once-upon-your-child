@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from datetime import datetime, timezone
 
+
 class User(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -16,9 +17,9 @@ class User(db.Model):
     last_active_at = db.Column(db.DateTime, nullable=True)
 
     # Subscription details
-    role = db.Column(db.String(20), default='user', nullable=False)
-    subscription_tier = db.Column(db.String(50), default='free', nullable=False)
-    subscription_status = db.Column(db.String(50), default='active', nullable=False)
+    role = db.Column(db.String(20), default="user", nullable=False)
+    subscription_tier = db.Column(db.String(50), default="free", nullable=False)
+    subscription_status = db.Column(db.String(50), default="active", nullable=False)
     current_period_end = db.Column(db.DateTime)
     cancel_at_period_end = db.Column(db.Boolean, default=False)
     stripe_customer_id = db.Column(db.String(255))
@@ -32,7 +33,9 @@ class User(db.Model):
 
     # BYOK (Bring Your Own API Key) support
     gemini_api_key_encrypted = db.Column(db.Text, nullable=True)  # Encrypted API key
-    has_byok = db.Column(db.Boolean, default=False, nullable=False)  # Quick flag for BYOK status
+    has_byok = db.Column(
+        db.Boolean, default=False, nullable=False
+    )  # Quick flag for BYOK status
 
     # Monthly usage tracking.
     # M-2/M-17: `stories_generated_this_month` is the conservative monthly story
@@ -42,11 +45,17 @@ class User(db.Model):
     # Previously it was declared but never incremented (dead state); it is now
     # actively maintained alongside the enforced Redis daily counter.
     stories_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
-    illustrations_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
-    usage_reset_date = db.Column(db.DateTime, nullable=True)  # When to reset monthly counters
+    illustrations_generated_this_month = db.Column(
+        db.Integer, default=0, nullable=False
+    )
+    usage_reset_date = db.Column(
+        db.DateTime, nullable=True
+    )  # When to reset monthly counters
 
     # COPPA compliance
-    declared_age = db.Column(db.Integer, nullable=True)  # Age declared during onboarding
+    declared_age = db.Column(
+        db.Integer, nullable=True
+    )  # Age declared during onboarding
     is_under_13 = db.Column(db.Boolean, default=False, nullable=False)  # COPPA flag
 
     # JWT revocation: minted into access tokens as the `tv` claim and verified
@@ -55,8 +64,8 @@ class User(db.Model):
     token_version = db.Column(db.Integer, default=0, nullable=False)
 
     # Relationships
-    characters = db.relationship('Character', backref='user', lazy=True)
-    stories = db.relationship('Story', backref='user', lazy=True)
+    characters = db.relationship("Character", backref="user", lazy=True)
+    stories = db.relationship("Story", backref="user", lazy=True)
     # progression_data = db.Column(db.JSON, default=dict)
 
     def set_password(self, password):
@@ -67,26 +76,32 @@ class User(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'role': self.role,
-            'created_at': self.created_at.isoformat(),
-            'last_active_at': self.last_active_at.isoformat() if self.last_active_at else None,
-            'subscription_tier': self.subscription_tier,
-            'subscription_status': self.subscription_status,
-            'current_period_end': self.current_period_end.isoformat() if self.current_period_end else None,
-            'cancel_at_period_end': self.cancel_at_period_end,
-            'stripe_customer_id': self.stripe_customer_id,
-            'stories_created_count': self.stories_created_count,
-            'custom_avatars_generated': self.custom_avatars_generated,
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role,
+            "created_at": self.created_at.isoformat(),
+            "last_active_at": (
+                self.last_active_at.isoformat() if self.last_active_at else None
+            ),
+            "subscription_tier": self.subscription_tier,
+            "subscription_status": self.subscription_status,
+            "current_period_end": (
+                self.current_period_end.isoformat() if self.current_period_end else None
+            ),
+            "cancel_at_period_end": self.cancel_at_period_end,
+            "stripe_customer_id": self.stripe_customer_id,
+            "stories_created_count": self.stories_created_count,
+            "custom_avatars_generated": self.custom_avatars_generated,
             # BYOK fields
-            'has_byok': self.has_byok,
-            'stories_generated_this_month': self.stories_generated_this_month,
-            'illustrations_generated_this_month': self.illustrations_generated_this_month,
-            'usage_reset_date': self.usage_reset_date.isoformat() if self.usage_reset_date else None,
+            "has_byok": self.has_byok,
+            "stories_generated_this_month": self.stories_generated_this_month,
+            "illustrations_generated_this_month": self.illustrations_generated_this_month,
+            "usage_reset_date": (
+                self.usage_reset_date.isoformat() if self.usage_reset_date else None
+            ),
             # COPPA fields
-            'declared_age': self.declared_age,
-            'is_under_13': self.is_under_13,
+            "declared_age": self.declared_age,
+            "is_under_13": self.is_under_13,
             # Note: Never expose gemini_api_key_encrypted in API responses
         }

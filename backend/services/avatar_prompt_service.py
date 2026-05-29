@@ -1,6 +1,7 @@
 """
 Avatar Prompt Service - Builds safe, magical prompts for child avatar generation
 """
+
 import hashlib
 from typing import Dict, Tuple, Optional
 
@@ -10,41 +11,71 @@ class AvatarPromptService:
 
     # Style anchors for different artistic approaches
     STYLE_ANCHORS = {
-        'pixar': 'Pixar 3D animation style with rounded features, big expressive eyes, smooth textures, professional character design',
-        'watercolor': 'Soft watercolor illustration style with gentle brush strokes, dreamy colors, artistic painted texture',
-        'cartoon': '2D cartoon animation style with bold outlines, vibrant flat colors, fun character design',
-        'clay': 'Claymation style with textured surfaces, playful 3D modeling, whimsical handcrafted look'
+        "pixar": "Pixar 3D animation style with rounded features, big expressive eyes, smooth textures, professional character design",
+        "watercolor": "Soft watercolor illustration style with gentle brush strokes, dreamy colors, artistic painted texture",
+        "cartoon": "2D cartoon animation style with bold outlines, vibrant flat colors, fun character design",
+        "clay": "Claymation style with textured surfaces, playful 3D modeling, whimsical handcrafted look",
     }
 
     # Age-based detail calibration
     AGE_DETAIL_LEVELS = {
-        (3, 5): "Very simple, rounded features with minimal details, extra soft and friendly appearance",
-        (6, 8): "Moderate detail with expressive features, playful and engaging character design",
-        (9, 12): "Higher detail with personality-rich features, sophisticated but still magical",
-        (13, 17): "Refined details with artistic depth, mature magical aesthetic"
+        (
+            3,
+            5,
+        ): "Very simple, rounded features with minimal details, extra soft and friendly appearance",
+        (
+            6,
+            8,
+        ): "Moderate detail with expressive features, playful and engaging character design",
+        (
+            9,
+            12,
+        ): "Higher detail with personality-rich features, sophisticated but still magical",
+        (13, 17): "Refined details with artistic depth, mature magical aesthetic",
     }
 
     # Emotion to visual expression mapping
     EMOTION_TO_EXPRESSION = {
-        'Happy': 'bright smile, joyful sparkling eyes, warm cheerful expression',
-        'Sad': 'gentle expression, thoughtful compassionate eyes, soft empathetic features',
-        'Angry': 'determined look, focused intense eyes, strong confident features',
-        'Scared': 'wide eyes showing concern, uncertain expression, seeking comfort and safety',
-        'Surprised': 'eyes wide with wonder and amazement, curious expression',
-        'Disgusted': 'thoughtful expression, processing feelings, contemplative features',
-        'Peaceful': 'serene smile, calm relaxed eyes, gentle peaceful expression',
-        'Excited': 'big enthusiastic smile, bright energetic eyes, lively expression',
-        'Proud': 'confident smile, self-assured eyes, accomplished expression'
+        "Happy": "bright smile, joyful sparkling eyes, warm cheerful expression",
+        "Sad": "gentle expression, thoughtful compassionate eyes, soft empathetic features",
+        "Angry": "determined look, focused intense eyes, strong confident features",
+        "Scared": "wide eyes showing concern, uncertain expression, seeking comfort and safety",
+        "Surprised": "eyes wide with wonder and amazement, curious expression",
+        "Disgusted": "thoughtful expression, processing feelings, contemplative features",
+        "Peaceful": "serene smile, calm relaxed eyes, gentle peaceful expression",
+        "Excited": "big enthusiastic smile, bright energetic eyes, lively expression",
+        "Proud": "confident smile, self-assured eyes, accomplished expression",
     }
 
     # Safety blocklist - terms that should never appear in prompts
     AVATAR_BLOCKLIST = [
-        'photorealistic', 'photo', 'photograph', 'realistic photo',
-        'camera', 'selfie', 'portrait photo', 'real person', 'real child',
-        'scary', 'frightening', 'horror', 'creepy', 'disturbing',
-        'violent', 'weapon', 'blood', 'injury', 'harm',
-        'inappropriate', 'adult', 'suggestive', 'explicit',
-        'nude', 'naked', 'undressed', 'revealing'
+        "photorealistic",
+        "photo",
+        "photograph",
+        "realistic photo",
+        "camera",
+        "selfie",
+        "portrait photo",
+        "real person",
+        "real child",
+        "scary",
+        "frightening",
+        "horror",
+        "creepy",
+        "disturbing",
+        "violent",
+        "weapon",
+        "blood",
+        "injury",
+        "harm",
+        "inappropriate",
+        "adult",
+        "suggestive",
+        "explicit",
+        "nude",
+        "naked",
+        "undressed",
+        "revealing",
     ]
 
     # Safety-critical subset of the blocklist. This EXCLUDES the photorealism /
@@ -55,11 +86,27 @@ class AvatarPromptService:
     # genuinely unsafe content (sexual / violent / frightening) that must
     # NEVER appear in a children's avatar prompt regardless of context.
     AVATAR_UNSAFE_CONTENT_BLOCKLIST = [
-        'scary', 'frightening', 'horror', 'creepy', 'disturbing',
-        'violent', 'weapon', 'blood', 'injury', 'gore',
-        'inappropriate', 'suggestive', 'explicit',
-        'nude', 'naked', 'undressed', 'revealing',
-        'sexy', 'sexual', 'lingerie', 'underwear',
+        "scary",
+        "frightening",
+        "horror",
+        "creepy",
+        "disturbing",
+        "violent",
+        "weapon",
+        "blood",
+        "injury",
+        "gore",
+        "inappropriate",
+        "suggestive",
+        "explicit",
+        "nude",
+        "naked",
+        "undressed",
+        "revealing",
+        "sexy",
+        "sexual",
+        "lingerie",
+        "underwear",
     ]
 
     # Critical safety rules embedded in every prompt
@@ -87,9 +134,9 @@ STRICTLY FORBIDDEN:
     def build_avatar_prompt(
         character_name: str,
         age: int,
-        style: str = 'pixar',
+        style: str = "pixar",
         features: Optional[Dict[str, str]] = None,
-        emotion_data: Optional[Dict[str, str]] = None
+        emotion_data: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Build a safe, magical avatar generation prompt.
@@ -108,8 +155,7 @@ STRICTLY FORBIDDEN:
 
         # Get style anchor
         style_anchor = AvatarPromptService.STYLE_ANCHORS.get(
-            style.lower(),
-            AvatarPromptService.STYLE_ANCHORS['pixar']
+            style.lower(), AvatarPromptService.STYLE_ANCHORS["pixar"]
         )
 
         # Get age-appropriate detail level
@@ -119,7 +165,9 @@ STRICTLY FORBIDDEN:
         appearance = AvatarPromptService._build_appearance_description(features)
 
         # Build emotion expression
-        expression = AvatarPromptService._build_emotion_expression(emotion_data, features)
+        expression = AvatarPromptService._build_emotion_expression(
+            emotion_data, features
+        )
 
         # Assemble complete prompt
         prompt = f"""Create a magical portrait of {character_name}, a {age}-year-old child character.
@@ -157,7 +205,10 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
     @staticmethod
     def _get_age_detail_level(age: int) -> str:
         """Get age-appropriate detail level description."""
-        for (min_age, max_age), details in AvatarPromptService.AGE_DETAIL_LEVELS.items():
+        for (
+            min_age,
+            max_age,
+        ), details in AvatarPromptService.AGE_DETAIL_LEVELS.items():
             if min_age <= age <= max_age:
                 return details
         return AvatarPromptService.AGE_DETAIL_LEVELS[(9, 12)]  # Default
@@ -167,17 +218,19 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
         """Build detailed appearance description from features."""
         appearance_parts = []
 
-        if features.get('hair_style') and features.get('hair_color'):
-            appearance_parts.append(f"- Hair: {features['hair_style']}, {features['hair_color']} color")
-        elif features.get('hair_style'):
+        if features.get("hair_style") and features.get("hair_color"):
+            appearance_parts.append(
+                f"- Hair: {features['hair_style']}, {features['hair_color']} color"
+            )
+        elif features.get("hair_style"):
             appearance_parts.append(f"- Hair: {features['hair_style']}")
-        if features.get('hair_details'):
+        if features.get("hair_details"):
             appearance_parts.append(f"- Hair details: {features['hair_details']}")
 
-        if features.get('skin_tone'):
+        if features.get("skin_tone"):
             appearance_parts.append(f"- Skin tone: {features['skin_tone']}")
 
-        if features.get('outfit'):
+        if features.get("outfit"):
             appearance_parts.append(f"- Outfit: {features['outfit']}")
 
         if appearance_parts:
@@ -187,31 +240,28 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
 
     @staticmethod
     def _build_emotion_expression(
-        emotion_data: Optional[Dict[str, str]],
-        features: Dict[str, str]
+        emotion_data: Optional[Dict[str, str]], features: Dict[str, str]
     ) -> str:
         """Build expression description from emotion data and features."""
         # Start with feature-based expression if provided
-        base_expression = features.get('expression', 'Happy')
+        base_expression = features.get("expression", "Happy")
 
         # If emotion data provided, use that to enhance expression
-        if emotion_data and emotion_data.get('core'):
-            core_emotion = emotion_data['core']
+        if emotion_data and emotion_data.get("core"):
+            core_emotion = emotion_data["core"]
             expression_desc = AvatarPromptService.EMOTION_TO_EXPRESSION.get(
-                core_emotion,
-                'gentle smile, warm eyes, friendly expression'
+                core_emotion, "gentle smile, warm eyes, friendly expression"
             )
 
             # Add eye and mouth details if provided
-            eye_type = emotion_data.get('eye_type', 'Default')
-            mouth_type = emotion_data.get('mouth_type', 'Smile')
+            eye_type = emotion_data.get("eye_type", "Default")
+            mouth_type = emotion_data.get("mouth_type", "Smile")
 
             return f"{expression_desc} ({eye_type} eyes, {mouth_type} mouth style)"
         else:
             # Use base expression from features
             return AvatarPromptService.EMOTION_TO_EXPRESSION.get(
-                base_expression,
-                'gentle smile, warm eyes, friendly expression'
+                base_expression, "gentle smile, warm eyes, friendly expression"
             )
 
     @staticmethod
@@ -233,25 +283,28 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
 
         # Extract the safe sections (safety rules and forbidden sections)
         safe_sections = []
-        if 'critical safety requirements:' in lower_prompt:
-            safe_start = lower_prompt.find('critical safety requirements:')
+        if "critical safety requirements:" in lower_prompt:
+            safe_start = lower_prompt.find("critical safety requirements:")
             safe_sections.append(lower_prompt[safe_start:])
-        if 'forbidden:' in lower_prompt:
-            forbidden_start = lower_prompt.find('forbidden:')
+        if "forbidden:" in lower_prompt:
+            forbidden_start = lower_prompt.find("forbidden:")
             safe_sections.append(lower_prompt[forbidden_start:])
-        if 'strictly forbidden:' in lower_prompt:
-            forbidden_start = lower_prompt.find('strictly forbidden:')
+        if "strictly forbidden:" in lower_prompt:
+            forbidden_start = lower_prompt.find("strictly forbidden:")
             safe_sections.append(lower_prompt[forbidden_start:])
 
         # Remove safe sections from prompt for validation
         prompt_to_check = lower_prompt
         for section in safe_sections:
-            prompt_to_check = prompt_to_check.replace(section, '')
+            prompt_to_check = prompt_to_check.replace(section, "")
 
         # Now check for blocked terms only in the remaining prompt
         for blocked_term in AvatarPromptService.AVATAR_BLOCKLIST:
             if blocked_term in prompt_to_check:
-                return False, f"Prompt validation failed: contains blocked term '{blocked_term}' in unsafe context"
+                return (
+                    False,
+                    f"Prompt validation failed: contains blocked term '{blocked_term}' in unsafe context",
+                )
 
         return True, "Prompt is safe"
 
@@ -277,8 +330,9 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
         # Word-boundary match so substrings inside benign words don't trip
         # (e.g. 'harm' inside 'harmony', 'gore' inside a name).
         import re as _re
+
         for blocked_term in AvatarPromptService.AVATAR_UNSAFE_CONTENT_BLOCKLIST:
-            if _re.search(rf'\b{_re.escape(blocked_term)}\b', lower_prompt):
+            if _re.search(rf"\b{_re.escape(blocked_term)}\b", lower_prompt):
                 return False, (
                     f"Prompt validation failed: contains unsafe term "
                     f"'{blocked_term}'"
@@ -287,9 +341,7 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
 
     @staticmethod
     def generate_character_seed(
-        character_name: str,
-        age: int,
-        features: Dict[str, str]
+        character_name: str, age: int, features: Dict[str, str]
     ) -> str:
         """
         Generate a consistent seed for character avatar reproducibility.
@@ -305,14 +357,14 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
         seed_components = [
             character_name.lower().strip(),
             str(age),
-            features.get('hair_style', '').lower(),
-            features.get('hair_details', '').lower(),
-            features.get('skin_tone', '').lower(),
-            features.get('outfit', '').lower()
+            features.get("hair_style", "").lower(),
+            features.get("hair_details", "").lower(),
+            features.get("skin_tone", "").lower(),
+            features.get("outfit", "").lower(),
         ]
 
-        seed_string = '|'.join(filter(None, seed_components))
-        seed_hash = hashlib.sha256(seed_string.encode('utf-8')).hexdigest()
+        seed_string = "|".join(filter(None, seed_components))
+        seed_hash = hashlib.sha256(seed_string.encode("utf-8")).hexdigest()
 
         return seed_hash[:16]  # First 16 characters for manageable seed
 
@@ -328,19 +380,21 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
         Returns:
             Enhanced prompt with emotion details
         """
-        if not emotion_data or not emotion_data.get('core'):
+        if not emotion_data or not emotion_data.get("core"):
             return prompt
 
-        core_emotion = emotion_data['core']
-        intensity = emotion_data.get('intensity', 3)  # 1-5 scale
+        core_emotion = emotion_data["core"]
+        intensity = emotion_data.get("intensity", 3)  # 1-5 scale
 
         # Build emotion enhancement
         emotion_enhancement = f"\n\nEMOTIONAL MIRRORING:"
         emotion_enhancement += f"\n- Character is feeling {core_emotion}"
         emotion_enhancement += f"\n- Intensity level: {intensity}/5"
-        emotion_enhancement += f"\n- Reflect this in facial expression subtly and appropriately"
+        emotion_enhancement += (
+            f"\n- Reflect this in facial expression subtly and appropriately"
+        )
 
-        if emotion_data.get('secondary'):
+        if emotion_data.get("secondary"):
             emotion_enhancement += f"\n- Specific feeling: {emotion_data['secondary']}"
 
         return prompt + emotion_enhancement

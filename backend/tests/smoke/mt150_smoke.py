@@ -33,6 +33,7 @@ re-validated each run.
 No git side effects, no deploys. Requires: requests, Pillow.
     pip install requests pillow
 """
+
 import io
 import sys
 import time
@@ -107,19 +108,25 @@ def check_a(token):
             timeout=SHORT_TIMEOUT,
         )
     except requests.RequestException as e:
-        record("a", "interactive-story not gated", FAIL,
-                f"request error: {e}")
+        record("a", "interactive-story not gated", FAIL, f"request error: {e}")
         return
 
     body = r.text
     if r.status_code == 403:
-        record("a", "interactive-story not gated", FAIL,
-                f"HTTP 403 -- endpoint is premium-gated: {excerpt(body)}")
+        record(
+            "a",
+            "interactive-story not gated",
+            FAIL,
+            f"HTTP 403 -- endpoint is premium-gated: {excerpt(body)}",
+        )
         return
     if r.status_code == 200:
-        record("a", "interactive-story not gated", PASS,
-                "HTTP 200 -- not gated, generation succeeded "
-                "(MT-154 appears fixed)")
+        record(
+            "a",
+            "interactive-story not gated",
+            PASS,
+            "HTTP 200 -- not gated, generation succeeded " "(MT-154 appears fixed)",
+        )
         return
     if r.status_code == 500:
         is_truncation = (
@@ -127,16 +134,27 @@ def check_a(token):
             or "value too long for type character varying" in body
         ) and "image_url" in body
         if is_truncation:
-            record("a", "interactive-story not gated", PASS,
-                    "HTTP 500 -- not gated; confirmed MT-154 bug "
-                    f"(image_url truncation): {excerpt(body)}")
+            record(
+                "a",
+                "interactive-story not gated",
+                PASS,
+                "HTTP 500 -- not gated; confirmed MT-154 bug "
+                f"(image_url truncation): {excerpt(body)}",
+            )
         else:
-            record("a", "interactive-story not gated", FAIL,
-                    f"HTTP 500 but NOT the MT-154 truncation bug: "
-                    f"{excerpt(body)}")
+            record(
+                "a",
+                "interactive-story not gated",
+                FAIL,
+                f"HTTP 500 but NOT the MT-154 truncation bug: " f"{excerpt(body)}",
+            )
         return
-    record("a", "interactive-story not gated", FAIL,
-           f"unexpected HTTP {r.status_code}: {excerpt(body)}")
+    record(
+        "a",
+        "interactive-story not gated",
+        FAIL,
+        f"unexpected HTTP {r.status_code}: {excerpt(body)}",
+    )
 
 
 # --------------------------------------------------------------------------
@@ -160,8 +178,12 @@ def check_b(token, png_bytes):
             timeout=SHORT_TIMEOUT,
         )
         gated = r.status_code == 403 and "upgrade" in r.text.lower()
-        record("b1", "pet-avatar gated", PASS if gated else FAIL,
-               f"HTTP {r.status_code}: {excerpt(r.text)}")
+        record(
+            "b1",
+            "pet-avatar gated",
+            PASS if gated else FAIL,
+            f"HTTP {r.status_code}: {excerpt(r.text)}",
+        )
     except requests.RequestException as e:
         record("b1", "pet-avatar gated", FAIL, f"request error: {e}")
 
@@ -174,8 +196,12 @@ def check_b(token, png_bytes):
             timeout=SHORT_TIMEOUT,
         )
         gated = r.status_code == 403 and "upgrade" in r.text.lower()
-        record("b2", "coloring-pages gated", PASS if gated else FAIL,
-               f"HTTP {r.status_code}: {excerpt(r.text)}")
+        record(
+            "b2",
+            "coloring-pages gated",
+            PASS if gated else FAIL,
+            f"HTTP {r.status_code}: {excerpt(r.text)}",
+        )
     except requests.RequestException as e:
         record("b2", "coloring-pages gated", FAIL, f"request error: {e}")
 
@@ -204,18 +230,31 @@ def check_d(token, user_id):
     try:
         status, count, body = get_custom_avatar_count(token, user_id)
     except requests.RequestException as e:
-        record("d", "custom_avatars_generated column exists", FAIL,
-               f"request error: {e}")
+        record(
+            "d", "custom_avatars_generated column exists", FAIL, f"request error: {e}"
+        )
         return None
     if status == 200 and count is not None:
-        record("d", "custom_avatars_generated column exists", PASS,
-               f"HTTP 200, custom_avatars_generated={count}")
+        record(
+            "d",
+            "custom_avatars_generated column exists",
+            PASS,
+            f"HTTP 200, custom_avatars_generated={count}",
+        )
     elif status == 500 and "UndefinedColumn" in body:
-        record("d", "custom_avatars_generated column exists", FAIL,
-               f"HTTP 500 UndefinedColumn -- column missing: {excerpt(body)}")
+        record(
+            "d",
+            "custom_avatars_generated column exists",
+            FAIL,
+            f"HTTP 500 UndefinedColumn -- column missing: {excerpt(body)}",
+        )
     else:
-        record("d", "custom_avatars_generated column exists", FAIL,
-               f"HTTP {status}: {excerpt(body)}")
+        record(
+            "d",
+            "custom_avatars_generated column exists",
+            FAIL,
+            f"HTTP {status}: {excerpt(body)}",
+        )
     return count
 
 
@@ -251,8 +290,7 @@ def check_c(token, user_id, png_bytes):
     try:
         _, count_before, _ = get_custom_avatar_count(token, user_id)
     except requests.RequestException as e:
-        record("c", "one-free-avatar gate", BLOCKED,
-               f"could not read pre-count: {e}")
+        record("c", "one-free-avatar gate", BLOCKED, f"could not read pre-count: {e}")
         return
     print(f"  custom_avatars_generated before: {count_before}")
 
@@ -261,30 +299,32 @@ def check_c(token, user_id, png_bytes):
     print(f"  attempt 1 -> HTTP {status1} in {elapsed1:.1f}s")
 
     # MT-155: timeout / 504 / connection reset on the first attempt -> BLOCKED
-    mt155 = (
-        err1 is not None
-        or status1 in (502, 503, 504)
-        or status1 is None
-    )
+    mt155 = err1 is not None or status1 in (502, 503, 504) or status1 is None
     if mt155:
-        detail = (f"MT-155: first generation did not complete cleanly "
-                  f"(HTTP {status1}, {elapsed1:.0f}s"
-                  + (f", error={err1}" if err1 else "") + "). "
-                  "Gate cannot be exercised until MT-155 deploys.")
+        detail = (
+            f"MT-155: first generation did not complete cleanly "
+            f"(HTTP {status1}, {elapsed1:.0f}s"
+            + (f", error={err1}" if err1 else "")
+            + "). "
+            "Gate cannot be exercised until MT-155 deploys."
+        )
         record("c", "one-free-avatar gate", BLOCKED, detail)
         return
 
     if status1 != 200:
-        record("c", "one-free-avatar gate", FAIL,
-               f"attempt 1 expected HTTP 200, got {status1}: {excerpt(body1)}")
+        record(
+            "c",
+            "one-free-avatar gate",
+            FAIL,
+            f"attempt 1 expected HTTP 200, got {status1}: {excerpt(body1)}",
+        )
         return
 
     # count after attempt 1 -- must have incremented by exactly 1
     try:
         _, count_after, _ = get_custom_avatar_count(token, user_id)
     except requests.RequestException as e:
-        record("c", "one-free-avatar gate", FAIL,
-               f"could not read post-count: {e}")
+        record("c", "one-free-avatar gate", FAIL, f"could not read post-count: {e}")
         return
     print(f"  custom_avatars_generated after attempt 1: {count_after}")
 
@@ -294,28 +334,43 @@ def check_c(token, user_id, png_bytes):
         and count_after == count_before + 1
     )
     if not incremented:
-        record("c", "one-free-avatar gate", FAIL,
-               f"custom_avatars_generated did not increment by 1 "
-               f"({count_before} -> {count_after})")
+        record(
+            "c",
+            "one-free-avatar gate",
+            FAIL,
+            f"custom_avatars_generated did not increment by 1 "
+            f"({count_before} -> {count_after})",
+        )
         return
 
     # attempt 2 -- must be 403 with an upgrade payload
     status2, body2, elapsed2, err2 = post_custom_avatar(token, png_bytes)
     print(f"  attempt 2 -> HTTP {status2} in {elapsed2:.1f}s")
     if err2 is not None:
-        record("c", "one-free-avatar gate", BLOCKED,
-               f"attempt 2 errored before gate could respond: {err2}")
+        record(
+            "c",
+            "one-free-avatar gate",
+            BLOCKED,
+            f"attempt 2 errored before gate could respond: {err2}",
+        )
         return
 
     gate_ok = status2 == 403 and "upgrade" in body2.lower()
     if gate_ok:
-        record("c", "one-free-avatar gate", PASS,
-               f"attempt1=200 (count {count_before}->{count_after}), "
-               f"attempt2=403 upgrade: {excerpt(body2)}")
+        record(
+            "c",
+            "one-free-avatar gate",
+            PASS,
+            f"attempt1=200 (count {count_before}->{count_after}), "
+            f"attempt2=403 upgrade: {excerpt(body2)}",
+        )
     else:
-        record("c", "one-free-avatar gate", FAIL,
-               f"attempt 2 expected 403 upgrade, got {status2}: "
-               f"{excerpt(body2)}")
+        record(
+            "c",
+            "one-free-avatar gate",
+            FAIL,
+            f"attempt 2 expected 403 upgrade, got {status2}: " f"{excerpt(body2)}",
+        )
 
 
 # --------------------------------------------------------------------------
@@ -339,7 +394,7 @@ def main():
 
     check_a(tok_a)
     check_b(tok_b, png_bytes)
-    check_d(tok_cd, uid_cd)            # read column before metering it
+    check_d(tok_cd, uid_cd)  # read column before metering it
     check_c(tok_cd, uid_cd, png_bytes)
 
     # ----- matrix -----
@@ -357,8 +412,10 @@ def main():
         print(f"RESULT: {n_fail} FAIL, {n_blocked} BLOCKED -- investigate.")
         sys.exit(1)
     if n_blocked:
-        print(f"RESULT: all runnable checks PASS, {n_blocked} BLOCKED "
-              "(re-run after the relevant fix deploys).")
+        print(
+            f"RESULT: all runnable checks PASS, {n_blocked} BLOCKED "
+            "(re-run after the relevant fix deploys)."
+        )
         sys.exit(0)
     print("RESULT: all checks PASS.")
     sys.exit(0)

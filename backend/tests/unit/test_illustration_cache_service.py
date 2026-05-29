@@ -7,6 +7,7 @@ Covers:
   * a cache hit skips the provider call AND the illustration quota.
   * the cache layer degrades open — a DB error behaves as a miss / no-op.
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -89,9 +90,12 @@ class TestCacheReadWrite:
     def test_store_then_get_round_trips(self, app):
         with app.app_context():
             key = "a" * 64
-            assert store_illustration(
-                key, "BASE64IMAGE", image_format="png", provider="flux_schnell"
-            ) is True
+            assert (
+                store_illustration(
+                    key, "BASE64IMAGE", image_format="png", provider="flux_schnell"
+                )
+                is True
+            )
             cached = get_cached_illustration(key)
             assert cached is not None
             assert cached["image_data"] == "BASE64IMAGE"
@@ -111,11 +115,7 @@ class TestCacheReadWrite:
             store_illustration(key, "IMG", provider="flux_schnell")
             get_cached_illustration(key)
             get_cached_illustration(key)
-            row = (
-                db.session.query(IllustrationCache)
-                .filter_by(cache_key=key)
-                .one()
-            )
+            row = db.session.query(IllustrationCache).filter_by(cache_key=key).one()
             assert row.hit_count == 2
 
     def test_store_duplicate_key_is_idempotent(self, app):
@@ -123,7 +123,9 @@ class TestCacheReadWrite:
             key = "c" * 64
             assert store_illustration(key, "FIRST", provider="flux_schnell") is True
             # Second store for the same key is a no-op success, keeps first image.
-            assert store_illustration(key, "SECOND", provider="gemini_openrouter") is True
+            assert (
+                store_illustration(key, "SECOND", provider="gemini_openrouter") is True
+            )
             cached = get_cached_illustration(key)
             assert cached["image_data"] == "FIRST"
 
@@ -191,9 +193,9 @@ class TestCacheHitSkipsProviderAndQuota:
                 illustrations = fake_flux()
 
             assert served_from_cache is True
-            assert provider_called["flux"] is False, (
-                "a cache hit must skip the provider call"
-            )
+            assert (
+                provider_called["flux"] is False
+            ), "a cache hit must skip the provider call"
             assert illustrations[0]["image_data"] == "CACHEDIMG"
 
     def test_hit_means_quota_not_incremented(self, app):
@@ -213,6 +215,6 @@ class TestCacheHitSkipsProviderAndQuota:
                 len([{"image_data": "x"}]) > 0
                 and not served_from_cache  # route's actual gate
             )
-            assert quota_incremented is False, (
-                "a re-read served from cache must not consume illustration quota"
-            )
+            assert (
+                quota_incremented is False
+            ), "a re-read served from cache must not consume illustration quota"

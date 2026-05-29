@@ -23,104 +23,120 @@ def _duration_minutes_to_word_range(minutes: int) -> tuple[int, int]:
 # Master constraint table from Story Weaver Coverage v2
 # Capped Rhyme Time at 600-800 max to maintain AI quality.
 AGE_CONSTRAINTS = {
-    '3-4': {
-        'regular': {'short': (200, 300), 'medium': (300, 450), 'long': (450, 650)},
-        'rhyme': {'short': (150, 250), 'medium': (250, 350), 'long': (350, 450)},
-        'ltr': {'short': 6, 'medium': 8, 'long': 10}, # pages
-        'notes': (
-            'Sentences: 5-8 words max; never more than two clauses. '
+    "3-4": {
+        "regular": {"short": (200, 300), "medium": (300, 450), "long": (450, 650)},
+        "rhyme": {"short": (150, 250), "medium": (250, 350), "long": (350, 450)},
+        "ltr": {"short": 6, "medium": 8, "long": 10},  # pages
+        "notes": (
+            "Sentences: 5-8 words max; never more than two clauses. "
             'Vocabulary: CVC words as the base (cat, run, big); introduce 2-3 "magic words" per story (sparkle, rumble) — always explained by what happens next. '
-            'FORBIDDEN WORDS — replace with the simpler equivalent in parentheses: '
-            'wobbly(jiggly), mossy(soft), stardust(sparkles), swirling(spinning), ancient(old), '
-            'magnificent(big), momentarily(soon), enormous(very big), trembled(shook), '
-            'wondrous(wonderful), vanished(gone), instantly(right away), mysterious(strange), '
-            'brilliant(bright), extraordinary(special). '
-            'SENTENCE CHECK: Count words before writing each sentence. If it would exceed 8 words, split it in two. '
+            "FORBIDDEN WORDS — replace with the simpler equivalent in parentheses: "
+            "wobbly(jiggly), mossy(soft), stardust(sparkles), swirling(spinning), ancient(old), "
+            "magnificent(big), momentarily(soon), enormous(very big), trembled(shook), "
+            "wondrous(wonderful), vanished(gone), instantly(right away), mysterious(strange), "
+            "brilliant(bright), extraordinary(special). "
+            "SENTENCE CHECK: Count words before writing each sentence. If it would exceed 8 words, split it in two. "
             'Emotion: Name one feeling simply ("[name] felt scared / happy / safe") — no internal monologue, always by character name. '
             'Structure: Repetition and pattern ("and then... and then... until finally"). '
-            'AVOID: Irony, sarcasm, ambiguous morality, abstract metaphor, time jumps, unfamiliar adult relationships, '
-            'objects that speak or giggle specifically for the child alone — magical objects may glow or react visibly '
-            'but must not produce personal sounds or sensations directed at the child.'
+            "AVOID: Irony, sarcasm, ambiguous morality, abstract metaphor, time jumps, unfamiliar adult relationships, "
+            "objects that speak or giggle specifically for the child alone — magical objects may glow or react visibly "
+            "but must not produce personal sounds or sensations directed at the child."
         ),
     },
-    '5-7': {
-        'regular': {'short': (450, 650), 'medium': (650, 900), 'long': (900, 1200)},
-        'rhyme': {'short': (300, 450), 'medium': (450, 550), 'long': (550, 650)},
-        'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': (
-            'Stay anchored tightly in the hero\'s moment-to-moment experience — close third-person by name throughout. '
-            'Sentences: 8-14 words on average; one complex clause allowed per paragraph. '
+    "5-7": {
+        "regular": {"short": (450, 650), "medium": (650, 900), "long": (900, 1200)},
+        "rhyme": {"short": (300, 450), "medium": (450, 550), "long": (550, 650)},
+        "ltr": {"short": 8, "medium": 10, "long": 12},
+        "notes": (
+            "Stay anchored tightly in the hero's moment-to-moment experience — close third-person by name throughout. "
+            "Sentences: 8-14 words on average; one complex clause allowed per paragraph. "
             'Vocabulary: Grade 1-2 sight words as the foundation; 3-4 new "wow words" each introduced with an immediate context clue. '
-            'Emotion: Simple labeling PLUS one physical sensation (heart beating fast, warm in the chest). '
-            'Structure: Clear 3-act arc (setup → problem → solution) with a single complication. '
-            'AVOID: Dramatic irony, subtext, unreliable narrators, abstract metaphor, romantic tension.'
+            "Emotion: Simple labeling PLUS one physical sensation (heart beating fast, warm in the chest). "
+            "Structure: Clear 3-act arc (setup → problem → solution) with a single complication. "
+            "AVOID: Dramatic irony, subtext, unreliable narrators, abstract metaphor, romantic tension."
         ),
     },
-    '8-10': {
-        'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
-        'rhyme': {'short': (400, 500), 'medium': (500, 650), 'long': (650, 800)},
-        'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': (
-            'POV: Third-person limited (close to the hero); short internal thought snippets are welcome. '
-            'Sentences: 12-20 words on average; compound and complex sentences encouraged. '
-            'Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; stretch words earn a context clue. '
-            'Emotion: Show competing feelings (excited AND nervous at once); the hero can be wrong and correct themselves — show, do not announce. '
-            'Structure: Two-step challenge where solving the first problem opens a harder second one; subplot connects to the theme. '
-            'AVOID: Explicit romantic tension, heavy existential themes, unreliable narrator, condescending phrasing.'
+    "8-10": {
+        "regular": {"short": (900, 1200), "medium": (1200, 1800), "long": (1800, 2400)},
+        "rhyme": {"short": (400, 500), "medium": (500, 650), "long": (650, 800)},
+        "ltr": {"short": 8, "medium": 10, "long": 12},
+        "notes": (
+            "POV: Third-person limited (close to the hero); short internal thought snippets are welcome. "
+            "Sentences: 12-20 words on average; compound and complex sentences encouraged. "
+            "Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; stretch words earn a context clue. "
+            "Emotion: Show competing feelings (excited AND nervous at once); the hero can be wrong and correct themselves — show, do not announce. "
+            "Structure: Two-step challenge where solving the first problem opens a harder second one; subplot connects to the theme. "
+            "AVOID: Explicit romantic tension, heavy existential themes, unreliable narrator, condescending phrasing."
         ),
     },
-    '11-13': {
-        'regular': {'short': (1300, 1700), 'medium': (1800, 2600), 'long': (2600, 3400)},
-        'rhyme': {'short': (450, 550), 'medium': (550, 700), 'long': (700, 800)},
-        'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': (
-            'POV: Third-person limited with meaningful internal monologue (1-2 paragraphs per story). '
-            'Sentences: Vary deliberately — mix punchy 5-word sentences with 25-word complex ones for rhythm. '
-            'Vocabulary: Middle-grade level; figurative language (simile, personification, hyperbole) used purposefully, not decoratively. '
-            'Emotion: Ambivalence is valid — the hero can be right and still feel bad; social dynamics, fairness, and belonging are real stakes. '
-            'Structure: Layered motivation; at least one decision costs something real; no tidy lesson announcement. '
-            'AVOID: Graphic violence, explicit content, condescending phrasing, over-explained morals.'
+    "11-13": {
+        "regular": {
+            "short": (1300, 1700),
+            "medium": (1800, 2600),
+            "long": (2600, 3400),
+        },
+        "rhyme": {"short": (450, 550), "medium": (550, 700), "long": (700, 800)},
+        "ltr": {"short": 8, "medium": 10, "long": 12},
+        "notes": (
+            "POV: Third-person limited with meaningful internal monologue (1-2 paragraphs per story). "
+            "Sentences: Vary deliberately — mix punchy 5-word sentences with 25-word complex ones for rhythm. "
+            "Vocabulary: Middle-grade level; figurative language (simile, personification, hyperbole) used purposefully, not decoratively. "
+            "Emotion: Ambivalence is valid — the hero can be right and still feel bad; social dynamics, fairness, and belonging are real stakes. "
+            "Structure: Layered motivation; at least one decision costs something real; no tidy lesson announcement. "
+            "AVOID: Graphic violence, explicit content, condescending phrasing, over-explained morals."
         ),
     },
-    '13-15': {
-        'regular': {'short': (1600, 2200), 'medium': (2400, 3400), 'long': (3400, 4500)},
-        'rhyme': {'short': (500, 600), 'medium': (600, 750), 'long': (750, 850)},
-        'ltr': {'short': 10, 'medium': 12, 'long': 14},
-        'notes': (
-            'POV: Third-person limited OR close first-person; the introspective voice must feel earned, not performative. '
-            'Sentences: Fully varied — fragments allowed for impact; sentence rhythm is a craft choice. '
-            'Vocabulary: YA level; abstract nouns welcome; irony and simile are fair game. '
-            'Emotion: Identity, loyalty, fear of judgment, first real-stakes decisions; characters can be genuinely flawed with no clean fix. '
-            'Structure: Subplots intersect; consequences ripple forward; endings can be bittersweet. '
-            'AVOID: Sexual content, graphic violence, nihilism, adult trauma without any path forward, babyish phrasing.'
+    "13-15": {
+        "regular": {
+            "short": (1600, 2200),
+            "medium": (2400, 3400),
+            "long": (3400, 4500),
+        },
+        "rhyme": {"short": (500, 600), "medium": (600, 750), "long": (750, 850)},
+        "ltr": {"short": 10, "medium": 12, "long": 14},
+        "notes": (
+            "POV: Third-person limited OR close first-person; the introspective voice must feel earned, not performative. "
+            "Sentences: Fully varied — fragments allowed for impact; sentence rhythm is a craft choice. "
+            "Vocabulary: YA level; abstract nouns welcome; irony and simile are fair game. "
+            "Emotion: Identity, loyalty, fear of judgment, first real-stakes decisions; characters can be genuinely flawed with no clean fix. "
+            "Structure: Subplots intersect; consequences ripple forward; endings can be bittersweet. "
+            "AVOID: Sexual content, graphic violence, nihilism, adult trauma without any path forward, babyish phrasing."
         ),
     },
-    '15-18': {
-        'regular': {'short': (2000, 2800), 'medium': (3000, 4200), 'long': (4200, 6000)},
-        'rhyme': {'short': (600, 800), 'medium': (800, 900), 'long': (900, 1000)},
-        'ltr': {'short': 10, 'medium': 12, 'long': 14},
-        'notes': (
-            'POV: First-person encouraged, or tight third-person with a distinct narrative voice — the narrator has a personality. '
-            'Sentences: Literary rhythm — alternate fragments with long, flowing sentences; prose style is part of the storytelling. '
-            'Vocabulary: Upper-YA; allusion, complex metaphor, and irony are all welcome — deploy them with precision. '
-            'Emotion: Relational complexity, moral ambiguity, existential stakes; inner conflict can go unresolved where honest. '
-            'Structure: Thematic resonance over formula — imagery introduced early should echo at the climax. '
-            'AVOID: Gratuitous content; characters must grow or be meaningfully changed — not simply punished.'
+    "15-18": {
+        "regular": {
+            "short": (2000, 2800),
+            "medium": (3000, 4200),
+            "long": (4200, 6000),
+        },
+        "rhyme": {"short": (600, 800), "medium": (800, 900), "long": (900, 1000)},
+        "ltr": {"short": 10, "medium": 12, "long": 14},
+        "notes": (
+            "POV: First-person encouraged, or tight third-person with a distinct narrative voice — the narrator has a personality. "
+            "Sentences: Literary rhythm — alternate fragments with long, flowing sentences; prose style is part of the storytelling. "
+            "Vocabulary: Upper-YA; allusion, complex metaphor, and irony are all welcome — deploy them with precision. "
+            "Emotion: Relational complexity, moral ambiguity, existential stakes; inner conflict can go unresolved where honest. "
+            "Structure: Thematic resonance over formula — imagery introduced early should echo at the climax. "
+            "AVOID: Gratuitous content; characters must grow or be meaningfully changed — not simply punished."
         ),
     },
-    'adult': {
-        'regular': {'short': (2000, 3000), 'medium': (3200, 5200), 'long': (5200, 7800)},
-        'rhyme': {'short': (650, 850), 'medium': (850, 950), 'long': (950, 1000)},
-        'ltr': {'short': 10, 'medium': 12, 'long': 14},
-        'notes': (
-            'POV: Any — first-person, third-person limited, or close third — the choice should feel intentional. '
-            'Sentences: Literary cadence and rhythm are craft decisions; prose should feel authored, not generated. '
-            'Vocabulary: No ceiling — nuanced, precise, and evocative; abstract themes handled with literary weight. '
-            'Emotion: Full spectrum — grief, desire, regret, joy — layered, textured, and unresolved where appropriate. '
-            'Structure: Thematic depth over formula; the resolution must feel earned through internal change, not plot convenience. '
-            'AVOID: Gratuitous content, heavy-handed moralizing, tidy lessons that undercut genuine emotional complexity.'
+    "adult": {
+        "regular": {
+            "short": (2000, 3000),
+            "medium": (3200, 5200),
+            "long": (5200, 7800),
+        },
+        "rhyme": {"short": (650, 850), "medium": (850, 950), "long": (950, 1000)},
+        "ltr": {"short": 10, "medium": 12, "long": 14},
+        "notes": (
+            "POV: Any — first-person, third-person limited, or close third — the choice should feel intentional. "
+            "Sentences: Literary cadence and rhythm are craft decisions; prose should feel authored, not generated. "
+            "Vocabulary: No ceiling — nuanced, precise, and evocative; abstract themes handled with literary weight. "
+            "Emotion: Full spectrum — grief, desire, regret, joy — layered, textured, and unresolved where appropriate. "
+            "Structure: Thematic depth over formula; the resolution must feel earned through internal change, not plot convenience. "
+            "AVOID: Gratuitous content, heavy-handed moralizing, tidy lessons that undercut genuine emotional complexity."
         ),
-    }
+    },
 }
 
 STRICT_OUTPUT_CONSTRAINTS = """
@@ -138,12 +154,25 @@ STRICT_OUTPUT_CONSTRAINTS = """
 
 # Forbidden terms used by the post-processing leakage filter (see _strip_meta_leakage).
 _META_LEAK_TERMS = [
-    "earned ending", "challenge arc", "two-step challenge", "three-key lock",
-    "therapeutic specialist", "narrative specialist", "narrative architect",
-    "consequence chain", "earned win", "manifest an abstract emotion",
-    "tradeoff", "plot twist arc", "story beat", "character arc",
-    "therapeutic narrative", "coping moment", "using their strengths",
-    "option had a downside", "approached problems using",
+    "earned ending",
+    "challenge arc",
+    "two-step challenge",
+    "three-key lock",
+    "therapeutic specialist",
+    "narrative specialist",
+    "narrative architect",
+    "consequence chain",
+    "earned win",
+    "manifest an abstract emotion",
+    "tradeoff",
+    "plot twist arc",
+    "story beat",
+    "character arc",
+    "therapeutic narrative",
+    "coping moment",
+    "using their strengths",
+    "option had a downside",
+    "approached problems using",
 ]
 
 SAFETY_GUARDRAILS = """
@@ -157,34 +186,118 @@ SAFETY RULES:
 # Maps therapeutic keywords → (virtue_name, how_to_show_it_in_prose)
 # NEVER name the virtue in the story — the character lives it, the reader feels it.
 VIRTUE_MAP = {
-    'friendship':          ('inclusion',          'The protagonist notices someone alone or left out and takes one small, concrete action to include them.'),
-    'social':              ('inclusion',          'The protagonist notices someone alone or left out and takes one small, concrete action to include them.'),
-    'making friends':      ('kindness',           'The protagonist initiates a genuine connection without being asked, and the moment costs them something (courage, comfort, time).'),
-    'emotion':             ('self-awareness',     'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
-    'feeling':             ('self-awareness',     'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
-    'regulation':          ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
-    'anger':               ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
-    'mad':                 ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
-    'anxiety':             ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
-    'fear':                ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
-    'scared':              ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
-    'confidence':          ('voice',              'The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.'),
-    'self-esteem':         ('voice',              'The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.'),
-    'resilience':          ('perseverance',       'The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.'),
-    'try':                 ('perseverance',       'The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.'),
-    'empathy':             ('compassion',         'The protagonist makes a decision that costs them something personally in order to help or understand another character. Show their internal reasoning.'),
-    'bullying':            ('integrity',          'The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.'),
-    'pressure':            ('integrity',          'The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.'),
-    'fairness':            ('justice',            'The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.'),
-    'unfair':              ('justice',            'The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.'),
-    'jealous':             ('gratitude',          'The protagonist feels the hot sting of jealousy — named honestly, not glossed over — then shifts their gaze to something they genuinely value. The shift is earned, not instant.'),
-    'sharing':             ('generosity',         'The protagonist gives something up voluntarily and the story lingers on the warmth that follows — not the sacrifice.'),
-    'transition':          ('adaptability',       'The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.'),
-    'change':              ('adaptability',       'The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.'),
-    'rules':               ('trust',              'The protagonist chooses to follow a rule whose purpose they don\'t yet understand, and the story — without moralizing — later reveals why the rule existed.'),
-    'authority':           ('trust',              'The protagonist chooses to follow a rule whose purpose they don\'t yet understand, and the story — without moralizing — later reveals why the rule existed.'),
-    'focus':               ('mindfulness',        'The protagonist\'s attention wanders at a key moment, they catch it, and returning to the present task makes all the difference. Show the noticing, not just the task.'),
-    'problem':             ('resourcefulness',    'The protagonist solves the central challenge using something they already had — an overlooked skill, an ignored object, or an underestimated relationship.'),
+    "friendship": (
+        "inclusion",
+        "The protagonist notices someone alone or left out and takes one small, concrete action to include them.",
+    ),
+    "social": (
+        "inclusion",
+        "The protagonist notices someone alone or left out and takes one small, concrete action to include them.",
+    ),
+    "making friends": (
+        "kindness",
+        "The protagonist initiates a genuine connection without being asked, and the moment costs them something (courage, comfort, time).",
+    ),
+    "emotion": (
+        "self-awareness",
+        "The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.",
+    ),
+    "feeling": (
+        "self-awareness",
+        "The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.",
+    ),
+    "regulation": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "anger": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "mad": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "anxiety": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "fear": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "scared": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "confidence": (
+        "voice",
+        "The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.",
+    ),
+    "self-esteem": (
+        "voice",
+        "The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.",
+    ),
+    "resilience": (
+        "perseverance",
+        "The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.",
+    ),
+    "try": (
+        "perseverance",
+        "The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.",
+    ),
+    "empathy": (
+        "compassion",
+        "The protagonist makes a decision that costs them something personally in order to help or understand another character. Show their internal reasoning.",
+    ),
+    "bullying": (
+        "integrity",
+        "The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.",
+    ),
+    "pressure": (
+        "integrity",
+        "The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.",
+    ),
+    "fairness": (
+        "justice",
+        "The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.",
+    ),
+    "unfair": (
+        "justice",
+        "The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.",
+    ),
+    "jealous": (
+        "gratitude",
+        "The protagonist feels the hot sting of jealousy — named honestly, not glossed over — then shifts their gaze to something they genuinely value. The shift is earned, not instant.",
+    ),
+    "sharing": (
+        "generosity",
+        "The protagonist gives something up voluntarily and the story lingers on the warmth that follows — not the sacrifice.",
+    ),
+    "transition": (
+        "adaptability",
+        "The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.",
+    ),
+    "change": (
+        "adaptability",
+        "The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.",
+    ),
+    "rules": (
+        "trust",
+        "The protagonist chooses to follow a rule whose purpose they don't yet understand, and the story — without moralizing — later reveals why the rule existed.",
+    ),
+    "authority": (
+        "trust",
+        "The protagonist chooses to follow a rule whose purpose they don't yet understand, and the story — without moralizing — later reveals why the rule existed.",
+    ),
+    "focus": (
+        "mindfulness",
+        "The protagonist's attention wanders at a key moment, they catch it, and returning to the present task makes all the difference. Show the noticing, not just the task.",
+    ),
+    "problem": (
+        "resourcefulness",
+        "The protagonist solves the central challenge using something they already had — an overlooked skill, an ignored object, or an underestimated relationship.",
+    ),
 }
 
 
@@ -214,7 +327,9 @@ def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
     return ""
 
 
-def _build_feelings_instruction(feelings_prompt: str | None, age: int, theme: str) -> str:
+def _build_feelings_instruction(
+    feelings_prompt: str | None, age: int, theme: str
+) -> str:
     if not feelings_prompt:
         return ""
 
@@ -266,8 +381,9 @@ def _normalize_parent_context_value(value: Any) -> str | None:
     return cleaned or None
 
 
-
-def transform_parent_context_to_story_guidance(parent_context: dict | None) -> dict[str, Any]:
+def transform_parent_context_to_story_guidance(
+    parent_context: dict | None,
+) -> dict[str, Any]:
     """Translate private parent context into child-safe story guidance."""
     if not isinstance(parent_context, dict):
         return {}
@@ -336,13 +452,19 @@ def transform_parent_context_to_story_guidance(parent_context: dict | None) -> d
 
 
 def _get_age_band(age: int) -> str:
-    if age <= 4: return '3-4'
-    if age <= 7: return '5-7'
-    if age <= 10: return '8-10'
-    if age <= 13: return '11-13'
-    if age < 15: return '13-15'
-    if age <= 18: return '15-18'
-    return 'adult'
+    if age <= 4:
+        return "3-4"
+    if age <= 7:
+        return "5-7"
+    if age <= 10:
+        return "8-10"
+    if age <= 13:
+        return "11-13"
+    if age < 15:
+        return "13-15"
+    if age <= 18:
+        return "15-18"
+    return "adult"
 
 
 # ============================================================================
@@ -369,8 +491,9 @@ def pseudonymize_hero_name(real_name: str | None, token: str = HERO_NAME_TOKEN) 
     return "Hero"
 
 
-def restore_hero_name(text: str | None, real_name: str | None,
-                       token: str = HERO_NAME_TOKEN) -> str:
+def restore_hero_name(
+    text: str | None, real_name: str | None, token: str = HERO_NAME_TOKEN
+) -> str:
     """Substitute the per-request hero token back to the child's real name.
 
     Applied LOCALLY to provider output before the story reaches the child, so
@@ -384,9 +507,7 @@ def restore_hero_name(text: str | None, real_name: str | None,
     clean_name = str(real_name).strip()
     # Use a function replacement so characters in the real name (e.g. a literal
     # backslash) are never interpreted as regex backreferences.
-    return re.sub(
-        re.escape(token), lambda _m: clean_name, text, flags=re.IGNORECASE
-    )
+    return re.sub(re.escape(token), lambda _m: clean_name, text, flags=re.IGNORECASE)
 
 
 # ============================================================================
@@ -440,7 +561,11 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
             .all()
         )
     except Exception:  # noqa: BLE001 — recall is best-effort
-        logger.warning("prior_adventures lookup failed for character_id=%s", character_id, exc_info=True)
+        logger.warning(
+            "prior_adventures lookup failed for character_id=%s",
+            character_id,
+            exc_info=True,
+        )
         return ""
 
     if not rows:
@@ -453,7 +578,7 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
 
     for row in rows:
         if len(themes_ordered) < _PRIOR_ADVENTURES_MAX_THEMES:
-            for t in (row.themes or []):
+            for t in row.themes or []:
                 if not isinstance(t, str):
                     continue
                 tag = t.strip().lower()
@@ -464,7 +589,7 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
                 if len(themes_ordered) >= _PRIOR_ADVENTURES_MAX_THEMES:
                     break
         if len(chars_ordered) < _PRIOR_ADVENTURES_MAX_CHARS:
-            for c in (row.characters_featured or []):
+            for c in row.characters_featured or []:
                 if not isinstance(c, str):
                     continue
                 name = c.strip()
@@ -478,8 +603,10 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
                 if len(chars_ordered) >= _PRIOR_ADVENTURES_MAX_CHARS:
                     break
         # Once both caps are hit, no need to scan further rows.
-        if (len(themes_ordered) >= _PRIOR_ADVENTURES_MAX_THEMES
-                and len(chars_ordered) >= _PRIOR_ADVENTURES_MAX_CHARS):
+        if (
+            len(themes_ordered) >= _PRIOR_ADVENTURES_MAX_THEMES
+            and len(chars_ordered) >= _PRIOR_ADVENTURES_MAX_CHARS
+        ):
             break
 
     # If the character has stories but they all lack themes (e.g. pre-2706b347
@@ -503,6 +630,7 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
         "Pick a fresh angle, problem type, or supporting cast where it serves the new story.\n"
     )
 
+
 class AdvancedStoryEngine:
     def generate_enhanced_prompt(
         self,
@@ -521,7 +649,7 @@ class AdvancedStoryEngine:
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
         character_details: dict | None = None,
-        story_length: str = "standard", # 'short', 'medium', 'long'
+        story_length: str = "standard",  # 'short', 'medium', 'long'
         story_duration: str | None = None,
         age: int = 5,
     ):
@@ -531,47 +659,49 @@ class AdvancedStoryEngine:
 
         band = _get_age_band(age)
         config = AGE_CONSTRAINTS[band]
-        length_key = 'medium'
-        if story_length == 'short' or story_length == 'quick':
-            length_key = 'short'
-        elif story_length == 'long' or story_length == 'epic':
-            length_key = 'long'
+        length_key = "medium"
+        if story_length == "short" or story_length == "quick":
+            length_key = "short"
+        elif story_length == "long" or story_length == "epic":
+            length_key = "long"
         else:
-            length_key = 'medium'
-        word_range = config['regular'][length_key]
-        
+            length_key = "medium"
+        word_range = config["regular"][length_key]
+
         # Build character context (Gender/Strengths)
         char_details = character_details or {}
-        special_ability = char_details.get('specialAbility') or ''
-        strengths = ", ".join(char_details.get('strengths', []))
-        interests = ", ".join(char_details.get('interests', []))
-        gender = char_details.get('gender', 'not specified')
-        pronouns = char_details.get('pronouns', '')
-        gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
+        special_ability = char_details.get("specialAbility") or ""
+        strengths = ", ".join(char_details.get("strengths", []))
+        interests = ", ".join(char_details.get("interests", []))
+        gender = char_details.get("gender", "not specified")
+        pronouns = char_details.get("pronouns", "")
+        gender_text = (
+            f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
+        )
 
         # Build companion context
         companion_sections = []
         all_companion_names = []
-        if companion_pets: 
+        if companion_pets:
             pets = []
             for p in companion_pets:
                 pets.append(f"{p['name']} the {p.get('species', 'pet')}")
-                all_companion_names.append(p['name'])
+                all_companion_names.append(p["name"])
             companion_sections.append(f"PETS: {', '.join(pets)}")
         if companion_characters:
             chars = []
             behavior_instructions = []
             for c in companion_characters:
-                name = c['name']
-                power = c.get('signaturePower', '')
-                constraint = c.get('powerConstraint', '')
-                sensory = c.get('sensoryTell', '')
-                behavior = c.get('behaviorPattern', '')
+                name = c["name"]
+                power = c.get("signaturePower", "")
+                constraint = c.get("powerConstraint", "")
+                sensory = c.get("sensoryTell", "")
+                behavior = c.get("behaviorPattern", "")
                 chars.append(
                     f"{name}"
-                    + (f" | Power: {power}" if power else '')
-                    + (f" | Constraint: {constraint}" if constraint else '')
-                    + (f" | Sensory: {sensory}" if sensory else '')
+                    + (f" | Power: {power}" if power else "")
+                    + (f" | Constraint: {constraint}" if constraint else "")
+                    + (f" | Sensory: {sensory}" if sensory else "")
                 )
                 if behavior:
                     behavior_instructions.append(
@@ -589,8 +719,8 @@ class AdvancedStoryEngine:
             adult_relatives = []
             for ac in additional_characters:
                 if isinstance(ac, dict):
-                    name = ac.get('name')
-                    is_adult = ac.get('is_adult_relative', False)
+                    name = ac.get("name")
+                    is_adult = ac.get("is_adult_relative", False)
                 else:
                     name = str(ac)
                     is_adult = False
@@ -611,8 +741,8 @@ class AdvancedStoryEngine:
 
         if not companion_sections and companion:
             if isinstance(companion, dict):
-                comp_name = companion.get('name', 'Companion')
-                comp_type = companion.get('type') or companion.get('species')
+                comp_name = companion.get("name", "Companion")
+                comp_type = companion.get("type") or companion.get("species")
                 if comp_type:
                     companion_sections.append(f"COMPANION: {comp_name} the {comp_type}")
                 else:
@@ -621,10 +751,12 @@ class AdvancedStoryEngine:
             else:
                 companion_sections.append(f"COMPANION: {companion}")
                 all_companion_names.append(str(companion))
-        
+
         comp_str = "\n".join(companion_sections) if companion_sections else "None"
         all_companion_names = [str(n) for n in all_companion_names if n]
-        mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
+        mandatory_names_str = (
+            ", ".join(all_companion_names) if all_companion_names else "None"
+        )
 
         # Mood Physics & Sensory
         mood_rules = ""
@@ -633,20 +765,22 @@ class AdvancedStoryEngine:
 
         # Age-specific impossible element suggestions - FOR INSPIRATION ONLY, DO NOT USE VERBATIM
         impossible_elements = {
-            '3-4': 'riding a friendly cloud, talking to a flower, or jumping over a moonbeam.',
-            '5-7': 'flying on dandelion seeds, tasting rainbow colors, or walking through a mirror.',
-            '8-10': 'surfing on lightning bolts, shifting gravity, or talking to the stars.',
-            '11-13': 'shaping a dreamscape, commanding the tides, or freezing time.',
-            '13-15': 'bridging two worlds, healing a rift in space, or weaving light into a bridge.',
-            '15-18': 'navigating a paradox, harmonizing a chaotic dimension, or transcending physical limits.',
-            'adult': 'visualizing a complex emotion as a physical force, reconciling memories from different times, or finding order in chaos.'
+            "3-4": "riding a friendly cloud, talking to a flower, or jumping over a moonbeam.",
+            "5-7": "flying on dandelion seeds, tasting rainbow colors, or walking through a mirror.",
+            "8-10": "surfing on lightning bolts, shifting gravity, or talking to the stars.",
+            "11-13": "shaping a dreamscape, commanding the tides, or freezing time.",
+            "13-15": "bridging two worlds, healing a rift in space, or weaving light into a bridge.",
+            "15-18": "navigating a paradox, harmonizing a chaotic dimension, or transcending physical limits.",
+            "adult": "visualizing a complex emotion as a physical force, reconciling memories from different times, or finding order in chaos.",
         }
-        age_impossible = impossible_elements.get(band, 'Something magical and physics-defying.')
+        age_impossible = impossible_elements.get(
+            band, "Something magical and physics-defying."
+        )
 
         # Age-appropriate Terminology adjustments
         tool_label = "HERO TOOL"
         tool_instruction = "' (MUST be used exactly once to solve a specific problem)"
-        
+
         if age >= 12:
             tool_label = "KEY ARTIFACT"
             tool_instruction = "' (MUST be integral to the resolution)"
@@ -668,7 +802,9 @@ class AdvancedStoryEngine:
         # Sprout (≤5) gets a tight cap matching industry norms for picture books
         # (10-25 words/page); previous 80-130 was overwhelming for the band.
         if age <= 5:
-            per_page_words = "10–25 words MAX (HARD CAP — split a page if it would exceed 25 words)"
+            per_page_words = (
+                "10–25 words MAX (HARD CAP — split a page if it would exceed 25 words)"
+            )
         elif age <= 8:
             per_page_words = "approx 80–130 words"
         elif age <= 13:
@@ -815,7 +951,9 @@ Strictly return valid JSON with this structure:
 }}
 {STRICT_OUTPUT_CONSTRAINTS}"""
 
+
 # Helper functions for story_tasks.py
+
 
 def _strip_meta_leakage(pages: list) -> list:
     """Remove sentences that contain leaked storytelling jargon from page text.
@@ -828,7 +966,7 @@ def _strip_meta_leakage(pages: list) -> list:
     """
     cleaned = []
     for page in pages:
-        sentences = re.split(r'(?<=[.!?])\s+', page.strip())
+        sentences = re.split(r"(?<=[.!?])\s+", page.strip())
         kept = []
         for sent in sentences:
             lower = sent.lower()
@@ -838,15 +976,23 @@ def _strip_meta_leakage(pages: list) -> list:
             if hits >= 2:
                 logger.warning("Stripped meta-leakage (multi-term): %r", sent[:120])
                 continue
-            if hits == 1 and len(words) <= 12 and re.match(r'^(it was|this was|that was|in the end,?)\b', lower):
-                logger.warning("Stripped meta-leakage (short declarative): %r", sent[:120])
+            if (
+                hits == 1
+                and len(words) <= 12
+                and re.match(r"^(it was|this was|that was|in the end,?)\b", lower)
+            ):
+                logger.warning(
+                    "Stripped meta-leakage (short declarative): %r", sent[:120]
+                )
                 continue
             kept.append(sent)
         page_clean = " ".join(kept)
         if page_clean.strip():  # skip pages that became fully empty after stripping
             cleaned.append(page_clean)
         elif kept != sentences:
-            logger.warning("Page became empty after meta-leakage stripping; retaining original.")
+            logger.warning(
+                "Page became empty after meta-leakage stripping; retaining original."
+            )
             cleaned.append(page)
         else:
             cleaned.append(page_clean)
@@ -856,10 +1002,10 @@ def _strip_meta_leakage(pages: list) -> list:
 # Regex patterns for lesson-summary endings that break story immersion.
 # Applied only to the last sentence of the last non-empty page.
 _LESSON_ENDING_PATTERNS = re.compile(
-    r'^(and so|from that day( on)?|from then on|and (he|she|they|[a-z]+) (knew|understood|learned|realized|discovered|had learned|had discovered|had understood)|'
-    r'and that is how|and that\'s how|it taught|the moral (was|of the story)|'
-    r'[a-z]+ had discovered the (true )?meaning|[a-z]+ would (always |never )?forget that|'
-    r'it was a (valuable |important |powerful )?lesson)',
+    r"^(and so|from that day( on)?|from then on|and (he|she|they|[a-z]+) (knew|understood|learned|realized|discovered|had learned|had discovered|had understood)|"
+    r"and that is how|and that\'s how|it taught|the moral (was|of the story)|"
+    r"[a-z]+ had discovered the (true )?meaning|[a-z]+ would (always |never )?forget that|"
+    r"it was a (valuable |important |powerful )?lesson)",
     re.IGNORECASE,
 )
 
@@ -881,7 +1027,7 @@ def _strip_lesson_endings(pages: list) -> list:
         return pages
 
     last_page = pages[last_idx]
-    sentences = re.split(r'(?<=[.!?])\s+', last_page.strip())
+    sentences = re.split(r"(?<=[.!?])\s+", last_page.strip())
     if len(sentences) < 2:
         # Only one sentence — don't strip or the page becomes empty
         return pages
@@ -915,9 +1061,7 @@ def _strip_the_end_pages(pages: list) -> list:
         return pages
     filtered = list(pages)
     while filtered and _THE_END_PATTERN.match(filtered[-1].strip()):
-        logger.warning(
-            "Stripped trailing 'The End' marker page: %r", filtered[-1][:60]
-        )
+        logger.warning("Stripped trailing 'The End' marker page: %r", filtered[-1][:60])
         filtered.pop()
     return filtered or pages
 
@@ -996,7 +1140,9 @@ def _extract_story_metadata(data) -> dict:
         return {"themes": [], "characters_featured": [], "emotional_arc": None}
     return {
         "themes": _normalize_themes(data.get("themes")),
-        "characters_featured": _normalize_characters_featured(data.get("characters_featured")),
+        "characters_featured": _normalize_characters_featured(
+            data.get("characters_featured")
+        ),
         "emotional_arc": _normalize_emotional_arc(data.get("emotional_arc")),
     }
 
@@ -1026,12 +1172,12 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     candidate_text = clean_text
 
     # Try to locate JSON object
-    json_start = clean_text.find('{')
-    json_end = clean_text.rfind('}')
-    
+    json_start = clean_text.find("{")
+    json_end = clean_text.rfind("}")
+
     sliced_text = clean_text
     if json_start >= 0 and json_end > json_start:
-        sliced_text = clean_text[json_start:json_end + 1]
+        sliced_text = clean_text[json_start : json_end + 1]
 
     def _parse_story_data(json_str):
         try:
@@ -1041,7 +1187,9 @@ def _safe_extract_title_and_gem(text: str, theme: str):
             data = json.loads(json_str)
         raw_title = data.get("title", f"A {theme} Adventure")
         # Strip double articles: "A The X" → "The X", "An A X" → "A X", etc.
-        title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', raw_title, flags=re.IGNORECASE)
+        title = re.sub(
+            r"^(A|An)\s+(The|A|An)\s+", r"\2 ", raw_title, flags=re.IGNORECASE
+        )
         pages_input = data.get("pages", [])
         post_story = data.get("post_story", {})
 
@@ -1064,10 +1212,10 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 
         # If valid JSON but missing 'pages', check for 'story' or 'story_text'
         if not pages:
-             if 'story' in data and isinstance(data['story'], str):
-                 pages = [data['story']]
-             elif 'story_text' in data and isinstance(data['story_text'], str):
-                 pages = [data['story_text']]
+            if "story" in data and isinstance(data["story"], str):
+                pages = [data["story"]]
+            elif "story_text" in data and isinstance(data["story_text"], str):
+                pages = [data["story_text"]]
 
         metadata = _extract_story_metadata(data)
         return title, None, pages, post_story, metadata
@@ -1088,10 +1236,12 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         # 2. If sliced failed, maybe the full text is valid JSON (e.g. start at 0)?
         # Or maybe the braces were part of prose.
         try:
-             if sliced_text != candidate_text:
-                title, wisdom_gem, pages, post_story, metadata = _parse_story_data(candidate_text)
-             else:
-                raise # Already tried candidate (as sliced)
+            if sliced_text != candidate_text:
+                title, wisdom_gem, pages, post_story, metadata = _parse_story_data(
+                    candidate_text
+                )
+            else:
+                raise  # Already tried candidate (as sliced)
         except json.JSONDecodeError as e:
             # 3. Regex salvage — when the model produces JSON with bad brackets
             # or stray fields, the strict parser bails. Rather than dumping the
@@ -1124,10 +1274,20 @@ def _safe_extract_title_and_gem(text: str, theme: str):
                 else:
                     salvaged_title = f"A {theme} Adventure"
                 salvaged_title = re.sub(
-                    r'^(A|An)\s+(The|A|An)\s+', r'\2 ', salvaged_title, flags=re.IGNORECASE
+                    r"^(A|An)\s+(The|A|An)\s+",
+                    r"\2 ",
+                    salvaged_title,
+                    flags=re.IGNORECASE,
                 )
                 story_body = "\n\n".join(salvaged)
-                return salvaged_title, None, story_body, salvaged, {}, dict(_EMPTY_METADATA)
+                return (
+                    salvaged_title,
+                    None,
+                    story_body,
+                    salvaged,
+                    {},
+                    dict(_EMPTY_METADATA),
+                )
 
             # 4. Final fallback — plain-prose response (e.g. Superhero Mode
             # prompts that explicitly ask for "plain prose, no JSON"). Split
@@ -1135,23 +1295,44 @@ def _safe_extract_title_and_gem(text: str, theme: str):
             # rendered page per paragraph instead of a single mega-blob.
             # MT-111: Explorer's 5-paragraph arc was collapsing to one page,
             # making the rendered story look truncated.
-            logger.warning(f"Failed to parse story JSON: {e}. Falling back to raw text.")
-            fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
+            logger.warning(
+                f"Failed to parse story JSON: {e}. Falling back to raw text."
+            )
+            fallback_title = re.sub(
+                r"^(A|An)\s+(The|A|An)\s+",
+                r"\2 ",
+                f"A {theme} Adventure",
+                flags=re.IGNORECASE,
+            )
             prose_pages = _split_prose_into_pages(candidate_text)
             story_body = "\n\n".join(prose_pages)
-            return fallback_title, None, story_body, prose_pages, {}, dict(_EMPTY_METADATA)
+            return (
+                fallback_title,
+                None,
+                story_body,
+                prose_pages,
+                {},
+                dict(_EMPTY_METADATA),
+            )
     except Exception as e:
-        logger.warning(f"Unexpected error parsing story: {e}. Falling back to raw text.")
-        fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
+        logger.warning(
+            f"Unexpected error parsing story: {e}. Falling back to raw text."
+        )
+        fallback_title = re.sub(
+            r"^(A|An)\s+(The|A|An)\s+",
+            r"\2 ",
+            f"A {theme} Adventure",
+            flags=re.IGNORECASE,
+        )
         prose_pages = _split_prose_into_pages(candidate_text)
         story_body = "\n\n".join(prose_pages)
         return fallback_title, None, story_body, prose_pages, {}, dict(_EMPTY_METADATA)
 
     # If we parsed successfully but got no pages, verify content length
     if not pages:
-         # This shouldn't happen with proper JSON unless 'pages' key was empty list
-         # Use candidate text as fallback
-         pages = [candidate_text]
+        # This shouldn't happen with proper JSON unless 'pages' key was empty list
+        # Use candidate text as fallback
+        pages = [candidate_text]
 
     pages = _strip_meta_leakage(pages)
     pages = _strip_lesson_endings(pages)
@@ -1160,24 +1341,37 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     return title, wisdom_gem, story_body, pages, post_story, metadata
 
 
-def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
+def _build_learning_to_read_prompt(
+    character_name,
+    theme,
+    age,
+    character_details,
+    companion=None,
+    companion_pets=None,
+    companion_characters=None,
+    extra_characters=None,
+    story_length="standard",
+    custom_elements="",
+):
     """Build prompt for Learning to Read mode stories with graduated vocabulary."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
 
-    length_key = 'medium'
-    if story_length == 'short' or story_length == 'quick':
-        length_key = 'short'
-    elif story_length == 'long' or story_length == 'epic':
-        length_key = 'long'
+    length_key = "medium"
+    if story_length == "short" or story_length == "quick":
+        length_key = "short"
+    elif story_length == "long" or story_length == "epic":
+        length_key = "long"
     else:
-        length_key = 'medium'
+        length_key = "medium"
     # Hard floor at 5 pages — models tend to compress LTR output to as few as 2 pages
     # when given a soft target. Floor protects the early-reader pacing experience.
-    num_pages = max(5, config['ltr'][length_key])
+    num_pages = max(5, config["ltr"][length_key])
 
     # Graduate vocabulary and format based on age
-    rhyme_scheme_instruction = "Simple rhyming couplets across pages (AABB pairs by page endings)."
+    rhyme_scheme_instruction = (
+        "Simple rhyming couplets across pages (AABB pairs by page endings)."
+    )
     if age <= 5:
         vocab_instruction = (
             "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters. "
@@ -1206,7 +1400,9 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         # Older reluctant readers (7-12): funny connected limericks.
         # Audit 05 found this band scores age_fit 4.0+; limericks are working here.
         vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
-        format_instruction = "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
+        format_instruction = (
+            "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
+        )
         rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
         use_limericks = True
         use_prose = False
@@ -1235,10 +1431,10 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     companion_sections = []
     all_companion_names = []
     if character_details:
-        pets = character_details.get('pets') or []
+        pets = character_details.get("pets") or []
         for p in pets:
-            name = p.get('name')
-            species = p.get('species')
+            name = p.get("name")
+            species = p.get("species")
             if name and species:
                 companion_sections.append(f"{name} the {species}")
                 all_companion_names.append(name)
@@ -1249,8 +1445,8 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     if companion_pets:
         for p in companion_pets:
             if isinstance(p, dict):
-                name = p.get('name')
-                species = p.get('species')
+                name = p.get("name")
+                species = p.get("species")
                 if name and species:
                     companion_sections.append(f"{name} the {species}")
                     all_companion_names.append(name)
@@ -1264,7 +1460,7 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     if companion_characters:
         for c in companion_characters:
             if isinstance(c, dict):
-                name = c.get('name')
+                name = c.get("name")
                 if name:
                     companion_sections.append(name)
                     all_companion_names.append(name)
@@ -1275,7 +1471,7 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     if extra_characters:
         for c in extra_characters:
             if isinstance(c, dict):
-                name = c.get('name')
+                name = c.get("name")
                 if name:
                     companion_sections.append(name)
                     all_companion_names.append(name)
@@ -1288,7 +1484,9 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         all_companion_names.append(companion)
 
     comp_str = ", ".join(companion_sections) if companion_sections else "None"
-    mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
+    mandatory_names_str = (
+        ", ".join(all_companion_names) if all_companion_names else "None"
+    )
 
     if use_limericks:
         return f"""
@@ -1415,25 +1613,38 @@ No other extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}"""
 
 
-def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements="", world_bible="", conflict_hook="", sensory_palette=""):
+def _build_rhyme_time_prompt(
+    character_name,
+    theme,
+    age,
+    character_details,
+    companion_pets=None,
+    companion_characters=None,
+    extra_characters=None,
+    story_length="standard",
+    custom_elements="",
+    world_bible="",
+    conflict_hook="",
+    sensory_palette="",
+):
     """Build prompt for Rhyme Time mode stories."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
-    length_key = 'medium'
-    if story_length == 'short' or story_length == 'quick':
-        length_key = 'short'
-    elif story_length == 'long' or story_length == 'epic':
-        length_key = 'long'
+    length_key = "medium"
+    if story_length == "short" or story_length == "quick":
+        length_key = "short"
+    elif story_length == "long" or story_length == "epic":
+        length_key = "long"
     else:
-        length_key = 'medium'
-    word_range = config['rhyme'][length_key]
+        length_key = "medium"
+    word_range = config["rhyme"][length_key]
 
     # Extract character context
     char_details = character_details or {}
-    strengths = ", ".join(char_details.get('strengths', []))
-    gender = char_details.get('gender', '')
-    pronouns = char_details.get('pronouns', '')
-    special_ability = char_details.get('specialAbility') or ''
+    strengths = ", ".join(char_details.get("strengths", []))
+    gender = char_details.get("gender", "")
+    pronouns = char_details.get("pronouns", "")
+    special_ability = char_details.get("specialAbility") or ""
     gender_text = ""
     if gender:
         gender_text = f" ({gender}{', pronouns: ' + pronouns if pronouns else ''})"
@@ -1525,8 +1736,8 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     if companion_pets:
         for p in companion_pets:
             if isinstance(p, dict):
-                name = p.get('name')
-                species = p.get('species')
+                name = p.get("name")
+                species = p.get("species")
                 if name and species:
                     companion_sections.append(f"{name} the {species}")
                     all_companion_names.append(name)
@@ -1541,10 +1752,10 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
         behavior_instructions = []
         for c in companion_characters:
             if isinstance(c, dict):
-                name = c.get('name')
-                power = c.get('signaturePower', '')
-                constraint = c.get('powerConstraint', '')
-                behavior = c.get('behaviorPattern', '')
+                name = c.get("name")
+                power = c.get("signaturePower", "")
+                constraint = c.get("powerConstraint", "")
+                behavior = c.get("behaviorPattern", "")
                 if name:
                     entry = name
                     if power:
@@ -1567,7 +1778,7 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     if extra_characters:
         for c in extra_characters:
             if isinstance(c, dict):
-                name = c.get('name')
+                name = c.get("name")
                 if name:
                     companion_sections.append(name)
                     all_companion_names.append(name)
@@ -1576,7 +1787,9 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
                 all_companion_names.append(str(c))
 
     comp_str = "\n".join(companion_sections) if companion_sections else "None"
-    mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
+    mandatory_names_str = (
+        ", ".join(all_companion_names) if all_companion_names else "None"
+    )
 
     # Add worked example for youngest band — Audit 05 proved examples are the
     # single most effective intervention for age-fit (Bug 3 in superhero|3-4).
@@ -1630,54 +1843,54 @@ The themes / characters_featured / emotional_arc keys MUST appear. No prose outs
 
 # Rich world descriptions for bedtime settings — evoke sensory calm, not excitement.
 _BEDTIME_SETTINGS = {
-    'rainbow world': (
-        'a shimmering realm where the sky holds soft arcs of rose and gold, '
-        'gentle streams of liquid light wind between velvet hills, and friendly cloud '
-        'creatures drift on warm breezes that smell of honeysuckle'
+    "rainbow world": (
+        "a shimmering realm where the sky holds soft arcs of rose and gold, "
+        "gentle streams of liquid light wind between velvet hills, and friendly cloud "
+        "creatures drift on warm breezes that smell of honeysuckle"
     ),
-    'cave of crystals': (
-        'a vast underground grotto lit by glowing crystals of rose, blue, and amber — '
-        'the walls hum a low, peaceful note and every echo returns as a soft musical chord'
+    "cave of crystals": (
+        "a vast underground grotto lit by glowing crystals of rose, blue, and amber — "
+        "the walls hum a low, peaceful note and every echo returns as a soft musical chord"
     ),
-    'cave full of crystals': (
-        'a vast underground grotto lit by glowing crystals of rose, blue, and amber — '
-        'the walls hum a low, peaceful note and every echo returns as a soft musical chord'
+    "cave full of crystals": (
+        "a vast underground grotto lit by glowing crystals of rose, blue, and amber — "
+        "the walls hum a low, peaceful note and every echo returns as a soft musical chord"
     ),
-    'friendly dragons': (
-        'a warm valley where gentle dragons curl in cosy nests, their slow steady breath '
-        'filling the air with the scent of cinnamon and sending up wisps of soft golden smoke'
+    "friendly dragons": (
+        "a warm valley where gentle dragons curl in cosy nests, their slow steady breath "
+        "filling the air with the scent of cinnamon and sending up wisps of soft golden smoke"
     ),
-    'making a new friend': (
-        'a sun-warmed village at the edge of a silvery wood, where doorways glow with '
-        'lamplight and the cobblestones are warm underfoot even in the evening'
+    "making a new friend": (
+        "a sun-warmed village at the edge of a silvery wood, where doorways glow with "
+        "lamplight and the cobblestones are warm underfoot even in the evening"
     ),
-    'big feelings': (
-        'a quiet hilltop garden where the wind is always gentle and a great ancient tree '
-        'spreads wide warm branches — branches that seem to listen without saying a word'
+    "big feelings": (
+        "a quiet hilltop garden where the wind is always gentle and a great ancient tree "
+        "spreads wide warm branches — branches that seem to listen without saying a word"
     ),
-    'magical forest': (
-        'a moonlit forest where silver-leafed trees hum a low steady song, fireflies '
-        'trace slow spirals through the air, and the moss underfoot is deep and impossibly soft'
+    "magical forest": (
+        "a moonlit forest where silver-leafed trees hum a low steady song, fireflies "
+        "trace slow spirals through the air, and the moss underfoot is deep and impossibly soft"
     ),
-    'enchanted ocean': (
-        'a calm warm sea under a sky full of stars, where bioluminescent creatures drift '
-        'like living lanterns and the waves make a slow, rhythmic shushing sound'
+    "enchanted ocean": (
+        "a calm warm sea under a sky full of stars, where bioluminescent creatures drift "
+        "like living lanterns and the waves make a slow, rhythmic shushing sound"
     ),
-    'dreamy clouds': (
-        'soft, billowy cloudscapes high above the sleeping world, where cloud creatures '
-        'make homes from moonlight and every step springs gently underfoot like the best pillow'
+    "dreamy clouds": (
+        "soft, billowy cloudscapes high above the sleeping world, where cloud creatures "
+        "make homes from moonlight and every step springs gently underfoot like the best pillow"
     ),
 }
 
 # Bedtime word-count targets — shorter than adventure stories so children drift off gently.
 _BEDTIME_WORD_RANGES = {
-    '3-4':  {'short': (180, 260),  'medium': (260, 380),  'long': (380, 500)},
-    '5-7':  {'short': (300, 420),  'medium': (420, 580),  'long': (580, 750)},
-    '8-10': {'short': (480, 650),  'medium': (650, 900),  'long': (900, 1150)},
-    '11-13':{'short': (650, 850),  'medium': (850, 1100), 'long': (1100, 1400)},
-    '13-15':{'short': (750, 950),  'medium': (950, 1250), 'long': (1250, 1600)},
-    '15-18':{'short': (800, 1050), 'medium': (1050, 1400),'long': (1400, 1800)},
-    'adult':{'short': (800, 1100), 'medium': (1100, 1500),'long': (1500, 2000)},
+    "3-4": {"short": (180, 260), "medium": (260, 380), "long": (380, 500)},
+    "5-7": {"short": (300, 420), "medium": (420, 580), "long": (580, 750)},
+    "8-10": {"short": (480, 650), "medium": (650, 900), "long": (900, 1150)},
+    "11-13": {"short": (650, 850), "medium": (850, 1100), "long": (1100, 1400)},
+    "13-15": {"short": (750, 950), "medium": (950, 1250), "long": (1250, 1600)},
+    "15-18": {"short": (800, 1050), "medium": (1050, 1400), "long": (1400, 1800)},
+    "adult": {"short": (800, 1100), "medium": (1100, 1500), "long": (1500, 2000)},
 }
 
 
@@ -1685,13 +1898,13 @@ def _build_bedtime_prompt(
     character_name,
     age,
     theme,
-    mood='calming',
+    mood="calming",
     all_listeners=None,
     companion=None,
     companion_pets=None,
     companion_characters=None,
     extra_characters=None,
-    story_length='standard',
+    story_length="standard",
     duration_minutes: int | None = None,
 ):
     """
@@ -1701,20 +1914,20 @@ def _build_bedtime_prompt(
     reduced stimulation, and explicit inclusion of every named listener.
     """
     band = _get_age_band(age)
-    length_key = 'medium'
-    if story_length in ('short', 'quick'):
-        length_key = 'short'
-    elif story_length in ('long', 'epic'):
-        length_key = 'long'
+    length_key = "medium"
+    if story_length in ("short", "quick"):
+        length_key = "short"
+    elif story_length in ("long", "epic"):
+        length_key = "long"
 
     if duration_minutes and duration_minutes > 0:
         word_range = _duration_minutes_to_word_range(duration_minutes)
     else:
         word_range = _BEDTIME_WORD_RANGES.get(
             band,
-            _BEDTIME_WORD_RANGES['5-7'],
+            _BEDTIME_WORD_RANGES["5-7"],
         )[length_key]
-    age_notes = AGE_CONSTRAINTS.get(band, AGE_CONSTRAINTS['5-7'])['notes']
+    age_notes = AGE_CONSTRAINTS.get(band, AGE_CONSTRAINTS["5-7"])["notes"]
 
     # World description — use rich setting or fall back to the raw theme string.
     world_desc = _BEDTIME_SETTINGS.get(theme.lower().strip(), theme)
@@ -1723,7 +1936,7 @@ def _build_bedtime_prompt(
     all_heroes = [character_name]
     if all_listeners:
         for name in all_listeners:
-            n = (name.get('name') if isinstance(name, dict) else str(name)).strip()
+            n = (name.get("name") if isinstance(name, dict) else str(name)).strip()
             if n and n not in all_heroes:
                 all_heroes.append(n)
 
@@ -1740,39 +1953,48 @@ def _build_bedtime_prompt(
     if companion_pets:
         for p in companion_pets:
             if isinstance(p, dict):
-                _add_companion(p.get('name'), f"{p.get('name')} the {p.get('species', 'pet')}" if p.get('species') else p.get('name'))
+                _add_companion(
+                    p.get("name"),
+                    (
+                        f"{p.get('name')} the {p.get('species', 'pet')}"
+                        if p.get("species")
+                        else p.get("name")
+                    ),
+                )
             elif p:
                 _add_companion(str(p))
     if companion_characters:
         for c in companion_characters:
             if isinstance(c, dict):
-                _add_companion(c.get('name'))
+                _add_companion(c.get("name"))
             elif c:
                 _add_companion(str(c))
     if extra_characters:
         for c in extra_characters:
             if isinstance(c, dict):
-                _add_companion(c.get('name'))
+                _add_companion(c.get("name"))
             elif c:
                 _add_companion(str(c))
     if companion and not companion_sections:
         _add_companion(str(companion))
 
-    comp_str = ', '.join(companion_sections) if companion_sections else 'None'
-    mandatory_comp_str = ', '.join(all_companion_names) if all_companion_names else 'None'
+    comp_str = ", ".join(companion_sections) if companion_sections else "None"
+    mandatory_comp_str = (
+        ", ".join(all_companion_names) if all_companion_names else "None"
+    )
 
-    heroes_str = ' and '.join(all_heroes)
+    heroes_str = " and ".join(all_heroes)
     all_mandatory = all_heroes + all_companion_names
-    mandatory_all_str = ', '.join(all_mandatory)
+    mandatory_all_str = ", ".join(all_mandatory)
 
     # Mood-specific tone hint.
     mood_hints = {
-        'calming':    'deeply peaceful and soothing — every sentence should slow the reader\'s breathing',
-        'brave':      'gently brave — the challenge is real but never frightening, resolved with warmth and confidence',
-        'funny':      'softly funny — gentle wordplay and cosy silliness, nothing rowdy or stimulating',
-        'friendship': 'warm and connective — the bond between the heroes is the heart of every scene',
+        "calming": "deeply peaceful and soothing — every sentence should slow the reader's breathing",
+        "brave": "gently brave — the challenge is real but never frightening, resolved with warmth and confidence",
+        "funny": "softly funny — gentle wordplay and cosy silliness, nothing rowdy or stimulating",
+        "friendship": "warm and connective — the bond between the heroes is the heart of every scene",
     }
-    tone_hint = mood_hints.get(mood.lower().strip(), mood_hints['calming'])
+    tone_hint = mood_hints.get(mood.lower().strip(), mood_hints["calming"])
 
     return f"""You are a master bedtime storyteller. Create a magical, soothing bedtime story for the following listeners:
 

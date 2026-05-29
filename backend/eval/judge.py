@@ -49,7 +49,9 @@ Score the following story:
 Return ONLY the JSON object."""
 
 
-def build_judge_prompt(generation_row: dict, story_text: str, t: test_set.TestInput) -> str:
+def build_judge_prompt(
+    generation_row: dict, story_text: str, t: test_set.TestInput
+) -> str:
     rubric_block = "\n\n".join(
         f"### {r.name} ({r.scale})\n{r.judge_prompt.format(age_band=generation_row['age_band'], mode=generation_row['mode'])}"
         for r in rubrics.ALL_RUBRICS
@@ -91,9 +93,9 @@ def _extract_json(text: str) -> dict:
 def _judge_client(judge_name: str):
     """Build (and cache) the provider client for a judge identifier.
 
-      github-models[:<model>]  -> GitHub Models (default gpt-4.1)
-      gemini[:<model>]         -> Gemini API   (default gemini-2.5-flash)
-      gemini-pro               -> Gemini API   (gemini-2.5-pro)
+    github-models[:<model>]  -> GitHub Models (default gpt-4.1)
+    gemini[:<model>]         -> Gemini API   (default gemini-2.5-flash)
+    gemini-pro               -> Gemini API   (gemini-2.5-pro)
     """
     if judge_name in _JUDGE_CLIENTS:
         return _JUDGE_CLIENTS[judge_name]
@@ -124,7 +126,9 @@ def _inter_judge_agreement(scores_a: dict, scores_b: dict) -> float:
     """Cohen-ish agreement on rubric scores, treating 1-5 within +/-1 as agreement
     and binary as exact match. Returns a fraction 0.0-1.0.
     """
-    keys = [r.name for r in rubrics.ALL_RUBRICS if r.name in scores_a and r.name in scores_b]
+    keys = [
+        r.name for r in rubrics.ALL_RUBRICS if r.name in scores_a and r.name in scores_b
+    ]
     if not keys:
         return 0.0
     agreed = 0
@@ -132,7 +136,11 @@ def _inter_judge_agreement(scores_a: dict, scores_b: dict) -> float:
         a, b = scores_a[k], scores_b[k]
         if a is None or b is None:
             continue
-        if isinstance(a, bool) or isinstance(b, bool) or k in ("mode_adherence", "refusal_flag"):
+        if (
+            isinstance(a, bool)
+            or isinstance(b, bool)
+            or k in ("mode_adherence", "refusal_flag")
+        ):
             if a == b:
                 agreed += 1
         else:
@@ -141,7 +149,9 @@ def _inter_judge_agreement(scores_a: dict, scores_b: dict) -> float:
     return agreed / max(1, len(keys))
 
 
-def _existing_scores(scores_path: Path) -> tuple[set[tuple[str, int, str]], dict[tuple[str, int], dict[str, dict]]]:
+def _existing_scores(
+    scores_path: Path,
+) -> tuple[set[tuple[str, int, str]], dict[tuple[str, int], dict[str, dict]]]:
     """Return (set of done (cell_id, sample_idx, judge), and a per-(cell,sample)
     judge->scores dict for agreement computation).
     """
@@ -198,8 +208,10 @@ def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
             except (json.JSONDecodeError, KeyError):
                 continue
 
-    print(f"[judge] scoring {gen_jsonl} with judges={judges}; "
-          f"already_done={len(done)} pairs")
+    print(
+        f"[judge] scoring {gen_jsonl} with judges={judges}; "
+        f"already_done={len(done)} pairs"
+    )
 
     counts = {"scored": 0, "skipped": 0, "errors": 0}
     for line in gen_jsonl.read_text(encoding="utf-8").splitlines():
@@ -214,11 +226,14 @@ def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
             continue
         cell_id = row["cell_id"]
         sample_idx = row["sample_idx"]
-        story_path = (run_dir / "stories"
-                      / f"{cell_id.replace('|', '_')}_s{sample_idx}.txt")
+        story_path = (
+            run_dir / "stories" / f"{cell_id.replace('|', '_')}_s{sample_idx}.txt"
+        )
         if not story_path.exists():
-            print(f"[judge] skipping {cell_id} s{sample_idx} — story missing",
-                  file=sys.stderr)
+            print(
+                f"[judge] skipping {cell_id} s{sample_idx} — story missing",
+                file=sys.stderr,
+            )
             counts["skipped"] += 1
             continue
         story_text = story_path.read_text(encoding="utf-8")
@@ -235,16 +250,28 @@ def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
             except NotImplementedError as exc:
                 print(f"[judge] FATAL {judge}: {exc}", file=sys.stderr)
                 return 2
-            except Exception as exc:  # noqa: BLE001 — log and continue on transient/judge-side errors
-                print(f"[judge] err  {judge}  {cell_id} s{sample_idx}  "
-                      f"{type(exc).__name__}: {exc}", file=sys.stderr)
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — log and continue on transient/judge-side errors
+                print(
+                    f"[judge] err  {judge}  {cell_id} s{sample_idx}  "
+                    f"{type(exc).__name__}: {exc}",
+                    file=sys.stderr,
+                )
                 counts["errors"] += 1
                 continue
             with scores_path.open("a", encoding="utf-8") as sf:
-                sf.write(json.dumps({
-                    "cell_id": cell_id, "sample_idx": sample_idx,
-                    "judge": judge, "scores": s,
-                }) + "\n")
+                sf.write(
+                    json.dumps(
+                        {
+                            "cell_id": cell_id,
+                            "sample_idx": sample_idx,
+                            "judge": judge,
+                            "scores": s,
+                        }
+                    )
+                    + "\n"
+                )
             by_sample.setdefault((cell_id, sample_idx), {})[judge] = s
             done.add(key)
             counts["scored"] += 1
@@ -259,14 +286,23 @@ def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
             if len(present) >= 2:
                 ag = _inter_judge_agreement(present[0], present[1])
                 with agreement_path.open("a", encoding="utf-8") as af:
-                    af.write(json.dumps({
-                        "cell_id": cell_id, "sample_idx": sample_idx,
-                        "judges": judges[:2], "agreement": ag,
-                    }) + "\n")
+                    af.write(
+                        json.dumps(
+                            {
+                                "cell_id": cell_id,
+                                "sample_idx": sample_idx,
+                                "judges": judges[:2],
+                                "agreement": ag,
+                            }
+                        )
+                        + "\n"
+                    )
                 seen_agreements.add((cell_id, sample_idx))
 
-    print(f"[judge] done. scored={counts['scored']} skipped={counts['skipped']} "
-          f"errors={counts['errors']}")
+    print(
+        f"[judge] done. scored={counts['scored']} skipped={counts['skipped']} "
+        f"errors={counts['errors']}"
+    )
     return 0
 
 
@@ -281,20 +317,30 @@ def ping(judge_name: str) -> int:
     if result.error:
         print(f"[judge] ping FAILED ({result.model}): {result.error}", file=sys.stderr)
         return 1
-    print(f"[judge] ping OK  model={result.model}  "
-          f"reply={result.text!r}  latency={result.latency_ms}ms")
+    print(
+        f"[judge] ping OK  model={result.model}  "
+        f"reply={result.text!r}  latency={result.latency_ms}ms"
+    )
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--run-id", help="Run id under results/ to score.")
-    p.add_argument("--judges", default="github-models",
-                   help="Comma-separated judge identifiers.")
-    p.add_argument("--ping", action="store_true",
-                   help="Connectivity check only; one trivial call, no scoring.")
-    p.add_argument("--throttle-sec", type=float, default=4.0,
-                   help="Sleep between cells to stay under per-minute rate limits.")
+    p.add_argument(
+        "--judges", default="github-models", help="Comma-separated judge identifiers."
+    )
+    p.add_argument(
+        "--ping",
+        action="store_true",
+        help="Connectivity check only; one trivial call, no scoring.",
+    )
+    p.add_argument(
+        "--throttle-sec",
+        type=float,
+        default=4.0,
+        help="Sleep between cells to stay under per-minute rate limits.",
+    )
     args = p.parse_args(argv if argv is not None else sys.argv[1:])
     judges = [j.strip() for j in args.judges.split(",") if j.strip()]
     if args.ping:

@@ -17,7 +17,13 @@ from datetime import datetime, timezone
 import pytest
 
 from backend.database import db
-from backend.models import InteractiveStory, StorySegment, StoryChoice, StoryState, Character
+from backend.models import (
+    InteractiveStory,
+    StorySegment,
+    StoryChoice,
+    StoryState,
+    Character,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -333,7 +339,12 @@ class TestContinueInteractiveStoryAPI:
                 "choices": [],
             },
             "inventory": ["Old Map", "Crystal Heart"],
-            "state": {"current_location": "Home", "current_goal": "Done", "key_clues": [], "companion_status": ""},
+            "state": {
+                "current_location": "Home",
+                "current_goal": "Done",
+                "key_clues": [],
+                "companion_status": "",
+            },
             "is_completed": True,
             "current_segment_number": 5,
         }
@@ -371,9 +382,7 @@ class TestContinueInteractiveStoryAPI:
         assert response.status_code == 400
         assert "error" in response.get_json()
 
-    def test_continue_story_not_found(
-        self, client, auth_headers, user_in_db
-    ):
+    def test_continue_story_not_found(self, client, auth_headers, user_in_db):
         """Test continuation returns 404 when story doesn't exist."""
         response = client.post(
             "/continue-interactive-story",
@@ -388,7 +397,9 @@ class TestContinueInteractiveStoryAPI:
         self, client, auth_headers, story_in_db, mock_interactive_service
     ):
         """Test that an invalid choice_id raises ValueError which the route maps to 404."""
-        mock_interactive_service.continue_story.side_effect = ValueError("Invalid choice")
+        mock_interactive_service.continue_story.side_effect = ValueError(
+            "Invalid choice"
+        )
 
         response = client.post(
             "/continue-interactive-story",
@@ -444,12 +455,11 @@ class TestGetInteractiveStoryAPI:
         assert response.status_code == 404
         assert "error" in response.get_json()
 
-    def test_get_story_access_denied_other_user(
-        self, client, story_in_db, mocker
-    ):
+    def test_get_story_access_denied_other_user(self, client, story_in_db, mocker):
         """Test that a different user cannot access another user's story."""
         # Create a token for a different user
         import jwt
+
         other_token = jwt.encode(
             {"user_id": "other-user-999", "exp": 9999999999},
             "dev-secret-key",
@@ -474,9 +484,7 @@ class TestGetInteractiveStoryAPI:
 class TestResumeInteractiveStoryAPI:
     """Test GET /interactive-story/<story_id>/resume endpoint"""
 
-    def test_resume_story_success(
-        self, client, auth_headers, story_in_db
-    ):
+    def test_resume_story_success(self, client, auth_headers, story_in_db):
         """Test resuming an in-progress story returns current segment from DB."""
         response = client.get(
             f"/interactive-story/{story_in_db.id}/resume",
@@ -489,7 +497,7 @@ class TestResumeInteractiveStoryAPI:
         # Resume builds directly from DB — shape differs from service.get_story()
         assert data["story_id"] == story_in_db.id
         assert "title" in data
-        assert "segment" in data          # current segment dict
+        assert "segment" in data  # current segment dict
         assert "inventory" in data
         assert "is_completed" in data
         assert data["is_completed"] is False
@@ -576,7 +584,12 @@ class TestPickAPathStatePersistence:
         self, client, auth_headers, story_in_db, mock_interactive_service
     ):
         """State dict has the same required keys after both create and continue."""
-        required_keys = {"current_location", "current_goal", "key_clues", "companion_status"}
+        required_keys = {
+            "current_location",
+            "current_goal",
+            "key_clues",
+            "companion_status",
+        }
 
         create_response = client.post(
             "/generate-interactive-story",
@@ -609,13 +622,20 @@ class TestPickAPathStatePersistence:
         assert create_response.get_json()["segment"]["segment_number"] == 1
 
         for expected in [2, 3]:
-            mock_interactive_service.continue_story.return_value["segment"]["segment_number"] = expected
-            mock_interactive_service.continue_story.return_value["current_segment_number"] = expected
+            mock_interactive_service.continue_story.return_value["segment"][
+                "segment_number"
+            ] = expected
+            mock_interactive_service.continue_story.return_value[
+                "current_segment_number"
+            ] = expected
 
             resp = client.post(
                 "/continue-interactive-story",
                 headers=auth_headers,
-                json={"story_id": story_in_db.id, "choice_id": f"choice-{expected - 1}"},
+                json={
+                    "story_id": story_in_db.id,
+                    "choice_id": f"choice-{expected - 1}",
+                },
             )
             assert resp.status_code == 200
             assert resp.get_json()["segment"]["segment_number"] == expected

@@ -9,6 +9,7 @@ Usage::
 Writes are fire-and-forget: any database or import error is swallowed so a
 logging failure never breaks a user-facing request.
 """
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,4 +52,4 @@ def audit_log(
         db.session.add(entry)
         db.session.commit()
     except Exception as exc:
-        logger.warning('audit_log: failed to write event %s (%s)', event_type, exc)
+        logger.warning("audit_log: failed to write event %s (%s)", event_type, exc)

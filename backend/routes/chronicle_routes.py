@@ -2,6 +2,7 @@
 Chronicle Routes
 Endpoints for Living Story Chronicle: chapter summarization and arc compression.
 """
+
 import logging
 from flask import Blueprint, jsonify, request
 
@@ -47,7 +48,10 @@ def create_chronicle_blueprint(api_key: str, limiter) -> Blueprint:
         existing_unresolved_threads = payload.get("existing_unresolved_threads") or []
 
         if not chapter_number or not chapter_text:
-            return jsonify({"error": "chapter_number and chapter_text are required"}), 400
+            return (
+                jsonify({"error": "chapter_number and chapter_text are required"}),
+                400,
+            )
 
         if len(chapter_text) > 50000:
             return jsonify({"error": "chapter_text too long (max 50000 chars)"}), 400
@@ -93,10 +97,18 @@ def create_chronicle_blueprint(api_key: str, limiter) -> Blueprint:
         character_name = payload.get("character_name", "Hero")
 
         if not arc_number or not chapter_start or not chapter_end:
-            return jsonify({"error": "arc_number, chapter_start, and chapter_end are required"}), 400
+            return (
+                jsonify(
+                    {"error": "arc_number, chapter_start, and chapter_end are required"}
+                ),
+                400,
+            )
 
         if len(chapter_summaries) != 5:
-            return jsonify({"error": "chapter_summaries must contain exactly 5 entries"}), 400
+            return (
+                jsonify({"error": "chapter_summaries must contain exactly 5 entries"}),
+                400,
+            )
 
         try:
             service = ChroniclePromptService(gemini_api_key=api_key)

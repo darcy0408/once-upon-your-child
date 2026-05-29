@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import edge_tts
+
     EDGE_TTS_AVAILABLE = True
 except ImportError:
     EDGE_TTS_AVAILABLE = False
@@ -26,14 +27,14 @@ except ImportError:
 # fallback keeps roughly the gender/accent the user picked in the voice picker.
 # Keys mirror CURATED_VOICES in elevenlabs_tts_service.py.
 _ELEVENLABS_TO_EDGE = {
-    "XrExE9yKIg1WjnnlVkGX": "en-US-JennyNeural",    # Matilda — warm US female
-    "21m00Tcm4TlvDq8ikWAM": "en-US-AriaNeural",     # Rachel — calm US female
-    "ThT5KcBeYPX3keUQqHPh": "en-GB-SoniaNeural",    # Dorothy — British female
-    "jBpfuIE2acCO8z3wKNLl": "en-US-AnaNeural",      # Gigi — childlike US female
-    "JBFqnCBsd6RMkjVDRZzb": "en-GB-RyanNeural",     # George — British male
+    "XrExE9yKIg1WjnnlVkGX": "en-US-JennyNeural",  # Matilda — warm US female
+    "21m00Tcm4TlvDq8ikWAM": "en-US-AriaNeural",  # Rachel — calm US female
+    "ThT5KcBeYPX3keUQqHPh": "en-GB-SoniaNeural",  # Dorothy — British female
+    "jBpfuIE2acCO8z3wKNLl": "en-US-AnaNeural",  # Gigi — childlike US female
+    "JBFqnCBsd6RMkjVDRZzb": "en-GB-RyanNeural",  # George — British male
     "IKne3meq5aSn9XLyUdCD": "en-AU-WilliamNeural",  # Charlie — Australian male
-    "N2lVS1w4EtoT3dr4eOWO": "en-US-GuyNeural",      # Callum — US male
-    "D38z5RcWu1voky8WS1ja": "en-IE-ConnorNeural",   # Fin — Irish male
+    "N2lVS1w4EtoT3dr4eOWO": "en-US-GuyNeural",  # Callum — US male
+    "D38z5RcWu1voky8WS1ja": "en-IE-ConnorNeural",  # Fin — Irish male
 }
 
 # Warm storytelling default when the requested voice has no mapping.
@@ -42,7 +43,9 @@ DEFAULT_EDGE_VOICE = "en-US-JennyNeural"
 
 def edge_voice_for(elevenlabs_voice_id: str) -> str:
     """Map an ElevenLabs voice ID to the closest Edge neural voice."""
-    return _ELEVENLABS_TO_EDGE.get((elevenlabs_voice_id or "").strip(), DEFAULT_EDGE_VOICE)
+    return _ELEVENLABS_TO_EDGE.get(
+        (elevenlabs_voice_id or "").strip(), DEFAULT_EDGE_VOICE
+    )
 
 
 def _speed_to_rate(speed: float) -> str:
@@ -114,6 +117,10 @@ class EdgeTTSService:
         audio_bytes, word_timestamps = _run_async(_run())
         logger.info(
             "Edge TTS: %d bytes, %d words for %d chars (voice=%s rate=%s)",
-            len(audio_bytes), len(word_timestamps), len(text), voice, rate,
+            len(audio_bytes),
+            len(word_timestamps),
+            len(text),
+            voice,
+            rate,
         )
         return audio_bytes, word_timestamps

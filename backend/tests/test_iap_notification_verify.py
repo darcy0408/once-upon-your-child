@@ -16,6 +16,7 @@ synthetic "root CA" so the full chain-validation code path is exercised without
 Apple's real private keys. The Google path is exercised by monkeypatching
 `google.oauth2.id_token.verify_oauth2_token`.
 """
+
 import base64
 import json
 from datetime import datetime, timedelta, timezone
@@ -42,6 +43,7 @@ GOOGLE_URL = "/api/iap/google/notifications"
 # Self-signed Apple-style certificate chain helpers
 # ===========================================================================
 
+
 def _make_ec_key():
     return ec.generate_private_key(ec.SECP256R1())
 
@@ -64,9 +66,9 @@ def _make_cert(subject_cn, issuer_cn, subject_key, issuer_key, *, days=3650):
 
 
 def _cert_der_b64(cert):
-    return base64.b64encode(
-        cert.public_bytes(serialization.Encoding.DER)
-    ).decode("ascii")
+    return base64.b64encode(cert.public_bytes(serialization.Encoding.DER)).decode(
+        "ascii"
+    )
 
 
 @pytest.fixture
@@ -82,10 +84,12 @@ def apple_chain(tmp_path, monkeypatch):
     leaf_key = _make_ec_key()
 
     root_cert = _make_cert("Test Apple Root", "Test Apple Root", root_key, root_key)
-    inter_cert = _make_cert("Test Apple Intermediate", "Test Apple Root",
-                            inter_key, root_key)
-    leaf_cert = _make_cert("Test Apple Leaf", "Test Apple Intermediate",
-                           leaf_key, inter_key)
+    inter_cert = _make_cert(
+        "Test Apple Intermediate", "Test Apple Root", inter_key, root_key
+    )
+    leaf_cert = _make_cert(
+        "Test Apple Leaf", "Test Apple Intermediate", leaf_key, inter_key
+    )
 
     root_path = tmp_path / "TestAppleRoot.cer"
     root_path.write_bytes(root_cert.public_bytes(serialization.Encoding.DER))
@@ -108,6 +112,7 @@ def _sign_apple_jws(payload, leaf_key, x5c):
 # ===========================================================================
 # Apple — verify_apple_jws unit tests
 # ===========================================================================
+
 
 def test_apple_jws_valid_chain_returns_payload(apple_chain):
     payload = {"notificationType": "DID_RENEW", "notificationUUID": "abc-123"}
@@ -150,8 +155,7 @@ def test_apple_jws_untrusted_root_raises(tmp_path, monkeypatch):
 
     # Trust an unrelated root.
     other_root_key = _make_ec_key()
-    other_root = _make_cert("Real Root", "Real Root", other_root_key,
-                            other_root_key)
+    other_root = _make_cert("Real Root", "Real Root", other_root_key, other_root_key)
     root_path = tmp_path / "RealRoot.cer"
     root_path.write_bytes(other_root.public_bytes(serialization.Encoding.DER))
     monkeypatch.setenv("APPLE_ROOT_CA_PATH", str(root_path))
@@ -184,10 +188,11 @@ def test_apple_jws_missing_root_ca_raises_config_error(tmp_path, monkeypatch):
 def test_bundled_apple_root_ca_is_present_and_parses():
     """The bundled AppleRootCA-G3.cer asset must exist and be a valid cert."""
     import os
+
     path = verify_mod._DEFAULT_APPLE_ROOT_CA
-    assert os.path.exists(path), (
-        "AppleRootCA-G3.cer must be bundled next to iap_notification_verify.py"
-    )
+    assert os.path.exists(
+        path
+    ), "AppleRootCA-G3.cer must be bundled next to iap_notification_verify.py"
     cert = verify_mod._load_apple_root_ca()
     assert "Apple Root CA" in cert.subject.rfc4514_string()
 
@@ -195,6 +200,7 @@ def test_bundled_apple_root_ca_is_present_and_parses():
 # ===========================================================================
 # Apple — endpoint gate tests
 # ===========================================================================
+
 
 def test_apple_endpoint_missing_jws_returns_403(client):
     resp = client.post(APPLE_URL, json={})
@@ -228,6 +234,7 @@ def test_apple_endpoint_valid_jws_acks_200(client, apple_chain):
 # ===========================================================================
 # Google — endpoint gate tests
 # ===========================================================================
+
 
 def _install_fake_google_verifier(monkeypatch, *, claims=None, raises=False):
     """Monkeypatch google.oauth2.id_token.verify_oauth2_token."""
@@ -289,8 +296,7 @@ def test_google_endpoint_valid_token_acks_200(client, monkeypatch):
     monkeypatch.setenv("GOOGLE_PUBSUB_AUDIENCE", "https://sw.example/iap/google")
     _install_fake_google_verifier(
         monkeypatch,
-        claims={"email": "pubsub@gserviceaccount.com",
-                "email_verified": True},
+        claims={"email": "pubsub@gserviceaccount.com", "email_verified": True},
     )
     resp = client.post(
         GOOGLE_URL,

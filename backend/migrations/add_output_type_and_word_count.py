@@ -6,6 +6,7 @@ for the improved UX design.
 Run this migration with:
     python -m backend.migrations.add_output_type_and_word_count
 """
+
 from backend.app import create_app
 from backend.database import db
 from sqlalchemy import text
@@ -16,17 +17,20 @@ def run_migration():
     print("Starting output_type and word_count migration...")
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():
         try:
             # Check if columns already exist
             inspector = db.inspect(db.engine)
-            existing_columns = [col['name'] for col in inspector.get_columns('story_segment')]
+            existing_columns = [
+                col["name"] for col in inspector.get_columns("story_segment")
+            ]
 
             # Add output_type column if it doesn't exist
-            if 'output_type' not in existing_columns:
+            if "output_type" not in existing_columns:
                 print("Adding output_type column to story_segment...")
                 # SQLite-compatible syntax (no IF NOT EXISTS)
                 db.session.execute(text("""
@@ -38,7 +42,7 @@ def run_migration():
                 print("[SKIP] output_type column already exists")
 
             # Add word_count column if it doesn't exist
-            if 'word_count' not in existing_columns:
+            if "word_count" not in existing_columns:
                 print("Adding word_count column to story_segment...")
                 db.session.execute(text("""
                     ALTER TABLE story_segment
@@ -81,7 +85,8 @@ def rollback_migration():
         return
 
     import os
-    config_name = os.getenv('FLASK_ENV', 'development')
+
+    config_name = os.getenv("FLASK_ENV", "development")
     app = create_app(config_name)
 
     with app.app_context():

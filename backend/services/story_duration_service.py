@@ -4,6 +4,7 @@ Story Duration and Page Management Service
 Handles duration-to-word-count mapping, page splitting, and validation
 for age-appropriate story generation.
 """
+
 import re
 from typing import List, Dict, Tuple
 import logging
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class StoryDuration:
     """Duration configuration for story length"""
+
     FIVE_MINUTES = "5_minutes"
     TEN_MINUTES = "10_minutes"
 
@@ -82,10 +84,10 @@ class PageSplitter:
     """Smart page splitting that respects sentence boundaries"""
 
     # Sentence ending patterns
-    SENTENCE_ENDINGS = re.compile(r'([.!?]+\s+)|([.!?]+$)')
+    SENTENCE_ENDINGS = re.compile(r"([.!?]+\s+)|([.!?]+$)")
 
     # Paragraph breaks
-    PARAGRAPH_BREAK = re.compile(r'\n\n+')
+    PARAGRAPH_BREAK = re.compile(r"\n\n+")
 
     @classmethod
     def split_into_pages(
@@ -93,7 +95,7 @@ class PageSplitter:
         text: str,
         target_words_per_page: int = 100,
         min_pages: int = 5,
-        max_pages: int = 8
+        max_pages: int = 8,
     ) -> List[str]:
         """
         Split story text into pages, respecting sentence and paragraph boundaries.
@@ -120,18 +122,12 @@ class PageSplitter:
         # If we have natural paragraph breaks, use them
         if len(paragraphs) >= min_pages:
             pages = cls._split_by_paragraphs(
-                paragraphs,
-                target_words_per_page,
-                min_pages,
-                max_pages
+                paragraphs, target_words_per_page, min_pages, max_pages
             )
         else:
             # Otherwise, split by sentences
             pages = cls._split_by_sentences(
-                text,
-                target_words_per_page,
-                min_pages,
-                max_pages
+                text, target_words_per_page, min_pages, max_pages
             )
 
         # Ensure we have the right number of pages
@@ -151,7 +147,7 @@ class PageSplitter:
         paragraphs: List[str],
         target_words_per_page: int,
         min_pages: int,
-        max_pages: int
+        max_pages: int,
     ) -> List[str]:
         """Split by grouping paragraphs into pages"""
         pages = []
@@ -162,7 +158,10 @@ class PageSplitter:
             para_words = len(para.split())
 
             # If adding this paragraph would exceed target, start new page
-            if current_page and current_word_count + para_words > target_words_per_page * 1.5:
+            if (
+                current_page
+                and current_word_count + para_words > target_words_per_page * 1.5
+            ):
                 pages.append("\n\n".join(current_page))
                 current_page = [para]
                 current_word_count = para_words
@@ -178,11 +177,7 @@ class PageSplitter:
 
     @classmethod
     def _split_by_sentences(
-        cls,
-        text: str,
-        target_words_per_page: int,
-        min_pages: int,
-        max_pages: int
+        cls, text: str, target_words_per_page: int, min_pages: int, max_pages: int
     ) -> List[str]:
         """Split by grouping sentences into pages, balanced across desired page count.
 
@@ -229,7 +224,7 @@ class PageSplitter:
     def _split_into_sentences(cls, text: str) -> List[str]:
         """Split text into individual sentences"""
         # Split on sentence endings
-        parts = re.split(r'([.!?]+)', text)
+        parts = re.split(r"([.!?]+)", text)
 
         sentences = []
         for i in range(0, len(parts) - 1, 2):
@@ -288,11 +283,7 @@ class StoryValidator:
 
     @classmethod
     def validate_story(
-        cls,
-        story_text: str,
-        pages: List[str],
-        duration: str,
-        age: int
+        cls, story_text: str, pages: List[str], duration: str, age: int
     ) -> Tuple[bool, List[str]]:
         """
         Validate story meets requirements.
@@ -331,9 +322,7 @@ class StoryValidator:
         # Check that pages end on sentence boundaries
         for i, page in enumerate(pages):
             if not cls._ends_on_sentence_boundary(page):
-                issues.append(
-                    f"Page {i+1} does not end on a sentence boundary"
-                )
+                issues.append(f"Page {i+1} does not end on a sentence boundary")
 
         is_valid = len(issues) == 0
         return is_valid, issues
@@ -346,7 +335,7 @@ class StoryValidator:
             return False
 
         # Should end with sentence-ending punctuation
-        return text[-1] in '.!?'
+        return text[-1] in ".!?"
 
 
 class AdventureStepGenerator:

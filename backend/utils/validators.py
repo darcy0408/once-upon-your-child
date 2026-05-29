@@ -1,12 +1,12 @@
-
 import re
 
-ALLOWED_STORY_LENGTHS = {'short', 'medium', 'long', 'standard', 'quick', 'epic'}
+ALLOWED_STORY_LENGTHS = {"short", "medium", "long", "standard", "quick", "epic"}
 
 # Image validation constants
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_IMAGE_DIMENSION = 4096  # Max width/height in pixels
-MIN_IMAGE_DIMENSION = 64    # Min width/height in pixels
+MIN_IMAGE_DIMENSION = 64  # Min width/height in pixels
+
 
 def validate_age(age):
     """
@@ -18,11 +18,12 @@ def validate_age(age):
         age_int = int(age)
     except (TypeError, ValueError):
         raise ValueError("Age must be a valid integer.")
-    
+
     if not (0 <= age_int <= 120):
         raise ValueError("Age must be between 0 and 120.")
-        
+
     return age_int
+
 
 def validate_story_length(length):
     """
@@ -31,13 +32,16 @@ def validate_story_length(length):
     Raises ValueError if invalid.
     """
     if not length:
-        return 'standard'
-    
+        return "standard"
+
     length_lower = str(length).lower()
     if length_lower not in ALLOWED_STORY_LENGTHS:
-        raise ValueError(f"Invalid story length. Must be one of: {', '.join(ALLOWED_STORY_LENGTHS)}")
-        
+        raise ValueError(
+            f"Invalid story length. Must be one of: {', '.join(ALLOWED_STORY_LENGTHS)}"
+        )
+
     return length_lower
+
 
 def sanitize_text(text, max_length=100, allow_newlines=False):
     """
@@ -48,16 +52,16 @@ def sanitize_text(text, max_length=100, allow_newlines=False):
     """
     if not text:
         return ""
-        
+
     s = str(text).strip()
-    
+
     # Simple HTML tag stripping (naive but effective for basic script injection)
     # Allows benign text, blocks <script>...
-    s = re.sub(r'<[^>]*>', '', s)
-    
+    s = re.sub(r"<[^>]*>", "", s)
+
     if not allow_newlines:
-        s = s.replace('\n', ' ').replace('\r', '')
-        
+        s = s.replace("\n", " ").replace("\r", "")
+
     if len(s) > max_length:
         s = s[:max_length]
 
@@ -112,10 +116,14 @@ def validate_image_dimensions(width, height, max_dim=None, min_dim=None):
         min_dim = MIN_IMAGE_DIMENSION
 
     if width < min_dim or height < min_dim:
-        raise ValueError(f"Image dimensions {width}x{height} below minimum {min_dim}x{min_dim}")
+        raise ValueError(
+            f"Image dimensions {width}x{height} below minimum {min_dim}x{min_dim}"
+        )
 
     if width > max_dim or height > max_dim:
-        raise ValueError(f"Image dimensions {width}x{height} exceed maximum {max_dim}x{max_dim}")
+        raise ValueError(
+            f"Image dimensions {width}x{height} exceed maximum {max_dim}x{max_dim}"
+        )
 
     return True
 

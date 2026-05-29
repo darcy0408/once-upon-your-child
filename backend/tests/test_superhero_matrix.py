@@ -4,6 +4,7 @@ These tests exercise the villain/problem/power compatibility matrix
 that backs Superhero Mode (ages 3-5). They do NOT hit Gemini, the
 Flask app, or the database — only the pure data module.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -25,13 +26,16 @@ def test_matrix_has_expected_cardinality():
     assert len(VILLAINS) == 10, "Spec calls for exactly 10 villains"
     assert len(PROBLEMS) == 10, "Spec calls for exactly 10 problems"
     assert len(POWERS) == 8, "Spec calls for exactly 8 powers"
-    assert set(VILLAIN_PROBLEMS.keys()) == set(VILLAINS.keys()), \
-        "Every villain must have a problem-compatibility row"
+    assert set(VILLAIN_PROBLEMS.keys()) == set(
+        VILLAINS.keys()
+    ), "Every villain must have a problem-compatibility row"
 
 
 def test_each_power_has_ideal_and_at_least_four_alternatives():
     for power_id, spec in POWERS.items():
-        assert spec["ideal"] in VILLAINS, f"{power_id}.ideal must reference a real villain"
+        assert (
+            spec["ideal"] in VILLAINS
+        ), f"{power_id}.ideal must reference a real villain"
         also = spec.get("also", [])
         assert len(also) >= 4, f"{power_id} needs >=4 also-works villains"
         for v in also:
@@ -59,9 +63,9 @@ def test_pick_pairing_returns_sensible_pair_for_each_power():
         # Seed each call so the test is deterministic across CI runs.
         for seed in range(10):
             villain_id, problem_id = pick_pairing(power_id, seed=seed)
-            assert villain_id in allowed_villains, (
-                f"{power_id} returned villain={villain_id} not in {allowed_villains}"
-            )
+            assert (
+                villain_id in allowed_villains
+            ), f"{power_id} returned villain={villain_id} not in {allowed_villains}"
             assert problem_id in VILLAIN_PROBLEMS[villain_id], (
                 f"villain={villain_id} returned problem={problem_id} "
                 f"not in {VILLAIN_PROBLEMS[villain_id]}"
@@ -78,7 +82,9 @@ def test_pick_pairing_varies_across_seeds():
     pairs. (The ideal villain is weight-2 but ``also`` candidates are
     weight-1, so we expect some spread.)"""
     pairs = {pick_pairing("super_speed", seed=i) for i in range(10)}
-    assert len(pairs) > 1, "10 seeded calls all returned the same pair — distribution is broken"
+    assert (
+        len(pairs) > 1
+    ), "10 seeded calls all returned the same pair — distribution is broken"
 
 
 def test_pick_pairing_respects_recent_villains():
@@ -94,13 +100,17 @@ def test_pick_pairing_respects_recent_villains():
     blocked = [v for v in allowed if v != survivor]
     for seed in range(5):
         villain_id, _ = pick_pairing(
-            "super_smile", seed=seed, recent_villains=blocked,
+            "super_smile",
+            seed=seed,
+            recent_villains=blocked,
         )
         assert villain_id == survivor
 
     # Block ALL — must still return something, not raise.
     villain_id, _ = pick_pairing(
-        "super_smile", seed=0, recent_villains=allowed,
+        "super_smile",
+        seed=0,
+        recent_villains=allowed,
     )
     assert villain_id in allowed
 
@@ -108,7 +118,9 @@ def test_pick_pairing_respects_recent_villains():
 def test_pick_pairing_respects_recent_problems():
     """Same fallback rule for problems."""
     villain_id, problem_id = pick_pairing(
-        "super_speed", seed=42, recent_problems=["get_back"],
+        "super_speed",
+        seed=42,
+        recent_problems=["get_back"],
     )
     # If the chosen villain's pool only had get_back, the fallback rule
     # would return get_back anyway. Otherwise it must NOT be get_back.

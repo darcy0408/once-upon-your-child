@@ -105,5 +105,7 @@ class TestAchievementService:
             assert stats.total_stories == 5
             assert stats.theme_counts["Adventure"] == 3
             assert data["stats"]["total_stories"] == 5
-            assert any(a["achievement_type"] == "fiveStories" for a in data["achievements"])
+            assert any(
+                a["achievement_type"] == "fiveStories" for a in data["achievements"]
+            )
             self._cleanup_for_user(test_user.id)

@@ -7,8 +7,8 @@ import time
 import sys
 
 # Ensure backend package is importable when running as script
-if __name__ == '__main__' and __package__ is None:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+if __name__ == "__main__" and __package__ is None:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
@@ -24,7 +24,7 @@ except OSError:
 
 logging.basicConfig(
     level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=_log_handlers,
 )
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ try:
     from backend.config import config, config_by_name
     from backend.database import db
     from backend.celery_config import celery
+
     # Import models in dependency order (Story and Character first, then User which references them)
     from backend.models.story import Story
     from backend.models.character import Character
@@ -90,10 +91,23 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 image_generator = None
 
 
-_SENTRY_SENSITIVE_KEYS = frozenset({
-    "prompt", "story", "response", "context", "content", "note",
-    "text", "body", "message", "parent", "hidden", "guidance",
-})
+_SENTRY_SENSITIVE_KEYS = frozenset(
+    {
+        "prompt",
+        "story",
+        "response",
+        "context",
+        "content",
+        "note",
+        "text",
+        "body",
+        "message",
+        "parent",
+        "hidden",
+        "guidance",
+    }
+)
+
 
 def _scrub_sentry_vars(frame_vars: dict) -> dict:
     """Strip story content and parent context from Sentry exception frames."""
@@ -131,13 +145,16 @@ def before_send(event, hint):
     exception = event.get("exception")
     if isinstance(exception, dict):
         for exc_val in exception.get("values", []):
-            stacktrace = exc_val.get("stacktrace") if isinstance(exc_val, dict) else None
+            stacktrace = (
+                exc_val.get("stacktrace") if isinstance(exc_val, dict) else None
+            )
             if isinstance(stacktrace, dict):
                 for frame in stacktrace.get("frames", []):
                     if isinstance(frame, dict) and isinstance(frame.get("vars"), dict):
                         frame["vars"] = _scrub_sentry_vars(frame["vars"])
 
     return event
+
 
 def _run_security_assertions(app, config_name: str) -> None:
     """
@@ -146,15 +163,15 @@ def _run_security_assertions(app, config_name: str) -> None:
     Raises RuntimeError on any critical failure so the process exits cleanly
     rather than serving traffic with a broken security posture.
     """
-    is_prod = config_name in ('prod', 'production')
+    is_prod = config_name in ("prod", "production")
     errors = []
 
     # ── JWT secret ────────────────────────────────────────────────────────────
-    jwt_secret = app.config.get('JWT_SECRET_KEY', '')
-    if jwt_secret == 'dev-secret-key':
+    jwt_secret = app.config.get("JWT_SECRET_KEY", "")
+    if jwt_secret == "dev-secret-key":
         errors.append(
             "JWT_SECRET_KEY is the hardcoded dev default. "
-            "Generate a strong secret: python -c \"import secrets; print(secrets.token_hex(32))\""
+            'Generate a strong secret: python -c "import secrets; print(secrets.token_hex(32))"'
         )
     elif len(jwt_secret) < 32:
         errors.append(
@@ -163,7 +180,7 @@ def _run_security_assertions(app, config_name: str) -> None:
 
     # ── Redis in production ───────────────────────────────────────────────────
     if is_prod:
-        redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+        redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
         if not redis_url:
             errors.append(
                 "REDIS_URL is not set in production. "
@@ -184,24 +201,26 @@ def create_app(config_name):
     logger.info(f"Available configs: {list(config_by_name.keys())}")
     # Image generation fix deployed - 2024-12-01
     # Explicitly set static folder to ensure avatars are served correctly
-    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    app = Flask(__name__, static_folder=static_folder, static_url_path="/static")
 
     # Normalize config name
     if config_name not in config_by_name:
         logger.warning(f"Config '{config_name}' not found, using 'production'")
-        config_name = 'production'
+        config_name = "production"
 
     # Initialize Sentry (Priority 3)
-    sentry_dsn = os.getenv('SENTRY_DSN')
-    if sentry_dsn and config_name != 'testing':
+    sentry_dsn = os.getenv("SENTRY_DSN")
+    if sentry_dsn and config_name != "testing":
         logger.info(f"Initializing Sentry (Env: {config_name})")
         try:
-            sentry_environment = config_name or os.getenv('FLASK_ENV', 'production')
+            sentry_environment = config_name or os.getenv("FLASK_ENV", "production")
             sentry_sdk.init(
                 dsn=sentry_dsn,
                 integrations=[FlaskIntegration()],
-                traces_sample_rate=0.1 if sentry_environment in ('prod', 'production') else 0.2,
+                traces_sample_rate=(
+                    0.1 if sentry_environment in ("prod", "production") else 0.2
+                ),
                 profiles_sample_rate=0.0,
                 environment=sentry_environment,
                 before_send=before_send,
@@ -209,27 +228,28 @@ def create_app(config_name):
         except Exception as e:
             logger.warning(f"Sentry initialization failed: {e}")
 
-    if config_name == 'testing':
-        app.config.from_object(config_by_name['testing'])
-        app.config['TESTING'] = True
-        app.config.pop('SQLALCHEMY_ENGINE_OPTIONS', None)
+    if config_name == "testing":
+        app.config.from_object(config_by_name["testing"])
+        app.config["TESTING"] = True
+        app.config.pop("SQLALCHEMY_ENGINE_OPTIONS", None)
         # Use StaticPool so every app-context and test-client request shares the
         # same in-memory SQLite connection.  Without this, users committed inside
         # a fixture's nested app_context are on a different connection and are
         # invisible to the test-client request handler → 401 Unauthorized.
         from sqlalchemy.pool import StaticPool
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'connect_args': {'check_same_thread': False},
-            'poolclass': StaticPool,
+
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"check_same_thread": False},
+            "poolclass": StaticPool,
         }
     else:
         app.config.from_object(config_by_name[config_name])
 
-    testing_mode = app.config.get('TESTING', False)
+    testing_mode = app.config.get("TESTING", False)
 
     # Cap request body size to defend against memory-exhaustion via oversized
     # uploads (e.g. avatar image uploads). Flask aborts with 413 if exceeded.
-    app.config.setdefault('MAX_CONTENT_LENGTH', 12 * 1024 * 1024)  # 12 MB
+    app.config.setdefault("MAX_CONTENT_LENGTH", 12 * 1024 * 1024)  # 12 MB
 
     if not testing_mode:
         _run_security_assertions(app, config_name)
@@ -239,19 +259,22 @@ def create_app(config_name):
     logger.info("Database initialized")
 
     # Update Celery configuration
-    celery.config_from_object(app.config, namespace='CELERY')
+    celery.config_from_object(app.config, namespace="CELERY")
 
     # Initialize AdvancedStoryEngine
     story_engine_instance = AdvancedStoryEngine()
 
     # CORS setup
-    CORS(app, resources={
-        r"/*": {
-            "origins": app.config["ALLOWED_ORIGINS"],
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-        }
-    })
+    CORS(
+        app,
+        resources={
+            r"/*": {
+                "origins": app.config["ALLOWED_ORIGINS"],
+                "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"],
+            }
+        },
+    )
 
     def _is_allowed_origin(origin_value):
         if not origin_value:
@@ -281,6 +304,7 @@ def create_app(config_name):
 
         if not origin and referer:
             from urllib.parse import urlparse
+
             referer_origin = f"{urlparse(referer).scheme}://{urlparse(referer).netloc}"
             if not _is_allowed_origin(referer_origin):
                 return jsonify({"error": "Referer origin not allowed"}), 403
@@ -289,22 +313,26 @@ def create_app(config_name):
 
     # Rate limiting setup
     # Use Redis in production for distributed rate limiting, fallback to memory for dev
-    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if redis_url and not testing_mode:
         rate_limit_storage = redis_url
         logger.info("Rate limiting configured with Redis (distributed)")
     else:
         rate_limit_storage = "memory://"
         if not testing_mode:
-            logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
+            logger.warning(
+                "Rate limiting using in-memory storage - not suitable for multi-instance deployments"
+            )
 
     limiter = Limiter(
         app=app,
         key_func=get_user_identifier,
         default_limits=["200 per day", "50 per hour"],
-        storage_uri=rate_limit_storage
+        storage_uri=rate_limit_storage,
     )
-    logger.info("Rate limiting enabled=%s storage=%s", limiter.enabled, rate_limit_storage)
+    logger.info(
+        "Rate limiting enabled=%s storage=%s", limiter.enabled, rate_limit_storage
+    )
     # Store limiter on app to prevent garbage collection when passed to blueprints
     app.limiter = limiter
 
@@ -316,23 +344,27 @@ def create_app(config_name):
         """Add security headers to all responses"""
         # HSTS - only for production
         if is_production():
-            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+
         # CSP - restrictive but allows API/static needs
         # Adjust 'self' and origins as needed for your frontend
-        response.headers['Content-Security-Policy'] = (
+        response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "connect-src 'self' https://generativelanguage.googleapis.com https://openrouter.ai;"
         )
-        
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=()'
-        
+
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), payment=()"
+        )
+
         return response
 
     @app.after_request
@@ -340,33 +372,39 @@ def create_app(config_name):
         """Add rate limit headers to API responses"""
         try:
             # Get current request limits
-            current_limit = getattr(request, 'rate_limit', None)
+            current_limit = getattr(request, "rate_limit", None)
             if current_limit:
-                response.headers['X-RateLimit-Limit'] = str(current_limit.limit)
-                response.headers['X-RateLimit-Remaining'] = str(max(0, current_limit.limit - current_limit.count))
-                response.headers['X-RateLimit-Reset'] = str(int(current_limit.reset_time.timestamp()))
+                response.headers["X-RateLimit-Limit"] = str(current_limit.limit)
+                response.headers["X-RateLimit-Remaining"] = str(
+                    max(0, current_limit.limit - current_limit.count)
+                )
+                response.headers["X-RateLimit-Reset"] = str(
+                    int(current_limit.reset_time.timestamp())
+                )
         except Exception:
             # Don't fail the request if header addition fails
             pass
 
         # Baseline transport/security headers
-        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
-        response.headers.setdefault('X-Frame-Options', 'DENY')
-        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault(
-            'Permissions-Policy',
-            'camera=(), microphone=(), geolocation=(), payment=()',
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "camera=(), microphone=(), geolocation=(), payment=()",
         )
 
         # Apply a strict CSP for API responses while leaving static HTML assets functional.
-        if response.mimetype == 'application/json':
+        if response.mimetype == "application/json":
             response.headers.setdefault(
-                'Content-Security-Policy',
+                "Content-Security-Policy",
                 "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
             )
         else:
             response.headers.setdefault(
-                'Content-Security-Policy',
+                "Content-Security-Policy",
                 "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:; frame-ancestors 'none'",
             )
@@ -374,39 +412,43 @@ def create_app(config_name):
 
     @app.errorhandler(429)
     def ratelimit_handler(e):
-        request_id = getattr(g, 'request_id', 'unknown')
+        request_id = getattr(g, "request_id", "unknown")
         user_tier = get_user_tier()
 
-        logger.warning(f"[{request_id}] Rate limit exceeded for {user_tier} user: {request.endpoint}")
+        logger.warning(
+            f"[{request_id}] Rate limit exceeded for {user_tier} user: {request.endpoint}"
+        )
 
         # Customize message based on user tier
-        if user_tier == 'free':
-            message = 'Free tier limit reached. Upgrade to Premium for higher limits!'
-            upgrade_url = 'https://storyweaver.com/premium'
-        elif user_tier == 'premium':
-            message = 'Premium limit reached. Upgrade to Family plan for even higher limits!'
-            upgrade_url = 'https://storyweaver.com/family'
+        if user_tier == "free":
+            message = "Free tier limit reached. Upgrade to Premium for higher limits!"
+            upgrade_url = "https://storyweaver.com/premium"
+        elif user_tier == "premium":
+            message = (
+                "Premium limit reached. Upgrade to Family plan for even higher limits!"
+            )
+            upgrade_url = "https://storyweaver.com/family"
         else:
-            message = 'Rate limit exceeded. Please try again later.'
+            message = "Rate limit exceeded. Please try again later."
             upgrade_url = None
 
         response_data = {
-            'error': 'Rate limit exceeded',
-            'message': message,
-            'retry_after': getattr(e, 'description', None),
-            'retry_after_seconds': int(getattr(e, 'retry_after', 0) or 0),
-            'user_tier': user_tier
+            "error": "Rate limit exceeded",
+            "message": message,
+            "retry_after": getattr(e, "description", None),
+            "retry_after_seconds": int(getattr(e, "retry_after", 0) or 0),
+            "user_tier": user_tier,
         }
 
         if upgrade_url:
-            response_data['upgrade_url'] = upgrade_url
+            response_data["upgrade_url"] = upgrade_url
 
         return jsonify(response_data), 429
 
     # Logging setup for story engine (use different name to avoid shadowing global logger)
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     story_logger = logging.getLogger("story_engine")
 
@@ -450,15 +492,23 @@ def create_app(config_name):
     # SECURITY: Don't log API keys, even partially masked
     logger.debug(f"GEMINI_API_KEY configured: {bool(api_key)}")
     if not api_key:
-        logger.warning("GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks.")
+        logger.warning(
+            "GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks."
+        )
         model = None
 
     if api_key:
         try:
-            from google import genai as genai_sdk  # Local import to avoid slow startup in tests
+            from google import (
+                genai as genai_sdk,
+            )  # Local import to avoid slow startup in tests
+
             logger.info("google-genai SDK imported successfully.")
         except Exception as e:
-            logger.exception("Failed to import google-genai. Please ensure the library is installed: %s", e)
+            logger.exception(
+                "Failed to import google-genai. Please ensure the library is installed: %s",
+                e,
+            )
             genai_sdk = None
 
         if genai_sdk:
@@ -479,6 +529,7 @@ def create_app(config_name):
     try:
         from backend.routes.stripe_routes import stripe_routes, init_stripe_api
         from backend.routes.webhook_handler import webhook_routes
+
         # STORE-1 (MT-143): in-app-purchase receipt verification + S2S
         # notification endpoints for the iOS/Android store builds.
         from backend.routes.iap_routes import iap_routes
@@ -489,8 +540,12 @@ def create_app(config_name):
 
     if not testing_mode:
         init_stripe_api(app)
-        logger.info(f"Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
-        logger.info(f"Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
+        logger.info(
+            f"Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}"
+        )
+        logger.info(
+            f"Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}"
+        )
 
     # Initialize image generator (prefer OpenRouter if available, fallback to Gemini)
     global image_generator
@@ -514,7 +569,9 @@ def create_app(config_name):
             logger.info("Image generator initialized with Gemini (fallback)")
         else:
             image_generator = None
-            logger.warning("No image generator initialized (no OPENROUTER_API_KEY or GEMINI_API_KEY)")
+            logger.warning(
+                "No image generator initialized (no OPENROUTER_API_KEY or GEMINI_API_KEY)"
+            )
     except Exception as e:
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None
@@ -529,8 +586,10 @@ def create_app(config_name):
             # lose the race and get "table already exists". The table is there;
             # safe to continue. Without this guard the loser exits, gunicorn
             # restarts, and Sentry gets paged on every deploy.
-            if 'already exists' in str(_create_err):
-                logger.info("Tables already exist; skipping create_all (worker boot race)")
+            if "already exists" in str(_create_err):
+                logger.info(
+                    "Tables already exist; skipping create_all (worker boot race)"
+                )
             else:
                 raise
 
@@ -538,29 +597,36 @@ def create_app(config_name):
         # before these fields were introduced (avoids needing manual admin endpoint).
         try:
             from sqlalchemy import inspect as sa_inspect, text as sa_text
+
             inspector = sa_inspect(db.engine)
-            existing_cols = {col['name'] for col in inspector.get_columns('user')}
+            existing_cols = {col["name"] for col in inspector.get_columns("user")}
             pending_cols = {
-                'stories_created_count':               'INTEGER DEFAULT 0 NOT NULL',
-                'custom_avatars_generated':            'INTEGER DEFAULT 0 NOT NULL',
-                'gemini_api_key_encrypted':             'TEXT',
-                'has_byok':                            'BOOLEAN DEFAULT FALSE NOT NULL',
-                'stories_generated_this_month':        'INTEGER DEFAULT 0 NOT NULL',
-                'illustrations_generated_this_month':  'INTEGER DEFAULT 0 NOT NULL',
-                'usage_reset_date':                    'TIMESTAMP',
-                'declared_age':                        'INTEGER',
-                'is_under_13':                         'BOOLEAN DEFAULT FALSE NOT NULL',
-                'token_version':                       'INTEGER DEFAULT 0 NOT NULL',
+                "stories_created_count": "INTEGER DEFAULT 0 NOT NULL",
+                "custom_avatars_generated": "INTEGER DEFAULT 0 NOT NULL",
+                "gemini_api_key_encrypted": "TEXT",
+                "has_byok": "BOOLEAN DEFAULT FALSE NOT NULL",
+                "stories_generated_this_month": "INTEGER DEFAULT 0 NOT NULL",
+                "illustrations_generated_this_month": "INTEGER DEFAULT 0 NOT NULL",
+                "usage_reset_date": "TIMESTAMP",
+                "declared_age": "INTEGER",
+                "is_under_13": "BOOLEAN DEFAULT FALSE NOT NULL",
+                "token_version": "INTEGER DEFAULT 0 NOT NULL",
                 # CMP-5 / PP-13: activity timestamp for the data-retention
                 # purge job. Nullable — the job falls back to created_at.
-                'last_active_at':                      'TIMESTAMP',
+                "last_active_at": "TIMESTAMP",
             }
             with db.engine.connect() as _conn:
                 for col_name, col_def in pending_cols.items():
                     if col_name not in existing_cols:
-                        _conn.execute(sa_text(f'ALTER TABLE "user" ADD COLUMN {col_name} {col_def}'))
+                        _conn.execute(
+                            sa_text(
+                                f'ALTER TABLE "user" ADD COLUMN {col_name} {col_def}'
+                            )
+                        )
                         _conn.commit()
-                        logger.info("Auto-migration: added column '%s' to user table", col_name)
+                        logger.info(
+                            "Auto-migration: added column '%s' to user table", col_name
+                        )
         except Exception as _mig_err:
             logger.warning("Auto-migration check failed (non-fatal): %s", _mig_err)
 
@@ -570,14 +636,17 @@ def create_app(config_name):
         # 'consent_record' table created before the email round trip existed.
         try:
             from sqlalchemy import inspect as sa_inspect, text as sa_text
+
             inspector = sa_inspect(db.engine)
-            consent_cols = {c['name'] for c in inspector.get_columns('consent_record')}
-            if 'verified' not in consent_cols:
+            consent_cols = {c["name"] for c in inspector.get_columns("consent_record")}
+            if "verified" not in consent_cols:
                 with db.engine.connect() as _conn:
-                    _conn.execute(sa_text(
-                        'ALTER TABLE consent_record '
-                        'ADD COLUMN verified BOOLEAN DEFAULT FALSE NOT NULL'
-                    ))
+                    _conn.execute(
+                        sa_text(
+                            "ALTER TABLE consent_record "
+                            "ADD COLUMN verified BOOLEAN DEFAULT FALSE NOT NULL"
+                        )
+                    )
                     _conn.commit()
                     logger.info(
                         "Auto-migration: added column 'verified' to consent_record table"
@@ -585,11 +654,13 @@ def create_app(config_name):
             # CMP-10: policy_version column. Nullable (no DEFAULT / NOT NULL) so
             # legacy rows stay NULL — the COPPA gate treats NULL as stale. New
             # rows are stamped with CURRENT_POLICY_VERSION at the app layer.
-            if 'policy_version' not in consent_cols:
+            if "policy_version" not in consent_cols:
                 with db.engine.connect() as _conn:
-                    _conn.execute(sa_text(
-                        'ALTER TABLE consent_record ADD COLUMN policy_version INTEGER'
-                    ))
+                    _conn.execute(
+                        sa_text(
+                            "ALTER TABLE consent_record ADD COLUMN policy_version INTEGER"
+                        )
+                    )
                     _conn.commit()
                     logger.info(
                         "Auto-migration: added column 'policy_version' to consent_record table"
@@ -605,16 +676,21 @@ def create_app(config_name):
         # StringDataRightTruncation and 500s interactive-story creation (MT-154).
         try:
             from sqlalchemy import inspect as sa_inspect, text as sa_text
-            if db.engine.dialect.name == 'postgresql':
+
+            if db.engine.dialect.name == "postgresql":
                 inspector = sa_inspect(db.engine)
-                seg_cols = {c['name']: c for c in inspector.get_columns('story_segment')}
-                img_col = seg_cols.get('image_url')
-                if img_col is not None and 'TEXT' not in str(img_col['type']).upper():
+                seg_cols = {
+                    c["name"]: c for c in inspector.get_columns("story_segment")
+                }
+                img_col = seg_cols.get("image_url")
+                if img_col is not None and "TEXT" not in str(img_col["type"]).upper():
                     with db.engine.connect() as _conn:
-                        _conn.execute(sa_text(
-                            'ALTER TABLE story_segment '
-                            'ALTER COLUMN image_url TYPE TEXT'
-                        ))
+                        _conn.execute(
+                            sa_text(
+                                "ALTER TABLE story_segment "
+                                "ALTER COLUMN image_url TYPE TEXT"
+                            )
+                        )
                         _conn.commit()
                         logger.info(
                             "Auto-migration: widened story_segment.image_url to TEXT"
@@ -622,18 +698,18 @@ def create_app(config_name):
         except Exception as _mig_err:
             logger.warning(
                 "story_segment.image_url widen migration failed (non-fatal): %s",
-                _mig_err
+                _mig_err,
             )
 
         # Ensure anonymous user exists for story generation
         try:
-            anonymous_user = db.session.get(User, 'anonymous')
+            anonymous_user = db.session.get(User, "anonymous")
             if not anonymous_user:
                 logger.info("Creating anonymous user for story generation...")
                 anon = User(
-                    id='anonymous',
-                    username='anonymous',
-                    email='anonymous@storyweaver.app'
+                    id="anonymous",
+                    username="anonymous",
+                    email="anonymous@storyweaver.app",
                 )
                 anon.set_password(uuid.uuid4().hex)
                 db.session.add(anon)
@@ -643,7 +719,7 @@ def create_app(config_name):
                 logger.info("Anonymous user already exists")
         except Exception as e:
             db.session.rollback()
-            if 'UNIQUE constraint' in str(e) or 'already exists' in str(e):
+            if "UNIQUE constraint" in str(e) or "already exists" in str(e):
                 logger.info("Anonymous user already exists (worker boot race)")
             else:
                 logger.error(f"Failed to create anonymous user: {e}")
@@ -653,31 +729,36 @@ def create_app(config_name):
     # Token lifetimes (JWT_ACCESS/REFRESH_TOKEN_EXPIRES) are set on the config
     # class so they apply before JWTManager() is constructed (S-07).
     jwt = JWTManager(app)
-    jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
-    if not jwt_secret or jwt_secret == 'dev-secret-key':
-        if os.getenv('FLASK_ENV') in ('prod', 'production'):
-            raise ValueError("SECURITY ERROR: JWT_SECRET_KEY must be set in production!")
+    jwt_secret = app.config.get("JWT_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+    if not jwt_secret or jwt_secret == "dev-secret-key":
+        if os.getenv("FLASK_ENV") in ("prod", "production"):
+            raise ValueError(
+                "SECURITY ERROR: JWT_SECRET_KEY must be set in production!"
+            )
         logger.warning("Using dev JWT secret - NOT SAFE FOR PRODUCTION")
-        jwt_secret = 'dev-secret-key'
-    app.config['JWT_SECRET_KEY'] = jwt_secret
+        jwt_secret = "dev-secret-key"
+    app.config["JWT_SECRET_KEY"] = jwt_secret
 
     # JWT revocation — check Redis blocklist for spent refresh tokens.
     # Degrades gracefully: if Redis is unavailable the check is skipped so a
     # Redis outage never locks users out of the app.
     @jwt.token_in_blocklist_loader
     def _check_token_revoked(jwt_header, jwt_payload):
-        jti = jwt_payload.get('jti')
+        jti = jwt_payload.get("jti")
         if not jti:
             return False
-        redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+        redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
         if not redis_url:
             return False
         try:
             import redis as _redis_lib
+
             _r = _redis_lib.from_url(redis_url, socket_connect_timeout=1)
-            return bool(_r.exists(f'jwt:blocklist:{jti}'))
+            return bool(_r.exists(f"jwt:blocklist:{jti}"))
         except Exception as exc:
-            logger.warning('JWT blocklist: Redis unavailable (%s) — skipping revocation check', exc)
+            logger.warning(
+                "JWT blocklist: Redis unavailable (%s) — skipping revocation check", exc
+            )
             return False
 
     # Database query monitoring
@@ -685,20 +766,24 @@ def create_app(config_name):
     from sqlalchemy.engine import Engine
 
     @event.listens_for(Engine, "before_cursor_execute")
-    def receive_before_cursor_execute(conn, cursor, statement, params, context, executemany):
+    def receive_before_cursor_execute(
+        conn, cursor, statement, params, context, executemany
+    ):
         context._query_start_time = time.time()
 
     @event.listens_for(Engine, "after_cursor_execute")
-    def receive_after_cursor_execute(conn, cursor, statement, params, context, executemany):
+    def receive_after_cursor_execute(
+        conn, cursor, statement, params, context, executemany
+    ):
         total = time.time() - context._query_start_time
         if total > 1.0:  # Log slow queries
             log_error(
-                error_type='slow_database_query',
-                message=f'Slow query took {total:.2f}s',
+                error_type="slow_database_query",
+                message=f"Slow query took {total:.2f}s",
                 details={
-                    'query': statement[:200],  # First 200 chars
-                    'duration': total
-                }
+                    "query": statement[:200],  # First 200 chars
+                    "duration": total,
+                },
             )
 
     try:
@@ -716,17 +801,17 @@ def create_app(config_name):
 
     logger.info("Registering routes")
     if stripe_routes:
-        app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
+        app.register_blueprint(stripe_routes, url_prefix="/api/stripe")
     if webhook_routes:
-        app.register_blueprint(webhook_routes, url_prefix='/api')
+        app.register_blueprint(webhook_routes, url_prefix="/api")
     # STORE-1 (MT-143): iap_routes already prefixes its rules with '/iap/...',
     # so mount it under '/api' to expose '/api/iap/apple/verify' etc.
     if iap_routes:
-        app.register_blueprint(iap_routes, url_prefix='/api')
+        app.register_blueprint(iap_routes, url_prefix="/api")
     analytics_bp = create_analytics_blueprint(limiter=limiter)
     app.register_blueprint(analytics_bp)
     achievement_bp = create_achievement_blueprint(limiter=limiter)
-    app.register_blueprint(achievement_bp, url_prefix='/achievement')
+    app.register_blueprint(achievement_bp, url_prefix="/achievement")
     subscription_bp = create_subscription_blueprint(limiter=limiter)
     app.register_blueprint(subscription_bp)
     user_routes = create_user_routes_blueprint(limiter=limiter)
@@ -771,9 +856,15 @@ def create_app(config_name):
     character_bp = create_character_blueprint(limiter=limiter, logger=logger)
     admin_bp = create_admin_blueprint(logger=logger, limiter=limiter)
     health_bp = create_health_blueprint(
-        logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL, limiter=limiter
+        logger=logger,
+        api_key=api_key,
+        app_version="1.0.2",
+        gemini_model=GEMINI_MODEL,
+        limiter=limiter,
     )
-    utility_bp = create_utility_blueprint(logger=logger, log_error=log_error, limiter=limiter)
+    utility_bp = create_utility_blueprint(
+        logger=logger, log_error=log_error, limiter=limiter
+    )
     chronicle_bp = create_chronicle_blueprint(api_key=api_key, limiter=limiter)
 
     app.register_blueprint(story_bp)
@@ -782,8 +873,8 @@ def create_app(config_name):
     app.register_blueprint(health_bp)
     app.register_blueprint(utility_bp)
     app.register_blueprint(chronicle_bp)
-    app.register_blueprint(create_avatar_blueprint(limiter), url_prefix='/avatar')
-    app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
+    app.register_blueprint(create_avatar_blueprint(limiter), url_prefix="/avatar")
+    app.register_blueprint(avatar_gallery_bp, url_prefix="/avatar/gallery")
 
     # TTS narration (lazy — works without Google credentials, returns 503)
     try:
@@ -797,7 +888,15 @@ def create_app(config_name):
 
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"error": "Not found", "message": "The requested endpoint does not exist."}), 404
+        return (
+            jsonify(
+                {
+                    "error": "Not found",
+                    "message": "The requested endpoint does not exist.",
+                }
+            ),
+            404,
+        )
 
     @app.errorhandler(405)
     def method_not_allowed(e):
@@ -808,35 +907,54 @@ def create_app(config_name):
         logger.error(f"Internal Server Error: {str(e)}")
         # In production, do not return the exception details
         if is_production():
-            return jsonify({
-                "error": "Internal Server Error",
-                "message": "An unexpected error occurred. Please contact support."
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "error": "Internal Server Error",
+                        "message": "An unexpected error occurred. Please contact support.",
+                    }
+                ),
+                500,
+            )
         # In dev/test, typically okay to show more, or sanitize too.
         # Let's sanitize to be safe as per requirement "Ensure no stack traces... in production"
-        return jsonify({
-            "error": "Internal Server Error", 
-            "message": str(e) # Only show message in dev
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": "Internal Server Error",
+                    "message": str(e),  # Only show message in dev
+                }
+            ),
+            500,
+        )
 
     logger.info("All routes registered successfully")
     logger.debug(
         "Registered routes: %s",
         sorted(
-            [{'path': rule.rule, 'methods': sorted(m for m in rule.methods if m not in {'HEAD', 'OPTIONS'})} for rule in app.url_map.iter_rules()],
-            key=lambda r: (r['path'], tuple(r['methods']))
-        )
+            [
+                {
+                    "path": rule.rule,
+                    "methods": sorted(
+                        m for m in rule.methods if m not in {"HEAD", "OPTIONS"}
+                    ),
+                }
+                for rule in app.url_map.iter_rules()
+            ],
+            key=lambda r: (r["path"], tuple(r["methods"])),
+        ),
     )
     return app
 
+
 # Trigger reload
-if __name__ == '__main__':
-    app = create_app(os.getenv('FLASK_ENV') or 'production')
+if __name__ == "__main__":
+    app = create_app(os.getenv("FLASK_ENV") or "production")
     app.run(
-        host='0.0.0.0',
-        port=int(os.getenv('PORT', 5000)),
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 5000)),
         exclude_patterns=[
-            '*/Flutter/ephemeral/*',
-            '*/flutter/ephemeral/*',
+            "*/Flutter/ephemeral/*",
+            "*/flutter/ephemeral/*",
         ],
     )

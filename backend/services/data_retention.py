@@ -16,6 +16,7 @@ Configuration
 ``DATA_RETENTION_INACTIVE_DAYS`` — integer, default 730 (2 years). Accounts
 with no activity for at least this many days are purged by the scheduled job.
 """
+
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -31,7 +32,7 @@ DEFAULT_RETENTION_INACTIVE_DAYS = 730
 # Accounts that must never be auto-purged regardless of inactivity. The shared
 # 'anonymous' user backs anonymous story generation; deleting it would break
 # the app for every guest.
-PROTECTED_USER_IDS = frozenset({'anonymous'})
+PROTECTED_USER_IDS = frozenset({"anonymous"})
 
 
 def get_retention_inactive_days() -> int:
@@ -42,7 +43,7 @@ def get_retention_inactive_days() -> int:
     """
     import os
 
-    raw = os.getenv('DATA_RETENTION_INACTIVE_DAYS')
+    raw = os.getenv("DATA_RETENTION_INACTIVE_DAYS")
     if raw is None or not str(raw).strip():
         return DEFAULT_RETENTION_INACTIVE_DAYS
     try:
@@ -51,14 +52,16 @@ def get_retention_inactive_days() -> int:
         logger.warning(
             "DATA_RETENTION_INACTIVE_DAYS=%r is not an integer; "
             "falling back to %d days",
-            raw, DEFAULT_RETENTION_INACTIVE_DAYS,
+            raw,
+            DEFAULT_RETENTION_INACTIVE_DAYS,
         )
         return DEFAULT_RETENTION_INACTIVE_DAYS
     if value <= 0:
         logger.warning(
             "DATA_RETENTION_INACTIVE_DAYS=%d is not positive; "
             "falling back to %d days",
-            value, DEFAULT_RETENTION_INACTIVE_DAYS,
+            value,
+            DEFAULT_RETENTION_INACTIVE_DAYS,
         )
         return DEFAULT_RETENTION_INACTIVE_DAYS
     return value
@@ -71,7 +74,7 @@ def _last_activity(user: User) -> datetime | None:
     when present, otherwise falls back to ``created_at``. Returns a naive UTC
     datetime (the DB stores naive UTC) or ``None`` if neither is available.
     """
-    ts = getattr(user, 'last_active_at', None) or getattr(user, 'created_at', None)
+    ts = getattr(user, "last_active_at", None) or getattr(user, "created_at", None)
     if ts is None:
         return None
     if ts.tzinfo is not None:
@@ -81,8 +84,8 @@ def _last_activity(user: User) -> datetime | None:
 
 def _is_already_anonymized(user: User) -> bool:
     """True when the account has already been anonymised by a prior erasure."""
-    email = (user.email or '')
-    return user.password_hash == 'DELETED' or email.endswith('@deleted.local')
+    email = user.email or ""
+    return user.password_hash == "DELETED" or email.endswith("@deleted.local")
 
 
 def purge_user_data(user: User, *, commit: bool = True) -> None:
@@ -99,8 +102,13 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     """
     # Imported lazily to avoid import-time cycles with the models package.
     from backend.models import (
-        InteractiveStory, StorySegment, StoryChoice,
-        InventoryItem, StoryState, UserAchievement, AchievementStats,
+        InteractiveStory,
+        StorySegment,
+        StoryChoice,
+        InventoryItem,
+        StoryState,
+        UserAchievement,
+        AchievementStats,
     )
     from backend.models.character import Character
     from backend.models.story import Story
@@ -136,9 +144,9 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
 
     # --- Anonymize user record ---
     anon_id = str(uuid.uuid4())[:8]
-    user.username = f'deleted_{anon_id}'
-    user.email = f'deleted_{anon_id}@deleted.local'
-    user.password_hash = 'DELETED'
+    user.username = f"deleted_{anon_id}"
+    user.email = f"deleted_{anon_id}@deleted.local"
+    user.password_hash = "DELETED"
     user.declared_age = None
     user.is_under_13 = False
     user.stripe_customer_id = None
@@ -149,7 +157,7 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     user.illustrations_generated_this_month = 0
     # Invalidate every outstanding access token for this account so the
     # erasure cannot be undone by a still-valid pre-deletion token (M-1).
-    user.token_version = (getattr(user, 'token_version', 0) or 0) + 1
+    user.token_version = (getattr(user, "token_version", 0) or 0) + 1
 
     if commit:
         db.session.commit()
@@ -174,7 +182,8 @@ def purge_inactive_accounts(inactive_days: int | None = None) -> dict:
 
     logger.info(
         "Data-retention purge starting: window=%d days, cutoff=%s (UTC)",
-        inactive_days, cutoff.isoformat(),
+        inactive_days,
+        cutoff.isoformat(),
     )
 
     purged = 0
@@ -213,15 +222,20 @@ def purge_inactive_accounts(inactive_days: int | None = None) -> dict:
             logger.info(
                 "Retention: purged inactive account %s "
                 "(last activity %s, %d+ days inactive)",
-                user.id, last_active.isoformat(), inactive_days,
+                user.id,
+                last_active.isoformat(),
+                inactive_days,
             )
             try:
                 from backend.utils.audit import audit_log
+
                 audit_log(
-                    'data_retention_purge',
+                    "data_retention_purge",
                     user_id=user.id,
-                    data={'inactive_days': inactive_days,
-                          'last_active': last_active.isoformat()},
+                    data={
+                        "inactive_days": inactive_days,
+                        "last_active": last_active.isoformat(),
+                    },
                 )
             except Exception:
                 pass
@@ -233,14 +247,14 @@ def purge_inactive_accounts(inactive_days: int | None = None) -> dict:
             )
 
     summary = {
-        'window_days': inactive_days,
-        'cutoff': cutoff.isoformat(),
-        'scanned': len(users),
-        'purged': purged,
-        'skipped_recent': skipped_recent,
-        'skipped_protected': skipped_protected,
-        'skipped_already_anonymized': skipped_already,
-        'errors': errors,
+        "window_days": inactive_days,
+        "cutoff": cutoff.isoformat(),
+        "scanned": len(users),
+        "purged": purged,
+        "skipped_recent": skipped_recent,
+        "skipped_protected": skipped_protected,
+        "skipped_already_anonymized": skipped_already,
+        "errors": errors,
     }
     logger.info("Data-retention purge complete: %s", summary)
     return summary

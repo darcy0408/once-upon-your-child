@@ -16,6 +16,7 @@ Two models, both auto-created at boot by `db.create_all()` (no ALTER TABLE):
                         subscription state. Used to drop out-of-order /
                         replayed events that would regress state.
 """
+
 import uuid
 from datetime import datetime, timezone
 
@@ -25,7 +26,7 @@ from ..database import db
 class StripeWebhookEvent(db.Model):
     """One row per Stripe `event.id` we have accepted and processed."""
 
-    __tablename__ = 'stripe_webhook_event'
+    __tablename__ = "stripe_webhook_event"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     # Stripe's `event.id` (e.g. "evt_..."). Unique — this is the dedup key.
@@ -40,11 +41,13 @@ class StripeWebhookEvent(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'event_id': self.event_id,
-            'event_type': self.event_type,
-            'event_created': self.event_created.isoformat() if self.event_created else None,
-            'received_at': self.received_at.isoformat() if self.received_at else None,
+            "id": self.id,
+            "event_id": self.event_id,
+            "event_type": self.event_type,
+            "event_created": (
+                self.event_created.isoformat() if self.event_created else None
+            ),
+            "received_at": self.received_at.isoformat() if self.received_at else None,
         }
 
 
@@ -58,12 +61,14 @@ class StripeSubscriptionCursor(db.Model):
     `payment_failed`).
     """
 
-    __tablename__ = 'stripe_subscription_cursor'
+    __tablename__ = "stripe_subscription_cursor"
 
     user_id = db.Column(db.String(36), primary_key=True)
     last_event_created = db.Column(db.DateTime, nullable=True)
     last_event_id = db.Column(db.String(255), nullable=True)
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc),
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )

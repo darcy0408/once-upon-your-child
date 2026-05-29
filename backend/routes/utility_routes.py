@@ -30,16 +30,17 @@ def _blocklist_jti(jti: str, exp: int, logger) -> None:
     """
     from datetime import datetime, timezone
 
-    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return
     try:
         import redis as _redis_lib
+
         r = _redis_lib.from_url(redis_url, socket_connect_timeout=1)
         remaining = max(1, exp - int(datetime.now(timezone.utc).timestamp()))
-        r.setex(f'jwt:blocklist:{jti}', remaining, '1')
+        r.setex(f"jwt:blocklist:{jti}", remaining, "1")
     except Exception as exc:
-        logger.warning('jwt refresh: failed to blocklist old JTI %s (%s)', jti, exc)
+        logger.warning("jwt refresh: failed to blocklist old JTI %s (%s)", jti, exc)
 
 
 # --- Per-account failed-login backoff (S-11) -------------------------------
@@ -49,15 +50,16 @@ def _blocklist_jti(jti: str, exp: int, logger) -> None:
 # the correct password is never locked out — only failed attempts past the
 # threshold get a 429. Degrades gracefully: a Redis outage disables the
 # backoff rather than breaking login.
-_LOGIN_FAIL_MAX = 10        # failed attempts within the window before throttling
-_LOGIN_FAIL_WINDOW = 900    # seconds (15 min)
+_LOGIN_FAIL_MAX = 10  # failed attempts within the window before throttling
+_LOGIN_FAIL_WINDOW = 900  # seconds (15 min)
 
 
 def _login_fail_redis():
-    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
     import redis as _redis_lib
+
     return _redis_lib.from_url(redis_url, socket_connect_timeout=1)
 
 
@@ -69,10 +71,10 @@ def _login_is_throttled(username: str, logger) -> bool:
         r = _login_fail_redis()
         if r is None:
             return False
-        count = r.get(f'login:fail:{username}')
+        count = r.get(f"login:fail:{username}")
         return count is not None and int(count) >= _LOGIN_FAIL_MAX
     except Exception as exc:
-        logger.warning('login backoff: Redis unavailable (%s) — skipping', exc)
+        logger.warning("login backoff: Redis unavailable (%s) — skipping", exc)
         return False
 
 
@@ -84,11 +86,11 @@ def _login_record_failure(username: str, logger) -> None:
         r = _login_fail_redis()
         if r is None:
             return
-        key = f'login:fail:{username}'
+        key = f"login:fail:{username}"
         if r.incr(key) == 1:
             r.expire(key, _LOGIN_FAIL_WINDOW)
     except Exception as exc:
-        logger.warning('login backoff: failed to record failure (%s)', exc)
+        logger.warning("login backoff: failed to record failure (%s)", exc)
 
 
 def _login_clear_failures(username: str, logger) -> None:
@@ -98,7 +100,7 @@ def _login_clear_failures(username: str, logger) -> None:
     try:
         r = _login_fail_redis()
         if r is not None:
-            r.delete(f'login:fail:{username}')
+            r.delete(f"login:fail:{username}")
     except Exception:
         pass
 
@@ -114,47 +116,47 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         return decorator
 
-    @utility_bp.route('/quality/score-story', methods=['POST'])
+    @utility_bp.route("/quality/score-story", methods=["POST"])
     @require_auth
     def score_story_quality():
         """Score a story for quality metrics"""
         try:
             data = request.get_json(silent=True) or {}
-            story_text = data.get('story_text', '').strip()
-            age = int(data.get('age', 7))
+            story_text = data.get("story_text", "").strip()
+            age = int(data.get("age", 7))
 
             if not story_text:
-                return jsonify({'error': 'Story text is required'}), 400
+                return jsonify({"error": "Story text is required"}), 400
 
             quality_score = StoryQualityService.calculate_story_quality(story_text, age)
 
             return jsonify(quality_score), 200
 
         except ValueError:
-            return jsonify({'error': 'Invalid age parameter'}), 400
+            return jsonify({"error": "Invalid age parameter"}), 400
         except Exception as e:
             log_error(
-                error_type='quality_scoring_failed',
+                error_type="quality_scoring_failed",
                 message=str(e),
-                details={'error_class': e.__class__.__name__}
+                details={"error_class": e.__class__.__name__},
             )
-            return jsonify({'error': 'Quality scoring failed'}), 500
+            return jsonify({"error": "Quality scoring failed"}), 500
 
-    @utility_bp.route('/debug-gemini', methods=['GET'])
+    @utility_bp.route("/debug-gemini", methods=["GET"])
     @require_auth
     @require_admin
     def debug_gemini():
         """Debug endpoint to test Gemini text generation"""
         # S-09: debug endpoints run live, metered Gemini calls — never in prod.
         if is_production():
-            return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
+            return jsonify({"error": "Debug endpoints are disabled in production"}), 403
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-        
+
         status = {
             "api_key_configured": bool(api_key),
             "model_name": model_name,
-            "steps": []
+            "steps": [],
         }
 
         try:
@@ -175,7 +177,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             start_time = time.time()
             response = client.models.generate_content(
                 model=model_name,
-                contents="Say 'Hello from Gemini!' if you can hear me."
+                contents="Say 'Hello from Gemini!' if you can hear me.",
             )
             duration = time.time() - start_time
 
@@ -195,35 +197,43 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             # Try to list available models to help debug
             try:
                 from google import genai as genai_sdk
+
                 client = genai_sdk.Client(api_key=api_key)
                 available_models = []
                 for m in client.models.list():
                     available_models.append(m.name)
                 status["available_models"] = available_models[:20]  # Limit to first 20
-                status["steps"].append(f"ℹ️ Listed {len(available_models)} available models")
+                status["steps"].append(
+                    f"ℹ️ Listed {len(available_models)} available models"
+                )
             except Exception:
                 logger.exception("Debug Gemini: failed to list models")
                 status["steps"].append("❌ Failed to list models — see server logs")
 
         return jsonify(status)
 
-    @utility_bp.route('/debug-openrouter', methods=['GET'])
+    @utility_bp.route("/debug-openrouter", methods=["GET"])
     @require_auth
     @require_admin
     def debug_openrouter():
         """Debug endpoint to test OpenRouter configuration and generation."""
         # S-09: debug endpoints run live, metered image-gen calls — never in prod.
         if is_production():
-            return jsonify({'error': 'Debug endpoints are disabled in production'}), 403
+            return jsonify({"error": "Debug endpoints are disabled in production"}), 403
         try:
             api_key = os.getenv("OPENROUTER_API_KEY")
             if not api_key:
                 # SECURITY: never echo the environment variable names — that
                 # leaks the full server config surface to the caller.
-                return jsonify({
-                    "status": "error",
-                    "message": "OPENROUTER_API_KEY is not configured",
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "OPENROUTER_API_KEY is not configured",
+                        }
+                    ),
+                    500,
+                )
 
             # Test generation
             generator = OpenRouterImageGenerator()
@@ -235,33 +245,45 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
                 preview = "None"
                 if images and len(images) > 0:
-                     first_img = images[0]
-                     if 'image_url' in first_img:
-                         # Handle if image_url is very long (base64)
-                         url_str = str(first_img['image_url'])
-                         preview = url_str[:50] + "..." if len(url_str) > 50 else url_str
+                    first_img = images[0]
+                    if "image_url" in first_img:
+                        # Handle if image_url is very long (base64)
+                        url_str = str(first_img["image_url"])
+                        preview = url_str[:50] + "..." if len(url_str) > 50 else url_str
 
-                return jsonify({
-                    "status": "success",
-                    "message": "Image generated successfully",
-                    "model": "google/gemini-2.5-flash-image",
-                    "image_count": len(images),
-                    "image_data_preview": preview,
-                })
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "Image generated successfully",
+                        "model": "google/gemini-2.5-flash-image",
+                        "image_count": len(images),
+                        "image_data_preview": preview,
+                    }
+                )
             except Exception:
                 # Log detail server-side; return a generic message only.
                 logger.exception("Debug OpenRouter: image generation failed")
-                return jsonify({
-                    "status": "error",
-                    "message": "Image generation failed — see server logs for detail",
-                }), 500
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Image generation failed — see server logs for detail",
+                        }
+                    ),
+                    500,
+                )
 
         except Exception:
             logger.exception("Debug OpenRouter endpoint failed")
-            return jsonify({
-                "status": "error",
-                "message": "Debug endpoint failed — see server logs for detail",
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Debug endpoint failed — see server logs for detail",
+                    }
+                ),
+                500,
+            )
 
     @utility_bp.route("/setup-test-account", methods=["POST"])
     def setup_test_account():
@@ -293,11 +315,13 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             db.session.add(user)
             status = "created"
         db.session.commit()
-        return jsonify({
-            "status": status,
-            "username": username,
-            "password": password,
-        }), 201 if status == "created" else 200
+        return jsonify(
+            {
+                "status": status,
+                "username": username,
+                "password": password,
+            }
+        ), (201 if status == "created" else 200)
 
     @utility_bp.route("/auth/anonymous", methods=["POST"])
     @rate_limit("20 per minute")
@@ -314,15 +338,16 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         JWTs for arbitrary user IDs.
         """
         import uuid
+
         data = request.get_json(silent=True) or {}
-        client_id = data.get('client_id')
+        client_id = data.get("client_id")
         user = None
 
         # Only honour client-supplied IDs that belong to per-session anonymous
         # accounts. The bootstrap singleton 'anonymous' user must never be
         # reclaimed — issuing a JWT for it would collapse all anonymous traffic
         # onto one identity / rate-limit bucket (M-16).
-        if client_id == 'anonymous':
+        if client_id == "anonymous":
             logger.warning(
                 "auth/anonymous: client_id 'anonymous' (singleton) rejected; "
                 "creating new per-session anonymous account."
@@ -334,8 +359,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             candidate = User.query.filter_by(id=client_id).first()
             if (
                 candidate
-                and candidate.id != 'anonymous'
-                and candidate.email.endswith('@anonymous.storyweaver.app')
+                and candidate.id != "anonymous"
+                and candidate.email.endswith("@anonymous.storyweaver.app")
             ):
                 user = candidate
                 logger.info("Anonymous session reclaimed: %s", client_id)
@@ -372,7 +397,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         token = create_access_token(
             identity=user.id,
-            additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+            additional_claims={"tv": getattr(user, "token_version", 0) or 0},
         )
         refresh_token = create_refresh_token(identity=user.id)
         # CMP-5 / PP-13: stamp activity so the retention purge job does not
@@ -382,21 +407,26 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
-        audit_log('anonymous_session', user_id=user.id)
-        return jsonify({
-            'token': token,
-            'refresh_token': refresh_token,
-            'user_id': user.id,
-            'is_anonymous': True,
-        }), 200
+        audit_log("anonymous_session", user_id=user.id)
+        return (
+            jsonify(
+                {
+                    "token": token,
+                    "refresh_token": refresh_token,
+                    "user_id": user.id,
+                    "is_anonymous": True,
+                }
+            ),
+            200,
+        )
 
     @utility_bp.route("/auth/login", methods=["POST"])
     @rate_limit("10 per minute")
     def login():
         """Simple login endpoint for testing."""
         data = request.get_json(silent=True) or {}
-        username = data.get('username')
-        password = data.get('password')
+        username = data.get("username")
+        password = data.get("password")
 
         # S-11: per-account failed-login backoff. Evaluated up front but the
         # password is still checked below — a correct password always succeeds,
@@ -408,7 +438,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             _login_clear_failures(username, logger)
             token = create_access_token(
                 identity=user.id,
-                additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+                additional_claims={"tv": getattr(user, "token_version", 0) or 0},
             )
             refresh_token = create_refresh_token(identity=user.id)
             # CMP-5 / PP-13: stamp activity so the data-retention purge job
@@ -418,15 +448,20 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-            audit_log('user_login', user_id=user.id)
-            return jsonify({'token': token, 'refresh_token': refresh_token}), 200
+            audit_log("user_login", user_id=user.id)
+            return jsonify({"token": token, "refresh_token": refresh_token}), 200
 
         _login_record_failure(username, logger)
         if throttled:
-            return jsonify({
-                'message': 'Too many failed login attempts. Please try again later.'
-            }), 429
-        return jsonify({'message': 'Invalid credentials'}), 401
+            return (
+                jsonify(
+                    {
+                        "message": "Too many failed login attempts. Please try again later."
+                    }
+                ),
+                429,
+            )
+        return jsonify({"message": "Invalid credentials"}), 401
 
     @utility_bp.route("/auth/refresh", methods=["POST"])
     @rate_limit("30 per minute")
@@ -435,23 +470,23 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         """Issue a new access + refresh token pair and revoke the old refresh token."""
         user_id = get_jwt_identity()
         if not user_id:
-            return jsonify({'error': 'Invalid refresh token'}), 401
+            return jsonify({"error": "Invalid refresh token"}), 401
 
         user = User.query.filter_by(id=user_id).first()
         if not user:
-            return jsonify({'error': 'User not found'}), 401
+            return jsonify({"error": "User not found"}), 401
 
         # Blocklist the consumed refresh token so it cannot be reused even within
         # its remaining TTL (refresh token rotation / family invalidation).
         old_claims = get_jwt()
-        old_jti = old_claims.get('jti')
-        old_exp = old_claims.get('exp')
+        old_jti = old_claims.get("jti")
+        old_exp = old_claims.get("exp")
         if old_jti and old_exp:
             _blocklist_jti(old_jti, old_exp, logger)
 
         token = create_access_token(
             identity=user.id,
-            additional_claims={'tv': getattr(user, 'token_version', 0) or 0},
+            additional_claims={"tv": getattr(user, "token_version", 0) or 0},
         )
         new_refresh = create_refresh_token(identity=user.id)
         # CMP-5 / PP-13: a token refresh means the app is in active use —
@@ -461,22 +496,27 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
-        audit_log('token_refreshed', user_id=user.id)
-        return jsonify({
-            'token': token,
-            'refresh_token': new_refresh,
-            'user_id': user.id,
-        }), 200
+        audit_log("token_refreshed", user_id=user.id)
+        return (
+            jsonify(
+                {
+                    "token": token,
+                    "refresh_token": new_refresh,
+                    "user_id": user.id,
+                }
+            ),
+            200,
+        )
 
     @utility_bp.route("/users/<string:user_id>/feature-unlocks", methods=["GET"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     def get_feature_unlocks(user_id: str):
         """Get feature unlock status for a user."""
         try:
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                return jsonify({'error': 'User not found'}), 404
+                return jsonify({"error": "User not found"}), 404
 
             stories_created = user.stories_created_count
 
@@ -490,57 +530,56 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                 from routes.subscription_routes import _user_is_premium
 
             unlock_status = {
-                'stories_created_count': stories_created,
-                'character_creation_unlocked': stories_created >= 1,
-                'interactive_stories_unlocked': stories_created >= 2,
-                'coloring_pages_unlocked': stories_created >= 3,
-                'advanced_settings_unlocked': stories_created >= 5,
-                'custom_avatars_generated': user.custom_avatars_generated or 0,
-                'is_premium': _user_is_premium(user),
+                "stories_created_count": stories_created,
+                "character_creation_unlocked": stories_created >= 1,
+                "interactive_stories_unlocked": stories_created >= 2,
+                "coloring_pages_unlocked": stories_created >= 3,
+                "advanced_settings_unlocked": stories_created >= 5,
+                "custom_avatars_generated": user.custom_avatars_generated or 0,
+                "is_premium": _user_is_premium(user),
             }
 
             return jsonify(unlock_status), 200
 
         except Exception as e:
             log_error(
-                error_type='get_feature_unlocks_failed',
+                error_type="get_feature_unlocks_failed",
                 message=str(e),
-                details={
-                    'user_id': user_id,
-                    'error_class': e.__class__.__name__
-                }
+                details={"user_id": user_id, "error_class": e.__class__.__name__},
             )
-            return jsonify({'error': 'Failed to get feature unlocks'}), 500
+            return jsonify({"error": "Failed to get feature unlocks"}), 500
 
     @utility_bp.route("/users/<string:user_id>/story-created", methods=["POST"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     def record_story_created(user_id: str):
         """Increment the stories created count for a user."""
         try:
             user = User.query.filter_by(id=user_id).first()
             if not user:
-                return jsonify({'error': 'User not found'}), 404
+                return jsonify({"error": "User not found"}), 404
 
             user.stories_created_count += 1
             db.session.commit()
 
-            return jsonify({
-                'stories_created_count': user.stories_created_count,
-                'message': 'Story creation recorded successfully'
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "stories_created_count": user.stories_created_count,
+                        "message": "Story creation recorded successfully",
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             db.session.rollback()
             log_error(
-                error_type='record_story_created_failed',
+                error_type="record_story_created_failed",
                 message=str(e),
-                details={
-                    'user_id': user_id,
-                    'error_class': e.__class__.__name__
-                }
+                details={"user_id": user_id, "error_class": e.__class__.__name__},
             )
-            return jsonify({'error': 'Failed to record story creation'}), 500
+            return jsonify({"error": "Failed to record story creation"}), 500
 
     @utility_bp.route("/usage/summary", methods=["GET"])
     @require_auth
@@ -561,8 +600,12 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             from datetime import datetime, timedelta
 
             # Get query parameters
-            days = int(request.args.get('days', 30))
-            include_mock = request.args.get('include_mock', 'true').lower() in ['true', '1', 'yes']
+            days = int(request.args.get("days", 30))
+            include_mock = request.args.get("include_mock", "true").lower() in [
+                "true",
+                "1",
+                "yes",
+            ]
 
             tracker = get_usage_tracker()
 
@@ -571,16 +614,14 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             start_date = end_date - timedelta(days=days)
 
             summary = tracker.get_usage_summary(
-                start_date=start_date,
-                end_date=end_date,
-                include_mock=include_mock
+                start_date=start_date, end_date=end_date, include_mock=include_mock
             )
 
             return jsonify(summary), 200
 
         except Exception as e:
             logger.exception(f"Failed to get usage summary: {e}")
-            return jsonify({'error': 'Failed to get usage summary'}), 500
+            return jsonify({"error": "Failed to get usage summary"}), 500
 
     @utility_bp.route("/usage/daily", methods=["GET"])
     @require_auth
@@ -598,7 +639,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         try:
             from backend.services.usage_tracking_service import get_usage_tracker
 
-            days = int(request.args.get('days', 7))
+            days = int(request.args.get("days", 7))
 
             tracker = get_usage_tracker()
             daily = tracker.get_daily_breakdown(days=days)
@@ -607,7 +648,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
 
         except Exception as e:
             logger.exception(f"Failed to get daily usage: {e}")
-            return jsonify({'error': 'Failed to get daily usage'}), 500
+            return jsonify({"error": "Failed to get daily usage"}), 500
 
     @utility_bp.route("/usage/mock-mode", methods=["GET"])
     @require_auth
@@ -622,17 +663,25 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         try:
             from flask import current_app
 
-            mock_mode = current_app.config.get('MOCK_TESTING_MODE', False)
+            mock_mode = current_app.config.get("MOCK_TESTING_MODE", False)
 
-            return jsonify({
-                'mock_testing_mode': mock_mode,
-                'environment': os.environ.get('FLASK_ENV', 'unknown'),
-                'message': 'Mock mode is ENABLED - using free mock endpoints' if mock_mode
-                          else 'Mock mode is DISABLED - using real API (costs apply)'
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "mock_testing_mode": mock_mode,
+                        "environment": os.environ.get("FLASK_ENV", "unknown"),
+                        "message": (
+                            "Mock mode is ENABLED - using free mock endpoints"
+                            if mock_mode
+                            else "Mock mode is DISABLED - using real API (costs apply)"
+                        ),
+                    }
+                ),
+                200,
+            )
 
         except Exception as e:
             logger.exception(f"Failed to get mock mode status: {e}")
-            return jsonify({'error': 'Failed to get mock mode status'}), 500
+            return jsonify({"error": "Failed to get mock mode status"}), 500
 
     return utility_bp

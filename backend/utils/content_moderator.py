@@ -61,7 +61,9 @@ def is_sprout_band(age) -> bool:
         return True
 
 
-def build_safe_fallback_segment(segment_number: int = 1, is_opening: bool = True) -> dict:
+def build_safe_fallback_segment(
+    segment_number: int = 1, is_opening: bool = True
+) -> dict:
     """Return a fresh copy of SAFE_FALLBACK_SEGMENT shaped for the caller.
 
     A copy is returned each call so callers can mutate it freely (e.g. when
@@ -71,6 +73,7 @@ def build_safe_fallback_segment(segment_number: int = 1, is_opening: bool = True
     segment["segment_number"] = segment_number
     return segment
 
+
 # Module-level client — initialised lazily so tests can patch os.getenv.
 _client = None
 
@@ -79,6 +82,7 @@ def _get_client():
     global _client
     if _client is None:
         from google import genai
+
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY not set")
@@ -136,9 +140,7 @@ def _split_into_chunks(
         # Prefer a paragraph break; fall back to a sentence end, then a space.
         split_at = window.rfind("\n\n")
         if split_at < chunk_size // 2:
-            split_at = max(
-                window.rfind(". "), window.rfind("! "), window.rfind("? ")
-            )
+            split_at = max(window.rfind(". "), window.rfind("! "), window.rfind("? "))
         if split_at < chunk_size // 2:
             split_at = window.rfind(" ")
         if split_at <= 0:

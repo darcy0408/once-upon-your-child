@@ -19,6 +19,7 @@ Cost-tracker side effects:
 The three lazy service-factory functions are patched at the module level so
 each test gets a clean slate regardless of the real environment.
 """
+
 from __future__ import annotations
 
 import base64
@@ -27,7 +28,6 @@ from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -69,15 +69,9 @@ def tts(mocker) -> TTSMocks:
     edge = MagicMock(name="EdgeService")
     edge.generate_speech_with_timestamps.return_value = (b"edge-audio", [])
 
-    mocker.patch(
-        "backend.routes.tts_routes._get_tts_service", return_value=elevenlabs
-    )
-    mocker.patch(
-        "backend.routes.tts_routes._get_gemini_service", return_value=gemini
-    )
-    mocker.patch(
-        "backend.routes.tts_routes._get_edge_service", return_value=edge
-    )
+    mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=elevenlabs)
+    mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=gemini)
+    mocker.patch("backend.routes.tts_routes._get_edge_service", return_value=edge)
 
     # --- Quota helpers ------------------------------------------------------
     # All quotas allow by default; tests force the cap by overriding.
@@ -129,7 +123,9 @@ def _post_synthesize(
 class TestElevenLabsTier:
     """Tier 1: ElevenLabs serves when available and within budget."""
 
-    def test_serves_when_available(self, client, free_user_headers, tts: TTSMocks) -> None:
+    def test_serves_when_available(
+        self, client, free_user_headers, tts: TTSMocks
+    ) -> None:
         status, body = _post_synthesize(client, free_user_headers)
 
         assert status == 200
@@ -154,9 +150,7 @@ class TestGeminiFallback:
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
         # Simulate ELEVENLABS_API_KEY unset — factory returns None.
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
 
         status, body = _post_synthesize(client, free_user_headers)
 
@@ -208,12 +202,8 @@ class TestEdgeFallback:
     def test_serves_when_elevenlabs_and_gemini_unavailable(
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
-        mocker.patch(
-            "backend.routes.tts_routes._get_gemini_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
+        mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=None)
 
         status, body = _post_synthesize(client, free_user_headers)
 
@@ -225,9 +215,7 @@ class TestEdgeFallback:
     def test_serves_when_elevenlabs_unconfigured_and_gemini_errors(
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
         tts.gemini.generate_speech_with_timestamps.side_effect = Exception(
             "Gemini quota exceeded"
         )
@@ -242,15 +230,9 @@ class TestEdgeFallback:
     ) -> None:
         # Patch all three factories to return None — the only path is 503
         # so the client falls back to on-device flutter_tts.
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
-        mocker.patch(
-            "backend.routes.tts_routes._get_gemini_service", return_value=None
-        )
-        mocker.patch(
-            "backend.routes.tts_routes._get_edge_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
+        mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=None)
+        mocker.patch("backend.routes.tts_routes._get_edge_service", return_value=None)
         mocker.patch(
             "backend.utils.ai_quota.check_tts_quota",
             return_value=(True, 0, 1000),
@@ -280,9 +262,7 @@ class TestCostTrackerSideEffects:
     def test_gemini_path_logs_cost_with_gemini_provider(
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
         text = "Once upon a time, a brave hero set out on a quest."
 
         status, body = _post_synthesize(client, free_user_headers, text=text)
@@ -306,9 +286,7 @@ class TestCostTrackerSideEffects:
     ) -> None:
         # Gemini exists *because* the ElevenLabs budget is gone — incrementing
         # that counter on Gemini calls would corrupt the Year-1 cap math.
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
 
         status, body = _post_synthesize(client, free_user_headers)
 
@@ -331,12 +309,8 @@ class TestCostTrackerSideEffects:
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
         # Edge is free — no log_api_cost row should be written.
-        mocker.patch(
-            "backend.routes.tts_routes._get_tts_service", return_value=None
-        )
-        mocker.patch(
-            "backend.routes.tts_routes._get_gemini_service", return_value=None
-        )
+        mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
+        mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=None)
 
         status, body = _post_synthesize(client, free_user_headers)
 

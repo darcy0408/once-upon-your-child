@@ -10,6 +10,7 @@ overshoots. These tests cover the two-stage safety belt in
 
 We mock the regen function so no real LLM calls are made.
 """
+
 from __future__ import annotations
 
 import json
@@ -118,7 +119,9 @@ class TestSproutRegen:
         # Build a 180-word regen body composed of fixed-size sentences.
         # 30 sentences × 6 words each = 180 words, each ending with ". ".
         sentence = "the quiet hero walked very far"  # 6 words
-        regen_pages = [". ".join([sentence] * 30) + ". Everyone cheered. Mia saved the day!"]
+        regen_pages = [
+            ". ".join([sentence] * 30) + ". Everyone cheered. Mia saved the day!"
+        ]
         # That cheer beat tail itself contains additional words — keep total > 150.
         regen_fn = MagicMock(return_value=_make_story_json(regen_pages))
 
@@ -240,7 +243,9 @@ class TestTruncateHelper:
         assert _count_words(out) <= 150
 
     def test_truncate_preserves_cheer_when_present(self):
-        body = ". ".join(["a b c d e f"] * 30) + ". Everyone cheered. Mia saved the day!"
+        body = (
+            ". ".join(["a b c d e f"] * 30) + ". Everyone cheered. Mia saved the day!"
+        )
         out = _truncate_to_word_cap(body, 150, "Mia")
         assert _has_cheer_beat(out)
         assert _count_words(out) <= 150

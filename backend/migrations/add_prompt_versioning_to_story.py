@@ -32,6 +32,7 @@ Local SQLite dev database:
 
   python backend/migrations/add_prompt_versioning_to_story.py
 """
+
 import os
 import sys
 
@@ -75,12 +76,16 @@ def run_migration() -> bool:
         if "prompt_template_id" in existing:
             print("[OK] column 'prompt_template_id' already exists — skipping.")
         else:
-            ddl_statements.append("ALTER TABLE story ADD COLUMN prompt_template_id VARCHAR(40)")
+            ddl_statements.append(
+                "ALTER TABLE story ADD COLUMN prompt_template_id VARCHAR(40)"
+            )
 
         if "prompt_revision_hash" in existing:
             print("[OK] column 'prompt_revision_hash' already exists — skipping.")
         else:
-            ddl_statements.append("ALTER TABLE story ADD COLUMN prompt_revision_hash VARCHAR(16)")
+            ddl_statements.append(
+                "ALTER TABLE story ADD COLUMN prompt_revision_hash VARCHAR(16)"
+            )
 
         if not ddl_statements:
             print("[OK] nothing to do — both columns already present.")
@@ -91,7 +96,9 @@ def run_migration() -> bool:
                 print(f"  executing: {stmt}")
                 conn.execute(text(stmt))
 
-        print("[SUCCESS] migration complete — F-01 prompt-versioning columns are present on 'story'.")
+        print(
+            "[SUCCESS] migration complete — F-01 prompt-versioning columns are present on 'story'."
+        )
         return True
     except Exception as exc:  # noqa: BLE001 — surface any DDL failure clearly
         print(f"[ERROR] migration failed: {exc}")

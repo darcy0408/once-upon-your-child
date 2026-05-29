@@ -57,11 +57,12 @@ def _estimate_cost(model: str, in_tok: int | None, out_tok: int | None) -> float
     rates = GEMINI_PRICING.get(model)
     if not rates or in_tok is None or out_tok is None:
         return 0.0
-    return (in_tok / 1_000_000 * rates["input"]
-            + out_tok / 1_000_000 * rates["output"])
+    return in_tok / 1_000_000 * rates["input"] + out_tok / 1_000_000 * rates["output"]
 
 
-def build_prompt(mode: str, age_band: str, test_input, story_length: str = "short") -> str:
+def build_prompt(
+    mode: str, age_band: str, test_input, story_length: str = "short"
+) -> str:
     """Assemble the production prompt for one cell.
 
     `test_input` is a backend.eval.test_set.TestInput.
@@ -84,37 +85,51 @@ def build_prompt(mode: str, age_band: str, test_input, story_length: str = "shor
 
     if mode == "superhero":
         from backend.data.superhero_matrix import pick_pairing
+
         band = "explorer" if 6 <= age <= 8 else "sprout"
         villain_id, problem_id = pick_pairing("super_smile", band=band)
         return PromptService.build_story_prompt(
-            character=name, theme="superhero", age=age,
+            character=name,
+            theme="superhero",
+            age=age,
             hero_power="super_smile",
             superhero_villain_id=villain_id,
             superhero_problem_id=problem_id,
         )
     if mode == "bedtime":
         return _build_bedtime_prompt(
-            character_name=name, age=age, theme=theme,
-            mood="calming", story_length=story_length,
+            character_name=name,
+            age=age,
+            theme=theme,
+            mood="calming",
+            story_length=story_length,
         )
     if mode in ("ltr_limerick", "ltr_seussian"):
         # story_service picks the limerick vs Seussian branch internally;
         # both eval modes route through the same builder. See F-10.
         return _build_learning_to_read_prompt(
-            character_name=name, theme=theme, age=age,
-            character_details=char_details, story_length=story_length,
+            character_name=name,
+            theme=theme,
+            age=age,
+            character_details=char_details,
+            story_length=story_length,
             custom_elements=custom,
         )
     if mode == "rhyme_time":
         return _build_rhyme_time_prompt(
-            character_name=name, theme=theme, age=age,
-            character_details=char_details, story_length=story_length,
+            character_name=name,
+            theme=theme,
+            age=age,
+            character_details=char_details,
+            story_length=story_length,
             custom_elements=custom,
         )
     # standard
     engine = AdvancedStoryEngine()
     return engine.generate_enhanced_prompt(
-        character=name, theme=theme, age=age,
+        character=name,
+        theme=theme,
+        age=age,
         custom_elements=custom,
         therapeutic_prompt=test_input.therapeutic_prompt or "",
         feelings_prompt=test_input.feelings_prompt,
@@ -123,15 +138,23 @@ def build_prompt(mode: str, age_band: str, test_input, story_length: str = "shor
     )
 
 
-def generate(mode: str, age_band: str, test_input, user_tier: str = "free",
-             story_length: str = "short") -> GenerationOutput:
+def generate(
+    mode: str,
+    age_band: str,
+    test_input,
+    user_tier: str = "free",
+    story_length: str = "short",
+) -> GenerationOutput:
     """Build the prompt and run one Gemini generation. Returns text + metrics."""
     load_env()
     # Reuse production model resolution / safety settings / extraction.
     from google import genai
     from google.genai import types
     from backend.services.story_generation_service import (
-        _resolve_text_model, _CHILD_SAFETY_SETTINGS, _extract_text, _SAFETY_FALLBACK,
+        _resolve_text_model,
+        _CHILD_SAFETY_SETTINGS,
+        _extract_text,
+        _SAFETY_FALLBACK,
     )
     import os
 
@@ -139,8 +162,16 @@ def generate(mode: str, age_band: str, test_input, user_tier: str = "free",
     model = _resolve_text_model(user_tier)
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return GenerationOutput("", model, prompt, None, None, 0.0,
-                                refused=True, error="GEMINI_API_KEY not set")
+        return GenerationOutput(
+            "",
+            model,
+            prompt,
+            None,
+            None,
+            0.0,
+            refused=True,
+            error="GEMINI_API_KEY not set",
+        )
 
     client = genai.Client(api_key=api_key)
     try:
@@ -150,8 +181,16 @@ def generate(mode: str, age_band: str, test_input, user_tier: str = "free",
             config=types.GenerateContentConfig(safety_settings=_CHILD_SAFETY_SETTINGS),
         )
     except Exception as exc:  # noqa: BLE001
-        return GenerationOutput("", model, prompt, None, None, 0.0,
-                                refused=True, error=f"{type(exc).__name__}: {exc}")
+        return GenerationOutput(
+            "",
+            model,
+            prompt,
+            None,
+            None,
+            0.0,
+            refused=True,
+            error=f"{type(exc).__name__}: {exc}",
+        )
 
     text = _extract_text(resp)
     refused = text is None

@@ -31,7 +31,11 @@ CONSENT_CODE_MAX_ATTEMPTS = 5
 # 'debug_bypass' are recorded by the client during the COPPA round trip / dev
 # bypass; 'email_verified' is only ever set server-side by the verify endpoint.
 ALLOWED_CONSENT_METHODS = (
-    'parent', 'self_attested', 'email_verified', 'email_pending', 'debug_bypass',
+    "parent",
+    "self_attested",
+    "email_verified",
+    "email_pending",
+    "debug_bypass",
 )
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -49,13 +53,14 @@ def _is_valid_email(email):
 
 def _hash_consent_code(code):
     """SHA-256 hex digest of a verification code (codes never stored plaintext)."""
-    return hashlib.sha256(code.encode('utf-8')).hexdigest()
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()
+
 
 # Subscription limits
 SUBSCRIPTION_LIMITS = {
-    'free': {'stories': 10, 'characters': 2},
-    'premium': {'stories': 100, 'characters': 5},
-    'family': {'stories': 500, 'characters': 10},
+    "free": {"stories": 10, "characters": 2},
+    "premium": {"stories": 100, "characters": 5},
+    "family": {"stories": 500, "characters": 10},
 }
 
 
@@ -86,7 +91,9 @@ def _get_period_bounds_for_user(user):
         day=1, hour=0, minute=0, second=0, microsecond=0
     )
     if current_month_start.month == 1:
-        period_start = current_month_start.replace(year=current_month_start.year - 1, month=12)
+        period_start = current_month_start.replace(
+            year=current_month_start.year - 1, month=12
+        )
     else:
         period_start = current_month_start.replace(month=current_month_start.month - 1)
     return period_start, period_end
@@ -95,16 +102,16 @@ def _get_period_bounds_for_user(user):
 def _format_timestamp(value):
     if not value:
         return None
-    return value.replace(microsecond=0).isoformat() + 'Z'
+    return value.replace(microsecond=0).isoformat() + "Z"
 
 
 def create_user_routes_blueprint(limiter=None):
     """Factory function to create user routes blueprint with rate limiting."""
-    user_routes = Blueprint('user_routes', __name__)
+    user_routes = Blueprint("user_routes", __name__)
 
-    @user_routes.route('/api/user/<user_id>/usage-stats', methods=['GET'])
+    @user_routes.route("/api/user/<user_id>/usage-stats", methods=["GET"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("60 per minute")  # Read-heavy endpoint
     def get_usage_stats(user_id):
         try:
@@ -117,32 +124,34 @@ def create_user_routes_blueprint(limiter=None):
             stories_this_month = Story.query.filter(
                 Story.user_id == user_id,
                 Story.created_at >= period_start,
-                Story.created_at < period_end
+                Story.created_at < period_end,
             ).count()
 
             # Count characters
-            characters_count = Character.query.filter(Character.user_id == user_id).count()
+            characters_count = Character.query.filter(
+                Character.user_id == user_id
+            ).count()
 
             # Get limits
-            tier = user.subscription_tier or 'free'
-            limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['free'])
+            tier = user.subscription_tier or "free"
+            limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS["free"])
 
             response = {
-                'stories_this_month': stories_this_month,
-                'stories_limit': limits['stories'],
-                'characters_count': characters_count,
-                'characters_limit': limits['characters'],
-                'period_start': _format_timestamp(period_start),
-                'period_end': _format_timestamp(period_end),
+                "stories_this_month": stories_this_month,
+                "stories_limit": limits["stories"],
+                "characters_count": characters_count,
+                "characters_limit": limits["characters"],
+                "period_start": _format_timestamp(period_start),
+                "period_end": _format_timestamp(period_end),
             }
             return jsonify(response)
         except Exception as e:
-            current_app.logger.exception('Failed to get usage stats for %s', user_id)
-            return jsonify({'error': 'Internal server error'}), 500
+            current_app.logger.exception("Failed to get usage stats for %s", user_id)
+            return jsonify({"error": "Internal server error"}), 500
 
-    @user_routes.route('/api/user/<user_id>/cancel-subscription', methods=['POST'])
+    @user_routes.route("/api/user/<user_id>/cancel-subscription", methods=["POST"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("5 per hour")  # Strict limit on subscription changes
     def cancel_subscription(user_id):
         try:
@@ -153,49 +162,53 @@ def create_user_routes_blueprint(limiter=None):
             db.session.commit()
 
             response = {
-                'success': True,
-                'message': 'Subscription will be canceled at period end',
-                'cancel_at_period_end': True,
+                "success": True,
+                "message": "Subscription will be canceled at period end",
+                "cancel_at_period_end": True,
             }
             return jsonify(response)
         except Exception as e:
-            current_app.logger.exception('Failed to cancel subscription for %s', user_id)
-            return jsonify({'error': 'Internal server error'}), 500
+            current_app.logger.exception(
+                "Failed to cancel subscription for %s", user_id
+            )
+            return jsonify({"error": "Internal server error"}), 500
 
     # ================================================================
     # COPPA COMPLIANCE ENDPOINTS
     # ================================================================
 
-    @user_routes.route('/api/user/<user_id>/age', methods=['PATCH'])
+    @user_routes.route("/api/user/<user_id>/age", methods=["PATCH"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("10 per hour")
     def set_declared_age(user_id):
         """Set the declared age for a user. Updates COPPA flag automatically."""
         try:
             data = request.get_json(silent=True) or {}
-            age = data.get('age')
+            age = data.get("age")
 
             if age is None or not isinstance(age, int) or age < 1 or age > 120:
-                return jsonify({'error': 'Valid age (1-120) is required'}), 400
+                return jsonify({"error": "Valid age (1-120) is required"}), 400
 
             user = request.current_user
             user.declared_age = age
             user.is_under_13 = age < 13
             db.session.commit()
 
-            return jsonify({
-                'success': True,
-                'declared_age': age,
-                'is_under_13': user.is_under_13,
-            })
+            return jsonify(
+                {
+                    "success": True,
+                    "declared_age": age,
+                    "is_under_13": user.is_under_13,
+                }
+            )
         except Exception as e:
-            current_app.logger.exception('Failed to set age for %s', user_id)
-            return jsonify({'error': 'Internal server error'}), 500
+            current_app.logger.exception("Failed to set age for %s", user_id)
+            return jsonify({"error": "Internal server error"}), 500
 
-    @user_routes.route('/api/user/<user_id>/consent', methods=['POST'])
+    @user_routes.route("/api/user/<user_id>/consent", methods=["POST"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("10 per hour")
     def record_consent(user_id):
         """
@@ -205,29 +218,34 @@ def create_user_routes_blueprint(limiter=None):
         """
         try:
             data = request.get_json(silent=True) or {}
-            child_age = data.get('child_age')
-            consent_method = data.get('consent_method')
+            child_age = data.get("child_age")
+            consent_method = data.get("consent_method")
 
             if child_age is None or not isinstance(child_age, int) or child_age < 1:
-                return jsonify({'error': 'Valid child_age is required'}), 400
+                return jsonify({"error": "Valid child_age is required"}), 400
             if not consent_method or consent_method not in ALLOWED_CONSENT_METHODS:
-                return jsonify({
-                    'error': 'consent_method must be one of: '
-                             + ', '.join(ALLOWED_CONSENT_METHODS)
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "consent_method must be one of: "
+                            + ", ".join(ALLOWED_CONSENT_METHODS)
+                        }
+                    ),
+                    400,
+                )
 
-            parent_email = (data.get('parent_email') or '').strip()[:120] or None
+            parent_email = (data.get("parent_email") or "").strip()[:120] or None
             # CMP-8: default False — an omitted field must not record the
             # child as opted in to photo-based (biometric) avatars.
-            allow_photo_avatar = data.get('allow_photo_avatar', False)
+            allow_photo_avatar = data.get("allow_photo_avatar", False)
 
             # COPPA: 'verified' may only be truthy when the method is a real
             # verified method. The email round trip is verified server-side by
             # the /consent/verify endpoint, never by a client-asserted flag, so
             # an 'email_verified'/'email_pending' record created via this
             # endpoint is forced verified=False here.
-            verified = bool(data.get('verified', False))
-            if consent_method in ('email_pending', 'email_verified'):
+            verified = bool(data.get("verified", False))
+            if consent_method in ("email_pending", "email_verified"):
                 verified = False
 
             # Also update the user's age fields
@@ -250,22 +268,29 @@ def create_user_routes_blueprint(limiter=None):
             db.session.commit()
 
             current_app.logger.info(
-                'Consent recorded for user %s: age=%d, method=%s',
-                user_id, child_age, consent_method
+                "Consent recorded for user %s: age=%d, method=%s",
+                user_id,
+                child_age,
+                consent_method,
             )
 
-            return jsonify({
-                'success': True,
-                'consent_id': record.id,
-                'consent': record.to_dict(),
-            }), 201
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "consent_id": record.id,
+                        "consent": record.to_dict(),
+                    }
+                ),
+                201,
+            )
         except Exception as e:
-            current_app.logger.exception('Failed to record consent for %s', user_id)
-            return jsonify({'error': 'Internal server error'}), 500
+            current_app.logger.exception("Failed to record consent for %s", user_id)
+            return jsonify({"error": "Internal server error"}), 500
 
-    @user_routes.route('/api/user/<user_id>/data', methods=['DELETE'])
+    @user_routes.route("/api/user/<user_id>/data", methods=["DELETE"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("3 per hour")  # Very strict — destructive operation
     def delete_user_data(user_id):
         """
@@ -283,21 +308,32 @@ def create_user_routes_blueprint(limiter=None):
             user = request.current_user
             purge_user_data(user, commit=True)
 
-            current_app.logger.info('All data deleted for user %s (anonymized)', user_id)
-            audit_log('data_deleted', user_id=user_id)
+            current_app.logger.info(
+                "All data deleted for user %s (anonymized)", user_id
+            )
+            audit_log("data_deleted", user_id=user_id)
 
-            return jsonify({
-                'success': True,
-                'message': 'All user data has been deleted and account anonymized.',
-            })
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "All user data has been deleted and account anonymized.",
+                }
+            )
         except Exception as e:
             db.session.rollback()
-            current_app.logger.exception('Failed to delete data for user %s', user_id)
-            return jsonify({'error': 'Data deletion failed. Please try again or contact support.'}), 500
+            current_app.logger.exception("Failed to delete data for user %s", user_id)
+            return (
+                jsonify(
+                    {
+                        "error": "Data deletion failed. Please try again or contact support."
+                    }
+                ),
+                500,
+            )
 
-    @user_routes.route('/api/user/<user_id>/export', methods=['GET'])
+    @user_routes.route("/api/user/<user_id>/export", methods=["GET"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("5 per hour")
     def export_user_data(user_id):
         """
@@ -307,8 +343,13 @@ def create_user_routes_blueprint(limiter=None):
         """
         try:
             from backend.models import (
-                InteractiveStory, StorySegment, StoryChoice,
-                InventoryItem, StoryState, UserAchievement, AchievementStats,
+                InteractiveStory,
+                StorySegment,
+                StoryChoice,
+                InventoryItem,
+                StoryState,
+                UserAchievement,
+                AchievementStats,
             )
 
             user = request.current_user
@@ -319,24 +360,33 @@ def create_user_routes_blueprint(limiter=None):
 
             # Stories
             stories = Story.query.filter_by(user_id=user_id).all()
-            stories_data = [{
-                'id': s.id,
-                'title': s.title,
-                'theme': s.theme,
-                'created_at': s.created_at.isoformat() if s.created_at else None,
-            } for s in stories]
+            stories_data = [
+                {
+                    "id": s.id,
+                    "title": s.title,
+                    "theme": s.theme,
+                    "created_at": s.created_at.isoformat() if s.created_at else None,
+                }
+                for s in stories
+            ]
 
             # Interactive Stories
-            interactive_stories = InteractiveStory.query.filter_by(user_id=user_id).all()
+            interactive_stories = InteractiveStory.query.filter_by(
+                user_id=user_id
+            ).all()
             interactive_data = []
             for ist in interactive_stories:
                 segments = StorySegment.query.filter_by(story_id=ist.id).all()
-                interactive_data.append({
-                    'id': ist.id,
-                    'title': getattr(ist, 'title', None),
-                    'created_at': ist.created_at.isoformat() if ist.created_at else None,
-                    'segments_count': len(segments),
-                })
+                interactive_data.append(
+                    {
+                        "id": ist.id,
+                        "title": getattr(ist, "title", None),
+                        "created_at": (
+                            ist.created_at.isoformat() if ist.created_at else None
+                        ),
+                        "segments_count": len(segments),
+                    }
+                )
 
             # Consent records
             consent_records = ConsentRecord.query.filter_by(user_id=user_id).all()
@@ -344,40 +394,49 @@ def create_user_routes_blueprint(limiter=None):
 
             # Achievements
             achievements = UserAchievement.query.filter_by(user_id=user_id).all()
-            achievements_data = [{
-                'id': a.id,
-                'achievement_type': getattr(a, 'achievement_type', None),
-                'earned_at': a.earned_at.isoformat() if getattr(a, 'earned_at', None) else None,
-            } for a in achievements]
+            achievements_data = [
+                {
+                    "id": a.id,
+                    "achievement_type": getattr(a, "achievement_type", None),
+                    "earned_at": (
+                        a.earned_at.isoformat()
+                        if getattr(a, "earned_at", None)
+                        else None
+                    ),
+                }
+                for a in achievements
+            ]
 
             export = {
-                'exported_at': datetime.now(timezone.utc).isoformat(),
-                'user_id': user_id,
-                'profile': user.to_dict(),
-                'characters': characters_data,
-                'stories': stories_data,
-                'interactive_stories': interactive_data,
-                'consent_records': consent_data,
-                'achievements': achievements_data,
+                "exported_at": datetime.now(timezone.utc).isoformat(),
+                "user_id": user_id,
+                "profile": user.to_dict(),
+                "characters": characters_data,
+                "stories": stories_data,
+                "interactive_stories": interactive_data,
+                "consent_records": consent_data,
+                "achievements": achievements_data,
             }
 
-            audit_log('data_exported', user_id=user_id)
+            audit_log("data_exported", user_id=user_id)
             response = jsonify(export)
-            response.headers['Content-Disposition'] = f'attachment; filename="storyweaver_export_{user_id[:8]}.json"'
+            response.headers["Content-Disposition"] = (
+                f'attachment; filename="storyweaver_export_{user_id[:8]}.json"'
+            )
             return response
         except Exception as e:
-            current_app.logger.exception('Failed to export data for %s', user_id)
-            return jsonify({'error': 'Data export failed'}), 500
+            current_app.logger.exception("Failed to export data for %s", user_id)
+            return jsonify({"error": "Data export failed"}), 500
 
     # ================================================================
     # COPPA EMAIL-VERIFIED PARENTAL CONSENT — round trip endpoints
     # ================================================================
 
     @user_routes.route(
-        '/api/user/<user_id>/consent/request-verification', methods=['POST']
+        "/api/user/<user_id>/consent/request-verification", methods=["POST"]
     )
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("5 per hour")  # Aggressive — email send is abuse-prone
     def request_consent_verification(user_id):
         """
@@ -394,27 +453,32 @@ def create_user_routes_blueprint(limiter=None):
         """
         try:
             data = request.get_json(silent=True) or {}
-            child_age = data.get('child_age')
-            parent_email = (data.get('parent_email') or '').strip()
-            allow_photo_avatar = bool(data.get('allow_photo_avatar', False))
+            child_age = data.get("child_age")
+            parent_email = (data.get("parent_email") or "").strip()
+            allow_photo_avatar = bool(data.get("allow_photo_avatar", False))
 
             if child_age is None or not isinstance(child_age, int) or child_age < 1:
-                return jsonify({'error': 'Valid child_age is required'}), 400
+                return jsonify({"error": "Valid child_age is required"}), 400
             if not _is_valid_email(parent_email):
-                return jsonify({'error': 'A valid parent_email is required'}), 400
+                return jsonify({"error": "A valid parent_email is required"}), 400
 
             # Email must be configured BEFORE we create state — fail closed.
             if not is_email_configured():
                 current_app.logger.error(
-                    'Consent verification requested for user %s but email '
-                    'service is not configured (RESEND_API_KEY unset).',
+                    "Consent verification requested for user %s but email "
+                    "service is not configured (RESEND_API_KEY unset).",
                     user_id,
                 )
-                return jsonify({
-                    'error': 'Email verification is temporarily unavailable. '
-                             'Please try again later.',
-                    'code': 'EMAIL_SERVICE_UNAVAILABLE',
-                }), 503
+                return (
+                    jsonify(
+                        {
+                            "error": "Email verification is temporarily unavailable. "
+                            "Please try again later.",
+                            "code": "EMAIL_SERVICE_UNAVAILABLE",
+                        }
+                    ),
+                    503,
+                )
 
             user = request.current_user
             user.declared_age = child_age
@@ -426,10 +490,9 @@ def create_user_routes_blueprint(limiter=None):
             # recent non-withdrawn pending record if one exists so repeated
             # "send code" presses don't pile up duplicate records.
             pending = (
-                ConsentRecord.query
-                .filter_by(
+                ConsentRecord.query.filter_by(
                     user_id=user_id,
-                    consent_method='email_pending',
+                    consent_method="email_pending",
                     withdrawn=False,
                     verified=False,
                 )
@@ -441,7 +504,7 @@ def create_user_routes_blueprint(limiter=None):
                     user_id=user_id,
                     child_age=child_age,
                     parent_email=stored_email,
-                    consent_method='email_pending',
+                    consent_method="email_pending",
                     ip_address=request.remote_addr,
                     allow_photo_avatar=allow_photo_avatar,
                     verified=False,
@@ -460,11 +523,13 @@ def create_user_routes_blueprint(limiter=None):
             # code should be usable.
             ConsentVerificationCode.query.filter_by(
                 user_id=user_id, consumed=False
-            ).update({'consumed': True, 'consumed_at': datetime.now(timezone.utc)},
-                     synchronize_session=False)
+            ).update(
+                {"consumed": True, "consumed_at": datetime.now(timezone.utc)},
+                synchronize_session=False,
+            )
 
             # Cryptographically random 6-digit numeric code.
-            code = f'{secrets.randbelow(1_000_000):06d}'
+            code = f"{secrets.randbelow(1_000_000):06d}"
             expires_at = datetime.now(timezone.utc) + timedelta(
                 minutes=CONSENT_CODE_EXPIRY_MINUTES
             )
@@ -484,39 +549,48 @@ def create_user_routes_blueprint(limiter=None):
             if not sent:
                 db.session.rollback()
                 current_app.logger.error(
-                    'Consent verification email failed to send for user %s.',
+                    "Consent verification email failed to send for user %s.",
                     user_id,
                 )
-                return jsonify({
-                    'error': 'Could not send the verification email. Please '
-                             'check the address and try again.',
-                    'code': 'EMAIL_SEND_FAILED',
-                }), 503
+                return (
+                    jsonify(
+                        {
+                            "error": "Could not send the verification email. Please "
+                            "check the address and try again.",
+                            "code": "EMAIL_SEND_FAILED",
+                        }
+                    ),
+                    503,
+                )
 
             db.session.commit()
 
             # SECURITY: never log the code or the parent email.
             current_app.logger.info(
-                'Consent verification email sent for user %s (code expires '
-                'in %d min)', user_id, CONSENT_CODE_EXPIRY_MINUTES
+                "Consent verification email sent for user %s (code expires "
+                "in %d min)",
+                user_id,
+                CONSENT_CODE_EXPIRY_MINUTES,
             )
-            audit_log('consent_verification_requested', user_id=user_id)
+            audit_log("consent_verification_requested", user_id=user_id)
 
-            return jsonify({
-                'success': True,
-                'message': 'Verification email sent to the parent address.',
-                'expires_in_minutes': CONSENT_CODE_EXPIRY_MINUTES,
-            })
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Verification email sent to the parent address.",
+                    "expires_in_minutes": CONSENT_CODE_EXPIRY_MINUTES,
+                }
+            )
         except Exception as e:
             db.session.rollback()
             current_app.logger.exception(
-                'Failed to request consent verification for %s', user_id
+                "Failed to request consent verification for %s", user_id
             )
-            return jsonify({'error': 'Internal server error'}), 500
+            return jsonify({"error": "Internal server error"}), 500
 
-    @user_routes.route('/api/user/<user_id>/consent/verify', methods=['POST'])
+    @user_routes.route("/api/user/<user_id>/consent/verify", methods=["POST"])
     @require_auth
-    @require_owner('user_id')
+    @require_owner("user_id")
     @limiter.limit("10 per hour")  # Plus per-code attempt cap below
     def verify_consent(user_id):
         """
@@ -534,28 +608,43 @@ def create_user_routes_blueprint(limiter=None):
         """
         try:
             data = request.get_json(silent=True) or {}
-            code = (data.get('code') or '').strip()
+            code = (data.get("code") or "").strip()
 
             if not code:
-                return jsonify({'verified': False, 'success': False,
-                                'error': 'A code is required'}), 400
+                return (
+                    jsonify(
+                        {
+                            "verified": False,
+                            "success": False,
+                            "error": "A code is required",
+                        }
+                    ),
+                    400,
+                )
 
             # Find the newest unconsumed code for this user.
             code_row = (
-                ConsentVerificationCode.query
-                .filter_by(user_id=user_id, consumed=False)
+                ConsentVerificationCode.query.filter_by(user_id=user_id, consumed=False)
                 .order_by(ConsentVerificationCode.created_at.desc())
                 .first()
             )
 
             # Non-distinguishing failure shape used for every failure path.
             def _fail(status=400):
-                return jsonify({'verified': False, 'success': False,
-                                'error': 'Invalid or expired code'}), status
+                return (
+                    jsonify(
+                        {
+                            "verified": False,
+                            "success": False,
+                            "error": "Invalid or expired code",
+                        }
+                    ),
+                    status,
+                )
 
             if code_row is None:
                 current_app.logger.info(
-                    'Consent verify failed for user %s: no active code', user_id
+                    "Consent verify failed for user %s: no active code", user_id
                 )
                 return _fail(410)
 
@@ -565,7 +654,7 @@ def create_user_routes_blueprint(limiter=None):
                 code_row.consumed_at = datetime.now(timezone.utc)
                 db.session.commit()
                 current_app.logger.info(
-                    'Consent verify failed for user %s: code expired', user_id
+                    "Consent verify failed for user %s: code expired", user_id
                 )
                 return _fail(410)
 
@@ -575,8 +664,7 @@ def create_user_routes_blueprint(limiter=None):
                 code_row.consumed_at = datetime.now(timezone.utc)
                 db.session.commit()
                 current_app.logger.warning(
-                    'Consent verify blocked for user %s: attempt cap reached',
-                    user_id
+                    "Consent verify blocked for user %s: attempt cap reached", user_id
                 )
                 return _fail(429)
 
@@ -589,14 +677,18 @@ def create_user_routes_blueprint(limiter=None):
                     code_row.consumed = True
                     code_row.consumed_at = datetime.now(timezone.utc)
                     current_app.logger.warning(
-                        'Consent verify: code invalidated for user %s after '
-                        '%d failed attempts', user_id, code_row.attempts
+                        "Consent verify: code invalidated for user %s after "
+                        "%d failed attempts",
+                        user_id,
+                        code_row.attempts,
                     )
                 db.session.commit()
                 current_app.logger.info(
-                    'Consent verify failed for user %s: code mismatch '
-                    '(attempt %d/%d)',
-                    user_id, code_row.attempts, CONSENT_CODE_MAX_ATTEMPTS
+                    "Consent verify failed for user %s: code mismatch "
+                    "(attempt %d/%d)",
+                    user_id,
+                    code_row.attempts,
+                    CONSENT_CODE_MAX_ATTEMPTS,
                 )
                 return _fail(400)
 
@@ -606,16 +698,13 @@ def create_user_routes_blueprint(limiter=None):
 
             record = None
             if code_row.consent_record_id:
-                record = db.session.get(
-                    ConsentRecord, code_row.consent_record_id
-                )
+                record = db.session.get(ConsentRecord, code_row.consent_record_id)
             if record is None:
                 # Fall back to the newest pending record for this user.
                 record = (
-                    ConsentRecord.query
-                    .filter_by(
+                    ConsentRecord.query.filter_by(
                         user_id=user_id,
-                        consent_method='email_pending',
+                        consent_method="email_pending",
                         withdrawn=False,
                     )
                     .order_by(ConsentRecord.consent_given_at.desc())
@@ -628,7 +717,7 @@ def create_user_routes_blueprint(limiter=None):
                 record = ConsentRecord(
                     user_id=user_id,
                     child_age=user.declared_age or 0,
-                    consent_method='email_verified',
+                    consent_method="email_verified",
                     ip_address=request.remote_addr,
                     verified=True,
                     # CMP-10: stamp the policy version in effect at consent time.
@@ -636,7 +725,7 @@ def create_user_routes_blueprint(limiter=None):
                 )
                 db.session.add(record)
             else:
-                record.consent_method = 'email_verified'
+                record.consent_method = "email_verified"
                 record.verified = True
                 # CMP-10: completing the verification round-trip is a fresh
                 # consent event — re-stamp to the current policy version.
@@ -645,22 +734,20 @@ def create_user_routes_blueprint(limiter=None):
             db.session.commit()
 
             current_app.logger.info(
-                'Consent verified for user %s (email round trip complete)',
-                user_id
+                "Consent verified for user %s (email round trip complete)", user_id
             )
-            audit_log('consent_verified', user_id=user_id)
+            audit_log("consent_verified", user_id=user_id)
 
-            return jsonify({
-                'verified': True,
-                'success': True,
-                'message': 'Parental consent verified.',
-            })
+            return jsonify(
+                {
+                    "verified": True,
+                    "success": True,
+                    "message": "Parental consent verified.",
+                }
+            )
         except Exception as e:
             db.session.rollback()
-            current_app.logger.exception(
-                'Failed to verify consent for %s', user_id
-            )
-            return jsonify({'error': 'Internal server error'}), 500
+            current_app.logger.exception("Failed to verify consent for %s", user_id)
+            return jsonify({"error": "Internal server error"}), 500
 
     return user_routes
-

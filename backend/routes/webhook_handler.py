@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from backend.database import db
 from backend.models.user import User
+
 # Importing the dedup models at module level registers them with SQLAlchemy
 # before app.py runs db.create_all(), so the tables are auto-created on a
 # fresh database with no manual migration step (M-3).
@@ -32,11 +33,7 @@ def _price_id_to_tier_map() -> Dict[str, str]:
     `get_price_ids()` keeps a single source of truth for the price config and
     automatically skips unset / placeholder price IDs (they come back as None).
     """
-    return {
-        price_id: tier
-        for tier, price_id in get_price_ids().items()
-        if price_id
-    }
+    return {price_id: tier for tier, price_id in get_price_ids().items() if price_id}
 
 
 def _resolve_subscription_object(subscription: Any) -> Optional[Dict[str, Any]]:
@@ -136,7 +133,11 @@ def _event_id(event: Any) -> Optional[str]:
 def _event_created(event: Any) -> Optional[datetime]:
     if hasattr(event, "to_dict"):
         event = event.to_dict()
-    created = event.get("created") if isinstance(event, dict) else getattr(event, "created", None)
+    created = (
+        event.get("created")
+        if isinstance(event, dict)
+        else getattr(event, "created", None)
+    )
     return _parse_timestamp(created)
 
 
@@ -149,9 +150,7 @@ def _already_processed(event_id: str) -> bool:
     """
     try:
         return (
-            db.session.query(StripeWebhookEvent.id)
-            .filter_by(event_id=event_id)
-            .first()
+            db.session.query(StripeWebhookEvent.id).filter_by(event_id=event_id).first()
             is not None
         )
     except SQLAlchemyError:
@@ -162,8 +161,9 @@ def _already_processed(event_id: str) -> bool:
         return False
 
 
-def _record_event(event_id: str, event_type: Optional[str],
-                   event_created: Optional[datetime]) -> bool:
+def _record_event(
+    event_id: str, event_type: Optional[str], event_created: Optional[datetime]
+) -> bool:
     """Persist the event.id. Returns False if it was already present (M-3).
 
     The unique constraint on `event_id` is the authoritative replay guard: if
@@ -171,11 +171,13 @@ def _record_event(event_id: str, event_type: Optional[str],
     IntegrityError and we treat the event as a duplicate.
     """
     try:
-        db.session.add(StripeWebhookEvent(
-            event_id=event_id,
-            event_type=event_type,
-            event_created=event_created,
-        ))
+        db.session.add(
+            StripeWebhookEvent(
+                event_id=event_id,
+                event_type=event_type,
+                event_created=event_created,
+            )
+        )
         db.session.commit()
         return True
     except IntegrityError:
@@ -213,8 +215,9 @@ def _is_stale_event(user_id: Optional[str], event_created: Optional[datetime]) -
     return incoming < last
 
 
-def _advance_cursor(user_id: Optional[str], event_created: Optional[datetime],
-                    event_id: Optional[str]) -> None:
+def _advance_cursor(
+    user_id: Optional[str], event_created: Optional[datetime], event_id: Optional[str]
+) -> None:
     """Move the per-user high-water mark forward after a state change (M-3)."""
     if not user_id or event_created is None:
         return
@@ -261,7 +264,7 @@ def handle_webhook():
     ]
     if not candidate_secrets:
         current_app.logger.error("STRIPE_WEBHOOK_SECRET not configured")
-        return jsonify({'error': 'Webhook not configured'}), 500
+        return jsonify({"error": "Webhook not configured"}), 500
 
     event = None
     for secret in candidate_secrets:
@@ -493,7 +496,8 @@ def _apply_subscription_updates(
         current_app.logger.warning(
             "Dropping stale/out-of-order Stripe event %s for user %s "
             "(event_created predates last applied state change)",
-            event_id, user.id,
+            event_id,
+            user.id,
         )
         return
 
@@ -545,5 +549,7 @@ def _parse_timestamp(value: Any) -> Optional[datetime]:
     try:
         return datetime.fromtimestamp(int(value), tz=timezone.utc)
     except (TypeError, ValueError):
-        current_app.logger.warning("Invalid timestamp value for Stripe webhook: %s", value)
+        current_app.logger.warning(
+            "Invalid timestamp value for Stripe webhook: %s", value
+        )
         return None

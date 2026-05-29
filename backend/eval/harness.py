@@ -37,7 +37,7 @@ RESULTS_ROOT = Path(__file__).parent / "results"
 # Per-call rough cost estimates (USD); used when provider response doesn't report.
 # Update when models or pricing change.
 COST_ESTIMATE_PER_CELL_USD = {
-    "gemini": 0.0012,        # gemini-2.5-flash, ~2k in / 3k out
+    "gemini": 0.0012,  # gemini-2.5-flash, ~2k in / 3k out
     "gemini-flash-lite": 0.0003,
     "openrouter-claude-sonnet": 0.045,
     "openrouter-llama-70b": 0.0017,
@@ -135,8 +135,8 @@ def _hash_text(text: str) -> str:
 
 # provider id -> Gemini subscription tier passed to the generation layer.
 _PROVIDER_TIER = {
-    "gemini": "premium",            # full gemini-2.5-flash
-    "gemini-flash-lite": "free",    # gemini-2.5-flash-lite (free-tier model)
+    "gemini": "premium",  # full gemini-2.5-flash
+    "gemini-flash-lite": "free",  # gemini-2.5-flash-lite (free-tier model)
 }
 
 
@@ -146,8 +146,9 @@ def story_filename(cell: Cell, sample_idx: int) -> str:
     return f"{cell.cell_id.replace('|', '_')}_s{sample_idx}"
 
 
-def _call_provider(cell: Cell, t: test_set.TestInput, provider: str,
-                   run_dir: Path, sample_idx: int) -> dict:
+def _call_provider(
+    cell: Cell, t: test_set.TestInput, provider: str, run_dir: Path, sample_idx: int
+) -> dict:
     """Build the assembled prompt, run one generation, persist artifacts.
 
     Story text is written to run_dir/stories/<cell>_s<idx>.txt and the
@@ -202,20 +203,25 @@ def run(cfg: RunConfig) -> int:
     if cfg.filter:
         cells = [c for c in cells if cfg.filter in c.cell_id]
     total = len(cells)
-    print(f"[harness] run_id={cfg.run_id} provider={cfg.provider} "
-          f"budget=${cfg.budget_usd:.2f} cells={total} "
-          f"already_complete={len(completed)} dry_run={cfg.dry_run}")
+    print(
+        f"[harness] run_id={cfg.run_id} provider={cfg.provider} "
+        f"budget=${cfg.budget_usd:.2f} cells={total} "
+        f"already_complete={len(completed)} dry_run={cfg.dry_run}"
+    )
 
     if cfg.dry_run:
         # Print cell distribution and exit.
         from collections import Counter
+
         by_cell = Counter((c.mode, c.age_band) for c in cells)
         for (mode, band), n in sorted(by_cell.items()):
             print(f"  {mode:14s} {band:7s} -> {n} generations")
         est_cost = total * COST_ESTIMATE_PER_CELL_USD.get(cfg.provider, 0.005)
         print(f"  estimated total cost: ${est_cost:.2f}")
         if est_cost > cfg.budget_usd:
-            print(f"  WARN: estimated cost ${est_cost:.2f} exceeds budget ${cfg.budget_usd:.2f}")
+            print(
+                f"  WARN: estimated cost ${est_cost:.2f} exceeds budget ${cfg.budget_usd:.2f}"
+            )
         return 0
 
     spent = 0.0
@@ -225,10 +231,18 @@ def run(cfg: RunConfig) -> int:
         if sample_key in completed:
             continue
         if spent + per_cell_est > cfg.budget_usd:
-            print(f"[harness] budget cap reached at ${spent:.2f} / ${cfg.budget_usd:.2f} "
-                  f"after {i}/{total} cells; halting cleanly.")
-            _write_row(jsonl, {"status": "budget_halt", "spent_usd": spent,
-                               "cells_remaining": total - i})
+            print(
+                f"[harness] budget cap reached at ${spent:.2f} / ${cfg.budget_usd:.2f} "
+                f"after {i}/{total} cells; halting cleanly."
+            )
+            _write_row(
+                jsonl,
+                {
+                    "status": "budget_halt",
+                    "spent_usd": spent,
+                    "cells_remaining": total - i,
+                },
+            )
             return 0
 
         t = test_set.by_id(cell.test_id)
@@ -239,57 +253,84 @@ def run(cfg: RunConfig) -> int:
             print(f"[harness] {exc}", file=sys.stderr)
             return 2
         except Exception as exc:
-            _write_row(jsonl, {
-                "status": "error",
-                "cell_id": cell.cell_id,
-                "sample_idx": i,
-                "error": str(exc),
-                "elapsed_s": time.time() - start,
-            })
+            _write_row(
+                jsonl,
+                {
+                    "status": "error",
+                    "cell_id": cell.cell_id,
+                    "sample_idx": i,
+                    "error": str(exc),
+                    "elapsed_s": time.time() - start,
+                },
+            )
             continue
 
         spent += result.get("cost_usd", per_cell_est)
-        _write_row(jsonl, {
-            "status": "complete",
-            "cell_id": cell.cell_id,
-            "sample_idx": i,
-            "template_id": cell.template_id,
-            "mode": cell.mode,
-            "age_band": cell.age_band,
-            "test_id": cell.test_id,
-            "provider": result.get("provider", cfg.provider),
-            "model": result.get("model"),
-            "latency_ms": int((time.time() - start) * 1000),
-            "input_tokens": result.get("input_tokens"),
-            "output_tokens": result.get("output_tokens"),
-            "cost_usd": result.get("cost_usd", per_cell_est),
-            "output_hash": _hash_text(result.get("output", "")),
-            "refused": result.get("refused", False),
-            "fell_back_to_static": result.get("fell_back_to_static", False),
-            "prompt_hash": result.get("prompt_hash"),
-            "snapshot_git_sha": prompt_registry.SNAPSHOT_GIT_SHA,
-        })
+        _write_row(
+            jsonl,
+            {
+                "status": "complete",
+                "cell_id": cell.cell_id,
+                "sample_idx": i,
+                "template_id": cell.template_id,
+                "mode": cell.mode,
+                "age_band": cell.age_band,
+                "test_id": cell.test_id,
+                "provider": result.get("provider", cfg.provider),
+                "model": result.get("model"),
+                "latency_ms": int((time.time() - start) * 1000),
+                "input_tokens": result.get("input_tokens"),
+                "output_tokens": result.get("output_tokens"),
+                "cost_usd": result.get("cost_usd", per_cell_est),
+                "output_hash": _hash_text(result.get("output", "")),
+                "refused": result.get("refused", False),
+                "fell_back_to_static": result.get("fell_back_to_static", False),
+                "prompt_hash": result.get("prompt_hash"),
+                "snapshot_git_sha": prompt_registry.SNAPSHOT_GIT_SHA,
+            },
+        )
     print(f"[harness] run complete; spent ${spent:.2f} / ${cfg.budget_usd:.2f}")
     return 0
 
 
 def _parse_args(argv: list[str]) -> RunConfig:
     p = argparse.ArgumentParser()
-    p.add_argument("--budget", type=float, default=5.0,
-                   help="Hard USD cap. Default $5 (calibration-only).")
-    p.add_argument("--provider", choices=("gemini", "gemini-flash-lite",
-                                          "openrouter-claude-sonnet",
-                                          "openrouter-llama-70b"),
-                   default="gemini")
-    p.add_argument("--calibration", action="store_true",
-                   help="10-cell slice across modes + 4 trauma/drift cells.")
-    p.add_argument("--filter", type=str, default=None,
-                   help="Substring match against cell_id "
-                        "(e.g. 'superhero|3-4' to re-run one cell after a fix).")
-    p.add_argument("--dry-run", action="store_true",
-                   help="Print the plan and exit; no API calls, no spend.")
-    p.add_argument("--resume", type=str, default=None,
-                   help="Resume an existing run-id.")
+    p.add_argument(
+        "--budget",
+        type=float,
+        default=5.0,
+        help="Hard USD cap. Default $5 (calibration-only).",
+    )
+    p.add_argument(
+        "--provider",
+        choices=(
+            "gemini",
+            "gemini-flash-lite",
+            "openrouter-claude-sonnet",
+            "openrouter-llama-70b",
+        ),
+        default="gemini",
+    )
+    p.add_argument(
+        "--calibration",
+        action="store_true",
+        help="10-cell slice across modes + 4 trauma/drift cells.",
+    )
+    p.add_argument(
+        "--filter",
+        type=str,
+        default=None,
+        help="Substring match against cell_id "
+        "(e.g. 'superhero|3-4' to re-run one cell after a fix).",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the plan and exit; no API calls, no spend.",
+    )
+    p.add_argument(
+        "--resume", type=str, default=None, help="Resume an existing run-id."
+    )
     args = p.parse_args(argv)
     run_id = args.resume or time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6]
     return RunConfig(

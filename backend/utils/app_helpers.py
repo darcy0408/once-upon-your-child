@@ -12,8 +12,18 @@ from ..models.user import User
 
 # Keywords inappropriate for ALL ages — always block regardless of age band.
 _KEYWORDS_ALL_AGES = [
-    'suicide', 'suicidal', 'self-harm', 'self harm', 'sexual', 'porn', 'erotic',
-    'genitals', 'intercourse', 'rape', 'nude', 'naked',
+    "suicide",
+    "suicidal",
+    "self-harm",
+    "self harm",
+    "sexual",
+    "porn",
+    "erotic",
+    "genitals",
+    "intercourse",
+    "rape",
+    "nude",
+    "naked",
 ]
 
 # Keywords only inappropriate for the youngest band (Sprout, age <= 5).
@@ -29,13 +39,20 @@ _KEYWORDS_ALL_AGES = [
 # which judges them in context — the same treatment Explorer+ already gets.
 # Only unambiguously violent words stay as instant keyword blocks here.
 _KEYWORDS_YOUNG_ONLY = [
-    'kill', 'murder', 'blood', 'death', 'gun', 'knife', 'stab',
-    'weapon', 'torture',
+    "kill",
+    "murder",
+    "blood",
+    "death",
+    "gun",
+    "knife",
+    "stab",
+    "weapon",
+    "torture",
 ]
 
 
 def is_production() -> bool:
-    return os.getenv('RAILWAY_ENVIRONMENT') == 'production'
+    return os.getenv("RAILWAY_ENVIRONMENT") == "production"
 
 
 def get_user_identifier() -> str:
@@ -48,15 +65,16 @@ def get_user_identifier() -> str:
     that victim's bucket. Unauthenticated requests are keyed on the IP.
     """
     # 1. Check for user attached by auth middleware (verified JWT)
-    if hasattr(request, 'current_user') and request.current_user:
+    if hasattr(request, "current_user") and request.current_user:
         return f"user:{request.current_user.id}"
 
-    if hasattr(g, 'current_user_id') and g.current_user_id:
+    if hasattr(g, "current_user_id") and g.current_user_id:
         return f"user:{g.current_user_id}"
 
     # 2. Check for flask-jwt-extended identity from a verified token
     try:
         from flask_jwt_extended import get_jwt_identity
+
         user_id = get_jwt_identity()
     except Exception:
         user_id = None
@@ -67,38 +85,38 @@ def get_user_identifier() -> str:
 def get_user_tier() -> str:
     """Get user subscription tier for rate limiting"""
     # 1. Check for user attached by auth middleware
-    if hasattr(request, 'current_user') and request.current_user:
-        return request.current_user.subscription_tier or 'free'
+    if hasattr(request, "current_user") and request.current_user:
+        return request.current_user.subscription_tier or "free"
 
     # 2. Try to load user from a server-verified ID in the request context.
     #    The client-supplied X-User-ID header is NOT trusted here — keying
     #    the rate limiter off it would let a client claim a higher tier's
     #    limits by guessing another user's id.
-    user_id = getattr(g, 'current_user_id', None) or getattr(g, 'user_id', None)
+    user_id = getattr(g, "current_user_id", None) or getattr(g, "user_id", None)
 
     if user_id:
         try:
             user = User.query.filter_by(id=user_id).first()
             if user:
-                return user.subscription_tier or 'free'
+                return user.subscription_tier or "free"
         except Exception:
             pass
 
-    return 'free'
+    return "free"
 
 
-def get_tier_limits(operation: str = 'default') -> str | None:
+def get_tier_limits(operation: str = "default") -> str | None:
     """Get rate limits based on user tier"""
     tier = get_user_tier()
 
     limits = {
-        'default': {
-            'free': "3/minute; 10/hour; 50/day",
-            'premium': "10/minute; 100/hour",
-            'family': "15/minute; 200/hour",
-            'byok': None
+        "default": {
+            "free": "3/minute; 10/hour; 50/day",
+            "premium": "10/minute; 100/hour",
+            "family": "15/minute; 200/hour",
+            "byok": None,
         },
-        'expensive': {
+        "expensive": {
             # MT-113 (reopen): the previous 5/hour; 10/day ladder was tighter
             # than the monthly illustration quota (free=10/month, sprout=60),
             # so a single 6-10 page story couldn't finish illustrating — and
@@ -114,14 +132,14 @@ def get_tier_limits(operation: str = 'default') -> str | None:
             # legitimate users; they remain as defense-in-depth backstops on
             # top of MT-169's DB-backed fail-closed cost breaker in
             # `check_illustration_quota`.
-            'free': "15/minute; 60/hour; 100/day",
-            'premium': "30/minute; 120/hour; 200/day",
-            'family': "60/minute; 240/hour; 400/day",
-            'byok': None
-        }
+            "free": "15/minute; 60/hour; 100/day",
+            "premium": "30/minute; 120/hour; 200/day",
+            "family": "60/minute; 240/hour; 400/day",
+            "byok": None,
+        },
     }
 
-    return limits.get(operation, limits['default']).get(tier, limits['default']['free'])
+    return limits.get(operation, limits["default"]).get(tier, limits["default"]["free"])
 
 
 def make_filter_story_content(logger):
@@ -145,8 +163,7 @@ def make_filter_story_content(logger):
         # ("kill" → killed/killing) but unrelated words that merely *contain*
         # a keyword are not ("skill", "begun", "establish").
         triggered = [
-            kw for kw in keywords
-            if re.search(r'\b' + re.escape(kw), lower_text)
+            kw for kw in keywords if re.search(r"\b" + re.escape(kw), lower_text)
         ]
         if triggered:
             logger.warning(
@@ -161,10 +178,10 @@ def make_filter_story_content(logger):
 def make_log_error(logger):
     def log_error(error_type, message, details=None):
         log_entry = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'type': error_type,
-            'message': message,
-            'details': details or {}
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": error_type,
+            "message": message,
+            "details": details or {},
         }
         logger.error(json.dumps(log_entry))
 
@@ -182,33 +199,40 @@ def make_add_request_id(logger):
 
 def make_log_response(logger, log_error):
     def log_response(response):
-        request_id = getattr(g, 'request_id', 'unknown')
+        request_id = getattr(g, "request_id", "unknown")
         duration = 0
-        if hasattr(g, 'start_time'):
+        if hasattr(g, "start_time"):
             duration = time.time() - g.start_time
             if duration > 5.0:
                 # AI generation routes legitimately take 8-15s — only flag truly slow requests
-                ai_paths = ('/generate', '/generate-interactive', '/generate-illustrations',
-                            '/generate-coloring', '/generate-avatar')
-                threshold = 15.0 if any(request.path.startswith(p) for p in ai_paths) else 5.0
+                ai_paths = (
+                    "/generate",
+                    "/generate-interactive",
+                    "/generate-illustrations",
+                    "/generate-coloring",
+                    "/generate-avatar",
+                )
+                threshold = (
+                    15.0 if any(request.path.startswith(p) for p in ai_paths) else 5.0
+                )
                 if duration > threshold:
                     log_error(
-                        error_type='slow_request',
-                        message=f'Request took {duration:.2f}s',
+                        error_type="slow_request",
+                        message=f"Request took {duration:.2f}s",
                         details={
-                            'method': request.method,
-                            'path': request.path,
-                            'duration': duration,
-                            'status_code': response.status_code
-                        }
+                            "method": request.method,
+                            "path": request.path,
+                            "duration": duration,
+                            "status_code": response.status_code,
+                        },
                     )
         log_entry = {
-            'method': request.method,
-            'path': request.path,
-            'status': response.status_code,
-            'duration_ms': round(duration * 1000, 2) if hasattr(g, 'start_time') else 0,
-            'ip': request.remote_addr,
-            'request_id': request_id
+            "method": request.method,
+            "path": request.path,
+            "status": response.status_code,
+            "duration_ms": round(duration * 1000, 2) if hasattr(g, "start_time") else 0,
+            "ip": request.remote_addr,
+            "request_id": request_id,
         }
         logger.info(json.dumps(log_entry))
         return response
@@ -218,27 +242,24 @@ def make_log_response(logger, log_error):
 
 def make_handle_error(logger, is_production_fn, log_error):
     def handle_error(error):
-        request_id = getattr(g, 'request_id', 'unknown')
+        request_id = getattr(g, "request_id", "unknown")
         log_error(
-            error_type='unhandled_error',
+            error_type="unhandled_error",
             message=str(error),
             details={
-                'request_id': request_id,
-                'method': request.method,
-                'path': request.path,
-                'error_class': error.__class__.__name__
-            }
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.path,
+                "error_class": error.__class__.__name__,
+            },
         )
         logger.exception(f"[{request_id}] Unhandled error: {error}")
 
         if is_production_fn():
-            return jsonify({
-                'error': 'Internal server error',
-                'request_id': request_id
-            }), 500
-        return jsonify({
-            'error': str(error),
-            'request_id': request_id
-        }), 500
+            return (
+                jsonify({"error": "Internal server error", "request_id": request_id}),
+                500,
+            )
+        return jsonify({"error": str(error), "request_id": request_id}), 500
 
     return handle_error

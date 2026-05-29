@@ -2,16 +2,17 @@
 Add avatar_data column to existing characters table
 Run this once to upgrade your database
 """
+
 import sqlite3
 import os
 
 # Find the database file
 db_paths = [
-    'backend/config/characters.db',
-    'config/characters.db',
-    'characters.db',
-    'backend/app.db',
-    'app.db'
+    "backend/config/characters.db",
+    "config/characters.db",
+    "characters.db",
+    "backend/app.db",
+    "app.db",
 ]
 
 db_path = None
@@ -37,7 +38,7 @@ cursor = conn.cursor()
 cursor.execute("PRAGMA table_info(character)")
 columns = [col[1] for col in cursor.fetchall()]
 
-if 'avatar_data' in columns:
+if "avatar_data" in columns:
     print("✓ avatar_data column already exists!")
 else:
     print("Adding avatar_data column...")
@@ -50,7 +51,7 @@ else:
         print(f"Error adding avatar_data column: {e}")
         conn.rollback()
 
-if 'avatar_params' in columns:
+if "avatar_params" in columns:
     print("✓ avatar_params column already exists!")
 else:
     print("Adding avatar_params column...")

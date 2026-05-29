@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 def create_achievement_blueprint(limiter=None):
     """Factory function to create achievement blueprint with rate limiting."""
-    achievement_bp = Blueprint('achievement', __name__)
+    achievement_bp = Blueprint("achievement", __name__)
     achievement_service = AchievementService()
 
-    @achievement_bp.route('/sync', methods=['POST'])
+    @achievement_bp.route("/sync", methods=["POST"])
     @jwt_required()
     @limiter.limit("30 per minute")  # Sync can be frequent but limit abuse
     def sync_achievements():
@@ -26,13 +26,16 @@ def create_achievement_blueprint(limiter=None):
             data = request.get_json(silent=True) or {}
 
             result = achievement_service.sync_achievement_progress(user_id, data)
-            return jsonify(result), 200 if result['status'] == 'success' else 400
+            return jsonify(result), 200 if result["status"] == "success" else 400
 
         except Exception as e:
             logger.error(f"Error syncing achievements: {e}")
-            return jsonify({'status': 'error', 'message': 'Failed to sync achievements'}), 500
+            return (
+                jsonify({"status": "error", "message": "Failed to sync achievements"}),
+                500,
+            )
 
-    @achievement_bp.route('/data', methods=['GET'])
+    @achievement_bp.route("/data", methods=["GET"])
     @jwt_required()
     @limiter.limit("60 per minute")  # Read-heavy endpoint
     def get_achievement_data():
@@ -44,9 +47,14 @@ def create_achievement_blueprint(limiter=None):
 
         except Exception as e:
             logger.error(f"Error getting achievement data: {e}")
-            return jsonify({'status': 'error', 'message': 'Failed to get achievement data'}), 500
+            return (
+                jsonify(
+                    {"status": "error", "message": "Failed to get achievement data"}
+                ),
+                500,
+            )
 
-    @achievement_bp.route('/record/story', methods=['POST'])
+    @achievement_bp.route("/record/story", methods=["POST"])
     @jwt_required()
     @limiter.limit("20 per minute")  # Limit story recording
     def record_story():
@@ -54,16 +62,19 @@ def create_achievement_blueprint(limiter=None):
         try:
             user_id = get_jwt_identity()
             data = request.get_json(silent=True) or {}
-            theme = data.get('theme', 'Adventure')
+            theme = data.get("theme", "Adventure")
 
             result = achievement_service.record_story_created(user_id, theme)
-            return jsonify(result), 200 if result['status'] == 'success' else 400
+            return jsonify(result), 200 if result["status"] == "success" else 400
 
         except Exception as e:
             logger.error(f"Error recording story: {e}")
-            return jsonify({'status': 'error', 'message': 'Failed to record story'}), 500
+            return (
+                jsonify({"status": "error", "message": "Failed to record story"}),
+                500,
+            )
 
-    @achievement_bp.route('/record/character', methods=['POST'])
+    @achievement_bp.route("/record/character", methods=["POST"])
     @jwt_required()
     @limiter.limit("20 per minute")  # Limit character recording
     def record_character():
@@ -72,13 +83,16 @@ def create_achievement_blueprint(limiter=None):
             user_id = get_jwt_identity()
 
             result = achievement_service.record_character_created(user_id)
-            return jsonify(result), 200 if result['status'] == 'success' else 400
+            return jsonify(result), 200 if result["status"] == "success" else 400
 
         except Exception as e:
             logger.error(f"Error recording character: {e}")
-            return jsonify({'status': 'error', 'message': 'Failed to record character'}), 500
+            return (
+                jsonify({"status": "error", "message": "Failed to record character"}),
+                500,
+            )
 
-    @achievement_bp.route('/stats', methods=['GET'])
+    @achievement_bp.route("/stats", methods=["GET"])
     @jwt_required()
     @limiter.limit("60 per minute")  # Read-heavy endpoint
     def get_achievement_stats():
@@ -90,6 +104,11 @@ def create_achievement_blueprint(limiter=None):
 
         except Exception as e:
             logger.error(f"Error getting achievement stats: {e}")
-            return jsonify({'status': 'error', 'message': 'Failed to get achievement stats'}), 500
+            return (
+                jsonify(
+                    {"status": "error", "message": "Failed to get achievement stats"}
+                ),
+                500,
+            )
 
     return achievement_bp

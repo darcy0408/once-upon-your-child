@@ -1,8 +1,10 @@
 from ..database import db
 
+
 class Character(db.Model):
     """Stores character information, traits, relationships, and metadata."""
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
+
+    user_id = db.Column(db.String(36), db.ForeignKey("user.id"), nullable=True)
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     age = db.Column(db.Integer, nullable=False)
@@ -12,7 +14,7 @@ class Character(db.Model):
     challenge = db.Column(db.Text)
 
     # Character type and superhero specific
-    character_type = db.Column(db.String(50), default='Everyday Kid')
+    character_type = db.Column(db.String(50), default="Everyday Kid")
     superhero_name = db.Column(db.String(100))
     mission = db.Column(db.Text)
 

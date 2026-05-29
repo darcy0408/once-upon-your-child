@@ -9,6 +9,7 @@ Covers:
   * ``_resolve_text_model`` — the pure selection function.
   * ``StoryGenerationService.__init__`` — the ``_model_name`` it ends up with.
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch

@@ -8,6 +8,7 @@ the deletion promise in PRIVACY_POLICY.md.
 The heavy lifting lives in backend.services.data_retention.purge_inactive_accounts;
 this module only wires it into Celery with a Flask app context.
 """
+
 import json
 import os
 from datetime import datetime, timezone
@@ -42,11 +43,14 @@ def _write_retention_heartbeat(summary: dict) -> None:
             )
             return
         import redis as _redis_lib
+
         r = _redis_lib.from_url(redis_url, socket_connect_timeout=2)
-        payload = json.dumps({
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "summary": summary,
-        })
+        payload = json.dumps(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "summary": summary,
+            }
+        )
         r.set("retention:last_run", payload)
     except Exception as exc:
         logger.warning("Data-retention purge: failed to write heartbeat (%s)", exc)
@@ -57,6 +61,7 @@ def get_flask_app():
     global _flask_app
     if _flask_app is None:
         from backend.app import create_app  # lazy import breaks circular dep
+
         _config_name = os.getenv("FLASK_CONFIG") or "dev"
         if _config_name not in {"dev", "prod", "production", "testing"}:
             _config_name = "dev"

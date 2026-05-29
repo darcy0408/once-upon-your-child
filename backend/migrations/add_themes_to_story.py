@@ -15,7 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def run_migration():
-    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'app.db')
+    db_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "instance", "app.db"
+    )
 
     if not os.path.exists(db_path):
         print(f"[ERROR] Database not found at {db_path}")
@@ -62,7 +64,7 @@ def run_migration():
             conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("Database Migration: Add themes columns to story")
     print("=" * 60)

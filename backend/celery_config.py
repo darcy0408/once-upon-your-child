@@ -5,11 +5,13 @@ from celery.schedules import crontab
 # Get Redis URL from environment
 # If not present, default to memory/cache to avoid connection errors on localhost
 
+
 def _fix_redis_scheme(url: str | None) -> str | None:
     """Normalize non-standard Redis URL schemes (e.g. rredis://) to redis://."""
     if url and url.startswith("rredis://"):
-        return "redis://" + url[len("rredis://"):]
+        return "redis://" + url[len("rredis://") :]
     return url
+
 
 REDIS_URL = _fix_redis_scheme(os.getenv("REDIS_URL"))
 CELERY_BROKER_URL = _fix_redis_scheme(os.getenv("CELERY_BROKER_URL"))
@@ -21,6 +23,7 @@ def _as_bool(name: str, default: bool = False) -> bool:
     if value is None:
         return default
     return str(value).strip().lower() in ("1", "true", "yes", "on")
+
 
 # Initialize Celery app
 celery = Celery(
@@ -47,10 +50,10 @@ celery.conf.update(
     # broker_url and result_backend are set via REDIS_URL or config.py
     # broker_url='redis://localhost:6379/0',
     # result_backend='redis://localhost:6379/0',
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='UTC',
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
     enable_utc=True,
     task_always_eager=task_always_eager,
     task_eager_propagates=task_eager_propagates,

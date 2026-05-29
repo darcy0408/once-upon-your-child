@@ -5,6 +5,7 @@ retry+truncate helper with cap=350. The Sprout-specific behavior is already
 covered by ``backend/tests/test_prompt_service.py``; this file focuses on
 the Explorer parameterization and the band/age guards.
 """
+
 from __future__ import annotations
 
 import json

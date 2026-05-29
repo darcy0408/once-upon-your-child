@@ -9,6 +9,7 @@ Covers:
   * is_legacy_encrypted() format detection.
   * Lazy re-wrap: decrypt_user_api_key converts a legacy key to gcm: format.
 """
+
 import base64
 import os
 
@@ -54,6 +55,7 @@ def _make_legacy_cbc_blob(plain_key: str) -> str:
 # GCM round-trip
 # ---------------------------------------------------------------------------
 
+
 def test_gcm_round_trip():
     encrypted = encrypt_api_key(SAMPLE_KEY)
     assert encrypted.startswith("gcm:")
@@ -72,6 +74,7 @@ def test_gcm_uses_fresh_nonce_each_time():
 # Legacy CBC backward compatibility
 # ---------------------------------------------------------------------------
 
+
 def test_legacy_cbc_blob_still_decrypts():
     legacy = _make_legacy_cbc_blob(SAMPLE_KEY)
     assert not legacy.startswith("gcm:")
@@ -82,9 +85,10 @@ def test_legacy_cbc_blob_still_decrypts():
 # Tamper detection
 # ---------------------------------------------------------------------------
 
+
 def test_tampered_gcm_blob_raises_value_error():
     encrypted = encrypt_api_key(SAMPLE_KEY)
-    raw = base64.b64decode(encrypted[len("gcm:"):])
+    raw = base64.b64decode(encrypted[len("gcm:") :])
     # Flip a bit in the ciphertext/tag region (past the 12-byte nonce).
     tampered_raw = bytearray(raw)
     tampered_raw[-1] ^= 0x01
@@ -96,7 +100,7 @@ def test_tampered_gcm_blob_raises_value_error():
 
 def test_tampered_gcm_nonce_raises_value_error():
     encrypted = encrypt_api_key(SAMPLE_KEY)
-    raw = bytearray(base64.b64decode(encrypted[len("gcm:"):]))
+    raw = bytearray(base64.b64decode(encrypted[len("gcm:") :]))
     raw[0] ^= 0x01  # corrupt the nonce
     tampered = "gcm:" + base64.b64encode(bytes(raw)).decode("utf-8")
 
@@ -107,6 +111,7 @@ def test_tampered_gcm_nonce_raises_value_error():
 # ---------------------------------------------------------------------------
 # is_legacy_encrypted
 # ---------------------------------------------------------------------------
+
 
 def test_is_legacy_encrypted_for_gcm_blob():
     encrypted = encrypt_api_key(SAMPLE_KEY)
@@ -126,6 +131,7 @@ def test_is_legacy_encrypted_for_empty_string():
 # ---------------------------------------------------------------------------
 # Lazy re-wrap via decrypt_user_api_key
 # ---------------------------------------------------------------------------
+
 
 def test_lazy_rewrap_converts_legacy_key_on_access(app):
     """Decrypting a User whose stored key is legacy-CBC must re-persist it
