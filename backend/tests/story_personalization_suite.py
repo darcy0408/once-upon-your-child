@@ -17,11 +17,7 @@ from backend.services.story_service import (
     _build_rhyme_time_prompt,
     _get_age_band,
 )
-from backend.tasks.story_tasks import (
-    _find_missing_custom_elements,
-    _parse_custom_elements,
-    generate_story_task,
-)
+from backend.tasks.story_tasks import generate_story_task
 
 
 @dataclass
@@ -109,7 +105,6 @@ def _hero_name(gender: str) -> str:
 
 def _collect_required_phrases(s: Scenario) -> List[str]:
     required = []
-    required.extend(_parse_custom_elements(s.custom_elements))
     required.append(_hero_name(s.gender))
 
     for pet in s.companion_pets:
@@ -134,14 +129,11 @@ def _collect_required_phrases(s: Scenario) -> List[str]:
 
 def _validate_prompt(s: Scenario, prompt: str) -> List[str]:
     issues = []
-    required = _parse_custom_elements(s.custom_elements)
-    for phrase in required:
-        if phrase not in prompt:
-            issues.append(f"Prompt missing custom element phrase: {phrase}")
 
-    if s.custom_elements and "use the exact words" not in prompt.lower():
-        issues.append("Prompt missing exact-words instruction for custom elements.")
-
+    # The "concrete scene or outcome" guidance still ships in all three
+    # standard/rhyme/LTR prompts; verifying it's plumbed through ensures
+    # the custom_elements free-text input continues to influence story
+    # structure (no longer enforced verbatim post-61b87a32).
     if s.custom_elements and "concrete scene or outcome" not in prompt:
         issues.append("Prompt missing action-scene instruction for custom elements.")
 
@@ -153,14 +145,13 @@ def _validate_prompt(s: Scenario, prompt: str) -> List[str]:
 
 
 def _validate_story_text(s: Scenario, story_text: str) -> Tuple[List[str], List[str]]:
+    # NOTE: custom_elements verbatim-presence enforcement was deliberately
+    # removed in commit 61b87a32 (security/imagine-it output moderation) for
+    # child-safety reasons — the model now "incorporates the spirit and
+    # themes" rather than echoing user input verbatim. We still validate
+    # hero/pet/companion name coverage, length bands, and meta-marker leakage.
     issues = []
     warnings = []
-    missing = _find_missing_custom_elements(
-        _parse_custom_elements(s.custom_elements),
-        story_text,
-    )
-    if missing:
-        issues.append(f"Missing custom elements in story: {', '.join(missing)}")
 
     for name in _collect_required_phrases(s):
         if name.lower() not in story_text.lower():

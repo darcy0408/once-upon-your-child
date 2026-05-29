@@ -43,8 +43,6 @@ def _is_superhero_theme(theme: str | None) -> bool:
 
 
 logger = get_task_logger(__name__)
-MAX_CUSTOM_ELEMENTS = 5
-MAX_CUSTOM_ELEMENT_LENGTH = 80
 
 # Lazy app initialization to avoid circular imports
 _flask_app = None
@@ -377,71 +375,6 @@ def _generate_story_text(
         user_tier=user_tier,
     )
     return story_text
-
-
-def _normalize_text_for_match(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def _normalize_phrase(phrase: str) -> str:
-    phrase = phrase.strip().strip(".,;:!?")
-    phrase = re.sub(r"\s+", " ", phrase)
-    return phrase.lower()
-
-
-def _parse_custom_elements(raw: str | None) -> list[str]:
-    if not raw:
-        return []
-    raw = str(raw).strip()
-    if not raw:
-        return []
-
-    # Preserve order while honoring quoted phrases
-    elements: list[str] = []
-    for match in re.finditer(r"\"([^\"]+)\"|'([^']+)'|[^,\n;]+", raw):
-        token = match.group(1) or match.group(2) or match.group(0)
-        token = token.strip()
-        if (token.startswith('"') and token.endswith('"')) or (
-            token.startswith("'") and token.endswith("'")
-        ):
-            token = token[1:-1].strip()
-        if token:
-            elements.append(token)
-
-    # Normalize, dedupe, and cap
-    normalized = []
-    seen = set()
-    for element in elements:
-        element = element.strip()
-        if not element:
-            continue
-        if len(element) > MAX_CUSTOM_ELEMENT_LENGTH:
-            element = element[:MAX_CUSTOM_ELEMENT_LENGTH].rstrip()
-        key = element.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        normalized.append(element)
-        if len(normalized) >= MAX_CUSTOM_ELEMENTS:
-            break
-
-    return normalized
-
-
-def _find_missing_custom_elements(required: list[str], story_text: str) -> list[str]:
-    if not required:
-        return []
-    normalized_story = _normalize_text_for_match(story_text)
-    missing = []
-    for phrase in required:
-        normalized_phrase = _normalize_phrase(phrase)
-        if not normalized_phrase:
-            continue
-        if normalized_phrase not in normalized_story:
-            missing.append(phrase)
-    return missing
 
 
 def _extract_page_end_word(page_text: str) -> str:
@@ -950,11 +883,6 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         custom_elements = kwargs.get(
             "custom_elements", ""
         )  # Free-form custom story requests
-        # TODO(lint): `required_custom_elements` is parsed but never plumbed
-        # through to the prompt builder or validator — `_parse_custom_elements`
-        # is defined at module level and its result is dropped on the floor.
-        # Suspected unfinished feature wiring; flagged on PR #151.
-        required_custom_elements = _parse_custom_elements(custom_elements)  # noqa: F841
 
         # NEW: Extract structured companion data
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
