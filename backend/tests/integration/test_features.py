@@ -94,6 +94,42 @@ def test_feature_companion_characters_are_forwarded(
     assert forwarded["companion_characters"] == companions
 
 
+def test_feature_additional_characters_top_level_are_forwarded(
+    client, auth_headers, mock_story_task
+):
+    """MT-194: `additional_characters` sent at the top of the request body
+    (Flutter client default) must be plumbed into task_kwargs so the
+    downstream prompt builder receives the guest cast.
+    """
+    extras = ["Maya", "Jordan"]
+    forwarded = _post_story_and_get_task_kwargs(
+        client,
+        auth_headers,
+        mock_story_task,
+        additional_characters=extras,
+    )
+
+    assert forwarded["additional_characters"] == extras
+
+
+def test_feature_additional_characters_nested_fallback_is_forwarded(
+    client, auth_headers, mock_story_task
+):
+    """MT-194: wizard flow nests guests under `character_details` as
+    `additionalCharacters`. When the top-level key is absent, the nested
+    spelling must still reach task_kwargs.
+    """
+    extras = ["Grandma Rose"]
+    forwarded = _post_story_and_get_task_kwargs(
+        client,
+        auth_headers,
+        mock_story_task,
+        character_details={"additionalCharacters": extras},
+    )
+
+    assert forwarded["additional_characters"] == extras
+
+
 def test_feature_custom_elements_are_mapped(client, auth_headers, mock_story_task):
     custom = "A flying skateboard and a talking robot bird"
     forwarded = _post_story_and_get_task_kwargs(

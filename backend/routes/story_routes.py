@@ -685,12 +685,15 @@ def create_story_blueprint(
             transformed_parent_guidance,
         )
 
-        # Extract character_details to get additional_characters if available
+        # Extract character_details to get additional_characters if available.
+        # The Flutter client sends `additional_characters` at the top level of
+        # the request body (see lib/services/api_service_manager.dart). The
+        # wizard fallback path nests them under `character_details` as
+        # `additionalCharacters`. Both spellings are preserved here and threaded
+        # into `task_kwargs` so the downstream prompt builders (bedtime, rhyme,
+        # learning-to-read, standard) actually receive the guest cast.
         character_details = payload.get("character_details") or {}
-        # TODO(lint): `additional_chars` is extracted but never threaded into
-        # `task_kwargs` below — suspected wiring bug. Left in place and silenced
-        # so the lint pass doesn't erase the evidence; see PR #151 discussion.
-        additional_chars = payload.get(  # noqa: F841
+        additional_chars = payload.get(
             "additional_characters"
         ) or character_details.get("additionalCharacters")
 
@@ -742,6 +745,11 @@ def create_story_blueprint(
             or payload.get("companion_name"),  # Legacy support
             "companion_pets": companion_pets,  # NEW: List of pet companions with species
             "companion_characters": companion_characters,  # NEW: List of character companions
+            # MT-194: thread `additional_characters` (guest cast) through to the
+            # prompt builder. Without this, the downstream `kwargs.get(
+            # "additional_characters")` returns None and the guest cast only
+            # appears if the client nested it under `character_details`.
+            "additional_characters": additional_chars,
             "spark_tool": payload.get("sparkTool"),  # NEW: Spark Tool
             "mood_physics": payload.get("moodPhysics"),  # NEW: Mood Physics
             "conflict_hook": payload.get("conflictHook"),  # NEW: Plot Driver
