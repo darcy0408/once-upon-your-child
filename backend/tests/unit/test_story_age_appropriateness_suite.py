@@ -256,6 +256,21 @@ class TestStoryGenerationRoutingAndValidation:
 
     def test_task_retries_when_story_omits_companions_or_custom_requests(self, app, mocker):
         mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)
+        # M-7 pseudonymization (deadeb10) replaces the hero name with HERO_1
+        # before validation, so the mock stories must contain HERO_1 (or we
+        # patch the pseudonymizer to a passthrough). Passthrough is simpler
+        # and keeps the mock stories readable.
+        mocker.patch(
+            "backend.tasks.story_tasks.pseudonymize_hero_name",
+            side_effect=lambda real_name, *args, **kwargs: real_name or "Hero",
+        )
+        # M-5 LLM content moderation (deadeb10) fails closed for ages <=12
+        # when no GEMINI_API_KEY is set in tests, which would route into the
+        # safe-fallback regen path and call the mocked generator a 3rd time.
+        mocker.patch(
+            "backend.utils.content_moderator.moderate_story_content",
+            return_value=(True, ""),
+        )
 
         invalid_story = _page_json(
             _repeat_sentence(
@@ -306,6 +321,17 @@ class TestStoryGenerationRoutingAndValidation:
 
     def test_task_retries_when_easy_reader_output_does_not_rhyme(self, app, mocker):
         mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)
+        # See companion test above — same M-7 + M-5 patches so the validation
+        # loop sees the rhyme-quality difference rather than tripping on the
+        # HERO_1 mandatory-name check or the fail-closed moderator path.
+        mocker.patch(
+            "backend.tasks.story_tasks.pseudonymize_hero_name",
+            side_effect=lambda real_name, *args, **kwargs: real_name or "Hero",
+        )
+        mocker.patch(
+            "backend.utils.content_moderator.moderate_story_content",
+            return_value=(True, ""),
+        )
 
         non_rhyming_story = _page_json(
             "Avery can hop to the hill.",
