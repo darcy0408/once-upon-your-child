@@ -12,6 +12,12 @@ import '../data/life_quest_data.dart';
 import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
 import '../widgets/coping_practice_sheet.dart';
+import '../widgets/crisis_resources_panel.dart';
+
+/// Quest id of the peer-mental-health-crisis Life Quest (ages 15-17). When
+/// this quest is active, [LifeQuestScreen] surfaces a calm crisis-resources
+/// panel at story start and story end. Content-safety audit F-09 / MT-159.
+const String _crisisQuestId = 'someone_needs_help';
 
 
 /// Launch a Life Quest: shows quest selector, then plays the quest.
@@ -645,6 +651,15 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Story-start crisis resources — MT-159 / F-09. Only the
+                // peer-mental-health-crisis quest, and only on its first
+                // segment before any choice has been made.
+                if (_activeQuest!.id == _crisisQuestId &&
+                    _segmentHistory.isEmpty &&
+                    segment.id == _activeQuest!.startSegmentId) ...[
+                  const CrisisResourcesPanel(),
+                  const SizedBox(height: 20),
+                ],
                 // Narrative text
                 Text(
                   _interpolate(segment.content),
@@ -772,9 +787,17 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   Widget _buildEndingSection(QuestSegment segment, AgeBandThemeData band) {
     final tip = _activeQuest?.grownupTip;
+    final showCrisisResources = _activeQuest?.id == _crisisQuestId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Story-end crisis resources — MT-159 / F-09. Rendered above the
+        // grown-up tip so the reader sees support options before the
+        // parent-facing callout. Only on the peer-mental-health-crisis quest.
+        if (showCrisisResources) ...[
+          const SizedBox(height: 8),
+          const CrisisResourcesPanel(),
+        ],
         // Grown-up tip — soft callout shown at the end of every quest that
         // has one. Marked clearly as parent-facing so kids don't mistake it
         // for story content.
