@@ -109,12 +109,12 @@ class TestExpensiveTierPerMinuteFloors:
         # MT-113 (reopen): hour/day raised above the monthly quota so they
         # never shadow it; the monthly-quota check is the real cost gate.
         src = self._expensive_limits()
-        assert "'free': \"15/minute; 60/hour; 100/day\"" in src
+        assert '"free": "15/minute; 60/hour; 100/day"' in src
 
     def test_premium_per_minute_is_30(self):
         src = self._expensive_limits()
-        assert "'premium': \"30/minute; 120/hour; 200/day\"" in src
+        assert '"premium": "30/minute; 120/hour; 200/day"' in src
 
     def test_family_per_minute_is_60(self):
         src = self._expensive_limits()
-        assert "'family': \"60/minute; 240/hour; 400/day\"" in src
+        assert '"family": "60/minute; 240/hour; 400/day"' in src
