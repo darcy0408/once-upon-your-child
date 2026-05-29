@@ -719,6 +719,19 @@ class TestLearningToReadPrompt:
         assert "WORKED EXAMPLE" in prompt
         assert "Page 1" in prompt and "Page 5" in prompt
 
+    def test_ltr_prompt_for_age_13_prose_path_forbids_rhyme(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Luna",
+            theme="Magic",
+            age=13,
+            character_details={},
+            story_length="short",
+        )
+        assert "This reader is a teen or adult who is learning to read fluently" in prompt
+        assert "NO rhyme" in prompt
+        assert "decodable prose, not poetry" in prompt
+        assert "NO RHYME — write in plain prose" in prompt
+
 
 class TestStripTheEndPages:
     """Trailing 'The End' marker pages are removed; embedded 'The End' is kept."""
