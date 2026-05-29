@@ -289,3 +289,155 @@ def test_generate_segment_with_retry_repairs_trailing_commas(
     assert data["title"] == "The Repair Path"
     assert data["choices"][0]["text"] == "Say sorry"
     assert data["choices"][1]["text"] == "Help fix it"
+
+
+def _seed_adventure_with_open_segment(test_user, test_character):
+    """Helper: insert a story with one CHOICE-type segment and one normal choice.
+
+    Returns the (story_id, segment_id, choice_id) tuple. Caller is responsible
+    for the surrounding app_context / merge / commit lifecycle.
+    """
+    story = InteractiveStory(
+        id=str(uuid.uuid4()),
+        user_id=test_user.id,
+        character_id=test_character.id,
+        title="Parent-choice attribution test",
+        theme="Adventure",
+        tone="fantasy",
+        length="short",
+        age=7,
+        current_segment_number=1,
+    )
+    db.session.add(story)
+
+    state = StoryState(
+        id=str(uuid.uuid4()),
+        story_id=story.id,
+        current_location="Start",
+        current_goal="Explore",
+    )
+    db.session.add(state)
+
+    segment = StorySegment(
+        id=str(uuid.uuid4()),
+        story_id=story.id,
+        segment_number=1,
+        content="Beginning...",
+        output_type="CHOICE",
+    )
+    db.session.add(segment)
+    db.session.flush()
+
+    choice = StoryChoice(
+        id=str(uuid.uuid4()),
+        segment_id=segment.id,
+        choice_number=1,
+        text="Go through the door",
+    )
+    db.session.add(choice)
+    story.current_segment_id = segment.id
+    db.session.commit()
+
+    return story.id, segment.id, choice.id
+
+
+def _mock_next_segment_response(mock_genai_client, *, is_ending=True):
+    """Stub Gemini with a minimal valid continuation segment."""
+    mock_response = MagicMock()
+    mock_response.text = json.dumps(
+        {
+            "content": "The next part of the adventure unfolds.",
+            "is_ending": is_ending,
+            "inventory": [],
+            "story_state": {"location": "Hallway", "goal": "Keep going"},
+            "choices": [],
+        }
+    )
+    mock_genai_client.models.generate_content.return_value = mock_response
+
+
+def test_continue_story_continue_branch_persists_null_parent_choice_id(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    """MT-195: the 'continue' branch must NOT persist the literal string
+    'continue' as parent_choice_id — it should be NULL, because there's no
+    StoryChoice row representing a continue action."""
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+        story_id, segment_id, _choice_id = _seed_adventure_with_open_segment(
+            test_user, test_character
+        )
+
+        _mock_next_segment_response(mock_genai_client)
+        interactive_service.continue_story(story_id, "continue")
+
+        new_segment = StorySegment.query.filter_by(
+            story_id=story_id, segment_number=2
+        ).one()
+        assert new_segment.parent_choice_id is None, (
+            "continue branch must persist NULL parent_choice_id, "
+            f"got {new_segment.parent_choice_id!r}"
+        )
+
+        # Cleanup
+        db.session.delete(db.session.get(InteractiveStory, story_id))
+        db.session.commit()
+
+
+def test_continue_story_custom_branch_persists_null_parent_choice_id(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    """MT-195: the 'custom' (free-text 'Something Else') branch must NOT persist
+    the literal string 'custom' as parent_choice_id — it should be NULL."""
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+        story_id, segment_id, _choice_id = _seed_adventure_with_open_segment(
+            test_user, test_character
+        )
+
+        _mock_next_segment_response(mock_genai_client)
+        interactive_service.continue_story(
+            story_id, "custom", custom_text="I want to climb the tree instead"
+        )
+
+        new_segment = StorySegment.query.filter_by(
+            story_id=story_id, segment_number=2
+        ).one()
+        assert new_segment.parent_choice_id is None, (
+            "custom branch must persist NULL parent_choice_id, "
+            f"got {new_segment.parent_choice_id!r}"
+        )
+
+        # Cleanup
+        db.session.delete(db.session.get(InteractiveStory, story_id))
+        db.session.commit()
+
+
+def test_continue_story_normal_branch_persists_real_choice_id(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    """MT-195: the normal choice branch must persist the real StoryChoice.id
+    (a valid FK to story_choice) as parent_choice_id."""
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+        story_id, segment_id, choice_id = _seed_adventure_with_open_segment(
+            test_user, test_character
+        )
+
+        _mock_next_segment_response(mock_genai_client)
+        interactive_service.continue_story(story_id, choice_id)
+
+        new_segment = StorySegment.query.filter_by(
+            story_id=story_id, segment_number=2
+        ).one()
+        assert new_segment.parent_choice_id == choice_id, (
+            f"normal branch must persist real choice id {choice_id!r}, "
+            f"got {new_segment.parent_choice_id!r}"
+        )
+
+        # Cleanup
+        db.session.delete(db.session.get(InteractiveStory, story_id))
+        db.session.commit()

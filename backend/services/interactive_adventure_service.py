@@ -344,12 +344,7 @@ class InteractiveAdventureService:
             choice.is_selected = True
             choice.selected_at = datetime.now(timezone.utc)
             selected_choice_text = choice.text
-            # TODO(lint): `parent_choice_id` is computed across all branches
-            # (None for continue/custom, choice_id otherwise) but the call at
-            # line ~412 passes `parent_choice_id=choice_id` directly, which is
-            # the literal string "continue" / "custom" for those branches.
-            # Suspected wiring bug — flagged on PR #151.
-            parent_choice_id = choice_id  # noqa: F841
+            parent_choice_id = choice_id
 
         # Build story context
         story_context = self._build_story_context(story)
@@ -409,12 +404,17 @@ class InteractiveAdventureService:
 
         next_segment_number = story.current_segment_number + 1
 
-        # Create new segment
+        # Create new segment.
+        # MT-195: `parent_choice_id` is the FK to story_choice.id (nullable).
+        # We pass the *computed* `parent_choice_id` — which is None for the
+        # "continue" / "custom" branches and the real choice.id otherwise —
+        # rather than the raw `choice_id` arg (which is the literal string
+        # "continue" or "custom" on those branches).
         new_segment = self._create_segment_record(
             story_id=story.id,
             segment_data=segment_data,
             segment_number=next_segment_number,
-            parent_choice_id=choice_id,
+            parent_choice_id=parent_choice_id,
         )
         db.session.add(new_segment)
         db.session.flush()
