@@ -4,12 +4,12 @@ Uses SDXL-Lightning for fast, cheap image generation (~$0.003 per image)
 """
 
 import base64
-import io
 import logging
 import os
 import re
 import uuid
 from datetime import datetime
+
 import requests
 
 logger = logging.getLogger(__name__)

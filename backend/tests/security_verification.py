@@ -1,8 +1,10 @@
-import pytest
 import json
-from backend.models.user import User
-from backend.models.character import Character
+
+import pytest
+
 from backend.database import db
+from backend.models.character import Character
+from backend.models.user import User
 
 # Note: We rely on 'app' fixture from conftest.py which provides active app_context.
 

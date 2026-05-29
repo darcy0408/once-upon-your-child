@@ -1,8 +1,9 @@
-import sqlite3
-import psycopg2
-import os
 import json
+import os
+import sqlite3
 from datetime import datetime, timezone
+
+import psycopg2
 
 # SQLite connection
 sqlite_conn = sqlite3.connect("characters.db")

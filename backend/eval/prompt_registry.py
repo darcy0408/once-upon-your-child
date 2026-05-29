@@ -12,7 +12,7 @@ To add or update a template: edit the entry, then run
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Sequence
 
 SNAPSHOT_GIT_SHA = "390de0e5"

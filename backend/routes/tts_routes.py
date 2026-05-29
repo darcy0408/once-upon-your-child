@@ -25,6 +25,7 @@ POST /tts/transcribe
 
 import base64
 import logging
+
 from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
@@ -46,8 +47,6 @@ def _get_tts_service():
         except ImportError:
             logger.warning("elevenlabs_tts_service module not found")
             return None
-
-    import os
 
     try:
         _tts_service = ElevenLabsTTSService()
@@ -213,18 +212,18 @@ def create_tts_blueprint(limiter, require_auth):
         # Per-user daily TTS quota check (applies to both providers)
         try:
             from backend.utils.ai_quota import (
-                check_tts_quota,
-                increment_tts_quota,
                 check_tts_chars_quota,
+                check_tts_quota,
                 increment_tts_chars,
+                increment_tts_quota,
             )
             from backend.utils.audit import audit_log
         except ImportError:
             from utils.ai_quota import (
-                check_tts_quota,
-                increment_tts_quota,
                 check_tts_chars_quota,
+                check_tts_quota,
                 increment_tts_chars,
+                increment_tts_quota,
             )
             from utils.audit import audit_log
 

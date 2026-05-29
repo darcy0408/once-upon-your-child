@@ -13,12 +13,12 @@ from flask_jwt_extended import (
 from sqlalchemy.exc import IntegrityError
 
 from ..database import db
+from ..middleware.auth import require_admin, require_auth, require_owner
 from ..models.user import User
 from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
-from ..middleware.auth import require_auth, require_admin, require_owner
-from ..utils.audit import audit_log
 from ..utils.app_helpers import is_production
+from ..utils.audit import audit_log
 
 
 def _blocklist_jti(jti: str, exp: int, logger) -> None:
@@ -596,8 +596,9 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             JSON with usage statistics and cost breakdown
         """
         try:
-            from backend.services.usage_tracking_service import get_usage_tracker
             from datetime import datetime, timedelta
+
+            from backend.services.usage_tracking_service import get_usage_tracker
 
             # Get query parameters
             days = int(request.args.get("days", 30))

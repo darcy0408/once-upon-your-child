@@ -1,6 +1,7 @@
 import uuid
-from ..database import db
 from datetime import datetime, timezone
+
+from ..database import db
 
 
 class Story(db.Model):

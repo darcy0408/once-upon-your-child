@@ -3,11 +3,10 @@ Cost Tracking Module for Story Weaver
 Tracks Gemini API usage costs and provides budget monitoring
 """
 
-import os
-import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 # Handle relative imports for both direct execution and module import
 try:

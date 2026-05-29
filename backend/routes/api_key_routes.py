@@ -3,18 +3,16 @@ API Key Management Routes for BYOK (Bring Your Own API Key) feature.
 Allows users to securely save, validate, and remove their Gemini API keys.
 """
 
-from flask import Blueprint, request, jsonify
 import logging
 from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, jsonify, request
 
 from ..database import db
 from ..encryption_utils import (
     encrypt_api_key,
-    decrypt_api_key,
-    decrypt_user_api_key,
-    is_legacy_encrypted,
-    validate_gemini_api_key_format,
     test_gemini_api_key,
+    validate_gemini_api_key_format,
 )
 
 try:

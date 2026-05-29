@@ -1,6 +1,7 @@
 import io
-import jwt
 from datetime import datetime, timedelta, timezone
+
+import jwt
 
 from backend.database import db
 from backend.models import User

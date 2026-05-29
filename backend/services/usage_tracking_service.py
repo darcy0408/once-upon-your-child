@@ -3,14 +3,13 @@ API Usage Tracking Service
 Tracks Gemini API usage and estimates costs
 """
 
-import os
 import json
 import logging
+from collections import defaultdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
-from dataclasses import dataclass, asdict
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 

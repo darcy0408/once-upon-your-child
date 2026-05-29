@@ -1,7 +1,9 @@
-from ..database import db
-from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from datetime import datetime, timezone
+
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from ..database import db
 
 
 class User(db.Model):

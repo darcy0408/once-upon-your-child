@@ -11,29 +11,30 @@ from celery.utils.log import get_task_logger
 # Prevent default app initialization during import so we can control app context here.
 os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
 
+from google.api_core import exceptions as google_exceptions
+
 from backend.celery_config import celery
+from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 from backend.database import db
 from backend.models.character import Character
 from backend.models.story import Story
 from backend.models.user import User
-from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
-from google.api_core import exceptions as google_exceptions
+from backend.services.prompt_service import PromptService
+from backend.services.prompt_versioning import resolve as _resolve_prompt_version
+from backend.services.story_generation_service import StoryGenerationService
 from backend.services.story_service import (
-    AdvancedStoryEngine,
-    _safe_extract_title_and_gem,
-    _build_learning_to_read_prompt,
-    _build_rhyme_time_prompt,
-    _build_bedtime_prompt,
     AGE_CONSTRAINTS,
-    _get_age_band,
+    AdvancedStoryEngine,
+    _build_bedtime_prompt,
+    _build_learning_to_read_prompt,
     _build_prior_adventures_block,
+    _build_rhyme_time_prompt,
+    _get_age_band,
+    _safe_extract_title_and_gem,
     pseudonymize_hero_name,
     restore_hero_name,
 )
-from backend.services.prompt_service import PromptService
-from backend.services.prompt_versioning import resolve as _resolve_prompt_version
-from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 
 
 def _is_superhero_theme(theme: str | None) -> bool:
@@ -949,7 +950,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         custom_elements = kwargs.get(
             "custom_elements", ""
         )  # Free-form custom story requests
-        required_custom_elements = _parse_custom_elements(custom_elements)
+        # TODO(lint): `required_custom_elements` is parsed but never plumbed
+        # through to the prompt builder or validator — `_parse_custom_elements`
+        # is defined at module level and its result is dropped on the floor.
+        # Suspected unfinished feature wiring; flagged on PR #151.
+        required_custom_elements = _parse_custom_elements(custom_elements)  # noqa: F841
 
         # NEW: Extract structured companion data
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts

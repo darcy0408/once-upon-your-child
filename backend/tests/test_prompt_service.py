@@ -16,8 +16,6 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-import pytest
-
 from backend.services.prompt_service import PromptService
 from backend.tasks.story_tasks import (
     SPROUT_WORD_CAP,

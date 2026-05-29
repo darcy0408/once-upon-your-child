@@ -26,25 +26,23 @@ the endpoints return 503 rather than silently granting entitlement.
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 try:
     from ..database import db
-    from ..models.user import User
+    from ..middleware.auth import require_auth
 
     # Importing the IAP models at module level registers them with SQLAlchemy
     # before db.create_all() runs, so the tables auto-create on a fresh DB.
     from ..models.iap_event import (
-        IapNotificationEvent,
-        IapPurchase,
         STORE_APPLE,
         STORE_GOOGLE,
+        IapPurchase,
     )
-    from ..middleware.auth import require_auth
-    from ..services.entitlement_service import apply_entitlement, FREE_TIER
+    from ..services.entitlement_service import FREE_TIER, apply_entitlement
     from ..utils.iap_notification_verify import (
         IapVerificationConfigError,
         IapVerificationError,
@@ -53,15 +51,13 @@ try:
     )
 except ImportError:  # pragma: no cover - flat-module layout
     from database import db
-    from models.user import User
+    from middleware.auth import require_auth
     from models.iap_event import (
-        IapNotificationEvent,
-        IapPurchase,
         STORE_APPLE,
         STORE_GOOGLE,
+        IapPurchase,
     )
-    from middleware.auth import require_auth
-    from services.entitlement_service import apply_entitlement, FREE_TIER
+    from services.entitlement_service import FREE_TIER, apply_entitlement
     from utils.iap_notification_verify import (
         IapVerificationConfigError,
         IapVerificationError,

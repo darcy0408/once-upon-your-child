@@ -13,8 +13,6 @@ import logging
 import pytest
 
 from backend.utils.app_helpers import (
-    _KEYWORDS_ALL_AGES,
-    _KEYWORDS_YOUNG_ONLY,
     make_filter_story_content,
 )
 
@@ -96,10 +94,10 @@ class TestExpensiveTierPerMinuteFloors:
         # Mirror the structure from get_tier_limits to inspect the values
         # without needing a Flask request context. The single source of truth
         # is exercised end-to-end by tests/security/test_rate_limiting.py.
-        from backend.utils import app_helpers
-
         # Re-import the function to read its literal default dict via inspect.
         import inspect
+
+        from backend.utils import app_helpers
 
         src = inspect.getsource(app_helpers.get_tier_limits)
         # Sanity: the block is small; just check the literal strings appear.

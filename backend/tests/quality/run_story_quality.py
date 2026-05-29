@@ -18,12 +18,12 @@ Usage (from repo root):
 Results are saved to: backend/tests/quality/results/story-quality-<timestamp>.json
 """
 
-import os
-import sys
-import json
-import re
-import time
 import datetime
+import json
+import os
+import re
+import sys
+import time
 
 # ── Load backend/.env before anything reads env vars ─────────────────────────
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -318,11 +318,11 @@ def main():
     print(f"  Model   : {model}")
     print(f"  Tests   : {len(TEST_CASES)} stories (one per age band)\n")
 
+    from backend.services.story_generation_service import StoryGenerationService
     from backend.services.story_service import (
         AdvancedStoryEngine,
         _safe_extract_title_and_gem,
     )
-    from backend.services.story_generation_service import StoryGenerationService
 
     engine = AdvancedStoryEngine()
     generator = StoryGenerationService()

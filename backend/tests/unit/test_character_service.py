@@ -12,15 +12,17 @@ Tests cover:
 - Error handling
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from backend.services import character_service
 from backend.services.character_service import (
+    PERSONALITY_SLIDER_DEFINITIONS,
+    _as_list,
     _clamp_slider_value,
     _sanitize_personality_sliders,
-    _as_list,
     _sanitize_pets,
-    PERSONALITY_SLIDER_DEFINITIONS,
 )
 
 

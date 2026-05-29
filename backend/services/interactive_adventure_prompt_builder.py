@@ -5,7 +5,7 @@ following the Interactive Children's Adventure Story Weaver specification.
 """
 
 import json
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from backend.services.story_service import transform_parent_context_to_story_guidance
 

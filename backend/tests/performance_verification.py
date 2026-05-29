@@ -1,8 +1,7 @@
-import unittest
-from unittest.mock import patch, MagicMock
-from io import BytesIO
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Add parent directory to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -57,7 +56,6 @@ class PerformanceVerificationTest(unittest.TestCase):
 
         # ALTERNATIVE: Verify the code modification validity via static analysis checks or unit test extraction.
         # Since I can't easily run the full endpoint, I will verify the ANALYTICS fix which is critical.
-        pass
 
     def test_analytics_route_stability(self):
         """Test that analytics routes do not crash (N+1 fix verification)"""
@@ -67,7 +65,6 @@ class PerformanceVerificationTest(unittest.TestCase):
         # we verify the query construction directly as the goal is to prevent N+1 issues.
 
         from backend.models.story import Story
-        from sqlalchemy.orm import joinedload
 
         try:
             # Replicate the query from analytics_routes.py

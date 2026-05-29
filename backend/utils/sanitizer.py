@@ -5,8 +5,8 @@ catches anything that bypasses the client (direct API calls, modified
 clients, etc.).
 """
 
-import re
 import html
+import re
 
 # Maximum character limits per field.
 MAX_CHARACTER_NAME = 50

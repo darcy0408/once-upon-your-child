@@ -20,13 +20,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import itertools
 import json
-import os
 import sys
 import time
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 

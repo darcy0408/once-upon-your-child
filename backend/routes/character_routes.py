@@ -3,12 +3,11 @@ import re
 from flask import Blueprint, jsonify, request
 
 from ..database import db
-from ..services import character_service
 from ..middleware.auth import require_auth
 from ..models.character import Character
 from ..models.parent_hidden_context import ParentHiddenContext
+from ..services import character_service
 from ..utils.sanitizer import sanitize_for_prompt
-from ..utils.validators import sanitize_text
 
 # ── Allowlists ──────────────────────────────────────────────────────────────
 # Only these exact values are accepted for structured fields.  Anything else

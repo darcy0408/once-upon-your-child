@@ -1,17 +1,18 @@
-import pytest
 import json
-from flask import jsonify, request
-from backend.middleware.auth import (
-    require_auth,
-    require_admin,
-    require_owner,
-    optional_auth,
-)
-import jwt
 from datetime import datetime, timedelta, timezone
-import os
-from backend.models.user import User
+
+import jwt
+import pytest
+from flask import jsonify, request
+
 from backend.database import db
+from backend.middleware.auth import (
+    optional_auth,
+    require_admin,
+    require_auth,
+    require_owner,
+)
+from backend.models.user import User
 
 
 # Test routes to verify decorators

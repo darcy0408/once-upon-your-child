@@ -14,11 +14,12 @@ Tests cover:
 """
 
 import pytest
+
 from backend.services.story_service import (
-    AdvancedStoryEngine,
-    _get_age_band,
     AGE_CONSTRAINTS,
+    AdvancedStoryEngine,
     _build_learning_to_read_prompt,
+    _get_age_band,
     transform_parent_context_to_story_guidance,
 )
 
@@ -1045,9 +1046,10 @@ class TestPriorAdventuresRecall:
     def _add_story(
         self, app, user_id, character_id, themes, characters_featured=None, days_ago=0
     ):
+        from datetime import datetime, timedelta, timezone
+
         from backend.database import db
         from backend.models.story import Story
-        from datetime import datetime, timezone, timedelta
 
         story = Story(
             id=f"story_{character_id}_{days_ago}_{len(themes)}",
@@ -1116,8 +1118,8 @@ class TestPriorAdventuresRecall:
     def test_block_caps_themes_at_max_and_preserves_newer_first(self, app):
         """Cap defends prompt size when a character has a long history."""
         from backend.services.story_service import (
-            _build_prior_adventures_block,
             _PRIOR_ADVENTURES_MAX_THEMES,
+            _build_prior_adventures_block,
         )
 
         with app.app_context():

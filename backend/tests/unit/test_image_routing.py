@@ -419,8 +419,9 @@ class TestFluxSchnellGenerator:
 
     def test_method_exists_with_user_id_kwarg(self):
         """Method must accept user_id kwarg for cost-tracker plumbing."""
-        from backend.replicate_image_generator import ReplicateImageGenerator
         import inspect
+
+        from backend.replicate_image_generator import ReplicateImageGenerator
 
         gen = ReplicateImageGenerator()
         assert hasattr(gen, "generate_story_illustration_flux_schnell")
@@ -466,8 +467,9 @@ class TestCloudflareFluxGenerator:
 
     def test_method_exists_with_expected_signature(self):
         """Must share the Replicate Flux signature so callers can swap freely."""
-        from backend.cloudflare_image_generator import CloudflareImageGenerator
         import inspect
+
+        from backend.cloudflare_image_generator import CloudflareImageGenerator
 
         gen = CloudflareImageGenerator()
         assert hasattr(gen, "generate_story_illustration_flux")
@@ -680,6 +682,7 @@ class TestPowerVisualOverride:
 
     def test_gemini_generate_threads_override_into_prompt(self):
         from unittest.mock import MagicMock
+
         from backend.gemini_image_generator import GeminiImageGenerator
 
         gen = GeminiImageGenerator(api_key="fake")

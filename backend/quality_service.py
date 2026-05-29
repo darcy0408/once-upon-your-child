@@ -1,6 +1,5 @@
 import re
-from typing import Dict, Any
-import math
+from typing import Any, Dict
 
 
 class StoryQualityService:
@@ -194,15 +193,11 @@ class StoryQualityService:
 
         # Simplified Flesch Reading Ease formula
         # ASL = average sentence length (words per sentence)
-        # ASW = average syllables per word (approximated)
         asl = word_count / sentence_count
 
-        # Rough syllable approximation (vowels = syllables)
-        vowels = len(re.findall(r"[aeiouAEIOU]", story_text))
-        asw = vowels / word_count if word_count > 0 else 0
-
-        # Simplified formula: 206.835 - 1.015 × ASL - 84.6 × ASW
-        # But we'll use a simpler version for our purposes
+        # NOTE: ASW (average syllables per word) and the canonical
+        # 206.835 - 1.015 × ASL - 84.6 × ASW formula were intentionally
+        # dropped in favor of the simpler heuristic below.
         readability_score = 100.0
 
         # Penalize very long sentences

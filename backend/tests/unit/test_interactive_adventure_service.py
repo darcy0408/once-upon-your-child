@@ -1,18 +1,17 @@
-import pytest
 import json
-from unittest.mock import MagicMock, patch
 import uuid
-from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
-from backend.services.interactive_adventure_service import InteractiveAdventureService
+import pytest
+
+from backend.database import db
 from backend.models import (
     InteractiveStory,
-    StorySegment,
     StoryChoice,
-    Character,
+    StorySegment,
     StoryState,
 )
-from backend.database import db
+from backend.services.interactive_adventure_service import InteractiveAdventureService
 
 
 @pytest.fixture

@@ -8,7 +8,8 @@ import io
 import logging
 import os
 import uuid
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from datetime import datetime
 
 from PIL import Image
@@ -279,7 +280,7 @@ class GeminiImageGenerator:
                                     )
             else:
                 logger.warning("Response has no candidates or unexpected structure")
-        except Exception as e:
+        except Exception:
             logger.exception("Error processing image response from Nano Banana")
 
         return images
@@ -762,7 +763,7 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
                 self._request_timeout_seconds,
             )
             return []
-        except Exception as e:
+        except Exception:
             logger.exception("Error generating coloring page with Gemini")
             return []
 

@@ -1,23 +1,17 @@
 try:
+    from ..data.superhero_matrix import POWERS as _SH_POWERS
+    from ..data.superhero_matrix import PROBLEMS as _SH_PROBLEMS
+    from ..data.superhero_matrix import VILLAINS as _SH_VILLAINS
+    from ..data.superhero_matrix import get_band_tables as _sh_get_band_tables
+    from ..data.superhero_matrix import pick_pairing as _sh_pick_pairing
     from .emotion_service import EmotionService
-    from ..config import config_by_name
-    from ..data.superhero_matrix import (
-        VILLAINS as _SH_VILLAINS,
-        PROBLEMS as _SH_PROBLEMS,
-        POWERS as _SH_POWERS,
-        pick_pairing as _sh_pick_pairing,
-        get_band_tables as _sh_get_band_tables,
-    )
 except ImportError:
+    from data.superhero_matrix import POWERS as _SH_POWERS
+    from data.superhero_matrix import PROBLEMS as _SH_PROBLEMS
+    from data.superhero_matrix import VILLAINS as _SH_VILLAINS  # type: ignore[no-redef]
+    from data.superhero_matrix import get_band_tables as _sh_get_band_tables
+    from data.superhero_matrix import pick_pairing as _sh_pick_pairing
     from services.emotion_service import EmotionService
-    from config import config_by_name
-    from data.superhero_matrix import (  # type: ignore[no-redef]
-        VILLAINS as _SH_VILLAINS,
-        PROBLEMS as _SH_PROBLEMS,
-        POWERS as _SH_POWERS,
-        pick_pairing as _sh_pick_pairing,
-        get_band_tables as _sh_get_band_tables,
-    )
 
 
 class PromptService:

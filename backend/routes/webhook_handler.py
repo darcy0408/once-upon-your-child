@@ -2,18 +2,17 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-import os
 import stripe
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from backend.database import db
-from backend.models.user import User
 
 # Importing the dedup models at module level registers them with SQLAlchemy
 # before app.py runs db.create_all(), so the tables are auto-created on a
 # fresh database with no manual migration step (M-3).
-from backend.models.stripe_event import StripeWebhookEvent, StripeSubscriptionCursor
+from backend.models.stripe_event import StripeSubscriptionCursor, StripeWebhookEvent
+from backend.models.user import User
 from backend.routes.stripe_routes import get_price_ids
 
 webhook_routes = Blueprint("webhook_routes", __name__)

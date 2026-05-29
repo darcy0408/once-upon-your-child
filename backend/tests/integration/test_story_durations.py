@@ -6,7 +6,8 @@ sized stories and that reading time estimates are reasonable.
 """
 
 import pytest
-from backend.services.story_service import AGE_CONSTRAINTS, _get_age_band
+
+from backend.services.story_service import AGE_CONSTRAINTS
 
 
 class TestStoryLengthConstraints:

@@ -17,7 +17,6 @@ module adds is response/usage capture for token accounting.
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 
 from .providers import load_env
@@ -69,13 +68,13 @@ def build_prompt(
     Mirrors the builder selection in story_tasks.generate_story_task.
     """
     # Imported lazily so a missing backend dep can't break `--dry-run`.
+    from backend.services.prompt_service import PromptService
     from backend.services.story_service import (
         AdvancedStoryEngine,
         _build_bedtime_prompt,
         _build_learning_to_read_prompt,
         _build_rhyme_time_prompt,
     )
-    from backend.services.prompt_service import PromptService
 
     age = BAND_TO_AGE[age_band]
     name = test_input.character_name
@@ -148,15 +147,17 @@ def generate(
     """Build the prompt and run one Gemini generation. Returns text + metrics."""
     load_env()
     # Reuse production model resolution / safety settings / extraction.
+    import os
+
     from google import genai
     from google.genai import types
+
     from backend.services.story_generation_service import (
-        _resolve_text_model,
         _CHILD_SAFETY_SETTINGS,
-        _extract_text,
         _SAFETY_FALLBACK,
+        _extract_text,
+        _resolve_text_model,
     )
-    import os
 
     prompt = build_prompt(mode, age_band, test_input, story_length)
     model = _resolve_text_model(user_tier)

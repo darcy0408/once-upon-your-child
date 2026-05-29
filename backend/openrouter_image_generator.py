@@ -4,14 +4,15 @@ Uses Stable Diffusion via OpenRouter (CHEAP: ~$0.002-0.005 per image!)
 Compatible with your existing OpenRouter API key
 """
 
+import base64
+import logging
 import os
 import re
-import requests
-import base64
+import time
 import uuid
 from datetime import datetime
-import time
-import logging
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +326,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                 if i < num_images - 1:
                     time.sleep(1)
 
-            except Exception as e:
+            except Exception:
                 logger.exception("Error generating image %s", i + 1)
 
         return images
@@ -446,7 +447,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                 if i < num_images - 1:
                     time.sleep(1)
 
-            except Exception as e:
+            except Exception:
                 logger.exception("Error generating coloring page %s", i + 1)
 
         return images

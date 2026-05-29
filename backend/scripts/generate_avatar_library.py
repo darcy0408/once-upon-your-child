@@ -11,14 +11,14 @@ Output:
     - metadata file backend/static/avatar_library/avatars.json
 """
 
-import os
-import sys
-import json
 import base64
-from pathlib import Path
-from PIL import Image
 import io
+import json
+import sys
 from datetime import datetime
+from pathlib import Path
+
+from PIL import Image
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))

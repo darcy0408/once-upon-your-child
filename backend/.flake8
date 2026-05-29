@@ -1,0 +1,25 @@
+[flake8]
+# Black compatibility + pragmatic ignores for the existing codebase.
+# E203, W503: conflict with Black's slice/binary-op formatting.
+# E501: long lines remaining after Black are string literals / docstrings.
+# W291, W293: trailing whitespace inside multi-line string literals (Black skips).
+# E402: dual-shape imports (sys.path bootstrap before package imports) in scripts.
+# F541: f-strings without placeholders are pre-existing throughout services/.
+# F841: ENFORCED — was previously ignored; the 31 violations were fixed and
+#       any remaining intentional-discard sites are tagged with # noqa: F841.
+# E712, E731: pre-existing style choices the codebase has accepted.
+# E722: ENFORCED — was previously ignored; bare `except:` was migrated to
+#       `except Exception:` to stop swallowing KeyboardInterrupt/SystemExit.
+# E231: missing whitespace after ',' — Black's call; only remaining ones are inside
+#       string literals.
+extend-ignore =
+    E203,
+    W503,
+    E501,
+    W291,
+    W293,
+    E402,
+    F541,
+    E712,
+    E731,
+    E231

@@ -2,14 +2,15 @@
 Avatar Generation Service - Generates safe, magical child avatars using Gemini 2.0
 """
 
-import uuid
 import base64
+import io
 import logging
 import os
 import re
-import io
+import uuid
 from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
+
 from .avatar_prompt_service import AvatarPromptService
 
 logger = logging.getLogger(__name__)
@@ -1404,7 +1405,7 @@ If reference photo is unclear, generate a friendly human character matching the 
 
         # For variation, we could add random elements to the seed or prompt
         # For now, we'll use the same seed which should give similar but not identical results
-        modified_seed = seed if not variation else seed + "_v2"
+        # (modified_seed = seed + "_v2" placeholder removed — unused dead code.)
 
         logger.info(f"Regenerating avatar with seed {seed}, variation={variation}")
 

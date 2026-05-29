@@ -4,6 +4,7 @@ Endpoints for Living Story Chronicle: chapter summarization and arc compression.
 """
 
 import logging
+
 from flask import Blueprint, jsonify, request
 
 try:

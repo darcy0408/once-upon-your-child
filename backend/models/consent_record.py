@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
+
 from ..database import db
 
 # CMP-10: monotonically increasing version of the privacy policy / consent

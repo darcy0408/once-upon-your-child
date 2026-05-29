@@ -5,17 +5,17 @@ High-quality AI narration for stories using ElevenLabs voices.
 
 import base64
 import io
+import logging
 import os
 import re
 import time
-import logging
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
-    from elevenlabs.client import ElevenLabs
     from elevenlabs import VoiceSettings
+    from elevenlabs.client import ElevenLabs
 
     ELEVENLABS_AVAILABLE = True
 except ImportError:

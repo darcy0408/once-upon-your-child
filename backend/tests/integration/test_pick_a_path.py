@@ -10,19 +10,17 @@ including:
 - Error handling and validation
 """
 
-import json
 import uuid
-from datetime import datetime, timezone
 
 import pytest
 
 from backend.database import db
 from backend.models import (
-    InteractiveStory,
-    StorySegment,
-    StoryChoice,
-    StoryState,
     Character,
+    InteractiveStory,
+    StoryChoice,
+    StorySegment,
+    StoryState,
 )
 
 

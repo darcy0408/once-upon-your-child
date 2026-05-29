@@ -7,17 +7,17 @@ Tests:
 3. Avatar API Endpoints - HTTP requests
 """
 
-import sys
 import os
+import sys
 
 # Add backend to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from services.avatar_prompt_service import AvatarPromptService
 from services.avatar_generation_service import (
     AvatarGenerationService,
     get_error_message,
 )
+from services.avatar_prompt_service import AvatarPromptService
 
 
 def test_prompt_service():

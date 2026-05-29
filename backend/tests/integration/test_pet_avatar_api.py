@@ -1,6 +1,7 @@
-import pytest
 from io import BytesIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 # A minimal valid PNG header + padding so the route's magic-byte photo
 # validation (_is_valid_image) accepts the upload. The route inspects only

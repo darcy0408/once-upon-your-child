@@ -8,8 +8,9 @@ Tests for the two-layer output safety system:
 These tests use mocked Gemini clients so no real API calls are made.
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -34,6 +35,7 @@ class TestKeywordFilter:
 
     def _make_filter(self):
         import logging
+
         from backend.utils.app_helpers import make_filter_story_content
 
         return make_filter_story_content(logging.getLogger("test"))
@@ -272,6 +274,7 @@ class TestTwoLayerModeration:
     def test_keyword_layer_catches_obvious_violation(self):
         """Keyword filter catches clear violations without needing LLM call."""
         import logging
+
         from backend.utils.app_helpers import make_filter_story_content
 
         fn = make_filter_story_content(logging.getLogger("test"))
@@ -281,9 +284,10 @@ class TestTwoLayerModeration:
 
     def test_llm_layer_catches_subtle_violation(self):
         """LLM classifier catches contextual violations that keywords miss."""
-        from backend.utils.content_moderator import moderate_story_content
         import logging
+
         from backend.utils.app_helpers import make_filter_story_content
+        from backend.utils.content_moderator import moderate_story_content
 
         fn = make_filter_story_content(logging.getLogger("test"))
         subtle_story = "The story described the hero visiting their friend Sarah at Westwood Elementary School, 42 Oak Lane."
@@ -317,7 +321,7 @@ class TestChunkedModeration:
         assert len(chunks) == 1
 
     def test_long_story_splits_into_multiple_chunks(self):
-        from backend.utils.content_moderator import _split_into_chunks, _CHUNK_SIZE
+        from backend.utils.content_moderator import _CHUNK_SIZE, _split_into_chunks
 
         long_text = "word " * 6000  # ~30000 chars
         chunks = _split_into_chunks(long_text)
@@ -325,7 +329,7 @@ class TestChunkedModeration:
         assert all(len(c) <= _CHUNK_SIZE for c in chunks)
 
     def test_chunk_count_capped(self):
-        from backend.utils.content_moderator import _split_into_chunks, _MAX_CHUNKS
+        from backend.utils.content_moderator import _MAX_CHUNKS, _split_into_chunks
 
         huge_text = "word " * 100000  # far past the cap
         chunks = _split_into_chunks(huge_text)

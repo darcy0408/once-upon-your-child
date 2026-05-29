@@ -12,9 +12,9 @@ Tests the story generation API endpoints to ensure:
 CRITICAL: These tests validate the core story generation API.
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-import json
-from unittest.mock import Mock, patch, MagicMock
 
 
 class TestGetStoryThemes:

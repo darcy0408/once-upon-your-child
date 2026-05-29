@@ -1,9 +1,8 @@
 from flask import Blueprint, jsonify
-
 from sqlalchemy import text
 
 from ..database import db
-from ..middleware.auth import require_auth, require_admin
+from ..middleware.auth import require_admin, require_auth
 
 
 def create_admin_blueprint(logger, limiter=None):
@@ -66,7 +65,7 @@ def create_admin_blueprint(logger, limiter=None):
                 200,
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to run database optimization")
             return (
                 jsonify({"error": "Database optimization failed. Check server logs."}),
@@ -202,7 +201,7 @@ def create_admin_blueprint(logger, limiter=None):
                 200,
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to run database migrations")
             return (
                 jsonify({"error": "Database migration failed. Check server logs."}),

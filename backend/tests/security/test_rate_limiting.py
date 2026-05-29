@@ -1,13 +1,15 @@
-import pytest
 import json
 import os
 import time
+from unittest.mock import MagicMock, patch
+
 import flask
-from backend.models.user import User
-from backend.database import db
+import pytest
+
 from backend.app import create_app
 from backend.config import TestingConfig
-from unittest.mock import patch, MagicMock
+from backend.database import db
+from backend.models.user import User
 
 
 @pytest.fixture
@@ -15,9 +17,8 @@ def ratelimit_app():
     """
     App fixture with rate limiting explicitly enabled.
     """
-    from backend.config import config_by_name
     import backend.tasks.story_tasks as story_tasks
-    import backend.utils.app_helpers as app_helpers
+    from backend.config import config_by_name
 
     class RateLimitTestingConfig(TestingConfig):
         RATELIMIT_ENABLED = True
@@ -84,8 +85,9 @@ def free_user_id(ratelimit_app):
         return "free_user_limit_test"
 
 
-import jwt
 from datetime import datetime, timedelta, timezone
+
+import jwt
 
 
 def _get_token(user_id, tier="free"):

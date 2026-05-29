@@ -6,10 +6,11 @@ tier-aware OpenRouter chain that does NOT subject child users to Gemini's
 prohibited-use ToS for child-directed apps.
 """
 
-import os
-import requests
 import logging
+import os
 import time
+
+import requests
 
 logger = logging.getLogger(__name__)
 

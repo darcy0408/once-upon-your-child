@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """Initialize the database by creating all tables."""
 
-import sys
 import os
+import sys
 
 # Add the parent directory to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from backend.database import db
 from backend.app import create_app
+from backend.database import db
 
 # Import all models to ensure they're registered
-from backend.models.character import Character
-from backend.models.story import Story
-from backend.models.user import User
-from backend.models.achievement import UserAchievement, AchievementStats
 
 
 def init_database():

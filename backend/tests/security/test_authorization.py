@@ -1,6 +1,7 @@
+from datetime import datetime, timedelta, timezone
+
 import jwt
 import pytest
-from datetime import datetime, timedelta, timezone
 from flask_jwt_extended import create_access_token
 
 from backend.database import db

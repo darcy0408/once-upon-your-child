@@ -8,29 +8,27 @@ import json
 import logging
 import re
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from google import genai
-from google.genai import types
 from google.api_core import exceptions as google_exceptions
+from google.genai import types
 
 from backend.database import db
 from backend.models import (
-    InteractiveStory,
-    StorySegment,
-    StoryChoice,
-    InventoryItem,
-    StoryState,
     Character,
+    InteractiveStory,
+    InventoryItem,
+    StoryChoice,
+    StorySegment,
+    StoryState,
 )
+from backend.replicate_image_generator import ReplicateImageGenerator
 from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
 from backend.services.story_service import pseudonymize_hero_name, restore_hero_name
-from backend.gemini_image_generator import GeminiImageGenerator
-from backend.replicate_image_generator import ReplicateImageGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -346,7 +344,12 @@ class InteractiveAdventureService:
             choice.is_selected = True
             choice.selected_at = datetime.now(timezone.utc)
             selected_choice_text = choice.text
-            parent_choice_id = choice_id
+            # TODO(lint): `parent_choice_id` is computed across all branches
+            # (None for continue/custom, choice_id otherwise) but the call at
+            # line ~412 passes `parent_choice_id=choice_id` directly, which is
+            # the literal string "continue" / "custom" for those branches.
+            # Suspected wiring bug — flagged on PR #151.
+            parent_choice_id = choice_id  # noqa: F841
 
         # Build story context
         story_context = self._build_story_context(story)

@@ -6,7 +6,7 @@ Builds Gemini prompts for chapter summarization and arc compression.
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from google import genai
 from google.genai import types

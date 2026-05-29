@@ -7,14 +7,15 @@ AES-256-CBC scheme are still decryptable for backward compatibility, and are
 lazily re-wrapped into GCM format on first access.
 """
 
-import os
 import base64
-import re
 import logging
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os
+import re
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 logger = logging.getLogger(__name__)
 

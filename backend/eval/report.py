@@ -22,7 +22,6 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from . import rubrics
 from .harness import RESULTS_ROOT
 
 # age_band_fit score below this counts as a failure for Critical detection.

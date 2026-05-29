@@ -1,12 +1,13 @@
 import uuid
-from datetime import datetime, timedelta, UTC
-import pytest
-from backend.database import db
-from backend.models.user import User
-from backend.models.character import Character
-from backend.models.story import Story
+from datetime import UTC, datetime, timedelta
 
 import jwt
+import pytest
+
+from backend.database import db
+from backend.models.character import Character
+from backend.models.story import Story
+from backend.models.user import User
 
 
 @pytest.fixture(scope="function")

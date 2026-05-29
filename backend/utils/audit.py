@@ -37,11 +37,11 @@ def audit_log(
                 ip = None
 
         try:
-            from backend.models.audit_log import AuditLog
             from backend.database import db
+            from backend.models.audit_log import AuditLog
         except ImportError:
-            from models.audit_log import AuditLog
             from database import db
+            from models.audit_log import AuditLog
 
         entry = AuditLog(
             user_id=user_id,

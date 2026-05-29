@@ -17,16 +17,17 @@ Run with:
     pytest backend/tests/integration/test_six_band_integration.py -v
 """
 
-import pytest
-import jwt
 from datetime import datetime, timedelta, timezone
+
+import jwt
+import pytest
 
 from backend.database import db
 from backend.models import User
-from backend.services.story_service import AGE_CONSTRAINTS, _get_age_band
 from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
+from backend.services.story_service import AGE_CONSTRAINTS, _get_age_band
 
 # ---------------------------------------------------------------------------
 # Band definitions

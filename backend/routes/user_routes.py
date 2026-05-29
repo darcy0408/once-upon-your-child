@@ -2,21 +2,22 @@ import hashlib
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, jsonify, current_app, request
-from backend.models.user import User
-from backend.models.character import Character
-from backend.models.story import Story
-from backend.models.consent_record import (
-    ConsentRecord,
-    ConsentVerificationCode,
-    CURRENT_POLICY_VERSION,
-)
+
+from flask import Blueprint, current_app, jsonify, request
+
 from backend.database import db
 from backend.middleware.auth import require_auth, require_owner
+from backend.models.character import Character
+from backend.models.consent_record import (
+    CURRENT_POLICY_VERSION,
+    ConsentRecord,
+    ConsentVerificationCode,
+)
+from backend.models.story import Story
 from backend.utils.audit import audit_log
 from backend.utils.email_service import (
-    send_consent_verification_email,
     is_email_configured,
+    send_consent_verification_email,
 )
 
 # --- COPPA email-verification tuning -------------------------------------
@@ -145,7 +146,7 @@ def create_user_routes_blueprint(limiter=None):
                 "period_end": _format_timestamp(period_end),
             }
             return jsonify(response)
-        except Exception as e:
+        except Exception:
             current_app.logger.exception("Failed to get usage stats for %s", user_id)
             return jsonify({"error": "Internal server error"}), 500
 
@@ -167,7 +168,7 @@ def create_user_routes_blueprint(limiter=None):
                 "cancel_at_period_end": True,
             }
             return jsonify(response)
-        except Exception as e:
+        except Exception:
             current_app.logger.exception(
                 "Failed to cancel subscription for %s", user_id
             )
@@ -202,7 +203,7 @@ def create_user_routes_blueprint(limiter=None):
                     "is_under_13": user.is_under_13,
                 }
             )
-        except Exception as e:
+        except Exception:
             current_app.logger.exception("Failed to set age for %s", user_id)
             return jsonify({"error": "Internal server error"}), 500
 
@@ -284,7 +285,7 @@ def create_user_routes_blueprint(limiter=None):
                 ),
                 201,
             )
-        except Exception as e:
+        except Exception:
             current_app.logger.exception("Failed to record consent for %s", user_id)
             return jsonify({"error": "Internal server error"}), 500
 
@@ -319,7 +320,7 @@ def create_user_routes_blueprint(limiter=None):
                     "message": "All user data has been deleted and account anonymized.",
                 }
             )
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Failed to delete data for user %s", user_id)
             return (
@@ -345,11 +346,7 @@ def create_user_routes_blueprint(limiter=None):
             from backend.models import (
                 InteractiveStory,
                 StorySegment,
-                StoryChoice,
-                InventoryItem,
-                StoryState,
                 UserAchievement,
-                AchievementStats,
             )
 
             user = request.current_user
@@ -424,7 +421,7 @@ def create_user_routes_blueprint(limiter=None):
                 f'attachment; filename="storyweaver_export_{user_id[:8]}.json"'
             )
             return response
-        except Exception as e:
+        except Exception:
             current_app.logger.exception("Failed to export data for %s", user_id)
             return jsonify({"error": "Data export failed"}), 500
 
@@ -581,7 +578,7 @@ def create_user_routes_blueprint(limiter=None):
                     "expires_in_minutes": CONSENT_CODE_EXPIRY_MINUTES,
                 }
             )
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception(
                 "Failed to request consent verification for %s", user_id
@@ -745,7 +742,7 @@ def create_user_routes_blueprint(limiter=None):
                     "message": "Parental consent verified.",
                 }
             )
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             current_app.logger.exception("Failed to verify consent for %s", user_id)
             return jsonify({"error": "Internal server error"}), 500

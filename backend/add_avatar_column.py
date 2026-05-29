@@ -3,8 +3,8 @@ Add avatar_data column to existing characters table
 Run this once to upgrade your database
 """
 
-import sqlite3
 import os
+import sqlite3
 
 # Find the database file
 db_paths = [

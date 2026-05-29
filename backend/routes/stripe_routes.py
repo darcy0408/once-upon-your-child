@@ -1,11 +1,11 @@
+import logging
 import os
 import time
-import logging
-from flask import Blueprint, request, jsonify
+
 import stripe
 from dotenv import load_dotenv
+from flask import Blueprint, jsonify, request
 
-from ..models.user import User
 from ..middleware.auth import require_auth
 
 load_dotenv()
@@ -113,7 +113,7 @@ def create_checkout_session():
         return jsonify(
             {"id": checkout_session.id, "checkout_url": checkout_session.url}
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to create checkout session")
         return (
             jsonify(error="Failed to create checkout session. Please try again."),
@@ -139,7 +139,7 @@ def create_portal_session():
             return_url="https://grand-light-production-68d9.up.railway.app/#/settings",
         )
         return jsonify({"portal_url": portal_session.url})
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to create portal session")
         return (
             jsonify({"error": "Failed to open billing portal. Please try again."}),
@@ -178,7 +178,7 @@ def get_subscription_status(user_id):
         # No active subscription
         return jsonify({"status": "inactive", "tier": "free"})
 
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to get subscription status")
         return jsonify({"error": "Failed to retrieve subscription status"}), 500
 

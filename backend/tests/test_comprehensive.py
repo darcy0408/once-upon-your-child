@@ -2,10 +2,6 @@
 Additional comprehensive tests for Story Weaver backend
 """
 
-import pytest
-import json
-from unittest.mock import patch, MagicMock
-
 
 def test_generate_story_with_feelings_wheel(client, auth_headers, test_user):
     """Test story generation with complete feelings wheel data"""
@@ -81,7 +77,9 @@ def test_database_operations(client, auth_headers, test_user):
         "/create-character", json=char_data, headers=auth_headers
     )
     assert create_response.status_code == 201
-    char_id = create_response.get_json()["id"]
+    # Ensure the create response payload exposes an id (no further use here —
+    # the listing assertion below verifies the row landed in the DB).
+    assert "id" in create_response.get_json()
 
     # Test retrieval
     get_response = client.get("/get-characters", headers=auth_headers)

@@ -10,9 +10,7 @@ from __future__ import annotations
 import pytest
 
 from backend.data.superhero_matrix import (
-    EXPLORER_POWERS,
     EXPLORER_PROBLEMS,
-    EXPLORER_VILLAIN_PROBLEMS,
     EXPLORER_VILLAINS,
 )
 from backend.services.prompt_service import PromptService

@@ -1,5 +1,6 @@
-from google import genai
 import os
+
+from google import genai
 
 c = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 for m in c.models.list():

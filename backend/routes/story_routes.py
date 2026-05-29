@@ -1,36 +1,39 @@
 import base64
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-import hashlib
 import io
+import logging
 import os
 import re
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
+
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from sqlalchemy.exc import SQLAlchemyError
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, g, jsonify, request
 from PIL import Image
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_config import celery
+from ..database import db
 from ..gemini_image_generator import GeminiImageGenerator
-from ..tasks.story_tasks import generate_story_task
-from ..models.user import User
+from ..middleware.auth import require_auth, require_parental_consent
 from ..models import Character, ParentHiddenContext
 from ..models.story import Story
-from ..database import db
-from ..middleware.auth import require_auth, require_parental_consent
 from ..routes.subscription_routes import require_premium
-from ..utils.ai_quota import check_daily_quota, increment_daily_quota
-from ..utils.audit import audit_log
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..services.story_service import transform_parent_context_to_story_guidance
+from ..tasks.story_tasks import generate_story_task
+from ..utils.ai_quota import check_daily_quota, increment_daily_quota
+from ..utils.audit import audit_log
 from ..utils.validators import (
-    validate_age,
-    validate_num_images,
-    validate_image_size,
-    validate_story_modes,
     sanitize_text,
+    validate_age,
+    validate_image_size,
+    validate_num_images,
+    validate_story_modes,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
@@ -684,7 +687,10 @@ def create_story_blueprint(
 
         # Extract character_details to get additional_characters if available
         character_details = payload.get("character_details") or {}
-        additional_chars = payload.get(
+        # TODO(lint): `additional_chars` is extracted but never threaded into
+        # `task_kwargs` below — suspected wiring bug. Left in place and silenced
+        # so the lint pass doesn't erase the evidence; see PR #151 discussion.
+        additional_chars = payload.get(  # noqa: F841
             "additional_characters"
         ) or character_details.get("additionalCharacters")
 
@@ -814,7 +820,7 @@ def create_story_blueprint(
             )
             return jsonify(response_payload), 200
 
-        except (FuturesTimeoutError, CeleryTimeoutError) as exc:
+        except (FuturesTimeoutError, CeleryTimeoutError):
             # A3: the synchronous generation overran the timeout. Its worker
             # thread is NOT abandoned — it keeps running in the background and
             # will persist a Story row keyed by `recovery_task_id`. Return that
@@ -1201,9 +1207,9 @@ def create_story_blueprint(
             # unsafe and replaced with a safe fallback rather than served
             # unmoderated. Older bands keep the deliberate fail-open behaviour.
             from backend.utils.content_moderator import (
-                moderate_story_content,
-                is_sprout_band,
                 build_safe_fallback_segment,
+                is_sprout_band,
+                moderate_story_content,
             )
 
             segment_content = result["segment"]["content"]
@@ -1379,9 +1385,9 @@ def create_story_blueprint(
             # that free-text custom choices can steer the continuation
             # (Finding H-3). Older bands keep the deliberate fail-open path.
             from backend.utils.content_moderator import (
-                moderate_story_content,
-                is_sprout_band,
                 build_safe_fallback_segment,
+                is_sprout_band,
+                moderate_story_content,
             )
 
             story_age = getattr(story, "age", None) or 5
@@ -1729,7 +1735,8 @@ def create_story_blueprint(
                 )
                 cached = get_cached_illustration(cache_key)
                 if cached and cached.get("image_data"):
-                    from datetime import datetime as _dt, timezone as _tz
+                    from datetime import datetime as _dt
+                    from datetime import timezone as _tz
 
                     served_from_cache = True
                     using_flux_schnell = str(cached.get("provider") or "").startswith(
@@ -2334,11 +2341,12 @@ def create_story_blueprint(
         Mock illustrations endpoint for testing and development.
         Returns placeholder images instantly without calling any AI model.
         """
-        import uuid
         import base64
-        from datetime import datetime
-        from PIL import Image, ImageDraw, ImageFont
         import io
+        import uuid
+        from datetime import datetime
+
+        from PIL import Image, ImageDraw, ImageFont
 
         try:
             data = request.get_json(silent=True) or {}
@@ -2360,7 +2368,7 @@ def create_story_blueprint(
                 try:
                     font_title = ImageFont.truetype("arial.ttf", 60)
                     font_desc = ImageFont.truetype("arial.ttf", 30)
-                except:
+                except Exception:
                     font_title = ImageFont.load_default()
                     font_desc = font_title
 
@@ -2425,11 +2433,12 @@ def create_story_blueprint(
         Mock coloring pages endpoint for testing and development.
         Returns placeholder black & white images instantly without calling any AI model.
         """
-        import uuid
         import base64
-        from datetime import datetime
-        from PIL import Image, ImageDraw, ImageFont
         import io
+        import uuid
+        from datetime import datetime
+
+        from PIL import Image, ImageDraw, ImageFont
 
         try:
             data = request.get_json(silent=True) or {}
@@ -2474,7 +2483,7 @@ def create_story_blueprint(
                     try:
                         font_title = ImageFont.truetype("arial.ttf", 50)
                         font_small = ImageFont.truetype("arial.ttf", 30)
-                    except:
+                    except Exception:
                         font_title = ImageFont.load_default()
                         font_small = font_title
 

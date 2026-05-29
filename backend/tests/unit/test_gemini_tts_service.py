@@ -23,10 +23,10 @@ from __future__ import annotations
 import pytest
 
 from backend.gemini_tts_service import (
+    _GEMINI_VOICE_NAMES,
     CURATED_VOICES,
     DEFAULT_VOICE_ID,
     MockGeminiTTSService,
-    _GEMINI_VOICE_NAMES,
     add_emotion_tags,
     gemini_voice_for,
 )

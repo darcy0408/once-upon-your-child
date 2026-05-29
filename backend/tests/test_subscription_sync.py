@@ -1,43 +1,6 @@
-from datetime import UTC, datetime, timedelta
-
-import pytest
-
-from backend.database import db
-from backend.models.user import User
-
-
-@pytest.fixture(scope="function")
-def setup_users(app):
-    with app.app_context():
-        # Clear users before each test
-        db.session.query(User).delete()
-        db.session.commit()
-
-
-def _create_user(**overrides):
-    payload = {
-        "id": overrides.pop("id", None),
-        "username": overrides.pop("username", "sub-test-user"),
-        "email": overrides.pop("email", "test@example.com"),
-        "password_hash": "hashed",
-        "subscription_tier": overrides.pop("subscription_tier", "premium"),
-        "subscription_status": overrides.pop("subscription_status", "active"),
-        "current_period_end": overrides.pop(
-            "current_period_end",
-            datetime.now(UTC) + timedelta(days=30),
-        ),
-        "cancel_at_period_end": overrides.pop("cancel_at_period_end", False),
-    }
-    payload.update(overrides)
-    user = User(**payload)
-    db.session.add(user)
-    db.session.commit()
-    return user.id
-
-
-import jwt
 from datetime import UTC, datetime, timedelta, timezone
 
+import jwt
 import pytest
 
 from backend.database import db

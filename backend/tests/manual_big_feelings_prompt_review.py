@@ -1,6 +1,6 @@
-import textwrap
 import os
 import sys
+import textwrap
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 if REPO_ROOT not in sys.path:

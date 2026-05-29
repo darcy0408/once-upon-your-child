@@ -1,11 +1,13 @@
-from google import genai
-from google.genai import types
-import os
 import logging
+import os
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Iterator
+
+from google import genai
 from google.api_core import exceptions as google_exceptions
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -336,7 +338,7 @@ class StoryGenerationService:
                     )
                 return
 
-            except google_exceptions.ResourceExhausted as e:
+            except google_exceptions.ResourceExhausted:
                 next_key_index = key_index + 1
                 if next_key_index < len(self._api_keys):
                     key_index = next_key_index

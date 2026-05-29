@@ -1,18 +1,15 @@
-import os
-import uuid
 import logging
-import traceback
-from datetime import datetime
-import time
+import os
 import sys
+import time
+import uuid
 
 # Ensure backend package is importable when running as script
 if __name__ == "__main__" and __package__ is None:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from flask import Flask, request, jsonify, g
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
-from dotenv import load_dotenv
 
 # Configure logging. Containers (Railway) capture stdout, so the log file is
 # best-effort — an unwritable working directory must never crash startup.
@@ -30,40 +27,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    from backend.config import config, config_by_name
-    from backend.database import db
     from backend.celery_config import celery
+    from backend.config import config_by_name
+    from backend.cost_tracking import track_cost
+    from backend.database import db
 
     # Import models in dependency order (Story and Character first, then User which references them)
-    from backend.models.story import Story
-    from backend.models.character import Character
-    from backend.models.parent_hidden_context import ParentHiddenContext
-    from backend.models.achievement import UserAchievement, AchievementStats
     from backend.models.user import User
-
     from backend.services.story_service import AdvancedStoryEngine
-    from backend.cost_tracking import track_cost
     from backend.utils.app_helpers import (
+        get_tier_limits,
         get_user_identifier,
         get_user_tier,
-        get_tier_limits,
         is_production,
-        make_filter_story_content,
-        make_log_error,
         make_add_request_id,
-        make_log_response,
+        make_filter_story_content,
         make_handle_error,
+        make_log_error,
+        make_log_response,
     )
     from backend.utils.request_logger import init_request_logging
 except ImportError:
     # Fallback if backend package not found (e.g. running from inside backend dir without path fix)
-    from config import config, config_by_name
+    from config import config_by_name
     from database import db
     from celery_config import celery
-    from models.story import Story
-    from models.character import Character
-    from models.parent_hidden_context import ParentHiddenContext
-    from models.achievement import UserAchievement, AchievementStats
     from models.user import User
 
     from services.story_service import AdvancedStoryEngine
@@ -81,10 +69,10 @@ except ImportError:
     )
     from utils.request_logger import init_request_logging
 
+import sentry_sdk
+from flask_caching import Cache
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
-from flask_caching import Cache
-import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Global image generator instance
@@ -500,8 +488,8 @@ def create_app(config_name):
     if api_key:
         try:
             from google import (
-                genai as genai_sdk,
-            )  # Local import to avoid slow startup in tests
+                genai as genai_sdk,  # Local import to avoid slow startup in tests
+            )
 
             logger.info("google-genai SDK imported successfully.")
         except Exception as e:
@@ -527,16 +515,15 @@ def create_app(config_name):
 
     # Initialize Stripe (configured via blueprint setup now)
     try:
-        from backend.routes.stripe_routes import stripe_routes, init_stripe_api
-        from backend.routes.webhook_handler import webhook_routes
-
         # STORE-1 (MT-143): in-app-purchase receipt verification + S2S
         # notification endpoints for the iOS/Android store builds.
         from backend.routes.iap_routes import iap_routes
+        from backend.routes.stripe_routes import init_stripe_api, stripe_routes
+        from backend.routes.webhook_handler import webhook_routes
     except ImportError:
-        from routes.stripe_routes import stripe_routes, init_stripe_api
-        from routes.webhook_handler import webhook_routes
         from routes.iap_routes import iap_routes
+        from routes.stripe_routes import init_stripe_api, stripe_routes
+        from routes.webhook_handler import webhook_routes
 
     if not testing_mode:
         init_stripe_api(app)
@@ -596,7 +583,8 @@ def create_app(config_name):
         # Auto-migrate: add columns that may be missing from databases created
         # before these fields were introduced (avoids needing manual admin endpoint).
         try:
-            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            from sqlalchemy import inspect as sa_inspect
+            from sqlalchemy import text as sa_text
 
             inspector = sa_inspect(db.engine)
             existing_cols = {col["name"] for col in inspector.get_columns("user")}
@@ -635,7 +623,8 @@ def create_app(config_name):
         # database; this block adds the 'verified' column to an existing
         # 'consent_record' table created before the email round trip existed.
         try:
-            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            from sqlalchemy import inspect as sa_inspect
+            from sqlalchemy import text as sa_text
 
             inspector = sa_inspect(db.engine)
             consent_cols = {c["name"] for c in inspector.get_columns("consent_record")}
@@ -675,7 +664,8 @@ def create_app(config_name):
         # a ~1.8M-char base64 data URI — a too-narrow column raises
         # StringDataRightTruncation and 500s interactive-story creation (MT-154).
         try:
-            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            from sqlalchemy import inspect as sa_inspect
+            from sqlalchemy import text as sa_text
 
             if db.engine.dialect.name == "postgresql":
                 inspector = sa_inspect(db.engine)
@@ -788,14 +778,14 @@ def create_app(config_name):
 
     try:
         from backend.analytics_routes import create_analytics_blueprint
-        from backend.routes.api_key_routes import create_api_key_blueprint
         from backend.routes.achievement_routes import create_achievement_blueprint
+        from backend.routes.api_key_routes import create_api_key_blueprint
         from backend.routes.subscription_routes import create_subscription_blueprint
         from backend.routes.user_routes import create_user_routes_blueprint
     except ImportError:
         from analytics_routes import create_analytics_blueprint
-        from routes.api_key_routes import create_api_key_blueprint
         from routes.achievement_routes import create_achievement_blueprint
+        from routes.api_key_routes import create_api_key_blueprint
         from routes.subscription_routes import create_subscription_blueprint
         from routes.user_routes import create_user_routes_blueprint
 
@@ -820,23 +810,23 @@ def create_app(config_name):
     app.register_blueprint(api_key_bp)
 
     try:
-        from backend.routes.story_routes import create_story_blueprint
-        from backend.routes.character_routes import create_character_blueprint
         from backend.routes.admin_routes import create_admin_blueprint
-        from backend.routes.avatar_routes import create_avatar_blueprint
         from backend.routes.avatar_gallery_routes import avatar_gallery_bp
-        from backend.routes.health_routes import create_health_blueprint
-        from backend.routes.utility_routes import create_utility_blueprint
+        from backend.routes.avatar_routes import create_avatar_blueprint
+        from backend.routes.character_routes import create_character_blueprint
         from backend.routes.chronicle_routes import create_chronicle_blueprint
+        from backend.routes.health_routes import create_health_blueprint
+        from backend.routes.story_routes import create_story_blueprint
+        from backend.routes.utility_routes import create_utility_blueprint
     except ImportError:
-        from routes.story_routes import create_story_blueprint
-        from routes.character_routes import create_character_blueprint
         from routes.admin_routes import create_admin_blueprint
-        from routes.avatar_routes import create_avatar_blueprint
         from routes.avatar_gallery_routes import avatar_gallery_bp
-        from routes.health_routes import create_health_blueprint
-        from routes.utility_routes import create_utility_blueprint
+        from routes.avatar_routes import create_avatar_blueprint
+        from routes.character_routes import create_character_blueprint
         from routes.chronicle_routes import create_chronicle_blueprint
+        from routes.health_routes import create_health_blueprint
+        from routes.story_routes import create_story_blueprint
+        from routes.utility_routes import create_utility_blueprint
 
     story_bp = create_story_blueprint(
         limiter=limiter,
@@ -878,11 +868,11 @@ def create_app(config_name):
 
     # TTS narration (lazy — works without Google credentials, returns 503)
     try:
-        from backend.routes.tts_routes import create_tts_blueprint
         from backend.middleware.auth import require_auth as _require_auth
+        from backend.routes.tts_routes import create_tts_blueprint
     except ImportError:
-        from routes.tts_routes import create_tts_blueprint
         from middleware.auth import require_auth as _require_auth
+        from routes.tts_routes import create_tts_blueprint
     tts_bp = create_tts_blueprint(limiter=limiter, require_auth=_require_auth)
     app.register_blueprint(tts_bp)
 

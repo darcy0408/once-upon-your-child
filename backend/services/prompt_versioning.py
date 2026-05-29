@@ -26,21 +26,21 @@ import logging
 from typing import Callable
 
 try:
+    from .prompt_service import PromptService
     from .story_service import (
         AdvancedStoryEngine,
         _build_bedtime_prompt,
         _build_learning_to_read_prompt,
         _build_rhyme_time_prompt,
     )
-    from .prompt_service import PromptService
 except ImportError:  # pragma: no cover — legacy bare-import fallback
+    from services.prompt_service import PromptService  # type: ignore[no-redef]
     from services.story_service import (  # type: ignore[no-redef]
         AdvancedStoryEngine,
         _build_bedtime_prompt,
         _build_learning_to_read_prompt,
         _build_rhyme_time_prompt,
     )
-    from services.prompt_service import PromptService  # type: ignore[no-redef]
 
 logger = logging.getLogger(__name__)
 

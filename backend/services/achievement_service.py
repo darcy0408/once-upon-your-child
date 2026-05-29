@@ -1,8 +1,8 @@
-from ..database import db
-from ..models.achievement import UserAchievement, AchievementStats
-from ..models.user import User
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+
+from ..database import db
+from ..models.achievement import AchievementStats, UserAchievement
 
 logger = logging.getLogger(__name__)
 

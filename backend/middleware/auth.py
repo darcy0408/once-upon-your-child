@@ -11,14 +11,16 @@ Security features:
 - optional_auth: Attempts auth but doesn't require it
 """
 
-from functools import wraps
-from flask import request, jsonify, g, current_app
-from backend.database import db
-from backend.models.user import User
-from backend.models.consent_record import ConsentRecord, CURRENT_POLICY_VERSION
-import jwt
-import os
 import logging
+import os
+from functools import wraps
+
+import jwt
+from flask import current_app, g, jsonify, request
+
+from backend.database import db
+from backend.models.consent_record import CURRENT_POLICY_VERSION, ConsentRecord
+from backend.models.user import User
 
 logger = logging.getLogger(__name__)
 

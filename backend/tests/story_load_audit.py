@@ -11,17 +11,15 @@ Scenarios covered:
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack
 import json
 import math
 import os
 import sys
 import time
-from concurrent.futures import (
-    ThreadPoolExecutor,
-    as_completed,
-    TimeoutError as FuturesTimeoutError,
-)
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
+from concurrent.futures import as_completed
+from contextlib import ExitStack
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -45,7 +43,6 @@ for candidate in _PATH_CANDIDATES:
 
 from backend.app import create_app
 from backend.database import db
-from backend.models.user import User
 
 ARTIFACTS_DIR = Path(__file__).resolve().parent / "artifacts"
 LATEST_JSON = ARTIFACTS_DIR / "story_load_audit_latest.json"

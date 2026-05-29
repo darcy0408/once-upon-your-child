@@ -1,7 +1,8 @@
-import pytest
 import os
 import sys
 from unittest.mock import MagicMock
+
+import pytest
 
 # Ensure backend path is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -124,6 +125,7 @@ def mock_openrouter_story(mocker, monkeypatch):
 def auth_token(test_user):
     """Generate a test JWT token."""
     from datetime import datetime, timedelta, timezone
+
     import jwt
 
     payload = {
@@ -167,6 +169,7 @@ def free_user(app):
 def free_user_headers(free_user):
     """Headers for a free tier user (for rate limiting tests)."""
     from datetime import datetime, timedelta, timezone
+
     import jwt
 
     payload = {
@@ -206,6 +209,7 @@ def premium_user(app):
 def premium_user_headers(premium_user):
     """Headers for a premium tier user."""
     from datetime import datetime, timedelta, timezone
+
     import jwt
 
     payload = {
@@ -385,6 +389,7 @@ def admin_user(app):
 def admin_token(admin_user):
     """Generate an admin JWT token."""
     from datetime import datetime, timedelta, timezone
+
     import jwt
 
     payload = {
@@ -401,6 +406,7 @@ def admin_token(admin_user):
 def admin_headers(admin_user):
     """Headers with admin authentication token."""
     from datetime import datetime, timedelta, timezone
+
     import jwt
 
     payload = {

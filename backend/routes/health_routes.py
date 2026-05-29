@@ -1,10 +1,9 @@
-import os
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify
 
 from ..database import db
-from ..middleware.auth import require_auth, require_admin
+from ..middleware.auth import require_admin, require_auth
 
 
 def create_health_blueprint(

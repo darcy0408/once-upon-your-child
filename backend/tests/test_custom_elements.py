@@ -1,10 +1,10 @@
 from backend.tasks.story_tasks import (
-    _parse_custom_elements,
+    MAX_CUSTOM_ELEMENT_LENGTH,
+    MAX_CUSTOM_ELEMENTS,
     _find_missing_custom_elements,
     _is_ltr_rhyme_quality_ok,
+    _parse_custom_elements,
     _words_rhyme,
-    MAX_CUSTOM_ELEMENTS,
-    MAX_CUSTOM_ELEMENT_LENGTH,
 )
 
 

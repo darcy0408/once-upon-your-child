@@ -2,9 +2,11 @@
 Avatar Gallery Routes - Serve pre-made character avatars
 """
 
-from flask import Blueprint, jsonify, request, send_from_directory
-import os
 import logging
+import os
+
+from flask import Blueprint, jsonify
+
 from ..middleware.auth import require_auth
 
 logger = logging.getLogger(__name__)

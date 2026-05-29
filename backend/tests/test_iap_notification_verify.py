@@ -18,7 +18,6 @@ Apple's real private keys. The Google path is exercised by monkeypatching
 """
 
 import base64
-import json
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -147,9 +146,11 @@ def test_apple_jws_no_x5c_header_raises(apple_chain):
 def test_apple_jws_untrusted_root_raises(tmp_path, monkeypatch):
     """A chain that does NOT terminate at the trusted root is rejected."""
     # Build a complete self-consistent chain but trust a DIFFERENT root.
+    # The rogue root cert itself is not included in x5c — only the leaf,
+    # signed by root_key. The verifier should reject because the trusted
+    # root path points elsewhere.
     root_key = _make_ec_key()
     leaf_key = _make_ec_key()
-    root_cert = _make_cert("Rogue Root", "Rogue Root", root_key, root_key)
     leaf_cert = _make_cert("Rogue Leaf", "Rogue Root", leaf_key, root_key)
     x5c = [_cert_der_b64(leaf_cert)]
 

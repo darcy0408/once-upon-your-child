@@ -3,9 +3,8 @@ Google Cloud Text-to-Speech Service
 Provides high-quality, natural-sounding narration for stories
 """
 
-import os
-from typing import Optional, List
 import re
+from typing import List, Optional
 
 # Try to import Google Cloud TTS, but don't fail if it's not available
 try:

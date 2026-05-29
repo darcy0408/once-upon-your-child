@@ -8,8 +8,8 @@ Usage:
 
 import os
 import sys
-import base64
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load backend .env for GEMINI_API_KEY
@@ -67,9 +67,10 @@ def main():
     print("Image generated (%d bytes). Removing background..." % len(image_data))
 
     try:
-        from rembg import remove
-        from PIL import Image
         import io
+
+        from PIL import Image
+        from rembg import remove
 
         result = remove(image_data)
         img = Image.open(io.BytesIO(result)).convert("RGBA")

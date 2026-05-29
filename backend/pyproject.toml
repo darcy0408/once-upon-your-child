@@ -1,0 +1,14 @@
+[tool.isort]
+profile = "black"
+line_length = 88
+skip = ["venv", ".venv", "migrations"]
+
+[tool.black]
+line-length = 88
+exclude = '''
+/(
+    \.venv
+  | venv
+  | migrations
+)/
+'''

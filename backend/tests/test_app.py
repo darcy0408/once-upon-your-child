@@ -2,7 +2,6 @@
 Basic tests for Story Weaver backend API
 """
 
-import pytest
 import json
 
 

@@ -3,7 +3,6 @@ One-off script: generate the "Super Brave!" sprout archetype image using Imagen 
 Run from the backend/ directory:  python generate_brave_hero.py
 """
 
-import base64
 import os
 import sys
 
@@ -63,8 +62,9 @@ def main():
         sys.exit(1)
 
     # Convert to JPEG and save
-    from PIL import Image
     import io
+
+    from PIL import Image
 
     img = Image.open(io.BytesIO(image_bytes))
     img = img.convert("RGB")

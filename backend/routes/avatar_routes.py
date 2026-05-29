@@ -2,18 +2,19 @@
 Avatar Routes - API endpoints for magical avatar generation
 """
 
+import concurrent.futures
+import logging
 import os
 import time
-import concurrent.futures
+
 from flask import (
     Blueprint,
-    request,
-    jsonify,
-    make_response,
     after_this_request,
     current_app,
+    jsonify,
+    make_response,
+    request,
 )
-import logging
 
 _AVATAR_TIMEOUT_SECONDS = 30
 
@@ -31,15 +32,15 @@ _avatar_rl_fallback_warned = False
 FREE_CUSTOM_AVATARS = 1
 
 try:
-    from backend.utils.app_helpers import get_user_tier, get_user_identifier
-    from backend.middleware.auth import require_auth, require_parental_consent
-    from backend.routes.subscription_routes import require_premium, _user_is_premium
     from backend.database import db
+    from backend.middleware.auth import require_auth, require_parental_consent
+    from backend.routes.subscription_routes import _user_is_premium, require_premium
+    from backend.utils.app_helpers import get_user_identifier, get_user_tier
 except ImportError:
-    from utils.app_helpers import get_user_tier, get_user_identifier
-    from middleware.auth import require_auth, require_parental_consent
-    from routes.subscription_routes import require_premium, _user_is_premium
     from database import db
+    from middleware.auth import require_auth, require_parental_consent
+    from routes.subscription_routes import _user_is_premium, require_premium
+    from utils.app_helpers import get_user_identifier, get_user_tier
 
 logger = logging.getLogger(__name__)
 
@@ -1312,9 +1313,10 @@ def _generate_mock_placeholder_avatar(
     Creates a colored square with the character's initial and age.
     This is for testing and development - no API calls, instant response.
     """
-    from PIL import Image, ImageDraw, ImageFont
     import base64
     import io
+
+    from PIL import Image, ImageDraw, ImageFont
 
     # Color schemes by style
     colors = {
@@ -1332,13 +1334,12 @@ def _generate_mock_placeholder_avatar(
 
     # Add character initial and age
     initial = character_name[0].upper() if character_name else "?"
-    text = f"{initial}\n{age}"
 
     # Try to use a nice font, fall back to default
     try:
         font = ImageFont.truetype("arial.ttf", 180)
         font_small = ImageFont.truetype("arial.ttf", 80)
-    except:
+    except Exception:
         font = ImageFont.load_default()
         font_small = font
 

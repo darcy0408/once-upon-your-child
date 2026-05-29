@@ -1,10 +1,8 @@
-import logging
-import random
-import re
 import json
-import time
+import logging
+import re
 from typing import Any
-from .avatar_to_prompt_helper import AvatarToPromptHelper
+
 from ..utils.sanitizer import wrap_user_input
 from ..utils.validators import validate_age, validate_story_length
 
@@ -543,12 +541,12 @@ def _build_prior_adventures_block(character_id: str | None) -> str:
     # Lazy imports to avoid a hard model dependency at module import time
     # (story_service is imported by tests that don't always have a DB ready).
     try:
-        from ..models.story import Story
         from ..database import db
+        from ..models.story import Story
     except ImportError:
         try:
-            from models.story import Story  # type: ignore[no-redef]
             from database import db  # type: ignore[no-redef]
+            from models.story import Story  # type: ignore[no-redef]
         except ImportError:
             return ""
 

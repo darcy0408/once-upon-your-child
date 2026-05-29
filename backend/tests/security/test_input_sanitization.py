@@ -12,8 +12,9 @@ CRITICAL: These tests ensure data integrity and user safety.
 """
 
 import pytest
+
+from backend.services.character_service import create_character
 from backend.utils.validators import sanitize_text
-from backend.services.character_service import create_character, update_character
 
 
 class TestTextSanitization:
@@ -142,7 +143,7 @@ class TestSQLInjectionPrevention:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -202,7 +203,7 @@ class TestXSSPrevention:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -263,7 +264,7 @@ class TestHTMLInjectionPrevention:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -308,7 +309,7 @@ class TestCommandInjectionPrevention:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -343,7 +344,7 @@ class TestPathTraversalPrevention:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -373,7 +374,7 @@ class TestUnicodeSanitization:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock.add_character = Mock()
@@ -461,7 +462,7 @@ class TestIntegrationSanitization:
     @pytest.fixture
     def mock_repository(self):
         """Mock character repository"""
-        from unittest.mock import patch, Mock
+        from unittest.mock import Mock, patch
 
         with patch("backend.services.character_service.character_repository") as mock:
             mock_char = Mock()

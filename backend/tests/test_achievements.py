@@ -2,10 +2,6 @@
 Tests for achievement backend functionality
 """
 
-import pytest
-import json
-from unittest.mock import patch
-
 
 def _setup_account_and_token(client):
     """Create the test account and log in.

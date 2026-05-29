@@ -1,9 +1,10 @@
 import pytest
-from backend.services.story_service import AGE_CONSTRAINTS
-from backend.utils.validators import validate_age, validate_story_length
+
 from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
+from backend.services.story_service import AGE_CONSTRAINTS
+from backend.utils.validators import validate_age, validate_story_length
 
 
 class TestStoryConstraints:

@@ -3,7 +3,7 @@ Avatar Prompt Service - Builds safe, magical prompts for child avatar generation
 """
 
 import hashlib
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 
 class AvatarPromptService:

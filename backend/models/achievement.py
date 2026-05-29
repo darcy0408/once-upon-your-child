@@ -1,6 +1,7 @@
-from ..database import db
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+
+from ..database import db
 
 
 class UserAchievement(db.Model):

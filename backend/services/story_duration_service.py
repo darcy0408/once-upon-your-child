@@ -5,9 +5,9 @@ Handles duration-to-word-count mapping, page splitting, and validation
 for age-appropriate story generation.
 """
 
-import re
-from typing import List, Dict, Tuple
 import logging
+import re
+from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -251,7 +251,6 @@ class PageSplitter:
 
         merged = []
         current_merge = []
-        page_index = 0
 
         for i, page in enumerate(pages):
             current_merge.append(page)

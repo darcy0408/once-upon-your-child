@@ -102,17 +102,17 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     """
     # Imported lazily to avoid import-time cycles with the models package.
     from backend.models import (
+        AchievementStats,
         InteractiveStory,
-        StorySegment,
-        StoryChoice,
         InventoryItem,
+        StoryChoice,
+        StorySegment,
         StoryState,
         UserAchievement,
-        AchievementStats,
     )
     from backend.models.character import Character
-    from backend.models.story import Story
     from backend.models.consent_record import ConsentRecord
+    from backend.models.story import Story
 
     user_id = user.id
 

@@ -1,7 +1,7 @@
 """Simple Flask run script for development"""
 
-import sys
 import os
+import sys
 
 # Add the project root to the sys.path
 # Assumes run.py is in 'backend/' and project root is its parent

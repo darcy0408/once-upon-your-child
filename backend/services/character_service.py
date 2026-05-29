@@ -1,10 +1,10 @@
+import json
 import logging
 import uuid
-import json
 
-from ..repositories import character_repository
 from ..models.character import Character
-from ..utils.validators import validate_age, sanitize_text
+from ..repositories import character_repository
+from ..utils.validators import sanitize_text, validate_age
 
 logger = logging.getLogger(__name__)
 
