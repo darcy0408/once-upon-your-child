@@ -339,7 +339,7 @@ const questLeftOut = LifeQuestScenario(
           'Maya shifts in her seat. Jayden looks at the table. Riley '
           'says, "Yeah — it was kind of last minute." The silence '
           'stretches. Someone puts down their phone.\n\n'
-          '"There was only room for five in my mom\'s car," Jayden '
+          '"There was only room for five in the car," Jayden '
           'finally says.\n\n'
           'You stand there with your lunch tray, feeling every single '
           'pair of eyes at that table. Your face is hot — you can feel '
@@ -616,7 +616,7 @@ const questLeftOut = LifeQuestScenario(
       content:
           '"Five in the car." You say it back like a question — except '
           'it\'s not really a question and everyone can hear that.\n\n'
-          'Jayden\'s jaw tightens. "It was last minute. My mom '
+          'Jayden\'s jaw tightens. "It was last minute. My family '
           'organized it."\n\n'
           '"But someone could have texted."\n\n'
           'The table has gone very quiet. Maya is looking at her phone '
@@ -773,7 +773,7 @@ const questPeerPressure = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'pp_c2b',
-          text: '"My mom just texted. Gotta go." — leave',
+          text: '"My grown-up just texted. Gotta go." — leave',
           nextSegmentId: 'pp_excuse',
         ),
       ],
@@ -887,8 +887,8 @@ const questPeerPressure = LifeQuestScenario(
           'You pull out your phone with the practiced efficiency of '
           'someone who has done this before — the quick glance down, '
           'the slight look of obligation.\n\n'
-          '"My mom just texted. I have to go."\n\n'
-          'Nobody argues with a mom text. It\'s one of the immutable '
+          '"My grown-up just texted. I have to go."\n\n'
+          'Nobody argues with a grown-up text. It\'s one of the immutable '
           'laws of middle school. Tyler waves you off. You wave back, '
           'already walking.\n\n'
           'The path curves behind the trees and you\'re alone with '
@@ -899,7 +899,7 @@ const questPeerPressure = LifeQuestScenario(
           'breath. "Good call," {companion} says. That\'s all. '
           'Good call.»\n\n'
           'You think about it on the walk home — the exit, whether '
-          'it was right, whether the mom-text excuse was worse than '
+          'it was right, whether the grown-up-text excuse was worse than '
           'just saying no outright. You land somewhere in the middle: '
           'it worked. The instinct was right. The execution was yours.\n\n'
           'The street is quiet. Your house is three blocks away. '
@@ -1107,18 +1107,18 @@ const questSchoolStress = LifeQuestScenario(
       id: 'ss_ask_parent',
       content:
           'You close the textbook and walk to the kitchen.\n\n'
-          'Your mom is cleaning up after dinner, shoulders tight with '
-          'her own kind of tired. You stand in the doorway.\n\n'
+          'Your grown-up is cleaning up after dinner, shoulders tight with '
+          'their own kind of tired. You stand in the doorway.\n\n'
           '"Can you help me? I\'m kind of freaking out about tomorrow."\n\n'
-          'She turns around. Looks at you. Dries her hands.\n\n'
+          'They turn around. Look at you. Dry their hands.\n\n'
           '"Show me what you\'ve got."\n\n'
-          'You sit at the kitchen table together. She doesn\'t do it '
-          'the way your teacher does — she uses the leftover dinner '
+          'You sit at the kitchen table together. They don\'t do it '
+          'the way your teacher does — they use the leftover dinner '
           'as props. If there are sixteen pieces of pasta and you eat '
-          'three-quarters of them, how many pieces are left? She makes '
+          'three-quarters of them, how many pieces are left? They make '
           'you count actual pasta.\n\n'
           'It\'s slightly embarrassing and it completely works.\n\n'
-          '«Later you text {companion}: my mom used actual pasta. '
+          '«Later you text {companion}: my grown-up used actual pasta. '
           '{companion}: did it help? You: yeah actually.»\n\n'
           'By 9:30 you understand word problems better than you have '
           'all semester. Not everything — but enough. You close the '
@@ -1332,17 +1332,17 @@ const questSiblingConflict = LifeQuestScenario(
       id: 'sc_parent',
       content:
           'You walk past your sibling without a word and down the '
-          'hall to find a parent.\n\n'
-          'Your dad is in the living room, phone in hand, looking '
+          'hall to find a grown-up.\n\n'
+          'Your grown-up is in the living room, phone in hand, looking '
           'tired in the specific way of someone who has mediated '
           'this exact argument approximately forty times this year. '
           'You explain it anyway.\n\n'
           '"I\'ve asked them to leave me alone four separate times. '
           'I just need some help."\n\n'
-          'Dad sighs — the long, resigned sigh of a referee — and '
-          'puts his phone down. He goes back to the hall, redirects '
+          'Your grown-up sighs — the long, resigned sigh of a referee — and '
+          'puts the phone down. They go back to the hall, redirect '
           'your sibling with a snack and the remote control, and '
-          'waves you back to your room.\n\n'
+          'wave you back to your room.\n\n'
           '«{companion} texts you later: you survived? '
           '"Barely," you write back.»\n\n'
           'You sit at your desk. The thirty minutes of peace are '
@@ -1690,7 +1690,7 @@ const questFamilyStress = LifeQuestScenario(
           'closed, the lamp on, the homework spread out on the bed '
           'in an optimistic way.\n\n'
           'But the voices downstairs aren\'t loud enough to understand '
-          'and just loud enough to not ignore. Mom and Dad — not '
+          'and just loud enough to not ignore. Your grown-ups — not '
           'exactly yelling, but not not-yelling either. The tight, '
           'clipped kind of voices that carry differently from normal '
           'talking. The kind that make the walls feel thin.\n\n'
@@ -1778,17 +1778,17 @@ const questFamilyStress = LifeQuestScenario(
       id: 'fs_intervene',
       content:
           'You put down your pencil and walk downstairs.\n\n'
-          'Both of them stop when you appear. Your mom\'s face changes '
-          'first — going careful, the way it does when she\'s trying '
+          'Both of them stop when you appear. One face changes '
+          'first — going careful, the way it does when a grown-up\'s trying '
           'to figure out what you\'ve heard.\n\n'
           '"Can you guys not do this right now?"\n\n'
           'Silence. The specific silence of two people deciding how '
           'to respond to being interrupted.\n\n'
-          '"Honey, I\'m sorry you heard that," your mom says. '
+          '"Honey, I\'m sorry you heard that," one of them says. '
           '"We\'re just having a conversation."\n\n'
           '"About what?" you ask, and immediately know it was '
           'the wrong question.\n\n'
-          '"About grown-up things," your dad says. Tired. Not unkind. '
+          '"About grown-up things," the other says. Tired. Not unkind. '
           'Just tired.\n\n'
           'You go back upstairs. The voices start again maybe five '
           'minutes later, quieter this time — you\'re not sure if '
@@ -1857,7 +1857,7 @@ const questFamilyStress = LifeQuestScenario(
           'Grown-up problems are for grown-ups."\n\n'
           'Something releases in your chest.\n\n'
           '"Your job right now is to be okay. Go get a snack. '
-          'Watch something dumb. I\'ll call your mom tomorrow." '
+          'Watch something dumb. I\'ll call your grown-up tomorrow." '
           'She says it like a plan, like she\'s already mapped '
           'the route.\n\n'
           '«"Tell {companion} I say hi," she says, for no particular '
@@ -3285,7 +3285,7 @@ const questSleepover = LifeQuestScenario(
           'You squeeze your eyes shut and try to make your brain be quiet.\n\n'
           'It doesn\'t really work. '
           'You think about your bedroom. '
-          'You think about your mum or dad or whoever tucks you in. '
+          'You think about your grown-up who tucks you in. '
           'You think about your pet, '
           'or your favourite corner of the sofa.\n\n'
           'The missing feeling gets bigger, not smaller.\n\n'
@@ -5468,7 +5468,7 @@ const questBigBearHug = LifeQuestScenario(
       choices: [
         QuestChoice(
           id: 'bbh_c1a',
-          text: 'Call out — "Mommy! Daddy!"',
+          text: 'Call out — "Grown-up!"',
           nextSegmentId: 'bbh_call',
         ),
         QuestChoice(
@@ -6556,7 +6556,7 @@ const questSiblingShine = LifeQuestScenario(
       id: 'ss_start',
       content:
           'Your little sister just learned to ride her bike.\n\n'
-          'Mom is clapping. Dad is filming on his phone. Grandma calls and '
+          'One grown-up is clapping. Another is filming on a phone. Grandma calls and '
           'wants to hear the story three times.\n\n'
           'You learned to ride your bike a long time ago. You learned to ride '
           'with no hands last summer. Nobody is filming that today.\n\n'
@@ -6572,7 +6572,7 @@ const questSiblingShine = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'ss_c1b',
-          text: 'Tell Mom you feel left out',
+          text: 'Tell a grown-up you feel left out',
           nextSegmentId: 'ss_say',
         ),
       ],
@@ -6583,16 +6583,16 @@ const questSiblingShine = LifeQuestScenario(
       content:
           'You stomp inside. The door makes a big noise behind you.\n\n'
           'You sit on your bed. Your eyes are hot.\n\n'
-          'After a few minutes, Mom knocks.\n\n'
+          'After a few minutes, your grown-up knocks.\n\n'
           '"Hey, kiddo. Can I come in?"\n\n'
           'You sniff and nod.\n\n'
-          'She sits next to you. "I noticed you got quiet outside. '
+          'They sit next to you. "I noticed you got quiet outside. '
           'Are you feeling left out?"',
       copingBreakId: 'belly_breath',
       choices: [
         QuestChoice(
           id: 'ss_c2a',
-          text: 'Nod and let her hug you',
+          text: 'Nod and let them hug you',
           nextSegmentId: 'ss_hug',
         ),
         QuestChoice(
@@ -6607,14 +6607,14 @@ const questSiblingShine = LifeQuestScenario(
       id: 'ss_say',
       content:
           'You take a big breath.\n\n'
-          '"Mom?" you say. "I feel kind of left out."\n\n'
-          'Mom looks up. Right at you. Like the whole bike thing got paused.\n\n'
+          '"Hey?" you say. "I feel kind of left out."\n\n'
+          'Your grown-up looks up. Right at you. Like the whole bike thing got paused.\n\n'
           '"Oh, honey. Tell me more."\n\n'
-          'It\'s scary to say it out loud. But she\'s listening now.',
+          'It\'s scary to say it out loud. But they\'re listening now.',
       choices: [
         QuestChoice(
           id: 'ss_c3a',
-          text: 'Tell her you wanted her to see you too',
+          text: 'Tell them you wanted them to see you too',
           nextSegmentId: 'ss_seen',
         ),
         QuestChoice(
@@ -6628,9 +6628,9 @@ const questSiblingShine = LifeQuestScenario(
     'ss_hug': QuestSegment(
       id: 'ss_hug',
       content:
-          'You nod. Mom wraps her arms around you.\n\n'
+          'You nod. Your grown-up wraps their arms around you.\n\n'
           'You don\'t say anything for a while. You don\'t have to.\n\n'
-          'Then she says, "You know what? You learned to ride with no hands. '
+          'Then they say, "You know what? You learned to ride with no hands. '
           'Want to show me again? Just us?"\n\n'
           'Maybe. In a minute.\n\n'
           'For now, the hug is enough.',
@@ -6641,8 +6641,8 @@ const questSiblingShine = LifeQuestScenario(
       id: 'ss_words',
       content:
           '"Why is everyone only excited about her?" you ask.\n\n'
-          'Mom is quiet for a moment.\n\n'
-          '"Today is her big day," she says. "Tomorrow could be yours. '
+          'Your grown-up is quiet for a moment.\n\n'
+          '"Today is her big day," they say. "Tomorrow could be yours. '
           'And last summer was yours, when you went no hands. Remember? '
           'Grandma still talks about that."\n\n'
           'You didn\'t know Grandma still talked about that.\n\n'
@@ -6655,9 +6655,9 @@ const questSiblingShine = LifeQuestScenario(
       content:
           '"I wanted you to see me too," you say.\n\n'
           'Your voice wobbles a little. That\'s okay.\n\n'
-          'Mom nods slowly. "I see you. I always see you. Sometimes the noise '
+          'Your grown-up nods slowly. "I see you. I always see you. Sometimes the noise '
           'gets loud and you can\'t tell — but I do."\n\n'
-          'She squeezes your hand.\n\n'
+          'They squeeze your hand.\n\n'
           'Brave words go a long way. '
           'Especially the wobbly ones.',
       isEnding: true,
@@ -6667,8 +6667,8 @@ const questSiblingShine = LifeQuestScenario(
       id: 'ss_shrug',
       content:
           'You shrug. You\'re not sure what else to say.\n\n'
-          'Mom waits. Then she just sits with you.\n\n'
-          '"Thanks for telling me," she says. "That took courage."\n\n'
+          'Your grown-up waits. Then they just sit with you.\n\n'
+          '"Thanks for telling me," they say. "That took courage."\n\n'
           'You didn\'t fix anything. You didn\'t say much.\n\n'
           'But the tight feeling in your chest got a little smaller. '
           'Saying it out loud was the magic.',
@@ -6723,9 +6723,9 @@ const questLostPet = LifeQuestScenario(
       id: 'lp_tell',
       content:
           'You run inside. Your shoes are still on the welcome mat behind you.\n\n'
-          '"Dad! Pepper\'s not in the yard!"\n\n'
-          'Dad puts down his coffee right away. "Okay. Okay. Let\'s think."\n\n'
-          'He grabs his shoes. "When did you last see Pepper?"',
+          '"Pepper\'s not in the yard!"\n\n'
+          'Your grown-up puts down their coffee right away. "Okay. Okay. Let\'s think."\n\n'
+          'They grab their shoes. "When did you last see Pepper?"',
       choices: [
         QuestChoice(
           id: 'lp_c2a',
@@ -6768,7 +6768,7 @@ const questLostPet = LifeQuestScenario(
       content:
           'You take a slow breath. "I think... right after breakfast. '
           'When the gate was open for the trash."\n\n'
-          'Dad nods. "Good remembering."\n\n'
+          'Your grown-up nods. "Good remembering."\n\n'
           'Together you walk down the sidewalk, calling Pepper\'s name.\n\n'
           'Three houses down, a tail. A wag. A guilty face full of grass.\n\n'
           'Pepper. Pepper, Pepper, Pepper.\n\n'
@@ -6781,9 +6781,9 @@ const questLostPet = LifeQuestScenario(
       id: 'lp_cry',
       content:
           'Tears spill over. "I — I — I can\'t remember!"\n\n'
-          'Dad kneels down. "Hey. Hey. It\'s okay to cry. We\'re going to find '
+          'Your grown-up kneels down. "Hey. Hey. It\'s okay to cry. We\'re going to find '
           'Pepper. You don\'t have to be perfect to help."\n\n'
-          'He hands you a tissue. You both walk outside together.\n\n'
+          'They hand you a tissue. You both walk outside together.\n\n'
           'Pepper is pawing at the gate from the OUTSIDE.\n\n'
           'You sob and laugh at the same time.\n\n'
           'You didn\'t have to know everything. '
@@ -6795,10 +6795,10 @@ const questLostPet = LifeQuestScenario(
       id: 'lp_help',
       content:
           'You stop. You wipe your eyes.\n\n'
-          '"DAAAD!" you call. "Dad, come help!"\n\n'
-          'He\'s there in seconds. "What\'s wrong?"\n\n'
+          '"HELP!" you call. "Come help!"\n\n'
+          'Your grown-up is there in seconds. "What\'s wrong?"\n\n'
           '"Pepper. I can\'t find Pepper."\n\n'
-          'He doesn\'t panic. He says, "Good job telling me. Two of us looking '
+          'They don\'t panic. They say, "Good job telling me. Two of us looking '
           'is way better than one."\n\n'
           'You find Pepper together, behind the neighbor\'s flowerpots.\n\n'
           'Your bravest move was knowing when to ask.',
@@ -6828,7 +6828,7 @@ const questLostPet = LifeQuestScenario(
 const questMissingGrownup = LifeQuestScenario(
   id: 'missing_grownup',
   title: 'Three Sleeps Until',
-  hook: 'Mom is away for a few days. The house feels different.',
+  hook: 'One of your grown-ups is away for a few days. The house feels different.',
   emoji: '🏠',
   emotions: ['sad', 'lonely', 'worried'],
   recommendedBands: [AgeBand.explorer],
@@ -6840,11 +6840,11 @@ const questMissingGrownup = LifeQuestScenario(
     'mg_start': QuestSegment(
       id: 'mg_start',
       content:
-          'Mom\'s away for work. Three more sleeps.\n\n'
-          'You knew it was happening. You helped her pack. You waved at the '
+          'One of your grown-ups is away for work. Three more sleeps.\n\n'
+          'You knew it was happening. You helped them pack. You waved at the '
           'window when the taxi pulled away.\n\n'
           'But now it\'s the second night. And the house sounds different. '
-          'The kitchen is quiet. The chair where Mom reads is empty. '
+          'The kitchen is quiet. The reading chair is empty. '
           'Even the fridge hums different.\n\n'
           '«You squeeze {companion} a little tighter than usual.»\n\n'
           'A big lump comes up in your throat.\n\n'
@@ -6857,7 +6857,7 @@ const questMissingGrownup = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'mg_c1b',
-          text: 'Go find Dad and tell him you miss her',
+          text: 'Go find your other grown-up and say you miss them',
           nextSegmentId: 'mg_share',
         ),
       ],
@@ -6868,7 +6868,7 @@ const questMissingGrownup = LifeQuestScenario(
       content:
           'You burrow under the blanket. The missing feeling is still there. '
           'It might even be growing.\n\n'
-          'After a while, Dad knocks softly. "Hey. Want to come watch the end '
+          'After a while, your other grown-up knocks softly. "Hey. Want to come watch the end '
           'of the game with me?"\n\n'
           'You\'re not really in a game mood. But you\'re not really in an '
           'alone mood either.',
@@ -6876,12 +6876,12 @@ const questMissingGrownup = LifeQuestScenario(
       choices: [
         QuestChoice(
           id: 'mg_c2a',
-          text: 'Come out and sit on the couch with him',
+          text: 'Come out and sit on the couch with them',
           nextSegmentId: 'mg_couch',
         ),
         QuestChoice(
           id: 'mg_c2b',
-          text: 'Ask if you can call Mom to say goodnight',
+          text: 'Ask if you can call to say goodnight',
           nextSegmentId: 'mg_call',
         ),
       ],
@@ -6890,21 +6890,21 @@ const questMissingGrownup = LifeQuestScenario(
     'mg_share': QuestSegment(
       id: 'mg_share',
       content:
-          'You pad into the living room. Dad looks up.\n\n'
-          '"I miss Mom," you say. Your voice is small.\n\n'
-          'Dad pats the spot next to him. "Yeah. Me too."\n\n'
-          'You didn\'t know Dad missed her. He\'s a grown-up. You thought maybe '
+          'You pad into the living room. Your grown-up looks up.\n\n'
+          '"I miss them," you say. Your voice is small.\n\n'
+          'They pat the spot next to them. "Yeah. Me too."\n\n'
+          'You didn\'t know grown-ups missed people like that. You thought maybe '
           'grown-ups don\'t miss as hard.\n\n'
           'They do. They just hide it better sometimes.',
       choices: [
         QuestChoice(
           id: 'mg_c3a',
-          text: "Ask Dad to tell you a story about Mom when she was little",
+          text: "Ask for a story about your other grown-up when they were little",
           nextSegmentId: 'mg_story',
         ),
         QuestChoice(
           id: 'mg_c3b',
-          text: 'Just sit with him and watch the rain',
+          text: 'Just sit with them and watch the rain',
           nextSegmentId: 'mg_quiet',
         ),
       ],
@@ -6914,9 +6914,9 @@ const questMissingGrownup = LifeQuestScenario(
       id: 'mg_couch',
       content:
           'You shuffle out and flop on the couch.\n\n'
-          'Dad doesn\'t make you talk. He just shares his blanket.\n\n'
-          'After a while, you say, "I miss Mom."\n\n'
-          'Dad nods. "I know, kiddo. Me too. Two more sleeps."\n\n'
+          'Your grown-up doesn\'t make you talk. They just share their blanket.\n\n'
+          'After a while, you say, "I miss them."\n\n'
+          'Your grown-up nods. "I know, kiddo. Me too. Two more sleeps."\n\n'
           'You count the sleeps on your fingers like you\'re little again.\n\n'
           'Two isn\'t very many. Two is doable.',
       isEnding: true,
@@ -6925,27 +6925,27 @@ const questMissingGrownup = LifeQuestScenario(
     'mg_call': QuestSegment(
       id: 'mg_call',
       content:
-          'Dad nods and dials. Mom picks up on the second ring.\n\n'
+          'Your grown-up nods and dials. The other grown-up picks up on the second ring.\n\n'
           '"Hey, baby! I was just thinking about you."\n\n'
-          'You tell her about the spelling test. About what you had for dinner. '
+          'You tell them about the spelling test. About what you had for dinner. '
           'About how the cat tried to drink your milk.\n\n'
-          'Mom laughs. You laugh.\n\n'
-          'Two sleeps from now, you\'ll see her face for real. '
-          'Tonight, you got her voice. '
-          'And her voice helps a lot.',
+          'They laugh. You laugh.\n\n'
+          'Two sleeps from now, you\'ll see their face for real. '
+          'Tonight, you got their voice. '
+          'And their voice helps a lot.',
       isEnding: true,
     ),
 
     'mg_story': QuestSegment(
       id: 'mg_story',
       content:
-          '"Tell me a story about Mom when she was little," you say.\n\n'
-          'Dad lights up. "Ohhh, I have GOOD ones."\n\n'
-          'He tells you about the time Mom climbed a tree and got stuck. '
-          'About her first dog. About the song she used to make up about '
+          '"Tell me a story about when they were little," you say.\n\n'
+          'Your grown-up lights up. "Ohhh, I have GOOD ones."\n\n'
+          'They tell you about the time the other grown-up climbed a tree and got stuck. '
+          'About their first dog. About the song they used to make up about '
           'spaghetti.\n\n'
           'You laugh until your stomach hurts.\n\n'
-          'Mom feels close again, even though she\'s far away.\n\n'
+          'They feel close again, even though they\'re far away.\n\n'
           'Stories are a kind of magic for missing.',
       isEnding: true,
     ),
@@ -6953,7 +6953,7 @@ const questMissingGrownup = LifeQuestScenario(
     'mg_quiet': QuestSegment(
       id: 'mg_quiet',
       content:
-          'You don\'t say anything else for a while. Just lean against Dad. '
+          'You don\'t say anything else for a while. Just lean against your grown-up. '
           'Just watch the rain make stripes on the window.\n\n'
           'It\'s okay to be sad.\n\n'
           'It\'s okay to miss someone.\n\n'
@@ -7073,8 +7073,8 @@ const questFirstHardThing = LifeQuestScenario(
       id: 'fh_tomorrow',
       content:
           'You walk home. Slow. The mad-feeling fades a little with every step.\n\n'
-          'When you get home, Dad sees your face. He doesn\'t ask twenty '
-          'questions. He just says, "Want a snack?"\n\n'
+          'When you get home, your grown-up sees your face. They don\'t ask twenty '
+          'questions. They just say, "Want a snack?"\n\n'
           'You nod.\n\n'
           'You eat crackers. You decide skateboards are stupid. Then later, '
           'right before bed, you decide they\'re only kind of stupid.\n\n'

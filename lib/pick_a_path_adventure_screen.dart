@@ -1203,7 +1203,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
               maxLines: 3,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'e.g. "Then Dad appeared with a magic map!"',
+                hintText: 'e.g. "Then a grown-up appeared with a magic map!"',
                 hintStyle: const TextStyle(color: Colors.white38),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
