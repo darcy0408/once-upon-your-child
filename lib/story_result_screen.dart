@@ -6,7 +6,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, compute;
+import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -1816,20 +1817,26 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// Base64-encode the currently-displayed cover illustration (if any) so it
   /// can be persisted with the saved story. Returns null when there is no
   /// cover art to keep.
-  String? _captureCoverImageBase64() {
+  Future<String?> _captureCoverImageBase64() async {
     if (_inlineIllustrations.isEmpty) return null;
     try {
-      return base64Encode(_inlineIllustrations.first.bytes);
+      final bytes = await _compressImageForWeb(_inlineIllustrations.first.bytes);
+      return base64Encode(bytes);
     } catch (_) {
       return null;
     }
+  }
+
+  Future<Uint8List> _compressImageForWeb(Uint8List bytes) async {
+    if (!kIsWeb) return bytes;
+    return await compute(_compressJpgSync, bytes);
   }
 
   /// Capture per-page illustration bytes available right now — from art that
   /// was already persisted (re-save case) or from the live prefetcher's
   /// `ready` pages — as a JSON array of base64 strings indexed by story page.
   /// Returns null when no page has art (avoids storing an all-null payload).
-  String? _capturePageIllustrationsJson() {
+  Future<String?> _capturePageIllustrationsJson() async {
     final prefetcher = _perPagePrefetcher;
     final entries = <String?>[];
     var hasAny = false;
@@ -1846,7 +1853,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       }
       if (bytes != null) {
         try {
-          entries.add(base64Encode(bytes));
+          final compressed = await _compressImageForWeb(bytes);
+          entries.add(base64Encode(compressed));
           hasAny = true;
           continue;
         } catch (_) {
@@ -1885,8 +1893,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           totalPages: widget.pages?.length ?? _storyPages.length,
           // Persist whatever illustrations are available now so re-opening
           // this story shows its pictures without regenerating them.
-          coverImageBase64: _captureCoverImageBase64(),
-          pageIllustrationsJson: _capturePageIllustrationsJson(),
+          coverImageBase64: await _captureCoverImageBase64(),
+          pageIllustrationsJson: await _capturePageIllustrationsJson(),
         );
 
         final storyLocal = StoryLocal.fromSavedStory(newStory);
@@ -5229,4 +5237,19 @@ class _StartReadingButtonState extends State<_StartReadingButton>
       ),
     );
   }
+}
+
+Uint8List _compressJpgSync(Uint8List bytes) {
+  final image = img.decodeImage(bytes);
+  if (image == null) return bytes;
+  var resized = image;
+  if (image.width > 400 || image.height > 400) {
+    resized = img.copyResize(
+      image,
+      width: image.width > image.height ? 400 : null,
+      height: image.height >= image.width ? 400 : null,
+      maintainAspect: true,
+    );
+  }
+  return Uint8List.fromList(img.encodeJpg(resized, quality: 65));
 }

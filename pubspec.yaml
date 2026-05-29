@@ -67,6 +67,7 @@ dependencies:
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   flutter_secure_storage: ^10.0.0 # Encrypted storage for API keys
+  image: ^4.8.0
 
   # meta: Removed explicit dependency - let Flutter SDK manage version to avoid integration_test conflicts
 dev_dependencies:
