@@ -102,15 +102,14 @@ void main() {
       expect(liveIds, containsAll(<String>['pick_a_side', 'the_dare']));
     });
 
-    test('tier 3-4 sensitive quests are gated (NOT live) pending review', () {
+    test('tier 3-4 quests are LIVE after owner review (2026-05-30)', () {
       final liveIds = allLifeQuests.map((q) => q.id).toSet();
-      final pendingIds = reviewPendingLifeQuests.map((q) => q.id).toSet();
-      expect(pendingIds, <String>{'the_offer', 'the_ride_home', 'the_secret'});
-      for (final id in pendingIds) {
-        expect(liveIds.contains(id), isFalse,
-            reason: 'Sensitive quest "$id" must not be in allLifeQuests until '
-                'owner review');
-      }
+      expect(
+        liveIds,
+        containsAll(<String>['the_offer', 'the_ride_home', 'the_secret']),
+      );
+      // Staging slot is empty now that they've been promoted.
+      expect(reviewPendingLifeQuests, isEmpty);
     });
   });
 }

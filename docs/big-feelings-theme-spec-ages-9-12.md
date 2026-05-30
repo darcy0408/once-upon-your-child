@@ -184,4 +184,5 @@ out is strength and that an adult's unsafe behavior is not their fault or their 
   decision/refusal scaffolding; add a 9-12 moderation tier in `content_moderator.py` that permits
   honest pressure/peril for SEL while hard-blocking gore, sexual content, and graphic substance use.
 - **Human review gate:** `questTheOffer`, `questRideHome`, `questSecretWeight` (and any tier 3-4
-  content) ship only after owner review.
+  content) ship only after owner review. **Reviewed and approved 2026-05-30** — promoted into
+  `allLifeQuests` and live. Future tier-3/4 content stages in `reviewPendingLifeQuests` first.

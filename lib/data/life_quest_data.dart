@@ -178,10 +178,14 @@ const allLifeQuests = <LifeQuestScenario>[
   questLeftOut,
   questSiblingConflict,
   questBeingTeased,
-  // Adventurer "Standing On Your Own" ladder, tiers 1-2 (MT-199). Tiers 3-4
-  // live in reviewPendingLifeQuests until owner content review.
+  // Adventurer "Standing On Your Own" ladder (MT-199) — all tiers LIVE after
+  // owner content review (2026-05-30). Tiers 3-4 surface the crisis-resources
+  // panel via _crisisQuestIds in life_quest_screen.dart.
   questPickASide,
   questTheDare,
+  questTheOffer,
+  questRideHome,
+  questSecretWeight,
   // All three bands (ages 9-17)
   questSchoolStress,
   // Creator + Adolescent (ages 12-17)
@@ -7783,12 +7787,8 @@ const questSecretWeight = LifeQuestScenario(
   },
 );
 
-/// Tier 3-4 "Standing On Your Own" quests, authored to
-/// docs/big-feelings-theme-spec-ages-9-12.md. These are intentionally NOT in
-/// [allLifeQuests] — they are held here pending owner content review before
-/// being surfaced in the app. To ship: move into [allLifeQuests].
-const reviewPendingLifeQuests = <LifeQuestScenario>[
-  questTheOffer,
-  questRideHome,
-  questSecretWeight,
-];
+/// Staging slot for content that needs owner review before going live. The
+/// tier-3/4 "Standing On Your Own" quests (questTheOffer, questRideHome,
+/// questSecretWeight) were reviewed and promoted into [allLifeQuests] on
+/// 2026-05-30, so this is currently empty. Keep it for the next batch.
+const reviewPendingLifeQuests = <LifeQuestScenario>[];
