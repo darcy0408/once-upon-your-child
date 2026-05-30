@@ -581,11 +581,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ? Icons.visibility
                     : Icons.visibility_off,
               ),
+              tooltip:
+                  settings.obscureApiKey ? 'Show API key' : 'Hide API key',
               onPressed: ref.read(settingsProvider.notifier).toggleObscure,
             ),
             if (_apiKeyController.text.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.clear),
+                tooltip: 'Clear API key',
                 onPressed: () => _clearApiKey(context),
               ),
           ],

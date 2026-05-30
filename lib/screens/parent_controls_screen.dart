@@ -1283,10 +1283,14 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       ),
       child: Column(
         children: [
-          GestureDetector(
-            onTap: _goToCharacterCreation,
-            child: const Icon(Icons.person_add_alt_1_rounded,
-                color: Color(0xFFFFD700), size: 36),
+          Semantics(
+            button: true,
+            label: 'Create a character',
+            child: GestureDetector(
+              onTap: _goToCharacterCreation,
+              child: const Icon(Icons.person_add_alt_1_rounded,
+                  color: Color(0xFFFFD700), size: 36),
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -1541,17 +1545,23 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     ),
                   ),
                   if (isSelected)
-                    GestureDetector(
-                      onTap: () => setState(
-                        () => _expandedTrigger =
-                            isExpanded ? null : trigger.value,
-                      ),
-                      child: Icon(
-                        isExpanded
-                            ? Icons.expand_less
-                            : Icons.tune_rounded,
-                        color: const Color(0xFFFFD700),
-                        size: 20,
+                    Semantics(
+                      button: true,
+                      label: isExpanded
+                          ? 'Collapse ${trigger.label} options'
+                          : 'Customize ${trigger.label} practice',
+                      child: GestureDetector(
+                        onTap: () => setState(
+                          () => _expandedTrigger =
+                              isExpanded ? null : trigger.value,
+                        ),
+                        child: Icon(
+                          isExpanded
+                              ? Icons.expand_less
+                              : Icons.tune_rounded,
+                          color: const Color(0xFFFFD700),
+                          size: 20,
+                        ),
                       ),
                     )
                   else

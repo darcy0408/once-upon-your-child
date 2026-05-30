@@ -156,6 +156,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+            tooltip: 'Refresh dashboard',
             onPressed: () {
               setState(() => _loading = true);
               _loadData();
