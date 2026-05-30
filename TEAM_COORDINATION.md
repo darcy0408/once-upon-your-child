@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-30 | 11:07 | 433d | mt-099-bookfeel | MT-099 Open Book reader refactor (Direction B) → PR #164 | [link](docs/sessions/2026-05-30-1107-433d.md) |
 | 2026-05-28 | 13:52 | 875f | reliability-hardening | MT-187 F-01 prompt-template versioning shipped + prod Postgres migrated | [link](docs/sessions/2026-05-28-1352-875f.md) |
 | 2026-05-28 | 13:52 | 7c1c | reliability-hardening | Perf: PERF-01 streaming backend + PERF-04 cancel foundation | [link](docs/sessions/2026-05-28-1352-7c1c.md) |
 | 2026-05-28 | 13:52 | 83c8 | reliability-hardening | Backup workflow hardened + R2 walkthrough; P1/P2 path corrected | [link](docs/sessions/2026-05-28-1352-83c8.md) |
