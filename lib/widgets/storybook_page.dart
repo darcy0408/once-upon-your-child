@@ -33,6 +33,7 @@ class StoryBookPage extends StatelessWidget {
     this.showPageEdges = true,
     this.pageLabel,
     this.darkPage = false,
+    this.framed = false,
   });
 
   final Widget child;
@@ -56,6 +57,12 @@ class StoryBookPage extends StatelessWidget {
   /// the paper edges and badge invert to stay legible.
   final bool darkPage;
 
+  /// True when this leaf sits inside an [OpenBookFrame]. The frame supplies the
+  /// cover border and grounding shadow, so the leaf drops its own gold border,
+  /// outer glow, and filigree corners (which read "diploma", not "storybook")
+  /// and insets its spine to sit just off the frame's gutter (MT-099).
+  final bool framed;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -72,7 +79,9 @@ class StoryBookPage extends StatelessWidget {
             : (isCompact
                 ? const EdgeInsets.fromLTRB(26, 34, 26, 30)
                 : const EdgeInsets.fromLTRB(40, 50, 40, 40));
-        final effectiveShowDecorations = showDecorations && !isTiny;
+        // Inside an OpenBookFrame the leather rim is the border, so the leaf
+        // sheds its own gold filigree corners.
+        final effectiveShowDecorations = showDecorations && !isTiny && !framed;
         final bindLeft = bindingSide == BookBindingSide.left;
         // The binding side gets a deeper spine shadow; the outer side gets
         // the stacked page-edge fan and (optionally) the page-number badge.
@@ -88,22 +97,28 @@ class StoryBookPage extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: pageRadius,
-            border: Border.all(
-              color: AppColors.gold.withValues(alpha: 0.3),
-              width: 2,
-            ),
+            // Framed leaves drop the gold border + outer glow (the leather
+            // cover supplies them); they keep only a soft drop shadow so the
+            // leaf still lifts off the book body.
+            border: framed
+                ? null
+                : Border.all(
+                    color: AppColors.gold.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: framed ? 0.18 : 0.15),
+                blurRadius: framed ? 10 : 20,
+                offset: Offset(0, framed ? 4 : 8),
               ),
-              BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.1),
-                blurRadius: 0,
-                spreadRadius: 4,
-                offset: const Offset(0, 0),
-              ),
+              if (!framed)
+                BoxShadow(
+                  color: AppColors.gold.withValues(alpha: 0.1),
+                  blurRadius: 0,
+                  spreadRadius: 4,
+                  offset: const Offset(0, 0),
+                ),
             ],
           ),
           child: ClipRRect(
@@ -131,10 +146,11 @@ class StoryBookPage extends StatelessWidget {
                 ),
 
               // Spine shadow on the binding edge — deeper than before so a
-              // two-page spread reads as a real gutter, not a seam.
+              // two-page spread reads as a real gutter, not a seam. Inset 2px
+              // when framed so it sits just off the OpenBookFrame's gutter.
               Positioned(
-                left: bindLeft ? 0 : null,
-                right: bindLeft ? null : 0,
+                left: bindLeft ? (framed ? 2 : 0) : null,
+                right: bindLeft ? null : (framed ? 2 : 0),
                 top: 0,
                 bottom: 0,
                 width: spineWidth,
