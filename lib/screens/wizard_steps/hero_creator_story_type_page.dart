@@ -518,7 +518,11 @@ class HeroStoryTypePage extends StatelessWidget {
                         label: isCreator ? 'Choose Your Path' : 'Pick a Path',
                         subtitle: isCreator
                             ? 'Branch the narrative'
-                            : 'You choose what happens!',
+                            : band.band == AgeBand.adventurer
+                                // A-010: a sharper pitch for 9-12 than the
+                                // younger bands' "You choose what happens!".
+                                ? 'Every choice changes the ending'
+                                : 'You choose what happens!',
                         isActive: selectedMode == 'pickpath',
                         onTap: () {
                           setStoryMode('pickpath');
