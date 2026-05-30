@@ -13,6 +13,7 @@ import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
+import '../utils/motion_utils.dart';
 import '../widgets/star_burst_celebration.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
@@ -85,17 +86,32 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   void initState() {
     super.initState();
-    // Pulsing "Tap me!" hint on the title screen.
+    // Pulsing "Tap me!" hint on the title screen. Repeat is started in
+    // didChangeDependencies so MotionPrefs.reduceMotion is honored — see
+    // A11Y-007 sweep, audit-reports/06-accessibility-20260521-remediation-plan.md.
     _tapHintCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+    );
     _tapHintOpacity = Tween<double>(begin: 0.25, end: 1.0).animate(
       CurvedAnimation(parent: _tapHintCtrl, curve: Curves.easeInOut),
     );
 
     _resumeFromSavedAge();
     _initVoice();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _tapHintCtrl.stop();
+      // Settle to full opacity so the "Tap me!" hint stays visible — settling
+      // to zero would hide the cue, which is worse than the lost animation.
+      _tapHintCtrl.value = 1.0;
+    } else if (!_tapHintCtrl.isAnimating) {
+      _tapHintCtrl.repeat(reverse: true);
+    }
   }
 
   /// Determines the initial step on launch:
