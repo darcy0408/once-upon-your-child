@@ -1331,6 +1331,17 @@ class _StoryScreenState extends State<StoryScreen> {
     final averageProgress =
         (summary.averageProgress * 100).clamp(0, 100).toStringAsFixed(0);
 
+    // Theme the card accents from the active band so it doesn't read as a
+    // generic green/white widget on the band-coloured home (A-008). Adventurer
+    // and older bands get a "Mission Log / rank" framing instead of the
+    // younger "Achievement Journey".
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final accent = band?.primary ?? const Color(0xFF2E7D32);
+    final fill = band?.accent ?? Colors.green.shade600;
+    final olderFraming = band != null &&
+        (band.band == AgeBand.adventurer || band.band.isMature);
+    final headerTitle = olderFraming ? 'Mission Log' : 'Achievement Journey';
+
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1355,19 +1366,19 @@ class _StoryScreenState extends State<StoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Achievement Journey',
+                      Text(
+                        headerTitle,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E7D32),
+                          color: accent,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${summary.unlockedCount}/${summary.totalCount} unlocked so far',
                         style: TextStyle(
-                          color: Colors.green.shade900.withValues(alpha: 0.75),
+                          color: accent.withValues(alpha: 0.75),
                         ),
                       ),
                     ],
@@ -1397,10 +1408,8 @@ class _StoryScreenState extends State<StoryScreen> {
               child: LinearProgressIndicator(
                 minHeight: 12,
                 value: summary.completionPercent.clamp(0.0, 1.0),
-                backgroundColor: Colors.green.shade100,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Colors.green.shade600,
-                ),
+                backgroundColor: accent.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(fill),
               ),
             ),
             const SizedBox(height: 8),
@@ -1408,7 +1417,7 @@ class _StoryScreenState extends State<StoryScreen> {
               '$completionPercent% badges unlocked • '
               '$averageProgress% average progress',
               style: TextStyle(
-                color: Colors.green.shade900.withValues(alpha: 0.7),
+                color: accent.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1568,6 +1577,13 @@ class _CharacterPortraitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Drive the card palette from the active band instead of hard-coded purple
+    // so Adventurer (indigo/teal) and the other bands stay visually coherent
+    // with the rest of the home screen (A-007).
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final gradStart = band?.primary ?? const Color(0xFF6B3FA0);
+    final gradEnd = band?.primaryDark ?? const Color(0xFF3D1166);
+    final accent = band?.accent ?? const Color(0xFFFFD700);
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -1578,19 +1594,19 @@ class _CharacterPortraitCard extends StatelessWidget {
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF6B3FA0), Color(0xFF3D1166)],
+                colors: [gradStart, gradEnd],
               ),
               border: Border.all(
-                color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                color: isSelected ? accent : Colors.white24,
                 width: isSelected ? 2.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? const Color(0xFFFFD700).withAlpha(80)
+                      ? accent.withAlpha(80)
                       : Colors.black.withAlpha(60),
                   blurRadius: isSelected ? 12 : 6,
                   spreadRadius: isSelected ? 2 : 0,
@@ -1608,8 +1624,7 @@ class _CharacterPortraitCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color:
-                          isSelected ? const Color(0xFFFFD700) : Colors.white30,
+                      color: isSelected ? accent : Colors.white30,
                       width: 2,
                     ),
                   ),
@@ -1645,9 +1660,7 @@ class _CharacterPortraitCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFFFD700)
-                        : Colors.white.withAlpha(30),
+                    color: isSelected ? accent : Colors.white.withAlpha(30),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1673,8 +1686,8 @@ class _CharacterPortraitCard extends StatelessWidget {
                 child: Container(
                   width: 28,
                   height: 28,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF7C3AED),
+                  decoration: BoxDecoration(
+                    color: accent,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.bolt, color: Colors.white, size: 18),
