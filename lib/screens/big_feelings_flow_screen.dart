@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -54,6 +55,16 @@ class BigFeelingsFlowScreen extends StatefulWidget {
 
   @override
   State<BigFeelingsFlowScreen> createState() => _BigFeelingsFlowScreenState();
+
+  /// Test-only: returns the user-facing feeling labels (in the order the wheel
+  /// shows them) for [band]. Used to pin the MT-162 age-gating without having
+  /// to render the screen, which depends on Google Fonts the test environment
+  /// can't fetch (`SourceSansPro` on Creator+ bands).
+  @visibleForTesting
+  static List<String> debugFeelingLabelsForBand(AgeBand band) =>
+      _BigFeelingsFlowScreenState._feelingsForBand(band)
+          .map((o) => o.label)
+          .toList(growable: false);
 }
 
 class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
@@ -96,6 +107,16 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     _ChoiceOption(value: 'Stuck',     label: 'Stuck',     emoji: '🧱', subtitle: 'Don\'t know how',    matureLabel: 'Blocked',       matureSubtitle: 'Unable to move forward'),
   ];
 
+  // Gentle grief-adjacent vocabulary inherited from Explorer up. The heavier
+  // `Grief` entry below is gated to Adolescent+ (15+); content-safety audit
+  // F-19 (MT-162) flagged that a grieving pre-teen had no matching word, and
+  // Creator (13-14) doesn't yet get `Grief` either, so this carries through
+  // the whole 6-and-up chain. From Adolescent+ both "Missing Someone" and
+  // "Grief" coexist — different intensities, both valuable.
+  static const _feelingsMissingSomeone = [
+    _ChoiceOption(value: 'Missing_Someone', label: 'Missing Someone', emoji: '🫂', subtitle: 'When someone you love is far away'),
+  ];
+
   // Creator+ (13+) adds self-awareness feelings
   static const _feelingsCreator = [
     _ChoiceOption(value: 'What_If_y',        label: 'What-if-y', emoji: '❓', subtitle: 'Thinking a lot',   matureLabel: 'Anxious', matureSubtitle: 'Persistent worry'),
@@ -121,9 +142,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   ];
 
   /// Returns the age-appropriate feelings list for the given band.
-  /// Sprout: 4 | Explorer: 13 | Adventurer: 18 | Creator: 20 | Adolescent: 25 | Adult: 30
+  /// Sprout: 4 | Explorer: 15 | Adventurer: 20 | Creator: 21 | Adolescent: 27 | Adult: 32
+  ///
+  /// `_feelingsMissingSomeone` (MT-162) flows through the normal inheritance
+  /// chain — Explorer through Adult all get it. Creator (13-14) doesn't yet
+  /// receive the heavier `Grief` word (that's Adolescent+ at `_feelingsAdolescent`),
+  /// so dropping the softer form there would leave 13-14 year olds with no
+  /// grief-adjacent vocabulary at all — exactly the F-19 gap the audit flagged.
+  /// At Adolescent+ both options coexist deliberately: "Missing Someone" maps
+  /// to absence/longing; "Grief" maps to deeper loss. Different intensities,
+  /// both valuable.
   static List<_ChoiceOption> _feelingsForBand(AgeBand band) {
-    const explorer    = [..._feelingsCore, ..._feelingsExplorer];
+    const explorer    = [..._feelingsCore, ..._feelingsExplorer, ..._feelingsMissingSomeone];
     const adventurer  = [...explorer, ..._feelingsAdventurer];
     const creator     = [...adventurer, ..._feelingsCreator];
     const adolescent  = [...creator, ..._feelingsAdolescent];
@@ -238,6 +268,11 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'New person', label: 'New person', emoji: '👋'),
       _ChoiceOption(value: 'Big group', label: 'Big group', emoji: '👨‍👩‍👧‍👦'),
       _ChoiceOption(value: 'Center stage', label: 'Stage', emoji: '🎭'),
+    ],
+    'Missing_Someone': [
+      _ChoiceOption(value: 'Someone is away', label: 'Away', emoji: '✈️'),
+      _ChoiceOption(value: 'A pet is gone', label: 'My pet', emoji: '🐾'),
+      _ChoiceOption(value: 'A goodbye that hurt', label: 'A goodbye', emoji: '👋'),
     ],
     'Grief': [
       _ChoiceOption(value: 'Someone left', label: 'Someone left', emoji: '🚪'),
@@ -391,6 +426,11 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Hiding face', label: 'Hiding face', emoji: '🙈'),
       _ChoiceOption(value: 'Quiet voice', label: 'Quiet voice', emoji: '🤫'),
       _ChoiceOption(value: 'Small body', label: 'Small body', emoji: '🐭'),
+    ],
+    'Missing_Someone': [
+      _ChoiceOption(value: 'Heavy heart', label: 'Heavy heart', emoji: '💗'),
+      _ChoiceOption(value: 'Quiet tears', label: 'Quiet tears', emoji: '💧'),
+      _ChoiceOption(value: 'Empty hands', label: 'Empty hands', emoji: '🤲'),
     ],
     'Grief': [
       _ChoiceOption(value: 'Hollow chest', label: 'Hollow chest', emoji: '🫀'),
@@ -548,6 +588,11 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Hold a hand', label: 'Hold hand', emoji: '🤝'),
       _ChoiceOption(value: 'Take a breath', label: 'Take breath', emoji: '🌬️'),
       _ChoiceOption(value: 'Gentle wave', label: 'Gentle wave', emoji: '👋'),
+    ],
+    'Missing_Someone': [
+      _ChoiceOption(value: 'Look at a photo together', label: 'Look at a photo', emoji: '🖼️'),
+      _ChoiceOption(value: 'Tell a grown-up', label: 'Tell a grown-up', emoji: '🗣️'),
+      _ChoiceOption(value: 'Draw them a picture', label: 'Draw a picture', emoji: '🖍️'),
     ],
     'Grief': [
       _ChoiceOption(value: 'Let yourself feel it', label: 'Feel it fully', emoji: '🖤'),
