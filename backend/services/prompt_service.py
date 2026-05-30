@@ -179,11 +179,10 @@ class PromptService:
         elif age <= 12:
             return """
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 9-12):
-            ⚠️ MAXIMUM LENGTH: 250-400 words TOTAL. DO NOT EXCEED 400 WORDS.
-            - Count your words carefully and STOP at 400 words maximum
-            - Vocabulary: Grade-level appropriate
-            - Sentences: Varied length, some complex structures allowed
-            - Concepts: Multiple plot layers, character growth, lessons learned
+            - LENGTH: a full, substantial story of roughly 900-1800 words (up to ~2400 for a long story). Do NOT pad, but do NOT cut it short — these readers expect a real story, not a picture-book summary.
+            - Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue
+            - Sentences: 12-20 words on average; compound and complex sentences are encouraged
+            - Concepts: Multiple plot layers and a two-step challenge; character growth; show competing feelings the hero works through (the hero can be wrong and correct themselves)
             """
         elif age <= 15:
             return """
