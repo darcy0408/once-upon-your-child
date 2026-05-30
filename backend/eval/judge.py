@@ -14,6 +14,13 @@ Usage (once authorized):
 
 from __future__ import annotations
 
+# GitHub Models (gpt-4.1) has an 8,000-token request limit. Long bedtime/epic
+# stories for older age bands can exceed it when combined with the rubric block.
+# Truncate story text to a safe budget; rubric scoring is still meaningful on
+# the first portion (safety, format, age-fit, character inclusion are all
+# detectable in the opening pages). A notice is appended so the judge knows.
+GITHUB_MODELS_STORY_CHAR_LIMIT = 5_000  # ≈1,250 tokens; leaves headroom for rubrics
+
 import argparse
 import json
 import re
@@ -50,12 +57,18 @@ Return ONLY the JSON object."""
 
 
 def build_judge_prompt(
-    generation_row: dict, story_text: str, t: test_set.TestInput
+    generation_row: dict, story_text: str, t: test_set.TestInput,
+    story_char_limit: int | None = GITHUB_MODELS_STORY_CHAR_LIMIT,
 ) -> str:
     rubric_block = "\n\n".join(
         f"### {r.name} ({r.scale})\n{r.judge_prompt.format(age_band=generation_row['age_band'], mode=generation_row['mode'])}"
         for r in rubrics.ALL_RUBRICS
     )
+    # Truncate story to stay within provider token budgets (e.g. GitHub Models
+    # gpt-4.1 caps at 8,000 tokens per request). Pass story_char_limit=None to
+    # disable truncation for providers with larger context windows.
+    if story_char_limit and len(story_text) > story_char_limit:
+        story_text = story_text[:story_char_limit] + "\n\n[TRUNCATED — partial story shown for scoring]"
     return JUDGE_SYSTEM_PROMPT_TEMPLATE.format(
         mode=generation_row["mode"],
         age_band=generation_row["age_band"],
