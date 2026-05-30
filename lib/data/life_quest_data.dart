@@ -178,6 +178,10 @@ const allLifeQuests = <LifeQuestScenario>[
   questLeftOut,
   questSiblingConflict,
   questBeingTeased,
+  // Adventurer "Standing On Your Own" ladder, tiers 1-2 (MT-199). Tiers 3-4
+  // live in reviewPendingLifeQuests until owner content review.
+  questPickASide,
+  questTheDare,
   // All three bands (ages 9-17)
   questSchoolStress,
   // Creator + Adolescent (ages 12-17)
@@ -7110,3 +7114,681 @@ const questFirstHardThing = LifeQuestScenario(
     ),
   },
 );
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MT-199 — Adventurer (9-12) "Standing On Your Own" decision/pressure ladder.
+// Decision frame woven through every quest: PAUSE (you don't have to react now) ·
+// CHECK (is this safe? is this mine? what do I want?) · CHOOSE (your call, even if
+// different from the group) · REACH (tell a trusted adult when it's big).
+// Tiers 1-2 below are LIVE (in allLifeQuests). Tiers 3-4 are in
+// `reviewPendingLifeQuests` — NOT surfaced until owner content review.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Tier 1 (everyday pressure) — LIVE ──────────────────────────────────────────
+const questPickASide = LifeQuestScenario(
+  id: 'pick_a_side',
+  title: 'Pick a Side',
+  hook: 'Your two best friends had a fight. Now both want you to choose.',
+  emoji: '⚖️',
+  emotions: ['worried', 'frustrated', 'sad'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'pas_start',
+  grownupTip:
+      'Ask: "Has anyone ever tried to make you pick sides? What\'s it like '
+      'being in the middle?" Then just listen.',
+  segments: {
+    'pas_start': QuestSegment(
+      id: 'pas_start',
+      copingBreakId: 'belly_breath',
+      content:
+          'Maya and Jordan have been your two best friends since forever. '
+          'Yesterday they had a huge fight — nobody will say exactly about '
+          'what — and today the whole group feels like a tightrope.\n\n'
+          'At your locker, Maya leans in. "You\'re on my side, right? Don\'t '
+          'sit with Jordan at lunch. If you do, that says everything."\n\n'
+          'Across the hall, Jordan catches your eye and mouths: save me a seat.\n\n'
+          '«{companion} hovers nearby, watching you get pulled in two '
+          'directions at once.»\n\n'
+          'Your chest goes tight. You don\'t even know what the fight was '
+          'about — and now it\'s somehow YOUR test to pass. Two feelings show '
+          'up at the same time: you\'re worried about losing a friend, and '
+          'you\'re annoyed that you\'re being made to choose at all.',
+      choices: [
+        QuestChoice(
+          id: 'pas_c1a',
+          text: 'Promise Maya you\'ll freeze out Jordan',
+          nextSegmentId: 'pas_picked',
+        ),
+        QuestChoice(
+          id: 'pas_c1b',
+          text: 'Pause — tell them you need a minute before you answer',
+          nextSegmentId: 'pas_pause',
+        ),
+        QuestChoice(
+          id: 'pas_c1c',
+          text: 'Say you won\'t pick a side — you\'re friends with both',
+          nextSegmentId: 'pas_neither',
+        ),
+      ],
+    ),
+    'pas_picked': QuestSegment(
+      id: 'pas_picked',
+      content:
+          'You nod at Maya. "Okay. I\'m with you."\n\n'
+          'It buys you about ten seconds of feeling safe. Then you see '
+          'Jordan\'s face when you walk past their table without stopping. '
+          'You did that. Not because you decided Jordan was wrong — you '
+          'still don\'t even know what happened — but because Maya pushed '
+          'and you went along with it.\n\n'
+          'Going along with it is easier in the moment. It feels heavier '
+          'by lunch.\n\n'
+          'You realize you handed your choice to someone else. You could '
+          'still take it back.',
+      choices: [
+        QuestChoice(
+          id: 'pas_c2a',
+          text: 'Find Jordan after and tell the truth about what happened',
+          nextSegmentId: 'pas_repair',
+        ),
+        QuestChoice(
+          id: 'pas_c2b',
+          text: 'Leave it — it\'s done now',
+          nextSegmentId: 'pas_drift',
+        ),
+      ],
+    ),
+    'pas_pause': QuestSegment(
+      id: 'pas_pause',
+      content:
+          '"I need a minute," you say. "I\'m not going to decide who I am '
+          'in the hallway."\n\n'
+          'Maya blinks — she wasn\'t expecting that. But the tightness in '
+          'your chest loosens a notch, because you just did the thing that\'s '
+          'hardest under pressure: you didn\'t answer on someone else\'s '
+          'timer.\n\n'
+          'In that minute you actually think. Whose fight is this? Not '
+          'yours. What do YOU want? To not lose either of them. What\'s '
+          'fair? You weren\'t there; you don\'t have to referee.',
+      choices: [
+        QuestChoice(
+          id: 'pas_c3a',
+          text: '"I\'m not picking sides — but I\'m here for both of you."',
+          nextSegmentId: 'pas_neither',
+        ),
+        QuestChoice(
+          id: 'pas_c3b',
+          text: 'Ask a teacher or older sibling how to handle being in the middle',
+          nextSegmentId: 'pas_reach',
+        ),
+      ],
+    ),
+    'pas_neither': QuestSegment(
+      id: 'pas_neither',
+      content:
+          '"I\'m not going to freeze anybody out," you say. "I\'m friends '
+          'with both of you. If that\'s not allowed, that\'s not on me."\n\n'
+          'It is genuinely scary to say. For a second Maya looks like she '
+          'might be mad. Then — maybe not today, maybe not all the way — '
+          'something in her shoulders drops. You weren\'t mean. You were '
+          'just clear.\n\n'
+          'Choosing yourself instead of going with the flow doesn\'t make '
+          'the fight disappear. It does mean you didn\'t make it worse, and '
+          'you didn\'t lose yourself in someone else\'s argument.',
+      choices: [],
+      isEnding: true,
+    ),
+    'pas_reach': QuestSegment(
+      id: 'pas_reach',
+      content:
+          'You catch your older cousin after school and lay it out. They '
+          'don\'t laugh at you. "Being the rope in a tug-of-war is the worst," '
+          'they say. "You don\'t have to hold either end. Tell them both the '
+          'same thing: you like them, you\'re not refereeing."\n\n'
+          'Reaching out for advice when you\'re stuck isn\'t weak. It\'s how '
+          'you find words you didn\'t have yet.\n\n'
+          'The next day you say exactly that — to both of them. The fight is '
+          'still theirs. But you\'re not trapped in the middle of it anymore.',
+      choices: [],
+      isEnding: true,
+    ),
+    'pas_repair': QuestSegment(
+      id: 'pas_repair',
+      content:
+          'You find Jordan. "That was bad of me. Maya told me to freeze you '
+          'out and I just... did it. I don\'t even know what your fight was '
+          'about. I\'m not picking sides."\n\n'
+          'Jordan is quiet for a second. "Okay," they say. "Thanks for '
+          'saying it." Not everything snaps back to perfect. But honest beats '
+          'easy, and you can feel the difference.\n\n'
+          'You went along with the pressure once. Then you took your choice '
+          'back. That second part is the brave part.',
+      choices: [],
+      isEnding: true,
+    ),
+    'pas_drift': QuestSegment(
+      id: 'pas_drift',
+      content:
+          'You leave it. The group stays split for a while. Some days you '
+          'catch yourself wishing you\'d said something when it mattered.\n\n'
+          'Here\'s the thing to keep: when someone pressures you to decide '
+          'who you are RIGHT NOW, you\'re allowed to pause. You\'re allowed '
+          'to not pick a side. The choice is always yours to take back — '
+          'and the sooner, the easier.',
+      choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+// ── Tier 2 (rule-breaking pressure) — LIVE ─────────────────────────────────────
+const questTheDare = LifeQuestScenario(
+  id: 'the_dare',
+  title: 'The Dare',
+  hook: 'Everyone\'s daring you to do it. Your gut says no.',
+  emoji: '\u{1F3B2}',
+  emotions: ['worried', 'embarrassed', 'frustrated'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'dare_start',
+  grownupTip:
+      'Ask: "What\'s the difference between brave and a dare?" Kids who can '
+      'name that line are far better at holding it.',
+  segments: {
+    'dare_start': QuestSegment(
+      id: 'dare_start',
+      copingBreakId: 'star_breath',
+      content:
+          'It\'s after school behind the gym. Five of you. Someone found a '
+          'side door propped open — the one to the teachers\' lounge, the '
+          'room you\'re definitely not allowed in.\n\n'
+          '"Go in and grab something off the desk. Anything. Proof you did '
+          'it." Tyler\'s grinning. Everyone\'s grinning. "Come on, don\'t be '
+          'scared."\n\n'
+          'Your stomach knows the answer before your brain does — that '
+          'tight, no-thanks feeling. But five faces are waiting, and being '
+          'the one who chickens out feels almost as bad as getting caught.\n\n'
+          '«{companion} shifts beside you, uneasy too.»\n\n'
+          'You don\'t have to answer in the next half-second, even though it '
+          'feels like you do.',
+      choices: [
+        QuestChoice(
+          id: 'dare_c1a',
+          text: 'Go in — it\'s not a big deal, right?',
+          nextSegmentId: 'dare_in',
+        ),
+        QuestChoice(
+          id: 'dare_c1b',
+          text: 'Pause and actually check: is this me, or is this them?',
+          nextSegmentId: 'dare_check',
+        ),
+        QuestChoice(
+          id: 'dare_c1c',
+          text: '"Nah, I\'m good" — and start walking',
+          nextSegmentId: 'dare_walk',
+        ),
+      ],
+    ),
+    'dare_in': QuestSegment(
+      id: 'dare_in',
+      content:
+          'You take one step toward the door. The hinge creaks. Down the '
+          'hall, a custodian\'s cart rattles — getting closer.\n\n'
+          'Suddenly the dare isn\'t a game; it\'s a choice with a price tag, '
+          'and the price is yours alone. Tyler dared you, but Tyler won\'t '
+          'be the one in the office. The crowd that pushed you in won\'t be '
+          'standing next to you when it goes wrong.\n\n'
+          'That\'s the trick of "everyone\'s doing it" — when it lands, '
+          'you\'re the one holding it.',
+      choices: [
+        QuestChoice(
+          id: 'dare_c2a',
+          text: 'Back out now — better late than caught',
+          nextSegmentId: 'dare_walk',
+        ),
+        QuestChoice(
+          id: 'dare_c2b',
+          text: 'Keep going',
+          nextSegmentId: 'dare_caught',
+        ),
+      ],
+    ),
+    'dare_check': QuestSegment(
+      id: 'dare_check',
+      content:
+          'You stop and run the quick check, the one that fits in a single '
+          'breath. Is this safe? Not really. Is this mine — do I actually '
+          'want to? No. Whose idea was it? Tyler\'s.\n\n'
+          'When you separate what YOU want from what the group wants, the '
+          'fog clears fast. You\'re not scared of the room. You just don\'t '
+          'want to do something dumb on someone else\'s dare.\n\n'
+          'That\'s not chickening out. That\'s knowing your own mind.',
+      choices: [
+        QuestChoice(
+          id: 'dare_c3a',
+          text: '"Not doing it. If you want to, that\'s on you."',
+          nextSegmentId: 'dare_walk',
+        ),
+        QuestChoice(
+          id: 'dare_c3b',
+          text: 'Make it easy to leave — "I gotta go, you coming?"',
+          nextSegmentId: 'dare_lead',
+        ),
+      ],
+    ),
+    'dare_walk': QuestSegment(
+      id: 'dare_walk',
+      content:
+          '"Nah, I\'m good," you say, and you start walking before the '
+          'argument can start.\n\n'
+          'Someone calls you boring. It stings for about a block. Then it '
+          'doesn\'t, because boring fades and getting hauled into the office '
+          'for a dare you didn\'t even care about does not.\n\n'
+          'Walking away from a dare is one of the most underrated moves '
+          'there is. You don\'t owe anyone proof. The kid who can say no and '
+          'keep walking is the one who actually runs their own life.',
+      choices: [],
+      isEnding: true,
+    ),
+    'dare_lead': QuestSegment(
+      id: 'dare_lead',
+      content:
+          '"I gotta go," you say, easy, like it\'s no big thing. "You '
+          'coming?" You hold the exit open instead of making a speech.\n\n'
+          'Two of them peel off with you — turns out they didn\'t want to '
+          'either; they were just waiting for someone to go first. That\'s '
+          'the secret about going-with-the-flow: half the group is only '
+          'flowing because nobody else stopped.\n\n'
+          'You didn\'t lecture anyone. You just made the better choice the '
+          'easy one to follow.',
+      choices: [],
+      isEnding: true,
+    ),
+    'dare_caught': QuestSegment(
+      id: 'dare_caught',
+      content:
+          'The custodian rounds the corner. The crowd scatters like dropped '
+          'marbles — gone in a second. You\'re the one standing in the '
+          'doorway.\n\n'
+          'It\'s not the end of the world. You\'ll have an awkward talk, '
+          'maybe a call home. But notice who vanished: every single person '
+          'who dared you. That\'s the lesson worth keeping, and it cost less '
+          'to learn it here than for real.\n\n'
+          'Next time the gut-says-no feeling shows up, it\'s allowed to win. '
+          'You can pause, check, and choose — before your feet do.',
+      choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REVIEW-PENDING (tiers 3-4). Authored to spec; NOT in allLifeQuests. Ship only
+// after owner content review. Safety rules: always validate; never imply the
+// child caused it or must fix an adult; refusal always honored; route to a
+// trusted adult; crisis resources surfaced (see _crisisQuestIds in
+// life_quest_screen.dart). No graphic substance depiction.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Tier 3 (dangerous pressure: a peer offers something unsafe) ────────────────
+const questTheOffer = LifeQuestScenario(
+  id: 'the_offer',
+  title: 'The Offer',
+  hook: 'An older kid offers you something. Everyone\'s watching to see what you do.',
+  emoji: '\u{1F6D1}',
+  emotions: ['worried', 'embarrassed', 'frustrated'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'off_start',
+  grownupTip:
+      'Ask: "If someone ever offered you something you weren\'t sure about, '
+      'who could you tell — no matter what?" Make sure they have a name. '
+      'Remind them you\'d rather get a call than have them handle it alone.',
+  segments: {
+    'off_start': QuestSegment(
+      id: 'off_start',
+      copingBreakId: 'belly_breath',
+      content:
+          'Behind the bleachers after the game, where the grown-ups can\'t '
+          'see, an older kid you sort of know holds something out toward you. '
+          '"Here. Everybody tries it. You scared?"\n\n'
+          'You don\'t even fully know what it is. You just know the feeling '
+          'in your gut — the cold, clear NO that shows up before your words '
+          'do. But there\'s a circle of kids watching, and "scared" is the '
+          'word nobody wants to wear.\n\n'
+          '«{companion} presses close to your side.»\n\n'
+          'Two things are true at once: you\'re nervous about looking like a '
+          'baby, AND something about this is not okay. You don\'t have to '
+          'answer this second, even though it feels like you do.',
+      choices: [
+        QuestChoice(
+          id: 'off_c1a',
+          text: 'Pause — you don\'t owe anyone an answer right now',
+          nextSegmentId: 'off_pause',
+        ),
+        QuestChoice(
+          id: 'off_c1b',
+          text: '"No thanks" — clear and plain',
+          nextSegmentId: 'off_no',
+        ),
+        QuestChoice(
+          id: 'off_c1c',
+          text: 'Take it just so they\'ll stop staring',
+          nextSegmentId: 'off_pressured',
+        ),
+      ],
+    ),
+    'off_pause': QuestSegment(
+      id: 'off_pause',
+      content:
+          'You don\'t say yes and you don\'t say no yet. You just don\'t '
+          'reach for it. A pause is a real move — it takes the speed away '
+          'from the pressure.\n\n'
+          'In that breath you check the only questions that matter: Is this '
+          'safe? No. Is this mine, something I actually want? No. Then the '
+          'answer is already yours; you just have to say it with your mouth '
+          'or your feet.',
+      choices: [
+        QuestChoice(
+          id: 'off_c2a',
+          text: '"No. I\'m out." — and leave',
+          nextSegmentId: 'off_no',
+        ),
+        QuestChoice(
+          id: 'off_c2b',
+          text: 'Walk straight to a coach or grown-up you trust',
+          nextSegmentId: 'off_reach',
+        ),
+      ],
+    ),
+    'off_no': QuestSegment(
+      id: 'off_no',
+      content:
+          '"No thanks." You don\'t explain. You don\'t debate. You step back '
+          'out of the circle.\n\n'
+          'Someone might say something. Let them. A real "no" doesn\'t need '
+          'a paragraph after it, and you don\'t owe anyone a reason to keep '
+          'yourself safe. Your gut called it before the crowd did — and you '
+          'listened.\n\n'
+          'Saying no to something dangerous, with people watching, is one of '
+          'the bravest things a person your age ever does. Quietly, you just '
+          'did it.',
+      choices: [
+        QuestChoice(
+          id: 'off_c3a',
+          text: 'Tell a trusted grown-up what happened',
+          nextSegmentId: 'off_reach',
+        ),
+        QuestChoice(
+          id: 'off_c3b',
+          text: 'Keep it to yourself for now',
+          nextSegmentId: 'off_alone_end',
+        ),
+      ],
+    ),
+    'off_pressured': QuestSegment(
+      id: 'off_pressured',
+      content:
+          'Your hand starts to move because the staring is so loud. Then you '
+          'stop.\n\n'
+          'Here\'s the truth nobody behind the bleachers will tell you: the '
+          'kids pushing you won\'t be there if something goes wrong. The '
+          'stare ends in a minute. A bad choice can last a lot longer.\n\n'
+          'You\'re allowed to change your mind mid-reach. Pulling your hand '
+          'back is not losing. It\'s choosing yourself.',
+      choices: [
+        QuestChoice(
+          id: 'off_c4a',
+          text: 'Pull back — "Actually, no." And go',
+          nextSegmentId: 'off_no',
+        ),
+        QuestChoice(
+          id: 'off_c4b',
+          text: 'Go find a grown-up you trust right now',
+          nextSegmentId: 'off_reach',
+        ),
+      ],
+    ),
+    'off_reach': QuestSegment(
+      id: 'off_reach',
+      content:
+          'You find a coach you trust and say it straight: "Some kids behind '
+          'the bleachers are handing stuff out. I didn\'t take any. I didn\'t '
+          'know who else to tell."\n\n'
+          'The coach doesn\'t get mad at you. Not even a little. "You did '
+          'exactly the right thing," they say. "That took guts."\n\n'
+          'Telling a trusted grown-up is NOT tattling. When something is '
+          'unsafe, reaching out is the strong move — it\'s how you keep '
+          'yourself and maybe other kids safe too. You don\'t have to carry '
+          'a thing like this by yourself.',
+      choices: [],
+      isEnding: true,
+    ),
+    'off_alone_end': QuestSegment(
+      id: 'off_alone_end',
+      content:
+          'You said no, and that matters — a lot. You head home turning it '
+          'over.\n\n'
+          'One thing to hold onto: you don\'t have to keep something like '
+          'this to yourself. Telling a trusted grown-up later isn\'t getting '
+          'anyone in trouble — it\'s making sure a kid your age isn\'t the '
+          'only one who knows. Reaching out is always allowed, even after '
+          'the moment has passed.',
+      choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+// ── Tier 4 (an unsafe adult) ───────────────────────────────────────────────────
+const questRideHome = LifeQuestScenario(
+  id: 'the_ride_home',
+  title: 'The Ride Home',
+  hook: 'The grown-up who came to pick you up isn\'t acting right.',
+  emoji: '\u{1F697}',
+  emotions: ['worried', 'sad'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'ride_start',
+  grownupTip:
+      'This story teaches a child that an adult\'s unsafe choices are never '
+      'the child\'s fault or job to fix — only to stay safe and tell another '
+      'trusted adult. Ask your child: "Who are three grown-ups you could '
+      'call if a ride ever felt unsafe?" Help them save those numbers.',
+  segments: {
+    'ride_start': QuestSegment(
+      id: 'ride_start',
+      copingBreakId: 'belly_breath',
+      content:
+          'Practice runs late. The lot empties out. The grown-up who comes '
+          'to get you finally pulls up — but something\'s off. Their words '
+          'come slow and mushy. They fumble the door. They smell like the '
+          'stuff grown-ups drink at parties.\n\n'
+          'You\'ve been looking forward to going home all day. Now your '
+          'stomach knots, because part of you knows: this isn\'t safe to get '
+          'into.\n\n'
+          '«{companion} stays right beside you.»\n\n'
+          'First, the most important thing, and it is true no matter what: '
+          'this is NOT your fault. A grown-up\'s choices are not yours to '
+          'fix. Your only job right now is to keep YOU safe.',
+      choices: [
+        QuestChoice(
+          id: 'ride_c1a',
+          text: 'Get in so you don\'t make them upset',
+          nextSegmentId: 'ride_getin',
+        ),
+        QuestChoice(
+          id: 'ride_c1b',
+          text: 'Pause — you do not have to get in a car that isn\'t safe',
+          nextSegmentId: 'ride_pause',
+        ),
+      ],
+    ),
+    'ride_getin': QuestSegment(
+      id: 'ride_getin',
+      content:
+          'Your hand goes to the door because you don\'t want to make it '
+          'weird. Then you stop.\n\n'
+          'Not making it weird is not worth being unsafe. You are allowed to '
+          'say no to a ride — even with a grown-up, even one you love. That '
+          'isn\'t being rude. That\'s being smart.\n\n'
+          'You step back from the car instead.',
+      choices: [
+        QuestChoice(
+          id: 'ride_c2a',
+          text: 'Say you need the bathroom and go back inside to call someone',
+          nextSegmentId: 'ride_reach',
+        ),
+        QuestChoice(
+          id: 'ride_c2b',
+          text: 'Find the coach or another grown-up still at the school',
+          nextSegmentId: 'ride_reach',
+        ),
+      ],
+    ),
+    'ride_pause': QuestSegment(
+      id: 'ride_pause',
+      content:
+          'You keep your feet on the pavement and your hand off the door. '
+          '"I, um — I forgot something inside," you say. It buys you a '
+          'minute, and a minute is enough.\n\n'
+          'You run the check: Is this safe? No. Is this mine to fix? No. '
+          'What do I do when it\'s this big? You don\'t handle it alone — '
+          'you REACH. A grown-up who isn\'t safe to drive is exactly the '
+          'kind of big that another trusted grown-up needs to know about.',
+      choices: [
+        QuestChoice(
+          id: 'ride_c3a',
+          text: 'Go back inside and call another grown-up you trust',
+          nextSegmentId: 'ride_reach',
+        ),
+        QuestChoice(
+          id: 'ride_c3b',
+          text: 'Find a coach or teacher who\'s still there',
+          nextSegmentId: 'ride_reach',
+        ),
+      ],
+    ),
+    'ride_reach': QuestSegment(
+      id: 'ride_reach',
+      content:
+          'You get to a trusted grown-up — a coach, a teacher, or another '
+          'family member on the phone — and you say it plainly: "My ride '
+          'isn\'t safe to drive right now. I need help getting home."\n\n'
+          'Nobody is angry at you. They help. That\'s what trusted grown-ups '
+          'are FOR. You might feel a little shaky, maybe even guilty, like '
+          'you told on someone. You didn\'t do anything wrong — you kept '
+          'yourself safe and you let a grown-up help carry something too big '
+          'for a kid.\n\n'
+          'That is not betrayal. That is the bravest, smartest thing you '
+          'could have done.',
+      choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+// ── Tier 4 (an unsafe secret) ──────────────────────────────────────────────────
+const questSecretWeight = LifeQuestScenario(
+  id: 'the_secret',
+  title: 'The Secret',
+  hook: 'A grown-up asked you to keep something that doesn\'t feel okay.',
+  emoji: '\u{1F910}',
+  emotions: ['worried', 'sad', 'embarrassed'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'sec_start',
+  grownupTip:
+      'This story draws the line between a happy surprise and a secret that '
+      'sits heavy. Tell your child: "There is no secret you could tell me '
+      'that would make me love you less, and some secrets are NOT yours to '
+      'keep." Name the trusted adults they can always go to.',
+  segments: {
+    'sec_start': QuestSegment(
+      id: 'sec_start',
+      copingBreakId: 'star_breath',
+      content:
+          'A grown-up you know leaned in close and said it quiet: "Don\'t '
+          'tell anyone about this. Especially not your parents. It\'s our '
+          'secret, okay?"\n\n'
+          'You can\'t even say exactly what\'s wrong. You just know the '
+          'feeling it left behind — heavy, stuck, like swallowing a stone. '
+          'A birthday-surprise secret feels light and fizzy. This one '
+          'doesn\'t. This one sits.\n\n'
+          '«{companion} stays close, like {pronoun} can feel the weight too.»\n\n'
+          'Start here, because it\'s true: a secret that makes your stomach '
+          'hurt is usually a secret that isn\'t yours to keep — and none of '
+          'it is your fault.',
+      choices: [
+        QuestChoice(
+          id: 'sec_c1a',
+          text: 'Keep it — they\'re a grown-up, you\'re supposed to listen',
+          nextSegmentId: 'sec_keep',
+        ),
+        QuestChoice(
+          id: 'sec_c1b',
+          text: 'Check the feeling — is this a happy surprise, or a heavy one?',
+          nextSegmentId: 'sec_check',
+        ),
+      ],
+    ),
+    'sec_keep': QuestSegment(
+      id: 'sec_keep',
+      content:
+          'You try to just carry it. But heavy secrets don\'t get lighter '
+          'when you hold them alone — they get heavier. You\'re quieter at '
+          'dinner. You can\'t sleep right.\n\n'
+          'Here\'s the rule grown-ups don\'t always tell you: you are '
+          'allowed to break a secret when keeping it makes you feel unsafe '
+          'or sick inside. A grown-up asking you to hide something from your '
+          'parents is not a rule you have to follow.\n\n'
+          'You don\'t have to carry this one more day.',
+      choices: [
+        QuestChoice(
+          id: 'sec_c2a',
+          text: 'Tell a trusted grown-up — a parent, teacher, or counselor',
+          nextSegmentId: 'sec_reach',
+        ),
+      ],
+    ),
+    'sec_check': QuestSegment(
+      id: 'sec_check',
+      content:
+          'You run the check. A happy secret has a date it ends — a party, '
+          'a gift, a reveal. This one doesn\'t. A happy secret doesn\'t care '
+          'who knows later. This one said especially not your parents — and '
+          'that part is the loudest warning of all.\n\n'
+          'When a grown-up tells you to hide something specifically from the '
+          'people who keep you safe, that\'s not a secret. That\'s a thing a '
+          'trusted adult needs to know.',
+      choices: [
+        QuestChoice(
+          id: 'sec_c3a',
+          text: 'Tell a trusted grown-up you choose — and feel the weight lift',
+          nextSegmentId: 'sec_reach',
+        ),
+      ],
+    ),
+    'sec_reach': QuestSegment(
+      id: 'sec_reach',
+      content:
+          'You find a grown-up you trust — a parent, a teacher, a school '
+          'counselor — and you start with the hardest sentence: "Someone '
+          'told me to keep a secret, and it doesn\'t feel okay."\n\n'
+          'They don\'t get mad. They\'re glad you told them. The stone in '
+          'your stomach finally moves, because the moment you said it out '
+          'loud, you stopped carrying it alone.\n\n'
+          'Telling was not breaking a promise you had to keep. Some things '
+          'are too big and too heavy to be a kid\'s job — and handing them '
+          'to a trusted grown-up is exactly what you\'re supposed to do. '
+          'None of it was ever your fault.',
+      choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+/// Tier 3-4 "Standing On Your Own" quests, authored to
+/// docs/big-feelings-theme-spec-ages-9-12.md. These are intentionally NOT in
+/// [allLifeQuests] — they are held here pending owner content review before
+/// being surfaced in the app. To ship: move into [allLifeQuests].
+const reviewPendingLifeQuests = <LifeQuestScenario>[
+  questTheOffer,
+  questRideHome,
+  questSecretWeight,
+];

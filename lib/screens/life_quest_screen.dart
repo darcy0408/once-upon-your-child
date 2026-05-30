@@ -14,10 +14,17 @@ import '../theme/age_band_theme.dart';
 import '../widgets/coping_practice_sheet.dart';
 import '../widgets/crisis_resources_panel.dart';
 
-/// Quest id of the peer-mental-health-crisis Life Quest (ages 15-17). When
-/// this quest is active, [LifeQuestScreen] surfaces a calm crisis-resources
-/// panel at story start and story end. Content-safety audit F-09 / MT-159.
-const String _crisisQuestId = 'someone_needs_help';
+/// Quest ids that surface a calm crisis-resources panel at story start and
+/// story end. Originally the peer-mental-health-crisis quest (F-09 / MT-159);
+/// extended for the Adventurer "Standing On Your Own" tier-4 quests (MT-199)
+/// that involve an unsafe adult, so a child always has a trusted-adult / help
+/// off-ramp in view.
+const Set<String> _crisisQuestIds = {
+  'someone_needs_help',
+  'the_ride_home',
+  'the_secret',
+  'the_offer',
+};
 
 
 /// Launch a Life Quest: shows quest selector, then plays the quest.
@@ -656,7 +663,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                 // Story-start crisis resources — MT-159 / F-09. Only the
                 // peer-mental-health-crisis quest, and only on its first
                 // segment before any choice has been made.
-                if (_activeQuest!.id == _crisisQuestId &&
+                if (_crisisQuestIds.contains(_activeQuest!.id) &&
                     _segmentHistory.isEmpty &&
                     segment.id == _activeQuest!.startSegmentId) ...[
                   const CrisisResourcesPanel(),
@@ -789,7 +796,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   Widget _buildEndingSection(QuestSegment segment, AgeBandThemeData band) {
     final tip = _activeQuest?.grownupTip;
-    final showCrisisResources = _activeQuest?.id == _crisisQuestId;
+    final showCrisisResources =
+        _activeQuest != null && _crisisQuestIds.contains(_activeQuest!.id);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
