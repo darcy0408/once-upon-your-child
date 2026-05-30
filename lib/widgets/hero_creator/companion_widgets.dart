@@ -53,12 +53,15 @@ class GlowingCompanionOrb extends StatelessWidget {
       );
     }
 
-    return GestureDetector(
-      onTap: filled ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        width: _size + 12,
-        height: _size + 12,
+    return Semantics(
+      button: true,
+      label: filled ? 'Remove companion' : 'Companion slot empty',
+      child: GestureDetector(
+        onTap: filled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: _size + 12,
+          height: _size + 12,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
@@ -118,6 +121,7 @@ class GlowingCompanionOrb extends StatelessWidget {
                 )
               : Center(child: inner),
         ),
+      ),
       ),
     );
   }

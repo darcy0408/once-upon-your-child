@@ -471,7 +471,10 @@ class _HeroPetCardState extends State<HeroPetCard> {
         children: [
           Align(
             alignment: Alignment.topRight,
-            child: GestureDetector(
+            child: Semantics(
+              button: true,
+              label: 'Close pet editor',
+              child: GestureDetector(
               onTap: () {
                 final pet = _pet;
                 final name = (pet?['name'] ?? '').trim();
@@ -510,10 +513,14 @@ class _HeroPetCardState extends State<HeroPetCard> {
                     color: Colors.white54, size: 22),
               ),
             ),
+            ),
           ),
           Row(
             children: [
-              GestureDetector(
+              Semantics(
+                button: true,
+                label: 'Change pet photo',
+                child: GestureDetector(
                 onTap: () => widget.onPickPhoto(petIndex: _selectedPetIndex),
                 child: Stack(
                   children: [
@@ -554,6 +561,7 @@ class _HeroPetCardState extends State<HeroPetCard> {
                     ),
                   ],
                 ),
+              ),
               ),
               const SizedBox(width: 14),
               Expanded(

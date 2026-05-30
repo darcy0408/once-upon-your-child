@@ -343,6 +343,9 @@ class HeroStoryTypePage extends StatelessWidget {
               SizedBox(width: band.space(8)),
               IconButton(
                 iconSize: band.body(24),
+                tooltip: listeningFor == 'wish'
+                    ? 'Stop listening'
+                    : 'Speak your wish',
                 constraints: BoxConstraints(
                   minWidth: band.touchTarget(48),
                   minHeight: band.touchTarget(48),

@@ -284,33 +284,39 @@ class _ThemedNameInputState extends State<ThemedNameInput>
                   border: InputBorder.none,
                   filled: false,
                   suffixIcon: widget.onMicTap != null
-                      ? GestureDetector(
-                          onTap: widget.onMicTap,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.all(8),
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: widget.isListening
-                                  ? Colors.red.shade400
-                                  : const Color(0xFFFFD54F).withAlpha(50),
-                              border: Border.all(
+                      ? Semantics(
+                          button: true,
+                          label: widget.isListening
+                              ? 'Stop listening'
+                              : 'Tap and speak',
+                          child: GestureDetector(
+                            onTap: widget.onMicTap,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.all(8),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: widget.isListening
-                                    ? Colors.red
-                                    : const Color(0xFFFFD54F).withAlpha(180),
-                                width: 1.5,
+                                    ? Colors.red.shade400
+                                    : const Color(0xFFFFD54F).withAlpha(50),
+                                border: Border.all(
+                                  color: widget.isListening
+                                      ? Colors.red
+                                      : const Color(0xFFFFD54F).withAlpha(180),
+                                  width: 1.5,
+                                ),
                               ),
-                            ),
-                            child: Icon(
-                              widget.isListening
-                                  ? Icons.mic
-                                  : Icons.mic_none_rounded,
-                              size: 18,
-                              color: widget.isListening
-                                  ? Colors.white
-                                  : const Color(0xFFFFD54F),
+                              child: Icon(
+                                widget.isListening
+                                    ? Icons.mic
+                                    : Icons.mic_none_rounded,
+                                size: 18,
+                                color: widget.isListening
+                                    ? Colors.white
+                                    : const Color(0xFFFFD54F),
+                              ),
                             ),
                           ),
                         )

@@ -2713,31 +2713,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       return Column(
         children: [
           // Big mic button — primary input for sprouts
-          GestureDetector(
-            onTap: () => _toggleListening('name'),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isListening
-                    ? const Color(0xFFFFD700)
-                    : const Color(0xFF7C3FC8),
-                boxShadow: [
-                  BoxShadow(
-                    color: isListening
-                        ? const Color(0xFFFFD700).withAlpha(160)
-                        : const Color(0xFF9E6CFF).withAlpha(120),
-                    blurRadius: isListening ? 28 : 16,
-                    spreadRadius: isListening ? 6 : 2,
-                  ),
-                ],
-              ),
-              child: Icon(
-                isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                size: 44,
-                color: isListening ? const Color(0xFF3D0080) : Colors.white,
+          Semantics(
+            button: true,
+            label: isListening ? 'Stop listening' : 'Tap to say your name',
+            child: GestureDetector(
+              onTap: () => _toggleListening('name'),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isListening
+                      ? const Color(0xFFFFD700)
+                      : const Color(0xFF7C3FC8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isListening
+                          ? const Color(0xFFFFD700).withAlpha(160)
+                          : const Color(0xFF9E6CFF).withAlpha(120),
+                      blurRadius: isListening ? 28 : 16,
+                      spreadRadius: isListening ? 6 : 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                  size: 44,
+                  color: isListening ? const Color(0xFF3D0080) : Colors.white,
+                ),
               ),
             ),
           ),
@@ -3247,6 +3251,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded,
                       color: Colors.white),
+                  tooltip: 'Back',
                   onPressed: _heroPrevPage,
                 ),
               ),

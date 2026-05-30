@@ -443,28 +443,32 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
           ),
           if (_speechAvailable) ...[
             const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _toggleListening,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isListening ? _gold : const Color(0xFF7C3FFF),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_isListening ? _gold : const Color(0xFF7C3FFF))
-                          .withAlpha(_isListening ? 200 : 110),
-                      blurRadius: _isListening ? 28 : 16,
-                      spreadRadius: _isListening ? 8 : 3,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _isListening ? Icons.mic : Icons.mic_none,
-                  color: _isListening ? Colors.black87 : Colors.white,
-                  size: 48,
+            Semantics(
+              button: true,
+              label: _isListening ? 'Stop listening' : 'Tap to talk',
+              child: GestureDetector(
+                onTap: _toggleListening,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isListening ? _gold : const Color(0xFF7C3FFF),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_isListening ? _gold : const Color(0xFF7C3FFF))
+                            .withAlpha(_isListening ? 200 : 110),
+                        blurRadius: _isListening ? 28 : 16,
+                        spreadRadius: _isListening ? 8 : 3,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isListening ? Icons.mic : Icons.mic_none,
+                    color: _isListening ? Colors.black87 : Colors.white,
+                    size: 48,
+                  ),
                 ),
               ),
             ),
