@@ -629,7 +629,14 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
       );
     }
 
-    return AnimatedOpacity(
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      label: '${widget.name}${widget.isSelected ? ', selected' : ''}',
+      hint: widget.isSelected
+          ? 'Double tap to remove this companion.'
+          : 'Double tap to choose this companion.',
+      child: AnimatedOpacity(
       opacity: widget.dimmed ? 0.35 : 1.0,
       duration: const Duration(milliseconds: 200),
       child: GestureDetector(
@@ -737,6 +744,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
       ),
       ),
     ),
+    ),
     );
   }
 }
@@ -774,52 +782,75 @@ class _FriendChipButtonState extends State<FriendChipButton> {
   @override
   Widget build(BuildContext context) {
     final avatarProvider = _getAvatarProvider();
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: widget.isSelected ? const Color(0xFFFFD700) : Colors.white30,
-            width: widget.isSelected ? 2 : 1,
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      label:
+          '${widget.character.name}${widget.isSelected ? ', selected' : ''}',
+      hint: widget.isSelected
+          ? 'Double tap to remove this friend.'
+          : 'Double tap to add this friend.',
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: widget.isSelected ? const Color(0xFFFFD700) : Colors.white30,
+              width: widget.isSelected ? 3 : 1,
+            ),
+            color: widget.isSelected
+                ? const Color(0xFFFFD700).withAlpha(20)
+                : Colors.white10,
           ),
-          color: widget.isSelected
-              ? const Color(0xFFFFD700).withAlpha(20)
-              : Colors.white10,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF3A2363),
-              backgroundImage: avatarProvider,
-              child: avatarProvider == null
-                  ? Text(
-                      widget.character.name.isNotEmpty
-                          ? widget.character.name[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              widget.character.name,
-              style: TextStyle(
-                color:
-                    widget.isSelected ? const Color(0xFFFFD700) : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFF3A2363),
+                backgroundImage: avatarProvider,
+                child: avatarProvider == null
+                    ? Text(
+                        widget.character.name.isNotEmpty
+                            ? widget.character.name[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      )
+                    : null,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                widget.character.name,
+                style: TextStyle(
+                  color: widget.isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              if (widget.isSelected) ...[
+                const SizedBox(width: 6),
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFFFD700),
+                  ),
+                  child: const Icon(Icons.check,
+                      color: Colors.black, size: 12),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
