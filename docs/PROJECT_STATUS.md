@@ -1,20 +1,26 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-05-04
+**Last Updated:** 2026-05-30
 
-## Current Status: Post-Launch / Polish & Hardening
+> Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name.
 
-All four launch-track development phases are complete. The app is deployed (Railway backend, Netlify + Railway grand-light frontend). Phase 5 is in flight — Sprout-first redesign, voice/TTS hardening, BYOK reliability, and a child-UX audit sweep.
+## Current Status: Post-Launch / Monetization, Reliability & Hardening
+
+The five launch-track development phases are complete. The app is deployed on Railway (backend + `grand-light` frontend; Netlify mirror is orphaned and slated for decommission). Phase 6 is in flight — Stripe monetization wiring, reliability hardening (FMEA fixes, prompt-template versioning, streaming backend), Play Store size optimization (WebP), a WCAG 2.2 AA accessibility audit, recurring security audits, and a story-quality eval/judge harness.
+
+Backlog: **53 open / 93 done** manual tasks (`docs/MANUAL_TASKS.md`) — most open items are browser/device verification, not code.
 
 ## Architecture
 
 | Layer | Stack |
 |-------|-------|
-| Frontend | Flutter (Dart) — web, Android, iOS, desktop |
-| Backend | Python / Flask on Railway |
-| AI | Google Gemini (server + BYOK server-side); OpenRouter fallback |
-| Storage | Isar (offline cache, `SharedPreferences` stub on web), SQLite (backend) |
-| TTS | ElevenLabs (via backend; on-device flutter_tts fallback) |
+| Frontend | Flutter (Dart) — web, Android (AAB ~82MB), iOS, desktop |
+| Backend | Python / Flask on Railway + Celery worker (Redis broker) |
+| AI | Google Gemini (server + BYOK server-side); OpenRouter / Flux Schnell fallback |
+| Images | Gemini + Flux image generation; served via Cloudflare |
+| Storage | Postgres on Railway (since 2026-05-14; shared by Flask + Celery); Isar offline cache (`SharedPreferences` stub on web) |
+| Backups | External `pg_dump` → Cloudflare R2 (Railway native backups are Pro-only) |
+| TTS | ElevenLabs → Gemini Flash TTS → Edge TTS → on-device flutter_tts (tiered fallback) |
 | Monitoring | Sentry crash reporting |
 | Payments | Stripe (Free / Adventurer / Family / BYOK tiers) |
 
@@ -78,6 +84,27 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 - TTS warm-up queue reordered to cache Sprout avatar prompts and colour names first (was failing to robotic flutter_tts fallback when child outran the prewarm)
 - Wizard back-nav: tapping prior progress dots from MagicReviewStep now animates back to HeroCreatorStep at the correct sub-step
 
+### Monetization & Tiers (Phase 6)
+- Stripe checkout + webhooks wired (Phase 1 monetization); customer-portal redirect (Stripe-hosted until frontend has portal routes)
+- Tiers: Free / Adventurer / **Family** (6 slots, adult relatives, rotating hero) / BYOK
+- Free-tier illustration cap with upsell UI; BYOK users bypass the illustration paywall
+- Image-gen cost routing: Flux Schnell for non-BYOK; OpenRouter Gemini Image priced per-image (~$0.0375/img)
+- AI quota circuit breaker + fail-closed illustration-quota cost breaker on Redis outage
+
+### Reader & Reading Experience (Phase 6)
+- **MT-099 "Open Book" reader** — leaf grounded inside a leather hardback frame (per-band leather palettes, warm body, stacked-leaves footer), two-page spread on wide screens, gold-filigree chrome dropped when framed; high-contrast passthrough; reduce-motion gates the 3D flip + sparkle burst
+- Page-flip SFX (`page_turn.mp3`), egg-crack avatar generation animation, illustration persistence, resume/continue affordance per hero
+- Superhero Mode (hero powers with per-power visual overrides) extended to Explorer band
+
+### Story Generation & Quality (Phase 6)
+- **Prompt-template versioning** (MT-187 F-01) — prompts are versioned and tracked
+- **Streaming story backend** (PERF-01) + cancel foundation (PERF-04)
+- Story-quality **eval/judge harness** (MT-186) — GitHub Models gpt-4.1 judge, scheduled daily, story text truncated to 5k chars to avoid 413
+- Themes feature (story themes recall, wired end-to-end)
+
+### Therapeutic / Safety (Phase 6 additions)
+- **MT-158 parent sensitivity interstitial** — per-quest sensitivity metadata + a parent-facing interstitial before sensitive Life Quests (F-08/F-16)
+
 ### Infrastructure
 - BYOK (Bring Your Own Key) setup wizard with secure storage, "free" copy lead-in
   - Validation no longer crashes on empty-candidate Gemini responses (`models.list()` health check instead of `generate_content`)
@@ -91,9 +118,12 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 - `_safe_extract_title_and_gem` uses `JSONDecoder.raw_decode` so trailing Gemini content is silently ignored (no more 7,707-word "Extra data" raw-text fallback)
 - Adult band word-ceiling note ("HARD LIMIT: do not exceed N words total") + per-page word scaling by age
 - Quality-audit script (`backend/tests/quality/run_story_quality.py`) — 7–9 checks across all 6 bands; 49/49 green on 2026-05-03 production verification
-- Test suite: 294/294 green
-- Railway backend deployment
-- Netlify + Railway grand-light frontend deployment
+- Test suite: 294/294 green (+ new life-quest sensitivity flow/widget/unit tests from MT-158)
+- Postgres on Railway (since 2026-05-14), shared by Flask + Celery worker
+- External `pg_dump` → Cloudflare R2 backup workflow (Railway native backups are Pro-only)
+- WebP illustration asset conversion + Play Store size optimization (AAB ~82MB); Android keystore runbook delivered
+- Custom domain live (CSP + CORS hardened after a custom-domain outage; gstatic in both script-src and connect-src)
+- Railway backend + `grand-light` frontend deployment (Netlify mirror orphaned, decommission pending)
 - Zero-warning codebase
 
 ### Security Hardening (April 2026)
@@ -120,21 +150,20 @@ Band-specific feeling images, visual consistency pass, step-nav tap-to-scroll fo
 ### Phase 4 (Apr 2026) — Polish, Compliance & Differentiation
 ADULT-3 Reflect screen, Life Quests rebrand, security audit + remediation, Creator/Adolescent differentiation plan, gendered archetypes all bands, Playwright QA sweep (BUG-001/002/003 fixes), a11y semantic wiring (FeelingsBadgeGrid, GenderImageButton), 13–17 attestation gate, error-display fix (`interactive_story_service._parseError` priority `message ?? error ?? hint`).
 
-### Phase 5 (May 2026) — Sprout Polish & UX Sweep
+### Phase 5 (early May 2026) — Sprout Polish & UX Sweep
 Sprout-first redesign (avatar simplification, scene auto-advance, full-width story-type cards, Make One Up mic panel, auto-save, Chronicles "Your Stories" section, Big Feelings cloud grid + squircle cards), child-UX audit fixes (POV, vocabulary, illustration size, paywall gap), young-band story delight rules, voice/TTS hardening (warm-up reorder, dual-voice fix, `TTS_DISABLED` toggle, retry cap), BYOK reliability sweep (validation crash, text readability, persistence), wizard back-nav from review step, page-flip sparkles + haptics, character preloading, sparkle-catcher mini-game extended to Sprout, avatar tweak URL fix, age-band visual audit (5 fixes), test suite 294/294 green, quality-audit framework + 49/49 prod pass.
+
+### Phase 6 (mid–late May 2026) — Monetization, Reliability & Hardening
+Stripe monetization wiring (checkout + webhooks, Family tier, free-tier illustration cap upsell), Postgres provisioning + prod migration, themes feature, prompt-template versioning (MT-187 F-01), streaming story backend (PERF-01) + cancel foundation (PERF-04), story-quality eval/judge harness (MT-186), reliability hardening (FMEA fixes), R2 backup workflow, WebP asset conversion + Play Store size optimization (~82MB AAB) + keystore runbook, custom-domain launch + CSP/CORS P0 fixes, WCAG 2.2 AA accessibility audit + remediation (A11Y tooltip sweep), recurring Six Hats security/content/legal audits + remediation, cost-reduction sweep (Edge TTS free fallback, Gemini Flash TTS overflow tier), Superhero Mode → Explorer band, MT-099 "Open Book" reader refactor, MT-158 parent sensitivity interstitial, "Once Upon YOUR Child" brand sweep.
 
 ## Known Issues
 
-1. ~~**MT-035 — Sprout Chronicles save bug**~~ ✅ **CLOSED 2026-05-07** — Verified via Playwright: `[MT-035] storyLocal.charactersJson=[{"id":"...","name":"Tester","age":4,"role":"Hero",...}]` non-null on a freshly saved Sprout LTR story. Bug is dead. The original null reading was likely stale browser cache pre-`a7f641b2`. `[MT-035]` debugPrints can now be removed (tracked separately as MT-048).
-2. **ElevenLabs monthly quota exhausted until ~2026-05-05** — production emits clean 503s for `/tts/synthesize`; Flutter falls back silently to on-device TTS. `TTS_DISABLED=true` set locally. Blocks runtime verification of MT-016 / MT-019 / MT-032 audio component until quota reset.
-3. **Manual-tasks backlog: 14 open items**, all browser/device verification:
-   - BYOK trio: MT-014, MT-020 (real `AIza…` key on a BYOK-subscribed account)
-   - Audio: MT-016, MT-019 (Sprout TTS + Rhyme Time)
-   - Sprout walks: MT-018, MT-021, MT-032, MT-034, MT-035
-   - Recently shipped, awaiting verify: MT-036 (wizard back-nav), MT-037 (welcome-back sync), MT-038 (page-flip sparkles), MT-039 (avatar tweak URL), MT-040 (phrase-per-line), MT-041 (sprout mini-game)
-   - Offline: MT-030 (DevTools throttle scaffold-fallback test)
-4. **Dependabot deferred majors** — stripe 14.4.1 → 15.1.0, elevenlabs floor → 2.45.0, cryptography 46 → 47, protobuf 6 → 7. All blocked on manual smoke-test of payment / TTS / crypto paths. Dead `slack-github-action` PR can be closed on GitHub (workflows directory removed from main).
-5. ~~**~55 untracked Playwright screenshots in repo root**~~ ✅ **STALE 2026-05-07** — `.gitignore` already covers all the patterns (`mt-*.png`, `step*.png`, `back-*.png`, etc.). Currently 0 untracked PNGs in repo root.
+1. **Manual-tasks backlog: 53 open items** (`docs/MANUAL_TASKS.md`) — overwhelmingly browser/device verification of shipped fixes rather than unstarted code. Notable open code-ish items: MT-129 (illustration↔avatar fidelity — text-fix shipped, awaiting paid-tier verify), MT-120 (per-power visual override paid-tier verify), MT-105 (Flutter integration-tests agent in worktree), MT-199 (Sprout pop-up reader, backlog), MT-200 (MT-099 global warm-bg polish).
+2. **Reliability hardening not fully closed** — Phase 2+3 FMEA fixes done; prod migration done; some Railway verify + alerting still pending (see memory `reliability_hardening_2026_05`).
+3. **Railway native backups are Pro-only** — mitigated by external `pg_dump` → R2 workflow; verify the cron is healthy.
+4. **Dependabot deferred majors** — stripe → v15 (note: v15 has breaking changes — `stripe.error.*` removed, `StripeObject` lost `.get()`), elevenlabs floor, cryptography, protobuf. Each blocked on a manual smoke-test of the payment / TTS / crypto paths.
+5. **Netlify frontend is orphaned** — `reliable-sherbet-2352c4` still auto-deploys a stale build; real prod is Railway `grand-light`. Decommission pending.
+6. **Local `backend_errors.log`** carries only test-suite noise (dev JWT, `agegate-*` users, Redis-down breaker firing by design) — not production errors.
 
 ## Planned (v1.1+)
 
@@ -147,6 +176,9 @@ Sprout-first redesign (avatar simplification, scene auto-advance, full-width sto
 - Per-page illustration generation for Sprout Picture Book mode (B-BE4, deferred from child-UX audit)
 - Stripe v15 + ElevenLabs v2 floor bump after smoke-tests
 - 6 additional Creator/Adolescent Life Quests (authored, awaiting rollout)
+- MT-199 Direction C "Pop-Up Picture Book" reader for Sprout (backlog, pending signal)
+- MT-200 MT-099 polish: global warm "book-stage" background + title-page-leaf demotion
+- Frontend migration to Cloudflare Pages (branch `chore/frontend-cloudflare-pages`) + Netlify decommission
 
 ## Resources
 
