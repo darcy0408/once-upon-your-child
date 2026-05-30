@@ -5,9 +5,11 @@ name: Eval Judge Resume (MT-186)
 # resets ~daily; the script bails on the first RateLimitError so each run
 # does as much as the day allows.
 #
-# Requires repo secret: GITHUB_MODELS_TOKEN (fine-grained PAT with the
-# "Models" account permission). Different from the auto-provided
-# GITHUB_TOKEN — that one can't hit models.github.ai.
+# Requires repo secret: MODELS_TOKEN (fine-grained PAT with the "Models"
+# account permission). It maps to the env var GITHUB_MODELS_TOKEN at run
+# time — GitHub forbids creating repo secrets that start with the
+# reserved `GITHUB_` prefix, so we name the secret without it and rebind
+# inside the workflow.
 
 on:
   schedule:
@@ -42,7 +44,10 @@ jobs:
 
       - name: Run judge resume
         env:
-          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
+          # Repo secret is named MODELS_TOKEN because GitHub forbids the
+          # GITHUB_ prefix on user-created secrets; mapped here to the env
+          # var name the providers module reads (`GITHUB_MODELS_TOKEN`).
+          GITHUB_MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
           # Provide GEMINI_API_KEY too so the judge module can import providers cleanly
           # (only github-models is actually called via --judges, but the providers
           # module touches both on init).
