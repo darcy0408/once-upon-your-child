@@ -87,7 +87,9 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     final heroName = profile.heroName?.trim().isNotEmpty == true
         ? profile.heroName!.trim()
         : 'Super Hero';
-    final isExplorer = band == AgeBand.explorer;
+    // Explorer + Adventurer share the older, mission-flavored copy.
+    final isExplorer =
+        band == AgeBand.explorer || band == AgeBand.adventurer;
     final gradient = themeForBand(band).backgroundGradient;
     final greetingLine = isExplorer ? 'Welcome back,' : 'Welcome back,';
     final invitation = isExplorer

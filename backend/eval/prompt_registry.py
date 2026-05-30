@@ -232,9 +232,39 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         ),
         description="6-beat villain matrix; 250-350 word cap; richer prose than Sprout.",
     ),
-    # T8-T14 are injection fragments not directly sent to the LLM; the harness
-    # records whether they were active for a given generation in the metadata
-    # column, but does not score them as standalone templates.
+    PromptTemplate(
+        template_id="T8_SUPERHERO_ADVENTURER",
+        content_hash="d0bc0141366d86bc",
+        source_file="backend/services/prompt_service.py",
+        line_start=610,
+        line_end=782,
+        mode="superhero",
+        age_bands=("8-10",),
+        builder_function="_build_superhero_prompt_adventurer",
+        output_format="json: same shape as T1",
+        interpolated_vars=(
+            "character",
+            "age",
+            "hero_costume_color",
+            "hero_cape_style",
+            "hero_emblem",
+            "hero_power",
+            "villain_name",
+            "villain_motive",
+            "problem_desc",
+            "problem_summary",
+        ),
+        description=(
+            "6-scene hero arc; real villain WITH a motive (sometimes a point); "
+            "900-1500 words; non-violent, understanding-based resolution."
+        ),
+    ),
+    # The remaining T8/T9/T11-T13 entries are injection fragments not directly
+    # sent to the LLM as a standalone prompt; the harness records whether they
+    # were active for a given generation in the metadata column, but does not
+    # score them as standalone templates. (T8_SAFETY_GUARDRAILS shares the "T8"
+    # label with the sendable T8_SUPERHERO_ADVENTURER above — they are distinct
+    # template_ids; the numbering is a label, not a namespace.)
     PromptTemplate(
         template_id="T8_SAFETY_GUARDRAILS",
         content_hash="d22eae8afc8d11d8",
@@ -315,6 +345,7 @@ SENDABLE_TEMPLATE_IDS = frozenset(
         "T5_BEDTIME",
         "T6_SUPERHERO_SPROUT",
         "T7_SUPERHERO_EXPLORER",
+        "T8_SUPERHERO_ADVENTURER",
     }
 )
 

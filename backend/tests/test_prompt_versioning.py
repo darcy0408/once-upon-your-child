@@ -34,7 +34,10 @@ _HEX16 = re.compile(r"^[0-9a-f]{16}$")
         ("superhero", 5, "T6_SUPERHERO_SPROUT"),
         ("superhero", 6, "T7_SUPERHERO_EXPLORER"),
         ("superhero", 8, "T7_SUPERHERO_EXPLORER"),
-        ("superhero", 9, "T6_SUPERHERO_SPROUT"),  # >8 falls back to Sprout
+        ("superhero", 9, "T8_SUPERHERO_ADVENTURER"),  # Adventurer lower edge
+        ("superhero", 11, "T8_SUPERHERO_ADVENTURER"),
+        ("superhero", 12, "T8_SUPERHERO_ADVENTURER"),  # Adventurer upper edge
+        ("superhero", 13, "T6_SUPERHERO_SPROUT"),  # >12 falls back to Sprout
     ],
 )
 def test_resolve_template_ids(mode, age, expected_id):
