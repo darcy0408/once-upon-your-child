@@ -194,6 +194,7 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
+            tooltip: 'Back',
             onPressed: () => Navigator.of(context).pop(),
           ),
           const Text('🌱', style: TextStyle(fontSize: 22)),

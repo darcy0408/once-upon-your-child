@@ -373,12 +373,14 @@ class _ChildProfileManagerScreenState
                               IconButton(
                                 icon: const Icon(Icons.edit_rounded,
                                     color: Colors.white54),
+                                tooltip: 'Edit profile',
                                 onPressed: () =>
                                     _showProfileDialog(existing: profile),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline_rounded,
                                     color: Colors.red),
+                                tooltip: 'Delete profile',
                                 onPressed: () => _deleteProfile(profile),
                               ),
                             ],

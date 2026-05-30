@@ -365,6 +365,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white60),
+                tooltip: 'Close',
                 onPressed: () => Navigator.of(context).pop(),
               ),
               Expanded(
@@ -635,6 +636,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                   _ttsEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
                   color: Colors.white60,
                 ),
+                tooltip: _ttsEnabled ? 'Mute narration' : 'Unmute narration',
                 onPressed: () {
                   setState(() => _ttsEnabled = !_ttsEnabled);
                   if (_ttsEnabled) _maybeSpeakSegment();

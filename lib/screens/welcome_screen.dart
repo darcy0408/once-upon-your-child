@@ -350,6 +350,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           child: SafeArea(
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white54),
+              tooltip: 'Back',
               onPressed: _goBack,
             ),
           ),

@@ -839,6 +839,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   children: [
                     IconButton(
                       onPressed: _goBack,
+                      tooltip: _step == 0 ? 'Close' : 'Back',
                       icon: Icon(
                         _step == 0
                             ? Icons.close
@@ -1128,6 +1129,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   children: [
                     IconButton(
                       onPressed: _goBack,
+                      tooltip: 'Back',
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
                           color: Colors.white),
                     ),
