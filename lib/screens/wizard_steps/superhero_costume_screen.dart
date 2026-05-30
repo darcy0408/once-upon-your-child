@@ -71,7 +71,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _EmblemOption(id: 'comet', label: 'Comet', emoji: '☄️'),
   ];
 
-  List<_EmblemOption> get _emblems => widget.band == AgeBand.explorer
+  List<_EmblemOption> get _emblems => (widget.band == AgeBand.explorer ||
+          widget.band == AgeBand.adventurer)
       ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
       : _baseEmblems;
 
@@ -117,7 +118,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isExplorer = widget.band == AgeBand.explorer;
+    // Explorer + Adventurer share the older, less babyish copy.
+    final isExplorer = widget.band == AgeBand.explorer ||
+        widget.band == AgeBand.adventurer;
     // Pull the canonical band gradient instead of hardcoding a new palette.
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = isExplorer ? 'Design Your Hero!' : 'Make Your Hero!';
@@ -198,7 +201,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 1: color ──────────────────────────────────────────────────────────
 
   Widget _buildColorPage() {
-    final isExplorer = widget.band == AgeBand.explorer;
+    // Explorer + Adventurer share the older, less babyish copy.
+    final isExplorer = widget.band == AgeBand.explorer ||
+        widget.band == AgeBand.adventurer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
@@ -272,7 +277,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 2: cape ───────────────────────────────────────────────────────────
 
   Widget _buildCapePage() {
-    final isExplorer = widget.band == AgeBand.explorer;
+    // Explorer + Adventurer share the older, less babyish copy.
+    final isExplorer = widget.band == AgeBand.explorer ||
+        widget.band == AgeBand.adventurer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
@@ -363,7 +370,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   // ── Page 3: emblem ─────────────────────────────────────────────────────────
 
   Widget _buildEmblemPage() {
-    final isExplorer = widget.band == AgeBand.explorer;
+    // Explorer + Adventurer share the older, less babyish copy.
+    final isExplorer = widget.band == AgeBand.explorer ||
+        widget.band == AgeBand.adventurer;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(

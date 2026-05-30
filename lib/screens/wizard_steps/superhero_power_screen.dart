@@ -114,23 +114,57 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
 
   // Explorer-tier display label overrides for the shared 8 power IDs.
   // Order/keys must stay aligned with the backend `EXPLORER_POWERS` map.
-  static const Map<String, _ExplorerCopy> _explorerNameOverrides = {
-    'super_speed': _ExplorerCopy('Lightning Speed', 'Run faster than thought.'),
-    'flying': _ExplorerCopy('Sky Glide', 'Ride the air currents.'),
-    'super_strength': _ExplorerCopy('Strong Lift', 'Move what others can\'t.'),
-    'super_hearing': _ExplorerCopy('Keen Ears', 'Hear what others miss.'),
-    'super_smile': _ExplorerCopy('Bright Smile', 'Brighten any room.'),
-    'super_hugs': _ExplorerCopy('Big Heart Hug', 'Comfort with kindness.'),
-    'super_whisper': _ExplorerCopy('Quiet Voice', 'Calm the chaos.'),
-    'super_sharing': _ExplorerCopy('Fair Share', 'Make sure everyone gets some.'),
+  static const Map<String, _BandCopy> _explorerNameOverrides = {
+    'super_speed': _BandCopy('Lightning Speed', 'Run faster than thought.'),
+    'flying': _BandCopy('Sky Glide', 'Ride the air currents.'),
+    'super_strength': _BandCopy('Strong Lift', 'Move what others can\'t.'),
+    'super_hearing': _BandCopy('Keen Ears', 'Hear what others miss.'),
+    'super_smile': _BandCopy('Bright Smile', 'Brighten any room.'),
+    'super_hugs': _BandCopy('Big Heart Hug', 'Comfort with kindness.'),
+    'super_whisper': _BandCopy('Quiet Voice', 'Calm the chaos.'),
+    'super_sharing': _BandCopy('Fair Share', 'Make sure everyone gets some.'),
   };
 
-  /// Returns the band-appropriate power list, with Explorer renames applied.
+  // Adventurer adds two extra power IDs (must match backend ADVENTURER_POWERS).
+  static const List<_PowerOption> _adventurerExtraPowers = [
+    _PowerOption(
+      id: 'strategist',
+      emoji: '🧠',
+      name: 'Master Strategist',
+      description: 'Out-think any scheme.',
+    ),
+    _PowerOption(
+      id: 'gadgeteer',
+      emoji: '🛠️',
+      name: 'Gadgeteer',
+      description: 'Rig the perfect gadget.',
+    ),
+  ];
+
+  // Adventurer-tier display label overrides for the shared 8 power IDs.
+  // Names must match the backend `ADVENTURER_POWERS` map so the picked power
+  // reads identically in the generated story.
+  static const Map<String, _BandCopy> _adventurerNameOverrides = {
+    'super_speed': _BandCopy('Velocity', 'Move before they can blink.'),
+    'flying': _BandCopy('Skyborne', 'Take the high ground.'),
+    'super_strength': _BandCopy('Titan Strength', 'Shift what no one else can.'),
+    'super_hearing': _BandCopy('Echo Sense', 'Catch the faintest clue.'),
+    'super_smile': _BandCopy('Disarming Charm', 'Win people over.'),
+    'super_hugs': _BandCopy('Steadfast Heart', 'Stand by anyone.'),
+    'super_whisper': _BandCopy('Calm Voice', 'Steady the storm.'),
+    'super_sharing': _BandCopy('Fair Hand', 'Make it fair for everyone.'),
+  };
+
+  /// Returns the band-appropriate power list, with band renames applied.
   List<_PowerOption> get powers {
-    final isExplorer = widget.band == AgeBand.explorer;
+    final overrides = widget.band == AgeBand.explorer
+        ? _explorerNameOverrides
+        : widget.band == AgeBand.adventurer
+            ? _adventurerNameOverrides
+            : null;
     final base = _sproutPowers.map((p) {
-      if (!isExplorer) return p;
-      final override = _explorerNameOverrides[p.id];
+      if (overrides == null) return p;
+      final override = overrides[p.id];
       if (override == null) return p;
       return _PowerOption(
         id: p.id,
@@ -139,8 +173,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         description: override.description,
       );
     }).toList();
-    if (isExplorer) {
+    if (widget.band == AgeBand.explorer) {
       base.addAll(_explorerExtraPowers);
+    } else if (widget.band == AgeBand.adventurer) {
+      base.addAll(_adventurerExtraPowers);
     }
     return base;
   }
@@ -194,16 +230,16 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   @override
   Widget build(BuildContext context) {
     final hasSelection = _selectedPowerId != null;
-    final isExplorer = widget.band == AgeBand.explorer;
+    // Explorer + Adventurer get the older, less babyish copy.
+    final isOlder = widget.band == AgeBand.explorer ||
+        widget.band == AgeBand.adventurer;
     final gradient = themeForBand(widget.band).backgroundGradient;
-    final appBarTitle = isExplorer ? 'Choose your power' : 'Pick your power!';
-    final heading = isExplorer
+    final appBarTitle = isOlder ? 'Choose your power' : 'Pick your power!';
+    final heading = isOlder
         ? 'What is your hero power?'
         : 'What is your superpower?';
-    final ctaIdle =
-        isExplorer ? 'Choose this power' : 'Pick this power!';
-    final ctaEmpty =
-        isExplorer ? 'Tap a power above' : 'Tap a power above';
+    final ctaIdle = isOlder ? 'Choose this power' : 'Pick this power!';
+    final ctaEmpty = 'Tap a power above';
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -408,9 +444,9 @@ class _PowerOption {
   });
 }
 
-/// Explorer-band display copy for a shared power id.
-class _ExplorerCopy {
+/// Band-tier display copy for a shared power id (Explorer or Adventurer).
+class _BandCopy {
   final String name;
   final String description;
-  const _ExplorerCopy(this.name, this.description);
+  const _BandCopy(this.name, this.description);
 }

@@ -57,7 +57,9 @@ Return ONLY the JSON object."""
 
 
 def build_judge_prompt(
-    generation_row: dict, story_text: str, t: test_set.TestInput,
+    generation_row: dict,
+    story_text: str,
+    t: test_set.TestInput,
     story_char_limit: int | None = GITHUB_MODELS_STORY_CHAR_LIMIT,
 ) -> str:
     rubric_block = "\n\n".join(
@@ -68,7 +70,10 @@ def build_judge_prompt(
     # gpt-4.1 caps at 8,000 tokens per request). Pass story_char_limit=None to
     # disable truncation for providers with larger context windows.
     if story_char_limit and len(story_text) > story_char_limit:
-        story_text = story_text[:story_char_limit] + "\n\n[TRUNCATED — partial story shown for scoring]"
+        story_text = (
+            story_text[:story_char_limit]
+            + "\n\n[TRUNCATED — partial story shown for scoring]"
+        )
     return JUDGE_SYSTEM_PROMPT_TEMPLATE.format(
         mode=generation_row["mode"],
         age_band=generation_row["age_band"],
@@ -266,12 +271,26 @@ def score_run(run_id: str, judges: list[str], throttle_sec: float = 4.0) -> int:
             except (
                 Exception
             ) as exc:  # noqa: BLE001 — log and continue on transient/judge-side errors
+                msg = f"{type(exc).__name__}: {exc}"
                 print(
-                    f"[judge] err  {judge}  {cell_id} s{sample_idx}  "
-                    f"{type(exc).__name__}: {exc}",
+                    f"[judge] err  {judge}  {cell_id} s{sample_idx}  {msg}",
                     file=sys.stderr,
                 )
                 counts["errors"] += 1
+                # Fail fast on a daily quota burn — otherwise the loop thrashes
+                # through hundreds of cells, each adding 4s of throttle wait, when
+                # every remaining call would fail the same way. Resume next run.
+                if "RateLimit" in msg or "rate limit" in msg.lower():
+                    print(
+                        f"[judge] aborting early: provider {judge} rate-limited. "
+                        f"Re-run later to resume.",
+                        file=sys.stderr,
+                    )
+                    print(
+                        f"[judge] partial. scored={counts['scored']} "
+                        f"skipped={counts['skipped']} errors={counts['errors']}"
+                    )
+                    return 0
                 continue
             with scores_path.open("a", encoding="utf-8") as sf:
                 sf.write(

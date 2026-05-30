@@ -426,6 +426,216 @@ EXPLORER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Adventurer-band (ages 9-12) matrix — parallel to the Sprout/Explorer tables.
+# These antagonists are real: each has a genuine, understandable motive, and
+# sometimes a point worth hearing (a guardian who over-protects, a rival who
+# was overlooked, a caller defending creatures the town displaced). Stakes are
+# real, the villain is never silly — but the resolution ALWAYS comes through
+# cleverness, courage, empathy, and understanding the antagonist's underlying
+# need. NEVER through violence, weapons, fighting, or fear. The ``softens``
+# beat is a *changed mind / met need*, not merely "tidied up". Problems demand
+# strategy and perspective-taking (uncover, negotiate, rally, out-think), which
+# is what a 9-12-year-old reader wants to do.
+# ---------------------------------------------------------------------------
+ADVENTURER_VILLAINS: dict[str, dict] = {
+    "the_archivist": {
+        "name": "the Archivist",
+        "action": "lock away every story and map in a vault so nothing can ever be lost again",
+        "softens": "unsealed the vault once the hero showed that stories only grow when they are shared",
+    },
+    "mirror_warden": {
+        "name": "the Mirror Warden",
+        "action": "trap people's reflections so no one can be judged by how they look",
+        "softens": "freed the reflections after learning that hiding is not the same as protecting",
+    },
+    "the_overlooked": {
+        "name": "the Overlooked",
+        "action": "sabotage the great festival because no one ever once chose them to lead",
+        "softens": "stood down the moment the hero made sure their real talent was finally seen",
+    },
+    "clockwork_sentinel": {
+        "name": "the Clockwork Sentinel",
+        "action": "freeze the whole town in place so that nobody can ever make a mistake",
+        "softens": "powered down its locks once it understood that mistakes are how people grow",
+    },
+    "tide_caller": {
+        "name": "the Tide Caller",
+        "action": "flood the harbor to win back the shore for the sea creatures the town pushed out",
+        "softens": "agreed to a fair plan that left room for both the town and the tide pools",
+    },
+    "ember_fox": {
+        "name": "the Ember Fox",
+        "action": "light warning fires because the town kept ignoring a danger that was real",
+        "softens": "let the flames die down once people finally listened and fixed what was wrong",
+    },
+    "the_collector": {
+        "name": "the Collector",
+        "action": "take one treasured thing from every family for a museum of what 'really matters'",
+        "softens": "returned every treasure and opened a museum the whole town built together",
+    },
+    "static_wraith": {
+        "name": "the Static Wraith",
+        "action": "scramble every message in town so that no one is able to tell a lie",
+        "softens": "let the signals clear once it saw that trust is rebuilt with honesty, not silence",
+    },
+    "the_gatekeeper": {
+        "name": "the Gatekeeper",
+        "action": "wall off the old quarter to keep every outsider away after being hurt once",
+        "softens": "opened the gate after the hero showed them they still belonged",
+    },
+    "nightshade_botanist": {
+        "name": "the Nightshade Botanist",
+        "action": "grow thorns over the gardens to stop people trampling the rarest plants",
+        "softens": "traded the thorns for a way to teach the town to tend the gardens instead",
+    },
+}
+
+ADVENTURER_PROBLEMS: dict[str, dict] = {
+    "uncover_the_truth": {
+        "name": "Uncover the truth",
+        "verb": "uncover",
+        "summary": "figure out what is really going on beneath the surface",
+    },
+    "broker_a_truce": {
+        "name": "Broker a truce",
+        "verb": "negotiate",
+        "summary": "get two sides to a fair agreement",
+    },
+    "rally_the_allies": {
+        "name": "Rally the allies",
+        "verb": "rally",
+        "summary": "bring people together to act as one",
+    },
+    "outsmart_the_trap": {
+        "name": "Outsmart the trap",
+        "verb": "out-think",
+        "summary": "solve a clever obstacle without force",
+    },
+    "return_what_was_taken": {
+        "name": "Return what was taken",
+        "verb": "recover and restore",
+        "summary": "give back what was taken and repair the harm",
+    },
+    "earn_their_trust": {
+        "name": "Earn their trust",
+        "verb": "win over",
+        "summary": "reach someone who has put their guard up",
+    },
+    "expose_the_real_danger": {
+        "name": "Expose the real danger",
+        "verb": "reveal",
+        "summary": "make everyone see a threat they have ignored",
+    },
+    "find_the_fair_path": {
+        "name": "Find the fair path",
+        "verb": "find a fair solution for",
+        "summary": "balance two needs that both genuinely matter",
+    },
+    "give_them_a_voice": {
+        "name": "Give them a voice",
+        "verb": "speak up for",
+        "summary": "make sure the overlooked are finally heard",
+    },
+    "mend_what_broke": {
+        "name": "Mend what broke",
+        "verb": "mend",
+        "summary": "repair a friendship or a trust that cracked",
+    },
+}
+
+# Adventurer powers reuse the 8 base IDs (so existing frontend pickers keep
+# working) with Adventurer-tier names/verbs, plus 2 Adventurer-only powers
+# (strategist, gadgeteer) that fit a 9-12-year-old's fantasies. Powers win the
+# day through cleverness and heart, never force.
+ADVENTURER_POWERS: dict[str, dict] = {
+    "super_speed": {
+        "name": "Velocity",
+        "verb": "blur into motion",
+        "ideal": "the_collector",
+        "also": ["the_archivist", "static_wraith", "mirror_warden", "the_overlooked"],
+        "primary_problem": "return_what_was_taken",
+    },
+    "flying": {
+        "name": "Skyborne",
+        "verb": "rise above it all",
+        "ideal": "tide_caller",
+        "also": ["ember_fox", "clockwork_sentinel", "the_gatekeeper", "nightshade_botanist"],
+        "primary_problem": "expose_the_real_danger",
+    },
+    "super_strength": {
+        "name": "Titan Strength",
+        "verb": "haul aside what blocks the way",
+        "ideal": "clockwork_sentinel",
+        "also": ["the_archivist", "nightshade_botanist", "the_collector", "the_gatekeeper"],
+        "primary_problem": "outsmart_the_trap",
+    },
+    "super_hearing": {
+        "name": "Echo Sense",
+        "verb": "tune in to the faintest sound",
+        "ideal": "static_wraith",
+        "also": ["mirror_warden", "the_overlooked", "ember_fox", "the_collector"],
+        "primary_problem": "uncover_the_truth",
+    },
+    "super_smile": {
+        "name": "Disarming Charm",
+        "verb": "win them over",
+        "ideal": "the_overlooked",
+        "also": ["the_gatekeeper", "mirror_warden", "tide_caller", "the_collector"],
+        "primary_problem": "give_them_a_voice",
+    },
+    "super_hugs": {
+        "name": "Steadfast Heart",
+        "verb": "stand beside them",
+        "ideal": "the_gatekeeper",
+        "also": ["mirror_warden", "the_overlooked", "ember_fox", "static_wraith"],
+        "primary_problem": "earn_their_trust",
+    },
+    "super_whisper": {
+        "name": "Calm Voice",
+        "verb": "speak low and steady",
+        "ideal": "mirror_warden",
+        "also": ["static_wraith", "the_overlooked", "the_gatekeeper", "the_archivist"],
+        "primary_problem": "mend_what_broke",
+    },
+    "super_sharing": {
+        "name": "Fair Hand",
+        "verb": "share it out fairly",
+        "ideal": "the_archivist",
+        "also": ["the_collector", "tide_caller", "clockwork_sentinel", "nightshade_botanist"],
+        "primary_problem": "find_the_fair_path",
+    },
+    # Adventurer-only powers — frontend exposes these only when band==adventurer.
+    "strategist": {
+        "name": "Master Strategist",
+        "verb": "out-plan the whole scheme",
+        "ideal": "clockwork_sentinel",
+        "also": ["tide_caller", "static_wraith", "the_collector", "nightshade_botanist"],
+        "primary_problem": "outsmart_the_trap",
+    },
+    "gadgeteer": {
+        "name": "Gadgeteer",
+        "verb": "rig a clever gadget",
+        "ideal": "static_wraith",
+        "also": ["clockwork_sentinel", "the_collector", "ember_fox", "mirror_warden"],
+        "primary_problem": "uncover_the_truth",
+    },
+}
+
+ADVENTURER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
+    "the_archivist": ["return_what_was_taken", "find_the_fair_path", "give_them_a_voice"],
+    "mirror_warden": ["earn_their_trust", "mend_what_broke", "uncover_the_truth"],
+    "the_overlooked": ["give_them_a_voice", "mend_what_broke", "broker_a_truce"],
+    "clockwork_sentinel": ["outsmart_the_trap", "broker_a_truce", "find_the_fair_path"],
+    "tide_caller": ["find_the_fair_path", "broker_a_truce", "expose_the_real_danger"],
+    "ember_fox": ["expose_the_real_danger", "give_them_a_voice", "rally_the_allies"],
+    "the_collector": ["return_what_was_taken", "find_the_fair_path", "earn_their_trust"],
+    "static_wraith": ["uncover_the_truth", "earn_their_trust", "mend_what_broke"],
+    "the_gatekeeper": ["earn_their_trust", "broker_a_truce", "rally_the_allies"],
+    "nightshade_botanist": ["find_the_fair_path", "expose_the_real_danger", "rally_the_allies"],
+}
+
+
 _BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
     "sprout": (VILLAINS, PROBLEMS, POWERS, VILLAIN_PROBLEMS),
     "explorer": (
@@ -433,6 +643,12 @@ _BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
         EXPLORER_PROBLEMS,
         EXPLORER_POWERS,
         EXPLORER_VILLAIN_PROBLEMS,
+    ),
+    "adventurer": (
+        ADVENTURER_VILLAINS,
+        ADVENTURER_PROBLEMS,
+        ADVENTURER_POWERS,
+        ADVENTURER_VILLAIN_PROBLEMS,
     ),
 }
 
@@ -542,6 +758,10 @@ __all__ = [
     "EXPLORER_PROBLEMS",
     "EXPLORER_POWERS",
     "EXPLORER_VILLAIN_PROBLEMS",
+    "ADVENTURER_VILLAINS",
+    "ADVENTURER_PROBLEMS",
+    "ADVENTURER_POWERS",
+    "ADVENTURER_VILLAIN_PROBLEMS",
     "pick_pairing",
     "get_band_tables",
 ]

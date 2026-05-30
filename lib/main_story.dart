@@ -514,6 +514,21 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
+  /// Home "create" CTA label, calibrated per age band so older readers aren't
+  /// addressed with the young-band "Make Magic" wording (Adventurer audit A-006).
+  String _homeCtaLabel(AgeBand? band) {
+    switch (band) {
+      case AgeBand.adventurer:
+        return 'Start the Adventure';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return 'Start Story';
+      default:
+        return 'Make Magic';
+    }
+  }
+
   Future<void> _onCreateButtonPressed() async {
     if (_isLoading) return;
 
@@ -892,14 +907,20 @@ class _StoryScreenState extends State<StoryScreen> {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                          backgroundColor: Colors.deepPurpleAccent,
-                          shadowColor:
-                              Colors.deepPurpleAccent.withValues(alpha: 0.6),
+                          backgroundColor:
+                              Theme.of(context).extension<AgeBandThemeData>()?.primary ??
+                                  Colors.deepPurpleAccent,
+                          shadowColor: (Theme.of(context)
+                                          .extension<AgeBandThemeData>()
+                                          ?.primary ??
+                                      Colors.deepPurpleAccent)
+                                  .withValues(alpha: 0.6),
                           elevation: 6,
                         ),
                         label: Text(_interactiveMode
                             ? 'Start Interactive Story'
-                            : (Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false) ? 'Start Story' : 'Make Magic'),
+                            : _homeCtaLabel(
+                                Theme.of(context).extension<AgeBandThemeData>()?.band)),
                       ),
                     ),
                   ],

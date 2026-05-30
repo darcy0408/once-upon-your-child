@@ -40,6 +40,7 @@ class PromptService:
 
         Superhero Mode branches by age band:
           - ages 6-8 (Explorer) -> ``_build_superhero_prompt_explorer``
+          - ages 9-12 (Adventurer) -> ``_build_superhero_prompt_adventurer``
           - everything else (default Sprout, ages 3-5) -> ``_build_superhero_prompt``
 
         The villain/problem IDs are normally chosen server-side via
@@ -56,6 +57,17 @@ class PromptService:
                 _age_int = 0
             if _age_int >= 6 and _age_int <= 8:
                 return PromptService._build_superhero_prompt_explorer(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
+                    hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                )
+            elif _age_int >= 9 and _age_int <= 12:
+                return PromptService._build_superhero_prompt_adventurer(
                     character=character,
                     age=age,
                     hero_costume_color=hero_costume_color,
@@ -179,11 +191,10 @@ class PromptService:
         elif age <= 12:
             return """
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 9-12):
-            ⚠️ MAXIMUM LENGTH: 250-400 words TOTAL. DO NOT EXCEED 400 WORDS.
-            - Count your words carefully and STOP at 400 words maximum
-            - Vocabulary: Grade-level appropriate
-            - Sentences: Varied length, some complex structures allowed
-            - Concepts: Multiple plot layers, character growth, lessons learned
+            - LENGTH: a full, substantial story of roughly 900-1800 words (up to ~2400 for a long story). Do NOT pad, but do NOT cut it short — these readers expect a real story, not a picture-book summary.
+            - Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue
+            - Sentences: 12-20 words on average; compound and complex sentences are encouraged
+            - Concepts: Multiple plot layers and a two-step challenge; character growth; show competing feelings the hero works through (the hero can be wrong and correct themselves)
             """
         elif age <= 15:
             return """
@@ -593,4 +604,179 @@ Strictly return valid JSON with this structure:
 }}
 
 Begin now. Stop at 350 words across all pages combined.
+"""
+
+    # ------------------------------------------------------------------
+    # Superhero Mode (ages 9-12 — Adventurer band) — 6-scene hero arc.
+    #
+    # Vs Explorer: longer (900-1500 words), Grade 3-4 vocab, and a real
+    # antagonist with a genuine, understandable motive — sometimes one with
+    # a point worth hearing. The arc adds an UNDERSTANDING beat (the hero
+    # uncovers the villain's real need) before the power moment, and the
+    # resolution turns on cleverness + perspective-taking, not just kindness.
+    # Same non-negotiable spine: no weapons, no fighting, no violence; the
+    # villain is never simply defeated — they change their mind / their real
+    # need is met. Roster is pinned (MT-121) to stop abstract-puzzle drift.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_superhero_prompt_adventurer(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_cape_style: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+    ) -> str:
+        """Build the 6-scene Superhero Mode prompt for Adventurer-band readers.
+
+        ``villain_id`` and ``problem_id`` should be pre-picked by the caller
+        via :func:`backend.data.superhero_matrix.pick_pairing` with
+        ``band='adventurer'``. If either is missing or invalid, the function
+        derives a sensible pair from the hero's power so a malformed request
+        still produces a coherent story rather than a 500. Unknown powers fall
+        back to ``super_smile``, a power ID all three bands share.
+        """
+        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
+            "adventurer"
+        )
+
+        # --- Resolve power (with safe fallback to super_smile) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in powers_t:
+            power_id = "super_smile"
+        power_spec = powers_t[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked, fallback if missing) ---
+        if (
+            not villain_id
+            or villain_id not in villains_t
+            or not problem_id
+            or problem_id not in problems_t
+        ):
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="adventurer")
+        villain = villains_t[villain_id]
+        problem = problems_t[problem_id]
+
+        # --- Costume description (each field optional; "none" cape allowed) ---
+        color = (hero_costume_color or "bold").strip().lower() or "bold"
+        cape = (hero_cape_style or "matching").strip().lower() or "matching"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+
+        if cape == "none":
+            cape_phrase = "no cape"
+        elif cape == "rainbow":
+            cape_phrase = "rainbow cape"
+        else:
+            cape_phrase = f"{color} cape"
+
+        identity_tag = f"{power_name} {character}"
+
+        # --- Canonical Adventurer villain roster (must be named explicitly) ---
+        # MT-121 guard: pin the antagonist to a real named character so the
+        # model can't drift into an abstract puzzle/landscape "villain".
+        canonical_villain_names = [v["name"] for v in villains_t.values()]
+        canonical_villain_list = ", ".join(canonical_villain_names)
+
+        # --- Scene seeds in plain language (the model writes the prose) ---
+        beat1_seed = (
+            f"{character} pulled on the {color} suit; tonight {character} is "
+            f"{identity_tag}, and the city is counting on them."
+        )
+        beat2_seed = (
+            f"Then {villain['name']} struck — moving to {villain['action']}. "
+            f"But something about it didn't add up."
+        )
+        beat3_seed = (
+            f"{character}'s first plan only half-worked, and worse: stopping "
+            f"{villain['name']} by force would hurt someone who didn't deserve it."
+        )
+        beat4_seed = (
+            f"{character} looked closer and finally understood WHY "
+            f"{villain['name']} was doing this — there was a real need under the trouble."
+        )
+        beat5_seed = (
+            f"{character} used {power_name} ({power_verb}) — paired with a clever "
+            f"plan — to {problem['verb']} the situation ({problem['summary']})."
+        )
+        beat6_seed = (
+            f"{villain['name']} {villain['softens']}. {character} had won not by "
+            f"beating them, but by understanding them."
+        )
+
+        # --- Prompt assembly ---
+        return f"""SUPERHERO MODE STORY (Ages 9-12 — Adventurer band)
+
+You are writing a substantial, single-sitting superhero story for a {age}-year-old confident reader who loves real stakes and clever heroes (think Percy Jackson / Marvel, written for this age).
+
+HERO IDENTITY (use the hero's name at least FOUR times and the identity tag at least THREE times):
+- Hero name: {character}
+- Identity tag: "{identity_tag}"
+- Costume: {color} suit with {cape_phrase} and a {emblem} emblem
+- Signature power: {power_name} ({power_verb}) — give the power a real LIMIT or COST so victory takes cleverness, not just raw power.
+
+VILLAIN — the antagonist MUST be one of these named Adventurer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and make them the embodied source of conflict.
+- Name: {villain['name']} (use this exact name in the prose)
+- What they do: {villain['action']}
+- Their motive matters: {villain['name']} is NOT evil. They have a genuine, understandable reason — and sometimes a point worth hearing. The reader should end up understanding them, even while disagreeing with what they did.
+- How they soften: {villain['softens']}
+- DO NOT replace the villain with an abstract setting, weather pattern, riddle, puzzle, "mysterious place", or logic game. The conflict MUST be embodied by {villain['name']} — a character with a motive who acts, is understood, and changes.
+
+PROBLEM TO SOLVE:
+- Goal: {problem['name']} — {problem['summary']}
+- Hero's resolution verb: {problem['verb']}
+
+STORY MUST FOLLOW THESE 6 SCENES IN ORDER (output is plain prose — DO NOT label scenes):
+
+1. HERO INTRO — {character} becomes "{identity_tag}". Establish real stakes and the hero's drive in 2-3 sensory details. Seed idea (rewrite naturally): "{beat1_seed}"
+2. THE TROUBLE — {villain['name']} arrives and moves to {villain['action']}. Plant a small clue that there's more to {villain['name']} than it first seems. Seed idea: "{beat2_seed}"
+3. FIRST ATTEMPT + COMPLICATION — {character}'s first plan only half-works AND reveals a moral or strategic complication (the easy answer would hurt someone, or {villain['name']} has a reason). This is a thinking beat. Seed idea: "{beat3_seed}"
+4. UNDERSTANDING — {character} uncovers the REAL need or motive driving {villain['name']}. A genuine perspective-taking turn. Seed idea: "{beat4_seed}"
+5. CLEVER POWER MOMENT — {character} combines {power_name} ({power_verb}) WITH a clever plan to {problem['verb']} the situation — addressing the real need, never by force. Reference naturally: "{beat5_seed}" (do NOT use the bracketed summary in the prose).
+6. RESOLUTION + GROWTH — {villain['name']} {villain['softens']}. The win comes through understanding, not defeat. {character} reflects and has clearly grown. Seed idea: "{beat6_seed}"
+
+HARD RULES — these are non-negotiable:
+- LENGTH: 900-1500 words TOTAL (up to 1800 for a big finish). Anything under 800 is too short for this reader.
+- READING LEVEL: Grade 3-4. Use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue.
+- SENTENCES: 12-20 words on average; mix compound and complex sentences with shorter punchy ones for rhythm.
+- Use the hero's name {character} AT LEAST FOUR times and the identity tag "{identity_tag}" AT LEAST THREE times.
+- The hero MUST speak at least TWO or THREE lines of dialogue (in quotation marks) across the story, including one that shows they understand {villain['name']}.
+- The villain {villain['name']} MUST have a believable motive that the story reveals. Show competing feelings in the hero (e.g. determined AND uncertain).
+- The antagonist MUST be the named villain {villain['name']} — never an abstract place, weather, riddle, or puzzle.
+- NO weapons. NO fighting. NO violence, gore, or threats of harm. NO killing or defeating the villain by force. NO scary or graphic content.
+- Resolution MUST come through cleverness, courage, empathy, and understanding the villain's real need — NEVER through force, punishment, or fear.
+
+OUTPUT FORMAT:
+Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "themes": ["3-6 short lowercase tags a parent would recognise (e.g. 'perspective-taking', 'standing-up', 'overcoming-fear'); avoid generic tags like 'adventure', 'magic', 'story'"],
+  "characters_featured": ["named characters who actually appear in the story"],
+  "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'certain → humbled', 'angry → understanding')",
+  "pages": [
+    {{
+      "text": "Scene 1 — the HERO INTRO (no 'Chapter X', no 'PAGE X', no scene numbers, no labels)."
+    }},
+    {{
+      "text": "Scene 2 — THE TROUBLE."
+    }},
+    {{
+      "text": "Scene 3 — FIRST ATTEMPT + COMPLICATION."
+    }},
+    {{
+      "text": "Scene 4 — UNDERSTANDING."
+    }},
+    {{
+      "text": "Scene 5 — CLEVER POWER MOMENT."
+    }},
+    {{
+      "text": "Scene 6 — RESOLUTION + GROWTH (with the hero's reflective dialogue)."
+    }}
+  ]
+}}
+
+Begin now. Write a real story of 900-1500 words across the scenes; the villain is understood, never beaten by force.
 """

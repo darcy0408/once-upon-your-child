@@ -63,6 +63,9 @@ _REVISION_HASHES: dict[str, str] = {
     "T7_SUPERHERO_EXPLORER": _hash_source(
         PromptService._build_superhero_prompt_explorer
     ),
+    "T8_SUPERHERO_ADVENTURER": _hash_source(
+        PromptService._build_superhero_prompt_adventurer
+    ),
 }
 
 
@@ -83,6 +86,8 @@ def resolve(*, mode: str, age: int | None) -> tuple[str, str]:
     if mode == "superhero":
         if age_int is not None and 6 <= age_int <= 8:
             template_id = "T7_SUPERHERO_EXPLORER"
+        elif age_int is not None and 9 <= age_int <= 12:
+            template_id = "T8_SUPERHERO_ADVENTURER"
         else:
             template_id = "T6_SUPERHERO_SPROUT"
     elif mode == "bedtime":
