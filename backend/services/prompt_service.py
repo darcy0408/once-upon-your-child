@@ -243,7 +243,35 @@ Create the rhyming learning-to-read story about {character_name} now:
 
     @staticmethod
     def _get_rhyme_time_instructions(age: int = 7) -> str:
-        """Instructions for rhyme time mode - age-appropriate rhyming"""
+        """Instructions for rhyme time mode — age-calibrated rhyming register.
+
+        Branches by band so a 9-12-year-old gets a ballad/narrative register
+        rather than the nursery-rhyme bounce a 6-8-year-old wants (A-003). This
+        mirrors the modern ``story_service._build_rhyme_time_prompt`` so the two
+        prompt paths stay consistent.
+        """
+        try:
+            age_int = int(age)
+        except (TypeError, ValueError):
+            age_int = 7
+        if age_int >= 9:
+            return """
+        RHYME TIME MODE (Ages 9-12 — ballad register):
+        - Story MUST follow the age-appropriate length requirements above.
+        - Use a ballad-style rhyming story: rhyming couplets (AABB) or an ABCB ballad stanza. NO sing-song bouncy nursery rhymes, NO limericks.
+        - Tell a real story with a clear arc; the rhyme carries the narrative, it does not replace it.
+        - Vocabulary: grade 3-4; vivid verbs and precise nouns; never force a baby word just to make a rhyme.
+        - Tone: adventurous and a little dramatic — a narrative poem, not a jingle.
+        """
+        if age_int >= 6:
+            return """
+        RHYME TIME MODE (Ages 6-8):
+        - Story MUST follow the age-appropriate length requirements above.
+        - Use a consistent, catchy scheme (AABB or ABAB) with a strong beat a new reader can feel.
+        - Playful and musical; a short repeated refrain is welcome.
+        - Vocabulary must match the child's reading level.
+        - Keep it warm and fun while staying within word count limits.
+        """
         return f"""
         RHYME TIME MODE (Age-Appropriate for {age} year old):
         - Story MUST follow the age-appropriate length requirements above
