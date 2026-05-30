@@ -638,6 +638,50 @@ class HeroStoryTypePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
           ],
+          // Personality twist — Adventurer+ only (A-012). These chips nudge the
+          // existing personalitySliders (which already flow to the prompt's
+          // PERSONALITY PROFILE), so a kid can make e.g. a Brave Knight also
+          // clever or a lone-ish hero playful — not just the archetype default.
+          // Multi-select; each chip toggles one slider between 50 and 80.
+          if (band.band == AgeBand.adventurer ||
+              band.band == AgeBand.creator) ...[
+            Text(
+              "Add a personality twist (optional)",
+              style: GoogleFonts.fredoka(
+                color: Colors.white.withAlpha(200),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final n in const [
+                  ['🦁 Bold', 'confidence'],
+                  ['🧭 Daring', 'adventurousness'],
+                  ['🧠 Clever', 'creativity'],
+                  ['💛 Kind', 'empathy'],
+                  ['🎉 Outgoing', 'sociability'],
+                  ['⚡ Energetic', 'energy'],
+                ])
+                  GenreChip(
+                    label: n[0],
+                    value: n[1],
+                    selected:
+                        (wizardData.personalitySliders[n[1]] ?? 50) >= 80,
+                    onTap: () {
+                      final cur = wizardData.personalitySliders[n[1]] ?? 50;
+                      wizardData.personalitySliders[n[1]] =
+                          cur >= 80 ? 50 : 80;
+                      onChanged();
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
           if (band.band == AgeBand.explorer)
             _buildWishPromptButtons(band)
           else if (band.band != AgeBand.sprout)
