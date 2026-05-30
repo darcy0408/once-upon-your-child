@@ -46,20 +46,41 @@ class _SproutEggHatchState extends State<SproutEggHatch>
   @override
   void initState() {
     super.initState();
+    // Repeats are started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored at runtime (A11Y-007 sweep). Build already swaps in
+    // AlwaysStoppedAnimation when reduced, but stopping the controllers
+    // themselves avoids burning vsync ticks in the background.
     _wobbleCtrl = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _glowCtrl = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _bounceCtrl = AnimationController(
       duration: const Duration(milliseconds: 700),
       vsync: this,
-    )..repeat(reverse: true);
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _wobbleCtrl.stop();
+      _wobbleCtrl.value = 0.0;
+      _glowCtrl.stop();
+      _glowCtrl.value = 1.0; // full glow visible, no pulse
+      _bounceCtrl.stop();
+      _bounceCtrl.value = 0.0;
+    } else {
+      if (!_wobbleCtrl.isAnimating) _wobbleCtrl.repeat(reverse: true);
+      if (!_glowCtrl.isAnimating) _glowCtrl.repeat(reverse: true);
+      if (!_bounceCtrl.isAnimating) _bounceCtrl.repeat(reverse: true);
+    }
   }
 
   @override

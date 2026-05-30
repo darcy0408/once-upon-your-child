@@ -76,15 +76,16 @@ class _AdventurerTreasureMapState extends State<AdventurerTreasureMap>
   void initState() {
     super.initState();
 
-    _pulseCtrl = AnimationController(duration: const Duration(milliseconds: 1600), vsync: this)
-      ..repeat(reverse: true);
+    // Looping controllers; repeats are started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored at runtime (A11Y-007 sweep). The
+    // particle controller's listener is attached here either way so a
+    // settings change while alive will start ticking the particles again.
+    _pulseCtrl = AnimationController(duration: const Duration(milliseconds: 1600), vsync: this);
 
-    _shimmerCtrl = AnimationController(duration: const Duration(milliseconds: 2400), vsync: this)
-      ..repeat();
+    _shimmerCtrl = AnimationController(duration: const Duration(milliseconds: 2400), vsync: this);
 
     _particleCtrl = AnimationController(duration: const Duration(milliseconds: 80), vsync: this)
-      ..addListener(_tickParticles)
-      ..repeat();
+      ..addListener(_tickParticles);
 
     for (int i = 0; i < _landmarks.length; i++) {
       _landmarkScaleCtrls[i] = AnimationController(
@@ -113,6 +114,23 @@ class _AdventurerTreasureMapState extends State<AdventurerTreasureMap>
     for (final c in _burstCtrls.values) { c.dispose(); }
     for (final c in _landmarkScaleCtrls.values) { c.dispose(); }
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _pulseCtrl.stop();
+      _pulseCtrl.value = 0.5;
+      _shimmerCtrl.stop();
+      _shimmerCtrl.value = 0.0;
+      _particleCtrl.stop();
+      _particleCtrl.value = 0.0;
+    } else {
+      if (!_pulseCtrl.isAnimating) _pulseCtrl.repeat(reverse: true);
+      if (!_shimmerCtrl.isAnimating) _shimmerCtrl.repeat();
+      if (!_particleCtrl.isAnimating) _particleCtrl.repeat();
+    }
   }
 
   @override

@@ -40,13 +40,26 @@ class _MagicalFloatState extends State<MagicalFloat>
           widget.duration.inMilliseconds;
     }
 
-    _controller.repeat(reverse: true);
+    // Repeat is started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored at runtime (A11Y-007 sweep).
 
     _animation = Tween<double>(begin: -widget.distance, end: widget.distance)
         .animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
     ));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _controller.stop();
+      // Settle to the midpoint so the offset is 0 — child renders centred.
+      _controller.value = 0.5;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override

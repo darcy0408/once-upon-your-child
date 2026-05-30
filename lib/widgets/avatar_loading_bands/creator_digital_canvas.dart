@@ -50,12 +50,25 @@ class _CreatorDigitalCanvasState extends State<CreatorDigitalCanvas>
   void initState() {
     super.initState();
 
+    // Looping controller; repeat started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored at runtime (A11Y-007 sweep).
     _pulseCtrl = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _shapes = _buildShapes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _pulseCtrl.stop();
+      _pulseCtrl.value = 0.5; // mid pulse — neutral glow
+    } else if (!_pulseCtrl.isAnimating) {
+      _pulseCtrl.repeat(reverse: true);
+    }
   }
 
   @override

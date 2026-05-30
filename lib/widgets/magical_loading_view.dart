@@ -168,20 +168,23 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   void initState() {
     super.initState();
 
+    // Looping controllers are constructed without `..repeat()` here; the
+    // repeat is started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored at runtime (A11Y-007 sweep).
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _rotationController = AnimationController(
       duration: const Duration(seconds: 8),
       vsync: this,
-    )..repeat();
+    );
 
     _weaveController = AnimationController(
       duration: const Duration(milliseconds: 1800),
       vsync: this,
-    )..repeat();
+    );
 
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -252,11 +255,11 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     });
 
     if (widget.isSproutBand) {
-      // Companion bounce: continuous hop cycle
+      // Companion bounce: continuous hop cycle. Start in didChangeDependencies.
       _bounceController = AnimationController(
         duration: const Duration(milliseconds: 700),
         vsync: this,
-      )..repeat(reverse: true);
+      );
 
       // Star constellation: light 1 star every 4s (5 stars over 20s)
       _constellationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
@@ -265,6 +268,31 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
           if (_starsLit < 5) _starsLit++;
         });
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Honor system reduce-motion: stop looping controllers and settle them to
+    // a sensible static value so the existing reduced-motion fallback in
+    // build() can render without controllers spinning in the background.
+    final reduce = MotionPrefs.reduceMotion(context);
+    if (reduce) {
+      _pulseController.stop();
+      _pulseController.value = 1.0;
+      _rotationController.stop();
+      _rotationController.value = 0.0;
+      _weaveController.stop();
+      _weaveController.value = 0.5;
+      _bounceController?.stop();
+      _bounceController?.value = 0.0;
+    } else {
+      if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
+      if (!_rotationController.isAnimating) _rotationController.repeat();
+      if (!_weaveController.isAnimating) _weaveController.repeat();
+      final bounce = _bounceController;
+      if (bounce != null && !bounce.isAnimating) bounce.repeat(reverse: true);
     }
   }
 

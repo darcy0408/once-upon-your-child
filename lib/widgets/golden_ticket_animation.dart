@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../utils/motion_utils.dart';
 
 /// A magical animation that shows a "Golden Ticket" (story card) 
 /// being stamped and saved to the library.
@@ -89,7 +90,23 @@ class _GoldenTicketAnimationState extends State<GoldenTicketAnimation>
       }
     });
 
-    _mainController.forward();
+    // Forward is started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored — under reduce-motion we jump straight to completion so
+    // onComplete still fires (the animation is functional, not decorative —
+    // it drives the post-creation library transition). A11Y-007 sweep.
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_mainController.status != AnimationStatus.dismissed) return;
+    if (MotionPrefs.reduceMotion(context)) {
+      // Jump to end state — the status listener fires onComplete, advancing
+      // the flow without subjecting the user to the 2.5s celebration.
+      _mainController.value = 1.0;
+    } else {
+      _mainController.forward();
+    }
   }
 
   @override

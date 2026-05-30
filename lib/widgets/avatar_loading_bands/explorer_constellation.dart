@@ -54,15 +54,17 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
   void initState() {
     super.initState();
 
+    // Looping controllers; repeats started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored at runtime (A11Y-007 sweep).
     _sparkleOrbitCtrl = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
-    )..repeat();
+    );
 
     _twinkleCtrl = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
-    )..repeat();
+    );
 
     // Used to drive per-star appearance animations; never explicitly ticked
     // beyond triggering rebuilds — each star's threshold is driven by progress.
@@ -72,6 +74,20 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
     );
 
     _startSpawnTimer();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _sparkleOrbitCtrl.stop();
+      _sparkleOrbitCtrl.value = 0.0;
+      _twinkleCtrl.stop();
+      _twinkleCtrl.value = 0.5;
+    } else {
+      if (!_sparkleOrbitCtrl.isAnimating) _sparkleOrbitCtrl.repeat();
+      if (!_twinkleCtrl.isAnimating) _twinkleCtrl.repeat();
+    }
   }
 
   @override

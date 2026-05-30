@@ -74,15 +74,33 @@ class _AdolescentHolographicPortalState
     _streamAlphas =
         List.generate(25, (_) => 0.1 + _rng.nextDouble() * 0.4);
 
+    // Looping controllers; repeats are started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored at runtime (A11Y-007 sweep). The
+    // reduced-motion build path uses a static painter, but stopping the
+    // controllers themselves avoids vsync ticks in the background.
     _dataStreamCtrl = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
-    )..repeat();
+    );
 
     _scanCtrl = AnimationController(
       duration: const Duration(seconds: 8),
       vsync: this,
-    )..repeat();
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _dataStreamCtrl.stop();
+      _dataStreamCtrl.value = 0.0;
+      _scanCtrl.stop();
+      _scanCtrl.value = 0.0;
+    } else {
+      if (!_dataStreamCtrl.isAnimating) _dataStreamCtrl.repeat();
+      if (!_scanCtrl.isAnimating) _scanCtrl.repeat();
+    }
   }
 
   @override

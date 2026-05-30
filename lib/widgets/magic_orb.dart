@@ -45,11 +45,13 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
   void initState() {
     super.initState();
 
-    // Pulse animation (breathing glow)
+    // Pulse animation (breathing glow). Repeat is started in
+    // didChangeDependencies so MotionPrefs.reduceMotion is honored at runtime
+    // (A11Y-007 sweep).
     _pulseController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
-    )..repeat(reverse: true);
+    );
 
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
@@ -59,10 +61,24 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
     _sparkleController = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
-    )..repeat();
+    );
 
     // Initialize sparkles
     _generateSparkles();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _pulseController.stop();
+      _pulseController.value = 1.0;
+      _sparkleController.stop();
+      _sparkleController.value = 0.0;
+    } else {
+      if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
+      if (!_sparkleController.isAnimating) _sparkleController.repeat();
+    }
   }
 
   void _generateSparkles() {

@@ -33,10 +33,23 @@ class _AdultInkWashState extends State<AdultInkWash>
   @override
   void initState() {
     super.initState();
+    // Looping controller; repeat started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored at runtime (A11Y-007 sweep).
     _breathCtrl = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
-    )..repeat(reverse: true);
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MotionPrefs.reduceMotion(context)) {
+      _breathCtrl.stop();
+      _breathCtrl.value = 0.5; // mid breath — neutral stroke width
+    } else if (!_breathCtrl.isAnimating) {
+      _breathCtrl.repeat(reverse: true);
+    }
   }
 
   @override
