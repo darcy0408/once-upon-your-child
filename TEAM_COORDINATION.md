@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-05-31 | 09:35 | dfa7 | main | 24 PRs merged, 4 prod bugs fixed, Adventurer audit sweep 5 PRs in flight | [link](docs/sessions/2026-05-31-0935-dfa7.md) |
 | 2026-05-31 | 07:39 | 1262 | main | Frontend host Netlify→Cloudflare Pages + CYOA TTS fix | [link](docs/sessions/2026-05-31-0739-1262.md) |
 | 2026-05-31 | 07:38 | 27aa | feat-adventurer-9-12 | Adventurer 9-12: Superhero Mode + feelings curriculum | [link](docs/sessions/2026-05-31-0738-27aa.md) |
 | 2026-05-30 | 11:07 | 433d | mt-099-bookfeel | MT-099 Open Book reader refactor (Direction B) → PR #164 | [link](docs/sessions/2026-05-30-1107-433d.md) |
