@@ -621,8 +621,15 @@ class ScenarioData {
       illustration: 'images/scenarios/my_big_feelings_btn.webp',
       description:
           'A superhero adventure where the child is the hero.',
+      // Mission-briefing preview line, age-tiered so 9-12 isn't shown the
+      // Sprout framing (the actual story is built server-side from the
+      // band-specific superhero prompt; this is just the preview blurb).
       conflictHook:
+          'A villain with a real motive is causing trouble — you win with cleverness, courage, and heart, never force.',
+      youngConflictHook:
           'A silly villain causes mischief; the hero solves it with kindness.',
+      matureConflictHook:
+          'An antagonist with a genuine grievance forces hard choices — outthink them and reach what they actually need.',
       sensoryPalette:
           'Bright primary colors, the swoosh of a cape, the warm glow of the hero emblem.',
       category: 'Magical Worlds',

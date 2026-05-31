@@ -539,7 +539,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             Text(technique.emoji, style: const TextStyle(fontSize: 30)),
             const SizedBox(height: 4),
             Text(
-              technique.name,
+              technique.nameForAge(widget.childAge),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -751,7 +751,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${technique.name} — ${technique.tagline}',
+                      '${technique.nameForAge(widget.childAge)} — ${technique.tagline}',
                       style: _chromeStyle(band,
                           color: Colors.white70, fontSize: 12),
                     ),
