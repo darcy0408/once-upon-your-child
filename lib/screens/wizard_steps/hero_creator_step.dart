@@ -1773,50 +1773,64 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         band.band == AgeBand.sprout || band.band == AgeBand.explorer;
     final hasNoCompanion = widget.wizardData.companionNames.isEmpty &&
         widget.wizardData.selectedCompanions.isEmpty;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Text(
-            companionTitle,
-            textAlign: TextAlign.center,
-            style: _bandTitleStyle(band, baseFontSize: 22),
-          ),
-          const SizedBox(height: 16),
-          _buildCompanionShowcase(),
-          const SizedBox(height: 20),
-          _buildCompanionGrid(),
-          const SizedBox(height: 24),
-          // "Adventure alone!" exit — only surfaced for young bands and only
-          // when no companion is selected. Without it, an empty showcase reads
-          // as "you have to fill these orbs" to a 7yo. Tapping advances the
-          // wizard the same way Next does, but the labelling makes the
-          // optional nature explicit.
-          if (isYoung && hasNoCompanion) ...[
-            TextButton.icon(
-              icon: const Icon(Icons.directions_walk_rounded,
-                  color: Colors.white70, size: 18),
-              label: Text(
-                'Adventure alone!',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: band.uiFontFamily,
+    // Page is restructured Column(Expanded(Scroll), Next) so the Next CTA
+    // stays in viewport when the companion grid + custom-friend buttons
+    // push past the fold — Adventurer band Choose Your Companions audit
+    // C-003 (audit-reports/age-review-choose-your-companions-adventurer-20260530.md).
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Text(
+                  companionTitle,
+                  textAlign: TextAlign.center,
+                  style: _bandTitleStyle(band, baseFontSize: 22),
                 ),
-              ),
-              onPressed: _heroNextPage,
+                const SizedBox(height: 16),
+                _buildCompanionShowcase(),
+                const SizedBox(height: 20),
+                _buildCompanionGrid(),
+                const SizedBox(height: 24),
+                // "Adventure alone!" exit — only surfaced for young bands and
+                // only when no companion is selected. Without it, an empty
+                // showcase reads as "you have to fill these orbs" to a 7yo.
+                // Tapping advances the wizard the same way Next does, but the
+                // labelling makes the optional nature explicit.
+                if (isYoung && hasNoCompanion) ...[
+                  TextButton.icon(
+                    icon: const Icon(Icons.directions_walk_rounded,
+                        color: Colors.white70, size: 18),
+                    label: Text(
+                      'Adventure alone!',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: band.uiFontFamily,
+                      ),
+                    ),
+                    onPressed: _heroNextPage,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                const SizedBox(height: 8),
+              ],
             ),
-            const SizedBox(height: 8),
-          ],
-          _buildNextArrowButton(
-              enabled: true,
-              onTap: _heroNextPage,
-              hint: 'Next: Choose Your Scene'),
-          const SizedBox(height: 20),
-        ],
-      ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: _buildNextArrowButton(
+            enabled: true,
+            onTap: _heroNextPage,
+            hint: 'Next: Choose Your Scene',
+          ),
+        ),
+      ],
     );
   }
 
@@ -1978,6 +1992,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ],
             ),
           ],
+          const SizedBox(height: 10),
+          // Photo-handling reassurance — Choose Your Companions audit P1 fix.
+          // Parents tapping "Add from Photo" on behalf of a 9-11 child need a
+          // visible signal that the photo isn't being stored.
+          Row(
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  size: 14, color: Colors.white54),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Photos generate your companion\'s portrait. Not stored on our servers.',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
         ],
         // ── Pet card (photo + name/species/color) ──────────────────────────────
