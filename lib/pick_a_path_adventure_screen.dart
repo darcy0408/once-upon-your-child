@@ -331,6 +331,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     if (_isContinuing || _isCompleted || _storyId == null) return;
 
     HapticFeedback.selectionClick();
+    // Stop any in-progress narration the instant a choice/skip is tapped, so the
+    // previous page's audio doesn't keep reading over the next page while the
+    // next segment is generated (the fetch can take several seconds). The new
+    // page's narration starts via _speakSegmentWithChoices() once it loads.
+    unawaited(AppTtsService.instance.stop());
     setState(() {
       _isContinuing = true;
       _errorMessage = null;
@@ -396,6 +401,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     }
 
     HapticFeedback.selectionClick();
+    // Stop any in-progress narration the instant a choice/skip is tapped, so the
+    // previous page's audio doesn't keep reading over the next page while the
+    // next segment is generated (the fetch can take several seconds). The new
+    // page's narration starts via _speakSegmentWithChoices() once it loads.
+    unawaited(AppTtsService.instance.stop());
     setState(() {
       _isContinuing = true;
       _errorMessage = null;
@@ -459,6 +469,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     if (_isContinuing || _isCompleted || _storyId == null) return;
 
     HapticFeedback.selectionClick();
+    // Stop any in-progress narration the instant a choice/skip is tapped, so the
+    // previous page's audio doesn't keep reading over the next page while the
+    // next segment is generated (the fetch can take several seconds). The new
+    // page's narration starts via _speakSegmentWithChoices() once it loads.
+    unawaited(AppTtsService.instance.stop());
     setState(() {
       _isContinuing = true;
       _errorMessage = null;
