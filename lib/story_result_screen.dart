@@ -50,6 +50,8 @@ import 'widgets/breathing_avatar.dart';
 import 'services/feature_tour_service.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
+import 'widgets/open_book_frame.dart';
+import 'utils/motion_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/wizard_story_screen.dart';
@@ -2741,6 +2743,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         bindingSide: effectiveBinding,
         darkPage: _highContrastMode || isDarkPage,
         showPageEdges: !isSpreadPeek,
+        framed: !_highContrastMode,
         child: const SizedBox.expand(),
       );
     }
@@ -2771,6 +2774,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       // The right-hand leaf of a spread sits against the gutter, not a free
       // edge, so it doesn't carry the page-edge fan.
       showPageEdges: !isSpreadPeek,
+      framed: !_highContrastMode,
       pageLabel: pageLabel,
       // MT-071(a): tap-to-turn. A tap anywhere on the page body reveals the
       // text on first tap, then turns to the next page — the reader no
@@ -2958,6 +2962,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       backgroundColor:
           _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
       showDecorations: !_highContrastMode,
+      framed: !_highContrastMode,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxImageHeight = constraints.maxHeight * 0.68;
@@ -3040,6 +3045,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       bindingSide: bindingSide,
       showPageEdges: showPageEdges,
       darkPage: _highContrastMode,
+      framed: !_highContrastMode,
       child: Center(
         child: SingleChildScrollView(
           key: const ValueKey('story-end-of-story-scroll'),
@@ -3678,6 +3684,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    // MT-099: the 3D page-flip and its sparkle burst are motion. Honour the
+    // OS "reduce motion" flag so vestibular-sensitive readers get instant,
+    // animation-free page turns (the arrows/taps still change the page).
+    final bool reduceMotion = MotionPrefs.reduceMotion(context);
     return ErrorBoundary(
       onRetry: _retryLoadData,
       child: Scaffold(
@@ -3973,7 +3983,19 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                               onPointerMove: _onFlipUpdated,
                                               onPointerUp: _onFlipEnded,
                                               onPointerCancel: _onFlipEnded,
-                                              child: Stack(
+                                              // MT-099: ground the leaf inside a
+                                              // visible open hardback (leather
+                                              // rim + warm body + stacked-leaves
+                                              // footer) instead of floating it on
+                                              // the purple background. Decorative
+                                              // only; disabled in high contrast.
+                                              child: OpenBookFrame(
+                                                palette:
+                                                    BookLeatherPalette.forBand(
+                                                        band),
+                                                enabled: !_highContrastMode,
+                                                showFooter: !isShortArea,
+                                                child: Stack(
                                                 children: [
                                                   PageFlipBuilder(
                                                     key: _pageFlipKey,
@@ -3994,8 +4016,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                     maxScale: 0.1,
                                                     onFlipComplete:
                                                         _handlePageFlip,
+                                                    // Reduce-motion: kill the
+                                                    // drag-flip 3D animation;
+                                                    // page turns stay instant.
                                                     interactiveFlipEnabled:
-                                                        true,
+                                                        !reduceMotion,
                                                   ),
                                                   // Dynamic Shadow Overlay
                                                   if (_flipShadowIntensity > 0)
@@ -4032,15 +4057,19 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       ),
                                                     ),
                                                   // Magical sparkle burst on flip
-                                                  Positioned.fill(
-                                                    child: _FlipSparkles(
-                                                      trigger:
-                                                          _flipBurstTrigger,
-                                                      fromRight:
-                                                          _flipBurstFromRight,
-                                                      largeBurst: _isYoungUser,
+                                                  // — suppressed under reduce
+                                                  // motion (it's pure motion).
+                                                  if (!reduceMotion)
+                                                    Positioned.fill(
+                                                      child: _FlipSparkles(
+                                                        trigger:
+                                                            _flipBurstTrigger,
+                                                        fromRight:
+                                                            _flipBurstFromRight,
+                                                        largeBurst:
+                                                            _isYoungUser,
+                                                      ),
                                                     ),
-                                                  ),
                                                   // Left arrow (previous page)
                                                   if (_currentPageIndex > 0)
                                                     Positioned(
@@ -4105,6 +4134,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                       ),
                                                     ),
                                                 ],
+                                              ),
                                               ),
                                             ),
                                           ),

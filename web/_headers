@@ -1,0 +1,20 @@
+# Cloudflare Pages custom response headers.
+# Ported 1:1 from nginx.conf (the Railway grand-light frontend) so the security
+# posture is identical after the move to Cloudflare Pages. Cloudflare copies this
+# file from web/ into build/web/ during `flutter build web` (same as web/_redirects).
+#
+# NOTE: these headers are NOT applied to Cloudflare Pages Functions responses.
+# This app is a pure static Flutter SPA with no Pages Functions, so that caveat
+# does not apply. If a Pages Function is ever added, set its headers in-code.
+#
+# connect-src intentionally still points at the Railway BACKEND
+# (story-weaver-app-production.up.railway.app) — only the FRONTEND host is
+# moving to Cloudflare; the backend API stays on Railway. If the backend domain
+# or Sentry DSN changes, update the connect-src line below (mirror nginx.conf).
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.gstatic.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://story-weaver-app-production.up.railway.app https://o4510948068491264.ingest.us.sentry.io https://www.gstatic.com https://fonts.gstatic.com https://browser.sentry-cdn.com; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'

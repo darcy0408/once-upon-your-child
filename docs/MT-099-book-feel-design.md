@@ -1,8 +1,51 @@
 # MT-099 — Story Reader "Book Feel" UI Refactor
 
-**Status:** design proposal, awaiting direction. No code changes.
-**Author:** Claude research agent, 2026-05-28.
-**Branch context:** `reliability-hardening`.
+**Status:** ✅ Implemented (Direction B, measured scope) on branch `mt-099-bookfeel`, 2026-05-29. See §6.
+**Author:** Claude research agent, 2026-05-28. Implementation: 2026-05-29.
+**Branch context:** proposal written on `reliability-hardening`; implemented on `mt-099-bookfeel` (isolated git worktree).
+
+## 6. What shipped (2026-05-29)
+
+Darcy picked **Direction B (Open Book)** with per-band leather tones, plus the
+reduce-motion and keep-spread scope adds. Delivered:
+
+- **`OpenBookFrame`** (`lib/widgets/open_book_frame.dart`) — a decorative leather
+  hardback rim + warm book body + stacked-leaves footer that wraps the flip
+  `Stack` in `story_result_screen.dart`. `ExcludeSemantics`; passthrough
+  (`enabled: false`) in high-contrast mode so the flat leaf rendering survives.
+- **Per-band leather** via `BookLeatherPalette.forBand`: Sprout warm chestnut,
+  Explorer classic brown, Adventurer deep walnut, dark/mature bands midnight
+  leather on a walnut body.
+- **De-filigree:** `StoryBookPage` gains `framed` — drops the gold border, outer
+  glow, and corner ornaments (the leather supplies the border) and insets the
+  spine 2px. New `AppColors.book*` tokens.
+- **Reduce-motion:** the 3D drag-flip (`interactiveFlipEnabled`) and the
+  `_FlipSparkles` burst now gate on `MotionPrefs.reduceMotion(context)`. Page
+  turns stay instant via arrows/taps. (Closes the Q5 open question.)
+- **Two-page spread** kept on wide screens — the leaves' existing gutter shadows
+  remain; the frame straddles both, no center-spine overlap with the flip plane
+  (sidesteps the M-risk z-order issue).
+
+**Page-flip sound (Q3):** already implemented before this ticket —
+`_handlePageFlip` plays `assets/sounds/page_turn.mp3` on every flip (respecting
+mute), and the asset exists + is registered. No follow-up needed.
+
+**Deliberately de-scoped** (the higher-risk Direction-A/B items) to avoid
+cross-band contrast rework, a `_buildReaderView` regression, and page-index
+surgery — filed as **MT-200** for optional later polish:
+- Global purple→warm scaffold swap (kept per-band purple for app bar + title +
+  the age-11+ reader layout; the leather frame already grounds the leaf).
+- Title-page-leaf demotion (would require a synthetic index-0 leaf, shifting all
+  page indices and the `_hasCoverIllustration` / prefetch math).
+
+Direction C (Pop-Up) remains backlogged as **MT-199**, scoped to Sprout-only,
+pending a real "young readers find the flip confusing" signal.
+
+**Verification:** `flutter analyze` clean on touched files; visually verified in
+a running CanvasKit build (web-server) via Playwright across all four band
+leathers, the high-contrast passthrough, and the wide two-page spread — all
+render correctly. (Reader/result + a11y widget tests were green in the original
+pass; re-run before merge since this branch is rebased on newer `origin/main`.)
 
 ## 1. Current state assessment
 

@@ -19,6 +19,15 @@ class AppColors {
   static const goldLight = Color(0xFFFFE082); // Light gold for glows
   static const cream = Color(0xFFFFF8E1); // Cream for pill buttons
 
+  // Book "open hardback" frame (MT-099, Direction B). The leather rim +
+  // warm body that surround a StoryBookPage leaf so the reader feels like an
+  // open book instead of a card floating on the purple background. Per-band
+  // leather tones are resolved in OpenBookFrame; these are the defaults.
+  static const bookBodyCream = Color(0xFFFAF1DE); // Matte cream behind a light leaf
+  static const bookBodyWalnut = Color(0xFF2E2118); // Warm body behind a dark leaf
+  static const bookCoverLeather = Color(0xFF5A3B22); // Classic brown hardback
+  static const bookCoverLeatherLight = Color(0xFF7A5538); // Lit edge of the cover
+
   // Semantic colors
   static const surface = Color(0xFFB2DFDB); // Light teal surface (contrasts with lavender background)
   static const error = Color(0xFFD32F2F);

@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/coping_techniques.dart';
 import '../data/life_quest_data.dart';
@@ -13,6 +14,7 @@ import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
 import '../widgets/coping_practice_sheet.dart';
 import '../widgets/crisis_resources_panel.dart';
+import '../widgets/parent_sensitivity_interstitial.dart';
 
 /// Quest ids that surface a calm crisis-resources panel at story start and
 /// story end. Originally the peer-mental-health-crisis quest (F-09 / MT-159);
@@ -25,6 +27,12 @@ const Set<String> _crisisQuestIds = {
   'the_secret',
   'the_offer',
 };
+
+/// SharedPreferences key prefix for "parent has already acknowledged the
+/// sensitivity interstitial for this quest id" — MT-158 / F-08. Suffixed
+/// with the quest id so each sensitive quest is acknowledged independently
+/// (parent who said yes once shouldn't be re-prompted on a second open).
+const String _sensitivityAckPrefix = 'life_quest.sensitivity_ack.';
 
 
 /// Launch a Life Quest: shows quest selector, then plays the quest.
@@ -65,6 +73,13 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   /// Sprout-only: which animal friend the user tapped on the entry grid.
   /// Null = entry grid is showing. Non-null = filtered quest list for that friend.
   SproutFriend? _selectedFriend;
+
+  /// MT-158 / F-08 — a sensitive quest the user has tapped but the parent
+  /// hasn't acknowledged yet. Non-null = the interstitial is shown instead
+  /// of the active quest or the selector. Cleared when the parent either
+  /// taps "Start the story" (and we transition to active) or "Choose a
+  /// different story" (and we drop back to the selector).
+  LifeQuestScenario? _pendingSensitiveQuest;
 
   /// On for Sprout (3-5 can't read story prose), off otherwise (older kids
   /// can read at their own pace and may prefer silent reading).
@@ -159,13 +174,73 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     );
   }
 
-  void _startQuest(LifeQuestScenario quest) {
+  /// Quest-card entry point. Routes through the parent sensitivity
+  /// interstitial (MT-158 / F-08) when the quest has sensitivity metadata
+  /// AND the parent hasn't already acknowledged this quest id. Otherwise
+  /// goes straight to the player.
+  Future<void> _startQuest(LifeQuestScenario quest) async {
+    if (quest.sensitivityTopics.isNotEmpty) {
+      final acknowledged = await _hasAcknowledgedSensitivity(quest.id);
+      if (!mounted) return;
+      if (!acknowledged) {
+        setState(() {
+          _pendingSensitiveQuest = quest;
+        });
+        return;
+      }
+    }
+    _beginQuest(quest);
+  }
+
+  /// Transition into the active quest, regardless of how we got here
+  /// (direct start, or parent-acknowledged interstitial).
+  void _beginQuest(LifeQuestScenario quest) {
     setState(() {
       _activeQuest = quest;
       _currentSegment = quest.segments[quest.startSegmentId];
       _segmentHistory.clear();
+      _pendingSensitiveQuest = null;
     });
     _maybeSpeakSegment();
+  }
+
+  /// MT-158 — has the parent already cleared the interstitial for this
+  /// quest id? Keyed per quest so different sensitive quests are
+  /// acknowledged independently.
+  Future<bool> _hasAcknowledgedSensitivity(String questId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('$_sensitivityAckPrefix$questId') ?? false;
+  }
+
+  /// MT-158 — persists the parent's "Start the story" tap for this quest id
+  /// so a second open doesn't re-prompt. Best-effort; a SharedPreferences
+  /// failure should NOT block the quest from starting.
+  Future<void> _persistSensitivityAck(String questId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('$_sensitivityAckPrefix$questId', true);
+    } catch (_) {
+      // Persist failure is non-fatal — worst case the parent sees the
+      // interstitial again on the next open. Don't block on it.
+    }
+  }
+
+  /// Parent tapped "Start the story" on the interstitial. Persist the ack
+  /// and transition into the quest.
+  void _onSensitivityAccepted(LifeQuestScenario quest) {
+    // Fire-and-forget the persist — we still want to start the quest even
+    // if SharedPreferences is unhappy.
+    _persistSensitivityAck(quest.id);
+    _beginQuest(quest);
+  }
+
+  /// Parent tapped "Choose a different story" on the interstitial. Drop
+  /// back to the selector without persisting (so the next open re-prompts,
+  /// which is the desired behaviour).
+  void _onSensitivityDeclined() {
+    setState(() {
+      _pendingSensitiveQuest = null;
+    });
   }
 
   void _makeChoice(QuestChoice choice) {
@@ -224,6 +299,19 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     final band = Theme.of(context).extension<AgeBandThemeData>() ??
         themeForAge(widget.childAge);
 
+    // MT-158 / F-08 — the parent sensitivity interstitial takes the whole
+    // screen surface (above the band gradient) when a sensitive quest has
+    // been tapped but not yet acknowledged. Falls through to the normal
+    // selector/player branches once cleared.
+    Widget body;
+    if (_pendingSensitiveQuest != null) {
+      body = _buildSensitivityInterstitial(_pendingSensitiveQuest!);
+    } else if (_activeQuest == null) {
+      body = _buildQuestSelector(band);
+    } else {
+      body = _buildQuestPlayer(band);
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -234,12 +322,28 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
           ),
         ),
-        child: SafeArea(
-          child: _activeQuest == null
-              ? _buildQuestSelector(band)
-              : _buildQuestPlayer(band),
-        ),
+        // The interstitial owns its own SafeArea so it can place actions
+        // flush to the bottom — the selector/player branches keep theirs.
+        child: _pendingSensitiveQuest != null ? body : SafeArea(child: body),
       ),
+    );
+  }
+
+  /// MT-158 / F-08 — wraps [ParentSensitivityInterstitial] with the two
+  /// callbacks. Always available; only mounted when a sensitive quest has
+  /// been tapped and the parent hasn't acknowledged it before.
+  Widget _buildSensitivityInterstitial(LifeQuestScenario quest) {
+    return ParentSensitivityInterstitial(
+      questTitle: quest.title,
+      topics: quest.sensitivityTopics,
+      // parentNote is required to be non-null when topics.isNotEmpty per the
+      // model docstring; defensive fallback covers the const-string case if
+      // a future quest adds topics but forgets the note.
+      parentNote: quest.parentNote ??
+          'This quest deals with a sensitive theme. '
+              'You may want to be nearby.',
+      onStart: () => _onSensitivityAccepted(quest),
+      onBack: _onSensitivityDeclined,
     );
   }
 
@@ -561,7 +665,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _startQuest(quest),
+          onTap: () { _startQuest(quest); },
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

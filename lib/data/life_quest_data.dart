@@ -53,6 +53,20 @@ class LifeQuestScenario {
   /// Surfaced as a soft callout on the ending screen — not the kid's content.
   final String? grownupTip;
 
+  /// MT-158 / content-safety audit F-08 + F-16 — sensitivity tags surfaced
+  /// on a parent-facing interstitial BEFORE the quest starts. Empty list =
+  /// no interstitial; the quest opens directly to the story. Examples:
+  /// `['parental conflict']`, `['peer mental-health crisis']`,
+  /// `['breakup']`. Short noun phrases — these render as chips.
+  final List<String> sensitivityTopics;
+
+  /// MT-158 / content-safety audit F-08 — 1-2 sentences the parent reads on
+  /// the interstitial. Calm, parent-respectful framing (not pathologising),
+  /// e.g. "This quest deals with a peer in a mental-health crisis. The story
+  /// handles it thoughtfully, but you may want to be nearby." Null when
+  /// [sensitivityTopics] is empty.
+  final String? parentNote;
+
   const LifeQuestScenario({
     required this.id,
     required this.title,
@@ -64,6 +78,8 @@ class LifeQuestScenario {
     required this.startSegmentId,
     this.friend,
     this.grownupTip,
+    this.sensitivityTopics = const [],
+    this.parentNote,
   });
 }
 
@@ -1877,6 +1893,15 @@ const questFamilyStress = LifeQuestScenario(
       isEnding: true,
     ),
   },
+  // MT-158 / content-safety audit F-08 + F-16 — parental-conflict storyline
+  // reachable by Creator (12-14) and Adolescent bands. Parent interstitial
+  // gives the grown-up a quiet heads-up.
+  sensitivityTopics: ['parental conflict', 'tension at home'],
+  parentNote:
+      'This quest is about hearing grown-ups argue from behind a closed '
+      'door. It\'s written carefully — no violence, no slurs — but it may '
+      'land close to home for kids in a tense household. You might want to '
+      'be nearby afterwards.',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4144,6 +4169,18 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
       isEnding: true,
     ),
   },
+  // MT-158 / content-safety audit F-08 — peer mental-health crisis. Pairs
+  // with MT-159's crisis-resources panel inside the quest itself; the
+  // interstitial flags the topic to the parent before the story opens.
+  sensitivityTopics: [
+    'peer mental-health crisis',
+    'worry for a friend',
+  ],
+  parentNote:
+      'This quest is about a teen who is worried that a friend may not be '
+      'okay. The story models reaching out and telling a trusted adult, '
+      'and includes real crisis-line resources. You may want to be nearby '
+      'or check in afterwards.',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4626,6 +4663,14 @@ const questFightAtHome = LifeQuestScenario(
       isEnding: true,
     ),
   },
+  // MT-158 / content-safety audit F-08 — an argument between a teen and
+  // their parent. Adolescent band only, but the interstitial still gives
+  // the grown-up a heads-up so they can choose proximity.
+  sensitivityTopics: ['family conflict', 'after an argument'],
+  parentNote:
+      'This quest opens after a fight between a teen and a parent. The '
+      'story explores the quiet hours after — apologising, holding firm, '
+      'or sitting with it — and ends with the door, not slammed, but open.',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4779,6 +4824,15 @@ const questAfterTheBreakup = LifeQuestScenario(
       isEnding: true,
     ),
   },
+  // MT-158 / content-safety audit F-08 — a teen breakup. No sexual content,
+  // no self-harm; the story is about the first hours of grief after a
+  // three-month relationship ends by text.
+  sensitivityTopics: ['breakup', 'heartbreak'],
+  parentNote:
+      'This quest is about a teen processing a breakup that arrived by '
+      'text. It handles the moment gently and lands on self-respect, but '
+      'it may surface feelings if your teen is going through something '
+      'similar.',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4941,6 +4995,18 @@ const questScreenshotSpreading = LifeQuestScenario(
       isEnding: true,
     ),
   },
+  // MT-158 / content-safety audit F-08 — a private message being shared
+  // without consent ("screenshot shaming"). Topic is social-shame, not
+  // explicit content; the interstitial gives the parent a heads-up so they
+  // can check in if their teen is in a similar real-world situation.
+  sensitivityTopics: [
+    'online shaming',
+    'privacy violation',
+  ],
+  parentNote:
+      'This quest is about a teen who realises something they said in a '
+      'private chat is being screenshotted and shared. It explores '
+      'composure, friendship, and choosing a response — not revenge.',
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -7440,6 +7506,7 @@ const questTheOffer = LifeQuestScenario(
   emoji: '\u{1F6D1}',
   emotions: ['worried', 'embarrassed', 'frustrated'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  sensitivityTopics: ['peer pressure', 'drugs or vaping'],
   startSegmentId: 'off_start',
   grownupTip:
       'Ask: "If someone ever offered you something you weren\'t sure about, '
@@ -7589,6 +7656,7 @@ const questRideHome = LifeQuestScenario(
   emoji: '\u{1F697}',
   emotions: ['worried', 'sad'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  sensitivityTopics: ['an unsafe adult', 'alcohol'],
   startSegmentId: 'ride_start',
   grownupTip:
       'This story teaches a child that an adult\'s unsafe choices are never '
@@ -7696,6 +7764,7 @@ const questSecretWeight = LifeQuestScenario(
   emoji: '\u{1F910}',
   emotions: ['worried', 'sad', 'embarrassed'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  sensitivityTopics: ['an unsafe secret', 'an adult crossing a line'],
   startSegmentId: 'sec_start',
   grownupTip:
       'This story draws the line between a happy surprise and a secret that '

@@ -166,37 +166,22 @@ jobs:
           path: build/web/
           retention-days: 7
 
-  # Deploy to Staging
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [build-frontend, backend-test]
-    if: github.ref == 'refs/heads/grok/cicd-enhancement'
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: flutter-web-build
-          path: build/web/
-
-      - name: Deploy to Netlify (Staging)
-        uses: nwtgck/actions-netlify@v2.0
-        with:
-          publish-dir: './build/web'
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions (Staging)"
-          enable-pull-request-comment: true
-          enable-commit-comment: true
-          overwrites-pull-request-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN_STAGING }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_STAGING }}
-        timeout-minutes: 1
-
-  # Deploy to Production
+  # Deploy Frontend to Cloudflare Pages (Production)
+  # Replaces the previous Netlify staging + production jobs. The frontend now
+  # lives on Cloudflare Pages (free, commercial-use OK, unlimited bandwidth,
+  # global edge CDN); the backend stays on Railway auto-deploy (see below).
+  #
+  # One-time setup required before this job will work:
+  #   1. Create a Cloudflare Pages project as a "Direct Upload" project named
+  #      exactly `once-upon-your-child` (or change --project-name below).
+  #   2. Add two repo secrets:
+  #        CLOUDFLARE_API_TOKEN  — token scoped to "Account > Cloudflare Pages: Edit"
+  #        CLOUDFLARE_ACCOUNT_ID — your Cloudflare account ID
+  #   3. In the Pages project, add the custom domain onceuponyourchild.app and
+  #      cut DNS over once a deploy is verified.
+  # The web/_headers file (ported from nginx.conf) and web/_redirects SPA
+  # fallback are copied into build/web by `flutter build web`, so the CSP and
+  # routing carry over automatically.
   deploy-production:
     runs-on: ubuntu-latest
     needs: [build-frontend, backend-test]
@@ -211,19 +196,12 @@ jobs:
           name: flutter-web-build
           path: build/web/
 
-      - name: Deploy to Netlify (Production)
-        uses: nwtgck/actions-netlify@v2.0
+      - name: Deploy to Cloudflare Pages (Production)
+        uses: cloudflare/wrangler-action@v3
         with:
-          publish-dir: './build/web'
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions (Production)"
-          enable-pull-request-comment: false
-          enable-commit-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 1
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name=once-upon-your-child --branch=main
 
   # Backend Deployment Check
   backend-deploy-check:
