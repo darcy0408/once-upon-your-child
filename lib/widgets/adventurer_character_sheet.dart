@@ -13,12 +13,20 @@ class AdventurerCharacterSheet extends StatelessWidget {
   final AgeBandThemeData band;
   /// Hero avatar widget — caller provides so this widget stays decoupled.
   final Widget heroAvatar;
+  /// Optional: tap the NAME row to jump back to the hero/name step.
+  /// Audit F-04 — matches the affordance the story-type and wish rows already
+  /// have. When null, the row remains non-tappable.
+  final VoidCallback? onTapName;
+  /// Optional: tap the PARTY row to jump back to the companions step.
+  final VoidCallback? onTapParty;
 
   const AdventurerCharacterSheet({
     super.key,
     required this.wizardData,
     required this.band,
     required this.heroAvatar,
+    this.onTapName,
+    this.onTapParty,
   });
 
   @override
@@ -32,10 +40,17 @@ class AdventurerCharacterSheet extends StatelessWidget {
     final scenarioCard = wizardData.selectedScenario != null
         ? ScenarioData.getById(wizardData.selectedScenario!)
         : null;
+    // Review-screen audit F-01: "Unknown Mission" with no objective deflates
+    // the child and reads like a bug to a parent. When no scenario resolves
+    // (rare — usually a free-text setting reaches here without a derived
+    // title), fall back to an inviting line and ensure a hook is shown.
     final scenarioTitle = scenarioCard?.titleForBand(band.band) ??
         wizardData.selectedScenario ??
-        'Unknown Mission';
-    final missionHook = scenarioCard?.conflictHookForAge(wizardData.characterAge);
+        'A surprise quest awaits!';
+    final missionHook = scenarioCard?.conflictHookForAge(wizardData.characterAge)
+        ?? (scenarioCard == null
+            ? 'Something amazing is about to happen — tap MISSION READY to begin.'
+            : null);
 
     return Container(
       decoration: BoxDecoration(
@@ -67,7 +82,10 @@ class AdventurerCharacterSheet extends StatelessWidget {
               'MISSION BRIEFING',
               textAlign: TextAlign.center,
               style: GoogleFonts.bitter(
-                fontSize: 11,
+                // Audit F-02: bumped from 11px so the section header is
+                // comfortably readable at the band floor (9-year-old) and
+                // for a parent scanning the card.
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF80CBC4),
                 letterSpacing: 2.5,
@@ -105,12 +123,19 @@ class AdventurerCharacterSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _StatLine(
-                        label: 'NAME',
-                        value: wizardData.characterName.isNotEmpty
-                            ? wizardData.characterName
-                            : '—',
-                        isHero: true,
+                      // Audit F-04: NAME row is now tappable when onTapName
+                      // is provided, matching the affordance the summary
+                      // rows below already have. Falls back to a static row
+                      // when no callback is wired.
+                      _TappableWrap(
+                        onTap: onTapName,
+                        child: _StatLine(
+                          label: 'NAME',
+                          value: wizardData.characterName.isNotEmpty
+                              ? wizardData.characterName
+                              : '—',
+                          isHero: true,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       if (archetype != null) ...[
@@ -136,9 +161,14 @@ class AdventurerCharacterSheet extends StatelessWidget {
                         const SizedBox(height: 6),
                       ],
                       if (wizardData.companionNames.isNotEmpty)
-                        _StatLine(
-                          label: 'PARTY',
-                          value: wizardData.companionNames.join(', '),
+                        // Audit F-04: PARTY row is now tappable when
+                        // onTapParty is provided.
+                        _TappableWrap(
+                          onTap: onTapParty,
+                          child: _StatLine(
+                            label: 'PARTY',
+                            value: wizardData.companionNames.join(', '),
+                          ),
                         ),
                     ],
                   ),
@@ -164,7 +194,9 @@ class AdventurerCharacterSheet extends StatelessWidget {
                     Text(
                       'MISSION',
                       style: GoogleFonts.bitter(
-                        fontSize: 10,
+                        // Audit F-02: bumped from 10px so the section label is
+                        // legible at band floor.
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF80CBC4),
                         letterSpacing: 1.8,
@@ -233,7 +265,10 @@ class _StatLine extends StatelessWidget {
                 TextSpan(
                   text: '$label  ',
                   style: GoogleFonts.bitter(
-                    fontSize: 9,
+                    // Audit F-02: bumped from 9px so NAME / CLASS / ROLE /
+                    // POWER / PARTY labels are legible at band floor and for
+                    // a parent skimming the card. Kept letter-spacing.
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF80CBC4),
                     letterSpacing: 1.5,
@@ -256,6 +291,32 @@ class _StatLine extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Wraps a [_StatLine] in a tap handler when [onTap] is non-null. When null,
+/// renders the child unchanged so non-tappable rows look the same as before
+/// the F-04 fix. Uses Material+InkWell so the tap surface gets standard ripple
+/// feedback at the band-appropriate touch target size.
+class _TappableWrap extends StatelessWidget {
+  final VoidCallback? onTap;
+  final Widget child;
+  const _TappableWrap({required this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (onTap == null) return child;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: child,
+        ),
+      ),
     );
   }
 }

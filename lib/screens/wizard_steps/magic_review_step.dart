@@ -87,8 +87,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return TextButton.icon(
       onPressed: _jumpToCompanions,
       icon: Icon(Icons.refresh_rounded, size: 16, color: color),
+      // Audit F-03: label now matches destination — the button only routes
+      // to the Companions step. The generic "Pick something new" implied
+      // any aspect could be changed, but a child wanting to edit a name
+      // or mission landed on the wrong step.
       label: Text(
-        'Pick something new',
+        'Change companions',
         style: GoogleFonts.nunito(
           color: color,
           fontSize: 14,
@@ -1257,6 +1261,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   characterName: data.characterName,
                   role: data.selectedArchetypeId,
                 ),
+                // Audit F-04: NAME and PARTY rows are tap-to-edit, matching
+                // the affordance the summary rows below already expose.
+                onTapName: _jumpToHero,
+                onTapParty: _jumpToCompanions,
               ),
               const SizedBox(height: 16),
 
