@@ -560,14 +560,24 @@ ADVENTURER_POWERS: dict[str, dict] = {
         "name": "Skyborne",
         "verb": "rise above it all",
         "ideal": "tide_caller",
-        "also": ["ember_fox", "clockwork_sentinel", "the_gatekeeper", "nightshade_botanist"],
+        "also": [
+            "ember_fox",
+            "clockwork_sentinel",
+            "the_gatekeeper",
+            "nightshade_botanist",
+        ],
         "primary_problem": "expose_the_real_danger",
     },
     "super_strength": {
         "name": "Titan Strength",
         "verb": "haul aside what blocks the way",
         "ideal": "clockwork_sentinel",
-        "also": ["the_archivist", "nightshade_botanist", "the_collector", "the_gatekeeper"],
+        "also": [
+            "the_archivist",
+            "nightshade_botanist",
+            "the_collector",
+            "the_gatekeeper",
+        ],
         "primary_problem": "outsmart_the_trap",
     },
     "super_hearing": {
@@ -602,7 +612,12 @@ ADVENTURER_POWERS: dict[str, dict] = {
         "name": "Fair Hand",
         "verb": "share it out fairly",
         "ideal": "the_archivist",
-        "also": ["the_collector", "tide_caller", "clockwork_sentinel", "nightshade_botanist"],
+        "also": [
+            "the_collector",
+            "tide_caller",
+            "clockwork_sentinel",
+            "nightshade_botanist",
+        ],
         "primary_problem": "find_the_fair_path",
     },
     # Adventurer-only powers — frontend exposes these only when band==adventurer.
@@ -610,7 +625,12 @@ ADVENTURER_POWERS: dict[str, dict] = {
         "name": "Master Strategist",
         "verb": "out-plan the whole scheme",
         "ideal": "clockwork_sentinel",
-        "also": ["tide_caller", "static_wraith", "the_collector", "nightshade_botanist"],
+        "also": [
+            "tide_caller",
+            "static_wraith",
+            "the_collector",
+            "nightshade_botanist",
+        ],
         "primary_problem": "outsmart_the_trap",
     },
     "gadgeteer": {
@@ -623,16 +643,28 @@ ADVENTURER_POWERS: dict[str, dict] = {
 }
 
 ADVENTURER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
-    "the_archivist": ["return_what_was_taken", "find_the_fair_path", "give_them_a_voice"],
+    "the_archivist": [
+        "return_what_was_taken",
+        "find_the_fair_path",
+        "give_them_a_voice",
+    ],
     "mirror_warden": ["earn_their_trust", "mend_what_broke", "uncover_the_truth"],
     "the_overlooked": ["give_them_a_voice", "mend_what_broke", "broker_a_truce"],
     "clockwork_sentinel": ["outsmart_the_trap", "broker_a_truce", "find_the_fair_path"],
     "tide_caller": ["find_the_fair_path", "broker_a_truce", "expose_the_real_danger"],
     "ember_fox": ["expose_the_real_danger", "give_them_a_voice", "rally_the_allies"],
-    "the_collector": ["return_what_was_taken", "find_the_fair_path", "earn_their_trust"],
+    "the_collector": [
+        "return_what_was_taken",
+        "find_the_fair_path",
+        "earn_their_trust",
+    ],
     "static_wraith": ["uncover_the_truth", "earn_their_trust", "mend_what_broke"],
     "the_gatekeeper": ["earn_their_trust", "broker_a_truce", "rally_the_allies"],
-    "nightshade_botanist": ["find_the_fair_path", "expose_the_real_danger", "rally_the_allies"],
+    "nightshade_botanist": [
+        "find_the_fair_path",
+        "expose_the_real_danger",
+        "rally_the_allies",
+    ],
 }
 
 

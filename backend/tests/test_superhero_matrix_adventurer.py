@@ -14,7 +14,6 @@ from backend.data.superhero_matrix import (
     ADVENTURER_PROBLEMS,
     ADVENTURER_VILLAIN_PROBLEMS,
     ADVENTURER_VILLAINS,
-    EXPLORER_POWERS,
     EXPLORER_PROBLEMS,
     EXPLORER_VILLAINS,
     POWERS,
@@ -67,7 +66,9 @@ def test_adventurer_villain_problem_entries_reference_real_problems():
 
 def test_adventurer_ids_are_namespaced_distinct_from_other_bands():
     """No accidental ID collisions across Sprout / Explorer / Adventurer."""
-    assert not (set(ADVENTURER_VILLAINS) & set(VILLAINS)), "Adventurer/Sprout villain IDs collide"
+    assert not (
+        set(ADVENTURER_VILLAINS) & set(VILLAINS)
+    ), "Adventurer/Sprout villain IDs collide"
     assert not (
         set(ADVENTURER_VILLAINS) & set(EXPLORER_VILLAINS)
     ), "Adventurer/Explorer villain IDs collide"

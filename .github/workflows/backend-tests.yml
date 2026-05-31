@@ -54,6 +54,13 @@ jobs:
           echo "DATABASE_URL=postgresql://postgres:testpassword@localhost:5432/test_db" >> $GITHUB_ENV
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> $GITHUB_ENV
           echo "FLASK_ENV=testing" >> $GITHUB_ENV
+          # Throwaway CI-only values (NOT production secrets). The eager-Celery
+          # path and the test_app_creation smoke test build a non-"testing" app,
+          # which runs _run_security_assertions; a >=32-char JWT secret lets them
+          # pass exactly as they do against a local .env. Stripe price id is a
+          # dummy so the checkout-contract route gets past its env-presence guard.
+          echo "JWT_SECRET_KEY=ci-test-only-jwt-secret-not-a-real-credential-0123456789abcdef" >> $GITHUB_ENV
+          echo "STRIPE_PRICE_ID_PREMIUM=price_test_dummy_ci" >> $GITHUB_ENV
 
       - name: Run tests with coverage
         run: |
