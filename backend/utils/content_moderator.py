@@ -91,13 +91,49 @@ def _get_client():
 
 
 def _age_band_label(age: int) -> str:
-    if age <= 7:
-        return "a young child aged 3-7"
+    if age <= 5:
+        return "a young child aged 3-5"
+    if age <= 8:
+        return "a child aged 6-8"
     if age <= 12:
-        return "a child aged 8-12"
+        return "a child aged 9-12"
     if age <= 17:
         return "a teenager aged 13-17"
     return "an adult"
+
+
+def _age_allowance(age: int) -> str:
+    """Age-band-aware allowance clause for the moderation prompt.
+
+    The hard UNSAFE list always applies. This clause tells the classifier what
+    is *developmentally appropriate* for the band so it doesn't over-flag the
+    very content these age groups need — e.g. an Adventurer (9-12) social-
+    emotional story that honestly (non-graphically) depicts peer pressure or an
+    unsafe adult so the child can recognize it, make a safe choice, and reach a
+    trusted adult. Without this, the classifier strips exactly the SEL content
+    that helps. (Adventurer audit A-005.)
+    """
+    if age <= 8:
+        return (
+            "Keep peril very mild and brief; no scary, dark, or threatening "
+            "themes. Anything beyond gentle, quickly-resolved trouble is unsafe."
+        )
+    if age <= 12:
+        return (
+            "The following ARE developmentally appropriate for this age and "
+            "must NOT be flagged on their own: mild peril or suspense, spooky "
+            "atmosphere, and honest, NON-graphic depiction of peer pressure or "
+            "of an adult behaving unsafely (e.g. a grown-up who has been "
+            "drinking, or a peer offering something dangerous) WHEN the story is "
+            "helping the child recognize it, make a safe choice, and reach a "
+            "trusted adult. Flag such content only if it is graphic, glamorizing, "
+            "instructional, or frightening beyond what serves the lesson."
+        )
+    return (
+        "Mature but non-graphic treatment of real social, emotional, and safety "
+        "topics is appropriate for this age; apply the UNSAFE list, not a "
+        "younger-child standard."
+    )
 
 
 # F-03: the classifier previously inspected only story_text[:3000] — roughly
@@ -227,8 +263,10 @@ def _classify_chunk(
         f"- Sexual content or innuendo\n"
         f"- Graphic violence, gore, or torture\n"
         f"- Self-harm or suicide themes\n"
+        f"- Graphic, instructional, or glamorizing depiction of drug, alcohol, or weapon use\n"
         f"- Real personal information (e.g. real school names, home addresses, phone numbers)\n"
         f"- Content that would be frightening or harmful for {age_label}\n\n"
+        f"AGE-APPROPRIATENESS NOTE: {_age_allowance(age)}\n\n"
         f"Respond ONLY with a JSON object — no other text:\n"
         f'  {{"safe": true}} if the story is appropriate\n'
         f'  {{"safe": false, "reason": "brief explanation"}} if it is not\n\n'

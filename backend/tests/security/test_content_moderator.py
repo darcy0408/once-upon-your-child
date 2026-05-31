@@ -238,8 +238,9 @@ class TestContentModerator:
     @pytest.mark.parametrize(
         "age,expected_label",
         [
-            (5, "young child aged 3-7"),
-            (10, "child aged 8-12"),
+            (5, "young child aged 3-5"),
+            (7, "child aged 6-8"),
+            (10, "child aged 9-12"),
             (15, "teenager aged 13-17"),
             (25, "adult"),
         ],

@@ -822,6 +822,8 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
   - Pick-a-path choices should change the social outcome in believable ways.
   - Repair should feel brave and credible, not neat or instant.
   - Adults can steady the scene, but the child still makes the key choice.
+  - When two feelings show up at once (scared AND angry, relieved AND guilty), name both; do not collapse them into one tidy feeling.
+  - When the pressure comes from another person behaving unfairly or unsafely (a peer OR an adult), give the child a real, deliberate choice: they can pause, say no, step away, or reach a trusted adult. Frame reaching out as strength, never tattling. NEVER imply the child caused the situation, and NEVER make the child responsible for fixing an adult's behavior — their job is their own safety and telling a trusted adult.
 """
         ages_13_to_15_rules = ""
         if 13 <= age <= 15:

@@ -53,6 +53,11 @@ class CopingTechnique {
   /// (red/orange for fiery dragon, blue for calm belly, etc.).
   final int colorSeed;
 
+  /// Cooler, less-babyish label for ages ~9+ (Adventurer and up). Same
+  /// exercise — just the name a 12-year-old won't roll their eyes at
+  /// ("Belly Breath" -> "Steady Breath"). Optional; falls back to [name].
+  final String? olderName;
+
   const CopingTechnique({
     required this.id,
     required this.name,
@@ -62,7 +67,12 @@ class CopingTechnique {
     required this.steps,
     this.cycles = 3,
     required this.colorSeed,
+    this.olderName,
   });
+
+  /// Band-appropriate display name. 9+ gets [olderName] when set.
+  String nameForAge(int age) =>
+      (age >= 9 && olderName != null) ? olderName! : name;
 
   /// Total duration of one full practice (all cycles).
   Duration get totalDuration {
@@ -140,6 +150,7 @@ const copingDragonBreath = CopingTechnique(
 const copingBellyBreath = CopingTechnique(
   id: 'belly_breath',
   name: 'Belly Breath',
+  olderName: 'Steady Breath',
   emoji: '🎈',
   tagline: 'Fill up like a balloon.',
   description:
@@ -172,6 +183,7 @@ const copingBellyBreath = CopingTechnique(
 const copingStarBreath = CopingTechnique(
   id: 'star_breath',
   name: 'Star Breath',
+  olderName: 'Reset Breath',
   emoji: '⭐',
   tagline: 'Trace a star with your finger.',
   description:
@@ -236,6 +248,7 @@ const copingVolcanoBreath = CopingTechnique(
 const copingHotCocoaBreath = CopingTechnique(
   id: 'hot_cocoa_breath',
   name: 'Hot Cocoa Breath',
+  olderName: 'Cool-Down Breath',
   emoji: '☕',
   tagline: 'Smell it, then cool it.',
   description:
@@ -268,6 +281,7 @@ const copingHotCocoaBreath = CopingTechnique(
 const copingGrounding54321 = CopingTechnique(
   id: 'grounding_54321',
   name: '5-4-3-2-1',
+  olderName: '5-4-3-2-1 Grounding',
   emoji: '👀',
   tagline: 'Find your way back here.',
   description:

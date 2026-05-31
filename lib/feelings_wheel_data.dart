@@ -165,15 +165,24 @@ class FeelingDetail {
   final String? emoji;
   final List<String>? matureCoping;
 
+  /// Coping for the Adventurer band (~ages 9-11) — between the young `coping`
+  /// and the 12+ `matureCoping`. Framed as "get steady enough to think / get
+  /// your power back" rather than little-kid soothing or full teen strategy.
+  /// Optional: falls back to matureCoping, then coping. (Adventurer audit:
+  /// coping used to jump straight from age-8 to age-12.)
+  final List<String>? tweenCoping;
+
   const FeelingDetail({
     required this.description,
     required this.coping,
     this.emoji,
     this.matureCoping,
+    this.tweenCoping,
   });
 
   List<String> copingForAge(int age) {
     if (age >= 12 && matureCoping != null) return matureCoping!;
+    if (age >= 9 && tweenCoping != null) return tweenCoping!;
     return coping;
   }
 }
@@ -193,6 +202,11 @@ class FeelingDetails {
         'Break the problem into smaller parts.',
         'Write down what\'s blocking you.',
       ],
+      tweenCoping: [
+        'Step away for a minute — you think clearer once the heat drops.',
+        'Find the next one small move and just do that.',
+        'Name what\'s actually blocking you, out loud or on paper.',
+      ],
       emoji: '😤',
     ),
     'Worried': const FeelingDetail(
@@ -206,6 +220,11 @@ class FeelingDetails {
         'Practice box breathing (4 in, 4 hold, 4 out, 4 hold).',
         'Write down your worry and challenge it with evidence.',
         'Talk to someone you trust about what\'s on your mind.',
+      ],
+      tweenCoping: [
+        'Slow your breathing — 4 in, 4 out — until your thoughts stop racing.',
+        'Sort it: what can I control, what can\'t I? Start with the part you can.',
+        'Tell someone you trust — you don\'t have to carry the worry alone.',
       ],
       emoji: '😟',
     ),

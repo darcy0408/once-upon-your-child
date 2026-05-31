@@ -45,8 +45,15 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
   // Track level for header title
   int _level = 0;
 
-  bool get _useBadgeGrid =>
-      ageBandFromAge(widget.childAge) == AgeBand.adventurer;
+  // Friendlier 8-emoji card grid instead of the spinning cloud-picker wheel
+  // for ages 6-14 (Explorer, Adventurer, Creator). Sprout (≤5) keeps its 4
+  // simple core clouds; 15+ keep the nuanced multi-level picker.
+  bool get _useBadgeGrid {
+    final band = ageBandFromAge(widget.childAge);
+    return band == AgeBand.explorer ||
+        band == AgeBand.adventurer ||
+        band == AgeBand.creator;
+  }
 
   bool get _isSproutBand =>
       ageBandFromAge(widget.childAge) == AgeBand.sprout;
