@@ -1713,6 +1713,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final maxSlots = band.band == AgeBand.sprout ? 1 : 3;
     final emptyCount = (maxSlots - slots.length).clamp(0, maxSlots);
 
+    // P3 delight levers from the Adventurer Choose-Your-Companions audit:
+    // - #9 earned slot reveals: empty placeholders are faded until the child
+    //   picks at least one companion. Progressive disclosure rewards each
+    //   commitment instead of presenting all the empty space up front.
+    // - #10 bigger, more celebratory status line: typography scales up when a
+    //   team is set, and the "team complete" state gets a sparkle marker.
+    final teamComplete = slots.length >= maxSlots;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1733,26 +1740,54 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 }),
               ),
             ],
-            // Empty placeholder slots
+            // Empty placeholder slots — faded until first commitment.
             for (int i = 0; i < emptyCount; i++) ...[
               if (slots.isNotEmpty || i > 0) const SizedBox(width: 16),
-              const GlowingCompanionOrb(slot: null),
+              AnimatedOpacity(
+                opacity: slots.isEmpty ? 0.35 : 1.0,
+                duration: const Duration(milliseconds: 280),
+                child: const GlowingCompanionOrb(slot: null),
+              ),
             ],
           ],
         ),
         const SizedBox(height: 8),
-        Text(
-          slots.isEmpty
-              ? (maxSlots == 1
-                  ? 'Tap a buddy to bring along!'
-                  : 'Tap a companion below to add them')
-              : slots.length == 1
-                  ? '${slots[0].name} is ready!'
-                  : 'Your team is set!',
+        AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 220),
           style: TextStyle(
-            color: slots.isEmpty ? Colors.white38 : const Color(0xFFFFD700),
-            fontSize: 12,
+            color: slots.isEmpty
+                ? Colors.white38
+                : teamComplete
+                    ? const Color(0xFFFFD700)
+                    : const Color(0xFFFFE08A),
+            fontSize: slots.isEmpty ? 13 : (teamComplete ? 16 : 14),
+            fontWeight: teamComplete ? FontWeight.w700 : FontWeight.w500,
             fontStyle: slots.isEmpty ? FontStyle.italic : FontStyle.normal,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (teamComplete) ...[
+                const Text('✨', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                slots.isEmpty
+                    ? (maxSlots == 1
+                        ? 'Tap a buddy to bring along!'
+                        : 'Tap a companion below to add them')
+                    : teamComplete
+                        ? 'Your team is set!'
+                        : slots.length == 1
+                            ? '${slots[0].name} is ready!'
+                            : 'Team forming — ${slots.length}/$maxSlots',
+              ),
+              if (teamComplete) ...[
+                const SizedBox(width: 6),
+                const Text('✨', style: TextStyle(fontSize: 14)),
+              ],
+            ],
           ),
         ),
       ],

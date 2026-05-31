@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
 import '../safe_asset_image.dart';
+import '../star_burst_celebration.dart';
 
 /// Data carrier for a showcase orb slot.
 class ShowcaseSlot {
@@ -548,6 +549,9 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
   late final Animation<double> _floatAnim;
   late final AnimationController _selectCtrl;
   late final Animation<double> _selectScale;
+  // Star-burst overlay fired on first-time selection — Adventurer audit P3
+  // delight lever #1 (audit-reports/age-review-choose-your-companions-adventurer-20260530.md).
+  final _burstCtrl = StarBurstCelebrationController();
 
   String get _normalImage =>
       widget.imagePath ?? 'assets/images/companions/${widget.id}_normal.jpg';
@@ -584,6 +588,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
     super.didUpdateWidget(oldWidget);
     if (widget.isSelected && !oldWidget.isSelected) {
       _selectCtrl.forward(from: 0);
+      _burstCtrl.trigger();
     }
   }
 
@@ -711,6 +716,17 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                               color: Colors.black, size: 14),
                         ),
                       ),
+                    // Burst overlay — fires the first time the card becomes
+                    // selected. IgnorePointer so it never intercepts taps.
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: StarBurstCelebration(
+                          controller: _burstCtrl,
+                          starCount: 8,
+                          radiusFactor: 0.65,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ), // AnimatedContainer
