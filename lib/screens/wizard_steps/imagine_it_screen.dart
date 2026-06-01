@@ -297,6 +297,28 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               fontStyle: FontStyle.italic,
             ),
           ),
+          const SizedBox(height: 10),
+          // Setting-screen audit F-05 (Adventurer): parents glancing at a
+          // free-text input on a child's screen want a visible safety cue.
+          // Backend sanitizes + injection-screens the input via
+          // backend/utils/sanitizer.py + [USER_INPUT] wrapping, so the line
+          // is truthful, not aspirational.
+          Row(
+            children: [
+              Icon(Icons.shield_outlined,
+                  size: 14, color: Colors.white.withAlpha(130)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'We check what you write to keep stories safe.',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(150),
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,

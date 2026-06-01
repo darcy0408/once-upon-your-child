@@ -160,7 +160,11 @@ class HeroScenePage extends StatelessWidget {
                     ? 'Pick a world or make your own!'
                     : band.band == AgeBand.creator
                         ? 'Start from your imagination — or choose a world below'
-                        : 'Create your own world — or choose one below!',
+                        // Audit F-04 (Adventurer): subtitle previously
+                        // duplicated the Imagine It card's CTA below. Reframe
+                        // to ownership-of-the-adventure language so the
+                        // subtitle and the card aren't saying the same thing.
+                        : 'Where will your adventure begin?',
             style: GoogleFonts.sourceSans3(color: Colors.white60, fontSize: 13),
             textAlign: TextAlign.center,
           ),
@@ -205,6 +209,9 @@ class HeroScenePage extends StatelessWidget {
                             wizardData.selectedScenario == displayButtons[i].id,
                         labelFontSize: labelFontSize,
                         showThematicQuestion: isCreator || isAdventurer,
+                        // Audit F-02: Adventurer tiles need the description
+                        // line under the title so each world self-explains.
+                        showDescription: isAdventurer,
                         onTap: () => onSceneTap(displayButtons[i].id),
                       ),
                     ),
@@ -219,6 +226,7 @@ class HeroScenePage extends StatelessWidget {
                             displayButtons[i + 1].id,
                         labelFontSize: labelFontSize,
                         showThematicQuestion: isCreator || isAdventurer,
+                        showDescription: isAdventurer,
                         onTap: () => onSceneTap(displayButtons[i + 1].id),
                       ),
                     ),
@@ -235,6 +243,7 @@ class HeroScenePage extends StatelessWidget {
                 isSelected: wizardData.selectedScenario == displayButtons.last.id,
                 labelFontSize: labelFontSize,
                 showThematicQuestion: isCreator || isAdventurer,
+                showDescription: isAdventurer,
                 onTap: () => onSceneTap(displayButtons.last.id),
               ),
             ),
@@ -252,6 +261,7 @@ class HeroScenePage extends StatelessWidget {
                         isSelected: wizardData.selectedScenario == btn.id,
                         labelFontSize: labelFontSize,
                         showThematicQuestion: isCreator || isAdventurer,
+                        showDescription: isAdventurer,
                         onTap: () => onSceneTap(btn.id),
                       ))
                   .toList(),
