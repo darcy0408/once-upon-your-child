@@ -358,6 +358,30 @@ class HeroStoryTypePage extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: band.space(6)),
+          // Parent-facing reassurance for the free-text + mic input. Phrased to
+          // be truthful on every platform: on web (Chrome) speech is processed
+          // by the browser's provider, NOT on-device — so we promise only what
+          // we actually do (don't keep the voice; safety-check the words) and
+          // make no on-device claim. See C-02 in the age-band review.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock_outline,
+                  size: band.body(12), color: Colors.white38),
+              SizedBox(width: band.space(4)),
+              Expanded(
+                child: Text(
+                  "We don't keep your voice — only the words, and we check "
+                  "those to keep things safe.",
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white.withAlpha(140),
+                    fontSize: band.body(11),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -532,8 +556,13 @@ class HeroStoryTypePage extends StatelessWidget {
                         secondaryColor: const Color(0xFFFFB3E6),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    if (data.characterAge < 9)
+                    // Only pair Pick a Path with the reading orb under age 9.
+                    // For Adventurer+ (>=9) the reading orb is gone, so let
+                    // Pick a Path fill the whole row rather than leaving a blank
+                    // right half that reads as "something failed to load" — and
+                    // a full-width card promotes the highest-agency mode.
+                    if (data.characterAge < 9) ...[
+                      const SizedBox(width: 12),
                       Expanded(
                         child: ImageModeOrb(
                           modeType: 'reading',
@@ -547,9 +576,8 @@ class HeroStoryTypePage extends StatelessWidget {
                           primaryColor: const Color(0xFFB88AFF),
                           secondaryColor: const Color(0xFFFF9ECC),
                         ),
-                      )
-                    else
-                      const Expanded(child: SizedBox.shrink()),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -627,15 +655,23 @@ class HeroStoryTypePage extends StatelessWidget {
                               : 'spooky';
                       onChanged();
                     }),
+                // Friendship (not Romance) on this Adventurer/Creator-shared
+                // screen: at the 9-year-old edge of Adventurer, a "Romance"
+                // genre reads older than the band and as un-curated to a
+                // watching parent. "Friendship" scratches the same
+                // caring-about-people itch and stays age-appropriate. The
+                // genre flows to the backend via customElements, which weaves
+                // it age-safely (see wizard_data_mapper.dart). Romance remains
+                // on the Creator-only creative-brief screen.
                 GenreChip(
-                    label: '💕 Romance',
-                    value: 'romance',
-                    selected: wizardData.selectedGenre == 'romance',
+                    label: '💛 Friendship',
+                    value: 'friendship',
+                    selected: wizardData.selectedGenre == 'friendship',
                     onTap: () {
                       wizardData.selectedGenre =
-                          wizardData.selectedGenre == 'romance'
+                          wizardData.selectedGenre == 'friendship'
                               ? null
-                              : 'romance';
+                              : 'friendship';
                       onChanged();
                     }),
               ],

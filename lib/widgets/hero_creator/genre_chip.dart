@@ -21,6 +21,11 @@ class GenreChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        // Floor the height at 44px so chips meet the minimum tap target — the
+        // 10px vertical padding alone leaves them ~36-40px, below the norm and
+        // well under the Adventurer band's 64px standard.
+        constraints: const BoxConstraints(minHeight: 44),
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: selected

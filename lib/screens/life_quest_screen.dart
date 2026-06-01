@@ -408,6 +408,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         // as its entry pattern; Creator+ get reframed-language techniques in
         // a future pass (current set is too cartoony for 12+).
         if (_isExplorer || _isAdventurer) _buildCopingToolbox(band),
+        // Section header — only when the toolbox is above it — so the two
+        // interaction modes don't read as one undivided list: calm-down tools
+        // you *practice* vs. stories you *step into*.
+        if ((_isExplorer || _isAdventurer) && quests.isNotEmpty)
+          _buildStoriesHeader(band),
         // Quest cards or empty state
         if (quests.isEmpty)
           Expanded(
@@ -605,16 +610,58 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               ],
             ),
           ),
+          // Right-edge fade so the half-visible last tile reads as "there's
+          // more to scroll" — kids don't reliably discover horizontal scroll,
+          // and the toolbox has 6 techniques but only ~3 fit on a phone.
           SizedBox(
-            height: 96,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              itemCount: allCopingTechniques.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (context, i) =>
-                  _buildToolboxCard(allCopingTechniques[i], band),
+            // 112 (not 96): two-line technique names ("Dragon's Breath",
+            // "Hot Cocoa Breath") need the extra vertical room since F-02
+            // bumped the card label to maxLines: 2.
+            height: 112,
+            child: ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Colors.white, Colors.white, Colors.transparent],
+                stops: [0.0, 0.86, 1.0],
+              ).createShader(bounds),
+              blendMode: BlendMode.dstIn,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: allCopingTechniques.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) =>
+                    _buildToolboxCard(allCopingTechniques[i], band),
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section label that frames the quest list as a distinct mode from the
+  /// coping toolbox above it. Mirrors the toolbox's label row so the two
+  /// zones read as siblings: "tools to practice" then "stories to step into".
+  Widget _buildStoriesHeader(AgeBandThemeData band) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 16, 0),
+      child: Row(
+        children: [
+          const Text('📖', style: TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Text(
+            'Stories to practice',
+            style: _chromeStyle(band,
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '— tap one to step in',
+            style: _chromeStyle(band, color: Colors.white54, fontSize: 11),
           ),
         ],
       ),
@@ -645,7 +692,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             Text(
               technique.nameForAge(widget.childAge),
               textAlign: TextAlign.center,
-              maxLines: 1,
+              // Two lines so longer names ("Dragon's Breath") don't truncate
+              // to "Dragon's Bre…" — reads as broken to a 9-year-old.
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: _chromeStyle(band,
                   color: Colors.white,

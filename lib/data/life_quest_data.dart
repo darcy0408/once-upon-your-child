@@ -202,6 +202,9 @@ const allLifeQuests = <LifeQuestScenario>[
   questTheOffer,
   questRideHome,
   questSecretWeight,
+  // Two more Adventurer quests (extracted from #171 / b4d3ed62)
+  questOwningUp,
+  questFriendGotPicked,
   // All three bands (ages 9-17)
   questSchoolStress,
   // Creator + Adolescent (ages 12-17)
@@ -1048,6 +1051,10 @@ const questSchoolStress = LifeQuestScenario(
   hook: 'It\'s 9 PM. The test is at 8 AM.',
   emoji: '\u{1F4DA}',
   emotions: ['worried', 'frustrated', 'sad'],
+  // The cram-the-night-before framing (9 PM, test at 8 AM) is a middle-school+
+  // schedule; pulled from Adventurer (9-11) so a 9-year-old isn't served it via
+  // the default-band fallthrough. Age-band review 2026-05-30, finding L-01.
+  recommendedBands: [AgeBand.creator, AgeBand.adolescent],
   startSegmentId: 'ss_start',
   segments: {
     'ss_start': QuestSegment(
@@ -1238,7 +1245,7 @@ const questSiblingConflict = LifeQuestScenario(
   id: 'sibling_conflict',
   title: 'The Last Straw',
   hook: 'Your sibling\'s back again. Fourth time.',
-  emoji: '\u{1F4A2}',
+  emoji: '\u{1F621}', // 😡 enraged face — clearer "anger" than the 💢 symbol
   emotions: ['angry', 'frustrated'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'sc_start',
@@ -1445,7 +1452,7 @@ const questBeingTeased = LifeQuestScenario(
   id: 'being_teased',
   title: 'The Comment',
   hook: 'Someone said something in the hallway. It\'s still in your head.',
-  emoji: '\u{1F62A}',
+  emoji: '\u{1F61F}', // 😟 worried face — reads as "stuck worry", not 😪 sleepy
   emotions: ['sad', 'angry', 'embarrassed'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'bt_start',
@@ -2584,6 +2591,390 @@ const questSorryStuck = LifeQuestScenario(
           '"I know. I\'m sorry."\n\n'
           'Sometimes sorry is easier when you\'re not face to face. '
           'That\'s okay. What matters is that you said it.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST 12: Nobody Saw  [Adventurer / Creator: ages 9-11]
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Honesty / moral courage. Built for Adventurer (industry-vs-inferiority,
+// strong fairness sense): you broke the class project and a quiet classmate is
+// getting blamed. Every path is survivable; the "say nothing" branch leaves a
+// redemption door open rather than punishing. Age-band review 2026-05-30.
+
+const questOwningUp = LifeQuestScenario(
+  id: 'owning_up',
+  title: 'Nobody Saw',
+  hook: 'You broke it. Now someone else is getting the blame.',
+  emoji: '\u{1F62C}', // 😬 grimacing — caught, nervous, "uh-oh"
+  emotions: ['worried', 'scared', 'guilty'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'os_start',
+  grownupTip:
+      'Ask: "Have you ever broken something by accident and felt scared to '
+      'admit it? What makes it easier — or harder — to tell the truth?"',
+  segments: {
+    'os_start': QuestSegment(
+      id: 'os_start',
+      copingBreakId: 'belly_breath',
+      content:
+          'The class volcano is the size of a beach ball. Everyone helped '
+          'build it — layers of newspaper and paste, painted red and brown, '
+          'a real crater on top. It has lived on the back shelf for two '
+          'weeks, drying.\n\n'
+          'You\'re packing up at the end of the day. You swing your backpack '
+          'onto your shoulder a little too fast, and the bottom of it clips '
+          'the shelf.\n\n'
+          'You hear it before you see it: a soft slide, then a heavy crunch. '
+          'The volcano is on the floor. One whole side has caved in.\n\n'
+          'The room goes quiet. Everyone turns.\n\n'
+          'And here\'s the thing — nobody was looking at you. They were '
+          'looking at the shelf. The kid standing closest, the quiet one who '
+          'sits by the window, is staring at the wreck with their mouth '
+          'open.\n\n'
+          '«From across the room, {companion} catches your eye. {companion} '
+          'saw the whole thing — and stays quiet.»\n\n'
+          'Your teacher walks over, looks at the broken volcano, then looks '
+          'right at the quiet kid. "Did you knock this over?"\n\n'
+          'The quiet kid\'s face goes red. "I— I didn\'t—"\n\n'
+          'Your heart is pounding. The words are right there. So is the easy '
+          'way out.',
+      choices: [
+        QuestChoice(
+          id: 'os_c1a',
+          text: 'Say it out loud: "It was me."',
+          nextSegmentId: 'os_truth',
+        ),
+        QuestChoice(
+          id: 'os_c1b',
+          text: 'Say nothing. Let it blow over.',
+          nextSegmentId: 'os_quiet',
+        ),
+        QuestChoice(
+          id: 'os_c1c',
+          text: 'Breathe first, then ask to talk to your teacher alone.',
+          nextSegmentId: 'os_private',
+        ),
+      ],
+    ),
+
+    'os_truth': QuestSegment(
+      id: 'os_truth',
+      content:
+          '"It was me," you say. Your voice comes out smaller than you '
+          'wanted — but it comes out.\n\n'
+          'The whole room looks at you now. That\'s the part you were scared '
+          'of, all those eyes. But it\'s already done, and the strange thing '
+          'is, it\'s not as bad as the waiting was.\n\n'
+          'Your teacher\'s face changes — not into anger, into something '
+          'softer. "Thank you for telling me," they say. "Accidents happen. '
+          'Hiding them is the part that gets messy."\n\n'
+          'The quiet kid lets out a breath like they\'d been holding it for '
+          'a year.\n\n'
+          'You stay in for the first ten minutes of recess to help tape the '
+          'volcano back together — slow and a little ridiculous, fingers '
+          'sticky with paste. The quiet kid stays too, even though they '
+          'didn\'t have to.\n\n'
+          '"You didn\'t have to say it was you," they say.\n\n'
+          '"Yeah, I did," you say. And you mean it.\n\n'
+          '«At lunch, {companion} saves you a spot — and a quiet '
+          '"that was brave."»\n\n'
+          'The volcano looks lumpy now. Honestly? It looks better. '
+          'And so, somehow, do you.',
+      isEnding: true,
+    ),
+
+    'os_quiet': QuestSegment(
+      id: 'os_quiet',
+      content:
+          'You look down at your shoes. You don\'t say anything.\n\n'
+          '"I didn\'t do it," the quiet kid says again, but their voice '
+          'wobbles and nobody\'s really listening. Your teacher sighs. '
+          '"We\'ll sort it out later. Everyone, line up."\n\n'
+          'And just like that, it\'s over. The volcano gets swept into a '
+          'bin. You walk out with everyone else. You got away with it.\n\n'
+          'Except — you didn\'t. Not really. The feeling rides home with '
+          'you, sitting in your chest like a swallowed stone, heavier than '
+          'getting in trouble would have been. You keep seeing the quiet '
+          'kid\'s red face.\n\n'
+          'That night you can\'t stop thinking about it. The thing about a '
+          'secret like this is that it doesn\'t get lighter on its own. It '
+          'just waits.\n\n'
+          'Tomorrow you\'ll see the quiet kid again.',
+      choices: [
+        QuestChoice(
+          id: 'os_c2a',
+          text: 'Tomorrow, get to school early and tell the teacher the truth.',
+          nextSegmentId: 'os_fix',
+        ),
+        QuestChoice(
+          id: 'os_c2b',
+          text: 'Try to forget it ever happened.',
+          nextSegmentId: 'os_carry',
+        ),
+      ],
+    ),
+
+    'os_fix': QuestSegment(
+      id: 'os_fix',
+      content:
+          'You barely sleep. But in the morning you get to school early, '
+          'before the noise starts, and you find your teacher at their '
+          'desk.\n\n'
+          '"Yesterday — the volcano. It was me. I was too scared to say it, '
+          'and I let someone else get blamed. I\'m sorry."\n\n'
+          'It takes about ten seconds to say. Ten seconds, after a whole '
+          'night of carrying it.\n\n'
+          'Your teacher listens. "That took courage," they say. "Coming '
+          'back the next day is harder than owning it right away — and you '
+          'still did it. I\'ll make sure things are set right with the other '
+          'kid."\n\n'
+          'The stone in your chest is just... gone. You didn\'t know how '
+          'heavy it was until you set it down.\n\n'
+          '«You tell {companion} at recess and get a shoulder-bump and a '
+          '"took you long enough" for it.»\n\n'
+          'You find the quiet kid and tell them too. It\'s awkward, and it\'s '
+          'worth it. Late is not the same as never.',
+      isEnding: true,
+    ),
+
+    'os_carry': QuestSegment(
+      id: 'os_carry',
+      content:
+          'You decide to bury it.\n\n'
+          'For a few days, it sort of works. You don\'t think about it at '
+          'lunch. You don\'t think about it in math. But it has a way of '
+          'surfacing — when you see the empty back shelf, when the quiet kid '
+          'walks past, when the lights go out at night.\n\n'
+          'Nobody ever finds out. That part is true. But "nobody found out" '
+          'turns out to be a smaller comfort than you expected. The one '
+          'person who knows is you — and you\'re with yourself all the '
+          'time.\n\n'
+          'Here\'s what\'s also true, and worth keeping: the door didn\'t '
+          'lock. It never does. A week from now, a month from now, you could '
+          'still walk up to your teacher and say the words. People can '
+          'usually handle the truth better than we expect — especially when '
+          'it\'s late.\n\n'
+          '«That night, {companion} curls up close while you think.»\n\n'
+          'You\'ll know when you\'re ready. The choice stays yours.',
+      isEnding: true,
+    ),
+
+    'os_private': QuestSegment(
+      id: 'os_private',
+      content:
+          'You take a slow breath — in through your nose, out long — and you '
+          'wait. You don\'t shout it across the room. You raise your hand and '
+          'ask if you can talk to your teacher for a second.\n\n'
+          'At their desk, quietly, you say it. "The volcano was me. My '
+          'backpack hit the shelf. I didn\'t want to yell it out in front of '
+          'everybody — but I didn\'t want the wrong person getting blamed '
+          'either."\n\n'
+          'Your teacher nods slowly. "I appreciate you telling me — and the '
+          'way you did it. That was thoughtful." They quietly let the other '
+          'kid know it\'s sorted. No big scene. No spotlight.\n\n'
+          'The knot in your stomach loosens, one loop at a time.\n\n'
+          '«{companion} finds you after. "I saw the whole thing. I wasn\'t '
+          'going to tell — but I\'m glad you did."»\n\n'
+          'Same truth as shouting it across the room — just delivered in a '
+          'way that felt like yours. Honest doesn\'t have to mean loud.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUEST 13: Happy For You  [Adventurer / Creator: ages 9-11]
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Jealousy / two-feelings-at-once. Built for Adventurer: a developmental leap
+// at this age is learning that happy-for-them and sad-for-me can be true at the
+// same time, and that the feeling isn't the problem — hiding it until it goes
+// sharp is. Coping break: Hot Cocoa Breath. Age-band review 2026-05-30.
+
+const questFriendGotPicked = LifeQuestScenario(
+  id: 'friend_got_picked',
+  title: 'Happy For You',
+  hook: 'Your best friend got the thing you wanted. You\'re happy for them. '
+      'You\'re also not.',
+  emoji: '\u{1F615}', // 😕 — two feelings at once, conflicted
+  emotions: ['jealous', 'sad', 'frustrated'],
+  recommendedBands: [AgeBand.adventurer, AgeBand.creator],
+  startSegmentId: 'hf_start',
+  grownupTip:
+      'Ask: "Has there ever been a time you felt happy for someone and '
+      'jealous at the same time? Did you know you\'re allowed to feel both '
+      'at once?"',
+  segments: {
+    'hf_start': QuestSegment(
+      id: 'hf_start',
+      copingBreakId: 'hot_cocoa_breath',
+      content:
+          'For three weeks the whole class has been working on one drawing — '
+          'the big one, the one that counts. At the end, the art teacher '
+          'picks just a single drawing to frame and hang in the front '
+          'hallway, where everybody who walks into the school will see it. '
+          'All term long.\n\n'
+          'You worked so hard on yours. You stayed in at recess twice. You '
+          'can picture it hanging there. If you\'re honest, you\'ve already '
+          'pictured it about a hundred times.\n\n'
+          'The art teacher stands at the front, holding the framed one '
+          'turned around so nobody can see it yet. "This term\'s hallway '
+          'pick is..."\n\n'
+          'She turns it around.\n\n'
+          'It\'s not yours.\n\n'
+          'It\'s your best friend\'s.\n\n'
+          'And your best friend gasps and lights up like it\'s their '
+          'birthday — and the very first thing they do is spin around to '
+          'find you, because you\'re the person they want to tell. They\'re '
+          'grinning right at you, waiting for you to be happy too.\n\n'
+          'And you are. That\'s the confusing part. You\'re happy for them, '
+          'and at the exact same second something in your chest drops '
+          'straight through the floor. Happy and crushed, holding hands.\n\n'
+          '«{companion} is right next to you and feels you go still.»\n\n'
+          'Your best friend is still looking at you. The grin is just '
+          'starting to wait for an answer.',
+      choices: [
+        QuestChoice(
+          id: 'hf_c1a',
+          text: 'Smile big and hide it. "That\'s so cool!"',
+          nextSegmentId: 'hf_hide',
+        ),
+        QuestChoice(
+          id: 'hf_c1b',
+          text: 'Be honest and kind: "I\'m happy for you — and a little sad too."',
+          nextSegmentId: 'hf_honest',
+        ),
+        QuestChoice(
+          id: 'hf_c1c',
+          text: 'Take a breath and step away for a minute first.',
+          nextSegmentId: 'hf_space',
+        ),
+      ],
+    ),
+
+    'hf_honest': QuestSegment(
+      id: 'hf_honest',
+      content:
+          'You take a breath and decide to just be real.\n\n'
+          '"I\'m really happy for you," you say. "For real. And also — I\'m a '
+          'little sad, because I wanted it too. Both at the same time. Is '
+          'that okay?"\n\n'
+          'Your best friend\'s grin softens into something kinder. "Yeah. Of '
+          'course it\'s okay." Then: "Yours was really good too. I honestly '
+          'thought it could\'ve been a tie."\n\n'
+          'And just like that, the heavy feeling has room to breathe. It '
+          'doesn\'t vanish — but saying it out loud took the sting out, and '
+          'your friend didn\'t think less of you for it. If anything, '
+          'they\'re standing a little closer.\n\n'
+          '«{companion} bumps your arm, like to say: both feelings allowed.»\n\n'
+          'Two true things at once turned out to be something you could '
+          'carry — especially out loud, especially with a friend.',
+      isEnding: true,
+    ),
+
+    'hf_space': QuestSegment(
+      id: 'hf_space',
+      content:
+          '"That\'s so cool — give me one sec," you manage, and you slip out '
+          'to get a drink of water.\n\n'
+          'In the hallway it\'s quiet. You cup your hands like you\'re '
+          'holding a warm mug and breathe — in slow through your nose, out '
+          'gently through your mouth, the way that cools things down. You let '
+          'the feeling be as big as it is for a minute. Jealous. Sad. Proud '
+          'of your friend. All of it, no audience.\n\n'
+          'It doesn\'t disappear. But it shrinks to a size you can carry back '
+          'into the room.\n\n'
+          'When you come back, your best friend looks up, a little unsure '
+          'now. "You okay?"\n\n'
+          '"Yeah," you say, and this time it\'s mostly true. "That\'s '
+          'awesome. I just needed a second — I wanted it too, you know?"\n\n'
+          '"...Yeah," they say. "I figured. Thanks for coming back."\n\n'
+          '«{companion} falls into step beside you.»\n\n'
+          'You didn\'t fake it, and you didn\'t snap. You gave the feeling a '
+          'minute, and a minute was enough.',
+      isEnding: true,
+    ),
+
+    'hf_hide': QuestSegment(
+      id: 'hf_hide',
+      content:
+          '"That\'s so cool!" you say — big smile, two thumbs up. "You '
+          'totally deserve it!"\n\n'
+          'And you sort of mean it. But you shove the other feeling, the '
+          'heavy one, way down where it won\'t show. The smile is real on '
+          'top and hollow underneath.\n\n'
+          'It doesn\'t stay down. Feelings you sit on don\'t disappear — they '
+          'leak. At lunch your best friend is still glowing, retelling the '
+          'whole moment, and you hear yourself go quiet. Then a little '
+          'sharp. "Okay, we get it," you mutter. "It\'s just a drawing."\n\n'
+          'The glow drops off their face. "Whoa. What\'s your problem?"\n\n'
+          'Now there are two things wrong: the sad thing from before, and '
+          'this new prickly thing sitting between you and your best '
+          'friend.\n\n'
+          '«{companion} looks between the two of you.»\n\n'
+          'Your friend is hurt and confused. You can feel the real feeling '
+          'pushing up underneath the snippy one.',
+      choices: [
+        QuestChoice(
+          id: 'hf_c2a',
+          text: 'Tell the truth: "Sorry. I got jealous and I hid it."',
+          nextSegmentId: 'hf_comeclean',
+        ),
+        QuestChoice(
+          id: 'hf_c2b',
+          text: '"Nothing. Forget it." Shut down.',
+          nextSegmentId: 'hf_deny',
+        ),
+      ],
+    ),
+
+    'hf_comeclean': QuestSegment(
+      id: 'hf_comeclean',
+      content:
+          'You let out a breath. "Sorry. That came out mean. The truth is, I '
+          'really wanted it too, and I got jealous, and I tried to squish it '
+          'so you wouldn\'t see — and it kind of squirted out sideways at '
+          'you instead."\n\n'
+          'Your best friend blinks. Then their face softens. "Wait — you '
+          'could\'ve just said that. I\'d get it. I\'d be jealous too if it '
+          'was yours."\n\n'
+          '"Yeah?"\n\n'
+          '"Yeah. You\'re allowed to be both, you know. Happy for me and '
+          'bummed for you. I\'m not gonna break."\n\n'
+          'Something untangles in your chest. It turns out the feeling got '
+          'way bigger from hiding — and way smaller the second you said it '
+          'out loud to the right person.\n\n'
+          'Lunch goes back to normal. Actually — a little better than '
+          'normal.\n\n'
+          '«{companion} bumps you both, grinning.»\n\n'
+          'Your friend\'s drawing hangs in the hallway all term. You walk '
+          'past it every day. After a while it just looks like your '
+          'friend\'s drawing — and you\'re glad it\'s there.',
+      isEnding: true,
+    ),
+
+    'hf_deny': QuestSegment(
+      id: 'hf_deny',
+      content:
+          '"Nothing," you say. "Forget it." And you close up like a fist.\n\n'
+          'Your best friend waits a second, then shrugs and turns back to '
+          'the others. Lunch keeps going without you really in it.\n\n'
+          'Nothing blew up. But something went quiet between you and your '
+          'friend, and quiet is its own kind of loud. You spend the whole '
+          'afternoon sitting right next to your best friend and feeling '
+          'further away than the other side of the room.\n\n'
+          'Here\'s the thing you\'ll figure out — maybe today, maybe in a '
+          'week: the jealous feeling was never the real problem. Jealous is '
+          'just a feeling. It shows up, it passes. Hiding it and letting it '
+          'go sharp is what cost you the afternoon.\n\n'
+          '«That night, {companion} sits with you while you feel it.»\n\n'
+          'You can still say something tomorrow. "Sorry about lunch" is a '
+          'short sentence. Best friends are usually on the other side of it, '
+          'waiting.',
       isEnding: true,
     ),
   },

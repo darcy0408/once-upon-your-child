@@ -93,10 +93,18 @@ class _HeroPetCardState extends State<HeroPetCard> {
     if (widget.pendingNewSpecies != null &&
         widget.pendingNewSpecies != oldWidget.pendingNewSpecies) {
       final species = widget.pendingNewSpecies!.split(':').first;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         _addCompanionWithType(species);
         widget.onPendingConsumed?.call();
+        // The "Add from Photo" / "Add My Pet" buttons take their name
+        // seriously — the user expects a photo prompt immediately, not a
+        // hidden empty entry they have to find and tap into. Auto-trigger
+        // the picker for the just-added pet.
+        final newIndex = widget.wizardData.pets.length - 1;
+        if (newIndex >= 0 && mounted) {
+          await widget.onPickPhoto(petIndex: newIndex);
+        }
       });
     }
   }
