@@ -13,6 +13,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 <!-- New session-close entries go here. Most recent at top. -->
 | 2026-05-31 | 22:40 | f3f4 | main | Cleared Adventurer queue (5 PRs) + #179 CSP prod fix + multi-agent worktree setup | [link](docs/sessions/2026-05-31-2240-f3f4.md) |
 | 2026-05-31 | 14:39 | e178 | main | Cloudflare architecture orientation + memory fix | [link](docs/sessions/2026-05-31-1439-e178.md) |
+| 2026-05-31 | 22:37 | bc9b | chore/git-guard-hook | CI triage → delete redundant deploy workflow + git-guard hook | [link](docs/sessions/2026-05-31-2237-bc9b.md) |
 | 2026-05-31 | 09:35 | dfa7 | main | 24 PRs merged, 4 prod bugs fixed, Adventurer audit sweep 5 PRs in flight | [link](docs/sessions/2026-05-31-0935-dfa7.md) |
 | 2026-05-31 | 07:39 | 1262 | main | Frontend host Netlify→Cloudflare Pages + CYOA TTS fix | [link](docs/sessions/2026-05-31-0739-1262.md) |
 | 2026-05-31 | 07:38 | 27aa | feat-adventurer-9-12 | Adventurer 9-12: Superhero Mode + feelings curriculum | [link](docs/sessions/2026-05-31-0738-27aa.md) |
