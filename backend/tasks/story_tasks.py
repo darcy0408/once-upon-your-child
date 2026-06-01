@@ -1001,6 +1001,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         band=sh_band,
                     )
 
+                # C4: honor a kid-chosen arch-villain (Adventurer nemesis picker).
+                # If the client supplied a nemesis id, use it instead of the
+                # server's surprise-pick; the prompt builder re-validates against
+                # the band's villain table and falls back if the id is unknown.
+                chosen_nemesis = (kwargs.get("hero_nemesis_id") or "").strip()
+                if chosen_nemesis:
+                    sh_villain_id = chosen_nemesis
+
                 superhero_meta = {
                     "villain_id": sh_villain_id,
                     "problem_id": sh_problem_id,
@@ -1023,6 +1031,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     hero_cape_style=kwargs.get("hero_cape_style"),
                     hero_emblem=kwargs.get("hero_emblem"),
                     hero_power=hero_power,
+                    hero_catchphrase=kwargs.get("hero_catchphrase"),
                     superhero_villain_id=sh_villain_id,
                     superhero_problem_id=sh_problem_id,
                 )

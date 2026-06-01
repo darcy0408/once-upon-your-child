@@ -773,6 +773,8 @@ def create_story_blueprint(
             "hero_cape_style": payload.get("hero_cape_style"),
             "hero_emblem": payload.get("hero_emblem"),
             "hero_power": payload.get("hero_power"),
+            "hero_catchphrase": payload.get("hero_catchphrase"),
+            "hero_nemesis_id": payload.get("hero_nemesis_id"),
             "recent_villains": payload.get("recent_villains") or [],
             "recent_problems": payload.get("recent_problems") or [],
         }

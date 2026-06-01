@@ -21,6 +21,7 @@ class HeroStoryTypePage extends StatelessWidget {
     required this.onContinue,
     required this.onToggleListening,
     this.onSpeakForSprout,
+    this.onLaunchSuperhero,
     this.illustrationsEnabled = true,
   });
 
@@ -35,6 +36,10 @@ class HeroStoryTypePage extends StatelessWidget {
   /// Optional Sprout TTS callback — when provided, card taps speak the label
   /// aloud so non-readers get audio confirmation of their selection.
   final Future<void> Function(String text)? onSpeakForSprout;
+
+  /// Launches Superhero Mode directly from this picker (Explorer + Adventurer).
+  /// When null the superhero orb is not shown (e.g. Sprout / Creator+).
+  final Future<void> Function()? onLaunchSuperhero;
 
   /// Whether the current user can generate illustrations (premium or BYOK).
   /// When false, story-type labels avoid promising pictures.
@@ -580,6 +585,26 @@ class HeroStoryTypePage extends StatelessWidget {
                     ],
                   ],
                 ),
+                // Superhero Mode — surfaced as a first-class story type for
+                // Explorer + Adventurer so it isn't buried under "Imagine It".
+                // Full-width to read as a special, distinct path. Tapping it
+                // launches the costume/power flow instead of setting a mode.
+                if (onLaunchSuperhero != null &&
+                    (band.band == AgeBand.explorer ||
+                        band.band == AgeBand.adventurer)) ...[
+                  SizedBox(height: band.space(12)),
+                  ImageModeOrb(
+                    modeType: 'superhero',
+                    label: 'Superhero',
+                    subtitle: band.band == AgeBand.adventurer
+                        ? 'Design your own hero — real villain, real stakes'
+                        : 'Be the hero who saves the day!',
+                    isActive: wizardData.selectedScenario == 'superhero',
+                    onTap: () => onLaunchSuperhero!(),
+                    primaryColor: const Color(0xFFFFB300),
+                    secondaryColor: const Color(0xFFFF7043),
+                  ),
+                ],
               ],
             ),
           SizedBox(height: band.space(12)),

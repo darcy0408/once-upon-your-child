@@ -692,6 +692,8 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroCatchphrase,
+    String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
   }) async {
@@ -790,6 +792,8 @@ class ApiServiceManager {
           heroCapeStyle: heroCapeStyle,
           heroEmblem: heroEmblem,
           heroPower: heroPower,
+          heroCatchphrase: heroCatchphrase,
+          heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
         ),
@@ -1064,6 +1068,8 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroCatchphrase,
+    String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
   }) async {
@@ -1116,6 +1122,8 @@ class ApiServiceManager {
           heroCapeStyle: heroCapeStyle,
           heroEmblem: heroEmblem,
           heroPower: heroPower,
+          heroCatchphrase: heroCatchphrase,
+          heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
         );
@@ -1187,6 +1195,8 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroCatchphrase,
+    String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
   }) async {
@@ -1246,6 +1256,12 @@ class ApiServiceManager {
       if (heroCapeStyle != null) body['hero_cape_style'] = heroCapeStyle;
       if (heroEmblem != null) body['hero_emblem'] = heroEmblem;
       if (heroPower != null) body['hero_power'] = heroPower;
+      if (heroCatchphrase != null && heroCatchphrase.trim().isNotEmpty) {
+        body['hero_catchphrase'] = heroCatchphrase.trim();
+      }
+      if (heroNemesisId != null && heroNemesisId.trim().isNotEmpty) {
+        body['hero_nemesis_id'] = heroNemesisId.trim();
+      }
       if (recentVillains != null && recentVillains.isNotEmpty) {
         body['recent_villains'] = recentVillains;
       }

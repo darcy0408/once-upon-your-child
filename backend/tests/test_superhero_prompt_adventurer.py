@@ -56,6 +56,35 @@ def test_adventurer_prompt_includes_villain_name_and_problem_verb():
     assert "win over" in prompt
 
 
+def test_adventurer_prompt_honors_kid_chosen_nemesis():
+    """C4: the kid's chosen nemesis id drives the villain in the prompt.
+
+    story_tasks overrides the server-picked villain with the client's
+    hero_nemesis_id; this asserts the builder actually renders the chosen
+    villain (and that a different choice changes the output)."""
+    base = dict(
+        character="Ada",
+        age=10,
+        hero_costume_color="midnight",
+        hero_cape_style="rainbow",
+        hero_emblem="comet",
+        hero_power="strategist",
+        problem_id="earn_their_trust",
+    )
+    p1 = PromptService._build_superhero_prompt_adventurer(
+        villain_id="mirror_warden", **base
+    )
+    p2 = PromptService._build_superhero_prompt_adventurer(
+        villain_id="nightshade_botanist", **base
+    )
+    # All villain NAMES appear in the pinned roster, so assert on each villain's
+    # unique ACTION text — that only renders for the *active* (chosen) villain.
+    assert "reflections" in p1  # mirror_warden's action
+    assert "thorns" not in p1
+    assert "thorns" in p2  # nightshade_botanist's action
+    assert "reflections" not in p2
+
+
 # ---------------------------------------------------------------------------
 # Real-villain-with-a-motive — the Adventurer tone (Option 1).
 # ---------------------------------------------------------------------------

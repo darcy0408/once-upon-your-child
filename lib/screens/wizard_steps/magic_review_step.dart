@@ -479,6 +479,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             heroCapeStyle: requestData['heroCapeStyle']?.toString(),
             heroEmblem: requestData['heroEmblem']?.toString(),
             heroPower: requestData['heroPower']?.toString(),
+            heroCatchphrase: requestData['heroCatchphrase']?.toString(),
+            heroNemesisId: requestData['heroNemesisId']?.toString(),
             recentVillains: recentVillains,
             recentProblems: recentProblems,
             onProgress: (status) {

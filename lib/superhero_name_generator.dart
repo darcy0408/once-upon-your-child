@@ -286,6 +286,77 @@ class SuperheroNameGenerator {
   }
 }
 
+/// Reader register for the funny-name picker (B2). Sprout keeps its
+/// auto-generated formula name and never reaches this generator — only
+/// Explorer (6-8) and Adventurer (9-12) pick a "cool" funny name.
+enum HeroNameRegister { explorer, adventurer }
+
+/// Generates COOL, kid-safe superhero codenames for the Explorer/Adventurer
+/// funny-name picker (Chunk B2). These pools are intentionally separate from
+/// the therapeutic [SuperheroNameGenerator] archetype names ("Captain
+/// High-Five"), which read too young for 9-12s. Names here are playful but
+/// not cutesy ("The Quiet Storm", "Nightcircuit", "Sir Reacts-a-Lot").
+///
+/// Determinism: when an optional [Random] (seeded) is supplied the output is
+/// reproducible, which the sanity test relies on.
+class HeroFunnyNameGenerator {
+  static final Random _defaultRandom = Random();
+
+  // Explorer 6-8 — a touch cooler than the therapeutic pool, still warm and
+  // approachable. Wholesome, no scary/edgy connotations.
+  static const List<String> explorerNames = [
+    'Captain Can-Do',
+    'The Bright Spark',
+    'Major Marvel',
+    'Sir Bounce-a-Lot',
+    'The Kind Comet',
+    'Turbo Tucker',
+    'The Helpful Hurricane',
+    'Captain Curious',
+    'The Cheerful Charge',
+    'Doctor Dazzle',
+    'The Brave Beacon',
+    'Zippy Justice',
+  ];
+
+  // Adventurer 9-12 — genuinely cool codenames a tween wouldn't find babyish.
+  // Playful wordplay welcome; still wholesome and kid-safe (no violence).
+  static const List<String> adventurerNames = [
+    'The Quiet Storm',
+    'Nightcircuit',
+    'Sir Reacts-a-Lot',
+    'The Velvet Bolt',
+    'Echo Vanguard',
+    'The Last Word',
+    'Static Fox',
+    'Doctor Deadpan',
+    'The Calm Current',
+    'Riddlewing',
+    'The Unbothered',
+    'Captain Clutch',
+    'The Slow Clap',
+    'Midnight Reasonable',
+  ];
+
+  static List<String> _poolFor(HeroNameRegister register) =>
+      register == HeroNameRegister.adventurer ? adventurerNames : explorerNames;
+
+  /// Returns [count] DISTINCT funny names for the given [register]. If the
+  /// pool is smaller than [count] the whole (shuffled) pool is returned.
+  /// Pass a seeded [random] for reproducible output.
+  static List<String> pickNames(
+    HeroNameRegister register, {
+    int count = 3,
+    Random? random,
+  }) {
+    final rng = random ?? _defaultRandom;
+    final pool = List<String>.from(_poolFor(register));
+    pool.shuffle(rng);
+    final n = count < pool.length ? count : pool.length;
+    return pool.sublist(0, n);
+  }
+}
+
 class _SuperheroArchetype {
   final String id;
   final String focusArea;

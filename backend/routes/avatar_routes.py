@@ -458,6 +458,126 @@ def create_avatar_blueprint(limiter):
                 500,
             )
 
+    @avatar_bp.route("/transform-superhero", methods=["POST"])
+    @require_auth
+    @require_premium  # Re-rendering the avatar is an image-gen cost; paid feature.
+    @require_parental_consent
+    @limiter.limit(_tier_limit(free=0, premium=20))
+    def transform_superhero():
+        """Re-render an existing child avatar as a superhero portrait.
+
+        Expects multipart/form-data with:
+        - photo: the child's existing avatar image (PNG/JPEG/WebP/GIF)
+        - costume_color, cape_style, emblem, power: optional choice ids from the
+          Flutter superhero flow (superhero_costume_screen / superhero_power_screen).
+
+        Returns the same envelope shape as ``/generate-custom-avatar``:
+        ``{"status": "success", "avatar": {... "image_base64": "data:image/png;..."}}``.
+        """
+        try:
+            if "photo" not in request.files:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "MISSING_PHOTO",
+                            "message": "An existing avatar photo is required",
+                        }
+                    ),
+                    400,
+                )
+
+            photo_file = request.files["photo"]
+            _MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10 MB
+            photo_bytes = photo_file.read(_MAX_PHOTO_BYTES + 1)
+            if len(photo_bytes) > _MAX_PHOTO_BYTES:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "PHOTO_TOO_LARGE",
+                            "message": "Photo must be under 10 MB",
+                        }
+                    ),
+                    413,
+                )
+
+            if not _is_valid_image(photo_bytes):
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "INVALID_PHOTO",
+                            "message": "Uploaded file is not a valid image (PNG, JPEG, WebP or GIF)",
+                        }
+                    ),
+                    400,
+                )
+
+            costume_color = request.form.get("costume_color")
+            cape_style = request.form.get("cape_style")
+            emblem = request.form.get("emblem")
+            power = request.form.get("power")
+
+            logger.info(
+                "Superhero transform request: color=%s cape=%s emblem=%s power=%s",
+                costume_color,
+                cape_style,
+                emblem,
+                power,
+            )
+
+            service = get_avatar_service()
+            try:
+                portrait = _run_with_timeout(
+                    service.transform_to_superhero,
+                    photo_bytes,
+                    costume_color=costume_color,
+                    cape_style=cape_style,
+                    emblem=emblem,
+                    power=power,
+                )
+                return jsonify({"status": "success", "avatar": portrait}), 200
+
+            except concurrent.futures.TimeoutError:
+                logger.warning("Superhero transform timed out")
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "TIMEOUT",
+                            "message": get_error_message("timeout"),
+                        }
+                    ),
+                    504,
+                )
+
+            except Exception as e:
+                logger.error(f"Superhero transform failed: {e}")
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                        }
+                    ),
+                    500,
+                )
+
+        except Exception as e:
+            logger.exception(f"Unexpected error in transform_superhero endpoint: {e}")
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INTERNAL_ERROR",
+                        "message": "Something magical went wrong! Let's try again! ✨",
+                    }
+                ),
+                500,
+            )
+
     @avatar_bp.route("/generate-pet-avatar", methods=["POST"])
     @require_auth
     @require_premium  # M-8: photo->cartoon companion creation is a premium capability (image-gen cost)

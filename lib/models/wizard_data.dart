@@ -90,6 +90,15 @@ class WizardData {
   String? heroEmblem;       // 'star' | 'lightning' | 'heart' | 'moon' | 'paw' | 'rainbow'
   String? heroPower;        // one of 8 IDs: super_speed | flying | super_strength |
                             // super_hearing | super_smile | super_hugs | super_whisper | super_sharing
+  String? heroCatchphrase;  // optional signature line the hero says at the story
+                            // climax (Explorer 6-8 / Adventurer 9-12). Backend key:
+                            // hero_catchphrase. Absent = unchanged story behavior.
+  String? heroPortraitUrl;  // data URI of the AI superhero portrait built from the
+                            // child's avatar (Explorer/Adventurer). Null until the
+                            // reveal screen generates it; best-effort, never required.
+  String? heroNemesisId;    // C4: Adventurer-chosen arch-villain id (key in backend
+                            // ADVENTURER_VILLAINS). Null = let the server surprise-pick.
+                            // Backend key: hero_nemesis_id.
 
   // Creator band (12-14): optional reflection prompt from character creation
   String? characterDesire; // e.g. "What does your character want more than anything?"
@@ -148,6 +157,9 @@ class WizardData {
     c.heroCapeStyle = heroCapeStyle;
     c.heroEmblem = heroEmblem;
     c.heroPower = heroPower;
+    c.heroCatchphrase = heroCatchphrase;
+    c.heroPortraitUrl = heroPortraitUrl;
+    c.heroNemesisId = heroNemesisId;
     c.characterDesire = characterDesire;
     return c;
   }
@@ -220,6 +232,8 @@ class WizardData {
       'hero_cape_style': heroCapeStyle,
       'hero_emblem': heroEmblem,
       'hero_power': heroPower,
+      'hero_catchphrase': heroCatchphrase,
+      'hero_nemesis_id': heroNemesisId,
       'characterDesire': characterDesire,
     };
   }
@@ -301,6 +315,10 @@ class WizardData {
         (json['hero_cape_style'] ?? json['heroCapeStyle']) as String?;
     d.heroEmblem = (json['hero_emblem'] ?? json['heroEmblem']) as String?;
     d.heroPower = (json['hero_power'] ?? json['heroPower']) as String?;
+    d.heroCatchphrase =
+        (json['hero_catchphrase'] ?? json['heroCatchphrase']) as String?;
+    d.heroNemesisId =
+        (json['hero_nemesis_id'] ?? json['heroNemesisId']) as String?;
     d.characterDesire = json['characterDesire'] as String?;
     return d;
   }

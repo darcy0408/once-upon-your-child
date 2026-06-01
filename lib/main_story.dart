@@ -13,8 +13,11 @@ import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'screens/splash_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/wizard_story_screen.dart';
+import 'screens/wizard_steps/superhero_entry_screen.dart';
 import 'screens/parental_consent_screen.dart';
 import 'services/parental_consent_service.dart';
+import 'services/superhero_portrait_store.dart';
+import 'providers/hero_profile_provider.dart';
 
 import 'achievements_screen.dart' deferred as achievements_screen;
 import 'coloring_book_library_screen.dart';
@@ -839,6 +842,8 @@ class _StoryScreenState extends State<StoryScreen> {
                     const SizedBox(height: 16),
                   ],
                   _buildCharacterPortraitRow(),
+                  if (_selectedCharacter != null)
+                    _ContinueAsHeroChip(character: _selectedCharacter!),
                   const SizedBox(height: 40),
                   if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
                     Padding(
@@ -1783,5 +1788,159 @@ class _NewHeroCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ── Continue-as-hero chip (Superhero Mode D2) ──────────────────────────────
+//
+// A modest secondary affordance that appears beneath the character row ONLY
+// when the active child (a) is in the Explorer (6-8) or Adventurer (9-12)
+// band — the only bands with Superhero Mode — AND (b) has a saved superhero
+// portrait from a previous session. Tapping it re-enters the existing
+// superhero flow via [SuperheroEntryScreen], which routes returning kids to
+// the welcome-back screen.
+//
+// Fail-soft: any missing portrait/profile (or a non-superhero band) renders
+// nothing — the chip simply doesn't appear. Built as a small private widget
+// so it's trivial to remove if rejected in owner home-screen review.
+class _ContinueAsHeroChip extends ConsumerWidget {
+  final Character character;
+
+  const _ContinueAsHeroChip({required this.character});
+
+  /// Builds the minimal [WizardData] the superhero flow needs, mirroring the
+  /// fields [_launchQuickStory] sets so [SuperheroEntryScreen.resolveCharacterId]
+  /// derives the same storage key the portrait/profile was saved under.
+  WizardData _wizardDataFor(Character character) => WizardData()
+    ..characterId = character.id
+    ..characterName = character.name
+    ..characterGender = character.gender ?? 'Hero'
+    ..characterAge = character.age;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only Explorer (6-8) and Adventurer (9-12) have Superhero Mode.
+    final band = ageBandFromAge(character.age);
+    if (band != AgeBand.explorer && band != AgeBand.adventurer) {
+      return const SizedBox.shrink();
+    }
+
+    final wizardData = _wizardDataFor(character);
+    final characterId = SuperheroEntryScreen.resolveCharacterId(wizardData);
+
+    return FutureBuilder<String?>(
+      future: SuperheroPortraitStore.load(characterId),
+      builder: (context, portraitSnap) {
+        final portrait = portraitSnap.data;
+        // No saved portrait → no chip (also covers the still-loading frame,
+        // so nothing flashes in before we know there's a hero to continue).
+        if (portrait == null || portrait.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Prefer the saved hero name; fall back to a generic label so the
+        // chip still works if only the portrait persisted.
+        final profile = ref.watch(heroProfileProvider(characterId)).valueOrNull;
+        final heroName = (profile?.heroName ?? '').trim();
+        final label = heroName.isNotEmpty
+            ? 'Continue as $heroName'
+            : 'Continue as your superhero';
+
+        final bandTheme = Theme.of(context).extension<AgeBandThemeData>();
+        final accent = bandTheme?.primary ?? Colors.deepPurpleAccent;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(28),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(28),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SuperheroEntryScreen(wizardData: _wizardDataFor(character)),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 16, 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _HeroChipThumb(portrait: portrait, accent: accent),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          '🦸 $label',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.chevron_right,
+                          size: 20, color: Colors.white.withAlpha(180)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Small circular thumbnail of the saved superhero portrait (a data URI).
+/// Falls back to a hero glyph if the data URI can't be decoded.
+class _HeroChipThumb extends StatelessWidget {
+  final String portrait;
+  final Color accent;
+
+  const _HeroChipThumb({required this.portrait, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    const double size = 36;
+    Widget fallback() => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: accent.withValues(alpha: 0.35),
+          ),
+          alignment: Alignment.center,
+          child: const Text('🦸', style: TextStyle(fontSize: 18)),
+        );
+
+    final commaIdx = portrait.indexOf(',');
+    if (!portrait.startsWith('data:') || commaIdx < 0) {
+      return fallback();
+    }
+    try {
+      final bytes = base64Decode(portrait.substring(commaIdx + 1));
+      return ClipOval(
+        child: Image.memory(
+          bytes,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => fallback(),
+        ),
+      );
+    } catch (_) {
+      return fallback();
+    }
   }
 }

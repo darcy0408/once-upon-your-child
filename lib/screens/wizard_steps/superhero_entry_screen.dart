@@ -1,4 +1,4 @@
-// Superhero Mode (ages 3-5) — entry dispatcher.
+// Superhero Mode (Sprout 3-5, Explorer 6-8, Adventurer 9-12) — entry dispatcher.
 //
 // Reads the [heroProfileProvider] for the current character and renders
 // either the welcome-back screen (returning user) or the costume picker
@@ -42,9 +42,10 @@ class SuperheroEntryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final characterId = resolveCharacterId(wizardData);
     final async = ref.watch(heroProfileProvider(characterId));
-    // Derive band from the character's age. The Superhero flow is currently
-    // designed for sprout (3-5) and explorer (6-8); older bands fall through
-    // to whatever the helper returns but the screens default to sprout styling.
+    // Derive band from the character's age. The Superhero flow supports
+    // Sprout (3-5), Explorer (6-8), and Adventurer (9-12) — each with its own
+    // palette, copy register, power roster, and backend prompt tier. Creator+
+    // (12+) has no superhero tier yet and is not offered the entry button.
     final band = ageBandFromAge(wizardData.characterAge);
 
     return async.when(

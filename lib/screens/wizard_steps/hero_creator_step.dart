@@ -38,6 +38,7 @@ import '../../widgets/safe_asset_image.dart';
 import '../../services/parental_consent_service.dart';
 import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
+import 'superhero_entry_screen.dart';
 import 'hero_creator_creative_brief.dart';
 import '../life_quest_screen.dart';
 import '../../services/offline_story_service.dart';
@@ -472,6 +473,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// Advances out of the Hero Creator from the story-type page (Page 6).
   /// Idempotent: Sprout mode cards schedule a delayed call after each tap, so
   /// this may fire more than once — only the first crosses into the next step.
+  /// Launches the Superhero Mode flow directly from the story-type picker
+  /// (Explorer + Adventurer). Mirrors the entry inside [ImagineItScreen] so the
+  /// feature is reachable as a first-class story type, not buried under
+  /// "Imagine It". On success the superhero flow has already set
+  /// `selectedScenario = 'superhero'` + `customElements`, so we just sync the
+  /// wish field and advance the wizard.
+  Future<void> _launchSuperheroFromStoryType() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SuperheroEntryScreen(wizardData: widget.wizardData),
+      ),
+    );
+    if (!mounted || result != true) return;
+    _wishController.text = widget.wizardData.customElements;
+    setState(() {});
+    _advanceFromStoryType();
+  }
+
   void _advanceFromStoryType() {
     if (_storyTypeAdvancing || !mounted) return;
     _storyTypeAdvancing = true;
@@ -3310,6 +3329,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     onContinue: _advanceFromStoryType,
                     onToggleListening: _toggleListening,
                     onSpeakForSprout: _speakForSprout,
+                    onLaunchSuperhero: _launchSuperheroFromStoryType,
                     illustrationsEnabled: _isPremium,
                   ),
                 ],

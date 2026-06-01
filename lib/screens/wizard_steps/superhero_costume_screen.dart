@@ -1,4 +1,4 @@
-// Superhero Mode (ages 3-5) — 3-tap costume picker.
+// Superhero Mode (Sprout 3-5, Explorer 6-8, Adventurer 9-12) — 3-tap costume picker.
 //
 // Three sequential pages inside a single Scaffold (PageView controlled
 // programmatically): color → cape → emblem. Auto-advances on color tap;
@@ -8,6 +8,8 @@
 // Writes selections back to [WizardData.heroCostumeColor], heroCapeStyle,
 // heroEmblem. Does NOT save the HeroProfile yet — that happens after the
 // power picker completes (see [SuperheroPowerScreen]).
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,6 +50,23 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _ColorOption(id: 'purple', label: 'Purple', color: Color(0xFF8E24AA)),
     _ColorOption(id: 'pink', label: 'Pink', color: Color(0xFFEC407A)),
   ];
+
+  // C2: Adventurer (9-12) sees cooler "suit theme" names instead of plain color
+  // words — same color ids, just a less babyish label. Keyed by color id.
+  static const Map<String, String> _adventurerColorNames = {
+    'red': 'Inferno',
+    'blue': 'Frostbite',
+    'green': 'Venom',
+    'yellow': 'Voltage',
+    'purple': 'Nightshade',
+    'pink': 'Nova',
+  };
+
+  /// Display label for a costume color, band-aware (Adventurer gets suit themes).
+  String _colorLabel(_ColorOption c) =>
+      widget.band == AgeBand.adventurer
+          ? (_adventurerColorNames[c.id] ?? c.label)
+          : c.label;
 
   static const _capes = <_CapeOption>[
     _CapeOption(id: 'none', label: 'No cape', emoji: '🦸'),
@@ -107,6 +126,37 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     }
   }
 
+  /// "🎲 Surprise me!" — rolls a complete random costume (color + cape +
+  /// emblem) and jumps straight to the power picker with a random power
+  /// pre-selected, so a kid can mint a full hero in one tap. The power screen
+  /// shows a "surprise" banner and a reroll so it stays playful and editable.
+  void _surpriseMe() {
+    final rng = Random();
+    final color = _colors[rng.nextInt(_colors.length)];
+    final cape = _capes[rng.nextInt(_capes.length)];
+    final emblem = _emblems[rng.nextInt(_emblems.length)];
+    HapticFeedback.mediumImpact();
+    setState(() {
+      widget.wizardData.heroCostumeColor = color.id;
+      widget.wizardData.heroCapeStyle = cape.id;
+      widget.wizardData.heroEmblem = emblem.id;
+    });
+    Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (_) => SuperheroPowerScreen(
+          wizardData: widget.wizardData,
+          band: widget.band,
+          surprise: true,
+        ),
+      ),
+    ).then((result) {
+      if (!mounted) return;
+      if (result == true) {
+        Navigator.of(context).pop(true);
+      }
+    });
+  }
+
   Future<void> _selectAndAdvance(String snapshot) async {
     HapticFeedback.lightImpact();
     setState(() => _justSelectedSnapshot = snapshot);
@@ -151,7 +201,34 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           child: Column(
             children: [
               _ProgressDots(currentPage: _currentPage, total: 3),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+              // One-tap "build me a random hero" — high-replayability shortcut.
+              Semantics(
+                button: true,
+                label: 'Surprise me — build a random superhero',
+                child: TextButton.icon(
+                  onPressed: _surpriseMe,
+                  style: TextButton.styleFrom(
+                    foregroundColor: _gold,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: _gold.withAlpha(120), width: 1.5),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  ),
+                  icon: const Text('🎲', style: TextStyle(fontSize: 18)),
+                  label: Text(
+                    'Surprise me!',
+                    style: GoogleFonts.fredoka(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: _gold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -250,7 +327,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      c.label,
+                      _colorLabel(c),
                       style: GoogleFonts.fredoka(
                         color: Colors.white,
                         fontSize: 22,

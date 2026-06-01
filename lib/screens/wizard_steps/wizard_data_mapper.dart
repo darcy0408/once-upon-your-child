@@ -323,6 +323,15 @@ class WizardDataMapper {
         'heroCapeStyle': data.heroCapeStyle,
         'heroEmblem': data.heroEmblem,
         'heroPower': data.heroPower,
+        // B3 catchphrase — optional; only emitted when the kid picked one.
+        if (data.heroCatchphrase != null &&
+            data.heroCatchphrase!.trim().isNotEmpty)
+          'heroCatchphrase': data.heroCatchphrase!.trim(),
+        // C4 nemesis — optional; only emitted when the kid chose an arch-villain
+        // (null = server surprise-picks).
+        if (data.heroNemesisId != null &&
+            data.heroNemesisId!.trim().isNotEmpty)
+          'heroNemesisId': data.heroNemesisId!.trim(),
       },
     };
   }

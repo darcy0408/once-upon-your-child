@@ -645,6 +645,56 @@ Maintain the character's facial features while converting them into the target a
 
         return None
 
+    def transform_to_superhero(
+        self,
+        photo_bytes: bytes,
+        *,
+        costume_color: Optional[str] = None,
+        cape_style: Optional[str] = None,
+        emblem: Optional[str] = None,
+        power: Optional[str] = None,
+    ) -> dict:
+        """Re-render an existing child avatar as a superhero portrait.
+
+        Uses the kid's already-generated avatar as the reference image plus the
+        costume/power chosen in the Flutter superhero flow. Returns the same
+        response shape as :meth:`generate_custom_avatar` so the client can treat
+        it identically. Raises if no generator is configured or no image is
+        produced.
+        """
+        if self.image_generator is None:
+            raise Exception(
+                "Superhero portrait generation is not configured. "
+                "Set GEMINI_API_KEY on the backend."
+            )
+
+        mime_type = self._detect_image_mime_type(photo_bytes)
+        results = self.image_generator.transform_to_superhero(
+            photo_bytes,
+            costume_color=costume_color,
+            cape_style=cape_style,
+            emblem=emblem,
+            power=power,
+            mime_type=mime_type,
+        )
+        image_base64 = self._extract_base64_from_results(results)
+        if not image_base64:
+            raise Exception("No image generated for superhero portrait")
+
+        return {
+            "id": str(uuid.uuid4()),
+            "image_base64": f"data:image/png;base64,{image_base64}",
+            "style": "pixar-superhero",
+            "attributes": {
+                "costume_color": costume_color,
+                "cape_style": cape_style,
+                "emblem": emblem,
+                "power": power,
+            },
+            "generated_at": datetime.now().isoformat(),
+            "version": 1,
+        }
+
     def _build_pet_avatar_response(
         self,
         *,

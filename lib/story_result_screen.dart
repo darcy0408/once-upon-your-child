@@ -908,13 +908,24 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     final distinguishing = real(attrs['distinguishing']);
     final gender = real(attrs['gender']);
 
+    // Superhero Mode: when the hero portrait is the likeness reference (see
+    // `_resolveAvatarReferenceBase64`), the reference already depicts the child
+    // in their hero costume. Suppress the plain-clothes `outfit` text field so
+    // the prompt doesn't tell the model "wearing <everyday outfit>" and fight
+    // the costume in the reference image. Everything else (hair/eyes/skin/etc.)
+    // still describes the same child and is kept.
+    final usingHeroPortrait = widget.wizardData?.selectedScenario ==
+            'superhero' &&
+        (widget.wizardData?.heroPortraitUrl?.trim().isNotEmpty ?? false);
+    final outfitForPayload = usingHeroPortrait ? null : outfit;
+
     final payload = <String, dynamic>{
       if (name != null) 'character_name': name,
       if (hairStyle != null) 'hair_style': hairStyle,
       if (hairColor != null) 'hair_color': hairColor,
       if (eyeColor != null) 'eye_color': eyeColor,
       if (skinTone != null) 'skin_tone': skinTone,
-      if (outfit != null) 'outfit': outfit,
+      if (outfitForPayload != null) 'outfit': outfitForPayload,
       if (distinguishing != null) 'distinguishing': distinguishing,
       if (gender != null) 'gender': gender,
     };
@@ -943,6 +954,21 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// leaving the illustration model to render a generic child. Fetch/load
   /// non-base64 forms here so the reference always arrives as base64.
   Future<String?> _resolveAvatarReferenceBase64() async {
+    // Superhero Mode: when the reveal screen has already generated a portrait of
+    // the child AS their superhero, use THAT as the illustration likeness
+    // reference instead of the plain avatar — so the story pictures depict the
+    // child in their hero costume. Opt-in by data: only when the scenario is
+    // 'superhero' and a portrait actually exists. `heroPortraitUrl` is a
+    // `data:image/...;base64,` URI, which the backend's `custom_avatar_base64`
+    // path decodes directly (the existing base64 branch below handles it).
+    final wizard = widget.wizardData;
+    if (wizard?.selectedScenario == 'superhero') {
+      final portrait = wizard?.heroPortraitUrl?.trim();
+      if (portrait != null && portrait.isNotEmpty) {
+        return portrait;
+      }
+    }
+
     // MT-129: same fallback as `_characterAppearanceForBackend` — the avatar
     // may live only on the live wizard data when the character is unsaved.
     final generatedAvatar =

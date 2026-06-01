@@ -101,12 +101,98 @@ void main() {
       expect(json['hero_cape_style'], isNull);
       expect(json['hero_emblem'], isNull);
       expect(json['hero_power'], isNull);
+      expect(json['hero_catchphrase'], isNull);
 
       final restored = WizardData.fromJson(json);
       expect(restored.heroCostumeColor, isNull);
       expect(restored.heroCapeStyle, isNull);
       expect(restored.heroEmblem, isNull);
       expect(restored.heroPower, isNull);
+      expect(restored.heroCatchphrase, isNull);
+    });
+  });
+
+  group('WizardData heroCatchphrase (B3)', () {
+    test('toJson emits snake_case hero_catchphrase', () {
+      final d = WizardData()
+        ..characterName = 'Maya'
+        ..heroPower = 'strategist'
+        ..heroCatchphrase = 'Never miss a beat!';
+
+      expect(d.toJson()['hero_catchphrase'], 'Never miss a beat!');
+    });
+
+    test('fromJson restores hero_catchphrase (snake_case)', () {
+      final d = WizardData.fromJson(<String, dynamic>{
+        'name': 'Maya',
+        'hero_power': 'strategist',
+        'hero_catchphrase': 'Stay sharp!',
+      });
+      expect(d.heroCatchphrase, 'Stay sharp!');
+    });
+
+    test('fromJson falls back to legacy camelCase heroCatchphrase', () {
+      final d = WizardData.fromJson(<String, dynamic>{
+        'name': 'Maya',
+        'heroCatchphrase': 'In through the nose, out through the cape!',
+      });
+      expect(d.heroCatchphrase, 'In through the nose, out through the cape!');
+    });
+
+    test('toJson then fromJson round-trips heroCatchphrase', () {
+      final original = WizardData()
+        ..characterName = 'Leo'
+        ..heroPower = 'gadgeteer'
+        ..heroCatchphrase = 'Time to improvise.';
+
+      final restored = WizardData.fromJson(original.toJson());
+      expect(restored.heroCatchphrase, 'Time to improvise.');
+    });
+
+    test('clone() preserves heroCatchphrase and is independent', () {
+      final original = WizardData()..heroCatchphrase = 'Calm wins.';
+      final copy = original.clone();
+
+      expect(copy.heroCatchphrase, 'Calm wins.');
+
+      copy.heroCatchphrase = 'Different line.';
+      expect(original.heroCatchphrase, 'Calm wins.');
+    });
+  });
+
+  group('WizardData heroNemesisId (C4)', () {
+    test('toJson emits snake_case hero_nemesis_id', () {
+      final d = WizardData()..heroNemesisId = 'mirror_warden';
+      expect(d.toJson()['hero_nemesis_id'], 'mirror_warden');
+    });
+
+    test('fromJson restores hero_nemesis_id (snake_case)', () {
+      final d = WizardData.fromJson({'hero_nemesis_id': 'ember_fox'});
+      expect(d.heroNemesisId, 'ember_fox');
+    });
+
+    test('fromJson falls back to legacy camelCase heroNemesisId', () {
+      final d = WizardData.fromJson({'heroNemesisId': 'the_collector'});
+      expect(d.heroNemesisId, 'the_collector');
+    });
+
+    test('toJson then fromJson round-trips heroNemesisId', () {
+      final original = WizardData()..heroNemesisId = 'the_gatekeeper';
+      final restored = WizardData.fromJson(original.toJson());
+      expect(restored.heroNemesisId, 'the_gatekeeper');
+    });
+
+    test('clone() preserves heroNemesisId and is independent', () {
+      final original = WizardData()..heroNemesisId = 'static_wraith';
+      final copy = original.clone();
+      expect(copy.heroNemesisId, 'static_wraith');
+      copy.heroNemesisId = 'tide_caller';
+      expect(original.heroNemesisId, 'static_wraith');
+    });
+
+    test('heroNemesisId defaults to null (server surprise-picks)', () {
+      expect(WizardData().heroNemesisId, isNull);
+      expect(WizardData().toJson()['hero_nemesis_id'], isNull);
     });
   });
 }

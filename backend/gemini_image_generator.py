@@ -71,6 +71,92 @@ _POWER_VISUAL_OVERRIDES: dict[str, str] = {
     ),
 }
 
+# Human-readable descriptors for the costume choices captured by the Flutter
+# superhero flow (lib/screens/wizard_steps/superhero_costume_screen.dart +
+# superhero_power_screen.dart). Used to build the avatar→superhero transform
+# prompt. Keys must stay aligned with the option ids in those screens.
+_SUPERHERO_COLOR_NAMES: dict[str, str] = {
+    "red": "bold red",
+    "blue": "bright blue",
+    "green": "vivid green",
+    "yellow": "sunny yellow",
+    "purple": "royal purple",
+    "pink": "vibrant pink",
+}
+
+_SUPERHERO_CAPE_DESC: dict[str, str] = {
+    "none": "no cape",
+    "matching": "a flowing cape that matches the suit color",
+    "rainbow": "a flowing rainbow-striped cape",
+}
+
+_SUPERHERO_EMBLEM_DESC: dict[str, str] = {
+    "star": "a five-pointed star",
+    "lightning": "a lightning bolt",
+    "heart": "a heart",
+    "moon": "a crescent moon",
+    "paw": "a paw print",
+    "rainbow": "a rainbow arc",
+    "bolt": "a trident bolt",
+    "comet": "a streaking comet",
+}
+
+# Action posture per power for powers without a full visual signature override.
+_SUPERHERO_POWER_POSE: dict[str, str] = {
+    "super_speed": "in a dynamic running pose with motion streaks",
+    "flying": "soaring upward in a heroic flying pose, cape billowing",
+    "super_strength": "in a confident strong stance, fists ready",
+    "super_hearing": "alert and listening, head tilted attentively",
+    "super_smile": "beaming a big warm confident smile",
+    "super_hugs": "arms open in a warm welcoming pose",
+    "super_whisper": "calm and reassuring, one finger to lips gently",
+    "super_sharing": "offering an open friendly hand",
+    "strategist": "thoughtful and poised, surveying the scene cleverly",
+    "gadgeteer": "holding a clever hand-built gadget, ready to use it",
+}
+
+
+def build_superhero_transform_prompt(
+    *,
+    costume_color: str | None = None,
+    cape_style: str | None = None,
+    emblem: str | None = None,
+    power: str | None = None,
+) -> str:
+    """Build the avatar→superhero transform prompt from costume/power choices.
+
+    Pure function (no I/O) so it is cheap to unit test. Preserves the child's
+    facial likeness, enforces a non-photorealistic Pixar style, and adds only
+    the chosen costume + a power-appropriate action pose. Unknown/None ids are
+    skipped gracefully so partial selections still produce a valid prompt.
+    """
+    color_desc = _SUPERHERO_COLOR_NAMES.get(costume_color or "", "a bright")
+    cape_desc = _SUPERHERO_CAPE_DESC.get(cape_style or "", "a flowing cape")
+    emblem_desc = _SUPERHERO_EMBLEM_DESC.get(emblem or "")
+    pose_desc = _SUPERHERO_POWER_POSE.get(power or "", "in a confident hero pose")
+
+    chest = f" with {emblem_desc} emblem on the chest" if emblem_desc else ""
+
+    parts = [
+        "This is a Pixar-style storybook character illustration of a child. ",
+        "Keep the child's FACE, hair, skin tone, and likeness EXACTLY the same — ",
+        "do not change their identity. ",
+        "Re-dress them as a friendly, kid-appropriate superhero: ",
+        f"a {color_desc} superhero suit{chest}, and {cape_desc}. ",
+        f"Pose the hero {pose_desc}. ",
+        "Comic-book lighting, bright heroic colors, non-photorealistic, ",
+        "clearly a cartoon character, square format. ",
+        "Wholesome and non-violent — no weapons, no scary or aggressive content. ",
+    ]
+
+    # Layer on a full visual signature for powers that define one (empathy
+    # halo, invisibility shimmer, etc.).
+    override = _POWER_VISUAL_OVERRIDES.get(power or "")
+    if override:
+        parts.append(override)
+
+    return "".join(parts)
+
 
 def _power_visual_block(power_id: str | None) -> str:
     if not power_id:
@@ -898,6 +984,63 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
 
         except Exception as e:
             logger.exception(f"Error tweaking gallery avatar with Gemini: {e}")
+            return []
+
+    def transform_to_superhero(
+        self,
+        image_bytes: bytes,
+        *,
+        costume_color: str | None = None,
+        cape_style: str | None = None,
+        emblem: str | None = None,
+        power: str | None = None,
+        mime_type: str = "image/webp",
+    ) -> list:
+        """Re-render an existing character avatar as a superhero portrait.
+
+        Takes the child's already-generated avatar as a reference and adds the
+        chosen costume (color + cape + emblem) and a power-themed action pose,
+        while preserving face/hair/skin likeness. Child-safe, non-photorealistic.
+        Mirrors :meth:`tweak_gallery_avatar`'s call shape.
+        """
+        if not self._client:
+            logger.warning(
+                "Gemini image generator unavailable; skipping superhero transform"
+            )
+            return []
+
+        prompt = build_superhero_transform_prompt(
+            costume_color=costume_color,
+            cape_style=cape_style,
+            emblem=emblem,
+            power=power,
+        )
+
+        try:
+            from google.genai import types
+
+            logger.info("Transforming avatar to superhero portrait")
+
+            contents = [
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                prompt,
+            ]
+
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                    safety_settings=_CHILD_IMAGE_SAFETY_SETTINGS,
+                ),
+            )
+
+            images = self._process_image_response(response, prompt)
+            logger.info(f"Superhero transform returned {len(images)} image(s)")
+            return images
+
+        except Exception as e:
+            logger.exception(f"Error transforming avatar to superhero: {e}")
             return []
 
     def generate_character_avatar(

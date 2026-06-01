@@ -33,6 +33,7 @@ class PromptService:
         hero_cape_style: str | None = None,
         hero_emblem: str | None = None,
         hero_power: str | None = None,
+        hero_catchphrase: str | None = None,
         superhero_villain_id: str | None = None,
         superhero_problem_id: str | None = None,
     ) -> str:
@@ -63,6 +64,7 @@ class PromptService:
                     hero_cape_style=hero_cape_style,
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
+                    hero_catchphrase=hero_catchphrase,
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                 )
@@ -74,6 +76,7 @@ class PromptService:
                     hero_cape_style=hero_cape_style,
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
+                    hero_catchphrase=hero_catchphrase,
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                 )
@@ -483,6 +486,7 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         hero_power: str | None,
         villain_id: str | None,
         problem_id: str | None,
+        hero_catchphrase: str | None = None,
     ) -> str:
         """Build the 5-paragraph Superhero Mode prompt for Explorer-band readers.
 
@@ -531,6 +535,21 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
 
         identity_tag = f"{power_name} {character}"
 
+        # --- Optional hero catchphrase (B3) — back-compat: absent = no-op. ---
+        catchphrase = (hero_catchphrase or "").strip()
+        catchphrase_identity_line = (
+            f'\n- Catchphrase: "{catchphrase}" (the hero\'s signature line)'
+            if catchphrase
+            else ""
+        )
+        catchphrase_rule = (
+            f'\n- The hero MUST say their catchphrase "{catchphrase}" out loud '
+            f"at the story's climax (the POWER MOMENT or the resolution), in "
+            f"quotation marks, word-for-word."
+            if catchphrase
+            else ""
+        )
+
         # --- Canonical Explorer villain roster (must be named explicitly) ---
         # The model MUST embody the conflict in one of these eight villains
         # rather than inventing an abstract puzzle/landscape antagonist.
@@ -570,7 +589,7 @@ HERO IDENTITY (use the hero's name at least THREE times and the identity tag at 
 - Hero name: {character}
 - Identity tag: "{identity_tag}"
 - Costume: {color} suit with {cape_phrase} and a {emblem} emblem
-- Signature power: {power_name} ({power_verb})
+- Signature power: {power_name} ({power_verb}){catchphrase_identity_line}
 
 VILLAIN — the antagonist MUST be one of these named Explorer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and use them as the embodied source of conflict.
 - Name: {villain['name']} (use this exact name in the prose)
@@ -599,7 +618,7 @@ HARD RULES — these are non-negotiable:
 - Use the identity tag "{identity_tag}" AT LEAST TWICE.
 - Include ONE repeated rhythmic phrase in paragraph 2 (a refrain, sound, or short repeated line for the early reader to notice).
 - Include at least TWO sensory details (sight, sound, OR touch) in paragraph 1.
-- The hero MUST speak ONE line of dialogue at the resolution.
+- The hero MUST speak ONE line of dialogue at the resolution.{catchphrase_rule}
 - The villain is mischievous, lonely, or misunderstood — NEVER evil, NEVER frightening.
 - The antagonist MUST be the named villain {villain['name']} — do NOT substitute an abstract place, weather, riddle, puzzle, or mountain for the villain. The villain must appear AS A CHARACTER in the story.
 - NO weapons. NO fighting. NO scary or dark content. NO chasing, biting, or threats.
@@ -656,6 +675,7 @@ Begin now. Stop at 350 words across all pages combined.
         hero_power: str | None,
         villain_id: str | None,
         problem_id: str | None,
+        hero_catchphrase: str | None = None,
     ) -> str:
         """Build the 6-scene Superhero Mode prompt for Adventurer-band readers.
 
@@ -703,6 +723,21 @@ Begin now. Stop at 350 words across all pages combined.
 
         identity_tag = f"{power_name} {character}"
 
+        # --- Optional hero catchphrase (B3) — back-compat: absent = no-op. ---
+        catchphrase = (hero_catchphrase or "").strip()
+        catchphrase_identity_line = (
+            f'\n- Catchphrase: "{catchphrase}" (the hero\'s signature line)'
+            if catchphrase
+            else ""
+        )
+        catchphrase_rule = (
+            f'\n- The hero MUST say their catchphrase "{catchphrase}" out loud '
+            f"at the story's climax (the CLEVER POWER MOMENT or the resolution), "
+            f"in quotation marks, word-for-word."
+            if catchphrase
+            else ""
+        )
+
         # --- Canonical Adventurer villain roster (must be named explicitly) ---
         # MT-121 guard: pin the antagonist to a real named character so the
         # model can't drift into an abstract puzzle/landscape "villain".
@@ -744,7 +779,7 @@ HERO IDENTITY (use the hero's name at least FOUR times and the identity tag at l
 - Hero name: {character}
 - Identity tag: "{identity_tag}"
 - Costume: {color} suit with {cape_phrase} and a {emblem} emblem
-- Signature power: {power_name} ({power_verb}) — give the power a real LIMIT or COST so victory takes cleverness, not just raw power.
+- Signature power: {power_name} ({power_verb}) — give the power a real LIMIT or COST so victory takes cleverness, not just raw power.{catchphrase_identity_line}
 
 VILLAIN — the antagonist MUST be one of these named Adventurer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and make them the embodied source of conflict.
 - Name: {villain['name']} (use this exact name in the prose)
@@ -771,7 +806,7 @@ HARD RULES — these are non-negotiable:
 - READING LEVEL: Grade 3-4. Use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue.
 - SENTENCES: 12-20 words on average; mix compound and complex sentences with shorter punchy ones for rhythm.
 - Use the hero's name {character} AT LEAST FOUR times and the identity tag "{identity_tag}" AT LEAST THREE times.
-- The hero MUST speak at least TWO or THREE lines of dialogue (in quotation marks) across the story, including one that shows they understand {villain['name']}.
+- The hero MUST speak at least TWO or THREE lines of dialogue (in quotation marks) across the story, including one that shows they understand {villain['name']}.{catchphrase_rule}
 - The villain {villain['name']} MUST have a believable motive that the story reveals. Show competing feelings in the hero (e.g. determined AND uncertain).
 - The antagonist MUST be the named villain {villain['name']} — never an abstract place, weather, riddle, or puzzle.
 - NO weapons. NO fighting. NO violence, gore, or threats of harm. NO killing or defeating the villain by force. NO scary or graphic content.
