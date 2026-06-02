@@ -1,0 +1,26 @@
+Step,User Action,Friction Score,Likely Drop-Off % (Projected),Heuristic Violations,Remediation
+Splash,App opens and watches 4s animation,2,3%,A-04,Tap-to-skip; shorten for returning users
+Teaser / Welcome,Taps "Let's start!",1,5%,-,Strong single-CTA teaser; keep
+Name capture,Types or says the hero name,2,8%,A-07;W-10,Add post-consent reassurance line; enlarge mic to 48dp
+Age gate,Taps the child's age,2,6%,A-02;A-08,Split 12-14 bucket at 13; add parent-zone visual signal
+Parental consent (under-13),Math gate + scroll + checkbox + email,4,30-40%,A-01;A-03;A-05;A-06,Re-enable verifiable email consent; fix scroll-gate edge cases; strengthen gate; optimize non-legal copy only (keep COPPA strength)
+13-17 attestation,Taps "Got it",1,3%,A-12,Optional: convert to attestation checkbox
+Wizard: Hero name + look,Names hero and picks gender/look,2,6-10%,W-01;W-02,Show intra-Hero sub-progress; enlarge mic; lengthen Sprout undo beat
+Wizard: Build + Archetype,Photo/gallery then picks archetype,3,8-12%,W-01;W-12,Add "Step 1: Hero" sub-progress signal
+Wizard: Adventure Team,Adds companions/pets/grown-ups,4,15-22%,W-04;W-06;W-16,Progressive disclosure of real-person adders; isolate "Add a Grown-up"; single go-solo control
+Wizard: Scene,Picks a place or "Imagine It",2,6-10%,W-13;W-10,Simplify copy; verify Imagine-It icons hit 48dp
+Wizard: Story Type,Picks mode + genre + personality,4,12-18%,W-05;W-13,Hide genre/personality twists behind "Add a twist?"; simplify copy
+Wizard: Review & Launch,Confirms choices and taps GO,2,4-8%,W-09;W-11,Make recap rows obviously editable; split consent error into child + parent copy
+Generation loading,Waits for AI and plays sparkle game,3,12-20% (slow networks),D-01;D-02;D-04,Drive progress from real backend status; add upfront time estimate; always-on Cancel
+Story display / reader,Reads story and turns pages,2,5-8%,D-06;D-07;D-08,One-time turn coach-mark; instant-text toggle; raise label contrast to AA
+Interactive (pick-a-path),Picks branch choices,3,10-15%,D-13;D-15;D-03,Inline "thinking" shimmer; friendly errors; cap parent input length
+Save / library,Saves story and returns to library,3,8-12%,D-10;D-11;D-14,Unify persistence stores; separate Save from Favorite; add resume banner
+Empty state / first-run,Lands on an empty library,4,25-35%,D-09,Add primary "Create your first story" CTA to empty states
+Generation error recovery,Hits an error mid-generation,4,30-40% of error-hitters,D-03;D-04,Route all errors through friendly dialog; never show raw $e; add saved-story fallback
+Reach parent / settings area,Solves the math gate,3,25%,P-07;P-09,Unify the two parent entry screens; standardize one stronger gate
+Paywall view,Sees an upgrade prompt,2,15%,P-03;P-10,Consistent dismissible paywalls; instrument paywall_viewed
+Plan selection,Compares subscription tiers,4,40%,P-01;P-06;P-15,Single pricing source of truth; remove example screen; show renewal terms
+Checkout,Taps subscribe and pays,3,50% (cold-paywall baseline),P-02,Add billed-amount confirmation; instrument checkout_started + purchase
+Purchase success,Sees confirmation,2,5%,P-11,Await sync with spinner; handle failure path
+BYOK alternative,Creates Google key and pastes it,3,45%,P-04;P-12;P-13,Reduce friction; fix double-validate persistence; consistent cost disclosure
+Subscription management,Cancels or changes plan,5,n/a (churn/support risk),P-05;P-06,Route "Manage Subscription" to real management screen; wire upgrade stub

@@ -265,7 +265,8 @@ class PaywallDialog {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '🌟 Family Plan — \$9.99/month',
+                    // Price source of truth: TierPricing.familyTier (subscription_models.dart)
+                    '🌟 Family Plan — \$19.99/month',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 8),
@@ -298,7 +299,8 @@ class PaywallDialog {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Premium — \$4.99/mo · 3 characters · 10 stories/day',
+                      // Price source of truth: TierPricing.premiumTier (subscription_models.dart)
+                      'Premium — \$9.99/mo · 3 characters · 10 stories/day',
                       style: TextStyle(fontSize: 13),
                     ),
                   ),

@@ -152,12 +152,19 @@ jobs:
         uses: actions/cache@v5
         with:
           path: build
-          key: ${{ runner.os }}-flutter-build-${{ hashFiles('**/*.dart', '**/pubspec.yaml', '**/pubspec.lock') }}
+          # `prodflavor` suffix busts the cache once so the FLAVOR=production
+          # dart-define below actually takes effect (Flutter's incremental build
+          # doesn't reliably detect dart-define changes). Bump if defines change.
+          key: ${{ runner.os }}-flutter-build-prodflavor-${{ hashFiles('**/*.dart', '**/pubspec.yaml', '**/pubspec.lock') }}
           restore-keys: |
-            ${{ runner.os }}-flutter-build-
+            ${{ runner.os }}-flutter-build-prodflavor-
 
       - name: Build web release
-        run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true
+        # FLAVOR=production is REQUIRED: without it FlavorConfig defaults to the
+        # development flavor whose backend is http://127.0.0.1:5000, so every
+        # backend call (incl. story generation) hits the user's localhost and
+        # fails. Mirror the Railway Dockerfile.frontend defines. (MT-204)
+        run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

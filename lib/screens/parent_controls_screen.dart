@@ -18,9 +18,9 @@ import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../services/screen_time_service.dart';
 import '../settings_screen.dart';
-import '../subscription_screen.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
+import 'subscription_management_screen.dart';
 import 'wizard_story_screen.dart';
 
 class ParentControlsScreen extends StatefulWidget {
@@ -621,7 +621,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => const SubscriptionScreen(),
+                                  builder: (_) =>
+                                      const SubscriptionManagementScreen(),
                                   fullscreenDialog: true,
                                 ),
                               );

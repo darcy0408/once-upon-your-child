@@ -240,9 +240,10 @@ class UpgradePromptDialog extends StatelessWidget {
           _tierRow(
             context,
             'Price',
+            // Prices source of truth: TierPricing (subscription_models.dart)
             '\$0',
-            '\$4.99/mo',
             '\$9.99/mo',
+            '\$19.99/mo',
           ),
         ],
       ),

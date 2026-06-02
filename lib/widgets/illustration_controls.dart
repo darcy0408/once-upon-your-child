@@ -152,7 +152,7 @@ class IllustrationControls extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _upgradeButton(context, 'Family\n\$14.99/mo', 'family'),
+                child: _upgradeButton(context, 'Family\n\$19.99/mo', 'family'),
               ),
             ],
           ),
