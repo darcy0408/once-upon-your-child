@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-01 | 18:02 | 4c8f | main (PR #181) | Finished Superhero Chunk C (C2/C4) + merged PR #181 + worktree cleanup | [link](docs/sessions/2026-06-01-1802-4c8f.md) |
 | 2026-05-31 | 22:33 | 1eea | feat/superhero-mode-improvements | Superhero Mode overhaul + avatar→hero portrait → PR #181 | [link](docs/sessions/2026-05-31-2233-1eea.md) |
 | 2026-05-31 | 22:40 | f3f4 | main | Cleared Adventurer queue (5 PRs) + #179 CSP prod fix + multi-agent worktree setup | [link](docs/sessions/2026-05-31-2240-f3f4.md) |
 | 2026-05-31 | 14:39 | e178 | main | Cloudflare architecture orientation + memory fix | [link](docs/sessions/2026-05-31-1439-e178.md) |
