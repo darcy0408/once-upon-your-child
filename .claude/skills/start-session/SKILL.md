@@ -41,6 +41,16 @@ Format the briefing as a concise, scannable summary. Keep it short and action-or
 
 **Suggested Focus:** [Based on what's unfinished and what seems highest-priority, suggest 1-2 things to tackle. Frame these as options, not commands — Darcy makes the call.]
 
+### 4. Isolate this session before editing code
+
+Darcy runs ~10 concurrent sessions in one checkout (`C:\dev\story-weaver-app`), sharing a single git index/HEAD/branch/working tree — the cause of repeated commit-contamination, `reset --hard` wipes, and branch-flip incidents. **Before making any code or doc edits**, offer to set up an isolated worktree:
+
+```powershell
+.\scripts\new-worktree.ps1 -Name <short-label>   # e.g. -Name pricing
+```
+
+Creates a sibling worktree `C:\dev\sw-<label>` on `session/<label>` cut from `origin/main`. Edit there (absolute paths), run git from the main root via `git -C C:\dev\sw-<label> ...` (never `cd` in for git), integrate via PR. Full protocol: `docs/WORKTREE_WORKFLOW.md`. Skip only for a pure read-only briefing; treat as mandatory if the git state shows another session's in-flight work.
+
 ### Guidelines
 
 - Be concise. The whole briefing should fit in one screenful.

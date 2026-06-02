@@ -77,6 +77,23 @@ Format (one screenful, bold the key facts):
 
 ---
 
+## Step 5 — Isolate this session before editing code
+
+Darcy runs ~10 simultaneous instances in ONE checkout (`C:\dev\story-weaver-app`), which share a single git index/HEAD/branch/working tree. That sharing causes recurring incidents: `git add`+commit sweeping up another session's files, `reset --hard` wiping uncommitted edits, `checkout` flipping the branch under a session, and a foreign merge blocking commits. The fix is one worktree per session.
+
+**Before making ANY code or doc edits this session**, offer to set up an isolated worktree:
+
+```powershell
+.\scripts\new-worktree.ps1 -Name <short-label>   # e.g. -Name pricing
+```
+
+This creates a sibling worktree `C:\dev\sw-<label>` on branch `session/<label>` cut from `origin/main`, with its own index/HEAD. Then edit there (absolute paths), run git from the **main root** via `git -C C:\dev\sw-<label> ...` (never `cd` in for git — it breaks the git-guard hook), and integrate via PR. Full protocol + gotchas: `docs/WORKTREE_WORKFLOW.md`.
+
+- **Skip only for a pure read-only/briefing session** with no edits planned.
+- **Treat as mandatory** if Step 1's `git status`/`git branch` or Step 3's contention check shows another session's in-flight work (foreign staged files, unexpected branch, or a merge in progress).
+
+---
+
 ## Important Rules
 
 - Don't read the whole `TEAM_COORDINATION.md` — only the Recent Sessions table and Pending Tasks table near the top. Old SESSION CLOSE blocks below are historical, not current.
