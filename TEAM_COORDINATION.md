@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-01 | 22:03 | 6b74 | main | Fixed broken main (Flutter compile #189) + CI analyze gate (#204) | [link](docs/sessions/2026-06-01-2203-6b74.md) |
 | 2026-06-01 | 22:03 | 4825 | main | Merged git-guard hook (#183) + closed redundant deploy PR (#180) + removed csp-fix worktree | [link](docs/sessions/2026-06-01-2203-4825.md) |
 | 2026-06-01 | 21:35 | 0d6c | main | Worktree-per-session tooling + start-session (PR #191) | [link](docs/sessions/2026-06-01-2135-0d6c.md) |
 | 2026-06-01 | 18:18 | 87b2 | main | Audit 09 Criticals: pricing + MT-204 Pages flavor fix + COPPA gates; merged #186 | [link](docs/sessions/2026-06-01-1818-87b2.md) |
