@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-02 | 13:27 | a7e6 | main | GIT_MAINTENANCE: branch cleanup 13→6, rescued 4cd2 record, discarded pubspec.lock churn | [link](docs/sessions/2026-06-02-1327-a7e6.md) |
 | 2026-05-31 | 14:18 | 4cd2 | main | Greened main CI (#177) + removed redundant deploy workflow (#178) + Railway prod triage | [link](docs/sessions/2026-05-31-1418-4cd2.md) |
 | 2026-06-01 | 22:03 | 6b74 | main | Fixed broken main (Flutter compile #189) + CI analyze gate (#204) | [link](docs/sessions/2026-06-01-2203-6b74.md) |
 | 2026-06-01 | 22:03 | 4825 | main | Merged git-guard hook (#183) + closed redundant deploy PR (#180) + removed csp-fix worktree | [link](docs/sessions/2026-06-01-2203-4825.md) |
