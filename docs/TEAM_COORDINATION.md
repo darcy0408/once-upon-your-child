@@ -2,6 +2,12 @@
 
 ---
 
+## Session Update — 2026-06-01 18:16 [bd35] (PERF-01 + PERF-04 finished end-to-end)
+
+Closed out Audit 07 performance items **PERF-01** and **PERF-04** on two feature branches (NOT yet merged — see MT-216). **PERF-01:** the wizard loading indicator now advances on real streamed-text length instead of a blind 3.1s timer; the pre-moderation `partial_text` is never rendered to a child ("Option 1: honest progress, no text" — deliberately did NOT show partial story text given the moderation ordering). **PERF-04:** the story-text Celery task now honors cancellation (`is_cancelled` gates before each (re)generation + before moderation), and the wizard Cancel button — plus bedtime/quick-story `dispose()` — calls `/cancel-task` end-to-end. Architecture correction documented: illustrations are a separate serial $0/image per-page endpoint (not a batch in the task), so per-image cancellation was descoped; the story-text task is the real cost lever. R0 empirical baselines remain blocked on a physical Android device + a staging env (MT-217); the load-test script is written and ready. Branches: `perf-04-backend-cancellation` (`d3b0cd54`), `perf-01-honest-progress` (`20141590`/`95e0db76`/`5898646a`). All `flutter analyze` / `py_compile` clean. Worked entirely on isolated branches/worktrees so the shared tree (busy across `chore/git-guard-hook` → `fix/audit-09-criticals`) was never disturbed.
+
+---
+
 ## Session Update — 2026-04-30 (Railway grand-light Build Fix + MCP Setup)
 
 ### What was completed this session
