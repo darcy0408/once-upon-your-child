@@ -235,6 +235,12 @@ class SceneImageButton extends StatefulWidget {
   /// When true, shows `data.thematicQuestion` (if present) in the label overlay.
   final bool showThematicQuestion;
 
+  /// Accepted by the Adventurer scene picker (PR #176). The full
+  /// description-rendering feature lives on the Adventurer age-fit branch;
+  /// this param is declared here so the call sites compile until that feature
+  /// lands. Currently inert (no `SceneButtonData.description` field on main).
+  final bool showDescription;
+
   const SceneImageButton({
     super.key,
     required this.data,
@@ -242,6 +248,7 @@ class SceneImageButton extends StatefulWidget {
     required this.onTap,
     this.labelFontSize = 13.0,
     this.showThematicQuestion = false,
+    this.showDescription = false,
   });
 
   @override
