@@ -336,8 +336,23 @@ MOCK_TESTING_MODE=true python3 -m pytest tests/ -q
 
 # Flutter
 flutter test
-flutter analyze   # rules in analysis_options.yaml
+flutter analyze   # core lints (rules in analysis_options.yaml)
+
+# Accessibility (WCAG 2.2 AA) custom lint gate — tools/a11y_lint/
+# Runs the no_unlabelled_icon_button / no_unlabelled_form_field /
+# no_unguarded_repeat rules. Exits non-zero when findings exist.
+dart run custom_lint
 ```
+
+> **a11y gate / analyzer pin (CQ-02):** the custom_lint a11y plugin only starts
+> because `pubspec.yaml` pins `analyzer: 6.3.0` AND overrides
+> `analyzer_plugin: 0.11.3`. The default-resolved `analyzer_plugin 0.11.2` calls
+> `Element.enclosingElement3` / `NamedType.name`, symbols absent from analyzer
+> 6.3.0, so the plugin fails to start ("Failed to start the plugins"). 0.11.3
+> compiles against the 6.3.0 API. The analyzer is held at 6.3.0 because
+> `isar_generator 3.1.0` caps `analyzer <6.0` (overridden) and `custom_lint 0.6.x`
+> needs a compatible analyzer. The long-term fix that lifts the pin is an
+> Isar 3→4 migration (out of scope here); until then, keep both overrides in sync.
 
 After changing Riverpod providers or Isar models:
 ```bash

@@ -107,6 +107,15 @@ dependency_overrides:
   #    which analyzer 6.4.x REMOVED — so analyzer must stay < 6.4.0.
   # 6.3.0 is the intersection. Revisit when Isar / custom_lint are upgraded.
   analyzer: 6.3.0
+  # CQ-02 fix: the pub solver picks analyzer_plugin 0.11.2 by default, but 0.11.2
+  # was BUILT against analyzer >=6.4 and calls symbols absent from 6.3.0
+  # (`Element.enclosingElement3`, `NamedType.name`) — so `dart run custom_lint`
+  # and the `flutter analyze` plugin hook both die with "Failed to start the
+  # plugins" and the WCAG a11y gate (tools/a11y_lint/) never runs. 0.11.3 declares
+  # `analyzer ^6.0.0` and compiles cleanly against 6.3.0, so the gate starts and
+  # reports findings. Keep this in lockstep with the analyzer 6.3.0 pin above;
+  # both can be removed once an Isar 3→4 migration lifts the analyzer cap.
+  analyzer_plugin: 0.11.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

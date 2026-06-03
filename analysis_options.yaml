@@ -14,6 +14,13 @@ analyzer:
   # Provides: no_unlabelled_icon_button, no_unlabelled_form_field,
   # no_unguarded_repeat. These run via `dart run custom_lint` and surface in
   # the IDE. They are NOT run by plain `flutter analyze`.
+  #
+  # CQ-02: this plugin only starts because pubspec.yaml overrides
+  # `analyzer_plugin: 0.11.3` alongside the `analyzer: 6.3.0` pin. The
+  # default-resolved analyzer_plugin 0.11.2 references analyzer symbols
+  # (enclosingElement3 / NamedType.name) that 6.3.0 lacks, which kills plugin
+  # startup ("Failed to start the plugins"). Do not drop that override unless the
+  # analyzer pin moves (e.g. after an Isar 3→4 migration) — see pubspec comments.
   plugins:
     - custom_lint
   exclude:
