@@ -56,7 +56,16 @@ jobs:
           # 2. Content sanity — a real pg_dump archive begins with the
           # "PostgreSQL database dump" banner. Anything else (e.g. a
           # captured error page) fails here loudly.
-          if ! gunzip -c "$DUMP_FILE" | head -50 | grep -q "PostgreSQL database dump"; then
+          # NB: capture the header into a variable FIRST. Piping
+          # `gunzip -c | head -50 | grep -q` directly tripped `pipefail`:
+          # grep exits on its first match, head closes the pipe, and gunzip
+          # dies with SIGPIPE (exit 141) — which pipefail then reports as a
+          # pipeline failure, rejecting a perfectly valid dump (this silently
+          # broke every backup from 2026-05-29 on). `|| true` absorbs the
+          # expected SIGPIPE; grep then runs over the captured string with no
+          # pipe, so no SIGPIPE.
+          header="$(gunzip -c "$DUMP_FILE" 2>/dev/null | head -50 || true)"
+          if ! grep -q "PostgreSQL database dump" <<<"$header"; then
             echo "::error::Dump does not contain the expected pg_dump header — aborting before upload."
             exit 1
           fi
