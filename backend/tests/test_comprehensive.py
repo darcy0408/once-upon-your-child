@@ -116,7 +116,7 @@ def test_cors_headers(client):
     assert response.headers.get("Access-Control-Allow-Origin") != rogue
 
     # Allow-listed production origin: reflected back by Flask-CORS.
-    allowed = "https://grand-light-production-68d9.up.railway.app"
+    allowed = "https://onceuponyourchild.app"
     response = client.get("/health", headers={"Origin": allowed})
     assert response.status_code == 200
     assert response.headers.get("Access-Control-Allow-Origin") == allowed

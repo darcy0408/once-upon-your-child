@@ -13,6 +13,12 @@ load_dotenv()
 stripe_routes = Blueprint("stripe_routes", __name__)
 logger = logging.getLogger("stripe_routes")
 
+# Canonical production frontend (Cloudflare Pages via the custom domain) used as
+# the Stripe checkout / billing-portal redirect target. Env-overridable so a
+# domain change needs no code edit. Previously hard-coded to the now-decommissioned
+# grand-light Railway frontend.
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://onceuponyourchild.app").rstrip("/")
+
 # Stripe API key will be set by init_stripe_api
 # stripe.api_key = os.getenv('STRIPE_API_KEY') # REMOVED
 
@@ -86,8 +92,8 @@ def create_checkout_session():
             payment_method_types=["card"],
             line_items=[{"price": PRICE_IDS[tier], "quantity": 1}],
             mode="subscription",
-            success_url="https://grand-light-production-68d9.up.railway.app/#/subscription-success",
-            cancel_url="https://grand-light-production-68d9.up.railway.app/#/subscription-canceled",
+            success_url=f"{FRONTEND_URL}/#/subscription-success",
+            cancel_url=f"{FRONTEND_URL}/#/subscription-canceled",
             client_reference_id=user_id,
             customer_email=user.email,
             metadata={"user_id": user_id, "subscription_tier": tier},
@@ -136,7 +142,7 @@ def create_portal_session():
     try:
         portal_session = stripe.billing_portal.Session.create(
             customer=user.stripe_customer_id,
-            return_url="https://grand-light-production-68d9.up.railway.app/#/settings",
+            return_url=f"{FRONTEND_URL}/#/settings",
         )
         return jsonify({"portal_url": portal_session.url})
     except Exception:

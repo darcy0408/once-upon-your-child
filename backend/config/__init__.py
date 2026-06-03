@@ -175,21 +175,14 @@ class Config:
     def get_allowed_origins():
         """Get allowed CORS origins based on environment"""
         base_origins = [
-            # Netlify production deploy
-            "https://reliable-sherbet-2352c4.netlify.app",
             # SECURITY: Do NOT use "https://*.netlify.app" — it allows any
             # Netlify project to make authenticated cross-origin requests.
             # For preview deploys, set PREVIEW_DEPLOY_URL in the environment.
-            # Railway web-frontend service (production)
-            # Set RAILWAY_FRONTEND_URL env var in Railway to override without a code change.
-            "https://grand-light-production-68d9.up.railway.app",
-            # Customer-facing custom domain (the canonical production frontend).
+            # Customer-facing custom domain (the canonical production frontend,
+            # served by Cloudflare Pages).
             "https://onceuponyourchild.app",
             "https://www.onceuponyourchild.app",
-            # Cloudflare Pages production deploy (frontend migration target).
-            # The custom domain above will point here after DNS cutover; this
-            # *.pages.dev origin is what the app is served from while testing
-            # the deploy before the domain is moved.
+            # Cloudflare Pages production deploy (the custom domain points here).
             "https://once-upon-your-child.pages.dev",
         ]
 
