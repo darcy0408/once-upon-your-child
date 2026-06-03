@@ -94,6 +94,13 @@ class HeroScenePage extends StatelessWidget {
       return null;
     }
 
+    // Adventurer band shows a one-line "what happens here" tease under each
+    // title so worlds are distinguishable and the "Life Quest" tile explains
+    // itself. Other bands either auto-advance (Sprout) or use the thematic
+    // question (Creator), so descriptions are gated to Adventurer (MT-218).
+    String? descriptionFor(String id) =>
+        isAdventurer ? scenarioById(id)?.descriptionForAge(age) : null;
+
     final featuredButtons = [
       SceneButtonData(
         id: 'vanishing_colors',
@@ -101,6 +108,7 @@ class HeroScenePage extends StatelessWidget {
         normalAsset: 'assets/images/scenarios/rainbow_land_btn.webp',
         pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('vanishing_colors'),
+        description: descriptionFor('vanishing_colors'),
       ),
       SceneButtonData(
         id: 'crystal_cavern',
@@ -112,6 +120,7 @@ class HeroScenePage extends StatelessWidget {
             ? 'assets/images/ui/sprout/tiles/ocean.webp'
             : 'assets/images/scenarios/crystal_cave_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('crystal_cavern'),
+        description: descriptionFor('crystal_cavern'),
       ),
       SceneButtonData(
         id: 'volcano_dragons',
@@ -119,6 +128,7 @@ class HeroScenePage extends StatelessWidget {
         normalAsset: 'assets/images/scenarios/dragon_friends_btn.webp',
         pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('volcano_dragons'),
+        description: descriptionFor('volcano_dragons'),
       ),
       // Big Feelings tile is shown for ALL bands. Tapping it opens the cloud
       // picker for younger bands / badge grid for adventurer+, then runs an
@@ -132,6 +142,7 @@ class HeroScenePage extends StatelessWidget {
         normalAsset: 'assets/images/scenarios/my_big_feelings_btn.webp',
         pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.webp',
         thematicQuestion: thematicQuestionFor('big_feelings_quest'),
+        description: descriptionFor('big_feelings_quest'),
       ),
     ];
 
@@ -208,7 +219,7 @@ class HeroScenePage extends StatelessWidget {
                         isSelected:
                             wizardData.selectedScenario == displayButtons[i].id,
                         labelFontSize: labelFontSize,
-                        showThematicQuestion: isCreator || isAdventurer,
+                        showThematicQuestion: isCreator,
                         // Audit F-02: Adventurer tiles need the description
                         // line under the title so each world self-explains.
                         showDescription: isAdventurer,
@@ -225,7 +236,7 @@ class HeroScenePage extends StatelessWidget {
                         isSelected: wizardData.selectedScenario ==
                             displayButtons[i + 1].id,
                         labelFontSize: labelFontSize,
-                        showThematicQuestion: isCreator || isAdventurer,
+                        showThematicQuestion: isCreator,
                         showDescription: isAdventurer,
                         onTap: () => onSceneTap(displayButtons[i + 1].id),
                       ),
@@ -242,7 +253,7 @@ class HeroScenePage extends StatelessWidget {
                 data: displayButtons.last,
                 isSelected: wizardData.selectedScenario == displayButtons.last.id,
                 labelFontSize: labelFontSize,
-                showThematicQuestion: isCreator || isAdventurer,
+                showThematicQuestion: isCreator,
                 showDescription: isAdventurer,
                 onTap: () => onSceneTap(displayButtons.last.id),
               ),
@@ -260,7 +271,7 @@ class HeroScenePage extends StatelessWidget {
                         data: btn,
                         isSelected: wizardData.selectedScenario == btn.id,
                         labelFontSize: labelFontSize,
-                        showThematicQuestion: isCreator || isAdventurer,
+                        showThematicQuestion: isCreator,
                         showDescription: isAdventurer,
                         onTap: () => onSceneTap(btn.id),
                       ))

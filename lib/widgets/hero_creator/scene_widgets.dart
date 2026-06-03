@@ -218,12 +218,18 @@ class SceneButtonData {
   /// Creator band: evocative psychological hook shown below the title.
   final String? thematicQuestion;
 
+  /// Adventurer band: one-line "what happens here" tease shown below the title
+  /// so a 9–11yo can tell worlds apart (and so the opaque "Life Quest" tile
+  /// explains itself). Sourced from `ScenarioCard.descriptionForAge`.
+  final String? description;
+
   const SceneButtonData({
     required this.id,
     required this.label,
     required this.normalAsset,
     required this.pressedAsset,
     this.thematicQuestion,
+    this.description,
   });
 }
 
@@ -235,10 +241,8 @@ class SceneImageButton extends StatefulWidget {
   /// When true, shows `data.thematicQuestion` (if present) in the label overlay.
   final bool showThematicQuestion;
 
-  /// Accepted by the Adventurer scene picker (PR #176). The full
-  /// description-rendering feature lives on the Adventurer age-fit branch;
-  /// this param is declared here so the call sites compile until that feature
-  /// lands. Currently inert (no `SceneButtonData.description` field on main).
+  /// When true, shows `data.description` (if present) under the title — used by
+  /// the Adventurer band so each world tile self-explains.
   final bool showDescription;
 
   const SceneImageButton({
@@ -365,6 +369,21 @@ class _SceneImageButtonState extends State<SceneImageButton> {
                                 color: Colors.white70,
                                 fontSize: 10,
                                 fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          if (widget.showDescription &&
+                              widget.data.description != null) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.data.description!,
+                              style: GoogleFonts.bitter(
+                                color: Colors.white.withAlpha(225),
+                                fontSize: 10.5,
+                                height: 1.15,
                               ),
                               textAlign: TextAlign.center,
                               maxLines: 2,
