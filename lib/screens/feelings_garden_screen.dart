@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../feelings_wheel_data.dart';
 import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
+import '../widgets/feelings_badge_grid.dart';
 import '../widgets/feelings_cloud_picker.dart';
 
 class FeelingsGardenScreen extends StatefulWidget {
@@ -580,21 +581,91 @@ class _GardenExplorerZone extends StatefulWidget {
 class _GardenExplorerZoneState extends State<_GardenExplorerZone> {
   FeelingSelection? _lastSelection;
 
+  // Friendlier 8-emoji card grid instead of the spinning cloud-picker wheel
+  // for ages 6-14 (Explorer, Adventurer, Creator). Mirrors FeelingsQuestModal
+  // so the picker behaves identically across surfaces. Sprout (≤5) never
+  // reaches Zone 2 (it has a single tab); 15+ keep the nuanced cloud picker.
+  bool get _useBadgeGrid {
+    final band = ageBandFromAge(widget.childAge);
+    return band == AgeBand.explorer ||
+        band == AgeBand.adventurer ||
+        band == AgeBand.creator;
+  }
+
+  /// Adapts the badge grid's flat id (e.g. 'happy') into the [FeelingSelection]
+  /// the Garden consumes. The grid only emits a single core feeling, so the
+  /// result carries a core with no secondary/tertiary. Resolves the id against
+  /// the wheel data where possible; falls back to a synthesized core for ids
+  /// the wheel doesn't model (e.g. 'calm').
+  FeelingSelection _selectionFromBadgeId(String id) {
+    final allCores = [
+      ...FeelingsWheelData.coreEmotionsForAge(widget.childAge),
+      ...FeelingsWheelData.coreEmotions,
+      ...FeelingsWheelData.bigFeelingsCoreEmotionsAges6To8,
+    ];
+    for (final core in allCores) {
+      if (core.id == id) return FeelingSelection(core: core);
+    }
+    // Id is not a core in the wheel (e.g. 'calm') — synthesize a minimal core
+    // so downstream consumers (save bar, journal) still have a name + emoji.
+    final fallbackEmoji = {
+          'calm': '😌',
+          'worried': '😟',
+          'frustrated': '😤',
+          'embarrassed': '😳',
+          'excited': '🤩',
+        }[id] ??
+        '😐';
+    final name = id.isEmpty
+        ? 'Okay'
+        : '${id[0].toUpperCase()}${id.substring(1)}';
+    return FeelingSelection(
+      core: CoreEmotion(
+        id: id,
+        name: name,
+        emoji: fallbackEmoji,
+        eyeType: 'Default',
+        mouthType: 'Smile',
+        color: widget.band.primary,
+        secondary: const [],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: FeelingsCloudPicker(
-            childAge: widget.childAge,
-            onSelected: (sel) {
-              setState(() => _lastSelection = sel);
-              widget.onSelected(sel);
-            },
-          ),
+          child: _useBadgeGrid
+              ? FeelingsBadgeGrid(
+                  band: ageBandFromAge(widget.childAge),
+                  onSelected: (ids) {
+                    if (ids.isEmpty) return;
+                    final sel = _selectionFromBadgeId(ids.first);
+                    setState(() => _lastSelection = sel);
+                    widget.onSelected(sel);
+                  },
+                )
+              : FeelingsCloudPicker(
+                  childAge: widget.childAge,
+                  onSelected: (sel) {
+                    setState(() => _lastSelection = sel);
+                    widget.onSelected(sel);
+                  },
+                ),
         ),
-        if (_lastSelection != null && _lastSelection!.tertiary != null)
+        // Coping suggestion ("Try this") — the therapeutic payload of Zone 2.
+        // The cloud picker (15+) surfaces it on a tertiary selection (unchanged).
+        // The badge grid emits a core-only selection, so for ages 9-14 — exactly
+        // where the old cloud picker DID render a coping card — we render it from
+        // the core feeling. FeelingDetails.forFeeling falls back
+        // tertiary->secondary->core->default, so a core-only lookup always yields
+        // a valid, non-empty coping list. Ages 6-8 keep the prior no-card behaviour.
+        if (_lastSelection != null &&
+            (_lastSelection!.tertiary != null ||
+                (_useBadgeGrid && widget.childAge >= 9)))
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: _CopingCard(
@@ -602,7 +673,7 @@ class _GardenExplorerZoneState extends State<_GardenExplorerZone> {
               childAge: widget.childAge,
               coreName: _lastSelection!.core.name,
               secondaryName: _lastSelection!.secondary?.name ?? '',
-              tertiaryName: _lastSelection!.tertiary!,
+              tertiaryName: _lastSelection!.tertiary ?? '',
             ),
           ),
       ],
