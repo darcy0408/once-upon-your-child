@@ -1,0 +1,93 @@
+STORY WEAVER — LINT SUMMARY (2026-06-02)
+Reproduced from the repository at commit 83814abf (branch session/audit, from origin/main).
+=====================================================================================
+
+CONVENTION
+  "raw"      = tool run with default/CLI settings, no project config.
+  "enforced" = tool run the way CI runs it, with the project's own config applied.
+  CI status for backend-lint.yml on recent pushes: SUCCESS (green).
+
+-------------------------------------------------------------------------------------
+DART / FLUTTER
+-------------------------------------------------------------------------------------
+flutter analyze (full, core analyzer)
+  Command : flutter analyze
+  Result  : 1 issue (info)
+    info - unnecessary_import - lib/screens/big_feelings_flow_screen.dart:3:8
+            (flutter/foundation.dart redundant; covered by material.dart)
+  Note    : autofixable via `dart fix --apply`.
+
+custom_lint / a11y_lint  (WCAG 2.2 AA custom rules)
+  Command : dart run custom_lint
+  Result  : FAILS TO START — "Bad state: Failed to start the plugins."
+  Root    : analyzer_plugin 0.11.2 + dart_style 2.3.8 reference symbols
+            (enclosingElement3, NamedType.name, MixinOnClause) that the pinned
+            analyzer 6.3.0 (see pubspec dependency_overrides) does not define.
+  Impact  : the a11y lint gate (no_unlabelled_icon_button, no_unlabelled_form_field,
+            no_unguarded_repeat) does NOT run, locally or in the analysis server.
+
+-------------------------------------------------------------------------------------
+PYTHON / BACKEND
+-------------------------------------------------------------------------------------
+flake8 — ENFORCED (cd backend; flake8 . --exclude=venv,.venv,migrations)
+  Result  : 0 findings.  (CI green.)
+
+flake8 — RAW (no project .flake8, --max-line-length=100): 720 findings
+  These are ENTIRELY codes the project deliberately extend-ignores in backend/.flake8:
+    612  E501  line too long          (Black leaves long string/comment lines)
+     62  E402  module import not at top (sys.path bootstrap in dual-shape modules)
+     23  F541  f-string without placeholders (pre-existing across services/)
+     12  E203  whitespace before ':'   (conflicts with Black slicing)
+      3  W291  trailing whitespace     (inside multi-line string literals)
+      3  E731  lambda assignment       (accepted style choice)
+      2  E712  == True / == False      (accepted style choice)
+      1  E231  missing whitespace after ','  (inside string literals)
+      1  W293  whitespace on blank line
+  ENFORCED-but-clean (project migrated these to errors and fixed them): F841, E722.
+
+black --check  : 0 files would be reformatted (line-length 88, per backend/pyproject.toml).
+isort --check  : 0 files (profile=black). ENFORCED clean.
+
+mypy . --ignore-missing-imports  — ADVISORY ONLY (CI runs it with `|| true`)
+  Result  : 308 errors in 60 files (checked 205 source files).
+  Top error codes:
+    118  arg-type        (wrong argument types passed)
+     62  no-redef        (name redefined — often the try/except dual-import pattern)
+     35  assignment      (incompatible assignment)
+     21  attr-defined    (attribute does not exist on type)
+     19  name-defined    (used before/without definition in a branch)
+     15  var-annotated   (needs annotation)
+     10  union-attr  /  9 index  /  8 operator  /  7 return-value  /  3 misc  /  1 call-arg
+  Files with the most errors:
+     84  backend/tasks/story_tasks.py          (Celery story pipeline)
+     26  backend/services/prompt_service.py
+     20  backend/eval/providers.py
+     17  backend/services/avatar_generation_service.py
+     17  backend/app.py
+     16  backend/routes/iap_routes.py
+     14  backend/elevenlabs_tts_service.py
+     13  backend/gemini_image_generator.py
+
+-------------------------------------------------------------------------------------
+DEPENDENCY / SUPPLY-CHAIN
+-------------------------------------------------------------------------------------
+pip-audit (backend/requirements.txt)
+  4 known vulnerabilities in 1 package:
+    pyjwt 2.12.1 — PYSEC-2026-175, -177, -178, -179   (fix: 2.13.0)
+  pyjwt underlies Flask-JWT-Extended (auth). No other vulnerable packages.
+
+flutter pub outdated
+  Dev toolchain frozen behind dependency_overrides: analyzer 6.3.0 (latest 13.0.0).
+  Direct deps >=1 major behind: flutter_riverpod 2.6.1->3, riverpod_annotation 2->4,
+    share_plus 12->13, package_info_plus 9->10.
+  Discontinued transitive packages: js, build_resolvers, build_runner_core.
+  33 upgradable deps locked in pubspec.lock; 12 backend Dependabot PRs open (#192-#203).
+
+-------------------------------------------------------------------------------------
+TEST EXECUTION
+-------------------------------------------------------------------------------------
+Backend  : 646 passed (pytest tests/unit tests/api tests/security), 50.8s.
+           Coverage TOTAL 58% (17,875 stmts, 7,533 missed).
+Frontend : 373 passed (flutter test test/unit), 7s.
+           Coverage 20.4% of instrumented lines; only 36 of 325 lib/ files instrumented
+           by the test/unit subset (CI gates test/unit/services only).
