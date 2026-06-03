@@ -648,6 +648,18 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         if is_near_end:
             ending_instruction = f"\n**ENDING LOGIC**: You are at segment {next_segment_number}/{path_depth}. If appropriate for the plot, you MAY conclude the story in this segment by setting `is_ending: true`. If not, ensure the story concludes by segment {path_depth}."
 
+        # ARC ESCALATION — scale tension to the actual path depth so each segment
+        # is genuine progress toward a climax, not a loop of similar scenes.
+        midpoint = max(2, int(path_depth * 0.66))
+        late_point = max(midpoint, path_depth - 1)
+        arc_escalation = (
+            f"- **ARC ESCALATION**: This is segment {next_segment_number}/{path_depth}."
+            f" Tension and complexity MUST increase toward the climax: complicate the situation or raise the stakes early,"
+            f" make the core challenge urgent and pressing by segment {midpoint} (the midpoint),"
+            f" and converge all open threads toward resolution by segments {late_point}-{path_depth}."
+            f" Each segment must be concrete progress toward a genuine climax — never a loop of similar scenes."
+        )
+
         empathy_moment = (
             f"- **EMPATHY MOMENT**: In this segment, introduce a secondary character who is experiencing a challenge"
             f" related to '{life_challenge_ctx}'. Frame it as: '[Friend's name] looks sad and says: [their problem in"
@@ -672,8 +684,10 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **THEME**: {theme} | **TONE**: {tone}
 - **HERO**: {child_name}
 - **COMPANIONS**: {companion_context} (Must affect the story).
+- **COMPANION AGENCY RULE**: Do NOT mention companions passively or as scenery — they MUST take actions that matter to this segment's complication or resolution.
 - **CURRENT SEGMENT**: {current_segment_number}/{path_depth}
 - **SELECTED CHOICE**: {selected_choice}
+- **CHOICE MUST DRIVE THIS SEGMENT**: The story MUST show the immediate consequence of {child_name}'s choice. It is NOT background — it MUST be the spark that creates this segment's new situation, obstacle, or discovery, and the prose must show how it moves {child_name} toward or away from the goal.
 - **INVENTORY**: {", ".join(inventory) if inventory else "None"}
 - **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
 - **SENSORY PALETTE**: {final_sensory}
@@ -691,8 +705,9 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
 - **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
-- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
+- **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
+{arc_escalation}
 {empathy_moment}
 - **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
