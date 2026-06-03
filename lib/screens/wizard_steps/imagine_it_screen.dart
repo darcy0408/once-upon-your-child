@@ -224,7 +224,10 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: TextField(
+                child: Semantics(
+                  label: 'Story idea',
+                  textField: true,
+                  child: TextField(
                   controller: widget.imagineItController,
                   maxLines: 5,
                   autofocus: true,
@@ -261,6 +264,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                       widget.wishController.text = value;
                     });
                   },
+                ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -645,7 +649,10 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          TextField(
+          Semantics(
+            label: 'Story idea',
+            textField: true,
+            child: TextField(
             controller: widget.imagineItController,
             maxLines: 1,
             style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -682,6 +689,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                 widget.wishController.text = value;
               });
             },
+          ),
           ),
           const SizedBox(height: 18),
           SizedBox(

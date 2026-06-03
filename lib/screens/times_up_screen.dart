@@ -149,6 +149,7 @@ class _TimesUpScreenState extends State<TimesUpScreen> {
                               fontSize: 20,
                             ),
                             decoration: InputDecoration(
+                              labelText: 'Answer',
                               hintText: '??',
                               hintStyle: GoogleFonts.fredoka(
                                 color: Colors.white.withAlpha(80),

@@ -109,16 +109,20 @@ class _TherapeuticCustomizationScreenState
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    controller: _situationController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'What\'s happening that you want to address?',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  Semantics(
+                    label: 'Situation to address',
+                    textField: true,
+                    child: TextField(
+                      controller: _situationController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'What\'s happening that you want to address?',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
                       ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
                     ),
                   ),
                 ],
@@ -197,16 +201,20 @@ class _TherapeuticCustomizationScreenState
                     style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    controller: _lessonController,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      hintText: 'e.g., "You are brave and can handle challenges"',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  Semantics(
+                    label: 'Lesson or message',
+                    textField: true,
+                    child: TextField(
+                      controller: _lessonController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'e.g., "You are brave and can handle challenges"',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
                       ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
                     ),
                   ),
                 ],
@@ -352,6 +360,7 @@ class _TherapeuticCustomizationScreenState
         subtitle: Text(wish.type.displayName),
         trailing: IconButton(
           icon: const Icon(Icons.delete, color: Colors.red),
+          tooltip: 'Delete Wish',
           onPressed: () {
             setState(() {
               _wishes.remove(wish);
@@ -376,13 +385,17 @@ class _TherapeuticCustomizationScreenState
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g., "The bully apologizes and learns to be kind"',
-                      border: OutlineInputBorder(),
+                  Semantics(
+                    label: 'Story wish',
+                    textField: true,
+                    child: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g., "The bully apologizes and learns to be kind"',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
                     ),
-                    maxLines: 3,
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<WishType>(

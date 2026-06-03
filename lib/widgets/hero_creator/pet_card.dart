@@ -186,11 +186,15 @@ class _HeroPetCardState extends State<HeroPetCard> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: Semantics(
+            label: hint,
+            textField: true,
+            child: TextField(
             controller: controller,
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: _petFieldDecoration(hint),
             onChanged: (_) => _updatePet(),
+          ),
           ),
         ),
         const SizedBox(width: 6),

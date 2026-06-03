@@ -796,7 +796,10 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 ),
               ],
             ),
-            TextField(
+            Semantics(
+              label: 'Character name',
+              textField: true,
+              child: TextField(
               controller: _customNameCtl,
               style: GoogleFonts.fredoka(color: Colors.white),
               cursorColor: _gold,
@@ -814,6 +817,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 ),
               ),
               onChanged: (_) => setState(() {}),
+            ),
             ),
             const SizedBox(height: 22),
             Text(
@@ -851,7 +855,10 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            TextField(
+            Semantics(
+              label: 'Your superhero catchphrase',
+              textField: true,
+              child: TextField(
               controller: _customCatchphraseCtl,
               style: GoogleFonts.fredoka(color: Colors.white),
               cursorColor: _gold,
@@ -873,6 +880,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   _selectedCatchphrase = null;
                 }
               }),
+            ),
             ),
             const SizedBox(height: 22),
             SizedBox(

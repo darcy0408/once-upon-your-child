@@ -2767,7 +2767,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final isSproutFour = band.band == AgeBand.sprout;
 
     if (band.band.isMature) {
-      return TextField(
+      return Semantics(
+        label: 'Character name',
+        textField: true,
+        child: TextField(
         controller: _nameController,
         focusNode: _nameFocusNode,
         textAlign: TextAlign.center,
@@ -2794,6 +2797,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ),
         onChanged: (v) =>
             setState(() => widget.wizardData.characterName = v.trim()),
+      ),
       );
     }
 
@@ -2859,7 +2863,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: TextField(
+              child: Semantics(
+                label: 'Character name',
+                textField: true,
+                child: TextField(
                 controller: _nameController,
                 focusNode: _nameFocusNode,
                 textAlign: TextAlign.center,
@@ -2895,6 +2902,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     );
                   }
                 },
+              ),
               ),
             ),
           ),

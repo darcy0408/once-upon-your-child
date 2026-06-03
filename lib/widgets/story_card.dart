@@ -64,6 +64,7 @@ class StoryCard extends ConsumerWidget {
                           color: story.isFavorite ? Colors.red : Colors.grey.shade400,
                           size: 20,
                         ),
+                        tooltip: 'Toggle favorite',
                         onPressed: onToggleFavorite,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

@@ -627,6 +627,7 @@ class _SwipeableStoryTile extends StatelessWidget {
               const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.more_vert, color: Colors.white60, size: 18),
+                tooltip: 'More actions',
                 onPressed: () => _showActionsMenu(context),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),

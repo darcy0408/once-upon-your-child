@@ -119,6 +119,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white, fontSize: 20),
             decoration: InputDecoration(
+              labelText: 'Answer',
               hintText: '?',
               hintStyle: const TextStyle(color: Colors.white24),
               errorText: _error,

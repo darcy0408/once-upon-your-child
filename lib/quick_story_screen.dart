@@ -430,15 +430,19 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: _characterNameController,
-            decoration: InputDecoration(
-              hintText: 'Enter a name (e.g., Emma, Max, Luna)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          Semantics(
+            label: 'Character name',
+            textField: true,
+            child: TextField(
+              controller: _characterNameController,
+              decoration: InputDecoration(
+                hintText: 'Enter a name (e.g., Emma, Max, Luna)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
               ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
             ),
           ),
 
@@ -509,22 +513,26 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           const SizedBox(height: 32),
 
           // Custom Theme Option
-          TextField(
-            controller: _themeController,
-            decoration: InputDecoration(
-              hintText: 'Or create your own theme...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          Semantics(
+            label: 'Create your own story theme',
+            textField: true,
+            child: TextField(
+              controller: _themeController,
+              decoration: InputDecoration(
+                hintText: 'Or create your own theme...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                prefixIcon: const Icon(Icons.edit),
               ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              prefixIcon: const Icon(Icons.edit),
+              onChanged: (value) {
+                setState(() {
+                  _selectedTheme = value;
+                });
+              },
             ),
-            onChanged: (value) {
-              setState(() {
-                _selectedTheme = value;
-              });
-            },
           ),
 
           const SizedBox(height: 32),

@@ -209,6 +209,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
             ),
           ),
           IconButton(
+            tooltip: 'Close',
             onPressed: widget.onCancel,
             icon: const Icon(Icons.close, color: Color(0xFF3B2363)),
           ),

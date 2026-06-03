@@ -152,6 +152,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         children: [
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
+            tooltip: 'Close',
             onPressed: widget.onCancel,
           ),
           const SizedBox(width: 10),
@@ -285,7 +286,10 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           style: TextStyle(fontSize: 12, color: Colors.black54),
         ),
         const SizedBox(height: 8),
-        TextField(
+        Semantics(
+          label: 'Hair details',
+          textField: true,
+          child: TextField(
           controller: _hairDetailsController,
           maxLines: 2,
           textInputAction: TextInputAction.newline,
@@ -307,6 +311,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
               borderSide: BorderSide(color: Colors.grey.shade500),
             ),
           ),
+        ),
         ),
       ],
     );

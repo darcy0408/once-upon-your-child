@@ -549,18 +549,22 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
       decoration: SunsetJungleTheme.saveSectionDecoration,
       child: Column(
         children: [
-          TextField(
-            controller: _nameController,
-            decoration: SunsetJungleTheme.inputDecoration(
-              hintText: 'Enter character name...',
-              labelText: 'Character Name',
-            ),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: 'Quicksand',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: SunsetJungleTheme.jungleForest,
+          Semantics(
+            label: 'Character Name',
+            textField: true,
+            child: TextField(
+              controller: _nameController,
+              decoration: SunsetJungleTheme.inputDecoration(
+                hintText: 'Enter character name...',
+                labelText: 'Character Name',
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Quicksand',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: SunsetJungleTheme.jungleForest,
+              ),
             ),
           ),
           const SizedBox(height: 20),

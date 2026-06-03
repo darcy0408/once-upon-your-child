@@ -267,21 +267,25 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
-                    controller: _whatHappenedController,
-                    decoration: InputDecoration(
-                      hintText:
-                          'Tell us what happened that made you feel this way...',
-                      hintStyle:
-                          TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  Semantics(
+                    label: 'What happened to make you feel this way (optional)',
+                    textField: true,
+                    child: TextField(
+                      controller: _whatHappenedController,
+                      decoration: InputDecoration(
+                        hintText:
+                            'Tell us what happened that made you feel this way...',
+                        hintStyle:
+                            TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
+                      maxLines: 3,
+                      maxLength: 200,
                     ),
-                    maxLines: 3,
-                    maxLength: 200,
                   ),
                 ],
 

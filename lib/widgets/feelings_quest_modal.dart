@@ -94,11 +94,13 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                         ? IconButton(
                             icon: const Icon(Icons.close,
                                 color: Colors.white60, size: 22),
+                            tooltip: 'Close',
                             onPressed: () => Navigator.of(context).pop(),
                           )
                         : IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                                 color: Colors.white, size: 20),
+                            tooltip: 'Back',
                             onPressed: () {
                               final wentBack =
                                   _pickerKey.currentState?.goBack() ?? false;

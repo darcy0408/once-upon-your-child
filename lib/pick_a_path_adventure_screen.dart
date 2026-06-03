@@ -1212,21 +1212,25 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
               style: TextStyle(color: Colors.white60, fontSize: 13),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              maxLines: 3,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'e.g. "Then a grown-up appeared with a magic map!"',
-                hintStyle: const TextStyle(color: Colors.white38),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.purple),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.purple),
+            Semantics(
+              label: 'Add to the story',
+              textField: true,
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'e.g. "Then a grown-up appeared with a magic map!"',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.purple),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.purple),
+                  ),
                 ),
               ),
             ),
@@ -1342,23 +1346,27 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: _customChoiceController,
-                  maxLength: 200,
-                  maxLines: 2,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'Type your own idea...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Semantics(
+                  label: 'What would you do? Type your own idea',
+                  textField: true,
+                  child: TextField(
+                    controller: _customChoiceController,
+                    maxLength: 200,
+                    maxLines: 2,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'Type your own idea...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      counterStyle: const TextStyle(fontSize: 11),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    counterStyle: const TextStyle(fontSize: 11),
+                    onSubmitted: (_) => _handleCustomChoice(),
                   ),
-                  onSubmitted: (_) => _handleCustomChoice(),
                 ),
                 const SizedBox(height: 8),
                 Row(

@@ -1157,7 +1157,10 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                TextField(
+                Semantics(
+                  label: 'Write one sentence about what is behind this feeling',
+                  textField: true,
+                  child: TextField(
                   controller: _journalController,
                   autofocus: true,
                   style: GoogleFonts.sourceSans3(
@@ -1184,6 +1187,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                           const BorderSide(color: creatorAccent, width: 2),
                     ),
                   ),
+                ),
                 ),
                 const Spacer(),
                 Row(

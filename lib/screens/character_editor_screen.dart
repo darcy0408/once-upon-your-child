@@ -281,6 +281,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                       TextField(
                         controller: _nameController,
                         decoration: const InputDecoration(
+                          labelText: 'Character Name',
                           hintText: 'Enter name',
                           prefixIcon: Icon(Icons.person),
                         ),

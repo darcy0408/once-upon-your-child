@@ -319,7 +319,10 @@ class CreativeBriefWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          TextField(
+          Semantics(
+            label: 'What your character wants',
+            textField: true,
+            child: TextField(
             controller: characterDesireController,
             style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
@@ -333,6 +336,7 @@ class CreativeBriefWidget extends StatelessWidget {
             ),
             onChanged: (v) =>
                 wizardData.characterDesire = v.trim().isEmpty ? null : v,
+          ),
           ),
         ],
         const SizedBox(height: 12),
@@ -670,7 +674,10 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         if (isCustom) ...[
           const SizedBox(height: 16),
-          TextField(
+          Semantics(
+            label: 'Describe your world or premise',
+            textField: true,
+            child: TextField(
             controller: imagineItController,
             maxLines: 2,
             style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
@@ -689,6 +696,7 @@ class CreativeBriefWidget extends StatelessWidget {
               wizardData.customElements = v;
               wishController.text = v;
             },
+          ),
           ),
         ],
       ],

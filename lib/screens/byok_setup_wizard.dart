@@ -109,6 +109,7 @@ class _ParentalGateDialogState extends State<ParentalGateDialog> {
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     isDense: true,
+                    labelText: 'Answer',
                     errorText: _wrong ? 'Not quite — try again.' : null,
                   ),
                   onSubmitted: (_) => _check(),

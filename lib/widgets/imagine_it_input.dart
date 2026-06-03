@@ -292,7 +292,10 @@ class _SproutInput extends StatelessWidget {
                   color: AppColors.textDark,
                 )),
             const SizedBox(height: 12),
-            TextField(
+            Semantics(
+              label: 'Story setting',
+              textField: true,
+              child: TextField(
               controller: controller,
               autofocus: true,
               maxLength: 500,
@@ -305,6 +308,7 @@ class _SproutInput extends StatelessWidget {
                     borderSide: BorderSide(color: band.primary, width: 2)),
               ),
               onChanged: onCaregiverType,
+            ),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -541,7 +545,10 @@ class _ExplorerInput extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Text field with voice suffix
-          TextField(
+          Semantics(
+            label: 'Story idea',
+            textField: true,
+            child: TextField(
             controller: controller,
             maxLines: 3,
             maxLength: 500,
@@ -569,6 +576,7 @@ class _ExplorerInput extends StatelessWidget {
               ),
             ),
             onChanged: onChanged,
+          ),
           ),
 
           // Persistent examples strip
@@ -710,7 +718,10 @@ class _AdventurerInputState extends State<_AdventurerInput> {
           // Text field + word count badge
           Stack(
             children: [
-              TextField(
+              Semantics(
+                label: 'World description',
+                textField: true,
+                child: TextField(
                 controller: widget.controller,
                 maxLines: 4,
                 maxLength: 500,
@@ -754,6 +765,7 @@ class _AdventurerInputState extends State<_AdventurerInput> {
                   widget.onChanged(v);
                   setState(() {}); // refresh word count
                 },
+              ),
               ),
               if (badge.isNotEmpty)
                 Positioned(
@@ -923,7 +935,10 @@ class _MatureInputState extends State<_MatureInput> {
           const SizedBox(height: 10),
 
           // Text area
-          TextField(
+          Semantics(
+            label: 'Story idea',
+            textField: true,
+            child: TextField(
             controller: widget.controller,
             maxLines: 5,
             maxLength: 500,
@@ -953,6 +968,7 @@ class _MatureInputState extends State<_MatureInput> {
               contentPadding: const EdgeInsets.all(12),
             ),
             onChanged: widget.onChanged,
+          ),
           ),
           const SizedBox(height: 8),
 

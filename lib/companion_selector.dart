@@ -126,13 +126,17 @@ class _CompanionSelectorState extends State<CompanionSelector> {
         const SizedBox(height: 8),
 
         // Search
-        TextField(
+        Semantics(
+          label: 'Search companions',
+          textField: true,
+          child: TextField(
           decoration: const InputDecoration(
             prefixIcon: Icon(Icons.search),
             hintText: 'Search companions…',
             border: OutlineInputBorder(),
           ),
           onChanged: (v) => setState(() => _query = v),
+        ),
         ),
         const SizedBox(height: 12),
 

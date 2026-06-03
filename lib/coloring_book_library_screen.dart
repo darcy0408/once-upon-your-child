@@ -390,6 +390,7 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                         IconButton(
                           icon: const Icon(Icons.print,
                               color: Colors.white, size: 20),
+                          tooltip: 'Print page',
                           onPressed: () => _printPage(page),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.black.withValues(alpha: 0.6),
@@ -398,6 +399,7 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                         IconButton(
                           icon: const Icon(Icons.delete,
                               color: Colors.white, size: 20),
+                          tooltip: 'Delete page',
                           onPressed: () => _deletePage(page),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.red.withValues(alpha: 0.8),

@@ -292,6 +292,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
               ),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
+                tooltip: 'Back',
                 onPressed: () => Navigator.of(context).pop(_storySaved),
               ),
             ),

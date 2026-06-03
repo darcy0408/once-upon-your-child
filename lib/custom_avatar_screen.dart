@@ -677,6 +677,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
+              tooltip: 'Close',
               icon: const Icon(Icons.close_rounded,
                   color: Colors.white, size: 28),
             ),
@@ -802,6 +803,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               alignment: Alignment.centerLeft,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
+                tooltip: 'Close',
                 icon: const Icon(Icons.close_rounded,
                     color: Colors.white, size: 28),
               ),
@@ -937,6 +939,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         children: [
           IconButton(
             onPressed: _goBack,
+            tooltip: 'Back',
             icon: Icon(
               Icons.arrow_back_ios_rounded,
               color: Colors.white,
@@ -1629,7 +1632,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: Semantics(
+                  label: 'What would you like to change?',
+                  textField: true,
+                  child: TextField(
                   controller: _refinementController,
                   style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14),
                   onChanged: (_) => setState(() {}),
@@ -1652,6 +1658,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                       borderSide: const BorderSide(color: accentColor, width: 1.5),
                     ),
                   ),
+                ),
                 ),
               ),
               if (_refinementSpeechEnabled) ...[

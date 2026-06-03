@@ -108,7 +108,10 @@ class _MultiSelectChipFieldState extends State<MultiSelectChipField> {
       builder: (context) {
         return AlertDialog(
           title: Text(widget.addCustomLabel),
-          content: TextField(
+          content: Semantics(
+            label: widget.addCustomLabel,
+            textField: true,
+            child: TextField(
             controller: controller,
             autofocus: true,
             decoration: const InputDecoration(
@@ -116,6 +119,7 @@ class _MultiSelectChipFieldState extends State<MultiSelectChipField> {
             ),
             textCapitalization: TextCapitalization.words,
             onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+          ),
           ),
           actions: [
             TextButton(

@@ -1096,6 +1096,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           maxLength: 24,
           style: GoogleFonts.fredoka(color: Colors.white),
           decoration: InputDecoration(
+            labelText: 'Custom caregiver name',
             hintText: 'e.g. Tata, Abuela, Yia Yia',
             hintStyle: GoogleFonts.fredoka(color: Colors.white38),
             enabledBorder: const UnderlineInputBorder(
@@ -1385,6 +1386,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                       color: Colors.white, fontSize: 18),
                   decoration: InputDecoration(
                     isDense: true,
+                    labelText: 'Answer',
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
                     enabledBorder: OutlineInputBorder(

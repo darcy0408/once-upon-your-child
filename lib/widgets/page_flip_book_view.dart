@@ -254,6 +254,7 @@ class _PageFlipBookViewState extends State<PageFlipBookView> with SingleTickerPr
               child: Center(
                 child: IconButton(
                   icon: const Icon(Icons.chevron_left, size: 36),
+                  tooltip: 'Previous page',
                   onPressed: _goToPreviousPage,
                   color: Colors.black.withValues(alpha: 0.5),
                 ),
@@ -269,6 +270,7 @@ class _PageFlipBookViewState extends State<PageFlipBookView> with SingleTickerPr
               child: Center(
                 child: IconButton(
                   icon: const Icon(Icons.chevron_right, size: 36),
+                  tooltip: 'Next page',
                   onPressed: _goToNextPage,
                   color: Colors.black.withValues(alpha: 0.5),
                 ),

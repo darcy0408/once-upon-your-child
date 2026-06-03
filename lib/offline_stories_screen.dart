@@ -71,6 +71,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen> with Single
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
+            tooltip: 'Cache info',
             onPressed: _showCacheInfo,
           ),
           PopupMenuButton(
@@ -177,6 +178,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen> with Single
                       story.isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: story.isFavorite ? Colors.red : Colors.grey,
                     ),
+                    tooltip: 'Toggle favorite',
                     onPressed: () => _toggleFavorite(story.id),
                   ),
                 ],
@@ -248,6 +250,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen> with Single
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        tooltip: 'Delete story',
                         onPressed: () => _deleteStory(story),
                       ),
                     ],

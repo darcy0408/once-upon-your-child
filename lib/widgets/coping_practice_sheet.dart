@@ -503,6 +503,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
             child: showClose
                 ? IconButton(
                     icon: const Icon(Icons.close, color: Colors.white60),
+                    tooltip: 'Close',
                     onPressed: _done,
                   )
                 : null,

@@ -3502,6 +3502,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 IconButton(
                   onPressed: () =>
                       setState(() => _textScale = max(0.8, _textScale - 0.1)),
+                  tooltip: 'Decrease Text Size',
                   icon: const Icon(Icons.remove_circle_outline),
                   color: AppColors.primary,
                 ),
@@ -3513,6 +3514,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 IconButton(
                   onPressed: () =>
                       setState(() => _textScale = min(2.0, _textScale + 0.1)),
+                  tooltip: 'Increase Text Size',
                   icon: const Icon(Icons.add_circle_outline),
                   color: AppColors.primary,
                 ),
@@ -3752,6 +3754,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back,
                                 color: Colors.white),
+                            tooltip: 'Exit Reader',
                             onPressed: _exitReader,
                           ),
                         ),

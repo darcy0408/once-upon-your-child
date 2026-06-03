@@ -327,7 +327,10 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        Semantics(
+          label: label,
+          textField: true,
+          child: TextField(
           controller: controller,
           maxLines: maxLines,
           onChanged: (_) => _notifyChange(),
@@ -360,6 +363,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
             fontSize: 14,
             color: Color(0xFF2D5016),
           ),
+        ),
         ),
       ],
     );

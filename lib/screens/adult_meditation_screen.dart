@@ -517,32 +517,36 @@ class _AdultMeditationScreenState extends State<AdultMeditationScreen>
           ),
           if (!_promptDismissed) ...[
           const SizedBox(height: 20),
-          TextField(
-            controller: _journalCtrl,
-            maxLines: 5,
-            onChanged: (v) => setState(() => _journalDraft = v),
-            style: const TextStyle(
-              color: _kText,
-              fontFamily: 'SourceSansPro',
-              fontSize: 15,
-              height: 1.6,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Write what comes up…',
-              hintStyle: const TextStyle(color: _kSubtext),
-              filled: true,
-              fillColor: _kSurface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: _kSubtext),
+          Semantics(
+            label: 'Journal: write what comes up',
+            textField: true,
+            child: TextField(
+              controller: _journalCtrl,
+              maxLines: 5,
+              onChanged: (v) => setState(() => _journalDraft = v),
+              style: const TextStyle(
+                color: _kText,
+                fontFamily: 'SourceSansPro',
+                fontSize: 15,
+                height: 1.6,
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: _kSubtext),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: _kGold),
+              decoration: InputDecoration(
+                hintText: 'Write what comes up…',
+                hintStyle: const TextStyle(color: _kSubtext),
+                filled: true,
+                fillColor: _kSurface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: _kSubtext),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: _kSubtext),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: _kGold),
+                ),
               ),
             ),
           ),

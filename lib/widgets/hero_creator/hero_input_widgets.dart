@@ -251,7 +251,10 @@ class _ThemedNameInputState extends State<ThemedNameInput>
                 left: 24,
                 right: widget.onMicTap != null ? 8 : 24,
               ),
-              child: TextField(
+              child: Semantics(
+                label: "Your hero's name",
+                textField: true,
+                child: TextField(
                 controller: widget.controller,
                 focusNode: widget.focusNode,
                 textAlign: TextAlign.center,
@@ -323,6 +326,7 @@ class _ThemedNameInputState extends State<ThemedNameInput>
                       : null,
                 ),
                 onChanged: widget.onChanged,
+              ),
               ),
             ),
           ),

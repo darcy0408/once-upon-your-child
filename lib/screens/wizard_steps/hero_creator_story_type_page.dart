@@ -323,7 +323,10 @@ class HeroStoryTypePage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: TextField(
+                child: Semantics(
+                  label: 'Story idea',
+                  textField: true,
+                  child: TextField(
                   controller: wishController,
                   style:
                       TextStyle(color: Colors.white, fontSize: band.body(14)),
@@ -343,6 +346,7 @@ class HeroStoryTypePage extends StatelessWidget {
                     ),
                   ),
                   onChanged: (v) => wizardData.customElements = v,
+                ),
                 ),
               ),
               SizedBox(width: band.space(8)),
