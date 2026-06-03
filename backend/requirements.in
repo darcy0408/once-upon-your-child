@@ -2,7 +2,7 @@
 Flask==3.1.3
 flask-cors==6.0.2
 Flask-SQLAlchemy==3.1.1
-gunicorn==25.3.0
+gunicorn==26.0.0
 python-dotenv==1.2.2
 
 # Database
@@ -10,31 +10,31 @@ SQLAlchemy==2.0.49
 psycopg2-binary==2.9.12
 
 # Google AI (Gemini)
-google-genai==1.74.0
+google-genai==2.7.0
 google-api-core==2.30.3
 google-auth==2.50.0
 
 # Utilities
-requests==2.33.1
+requests==2.34.2
 Jinja2==3.1.6
 MarkupSafe==3.0.3
-click==8.3.3
+click==8.4.1
 Werkzeug==3.1.8
 Pillow
-cryptography==46.0.7  # 46.0.5: CVE-2026-34073 (DNS name constraint bypass), CVE-2026-39892 (Hash.update buffer overflow)
+cryptography==48.0.0  # 46.0.5: CVE-2026-34073 (DNS name constraint bypass), CVE-2026-39892 (Hash.update buffer overflow)
 urllib3>=2.7.0  # 2.6.3: CVE-2026-44431 (cross-origin redirect header leak), CVE-2026-44432 (streaming API)
 idna>=3.15  # <3.15: CVE-2026-45409 (idna.encode() DoS, incomplete fix for CVE-2024-3651)
 bcrypt==5.0.0
 psutil>=5.9.0
 
 # Error Monitoring
-sentry-sdk[flask]==2.58.0
+sentry-sdk[flask]==2.61.1
 
 # Payment Processing
 stripe==15.1.0
 
 # JWT Authentication
-Flask-JWT-Extended==4.7.1
+Flask-JWT-Extended==4.7.4
 pyjwt>=2.13.0  # 2.12.1: PYSEC-2026-175/177/178/179 (JWT verification CVEs); transitive via Flask-JWT-Extended
 pyotp==2.9.0
 qrcode==8.2
@@ -48,14 +48,14 @@ apispec-webframeworks==1.2.0
 marshmallow==4.3.0
 
 # Caching
-redis==7.4.0
+redis==8.0.0
 Flask-Caching==2.4.0
 
 # Task Queue
 celery==5.6.3
 
 # ElevenLabs Text-to-Speech
-elevenlabs>=1.50.0
+elevenlabs==2.50.0
 pydub>=0.25.1
 
 # Microsoft Edge TTS — free, no-API-key neural voice used as the narration
@@ -69,4 +69,7 @@ pytest-flask==1.3.0
 pytest-mock==3.15.1
 
 # Python 3.13 Compatibility
-audioop-lts
+# 3.13 removed the stdlib `audioop` module (used by pydub); audioop-lts backports
+# it. It Requires-Python >=3.13, so gate it — on <=3.12 the stdlib module is used
+# and this dist has no installable distribution (would break the 3.11 CI install).
+audioop-lts ; python_version >= "3.13"
