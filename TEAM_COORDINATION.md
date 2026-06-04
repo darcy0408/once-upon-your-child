@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-03 | 23:35 | 5807 | session/triage-docs | PR triage: merged #206/#209/#205/#188 (+2 review-nit fixes), closed #182 | [link](docs/sessions/2026-06-03-2335-5807.md) |
 | 2026-06-03 | 12:27 | 5623 | main | Audit #11 + CQ-01/02/04 fixes + 61 a11y labels merged | [link](docs/sessions/2026-06-03-1227-5623.md) |
 | 2026-06-03 | 09:55 | 9794 | session/finops | FinOps audit: F-01/02/04/05 fixed, F-03 verified (PR #205) | [link](docs/sessions/2026-06-03-0955-9794.md) |
 | 2026-06-03 | 06:26 | 3211 | main | Overnight sweep: fixed 5-day backup outage (#207) + 3 backlog code PRs (#206/#209/#210) + corrected stale MT-219/207 | [link](docs/sessions/2026-06-03-0626-3211.md) |
