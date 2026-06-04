@@ -1,12 +1,16 @@
-"""Integration tests for the 3-tier TTS fallback chain in ``/tts/synthesize``.
+"""Integration tests for the tiered TTS fallback chain in ``/tts/synthesize``.
 
-Asserts the ordering and side-effects guaranteed by commit d2e31d0f:
+Asserts the ordering and side-effects after F-01 (ElevenLabs demoted to an
+opt-in premium voice; Gemini Flash TTS is the default paid voice):
 
-* ElevenLabs serves while available + within budget → ``provider='elevenlabs'``.
-* Gemini Flash TTS picks up when ElevenLabs is unconfigured, char-budget
+* Default request (no ``premium_voice``) → Gemini serves → ``provider='gemini'``
+  even when ElevenLabs is fully available.
+* ``premium_voice=true`` opts into ElevenLabs → ``provider='elevenlabs'`` while
+  available + within budget.
+* Gemini picks up when an opted-in ElevenLabs is unconfigured, char-budget
   exhausted, or raises a runtime error → ``provider='gemini'``.
 * Edge TTS is the free final fallback → ``provider='edge'``.
-* All three unavailable → HTTP 503 so clients fall to on-device TTS.
+* All providers unavailable → HTTP 503 so clients fall to on-device TTS.
 
 Cost-tracker side effects:
 
@@ -106,27 +110,56 @@ def _post_synthesize(
     headers: dict,
     text: str = "Once upon a time, a brave hero set out on a quest.",
     voice_id: Optional[str] = None,
+    premium_voice: bool = False,
 ) -> tuple:
-    """POST /tts/synthesize and return (status, json)."""
+    """POST /tts/synthesize and return (status, json).
+
+    ElevenLabs is opt-in after F-01 — pass ``premium_voice=True`` to request it.
+    """
     payload = {"text": text}
     if voice_id is not None:
         payload["voice_id"] = voice_id
+    if premium_voice:
+        payload["premium_voice"] = True
     resp = client.post("/tts/synthesize", json=payload, headers=headers)
     return resp.status_code, resp.get_json()
 
 
 # ---------------------------------------------------------------------------
-# Provider ordering — ElevenLabs first
+# Default provider — Gemini (ElevenLabs is opt-in after F-01)
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultTier:
+    """Default request serves Gemini even when ElevenLabs is fully available."""
+
+    def test_default_serves_gemini_not_elevenlabs(
+        self, client, free_user_headers, tts: TTSMocks
+    ) -> None:
+        # No premium_voice flag → ElevenLabs must never be touched, Gemini wins.
+        status, body = _post_synthesize(client, free_user_headers)
+
+        assert status == 200
+        assert body["provider"] == "gemini"
+        assert base64.b64decode(body["audio_base64"]) == b"gemini-audio"
+        assert body["format"] == "mp3"
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.gemini.generate_speech_with_timestamps.assert_called_once()
+        tts.edge.generate_speech_with_timestamps.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Opt-in premium tier — ElevenLabs via premium_voice=true
 # ---------------------------------------------------------------------------
 
 
 class TestElevenLabsTier:
-    """Tier 1: ElevenLabs serves when available and within budget."""
+    """ElevenLabs serves when explicitly opted-in, available, and within budget."""
 
-    def test_serves_when_available(
+    def test_serves_when_opted_in_and_available(
         self, client, free_user_headers, tts: TTSMocks
     ) -> None:
-        status, body = _post_synthesize(client, free_user_headers)
+        status, body = _post_synthesize(client, free_user_headers, premium_voice=True)
 
         assert status == 200
         assert body["provider"] == "elevenlabs"
@@ -144,15 +177,15 @@ class TestElevenLabsTier:
 
 
 class TestGeminiFallback:
-    """Tier 2: Gemini Flash TTS picks up when ElevenLabs is unavailable."""
+    """Gemini Flash TTS picks up when an opted-in ElevenLabs is unavailable."""
 
     def test_serves_when_elevenlabs_factory_returns_none(
         self, client, free_user_headers, tts: TTSMocks, mocker
     ) -> None:
-        # Simulate ELEVENLABS_API_KEY unset — factory returns None.
+        # Premium opt-in, but ELEVENLABS_API_KEY unset — factory returns None.
         mocker.patch("backend.routes.tts_routes._get_tts_service", return_value=None)
 
-        status, body = _post_synthesize(client, free_user_headers)
+        status, body = _post_synthesize(client, free_user_headers, premium_voice=True)
 
         assert status == 200
         assert body["provider"] == "gemini"
@@ -163,12 +196,13 @@ class TestGeminiFallback:
     def test_serves_when_elevenlabs_raises_exception(
         self, client, free_user_headers, tts: TTSMocks
     ) -> None:
-        # ElevenLabs is configured but its API call blows up — overflow fires.
+        # Opted-in ElevenLabs is configured but its API call blows up — Gemini
+        # fallback fires.
         tts.elevenlabs.generate_speech_with_timestamps.side_effect = Exception(
             "ElevenLabs API timeout"
         )
 
-        status, body = _post_synthesize(client, free_user_headers)
+        status, body = _post_synthesize(client, free_user_headers, premium_voice=True)
 
         assert status == 200
         assert body["provider"] == "gemini"
@@ -177,12 +211,11 @@ class TestGeminiFallback:
     def test_serves_when_elevenlabs_char_budget_exhausted(
         self, client, free_user_headers, tts: TTSMocks
     ) -> None:
-        # The Year-1 100k char/mo global cap is hit — the exact failure mode
-        # this overflow tier was built for. ``check_tts_chars_quota`` flips
-        # ``elevenlabs_ok`` to False before any ElevenLabs call.
+        # Premium opt-in, but the monthly char cap is hit — ``check_tts_chars_quota``
+        # flips ``elevenlabs_ok`` to False before any ElevenLabs call.
         tts.check_tts_chars_quota.return_value = (False, "global", 100_000, 100_000)
 
-        status, body = _post_synthesize(client, free_user_headers)
+        status, body = _post_synthesize(client, free_user_headers, premium_voice=True)
 
         assert status == 200
         assert body["provider"] == "gemini"
@@ -297,9 +330,9 @@ class TestCostTrackerSideEffects:
     def test_elevenlabs_path_does_increment_elevenlabs_char_budget(
         self, client, free_user_headers, tts: TTSMocks
     ) -> None:
-        # Sanity check the inverse: the ElevenLabs path MUST still increment
-        # the char counter so the global cap actually fires when it should.
-        status, body = _post_synthesize(client, free_user_headers)
+        # Sanity check the inverse: the opted-in ElevenLabs path MUST still
+        # increment the char counter so the global cap fires when it should.
+        status, body = _post_synthesize(client, free_user_headers, premium_voice=True)
 
         assert status == 200
         assert body["provider"] == "elevenlabs"

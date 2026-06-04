@@ -12,6 +12,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
 | 2026-06-03 | 12:27 | 5623 | main | Audit #11 + CQ-01/02/04 fixes + 61 a11y labels merged | [link](docs/sessions/2026-06-03-1227-5623.md) |
+| 2026-06-03 | 09:55 | 9794 | session/finops | FinOps audit: F-01/02/04/05 fixed, F-03 verified (PR #205) | [link](docs/sessions/2026-06-03-0955-9794.md) |
 | 2026-06-03 | 06:26 | 3211 | main | Overnight sweep: fixed 5-day backup outage (#207) + 3 backlog code PRs (#206/#209/#210) + corrected stale MT-219/207 | [link](docs/sessions/2026-06-03-0626-3211.md) |
 | 2026-06-02 | 13:27 | a7e6 | main | GIT_MAINTENANCE: branch cleanup 13→6, rescued 4cd2 record, discarded pubspec.lock churn | [link](docs/sessions/2026-06-02-1327-a7e6.md) |
 | 2026-05-31 | 14:18 | 4cd2 | main | Greened main CI (#177) + removed redundant deploy workflow (#178) + Railway prod triage | [link](docs/sessions/2026-05-31-1418-4cd2.md) |

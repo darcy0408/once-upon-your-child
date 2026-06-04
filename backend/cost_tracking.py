@@ -15,20 +15,30 @@ except ImportError:
     # When run directly or in test environment
     db = None
 
-# Cost estimates based on Gemini API pricing (as of 2025-2026)
-# These are approximate and should be updated based on actual pricing
+# Per-token Gemini cost rates (USD/token).
+#
+# CANONICAL SOURCE: backend/services/cost_tracker.py — per-call cost attribution
+# with list prices verified 2025-2026. This table is kept in agreement with it
+# (audit finding F-04 reconciled two divergent tables). Older 2.0/1.5 keys are
+# retained only for historical cost-report lookups over past log data.
 COST_RATES = {
-    "gemini-2.0-flash": {
-        "input_tokens": 0.00000010,  # $0.10 per million tokens
-        "output_tokens": 0.00000040,  # $0.40 per million tokens
-    },
-    "gemini-2.0-flash-lite": {
-        "input_tokens": 0.000000075,  # $0.075 per million tokens — kept for historical log lookups
+    # Current default text model — must be present so _calculate_token_cost's
+    # DEFAULT_MODEL fallback resolves (previously KeyError'd: the key was absent).
+    "gemini-2.5-flash": {
+        "input_tokens": 0.000000075,  # $0.075 per million tokens
         "output_tokens": 0.00000030,  # $0.30 per million tokens
     },
     "gemini-2.5-flash-lite": {
-        "input_tokens": 0.000000075,  # $0.075 per million tokens
-        "output_tokens": 0.00000030,  # $0.30 per million tokens
+        "input_tokens": 0.0000000375,  # $0.0375 per million tokens
+        "output_tokens": 0.00000015,  # $0.15 per million tokens
+    },
+    "gemini-2.0-flash": {
+        "input_tokens": 0.00000010,  # $0.10/M — historical (pre-2.5) log lookups
+        "output_tokens": 0.00000040,  # $0.40/M
+    },
+    "gemini-2.0-flash-lite": {
+        "input_tokens": 0.000000075,  # $0.075/M — historical log lookups
+        "output_tokens": 0.00000030,  # $0.30/M
     },
     "gemini-2.0-flash-exp": {
         "input_tokens": 0.0,  # FREE during experimental period

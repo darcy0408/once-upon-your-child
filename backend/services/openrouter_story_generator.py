@@ -14,9 +14,14 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# Paid / premium / family / BYOK tier: Claude 4.7 Sonnet via OpenRouter (long-form
-# prose, low refusal rate on child-safe content, native JSON mode).
-OPENROUTER_PAID_MODEL = "anthropic/claude-sonnet-4.7"
+# Paid / premium / family / BYOK tier: Claude Haiku 4.5 via OpenRouter.
+# F-02 audit: was Claude Sonnet 4.7 (~$3/$15 per M). This OpenRouter path is
+# only the *fallback* (primary is Gemini direct), so it fires rarely; Haiku
+# keeps the three properties Sonnet was chosen for — Anthropic provider
+# (cross-provider redundancy vs a Google/Gemini outage), native JSON mode, and
+# a low refusal rate on child-safe content — at ~3x lower cost (~$1/$5 per M).
+# Override via OPENROUTER_PAID_MODEL to A/B back to Sonnet without a deploy.
+OPENROUTER_PAID_MODEL = "anthropic/claude-haiku-4.5"
 
 # Free tier: Llama 3.3 70B Instruct — broad permissive license, capable of
 # child-safe long-form prose. NOT the ":free" route (that hits an unstable
@@ -45,8 +50,8 @@ def _resolve_text_model(user_tier: str | None) -> str:
     """Pick the OpenRouter text model for a subscription tier.
 
     Free-tier users get Llama 3.3 70B Instruct (free-tier-cheap, decent quality).
-    Paid/Premium/Family/BYOK and any unrecognized non-empty tier get Claude 4.7
-    Sonnet — a missing tier defaults to the paid model so a payer is never
+    Paid/Premium/Family/BYOK and any unrecognized non-empty tier get Claude
+    Haiku 4.5 — a missing tier defaults to the paid model so a payer is never
     silently downgraded (fail toward quality), exactly like the Gemini-side
     helper at story_generation_service.py:_resolve_text_model.
 

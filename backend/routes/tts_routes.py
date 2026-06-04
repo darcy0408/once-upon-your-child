@@ -1,11 +1,16 @@
 """
-TTS Routes — three-tier narration fallback chain.
+TTS Routes — tiered narration fallback chain.
 
-Provider order on /tts/synthesize:
-  1. ElevenLabs (premium, ~$0.18/1k chars) — preferred while char budget OK
-  2. Gemini Flash TTS (overflow, ~$0.054/1k chars) — premium quality at lower
-     cost when ElevenLabs is unconfigured or its monthly cap is hit
-  3. Edge TTS (free) — final online fallback before on-device TTS
+Default provider order on /tts/synthesize (cost-optimized — see F-01 in
+audit-reports/10-finops):
+  1. Gemini Flash TTS (~$0.054/1k chars) — the default paid voice
+  2. Edge TTS (free) — final online fallback before on-device TTS
+
+ElevenLabs (~$0.18/1k chars, ~3.3x Gemini) is an OPT-IN premium voice: used
+only when the request sets "premium_voice": true, or requests dialogue-
+differentiated narration via "character_voice_id" (a multi-voice feature only
+ElevenLabs supports). When opted in it serves first, then falls through to
+Gemini then Edge if unavailable or over its monthly character budget.
 The 'provider' field in the response indicates which tier served the request.
 
 POST /tts/synthesize
@@ -188,10 +193,11 @@ def create_tts_blueprint(limiter, require_auth):
     )
     def synthesize():
         """
-        Generate ElevenLabs MP3 narration for a story text.
-        Returns base64-encoded MP3 audio.
-        Returns 503 if ELEVENLABS_API_KEY is missing so the client falls back
-        to on-device TTS.
+        Generate MP3 narration for a story text.
+        Default voice is Gemini Flash TTS; ElevenLabs is an opt-in premium
+        voice (premium_voice=true, or character_voice_id for dialogue).
+        Returns base64-encoded MP3 audio, or 503 if every provider is
+        unavailable so the client falls back to on-device TTS.
         """
         import os
 
@@ -206,10 +212,14 @@ def create_tts_blueprint(limiter, require_auth):
                 503,
             )
 
-        service = _get_tts_service()
-        elevenlabs_ok = service is not None
+        # ElevenLabs is now an OPT-IN premium voice rather than the paid
+        # default (F-01: it costs ~3.3x Gemini Flash TTS). It is initialised
+        # and attempted only when the client explicitly opts in below; the
+        # default paid path is Gemini Flash TTS, then the free Edge tier.
+        service = None
+        elevenlabs_ok = False
 
-        # Per-user daily TTS quota check (applies to both providers)
+        # Per-user daily TTS quota check (applies to all providers)
         try:
             from backend.utils.ai_quota import (
                 check_tts_chars_quota,
@@ -257,6 +267,17 @@ def create_tts_blueprint(limiter, require_auth):
         text = (data.get("text") or "").strip()
         if not text:
             return jsonify({"error": "text is required"}), 400
+
+        # Opt-in gate for the premium ElevenLabs voice. Dialogue-differentiated
+        # narration (character_voice_id) also requires ElevenLabs, since it is
+        # the only provider that supports multi-voice synthesis. Without an
+        # explicit opt-in the request is served by the default Gemini -> Edge
+        # chain below.
+        premium_voice = bool(data.get("premium_voice"))
+        wants_dialogue = bool((data.get("character_voice_id") or "").strip())
+        if premium_voice or wants_dialogue:
+            service = _get_tts_service()
+            elevenlabs_ok = service is not None
 
         # Monthly ElevenLabs character-budget check (per-user + global). When
         # the premium budget is depleted we don't fail the request — we fall
@@ -347,9 +368,9 @@ def create_tts_blueprint(limiter, require_auth):
                 elevenlabs_ok = False
                 audio_bytes = None
 
-        # Gemini Flash TTS overflow tier — kicks in when ElevenLabs is
-        # unconfigured, its monthly budget is depleted, or it returned no
-        # audio. Quality stays close to ElevenLabs at ~30% of the per-char
+        # Gemini Flash TTS — the DEFAULT paid voice (F-01). Also serves as the
+        # fallback when an opted-in ElevenLabs request is unconfigured, over its
+        # monthly budget, or returned no audio. ~30% of the ElevenLabs per-char
         # cost; Edge stays below as the final free fallback.
         if not audio_bytes:
             gemini_result = _gemini_synthesize(text, voice_id, speed)
@@ -429,7 +450,7 @@ def create_tts_blueprint(limiter, require_auth):
                 "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
                 "format": "mp3",
                 "voice_id": voice_id,
-                "provider": provider,  # 'elevenlabs' or 'edge'
+                "provider": provider,  # 'gemini' (default), 'elevenlabs' (opt-in), or 'edge'
                 "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
             }
         )

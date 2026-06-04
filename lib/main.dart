@@ -26,7 +26,10 @@ Future<void> main() async {
       // STORE-2: keep the release sample rate well below 1.0 so a child's
       // session never floods the project even after consent is granted.
       options.sampleRate = kReleaseMode ? 0.2 : 0.0;
-      options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
+      // F-01 audit (F-05): traces scale with session count, not error count —
+      // 20% would exceed the event quota at ~10k+ users. Keep performance
+      // tracing at a thin 5% sample; error sampling stays at 20% above.
+      options.tracesSampleRate = kReleaseMode ? 0.05 : 0.0;
       // STORE-2 (COPPA §312.5 / Apple Kids-Category 1.3, 5.1.4): never attach
       // device/user PII to events from a children's app.
       options.sendDefaultPii = false;
