@@ -19,6 +19,7 @@ from backend.data.superhero_matrix import (
     POWERS,
     PROBLEMS,
     VILLAINS,
+    apply_nemesis_override,
     get_band_tables,
     pick_pairing,
 )
@@ -157,3 +158,63 @@ def test_get_band_tables_returns_adventurer_set():
     assert p_a is ADVENTURER_PROBLEMS
     assert pw_a is ADVENTURER_POWERS
     assert vp_a is ADVENTURER_VILLAIN_PROBLEMS
+
+
+# ---------------------------------------------------------------------------
+# C4 — kid-chosen nemesis override (apply_nemesis_override).
+# ---------------------------------------------------------------------------
+def test_apply_nemesis_override_empty_keeps_server_pick():
+    """No nemesis supplied → server's (villain, problem) is returned as-is."""
+    server_villain = next(iter(ADVENTURER_VILLAINS))
+    server_problem = ADVENTURER_VILLAIN_PROBLEMS[server_villain][0]
+    for empty in (None, "", "   "):
+        assert apply_nemesis_override(
+            "adventurer", server_villain, server_problem, empty
+        ) == (server_villain, server_problem)
+
+
+def test_apply_nemesis_override_unknown_id_ignored():
+    """An id that isn't a villain in the band is ignored (keeps server pick)."""
+    server_villain = next(iter(ADVENTURER_VILLAINS))
+    server_problem = ADVENTURER_VILLAIN_PROBLEMS[server_villain][0]
+    # A Sprout villain id is not a valid Adventurer nemesis.
+    stale_id = next(iter(VILLAINS))
+    assert stale_id not in ADVENTURER_VILLAINS
+    assert apply_nemesis_override(
+        "adventurer", server_villain, server_problem, stale_id
+    ) == (server_villain, server_problem)
+
+
+def test_apply_nemesis_override_swaps_villain_and_keeps_compatible_problem():
+    """A valid chosen nemesis replaces the villain; a problem already compatible
+    with the chosen villain is preserved."""
+    chosen = list(ADVENTURER_VILLAINS)[3]
+    good_problem = ADVENTURER_VILLAIN_PROBLEMS[chosen][0]
+    villain, problem = apply_nemesis_override(
+        "adventurer", list(ADVENTURER_VILLAINS)[0], good_problem, chosen
+    )
+    assert villain == chosen
+    assert problem == good_problem
+
+
+def test_apply_nemesis_override_repairs_incompatible_problem():
+    """When the server's problem doesn't fit the chosen villain, re-pair to one
+    that does — otherwise the prompt builder would re-roll and drop the choice."""
+    # Find a villain whose compatible-problem set excludes some other problem.
+    chosen = None
+    bad_problem = None
+    for vid, compat in ADVENTURER_VILLAIN_PROBLEMS.items():
+        for pid in ADVENTURER_PROBLEMS:
+            if pid not in compat:
+                chosen, bad_problem = vid, pid
+                break
+        if chosen:
+            break
+    assert chosen is not None, "expected at least one incompatible villain/problem"
+
+    villain, problem = apply_nemesis_override(
+        "adventurer", list(ADVENTURER_VILLAINS)[0], bad_problem, chosen
+    )
+    assert villain == chosen
+    # The re-paired problem must be one the chosen villain actually fits.
+    assert problem in ADVENTURER_VILLAIN_PROBLEMS[chosen]

@@ -14,6 +14,9 @@ os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
 from google.api_core import exceptions as google_exceptions
 
 from backend.celery_config import celery
+from backend.data.superhero_matrix import (
+    apply_nemesis_override as _superhero_apply_nemesis,
+)
 from backend.data.superhero_matrix import pick_pairing as _superhero_pick_pairing
 from backend.database import db
 from backend.models.character import Character
@@ -983,6 +986,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     _sh_age_int = 5
                 if _sh_age_int >= 6 and _sh_age_int <= 8:
                     sh_band = "explorer"
+                elif _sh_age_int >= 9 and _sh_age_int <= 12:
+                    # Adventurer (9-12) has its own villain/problem tables. Without
+                    # this branch the pairing was drawn from the Sprout table, so
+                    # the Adventurer prompt builder silently re-rolled the villain
+                    # (and the C4 nemesis override never stuck — see below).
+                    sh_band = "adventurer"
                 else:
                     sh_band = "sprout"
                 try:
@@ -1002,12 +1011,17 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     )
 
                 # C4: honor a kid-chosen arch-villain (Adventurer nemesis picker).
-                # If the client supplied a nemesis id, use it instead of the
-                # server's surprise-pick; the prompt builder re-validates against
-                # the band's villain table and falls back if the id is unknown.
-                chosen_nemesis = (kwargs.get("hero_nemesis_id") or "").strip()
-                if chosen_nemesis:
-                    sh_villain_id = chosen_nemesis
+                # If the client supplied a nemesis id, swap it in AND re-pair it to
+                # a problem it actually fits — the prompt builder re-rolls both
+                # villain and problem when either is invalid for the band, which
+                # would otherwise silently discard the kid's choice. Unknown ids
+                # fall through to the server's surprise-pick.
+                sh_villain_id, sh_problem_id = _superhero_apply_nemesis(
+                    sh_band,
+                    sh_villain_id,
+                    sh_problem_id,
+                    kwargs.get("hero_nemesis_id"),
+                )
 
                 superhero_meta = {
                     "villain_id": sh_villain_id,

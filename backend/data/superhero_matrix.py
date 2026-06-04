@@ -781,6 +781,44 @@ def get_band_tables(band: str) -> tuple[dict, dict, dict, dict]:
     return _band_tables(band)
 
 
+def apply_nemesis_override(
+    band: str,
+    villain_id: str,
+    problem_id: str,
+    chosen_nemesis: str | None,
+) -> tuple[str, str]:
+    """C4: replace the server-picked villain with a kid-chosen nemesis.
+
+    The Adventurer (9-12) nemesis picker sends ``hero_nemesis_id``. We must not
+    only swap in that villain but also keep the paired ``problem_id`` valid for
+    the band: the prompt builder re-rolls BOTH villain and problem whenever
+    either is invalid for the band, so an incompatible problem would silently
+    throw away the kid's chosen villain. We therefore re-pair the chosen villain
+    to a problem it actually fits.
+
+    Args:
+        band: The hero's band ('sprout' / 'explorer' / 'adventurer').
+        villain_id: The server's surprise-picked villain id.
+        problem_id: The server's surprise-picked problem id.
+        chosen_nemesis: The client-supplied villain id, or None/"".
+
+    Returns:
+        ``(villain_id, problem_id)`` — the chosen nemesis paired with a
+        compatible problem when the id is valid for ``band``; otherwise the
+        server pick unchanged (unknown/empty/wrong-band ids are ignored).
+    """
+    chosen = (chosen_nemesis or "").strip()
+    if not chosen:
+        return villain_id, problem_id
+    villains_t, _problems_t, _powers_t, villain_problems_t = _band_tables(band)
+    if chosen not in villains_t:
+        return villain_id, problem_id
+    compatible = villain_problems_t.get(chosen) or []
+    if compatible and problem_id not in compatible:
+        problem_id = compatible[0]
+    return chosen, problem_id
+
+
 __all__ = [
     "VILLAINS",
     "PROBLEMS",
@@ -796,4 +834,5 @@ __all__ = [
     "ADVENTURER_VILLAIN_PROBLEMS",
     "pick_pairing",
     "get_band_tables",
+    "apply_nemesis_override",
 ]
