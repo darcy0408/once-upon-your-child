@@ -837,13 +837,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         # cancelled (e.g., they navigated away in the gap between dispatch
         # and worker pickup). Fail-open — a Redis hiccup just lets the
         # generation proceed.
-        from ..utils.task_cancellation import is_cancelled
+        from ..utils.task_cancellation import clear_cancellation, is_cancelled
 
         if is_cancelled(self.request.id):
             logger.info(
                 "Task %s cancelled before work began; skipping generation.",
                 self.request.id,
             )
+            # Best-effort: drop the cancel flag so it never lingers past task
+            # end (the helper swallows Redis errors and the TTL is a backstop).
+            clear_cancellation(self.request.id)
             return {
                 "status": "cancelled",
                 "user_id": str(kwargs.get("user_id") or "anonymous"),
@@ -1227,6 +1230,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         attempt,
                     )
                     _clear_partial_story(self.request.id)
+                    clear_cancellation(self.request.id)
                     return {
                         "status": "cancelled",
                         "user_id": str(user_id),
@@ -1573,6 +1577,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     self.request.id,
                 )
                 _clear_partial_story(self.request.id)
+                clear_cancellation(self.request.id)
                 return {
                     "status": "cancelled",
                     "user_id": str(user_id),
@@ -1871,6 +1876,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     logger.exception(
                         "Failed to persist Story row (story still returned to caller)."
                     )
+
+            # PERF-04 hardening: clear the cancel flag on normal completion too,
+            # so a cancel that lost the race against the worker finishing never
+            # lingers in Redis past task end. Best-effort (helper swallows errors;
+            # the 10-min TTL is the backstop).
+            clear_cancellation(self.request.id)
 
             return {
                 "status": "complete",

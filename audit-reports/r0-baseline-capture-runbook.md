@@ -94,6 +94,14 @@ If no staging environment exists, this capture is **blocked on infrastructure**
 and should be deferred — do not substitute prod, per the audit's safety
 protocol.
 
+The committed `tools/perf-load-test.py` enforces this with two layers:
+a **denylist** of known prod hosts (`grand-light`, `onceuponyourchild`,
+`story-weaver-app.up.railway.app`, `pages.dev`) AND a positive **staging
+allowlist** — the resolved host must contain a `staging` token (or be in the
+explicit `_HOST_ALLOWLIST`), so a future prod-host rename fails closed rather
+than silently re-opening the hole. A new staging host whose name lacks
+`staging` must be added to `_HOST_ALLOWLIST` before the script will run.
+
 If staging exists, the script template:
 
 ```python
