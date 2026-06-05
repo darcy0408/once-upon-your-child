@@ -64,6 +64,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   // UI state
   String _statusText = '';
+
+  // PERF-04: backend task id of the in-flight generation. dispose() cancels the
+  // worker if the user leaves before the story is ready. Nulled once the story
+  // arrives so a later dispose doesn't fire a pointless cancel.
+  String? _activeTaskId;
   bool _isListening = false;
   bool _isSpeaking = false;
   bool _timerExpired = false;
@@ -129,6 +134,12 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   @override
   void dispose() {
+    // PERF-04: if the user leaves before the story is ready, abandon the
+    // in-flight backend task (best-effort). No-op once it has finished.
+    final taskId = _activeTaskId;
+    if (taskId != null && taskId.isNotEmpty) {
+      unawaited(ApiServiceManager.cancelTask(taskId));
+    }
     _sleepTimer?.cancel();
     _orbController.dispose();
     _speech.stop();
@@ -579,9 +590,13 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         bedtimeMood: _feelingChoice ?? 'calming',
         bedtimeDurationMinutes: _storyDurationMinutes,
         subscriptionTier: 'free',
+        // PERF-04: capture the task id so dispose() can cancel if abandoned.
+        onTaskId: (id) => _activeTaskId = id,
         onProgress: (status) {
           if (mounted) setState(() => _statusText = status);
         });
+    // PERF-04: story text is in hand — nothing left to cancel.
+    _activeTaskId = null;
 
     setState(() => _step = BedtimeStep.reading);
 

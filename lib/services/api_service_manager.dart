@@ -636,6 +636,26 @@ class ApiServiceManager {
     return byokPremium || paidPremium;
   }
 
+  /// PERF-04: best-effort cancellation of an in-flight story-generation task.
+  /// Fire-and-forget — the backend sets a Redis flag the Celery worker checks
+  /// between phases (before each (re)generation and before moderation). Errors
+  /// are swallowed: a failed cancel just lets the generation finish (cost = one
+  /// story), which is strictly better than blocking the UI on a cancel call.
+  static Future<void> cancelTask(String taskId) async {
+    if (taskId.isEmpty) return;
+    try {
+      final headers = await authHeaders();
+      await http
+          .post(
+            Uri.parse('$_localBackendUrl/cancel-task/$taskId'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('cancelTask($taskId) failed (best-effort): $e');
+    }
+  }
+
   /// Generate a story using appropriate method (backend or direct API)
   static Future<StoryGenerationResult> generateStory({
     required String characterName,
@@ -678,6 +698,10 @@ class ApiServiceManager {
     // each call is a fresh snapshot of the full accumulated story so far.
     // Existing callers that don't pass this are unaffected.
     void Function(String)? onPartial,
+    // PERF-04: fired once with the backend Celery task id as soon as
+    // /generate-story returns it, so the caller can later abandon the
+    // generation via cancelTask(). No-op on the synchronous (200) path.
+    void Function(String)? onTaskId,
     List<String>? progressPhases,
     // Age-appropriate story parameters
     String? therapeuticPrompt,
@@ -781,6 +805,7 @@ class ApiServiceManager {
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
           onPartial: onPartial,
+          onTaskId: onTaskId,
           progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
@@ -1057,6 +1082,10 @@ class ApiServiceManager {
     // each call is a fresh snapshot of the full accumulated story so far.
     // Existing callers that don't pass this are unaffected.
     void Function(String)? onPartial,
+    // PERF-04: fired once with the backend Celery task id as soon as
+    // /generate-story returns it, so the caller can later abandon the
+    // generation via cancelTask(). No-op on the synchronous (200) path.
+    void Function(String)? onTaskId,
     List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
@@ -1111,6 +1140,7 @@ class ApiServiceManager {
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
           onPartial: onPartial,
+          onTaskId: onTaskId,
           progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
@@ -1184,6 +1214,10 @@ class ApiServiceManager {
     // each call is a fresh snapshot of the full accumulated story so far.
     // Existing callers that don't pass this are unaffected.
     void Function(String)? onPartial,
+    // PERF-04: fired once with the backend Celery task id as soon as
+    // /generate-story returns it, so the caller can later abandon the
+    // generation via cancelTask(). No-op on the synchronous (200) path.
+    void Function(String)? onTaskId,
     List<String>? progressPhases,
     String? therapeuticPrompt,
     String? conflictHook,
@@ -1308,6 +1342,9 @@ class ApiServiceManager {
       final generateData =
           jsonDecode(generateResponse.body) as Map<String, dynamic>;
       final taskId = generateData['task_id'] as String;
+      // PERF-04: hand the task id to the caller so a user who abandons the
+      // wait can cancel the in-flight generation via cancelTask(taskId).
+      onTaskId?.call(taskId);
 
       // 2. Poll for the result
       final statusUri = Uri.parse('$_localBackendUrl/task-status/$taskId');

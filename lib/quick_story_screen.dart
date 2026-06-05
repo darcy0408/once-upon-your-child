@@ -32,6 +32,11 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   String? _generatedStory;
   bool _magicPulse = false;
 
+  // PERF-04: backend task id of the in-flight generation. Lets dispose() cancel
+  // the worker if the user leaves the screen before the story finishes. Nulled
+  // on completion so a later dispose doesn't fire a pointless cancel.
+  String? _activeTaskId;
+
   // Theme data with images
   final List<Map<String, String>> _quickThemes = [
     {
@@ -78,6 +83,12 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
   @override
   void dispose() {
+    // PERF-04: if the user leaves mid-generation, tell the backend to abandon
+    // the in-flight story task (best-effort). No-op if it already finished.
+    final taskId = _activeTaskId;
+    if (taskId != null && taskId.isNotEmpty) {
+      unawaited(ApiServiceManager.cancelTask(taskId));
+    }
     _characterNameController.dispose();
     _themeController.dispose();
     super.dispose();
@@ -95,6 +106,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
       _isGenerating = true;
       _magicPulse = true;
       _generatedStory = null;
+      _activeTaskId = null; // PERF-04: clear any stale id from a prior run.
     });
 
     try {
@@ -121,6 +133,8 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
         theme: _selectedTheme,
         age: int.parse(_selectedAge),
         subscriptionTier: subscription.tier.name,
+        // PERF-04: capture the task id so dispose() can cancel if abandoned.
+        onTaskId: (id) => _activeTaskId = id,
       );
 
       // Record usage
@@ -131,6 +145,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           _generatedStory = storyResult.storyText;
           _isGenerating = false;
           _magicPulse = false;
+          _activeTaskId = null; // PERF-04: completed — nothing to cancel.
         });
       }
     } catch (e) {

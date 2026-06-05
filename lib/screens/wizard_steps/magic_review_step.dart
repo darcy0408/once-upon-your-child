@@ -64,6 +64,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   bool _isGenerating = false;
   String? _generationError;
   late String _loadingStatus;
+
+  // PERF-01 "honest progress": the largest accumulated streamed partial-story
+  // length seen so far (characters), and the story-length tier used to scale it
+  // into a 0..1 progress fraction. The streamed text itself is PRE-MODERATION
+  // and is NEVER rendered — only its length drives the loading dot indicator.
+  int _partialChars = 0;
+  String _storyLengthTier = 'standard';
+
+  // PERF-04: the backend Celery task id for the in-flight generation, captured
+  // via generateStory(onTaskId:). Lets the Cancel button abandon the task so
+  // the worker stops before the next (re)generation / moderation phase.
+  String? _activeTaskId;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
   IllustrationPreference _illustrationPreference = IllustrationPreference.full;
@@ -77,6 +89,44 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   // so rebuilds don't re-fire the same prompt. Speaks again only if the
   // recap content actually changed (e.g. user edited a field and returned).
   String? _lastSpokenLaunchPrompt;
+
+  /// PERF-01: maps the accumulated streamed-text length into a 0..1 progress
+  /// fraction for [MagicalLoadingView]. Returns null until the first partial
+  /// arrives, so the loading view stays on its blind-timer fallback during the
+  /// initial pre-stream wait (queueing, prompt assembly) instead of sitting at
+  /// a stuck 0%.
+  ///
+  /// Heuristic: each length tier has an expected final character count (a rough
+  /// average of generated story bodies). progress = receivedChars / expected,
+  /// clamped to [0, 0.95] so the indicator never claims "Almost ready!" before
+  /// generation actually completes. Monotonicity is guaranteed because
+  /// [_partialChars] only ever increases (see the onPartial handler).
+  double? get _honestProgress {
+    if (_partialChars <= 0) return null;
+    // Approximate finished-story body lengths per tier (characters). These are
+    // deliberately generous so a long story doesn't peg the bar early; a short
+    // one simply reaches the 0.95 cap sooner.
+    const expectedChars = <String, int>{
+      'quick': 1400,
+      'short': 1400,
+      'standard': 2600,
+      'long': 4200,
+      'epic': 4200,
+    };
+    final expected = expectedChars[_storyLengthTier] ?? 2600;
+    return (_partialChars / expected).clamp(0.0, 0.95);
+  }
+
+  /// PERF-04: the user tapped Cancel during generation. Tell the backend to
+  /// abandon the in-flight task (best-effort, fire-and-forget) and drop the
+  /// loading view. Safe before a task id has arrived — cancelTask no-ops then.
+  void _cancelGeneration() {
+    final taskId = _activeTaskId;
+    if (taskId != null && taskId.isNotEmpty) {
+      unawaited(ApiServiceManager.cancelTask(taskId));
+    }
+    if (mounted) setState(() => _isGenerating = false);
+  }
 
   void _jumpToHero() => widget.onGoToSubStep?.call(0);
   void _jumpToCompanions() => widget.onGoToSubStep?.call(1);
@@ -139,6 +189,15 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   void dispose() {
     _countdownTimer?.cancel();
     AppTtsService.instance.stop();
+    // PERF-04: if the user navigates away mid-generation (back button / route
+    // pop) instead of tapping Cancel, still abandon the in-flight task so the
+    // worker stops rather than finishing a story nobody will see. Mirrors the
+    // quick-story / bedtime cancel-on-dispose parity. No-ops once _activeTaskId
+    // has been cleared on completion.
+    final taskId = _activeTaskId;
+    if (taskId != null) {
+      unawaited(ApiServiceManager.cancelTask(taskId));
+    }
     super.dispose();
   }
 
@@ -281,12 +340,22 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final canGetIllustrations =
         isPremium || isUsingOwnKey || widget.wizardData.learningToReadMode;
 
-    setState(() => _isGenerating = true);
+    setState(() {
+      _isGenerating = true;
+      // PERF-01: reset the honest-progress signal at the start of each run.
+      _partialChars = 0;
+      // PERF-04: clear any stale task id from a previous run.
+      _activeTaskId = null;
+    });
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
+      // PERF-01: remember the length tier so streamed-char progress can be
+      // scaled correctly for short vs. epic stories.
+      _storyLengthTier =
+          (requestData['storyLength'] as String?) ?? 'standard';
       final activeChildProfileId =
           await ChildProfileService().getActiveProfileId();
       if (activeChildProfileId != null && activeChildProfileId.isNotEmpty) {
@@ -485,6 +554,20 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 setState(() => _loadingStatus = status);
               }
             },
+            // PERF-01: each call delivers the FULL accumulated story text so
+            // far (a fresh snapshot, not a delta). We use only its LENGTH as a
+            // progress signal — the text is pre-moderation and is never shown.
+            // Take max() so the dot indicator stays monotonic if a snapshot
+            // ever arrives shorter than a prior one.
+            onPartial: (partialText) {
+              if (!mounted) return;
+              final chars = partialText.length;
+              if (chars > _partialChars) {
+                setState(() => _partialChars = chars);
+              }
+            },
+            // PERF-04: remember the task id so Cancel can abandon it.
+            onTaskId: (id) => _activeTaskId = id,
             progressPhases:
                 ageBandFromAge(requestData['age'] as int? ?? 5).isMature
                     ? const [
@@ -967,9 +1050,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (_isGenerating) {
       return MagicalLoadingView(
         status: _loadingStatus,
-        onCancel: () => setState(() => _isGenerating = false),
+        onCancel: _cancelGeneration,
         isSproutBand: true,
         companionImagePath: companionImg,
+        progress: _honestProgress,
       );
     }
 
@@ -1221,8 +1305,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (_isGenerating) {
       return MagicalLoadingView(
         status: _loadingStatus,
-        onCancel: () => setState(() => _isGenerating = false),
+        onCancel: _cancelGeneration,
         isSproutBand: false,
+        progress: _honestProgress,
       );
     }
 
@@ -1360,8 +1445,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (_isGenerating) {
       return MagicalLoadingView(
         status: _loadingStatus,
-        onCancel: () => setState(() => _isGenerating = false),
+        onCancel: _cancelGeneration,
         isSproutBand: false,
+        progress: _honestProgress,
       );
     }
 
@@ -1594,8 +1680,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     if (_isGenerating) {
       return MagicalLoadingView(
         status: _loadingStatus,
-        onCancel: () => setState(() => _isGenerating = false),
+        onCancel: _cancelGeneration,
         isSproutBand: false,
+        progress: _honestProgress,
       );
     }
 
@@ -2285,12 +2372,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     : _isGenerating
                         ? MagicalLoadingView(
                             status: _loadingStatus,
-                            onCancel: () =>
-                                setState(() => _isGenerating = false),
+                            onCancel: _cancelGeneration,
                             isSproutBand: band.band == AgeBand.sprout,
                             companionImagePath: band.band == AgeBand.sprout
                                 ? _companionImage
                                 : null,
+                            progress: _honestProgress,
                           )
                         : _PulsingCastSpellFrame(
                             isReady: !_isGenerating && data.isComplete,

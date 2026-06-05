@@ -20,12 +20,25 @@ class MagicalLoadingView extends StatefulWidget {
   /// When true, shows the child-friendly star constellation instead of the loom.
   final bool isSproutBand;
 
+  /// PERF-01 "honest progress": real generation progress in [0.0, 1.0],
+  /// derived by the caller from the accumulated length of the streamed
+  /// partial-story text. When non-null, the 4-dot adventure indicator advances
+  /// to mirror *actual* generation progress instead of a blind timer; the dot
+  /// timer is disabled. When null (non-streaming callers), the dot indicator
+  /// keeps its original timer-driven behaviour so those screens are unaffected.
+  ///
+  /// IMPORTANT: this is only a numeric progress *signal*. The streamed text it
+  /// is derived from is PRE-MODERATION raw model output and is never rendered
+  /// here — no story words ever reach this widget.
+  final double? progress;
+
   const MagicalLoadingView({
     super.key,
     required this.status,
     this.onCancel,
     this.companionImagePath,
     this.isSproutBand = false,
+    this.progress,
   });
 
   @override
@@ -164,6 +177,22 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   int _messageIndex = 0;
   int _stepIndex = 0;
 
+  /// Maps an honest progress fraction (0..1) to a dot index in
+  /// [_adventureSteps]. The first dot is lit immediately (progress 0 => "we've
+  /// started"); the final dot lights only once progress reaches ~95%, so the
+  /// indicator never claims "Almost ready!" before generation truly nears
+  /// completion. Monotonicity is enforced at the call site by clamping the
+  /// incoming progress, so the dot row only ever moves forward.
+  int _stepIndexForProgress(double progress) {
+    final steps = _adventureSteps.length; // 4
+    final p = progress.clamp(0.0, 1.0);
+    // Reserve the last step for "near complete". Distribute the first
+    // (steps - 1) dots across [0, 0.95); the last dot lights at >= 0.95.
+    if (p >= 0.95) return steps - 1;
+    final idx = (p / 0.95 * (steps - 1)).floor();
+    return idx.clamp(0, steps - 1);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -246,13 +275,21 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
           () => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
     });
 
-    // Advance progress steps every ~3s (4 steps over ~12s expected wait)
-    _stepTimer = Timer.periodic(const Duration(milliseconds: 3100), (_) {
-      if (!mounted) return;
-      setState(() {
-        if (_stepIndex < _adventureSteps.length - 1) _stepIndex++;
+    // PERF-01: honest progress when a progress signal is supplied.
+    // - progress != null: derive the dot index from real progress; no timer.
+    // - progress == null: fall back to the original blind timer so callers
+    //   that don't stream partial text behave exactly as before.
+    if (widget.progress != null) {
+      _stepIndex = _stepIndexForProgress(widget.progress!);
+    } else {
+      // Advance progress steps every ~3s (4 steps over ~12s expected wait)
+      _stepTimer = Timer.periodic(const Duration(milliseconds: 3100), (_) {
+        if (!mounted) return;
+        setState(() {
+          if (_stepIndex < _adventureSteps.length - 1) _stepIndex++;
+        });
       });
-    });
+    }
 
     if (widget.isSproutBand) {
       // Companion bounce: continuous hop cycle. Start in didChangeDependencies.
@@ -293,6 +330,32 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       if (!_weaveController.isAnimating) _weaveController.repeat();
       final bounce = _bounceController;
       if (bounce != null && !bounce.isAnimating) bounce.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant MagicalLoadingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // PERF-01: keep the dot indicator in step with the latest honest progress.
+    final progress = widget.progress;
+    if (progress != null) {
+      // A caller switched from timer-mode to progress-mode (or progress grew):
+      // cancel any leftover blind timer and recompute the dot index. Step index
+      // only ever moves forward (monotonic) — never snap backwards on jitter.
+      _stepTimer?.cancel();
+      _stepTimer = null;
+      final next = _stepIndexForProgress(progress);
+      if (next > _stepIndex) {
+        setState(() => _stepIndex = next);
+      }
+    } else if (oldWidget.progress != null && _stepTimer == null) {
+      // Reverted to a non-streaming caller: restart the blind-timer fallback.
+      _stepTimer = Timer.periodic(const Duration(milliseconds: 3100), (_) {
+        if (!mounted) return;
+        setState(() {
+          if (_stepIndex < _adventureSteps.length - 1) _stepIndex++;
+        });
+      });
     }
   }
 
