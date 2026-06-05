@@ -355,22 +355,34 @@ class TestInteractiveAdventureAllBands:
         with app.app_context():
             token = _make_user(f"interactive-{band_name}", "premium")
 
-        mock_task = mocker.MagicMock()
-        mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
-        result = {
-            "status": "complete",
-            "story": {
+        # The interactive endpoint calls InteractiveAdventureService.create_story
+        # (NOT generate_story_task), which makes a real Gemini call. Mock the
+        # service so this test never depends on a live GEMINI_API_KEY secret —
+        # previously it 500'd ("GEMINI_API_KEY not set") whenever CI's key was
+        # absent. Shape must match what the endpoint reads: result["segment"].
+        mocker.patch(
+            "backend.routes.story_routes.InteractiveAdventureService"
+        ).return_value.create_story.return_value = {
+            "story_id": "test-story-id",
+            "segment": {
+                "segment_number": 1,
                 "title": "Test Interactive",
-                "story_text": "Luna stepped into the forest.",
+                "content": "Luna stepped into the forest.",
+                "image_description": "",
+                "image_url": None,
                 "choices": [
                     {"id": "a", "text": "Go left"},
                     {"id": "b", "text": "Go right"},
                 ],
             },
         }
-        eager = mock_task.return_value
-        eager.get.return_value = result
-        mock_task.apply.return_value = eager
+        # Keep this band-coverage smoke test hermetic: the LLM moderator has its
+        # own tests; stub it safe so this never calls a live classifier whether
+        # or not GEMINI_API_KEY is set.
+        mocker.patch(
+            "backend.utils.content_moderator.moderate_story_content",
+            return_value=(True, ""),
+        )
 
         resp = client.post(
             "/generate-interactive-story",
