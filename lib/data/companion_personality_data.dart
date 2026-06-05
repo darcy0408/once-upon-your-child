@@ -81,6 +81,201 @@ const Map<String, String> companionBehaviorPatterns = {
       "Cinder has outlasted most of the certainties he once held and stopped grieving them. He gives counsel like a key — only when the door is already there. He sits with hard silences without filling them. He doesn't push. He is simply still there after everything, which is the only promise he has ever made.",
 };
 
+/// Band-specific signature powers for named companions (Audit 14 P2).
+/// Key format: '${AgeBand.name}_${companionId}' — matches companionBehaviorPatterns.
+/// Mirrors CompanionData.signaturePower; forwarded to the story prompt only.
+const Map<String, String> companionPowers = {
+  // ── SPROUT (3–5) ──────────────────────────────────────────────────────────
+  'sprout_pebble':
+      "Sparkle Sneeze: When Pebble sneezes, the glittery confetti drifts toward whatever is lost or hidden and settles on it, so you can find it.",
+
+  'sprout_mochi':
+      "Treasure Glow: Mochi's gold tail tip glows brighter the closer you get to something special nearby — a hidden door, a friend, a thing worth keeping.",
+
+  'sprout_sunny':
+      "Sunbeam Run: When Sunny is happy she races ahead and her star tag leaves a warm glowing trail you can follow back home, even in the dark.",
+
+  // ── EXPLORER (6–8) ────────────────────────────────────────────────────────
+  'explorer_ember':
+      "Rainbow Trail: The shimmering paths Ember leaves in the air become solid enough to climb or cross for a short while, turning a good idea into a real bridge.",
+
+  'explorer_clover':
+      "True-North Read: Clover's compass and stardust spiral toward the right way through any maze, wood, or muddle — not the shortest, the correct one.",
+
+  'explorer_biscuit':
+      "Shortcut Wand: A wave of Biscuit's wand can open one quick shortcut through something in the way — a hedge, a wall of brambles, a long boring stretch.",
+
+  // ── ADVENTURER (9–11) ─────────────────────────────────────────────────────
+  'adventurer_atlas':
+      "Constellation Map: Atlas can draw the stars overhead down into a glowing map of the land, showing every route between here and where you're going.",
+
+  'adventurer_nyx':
+      "Shadow Passage: Nyx can step into one shadow and out of another nearby, and pull someone with her — always finding the way out of a closed or tangled place.",
+
+  'adventurer_kodiak':
+      "Storm-Sense: Kodiak reads stardust and scent to know what the weather and the land will do hours ahead, so the pack can move before trouble arrives.",
+
+  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  'creator_cipher':
+      "Flaw-Finder: The gears Cipher breathes settle over any plan, machine, or structure and spin faster where it's about to fail, showing the one weak point.",
+
+  'creator_vesper':
+      "Pattern-Break Sense: Vesper feels the single thing in a scene that doesn't fit the pattern — the detail that's wrong, the change about to land — before anyone else.",
+
+  'creator_lore':
+      "Precedent Scroll: Lore's scroll opens to a time something like this was solved before, offering the shape of a solution that worked — not a copy, a starting point.",
+
+  // ── ADOLESCENT (15–17) ────────────────────────────────────────────────────
+  'adolescent_zephyr':
+      "Slipstream Foresight: Flying a half-step ahead, Zephyr can feel the next move before it's made and open a clean line through it — for the group, rarely for herself.",
+
+  'adolescent_shade':
+      "Clarifying Gaze: When Shade looks at a thing being avoided or dressed up, its true shape shows — the real reason, the actual stakes, plainly.",
+
+  'adolescent_frost':
+      "Read-the-Ground: Frost senses where footing is solid and where it will give way — in terrain, in plans, in moments — and moves first, trusting you to call him back.",
+
+  // ── ADULT (18+) ───────────────────────────────────────────────────────────
+  'adult_tide':
+      "Deep-Pattern Sight: Tide sees how the present moment has happened before — which details will matter and which won't — and names the one that does.",
+
+  'adult_onyx':
+      "Naming Stillness: Onyx can hold a moment still enough that what a room is really about surfaces on its own — the unspoken thing made plain without drama.",
+
+  'adult_cinder':
+      "Keylight: When the way forward already exists but can't be seen, Cinder's firelight falls on it and makes it walkable — counsel given like a key, only when the door is there.",
+};
+
+/// Band-specific power constraints for named companions (Audit 14 P2).
+/// Key format: '${AgeBand.name}_${companionId}' — matches companionBehaviorPatterns.
+/// Mirrors CompanionData.powerConstraint; forwarded to the story prompt only.
+const Map<String, String> companionPowerConstraints = {
+  // ── SPROUT (3–5) ──────────────────────────────────────────────────────────
+  'sprout_pebble':
+      "The sparkles only land on things that are truly there — they can't make a missing thing appear, only point to where it already is.",
+
+  'sprout_mochi':
+      "She can feel that something good is close, but never what it is — you still have to look.",
+
+  'sprout_sunny':
+      "The trail only lasts while she stays happy — if she gets scared or sad, it fades.",
+
+  // ── EXPLORER (6–8) ────────────────────────────────────────────────────────
+  'explorer_ember':
+      "A trail holds only as long as someone keeps believing the idea behind it — hesitate too long and it thins to mist.",
+
+  'explorer_clover':
+      "It only points; it won't walk the path for you, and it can't choose between two equally right answers.",
+
+  'explorer_biscuit':
+      "She can never aim it on purpose; the shortcut opens somewhere near where she pointed, not exactly there.",
+
+  // ── ADVENTURER (9–11) ─────────────────────────────────────────────────────
+  'adventurer_atlas':
+      "He can map what is — paths, distances, landmarks — but not what's hidden or what hasn't happened yet; the map shows the terrain, not the danger on it.",
+
+  'adventurer_nyx':
+      "She can only travel between shadows she can already see, and only when she's certain; if she doubts, the passage won't open.",
+
+  'adventurer_kodiak':
+      "He can feel that something is coming and roughly when, never exactly what; he reads nature, not people's choices.",
+
+  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  'creator_cipher':
+      "He can find the flaw but not fix it — and only points to one at a time, the most important one.",
+
+  'creator_vesper':
+      "She senses that something is off, never the whole answer; naming it still takes the hero's own thinking.",
+
+  'creator_lore':
+      "The scroll only holds what's actually been tried before; for a truly new problem its pages stay blank and he says so.",
+
+  // ── ADOLESCENT (15–17) ────────────────────────────────────────────────────
+  'adolescent_zephyr':
+      "She reads the path, not the people on it; when something gets personal her foresight clouds and she pulls back.",
+
+  'adolescent_shade':
+      "She can reveal what's true but never force anyone to accept it; the hero has to choose to look.",
+
+  'adolescent_frost':
+      "He commits before he's certain; without the hero's signal to redirect, he can move wrong and has.",
+
+  // ── ADULT (18+) ───────────────────────────────────────────────────────────
+  'adult_tide':
+      "She'll only name it once, and only what she's actually seen run its course; for the genuinely new, she says she doesn't know.",
+
+  'adult_onyx':
+      "She offers it only when you're ready to hear it; pushed early, the stillness simply doesn't come.",
+
+  'adult_cinder':
+      "He can light a door that exists but never make one; if there's no way yet, his light shows only that it isn't time.",
+};
+
+/// Band-specific sensory tells for named companions (Audit 14 P2).
+/// Key format: '${AgeBand.name}_${companionId}' — matches companionBehaviorPatterns.
+/// Mirrors CompanionData.sensoryTell; forwarded to the story prompt only.
+const Map<String, String> companionSensoryTells = {
+  // ── SPROUT (3–5) ──────────────────────────────────────────────────────────
+  'sprout_pebble':
+      "A tiny \"achoo,\" then the smell of birthday cake and warm sugar.",
+
+  'sprout_mochi':
+      "A soft golden shimmer and the gentle jingle of her moon charm.",
+
+  'sprout_sunny':
+      "A patch of sunshine-warmth on the ground and the smell of fresh grass.",
+
+  // ── EXPLORER (6–8) ────────────────────────────────────────────────────────
+  'explorer_ember':
+      "The air smells like rain on warm stone, and stray stars pop from her nose.",
+
+  'explorer_clover':
+      "Her stardust spins into a slow spiral and her glasses catch a faint blue light.",
+
+  'explorer_biscuit':
+      "A trail of gold sparkles and the smell of toasted bread.",
+
+  // ── ADVENTURER (9–11) ─────────────────────────────────────────────────────
+  'adventurer_atlas':
+      "A quiet hum like a held breath, and faint star-lines tracing the air in front of his glasses.",
+
+  'adventurer_nyx':
+      "A breath of cool air, the smell of cold stone, and her cosmic-purple edges going briefly to smoke.",
+
+  'adventurer_kodiak':
+      "His galaxy fur shimmers and ripples, and the air carries the smell of rain before any cloud shows.",
+
+  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  'creator_cipher':
+      "The room goes quiet, gears and compass roses orbit slower, then his eyes flash gold when the weak point locks in.",
+
+  'creator_vesper':
+      "A thin trail of purple smoke that drifts, against any breeze, toward the thing that doesn't belong.",
+
+  'creator_lore':
+      "The dry-paper rustle of a scroll unrolling and the smell of old ink and cedar.",
+
+  // ── ADOLESCENT (15–17) ────────────────────────────────────────────────────
+  'adolescent_zephyr':
+      "The wind drops to a hush and a faint green seam of light traces the path a moment before anyone takes it.",
+
+  'adolescent_shade':
+      "The purple energy around her stills, sound flattens for a breath, and her eyes hold yours without blinking.",
+
+  'adolescent_frost':
+      "A drop in temperature, frost feathering across the ground where it's safe to step.",
+
+  // ── ADULT (18+) ───────────────────────────────────────────────────────────
+  'adult_tide':
+      "A slow swell of cool sea-air and the distant sound of water, as if a tide were turning somewhere out of sight.",
+
+  'adult_onyx':
+      "The air goes quiet and unhurried, and her amber eyes settle on you and don't look away first.",
+
+  'adult_cinder':
+      "A low warmth like banked embers and the soft smell of woodsmoke, steady and unhurried.",
+};
+
 /// Band-specific companion descriptions (species + visual + personality), keyed
 /// '${AgeBand.name}_${companionId}', parallel to [companionBehaviorPatterns].
 ///
