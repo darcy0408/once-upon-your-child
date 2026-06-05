@@ -1216,6 +1216,22 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     f"Generation attempt {attempt}/{max_attempts} (tier={user_tier})"
                 )
 
+                # PERF-04: bail before each (re)generation if the client
+                # abandoned the wait. The dominant cost is the Gemini call
+                # below, so checking here saves a full generation on every
+                # cancelled regeneration attempt. Fail-open via is_cancelled.
+                if is_cancelled(self.request.id):
+                    logger.info(
+                        "Task %s cancelled before generation attempt %d; aborting.",
+                        self.request.id,
+                        attempt,
+                    )
+                    _clear_partial_story(self.request.id)
+                    return {
+                        "status": "cancelled",
+                        "user_id": str(user_id),
+                    }
+
                 ai_call_start = time.perf_counter()
                 story_text, provider_name, provider_sequence = (
                     _generate_story_text_with_metadata(
@@ -1547,6 +1563,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         _explorer_info.get("truncated"),
                         _explorer_info.get("final_words"),
                     )
+
+            # PERF-04: last cancellation gate before the moderation phase.
+            # Moderation is an LLM call (and a flag can trigger a safe-fallback
+            # regeneration) — skip it if the client already abandoned the wait.
+            if is_cancelled(self.request.id):
+                logger.info(
+                    "Task %s cancelled before moderation; aborting.",
+                    self.request.id,
+                )
+                _clear_partial_story(self.request.id)
+                return {
+                    "status": "cancelled",
+                    "user_id": str(user_id),
+                }
 
             # --- Output content moderation ---
             # Two-layer safety check on the generated story before it reaches the child.

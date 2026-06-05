@@ -144,3 +144,66 @@ Add `cancelTask(taskId)` to whatever API service wraps backend calls (likely
 - After PERF-03 (parallel illustrations), the value of PERF-04 increases:
   parallel illustrations means at the moment of cancel, more images are
   in-flight, more is saved by stopping the not-yet-started ones.
+
+## Architecture correction (2026-05-31)
+
+The design above assumed illustrations are generated as a concurrent batch
+*inside* the story Celery task. That is wrong. Verified against the code:
+
+- `backend/tasks/story_tasks.py:1705` — the story task generates **no**
+  illustrations (`illustrations = []`); a comment notes they are "generated
+  separately via /generate-illustrations endpoint."
+- `lib/services/per_page_illustration_prefetcher.dart` — the client generates
+  **one image per page, serially** (`num_images: 1`, 250ms throttle), via
+  separate `/generate-illustrations` POSTs, preferring the reader's current
+  page. On `dispose()` it already sets `_disposed`, clears the queue, and stops
+  sending new requests (`:400-409`). So the maximum waste on user-abort is a
+  single in-flight image, not a 4-image batch.
+- Per project memory, the default illustration provider is now Cloudflare
+  Workers AI (Flux Schnell, **$0/image**). Only BYOK/paid-provider paths cost
+  money per image.
+
+Consequence: the "stop a 4-image batch burning quota" premise is largely moot.
+The image generators have no `ThreadPoolExecutor` batch loop to gate, and there
+is no per-illustration `task_id` (the endpoint is synchronous, not Celery). The
+`/cancel-task/<task_id>` + Redis-flag infrastructure applies to the **story-text
+Celery task**, which is the real cost lever during the 40-110s generation wait.
+
+## Implemented (2026-05-31)
+
+Backend story-text cancellation, on `main`:
+
+- `backend/tasks/story_tasks.py` — two `is_cancelled(self.request.id)` gates
+  added (the foundation already had a single check at task start):
+  1. Top of the validation/regeneration loop, before each
+     `_generate_story_text_with_metadata` call — saves a full Gemini
+     generation on every cancelled regeneration attempt.
+  2. Before the moderation phase — saves the moderation LLM call (and any
+     safe-fallback regeneration it would trigger).
+  Both return `{"status": "cancelled", "user_id": ...}` and clear the partial
+  stream key. Fail-open (a Redis hiccup never aborts a paying user's request).
+
+These are safe and inert until the client calls `/cancel-task` — no behaviour
+change when the flag is never set.
+
+## Remaining (client wiring — do on top of branch `perf-01-honest-progress`)
+
+The wizard "Cancel" button currently only flips local state
+(`onCancel: () => setState(() => _isGenerating = false)` in
+`magic_review_step.dart`); it does not tell the backend. To make the backend
+gates fire:
+
+1. Add `ApiServiceManager.cancelTask(taskId)` — `POST /cancel-task/<id>`,
+   fire-and-forget (new method; does not conflict with PERF-01's `onPartial`).
+2. Surface the story task id to callers — add an `onTaskId` callback to
+   `generateStory(...)`; `_generateStoryWithBackend` already holds it for
+   `/task-status` polling.
+3. In `magic_review_step.dart`, capture the id via `onTaskId` and change the
+   six `onCancel` callbacks to also call `cancelTask(capturedId)`.
+
+Steps 2-3 edit `magic_review_step.dart`, which branch `perf-01-honest-progress`
+also modifies — do this wiring on/after that branch to avoid a merge conflict.
+
+Illustration-side cancellation is **descoped**: serial prefetch + already-stops-
+queuing-on-dispose + $0 default provider means the at-most-one in-flight image
+isn't worth making `/generate-illustrations` cancellable.
