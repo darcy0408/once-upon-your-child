@@ -1,0 +1,80 @@
+[
+  {
+    "age": 9,
+    "draw": 1,
+    "band": "8-10",
+    "title": "The Cavern of Fading Violet",
+    "words": 2324,
+    "pages": 22,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": true,
+    "told_want_count": 0,
+    "file": "val-age9-draw1-20260603-1018.txt"
+  },
+  {
+    "age": 9,
+    "draw": 2,
+    "band": "8-10",
+    "title": "The Cavern of Fading Violet",
+    "words": 1039,
+    "pages": 9,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": true,
+    "told_want_count": 0,
+    "file": "val-age9-draw2-20260603-1018.txt"
+  },
+  {
+    "age": 9,
+    "draw": 3,
+    "band": "8-10",
+    "title": "Zoe and the Echoing Violet",
+    "words": 1276,
+    "pages": 8,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": false,
+    "told_want_count": 0,
+    "file": "val-age9-draw3-20260603-1018.txt"
+  },
+  {
+    "age": 11,
+    "draw": 1,
+    "band": "11-13",
+    "title": "Zoe and the Echoing Violet",
+    "words": 2072,
+    "pages": 17,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": true,
+    "told_want_count": 0,
+    "file": "val-age11-draw1-20260603-1018.txt"
+  },
+  {
+    "age": 11,
+    "draw": 2,
+    "band": "11-13",
+    "title": "The Cavern of Whispering Violet",
+    "words": 1609,
+    "pages": 9,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": true,
+    "told_want_count": 0,
+    "file": "val-age11-draw2-20260603-1018.txt"
+  },
+  {
+    "age": 11,
+    "draw": 3,
+    "band": "11-13",
+    "title": "The Cavern of Fading Light",
+    "words": 1336,
+    "pages": 14,
+    "r3_atlas_is_dragon": true,
+    "r3_nyx_is_cat": true,
+    "tryfail_setback_language": true,
+    "told_want_count": 0,
+    "file": "val-age11-draw3-20260603-1018.txt"
+  }
+]

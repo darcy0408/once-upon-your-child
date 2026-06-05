@@ -266,6 +266,13 @@ SAFETY RULES:
 - Minimum one line of internal monologue per scene showing the character weighing their decision.
 """
 
+    # R5 (Audit 14): mirror the Standard engine's "companion drives a beat" rule
+    # for the middle bands so the companion materially changes the story, not
+    # just decorates it.
+    COMPANION_IMPACT_INSTRUCTION = """
+- **Companion Impact**: The companion must materially affect at least one branch outcome — at least one choice's consequence should hinge on what the companion does, knows, or wants. The companion is not background flavor.
+"""
+
     CO_AUTHOR_INSTRUCTION = """
 **CO-AUTHOR MODE (Ages 15+)**:
 - Frame choices as narrative decisions: 'What does {name} decide?' not 'What do YOU do?'
@@ -502,7 +509,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
 - **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
-- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
+- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
@@ -705,7 +712,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
 - **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
-- **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat.
+- **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 {arc_escalation}
 {empathy_moment}
@@ -1410,17 +1417,33 @@ OPEN STORY THREADS (must eventually resolve):
 
     @staticmethod
     def _build_companion_context(companions: Optional[List[Dict]]) -> str:
-        """Build companion context string from companion list."""
+        """Build companion context string from companion list.
+
+        R5 (Audit 14): non-pet companions previously rendered as bare
+        "{name} [SPEAKING]", giving the model nothing to characterize them with,
+        so they read as flat. Now each speaking companion carries its
+        description and/or behaviorPattern (whichever the wizard supplied) so the
+        Companion Contract has real material to work from. Cap matches the
+        wizard's companion allowance (up to 4).
+        """
         if not companions:
             return "solo on this adventure"
         companion_descriptions = []
-        for comp in companions[:2]:
+        for comp in companions[:4]:
             if "species" in comp:
                 companion_descriptions.append(
                     f"{comp.get('name', 'companion')} the {comp.get('species', 'pet')} [ANIMAL]"
                 )
             else:
+                # Append whatever characterization the wizard forwarded so the
+                # companion is distinct, not a bare name.
+                traits = [
+                    str(comp[key]).strip()
+                    for key in ("description", "behaviorPattern")
+                    if str(comp.get(key) or "").strip()
+                ]
+                detail = f" — {'; '.join(traits)}" if traits else ""
                 companion_descriptions.append(
-                    f"{comp.get('name', 'friend')} [SPEAKING]"
+                    f"{comp.get('name', 'friend')} [SPEAKING]{detail}"
                 )
         return "joined by " + " and ".join(companion_descriptions)

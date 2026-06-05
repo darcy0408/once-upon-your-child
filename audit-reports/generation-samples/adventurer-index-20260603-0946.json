@@ -1,0 +1,29 @@
+[
+  {
+    "id": "A",
+    "json": "sample-A-20260603-0946.json",
+    "txt": "sample-A-20260603-0946.txt",
+    "band": "8-10",
+    "words": 1231,
+    "pages": 17,
+    "title": "The Whisper of Violetlight"
+  },
+  {
+    "id": "B",
+    "json": "sample-B-20260603-0946.json",
+    "txt": "sample-B-20260603-0946.txt",
+    "band": "11-13",
+    "words": 1873,
+    "pages": 13,
+    "title": "The Violet Heart of the Deep"
+  },
+  {
+    "id": "C",
+    "json": "sample-C-20260603-0946.json",
+    "txt": "sample-C-20260603-0946.txt",
+    "band": "8-10",
+    "words": 1023,
+    "pages": 8,
+    "title": "The Last Star of Comet Street"
+  }
+]

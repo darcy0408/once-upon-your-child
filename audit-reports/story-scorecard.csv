@@ -1,0 +1,13 @@
+Story ID,Mode,Character Depth (1-10),Supporting Cast (1-10),Plot/Arc (1-10),Stakes/Tension (1-10),Excitement/Pacing (1-10),Language (1-10),Persona,Overall
+A,Standard (age 9; backend band 8-10),6,3,4,3,4,8,child-9,4.7
+A,Standard (age 9; backend band 8-10),6,3,3,2,3,8,child-11,4.2
+A,Standard (age 9; backend band 8-10),6,3,4,3,4,8,parent-of-9,4.7
+A,Standard (age 9; backend band 8-10),6,3,3,2,3,8,parent-of-11,4.2
+B,Standard (age 11; backend band 11-13),7,5,7,6,7,7,child-9,6.5
+B,Standard (age 11; backend band 11-13),7,5,7,6,6,8,child-11,6.5
+B,Standard (age 11; backend band 11-13),7,5,7,6,6,8,parent-of-9,6.5
+B,Standard (age 11; backend band 11-13),7,5,7,6,6,8,parent-of-11,6.5
+C,Standard (age 10; backend band 8-10; Robin full payload),7,6,7,5,6,8,child-9,6.5
+C,Standard (age 10; backend band 8-10; Robin full payload),7,6,7,4,5,8,child-11,6.2
+C,Standard (age 10; backend band 8-10; Robin full payload),7,6,7,5,6,8,parent-of-9,6.5
+C,Standard (age 10; backend band 8-10; Robin full payload),7,6,7,4,5,8,parent-of-11,6.2

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "A",
+    "json": "sample-A-20260603-0810.json",
+    "txt": "sample-A-20260603-0810.txt",
+    "band": "8-10",
+    "words": 1347,
+    "pages": 12,
+    "title": "Zoe and the Cavern's Fading Heart"
+  },
+  {
+    "id": "B",
+    "json": "sample-B-20260603-0810.json",
+    "txt": "sample-B-20260603-0810.txt",
+    "band": "11-13",
+    "words": 1672,
+    "pages": 15,
+    "title": "The Violet Heart of Stone"
+  },
+  {
+    "id": "C",
+    "json": "sample-C-20260603-0810.json",
+    "txt": "sample-C-20260603-0810.txt",
+    "band": "8-10",
+    "words": 954,
+    "pages": 12,
+    "title": "The Last Star on Comet Street"
+  }
+]

@@ -80,3 +80,58 @@ const Map<String, String> companionBehaviorPatterns = {
   'adult_cinder':
       "Cinder has outlasted most of the certainties he once held and stopped grieving them. He gives counsel like a key — only when the door is already there. He sits with hard silences without filling them. He doesn't push. He is simply still there after everything, which is the only promise he has ever made.",
 };
+
+/// Band-specific companion descriptions (species + visual + personality), keyed
+/// '${AgeBand.name}_${companionId}', parallel to [companionBehaviorPatterns].
+///
+/// Forwarded to the story prompt so the model knows WHAT a companion is — not
+/// just how they behave. Without this, companions whose ids do not match the
+/// backend `magicCompanions` list reached the model with no species at all and
+/// were written as generic humans (Audit 14, RC-3). RC-3 affects every band's
+/// non-robin companions (the robin variants match `magicCompanions` and already
+/// carry a description), so all bands are covered here. Descriptions are kept in
+/// sync with the selector cards in companion_selector_step.dart.
+const Map<String, String> companionDescriptions = {
+  // ── SPROUT (3-5) ──
+  'sprout_pebble':
+      "A round purple dragon whose roars come out as glittery sneezes. He puffs up as big as he can when something seems scary, which is not very big, and stands in front of you anyway.",
+  'sprout_mochi':
+      "A round orange kitten whose tail tip sparkles gold when she's excited, which is almost always. Her moon charm jingles when she runs toward you.",
+  'sprout_sunny':
+      "A golden puppy whose star tag glows when she's happy — which is always. Gets there first, bounces back to get you, and guides you in with her whole wagging body.",
+  // ── EXPLORER (6-8) ──
+  'explorer_ember':
+      "A pink dragon who leaves rainbow trails wherever she flies and cheers for every one of your ideas. When she gets excited she accidentally shoots stars from her nose.",
+  'explorer_clover':
+      "An orange tabby cat with round glasses and a compass who knows the way through any enchanted wood. Her stardust spirals when she's solving something.",
+  'explorer_biscuit':
+      "A golden puppy in an adventure vest who aims her wand at the sky and leaves sparkle trails to follow. Her compass spins whenever adventure is close.",
+  // ── ADVENTURER (9-11) ──
+  'adventurer_atlas':
+      "A blue-green scholar dragon with a compass medallion who knows every constellation. When the path is unclear he lifts his glasses and calculates. He admits when the map was wrong.",
+  'adventurer_nyx':
+      "A sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. When she trusts you enough to speak first, the information is always worth waiting for.",
+  'adventurer_kodiak':
+      "A galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked.",
+  // ── CREATOR (12-14) ──
+  'creator_cipher':
+      "A blue-green dragon who breathes orbiting gears and compass roses. He finds the flaw in a plan before it's a problem. When the puzzle breaks open, his eyes flash gold.",
+  'creator_vesper':
+      "A black cat in leather gear trailing purple smoke. She notices the thing that doesn't fit the pattern, and has decided, after careful consideration, that you are worth trusting.",
+  'creator_lore':
+      "A white wolf in a scholar's cloak who thinks in systems and keeps his word. When he pushes back on a plan he explains why once, clearly, then helps you build it the right way.",
+  // ── ADOLESCENT (15-17) ──
+  'adolescent_zephyr':
+      "A green hooded dragon who is already three moves ahead and usually right. Not trying to lead — trying to fly at the same altitude.",
+  'adolescent_shade':
+      "A black panther wreathed in purple energy who reads the room as closely as she reads you. Her loyalty was built deliberately and she knows exactly when.",
+  'adolescent_frost':
+      "A blue-eyed wolf in a dark cloak who is already moving and trusts you to aim him right. He watches your signals as closely as the terrain.",
+  // ── ADULT (18+) ──
+  'adult_tide':
+      "An ancient teal dragon who has seen this before and knows which details actually matter. Gives counsel once, with precision, then steps back and lets it land.",
+  'adult_onyx':
+      "A dark leopard with amber eyes who has made peace with patience. Names what the room is actually about, without drama, and waits for you to catch up.",
+  'adult_cinder':
+      "A wolf by firelight who has outlasted most certainties. Gives counsel like a key — only when the door is already there. Simply still there after everything.",
+};

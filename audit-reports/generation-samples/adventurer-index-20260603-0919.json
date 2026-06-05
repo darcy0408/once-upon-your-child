@@ -1,0 +1,29 @@
+[
+  {
+    "id": "A",
+    "json": "sample-A-20260603-0919.json",
+    "txt": "sample-A-20260603-0919.txt",
+    "band": "8-10",
+    "words": 1229,
+    "pages": 12,
+    "title": "The Whispering Crystal Maze"
+  },
+  {
+    "id": "B",
+    "json": "sample-B-20260603-0919.json",
+    "txt": "sample-B-20260603-0919.txt",
+    "band": "11-13",
+    "words": 1885,
+    "pages": 14,
+    "title": "The Violet Heart of the Cavern"
+  },
+  {
+    "id": "C",
+    "json": "sample-C-20260603-0919.json",
+    "txt": "sample-C-20260603-0919.txt",
+    "band": "8-10",
+    "words": 984,
+    "pages": 9,
+    "title": "The Last Star of Comet Street"
+  }
+]

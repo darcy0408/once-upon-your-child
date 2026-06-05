@@ -432,7 +432,14 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                           : AppColors.textDark.withValues(alpha: 0.5),
                     ),
                     onPressed: () {
-                      if (!_showParentalInput) _resetMathGate();
+                      // FR-03 (Audit 14): only ask the parent check the first
+                      // time on this screen. Re-opening Guardian Mode after it
+                      // was already passed should not re-interrogate the parent.
+                      // The barrier still gates the first open of each new wizard
+                      // session (fresh screen = fresh gate).
+                      if (!_showParentalInput && !_mathGatePassed) {
+                        _resetMathGate();
+                      }
                       setState(() => _showParentalInput = !_showParentalInput);
                     },
                     tooltip: 'Guardian Mode',

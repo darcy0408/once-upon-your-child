@@ -691,12 +691,18 @@ class AdvancedStoryEngine:
             behavior_instructions = []
             for c in companion_characters:
                 name = c["name"]
+                desc = c.get("description", "")
                 power = c.get("signaturePower", "")
                 constraint = c.get("powerConstraint", "")
                 sensory = c.get("sensoryTell", "")
                 behavior = c.get("behaviorPattern", "")
+                # R3 (Audit 14): render `description` too. Previously dropped, so
+                # companions whose ids don't match magicCompanions (Atlas, Nyx,
+                # Kodiak) reached the model as a bare name + behavior line — their
+                # whole on-screen identity was lost.
                 chars.append(
                     f"{name}"
+                    + (f" | Who they are: {desc}" if desc else "")
                     + (f" | Power: {power}" if power else "")
                     + (f" | Constraint: {constraint}" if constraint else "")
                     + (f" | Sensory: {sensory}" if sensory else "")
@@ -818,6 +824,12 @@ class AdvancedStoryEngine:
         word_ceiling_note = ""
         if age <= 5:
             word_ceiling_note = " HARD LIMIT: do not exceed 300 words total. Sprout is picture-book pacing — short pages, complete arc, no filler."
+        elif age <= 14:
+            # Audit 14: the 8-10 band overran (2324w vs 1800 target) on some draws
+            # once the richer craft instructions were added — previously these
+            # middle bands had no hard ceiling at all. A gentle ceiling steers
+            # toward the resolution instead of hard-stopping mid-scene.
+            word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. If you approach this limit, steer toward the resolution rather than adding new pages."
         elif age > 14:
             word_ceiling_note = f" HARD LIMIT: do not exceed {word_range[1]} words total. Stop the story before adding more pages if you are approaching this limit."
 
@@ -850,8 +862,23 @@ class AdvancedStoryEngine:
             complexity_instruction = "Use mature, nuanced prose with reflective inner monologue, relational complexity, and thematic depth suitable for adults."
 
         # Hard constraints to force complexity scaling for older readers.
+        # Ages 9-10 sit in the "8-10" band but, unlike 11-13, previously had no
+        # hard targets — so a 9-year-old's story came out structurally thinner
+        # than an 11-year-old's from identical inputs (Audit 14, RC-2). This
+        # light floor closes most of that gap without touching word counts.
+        # Scoped to 9-10 exactly: age 8 stays unconstrained, age 11+ keeps its
+        # own (stronger) targets below.
         hard_complexity_constraints = ""
-        if age >= 11 and age <= 13:
+        if age >= 9 and age <= 10:
+            hard_complexity_constraints = (
+                "Include at least one moment where the hero must choose between two "
+                "imperfect options and name the cost of the one they pick. "
+                "Include at least one short internal reflection (2-3 sentences) where "
+                "the hero weighs what to do. "
+                "Build a two-step problem: solving the first part reveals or creates "
+                "the harder second part."
+            )
+        elif age >= 11 and age <= 13:
             hard_complexity_constraints = (
                 "At least 30% of sentences should be compound or complex. "
                 "Include at least one situation where every available option has a downside. "
@@ -899,6 +926,51 @@ class AdvancedStoryEngine:
 3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward.
 5. WOW-WORD POLICY (Spark band): It is OK — and good — to use grade 1-2 "wow words" (e.g. "shimmered", "tumbled", "lantern", "festival"). Each new wow word must earn a context clue in the same paragraph: a vivid action, a comparison, or the reaction it causes ("the lantern shimmered like a tiny captured star"). Do NOT stop and define every fantasy noun inline as if explaining to a toddler — that flattens the story. The check is: a 6-7 year old should be able to guess the word from its surroundings on first listen.
+"""
+        elif age <= 12:
+            # Ages 8-12. Older bands previously lost ALL craft scaffolding: the
+            # companion-arc, rule-of-three, and page-hook rules above are gated
+            # to age <=7, so 8-12 got mannerisms but no arc, no escalation, no
+            # forward pull (Audit 14, RC-1). This restores them age-appropriately
+            # — depth and momentum instead of toddler sound-words.
+            young_delight_rules = f"""
+**SUPPORTING-CAST DEPTH RULES** (mandatory for this age):
+1. COMPANION WANT + FLAW: Each named companion has ONE concrete want of their own and ONE flaw that gets in the way — distinct from {character}'s goal. Reveal the want through what they DO and choose, never by stating it ("X wanted ..." is banned); let the flaw cost something at least once.
+2. COMPANION ARC: At least one companion changes across the story. A belief they hold at the start is tested and shifts by the end. Do NOT announce it — show it in what they choose differently later on.
+3. COMPANION DRIVES A BEAT: The resolution must depend on at least one companion doing something only they would do — their power, their knowledge, or their nerve. {character} cannot solve the climax alone.
+4. DISTINCT VOICE: Give each companion a verbal rhythm of their own, so two lines of their dialogue with the names removed are still tellable apart.
+
+**MOMENTUM RULES** (mandatory for this age):
+5. ESCALATION: The central problem must get harder at least twice before it is solved. Each time, name what raises the stakes — less time, a higher cost, or a complication the previous fix caused.
+6. TRY / FAIL: {character}'s first real attempt to solve the central problem must FAIL or backfire, and the failure must visibly make things worse or cost something before the next attempt. Show the setback on the page — never cut straight from plan to success. The attempt that finally works must use something established earlier in the story, never a power, object, or ally introduced at the climax.
+7. FORWARD PULL: End most non-final pages on an open question, a discovery, or an action mid-motion, so the reader wants to turn the page. Keep it curiosity, not fear — no peril cliffhangers and no threats aimed at the hero.
+"""
+        elif age <= 18:
+            # Teen (13-18). Same companion-depth + momentum gap as 8-12, but
+            # phrased for older readers — real tension and stakes are allowed
+            # (the global SAFETY_GUARDRAILS still bound content).
+            young_delight_rules = f"""
+**SUPPORTING-CAST DEPTH RULES** (mandatory):
+1. COMPANION WANT + FLAW: Each named companion has their own want and a flaw that complicates it, distinct from {character}'s goal. Reveal both through action and choice — never state them outright.
+2. COMPANION ARC: At least one companion is meaningfully changed by events — a belief or stance they start with is tested and shifts. Show the change in what they do differently; do not announce it.
+3. COMPANION MATTERS TO THE RESOLUTION: The climax must turn on something at least one companion does, knows, or risks. {character} does not resolve it single-handed.
+4. DISTINCT VOICE: Each companion has a distinct verbal register — their lines should be tellable apart with the names removed.
+
+**MOMENTUM RULES** (mandatory):
+5. ESCALATION: The central tension must intensify at least twice before the turn, each step raising the cost in a way the reader can feel.
+6. TRY / FAIL: {character}'s first real attempt must fail or fall short with a visible consequence before the resolution. The eventual solution must draw on something established earlier, not introduced at the climax.
+7. FORWARD PULL: End most non-final pages on an unresolved beat — a question, a reversal, or a decision left pending — that compels the next page.
+"""
+        else:
+            # Adult (18+). Companion depth applies, but momentum/page-hook rules
+            # are deliberately omitted — adult literary pacing is governed by the
+            # thematic-resonance constraints, not forced page-turn hooks.
+            young_delight_rules = f"""
+**SUPPORTING-CAST DEPTH RULES** (mandatory):
+1. COMPANION WANT + FLAW: Each named companion carries their own want and a flaw that complicates it, distinct from {character}'s goal. Let both surface through behaviour and choice rather than statement.
+2. COMPANION ARC: At least one companion is genuinely altered by the story — a conviction they hold is tested and moves. Render the shift through action, never exposition.
+3. COMPANION MATTERS TO THE RESOLUTION: The turn must hinge on something a companion does, knows, or risks; the protagonist does not arrive there alone.
+4. DISTINCT VOICE: Each companion speaks in a register distinct enough to identify with the names stripped out.
 """
 
         return f"""
@@ -1460,7 +1532,17 @@ def _build_learning_to_read_prompt(
             if isinstance(c, dict):
                 name = c.get("name")
                 if name:
-                    companion_sections.append(name)
+                    # R3 (Audit 14): include description/behavior so the companion
+                    # has a personality, not just a bare name. Kept to one short
+                    # line to respect this mode's tight word budget.
+                    desc = c.get("description", "")
+                    behavior = c.get("behaviorPattern", "")
+                    entry = name
+                    if desc:
+                        entry += f" (who they are: {desc})"
+                    if behavior:
+                        entry += f" (usually: {behavior})"
+                    companion_sections.append(entry)
                     all_companion_names.append(name)
             elif c:
                 companion_sections.append(str(c))
@@ -1751,11 +1833,16 @@ def _build_rhyme_time_prompt(
         for c in companion_characters:
             if isinstance(c, dict):
                 name = c.get("name")
+                desc = c.get("description", "")
                 power = c.get("signaturePower", "")
                 constraint = c.get("powerConstraint", "")
                 behavior = c.get("behaviorPattern", "")
                 if name:
                     entry = name
+                    # R3 (Audit 14): include description so the companion reads as
+                    # a character with an identity, not just a name + power.
+                    if desc:
+                        entry += f" | Who they are: {desc}"
                     if power:
                         entry += f" | Power: {power}"
                     if constraint:

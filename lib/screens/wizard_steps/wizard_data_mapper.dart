@@ -165,6 +165,10 @@ class WizardDataMapper {
         final bandBehavior = companionBehaviorPatterns[bandKey] ??
             companionData?.behaviorPattern ??
             '';
+        // R3 (Audit 14): forward the band-specific description for companions
+        // that miss the magicCompanions id match (Atlas, Nyx, Kodiak), so the
+        // model learns their species/look instead of writing them as humans.
+        final bandDescription = companionDescriptions[bandKey] ?? '';
 
         if (companionData != null) {
           companionsOther.add({
@@ -175,11 +179,12 @@ class WizardDataMapper {
             'sensoryTell': companionData.sensoryTell,
             'behaviorPattern': bandBehavior,
           });
-        } else if (bandBehavior.isNotEmpty) {
+        } else if (bandBehavior.isNotEmpty || bandDescription.isNotEmpty) {
           // Band-specific companion without a magicCompanions entry.
           companionsOther.add({
             'name': displayName,
-            'behaviorPattern': bandBehavior,
+            if (bandDescription.isNotEmpty) 'description': bandDescription,
+            if (bandBehavior.isNotEmpty) 'behaviorPattern': bandBehavior,
           });
         } else {
           // Standard friend/sibling — no special data.

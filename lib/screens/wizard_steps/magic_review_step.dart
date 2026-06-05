@@ -317,22 +317,19 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
           // Build companions list from wizard selections so the backend can
           // weave them into the story even for temp (non-DB) characters.
-          final companions = <Map<String, dynamic>>[];
-          // Magic/preset companions by name
-          for (final name in wd.companionNames) {
-            companions.add({'name': name, 'role': 'companion'});
-          }
-          // User pets
-          for (final pet in wd.pets) {
-            final name = (pet['name'] ?? '').trim();
-            if (name.isNotEmpty) {
-              companions.add({
-                'name': name,
-                'species': pet['species'] ?? 'pet',
-                'role': 'pet',
-              });
-            }
-          }
+          // R5 (Audit 14): reuse the rich payload WizardDataMapper already built
+          // (requestData), so Pick-a-Path companions carry their description /
+          // behaviorPattern / power exactly like the Standard engine. Previously
+          // this rebuilt bare {name, role} dicts, so interactive companions
+          // reached the model as flat names and read as set dressing.
+          final companions = <Map<String, dynamic>>[
+            ...((requestData['companion_characters'] as List?) ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .map((c) => {...c, 'role': 'companion'}),
+            ...((requestData['companion_pets'] as List?) ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .map((p) => {...p, 'role': 'pet'}),
+          ];
 
           // Tone calibrated by age band
           final band = ageBandFromAge(wd.characterAge);
@@ -497,7 +494,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         'Adding depth and detail...',
                         'Almost ready...',
                       ]
-                    : null);
+                    // FR-04 (Audit 14): give the younger bands staged progress
+                    // too, so a 15-30s wait shows movement instead of one frozen
+                    // line that reads as "stuck" to a 9-11 year old.
+                    : const [
+                        'Waking up your hero...',
+                        'Gathering your companions...',
+                        'Building your world...',
+                        'Writing your adventure...',
+                        'Almost ready...',
+                      ]);
 
         // Superhero Mode: persist the villain/problem the backend chose
         // so the next story avoids them.

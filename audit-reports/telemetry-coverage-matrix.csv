@@ -1,0 +1,36 @@
+Signal Type,Journey/Failure Mode,Currently Captured,Gap,Recommended Instrument,Priority
+Client error,App crash / unhandled exception,"Partial - Sentry 20% in release, consent-gated, no replay",No telemetry for under-13 or pre-consent sessions,Server-side anonymous PII-free crash counter from error responses,Medium
+Client error,Child PII in browser console,No (leak),Unguarded debugPrint logs child name/age in release web,Guard child-data debugPrint behind kDebugMode,Medium
+API error,Unhandled 5xx on Flask,"Yes - Sentry FlaskIntegration, full sample","Only if SENTRY_DSN set; no startup assertion",Assert SENTRY_DSN in production startup,Critical
+API error,Request-to-failure correlation,No,request_id not propagated to worker; no user_id on log lines,Propagate request_id + user_id into Celery and Sentry scope,High
+Celery failure,Worker loses in-flight task on restart (W1),Partial (queue-depth proxy),No stuck-PENDING alert; signal may no-op,acks_late fix plus stuck-PENDING alert via external pinger,High
+Celery failure,Reliability signals emitted from worker,At risk,No CeleryIntegration; capture_message can no-op on beat/monitor process,Init Sentry with CeleryIntegration at worker boot,Critical
+Celery failure,Beat liveness / retention purge stops (B2),Partial (36h heartbeat),Circular - beat must run to fire its own staleness alert,External pinger asserts fresh worker/beat heartbeat key,High
+Celery failure,Static fallback - all providers down (G1/G2),Yes - Sentry warning,Same worker-init caveat (OBS-02),Confirm signal fires after CeleryIntegration added,High
+Trace,Distributed trace client to API to worker,No,No trace propagation; no CeleryIntegration,Forward sentry-trace into task and continue trace in worker,Medium
+Backend log,Structured queryable logs,No,Plain-text not JSON; duplicate basicConfig keeps root at WARNING,Single JSON formatter shared by app and worker,High
+Backend log,Child name in log stream,No (leak),story_tasks.py:1091 logs full prompt pre-scrub at INFO,Remove or move after scrub and demote to DEBUG,Critical
+Backend log,Story/companion free-text in logs,No (leak),Prompt snippet and companion details logged at INFO,Demote to DEBUG behind explicit flag,High
+Business conversion,Signup / anonymous-auth,Yes - audit_log events,No funnel context,Keep; add funnel linkage,Low
+Business conversion,COPPA consent given,Partial,Consent-given via /consent is log-only not audited,Emit consent_granted to AuditLog,Medium
+Business conversion,Wizard start / completion,No,Firebase only; no-op on web; no per-step events,Emit wizard_started/completed to AuditLog,High
+Business conversion,Story generation success,Partial,Only sync route logs story_generated; async unlogged,Emit success event on async path too,Medium
+Business conversion,Story generation failure,No,No failure event anywhere,Emit story_generation_failed with reason/provider,High
+Business conversion,Checkout started,No,stripe_routes.py:61 writes no event,Emit checkout_started to AuditLog,High
+Business conversion,Checkout completed / subscription active,Partial,Webhook overwrites User state; no transition journal,Journal subscription_changed events with amount/user,High
+Business conversion,Churn / cancellation,No,deleted webhook overwrites; no churn row,Journal cancellation as a subscription_changed event,High
+Business conversion,Conversion rate (this week),No,No checkout-started denominator,Derive from checkout_started vs completed events,High
+Business conversion,Return visit / retention,Weak proxy,last_active_at and story-created proxy only,Session/visit event on app open,Medium
+Revenue,Stripe webhook processing failure,No alert,webhook_handler logs error only,Route webhook failure to Sentry plus Slack,Critical
+Revenue,IAP (Apple/Google) events,No,Notification handlers are Phase-1 stubs that ACK without writing,Persist verified IAP events when verification is enabled,Low
+Cost,AI / image / TTS spend per call,Yes (durable) but unused,api_cost_incurred rows written but never aggregated,Aggregation query per day/user/provider,High
+Cost,Daily / weekly budget breach,No (dead code),track_cost never called; store in-memory,Call track_cost or aggregate DB rows; add daily-spend alert,Critical
+Health,API + DB liveness,Yes - /health DB probe,No Redis/worker/provider probe; not externally polled,Deepen probe; re-enable external monitor,Critical
+Health,External uptime monitor,No,health-monitoring.yml cron commented out,Re-enable cron with Cloudflare URL,Critical
+Health,Redis eviction (R1),No,No evicted_keys alarm,Alarm on Redis evicted_keys greater than 0,Medium
+Backup,Postgres backup job failure,No alert,postgres-backup.yml has no failure notification,Slack failure step plus backup-age heartbeat alert,Critical
+Backup,Backup freshness,No,No alarm on stale newest backup,Alarm if newest R2 object older than 36h,High
+Release,Deploy-to-regression attribution,No,release not set on client or backend Sentry init,Set release from RAILWAY_GIT_COMMIT_SHA and build version,High
+Dashboard,Single founder health view,No,Scattered across Railway/Sentry/Actions/Slack; admin numbers hardcoded,Build /admin/status page with 5-7 real-query indicators,Medium
+Dashboard,Reported metric accuracy,No (fabricated),analytics_routes returns hardcoded error/failure/gen-time,Replace constants with real queries or remove,Critical
+Alerting,Severity routing,No,All Sentry signals flat warning; one shared Slack webhook,Add P1/P2/P3 tag; route P1 to paging channel,Medium
