@@ -181,7 +181,7 @@ class FeelingDetail {
   });
 
   List<String> copingForAge(int age) {
-    if (age >= 12 && matureCoping != null) return matureCoping!;
+    if (age >= 13 && matureCoping != null) return matureCoping!;
     if (age >= 9 && tweenCoping != null) return tweenCoping!;
     return coping;
   }

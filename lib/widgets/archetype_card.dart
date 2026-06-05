@@ -503,13 +503,13 @@ class ArchetypeData {
   String nameForAge(int age) {
     if (age <= 5 && youngChildName != null) return youngChildName!;
     if (age >= 6 && age <= 8 && explorerName != null) return explorerName!;
-    if (age >= 12 && matureName != null) return matureName!;
+    if (age >= 13 && matureName != null) return matureName!;
     return name;
   }
 
   String descriptionForAge(int age) {
-    if (age >= 12 && matureDescription != null) return matureDescription!;
-    if (age >= 9 && age <= 11 && adventurerDescription != null) return adventurerDescription!;
+    if (age >= 13 && matureDescription != null) return matureDescription!;
+    if (age >= 9 && age <= 12 && adventurerDescription != null) return adventurerDescription!;
     if (age >= 6 && age <= 8 && explorerDescription != null) return explorerDescription!;
     return description;
   }

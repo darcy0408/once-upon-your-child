@@ -93,12 +93,12 @@ class ScenarioCard {
     if (age <= 5 && sproutTitle != null) return sproutTitle!;
     // Explorer band (ages 6-8) gets the young/accessible version.
     if (age <= 8 && youngTitle != null) return youngTitle!;
-    // Creator band (ages 12-14) gets an identity-focused framing when available.
-    if (age >= 12 && age <= 14 && creatorTitle != null) return creatorTitle!;
+    // Creator band (ages 13-14) gets an identity-focused framing when available.
+    if (age >= 13 && age <= 14 && creatorTitle != null) return creatorTitle!;
     // Adult band (ages 18+) gets existential framing when available.
     if (age >= 18 && adultTitle != null) return adultTitle!;
-    // Ages 12+ get the mature title if defined; Adventurer (9-11) uses standard title.
-    if (age >= 12 && matureTitle != null) return matureTitle!;
+    // Ages 13+ get the mature title if defined; Adventurer (9-12) uses standard title.
+    if (age >= 13 && matureTitle != null) return matureTitle!;
     return title;
   }
 
@@ -107,14 +107,14 @@ class ScenarioCard {
     // Sprout band (ages 2-5) gets its own tile-matched description when available.
     if (age <= 5 && sproutDescription != null) return sproutDescription!;
     if (age <= 8 && youngDescription != null) return youngDescription!;
-    if (age >= 12 && matureDescription != null) return matureDescription!;
+    if (age >= 13 && matureDescription != null) return matureDescription!;
     return description;
   }
 
   /// Get the conflict hook appropriate for the given age.
   String conflictHookForAge(int age) {
     if (age <= 8 && youngConflictHook != null) return youngConflictHook!;
-    if (age >= 12 && matureConflictHook != null) return matureConflictHook!;
+    if (age >= 13 && matureConflictHook != null) return matureConflictHook!;
     return conflictHook;
   }
 
@@ -122,7 +122,7 @@ class ScenarioCard {
   String worldBibleForAge(int age) {
     if (age <= 8 && youngWorldBible != null) return youngWorldBible!;
     if (age >= 18 && adultWorldBible != null) return adultWorldBible!;
-    if (age >= 12 && matureWorldBible != null) return matureWorldBible!;
+    if (age >= 13 && matureWorldBible != null) return matureWorldBible!;
     return worldBible;
   }
 
