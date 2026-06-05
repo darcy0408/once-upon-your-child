@@ -44,6 +44,10 @@ import '../theme/age_band_theme.dart' show ageBandFromAge;
 /// parent/guardian needs to address, and silently swapping in canned
 /// content would hide the issue.
 bool isFallbackEligible(Object error, {bool aggressive = true}) {
+  // PERF-01 cancellation polish: a user-initiated cancel is NOT a failure —
+  // never substitute a fallback story for it. Let the signal propagate so the
+  // caller handles it silently (no error card, no story nav).
+  if (error is StoryGenerationCancelled) return false;
   if (error is TimeoutException) return true;
   if (error is SocketException) return true;
 

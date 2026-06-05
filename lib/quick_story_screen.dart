@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'main_story.dart';
 import 'offline_story_cache.dart';
 import 'premium_upgrade_screen.dart';
+import 'models/story_generation_result.dart' show StoryGenerationCancelled;
 import 'services/api_service_manager.dart';
 import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
@@ -146,6 +147,16 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           _isGenerating = false;
           _magicPulse = false;
           _activeTaskId = null; // PERF-04: completed — nothing to cancel.
+        });
+      }
+    } on StoryGenerationCancelled {
+      // PERF-01 cancellation polish: the user left mid-generation (dispose
+      // fired cancelTask). Not an error — show no snackbar. If somehow still
+      // mounted, just clear the generating state.
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _magicPulse = false;
         });
       }
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
+import '../models/story_generation_result.dart' show StoryGenerationCancelled;
 import '../models.dart';
 import '../theme/age_band_theme.dart';
 import 'wizard_steps/wizard_data_mapper.dart';
@@ -556,11 +557,26 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       } else {
         await _runRegularStory(requestData, additionalChars);
       }
+    } on StoryGenerationCancelled {
+      // PERF-01 cancellation polish: the user abandoned the wizard mid-
+      // generation (dispose fired cancelTask). Not an error — don't speak the
+      // failure line. Just leave quietly; dispose() handles teardown.
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
       await _speak(_isMature
           ? "Something went wrong generating the story. Try again in a moment."
           : "Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
       if (mounted) Navigator.of(context).pop();
+    } finally {
+      // PERF-01/PERF-04: clear the task id once generation has ended, whether
+      // it succeeded, threw, or was cancelled. Without this, a throw on the
+      // generation path would leave _activeTaskId set, so a later dispose()
+      // would fire a pointless cancel against an already-terminal task.
+      // Mirrors quick_story_screen.dart, which nulls its id in the success
+      // path and never re-fires after failure. The success path in
+      // _runRegularStory already nulls it before reading; this is the safety
+      // net for the error/cancel paths.
+      _activeTaskId = null;
     }
   }
 

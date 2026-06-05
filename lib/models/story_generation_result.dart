@@ -1,3 +1,19 @@
+/// PERF-01 cancellation polish: thrown by [ApiServiceManager.generateStory]'s
+/// poll loop when the backend reports the in-flight task was cancelled
+/// (the `/task-status` envelope surfaces `status: "complete"` with an inner
+/// `result.status == "cancelled"` and no story body).
+///
+/// This is a *signal*, not an error: a user-initiated cancel (Cancel button or
+/// navigating away mid-generation) must NOT pop an error card or navigate to a
+/// story. Callers catch this type first and treat it as a silent no-op —
+/// leaving the screen in whatever state the cancel handler already set.
+class StoryGenerationCancelled implements Exception {
+  const StoryGenerationCancelled();
+
+  @override
+  String toString() => 'StoryGenerationCancelled: story generation was cancelled';
+}
+
 class StoryGenerationResult {
   final String storyText;
   final String? title;

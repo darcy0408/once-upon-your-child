@@ -1157,6 +1157,11 @@ class ApiServiceManager {
           recentVillains: recentVillains,
           recentProblems: recentProblems,
         );
+      } on StoryGenerationCancelled {
+        // PERF-01 cancellation polish: a user-initiated cancel is terminal —
+        // never retry it (that would re-launch a task the user abandoned).
+        // Propagate the signal straight to the caller for silent handling.
+        rethrow;
       } catch (error, stackTrace) {
         attempts++;
         debugPrint('Story generation attempt $attempts failed: $error');
@@ -1413,12 +1418,26 @@ class ApiServiceManager {
 
         if (status == 'complete') {
           final result = statusData['result'];
+          // PERF-01 cancellation polish: a user-initiated cancel surfaces as a
+          // *completed* task whose inner result is `{"status": "cancelled"}`
+          // with no story body. Detect it and throw a dedicated signal so we
+          // stop polling immediately instead of treating the empty result as a
+          // story (or polling on to a TimeoutException → error card). Callers
+          // catch StoryGenerationCancelled and treat it as a silent no-op.
+          if (result is Map<String, dynamic> &&
+              result['status'] == 'cancelled') {
+            throw const StoryGenerationCancelled();
+          }
           if (result is Map<String, dynamic>) {
             return StoryGenerationResult.fromBackend(result);
           }
           return StoryGenerationResult(
             storyText: result as String,
           );
+        } else if (status == 'cancelled') {
+          // Defensive: if a future backend surfaces cancellation directly on the
+          // envelope status (rather than nested in result), honor it the same way.
+          throw const StoryGenerationCancelled();
         } else if (status == 'failure') {
           throw Exception(
               'Story generation task failed: ${statusData['result']}');

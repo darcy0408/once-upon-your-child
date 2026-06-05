@@ -16,6 +16,8 @@ import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/models/api_error.dart';
+import 'package:story_weaver_app/models/story_generation_result.dart'
+    show StoryGenerationCancelled;
 import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/services/chronicle_service.dart';
@@ -760,6 +762,15 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             setState(() => _isGenerating = false);
           }
         }
+      }
+    } on StoryGenerationCancelled {
+      // PERF-01 cancellation polish: the user cancelled (Cancel button or
+      // navigated away mid-generation). This is NOT an error — do not show an
+      // error card or navigate to a story. _cancelGeneration()/dispose() already
+      // dropped the loading view; just make sure generation state is cleared.
+      debugPrint('Story generation cancelled by user — no error shown.');
+      if (mounted) {
+        setState(() => _isGenerating = false);
       }
     } catch (e) {
       debugPrint('❌ Error generating story: $e');
