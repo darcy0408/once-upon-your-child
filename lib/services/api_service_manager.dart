@@ -656,6 +656,25 @@ class ApiServiceManager {
     }
   }
 
+  /// Flattens the mixed `additionalCharacters` payload into display names for
+  /// prompt text. The payload intentionally mixes plain-string guest names with
+  /// `{name, is_adult_relative}` dicts (Family-tier adult relatives) — the
+  /// backend reads the raw dicts off the wire (`story_service.py`), but the
+  /// client-side prompt builders below need just the names. Passing the mixed
+  /// list straight into the old `List<String>?` params used to throw
+  /// `type 'List<Object>' is not a subtype of type 'List<String>?'` and abort
+  /// generation; this normalizes it safely.
+  static List<String> _additionalCharacterDisplayNames(List<dynamic>? chars) {
+    if (chars == null) return <String>[];
+    final names = <String>[];
+    for (final c in chars) {
+      final name = c is Map ? (c['name'] ?? '').toString() : c.toString();
+      final trimmed = name.trim();
+      if (trimmed.isNotEmpty) names.add(trimmed);
+    }
+    return names;
+  }
+
   /// Generate a story using appropriate method (backend or direct API)
   static Future<StoryGenerationResult> generateStory({
     required String characterName,
@@ -665,7 +684,7 @@ class ApiServiceManager {
     String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
@@ -930,7 +949,7 @@ class ApiServiceManager {
     String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
@@ -1051,7 +1070,7 @@ class ApiServiceManager {
     String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
@@ -1190,7 +1209,7 @@ class ApiServiceManager {
     String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
@@ -1488,7 +1507,7 @@ class ApiServiceManager {
     String? parentHiddenContext,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     Map<String, dynamic>? characterEvolution,
     String customElements = '',
   }) {
@@ -1638,7 +1657,7 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
     String multiCharacterText = '';
     if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
       multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters can support $characterName emotionally.';
+          '\n\nADDITIONAL CHARACTERS: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}. These characters can support $characterName emotionally.';
     }
 
     // Build character evolution context
@@ -1776,7 +1795,7 @@ Maintain plain text (no markdown fences).''';
     required int age,
     String mood = 'calming',
     String? companion,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
@@ -1797,7 +1816,10 @@ Maintain plain text (no markdown fences).''';
     final worldDesc = _bedtimeSettingDescriptions[theme] ?? theme;
 
     // All heroes — protagonist + siblings/friends listening.
-    final allHeroes = <String>[characterName, ...?additionalCharacters];
+    final allHeroes = <String>[
+      characterName,
+      ..._additionalCharacterDisplayNames(additionalCharacters),
+    ];
     final heroesStr = allHeroes.length == 1
         ? allHeroes.first
         : '${allHeroes.sublist(0, allHeroes.length - 1).join(', ')} and ${allHeroes.last}';
@@ -1876,7 +1898,7 @@ No extra keys. No prose outside the JSON.''';
     required String lengthGuideline,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     Map<String, dynamic>? characterEvolution,
     String customElements = '',
   }) {
@@ -1942,7 +1964,7 @@ No extra keys. No prose outside the JSON.''';
     String multiCharacterText = '';
     if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
       multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters join the adventure.';
+          '\n\nADDITIONAL CHARACTERS: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}. These characters join the adventure.';
     }
 
     String customRequestsText = '';
@@ -2061,7 +2083,7 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
     required int age,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     String customElements = '',
   }) {
     String detailSection = '';
@@ -2094,7 +2116,8 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
     }
 
     if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      detailSection += '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
+      detailSection +=
+          '\nFRIENDS IN STORY: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}';
     }
 
     String companionText = '';
@@ -2131,7 +2154,7 @@ Create the rhyming learning-to-read story about $characterName now:
     required int age,
     String? companion,
     Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
+    List<dynamic>? additionalCharacters,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     String? feelingTrigger,
@@ -2161,9 +2184,8 @@ Create the rhyming learning-to-read story about $characterName now:
     }
 
     // Merge companions for prompt building
-    final effectiveAdditionalChars = additionalCharacters != null
-        ? List<String>.from(additionalCharacters)
-        : <String>[];
+    final effectiveAdditionalChars =
+        _additionalCharacterDisplayNames(additionalCharacters);
 
     if (companionCharacters != null) {
       for (final char in companionCharacters) {

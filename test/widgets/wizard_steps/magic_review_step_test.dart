@@ -132,7 +132,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.tap(find.text('Pebble'));
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text('Pick something new'));
+    // The generic "Pick something new" button was relabeled "Change companions"
+    // (still routes to the Companions sub-step via _jumpToCompanions → 1).
+    await tester.tap(find.text('Change companions'));
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(tappedSubSteps, [0, 2, 1, 1]);

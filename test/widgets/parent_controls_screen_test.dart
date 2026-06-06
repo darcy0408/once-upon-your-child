@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/screens/parent_controls_screen.dart';
@@ -11,7 +12,12 @@ void main() {
   });
 
   Widget buildSubject() {
-    return const MaterialApp(home: ParentControlsScreen());
+    // ParentControlsScreen (and its children) read Riverpod providers via
+    // Consumer, so a ProviderScope ancestor is required or the build throws
+    // a StateError ("No ProviderScope found").
+    return const ProviderScope(
+      child: MaterialApp(home: ParentControlsScreen()),
+    );
   }
 
   Future<void> expandBigFeelings(WidgetTester tester) async {

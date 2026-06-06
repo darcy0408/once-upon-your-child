@@ -5,9 +5,10 @@
 //   (a) The Explorer band renders the "Be a superhero!" button inside the
 //       standard input panel.
 //   (b) Tapping the button pushes [SuperheroEntryScreen].
-//   (c) The button is Explorer-only — Adventurer/Creator/Adolescent/Adult
-//       must NOT see it (backend prompt routing currently handles age 6-8
-//       only). The Sprout band uses a different input path entirely.
+//   (c) The button shows for Explorer AND Adventurer (backend prompt routing
+//       has dedicated tiers T7_SUPERHERO_EXPLORER / T8_SUPERHERO_ADVENTURER).
+//       Creator/Adolescent/Adult must NOT see it. The Sprout band uses a
+//       different input path entirely (idea-tile, no gated button).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -166,9 +167,31 @@ void main() {
     );
   }
 
-  testWidgets('Adventurer band does NOT show the superhero button',
+  testWidgets('Adventurer band shows the "Be a superhero!" button',
       (tester) async {
-    await expectNoSuperheroButton(tester, band: AgeBand.adventurer);
+    // The Adventurer (9-12) superhero entry was added alongside Explorer
+    // (backend tier T8_SUPERHERO_ADVENTURER). imagine_it_screen renders the
+    // gated button for explorer OR adventurer, so it must be present here.
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = _makeWizardData(age: 10);
+    final imagineCtl = TextEditingController();
+    final wishCtl = TextEditingController();
+    addTearDown(imagineCtl.dispose);
+    addTearDown(wishCtl.dispose);
+
+    await tester.pumpWidget(_bootstrap(
+      wizardData: wd,
+      band: AgeBand.adventurer,
+      imagineCtl: imagineCtl,
+      wishCtl: wishCtl,
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Be a superhero!'), findsOneWidget);
+    expect(find.text('🦸'), findsOneWidget);
   });
 
   testWidgets('Creator band does NOT show the superhero button',

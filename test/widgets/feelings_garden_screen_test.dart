@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/screens/feelings_garden_screen.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
+import 'package:story_weaver_app/widgets/feelings_badge_grid.dart';
 
 void main() {
   setUp(() {
@@ -84,22 +85,23 @@ void main() {
       await tester.pumpWidget(createTestWidget(8));
       await pumpFor(tester, const Duration(milliseconds: 500));
 
-      // Switch to Explorer tab
+      // Switch to Explorer tab.
       await tester.tap(find.text('Feelings Explorer'));
       await pumpFor(tester, const Duration(milliseconds: 800));
 
-      // Level 0 (_CoreGrid): for age 8, coreEmotionsForAge returns
-      // bigFeelingsCoreEmotionsAges6To8 — first emotion is 'Excited', not 'Happy'.
-      expect(find.text('Excited'), findsWidgets);
+      // The Explorer zone for ages 6-14 now renders the flat FeelingsBadgeGrid
+      // (the old two-level core->secondary drill-down was replaced — MT-201).
+      expect(find.byType(FeelingsBadgeGrid), findsOneWidget);
 
-      // Tap 'Excited' core emotion card
-      await tester.ensureVisible(find.text('Excited').first);
-      await tester.tap(find.text('Excited').first);
+      // 'Happy' is the first card (top-left), so it is always laid out even
+      // though the lazy GridView leaves lower cards (e.g. 'Excited') unbuilt.
+      // Tapping a card selects that core feeling.
+      await tester.tap(find.text('Happy'));
       await pumpFor(tester, const Duration(milliseconds: 300));
       await tester.pump(); // allow setState to rebuild
 
-      // Level 1 (_SecondaryGrid) — secondary emotions under Excited are visible
-      expect(find.text('Bouncy'), findsWidgets);
+      // Selecting a core feeling surfaces the Save bar (_selectedCore != null).
+      expect(find.text('Save'), findsWidgets);
     });
 
     testWidgets('Saving to journal shows snackbar for age 8+', (tester) async {
