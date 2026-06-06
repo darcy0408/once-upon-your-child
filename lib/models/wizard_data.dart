@@ -165,8 +165,18 @@ class WizardData {
   }
 
   // Helper methods
+  // A story is "step 1 complete" with a name plus an identity. The identity is
+  // normally an archetype, but Superhero Mode supplies it via heroPower and
+  // never sets selectedArchetypeId. Without this OR, a kid who jumps to the
+  // Story-type page (via a progress-dot tap, bypassing the archetype page) and
+  // launches Superhero Mode landed on Magic Review with the "Make my story"
+  // button permanently greyed out and no explanation. wizard_data_mapper
+  // already routes the superhero tier off heroPower (MT-118), so treating it as
+  // a valid identity here keeps the two in step.
   bool get isStep1Complete =>
-      selectedArchetypeId != null && characterName.isNotEmpty;
+      (selectedArchetypeId != null ||
+          (heroPower != null && heroPower!.trim().isNotEmpty)) &&
+      characterName.isNotEmpty;
 
   bool get isStep2Complete => true; // Feeling section removed
 

@@ -265,7 +265,14 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     wd.heroPower = power.id;
     wd.heroSuperpower = displayName;
     wd.selectedScenario = 'superhero';
-    wd.customElements = 'being a superhero';
+    // Preserve a custom "Imagine It" idea the kid typed before tapping
+    // "Be a superhero!" (e.g. "ride a magic wand"). The superhero tier routes
+    // off `heroPower` (wizard_data_mapper MT-118), so `customElements` is just
+    // free must-include text — unconditionally overwriting it here silently
+    // dropped the kid's own idea from the story. Keep theirs when present and
+    // fall back to the generic marker only when they typed nothing.
+    final typedIdea = wd.customElements.trim();
+    wd.customElements = typedIdea.isEmpty ? 'being a superhero' : typedIdea;
 
     final characterId = SuperheroEntryScreen.resolveCharacterId(wd);
     final profile = HeroProfileLocal()

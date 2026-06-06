@@ -43,6 +43,15 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
   bool _loading = true;
   Uint8List? _portrait;
 
+  // Escape hatch: the portrait transform can take up to 2 minutes (or stall on
+  // a provider quota/outage). This screen is explicitly "best-effort, never
+  // block the kid", but the loading state had no way out — a stalled transform
+  // froze the child on "Suiting up…" and they never reached story generation.
+  // Surface a subtle "Skip" after a short grace so a fast success still gets a
+  // clean reveal, but a slow/stuck one is always escapable.
+  bool _showSkip = false;
+  Timer? _skipTimer;
+
   @override
   void initState() {
     super.initState();
@@ -54,11 +63,15 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
     if (!MotionPrefs.reduceMotion(context)) {
       _pulse.repeat(reverse: true);
     }
+    _skipTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted && _loading) setState(() => _showSkip = true);
+    });
     _generate();
   }
 
   @override
   void dispose() {
+    _skipTimer?.cancel();
     _pulse.dispose();
     super.dispose();
   }
@@ -178,6 +191,26 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
             valueColor: AlwaysStoppedAnimation<Color>(_gold),
           ),
         ),
+        // Always-available escape hatch (revealed after a short grace) so a
+        // slow or stalled portrait transform can never trap the child here.
+        // Popping continues the wizard to story creation; the portrait is
+        // optional and simply stays unset.
+        if (_showSkip) ...[
+          const SizedBox(height: 28),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Skip — start my story →',
+              style: GoogleFonts.fredoka(
+                color: Colors.white.withAlpha(210),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white54,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

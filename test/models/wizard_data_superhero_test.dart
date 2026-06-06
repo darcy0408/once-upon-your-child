@@ -2,6 +2,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models/wizard_data.dart';
 
 void main() {
+  group('WizardData.isComplete identity gate', () {
+    test('superhero (heroPower, no archetype) is complete with a name', () {
+      // Regression: jumping to the Story-type page bypasses the archetype
+      // page, so Superhero Mode lands on Magic Review with no archetype.
+      // heroPower must satisfy the identity requirement or the generate
+      // button stays silently greyed out.
+      final d = WizardData()
+        ..characterName = 'Mia'
+        ..heroPower = 'super_hugs';
+
+      expect(d.selectedArchetypeId, isNull);
+      expect(d.isComplete, isTrue);
+    });
+
+    test('archetype path still completes (no superhero)', () {
+      final d = WizardData()
+        ..characterName = 'Mia'
+        ..selectedArchetypeId = 'brave_hero';
+
+      expect(d.isComplete, isTrue);
+    });
+
+    test('neither archetype nor heroPower is incomplete', () {
+      final d = WizardData()..characterName = 'Mia';
+      expect(d.isComplete, isFalse);
+    });
+
+    test('heroPower without a name is incomplete', () {
+      final d = WizardData()..heroPower = 'super_hugs';
+      expect(d.isComplete, isFalse);
+    });
+
+    test('blank heroPower does not satisfy the identity gate', () {
+      final d = WizardData()
+        ..characterName = 'Mia'
+        ..heroPower = '   ';
+      expect(d.isComplete, isFalse);
+    });
+  });
+
   group('WizardData superhero fields', () {
     test('toJson emits snake_case keys for backend payload', () {
       final d = WizardData()
