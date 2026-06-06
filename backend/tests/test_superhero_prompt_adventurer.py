@@ -27,7 +27,7 @@ def test_adventurer_prompt_includes_hero_name_4x_and_identity_tag_3x():
         hero_cape_style="matching",
         hero_emblem="lightning",
         hero_power="strategist",
-        villain_id="clockwork_sentinel",
+        villain_id="gigawatt",
         problem_id="outsmart_the_trap",
     )
     assert (
@@ -72,17 +72,17 @@ def test_adventurer_prompt_honors_kid_chosen_nemesis():
         problem_id="earn_their_trust",
     )
     p1 = PromptService._build_superhero_prompt_adventurer(
-        villain_id="mirror_warden", **base
+        villain_id="booger_baron", **base
     )
     p2 = PromptService._build_superhero_prompt_adventurer(
-        villain_id="nightshade_botanist", **base
+        villain_id="professor_picklejuice", **base
     )
     # All villain NAMES appear in the pinned roster, so assert on each villain's
     # unique ACTION text — that only renders for the *active* (chosen) villain.
-    assert "reflections" in p1  # mirror_warden's action
-    assert "thorns" not in p1
-    assert "thorns" in p2  # nightshade_botanist's action
-    assert "reflections" not in p2
+    assert "goo" in p1  # booger_baron's action
+    assert "pickle" not in p1
+    assert "pickle" in p2  # professor_picklejuice's action
+    assert "goo" not in p2
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ def test_adventurer_prompt_emphasizes_villain_motive_and_understanding():
         hero_cape_style="matching",
         hero_emblem="star",
         hero_power="super_hearing",
-        villain_id="static_wraith",
+        villain_id="gigawatt",
         problem_id="uncover_the_truth",
     )
     lowered = prompt.lower()
@@ -118,7 +118,7 @@ def test_adventurer_prompt_forbids_violence_and_force():
         hero_cape_style="none",
         hero_emblem="leaf",
         hero_power="super_strength",
-        villain_id="nightshade_botanist",
+        villain_id="professor_picklejuice",
         problem_id="find_the_fair_path",
     )
     assert "NO weapons" in prompt
@@ -140,7 +140,7 @@ def test_adventurer_prompt_pins_full_canonical_villain_roster():
         hero_cape_style="matching",
         hero_emblem="star",
         hero_power="gadgeteer",
-        villain_id="static_wraith",
+        villain_id="gigawatt",
         problem_id="uncover_the_truth",
     )
     required_names = [v["name"] for v in ADVENTURER_VILLAINS.values()]
@@ -158,7 +158,7 @@ def test_adventurer_prompt_uses_must_language_for_villain_constraint():
         hero_cape_style="matching",
         hero_emblem="star",
         hero_power="gadgeteer",
-        villain_id="static_wraith",
+        villain_id="gigawatt",
         problem_id="uncover_the_truth",
     )
     assert "MUST be one of these named Adventurer villains" in prompt
@@ -172,7 +172,7 @@ def test_adventurer_prompt_forbids_abstract_puzzle_substitute():
         hero_cape_style="matching",
         hero_emblem="star",
         hero_power="gadgeteer",
-        villain_id="static_wraith",
+        villain_id="gigawatt",
         problem_id="uncover_the_truth",
     )
     forbid_keywords = [
@@ -197,7 +197,7 @@ def test_adventurer_prompt_has_900_1500_word_budget():
         hero_cape_style="matching",
         hero_emblem="leaf",
         hero_power="super_hearing",
-        villain_id="static_wraith",
+        villain_id="gigawatt",
         problem_id="uncover_the_truth",
     )
     assert "900" in prompt

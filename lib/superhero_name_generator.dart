@@ -319,23 +319,41 @@ class HeroFunnyNameGenerator {
     'Zippy Justice',
   ];
 
-  // Adventurer 9-12 — genuinely cool codenames a tween wouldn't find babyish.
-  // Playful wordplay welcome; still wholesome and kid-safe (no violence).
+  // Adventurer 9-12 — genuinely cool OR genuinely funny codenames a tween would
+  // love and never find babyish. Playful wordplay welcome; still wholesome and
+  // kid-safe (no violence / no combat-implying names). The deadpan, adult-ironic
+  // entries (Doctor Deadpan, The Unbothered, The Slow Clap, Midnight Reasonable)
+  // were dropped — a 9-12 doesn't read them as cool, just confusing.
   static const List<String> adventurerNames = [
+    // Cool codenames.
     'The Quiet Storm',
     'Nightcircuit',
-    'Sir Reacts-a-Lot',
     'The Velvet Bolt',
     'Echo Vanguard',
     'The Last Word',
     'Static Fox',
-    'Doctor Deadpan',
     'The Calm Current',
     'Riddlewing',
-    'The Unbothered',
+    'Shadow Fox',
+    'Neon Nova',
+    'Sky Falcon',
+    'Star Sentinel',
+    'The Wonderbolt',
+    // Tech / gadget.
+    'Pixel Power',
+    'Circuit Kid',
+    'Gizmo Guardian',
+    'Glitch Fixer',
+    // Funny / playful.
+    'Sir Reacts-a-Lot',
     'Captain Clutch',
-    'The Slow Clap',
-    'Midnight Reasonable',
+    'Bubble Blast',
+    'Major Marshmallow',
+    'The Amazing Achoo',
+    'The Human Hiccup',
+    'Super Sock',
+    'Power Panda',
+    'The Brave Badger',
   ];
 
   static List<String> _poolFor(HeroNameRegister register) =>

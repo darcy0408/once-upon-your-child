@@ -158,8 +158,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     'flying': _BandCopy('Skyborne', 'Take the high ground.'),
     'super_strength': _BandCopy('Titan Strength', 'Shift what no one else can.'),
     'super_hearing': _BandCopy('Echo Sense', 'Catch the faintest clue.'),
-    'super_smile': _BandCopy('Disarming Charm', 'Win people over.'),
-    'super_hugs': _BandCopy('Steadfast Heart', 'Stand by anyone.'),
+    'super_smile': _BandCopy('Disarming Charm', 'Win people over.', emoji: '😎'),
+    'super_hugs':
+        _BandCopy('Steadfast Heart', 'Stand by anyone.', emoji: '🛡️'),
     'super_whisper': _BandCopy('Calm Voice', 'Steady the storm.'),
     'super_sharing': _BandCopy('Fair Hand', 'Make it fair for everyone.'),
   };
@@ -177,7 +178,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       if (override == null) return p;
       return _PowerOption(
         id: p.id,
-        emoji: p.emoji,
+        emoji: override.emoji ?? p.emoji,
         name: override.name,
         description: override.description,
       );
@@ -212,6 +213,15 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     });
   }
 
+  /// Upper-cases the first letter of each whitespace-separated word, leaving
+  /// the rest untouched (preserves intentional caps like "McFly"). Used so a
+  /// kid-typed name ("jason", "mary jane") reads as a proper codename.
+  static String _titleCaseName(String s) => s
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => w[0].toUpperCase() + w.substring(1))
+      .join(' ');
+
   Future<void> _confirm() async {
     if (_selectedPowerId == null || _saving) return;
     HapticFeedback.mediumImpact();
@@ -219,9 +229,12 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     final power = powers.firstWhere((p) => p.id == _selectedPowerId);
     final wd = widget.wizardData;
     // Sprout's auto formula name ("{power} {name}") is left unchanged.
-    final formulaName = wd.characterName.trim().isNotEmpty
-        ? '${power.name} ${wd.characterName.trim()}'
-        : power.name;
+    // Title-case the kid's typed name so "jason" doesn't render as
+    // "Gadgeteer jason" — kids type lowercase and the formula must still read
+    // like a proper hero codename.
+    final heroFirstName = _titleCaseName(wd.characterName.trim());
+    final formulaName =
+        heroFirstName.isNotEmpty ? '${power.name} $heroFirstName' : power.name;
 
     // B2 + B3: Explorer (6-8) and Adventurer (9-12) get a funny-name + optional
     // catchphrase chooser. Sprout keeps the silent formula name. The chooser is
@@ -592,10 +605,13 @@ class _PowerOption {
 }
 
 /// Band-tier display copy for a shared power id (Explorer or Adventurer).
+/// [emoji] optionally overrides the base (Sprout) icon when the shared emoji
+/// reads too young for the older band (e.g. 😄/🤗 on a 9-12 power card).
 class _BandCopy {
   final String name;
   final String description;
-  const _BandCopy(this.name, this.description);
+  final String? emoji;
+  const _BandCopy(this.name, this.description, {this.emoji});
 }
 
 /// Result of the B2/B3 chooser: the chosen hero name + an optional catchphrase
@@ -807,6 +823,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 hintText: 'Or type my own name…',
                 hintStyle:
                     GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                // Explicit dark-translucent fill so white text/hint stay
+                // readable even if a global inputDecorationTheme forces a
+                // light fill (matches the withAlpha(20) chips above).
+                filled: true,
+                fillColor: Colors.white.withAlpha(20),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(color: Colors.white24),
@@ -866,6 +887,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 hintText: 'Or type my own catchphrase…',
                 hintStyle:
                     GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                // Explicit dark-translucent fill so white text/hint stay
+                // readable even if a global inputDecorationTheme forces a
+                // light fill (matches the withAlpha(20) chips above).
+                filled: true,
+                fillColor: Colors.white.withAlpha(20),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(color: Colors.white24),
@@ -911,37 +937,39 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
   }
 }
 
-/// C4: Adventurer arch-villain roster — ids mirror backend ADVENTURER_VILLAINS
-/// (backend/data/superhero_matrix.py). Kid-facing blurbs summarize each villain's
-/// motive so a 9-12 can pick a nemesis with stakes they understand.
+/// C4: Adventurer arch-villain roster — ids + names mirror backend
+/// ADVENTURER_VILLAINS (backend/data/superhero_matrix.py). Kid-facing blurbs
+/// summarize each villain's funny scheme so a 9-12 can pick a nemesis they'll
+/// love; the backend carries the full motive/backstory that shapes the story.
 class _Nemesis {
   final String id;
   final String name;
   final String blurb;
-  const _Nemesis(this.id, this.name, this.blurb);
+  final String emoji;
+  const _Nemesis(this.id, this.name, this.blurb, this.emoji);
 }
 
 const List<_Nemesis> _adventurerNemeses = [
-  _Nemesis('the_archivist', 'The Archivist',
-      'Locks away every story and map so nothing can ever be lost.'),
-  _Nemesis('mirror_warden', 'The Mirror Warden',
-      'Traps reflections so no one can be judged by how they look.'),
+  _Nemesis('gigawatt', 'Gigawatt',
+      "Buries the town in 'helpful' gadgets that take over every chore — whether you want it or not.", '⚡'),
+  _Nemesis('lord_loading_screen', 'Lord Loading Screen',
+      'Makes every door, game, and lesson stall and buffer so nothing ever quite finishes.', '⏳'),
+  _Nemesis('doctor_detention', 'Doctor Detention',
+      'Freezes every clock so the bell never rings and school never, ever ends.', '🔔'),
+  _Nemesis('mister_meh', 'Mister Meh',
+      'Drains the fun out of birthdays, games, and even superpowers until everything feels gray.', '😑'),
+  _Nemesis('booger_baron', 'The Booger Baron',
+      "Flings sticky green goo and nose-shaped drones to keep everyone at arm's length.", '🤧'),
+  _Nemesis('llama_of_doom', 'The Llama of Doom',
+      'Stages giant dramatic scenes and demands that llamas finally rule the whole town.', '🦙'),
+  _Nemesis('professor_picklejuice', 'Professor Picklejuice',
+      'Fires sour-pickle blasts and locks every snack in town inside a giant brine vault.', '🥒'),
+  _Nemesis('count_copypaste', 'Count Copy-Paste',
+      "Spins out dozens of arguing copies of himself, each one sure it's the real Count.", '📋'),
   _Nemesis('the_overlooked', 'The Overlooked',
-      'Sabotages the festival — they were never once chosen to lead.'),
-  _Nemesis('clockwork_sentinel', 'The Clockwork Sentinel',
-      'Freezes the town in place so nobody can ever make a mistake.'),
-  _Nemesis('tide_caller', 'The Tide Caller',
-      'Floods the harbor to win the shore back for the sea creatures.'),
-  _Nemesis('ember_fox', 'The Ember Fox',
-      'Lights warning fires because the town keeps ignoring a real danger.'),
-  _Nemesis('the_collector', 'The Collector',
-      'Takes one treasured thing from every family for a museum.'),
-  _Nemesis('static_wraith', 'The Static Wraith',
-      'Scrambles every message so that no one is able to tell a lie.'),
+      'Sabotages the big festival because no one ever once chose them to lead.', '👤'),
   _Nemesis('the_gatekeeper', 'The Gatekeeper',
-      'Walls off the old quarter to keep outsiders away after being hurt.'),
-  _Nemesis('nightshade_botanist', 'The Nightshade Botanist',
-      'Grows thorns over the gardens to stop people trampling rare plants.'),
+      'Walls off the old quarter to keep every outsider away after being hurt once.', '🔒'),
 ];
 
 /// C4 nemesis picker bottom sheet. Pops the chosen villain id, or null for
@@ -1007,7 +1035,7 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                       _tile(
                         selected: _selected == n.id,
                         onTap: () => setState(() => _selected = n.id),
-                        emoji: '🦹',
+                        emoji: n.emoji,
                         title: n.name,
                         blurb: n.blurb,
                       ),

@@ -162,18 +162,18 @@ void main() {
 
   group('WizardData heroNemesisId (C4)', () {
     test('toJson emits snake_case hero_nemesis_id', () {
-      final d = WizardData()..heroNemesisId = 'mirror_warden';
-      expect(d.toJson()['hero_nemesis_id'], 'mirror_warden');
+      final d = WizardData()..heroNemesisId = 'gigawatt';
+      expect(d.toJson()['hero_nemesis_id'], 'gigawatt');
     });
 
     test('fromJson restores hero_nemesis_id (snake_case)', () {
-      final d = WizardData.fromJson({'hero_nemesis_id': 'ember_fox'});
-      expect(d.heroNemesisId, 'ember_fox');
+      final d = WizardData.fromJson({'hero_nemesis_id': 'booger_baron'});
+      expect(d.heroNemesisId, 'booger_baron');
     });
 
     test('fromJson falls back to legacy camelCase heroNemesisId', () {
-      final d = WizardData.fromJson({'heroNemesisId': 'the_collector'});
-      expect(d.heroNemesisId, 'the_collector');
+      final d = WizardData.fromJson({'heroNemesisId': 'count_copypaste'});
+      expect(d.heroNemesisId, 'count_copypaste');
     });
 
     test('toJson then fromJson round-trips heroNemesisId', () {
@@ -183,11 +183,11 @@ void main() {
     });
 
     test('clone() preserves heroNemesisId and is independent', () {
-      final original = WizardData()..heroNemesisId = 'static_wraith';
+      final original = WizardData()..heroNemesisId = 'doctor_detention';
       final copy = original.clone();
-      expect(copy.heroNemesisId, 'static_wraith');
-      copy.heroNemesisId = 'tide_caller';
-      expect(original.heroNemesisId, 'static_wraith');
+      expect(copy.heroNemesisId, 'doctor_detention');
+      copy.heroNemesisId = 'mister_meh';
+      expect(original.heroNemesisId, 'doctor_detention');
     });
 
     test('heroNemesisId defaults to null (server surprise-picks)', () {

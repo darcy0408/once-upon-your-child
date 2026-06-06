@@ -428,66 +428,100 @@ EXPLORER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
 
 # ---------------------------------------------------------------------------
 # Adventurer-band (ages 9-12) matrix — parallel to the Sprout/Explorer tables.
-# These antagonists are real: each has a genuine, understandable motive, and
-# sometimes a point worth hearing (a guardian who over-protects, a rival who
-# was overlooked, a caller defending creatures the town displaced). Stakes are
-# real, the villain is never silly — but the resolution ALWAYS comes through
-# cleverness, courage, empathy, and understanding the antagonist's underlying
-# need. NEVER through violence, weapons, fighting, or fear. The ``softens``
-# beat is a *changed mind / met need*, not merely "tidied up". Problems demand
-# strategy and perspective-taking (uncover, negotiate, rally, out-think), which
-# is what a 9-12-year-old reader wants to do.
+# These villains are FUNNY on the surface and REAL underneath: a gross-goofy or
+# gadget-mad premise a tween instantly loves, wrapped around a genuine,
+# relatable need (loneliness, perfectionism, feeling invisible or left out).
+# Each carries four story-shaping fields beyond name/action:
+#   - ``personality``: how they talk and behave (voice for the model).
+#   - ``backstory``: the real need under the trouble — revealed gradually so the
+#     reader ends up understanding them.
+#   - ``weakness``: a RIDICULOUS, non-violent vulnerability the hero exploits
+#     with cleverness, not force (asking a question, a peanut-butter jar, a
+#     spotlight) — this is the engine of the "out-think, never fight" win.
+#   - ``softens``: a *changed mind / met need*, never "defeated".
+# Resolution ALWAYS comes through cleverness, courage, empathy, and meeting the
+# real need — NEVER violence, weapons, fighting, or fear.
 # ---------------------------------------------------------------------------
 ADVENTURER_VILLAINS: dict[str, dict] = {
-    "the_archivist": {
-        "name": "the Archivist",
-        "action": "lock away every story and map in a vault so nothing can ever be lost again",
-        "softens": "unsealed the vault once the hero showed that stories only grow when they are shared",
+    "gigawatt": {
+        "name": "Gigawatt",
+        "action": "wire the whole town with 'helpful' gadgets that take over every chore and decision",
+        "personality": "a motor-mouthed boy-genius inventor who talks in exclamation points, never sits still, and cannot resist explaining how every gadget works",
+        "backstory": "Gigawatt was always told they were 'too much,' so they build machines to be so useful that people will finally want them around — the real need is to be valued for who they are, not just what they build",
+        "weakness": "every gadget runs off one absurdly tangled extension cord, and a genuine question about an invention sends Gigawatt into such an excited explanation that the whole scheme grinds to a halt",
+        "softens": "powered down the takeover once the hero showed the town wanted Gigawatt, not just the gadgets, and invited them to build something together",
     },
-    "mirror_warden": {
-        "name": "the Mirror Warden",
-        "action": "trap people's reflections so no one can be judged by how they look",
-        "softens": "freed the reflections after learning that hiding is not the same as protecting",
+    "lord_loading_screen": {
+        "name": "Lord Loading Screen",
+        "action": "make every door, lesson, and game stall and buffer so nothing in town ever quite finishes",
+        "personality": "a slow, sighing perfectionist in a spinning-wheel cloak who insists everything needs 'just a moment longer' to be perfect",
+        "backstory": "Lord Loading Screen is terrified of getting things wrong, so he freezes the moment before anything finishes — if it never finishes, it can never be a mistake; the real need is to learn that 'done' is braver than 'perfect'",
+        "weakness": "he panics whenever someone reaches for a 'skip' button, and he cannot resist finishing a countdown out loud once it has started",
+        "softens": "let the town start moving again once the hero showed him that finishing something imperfect is how anything good ever gets made",
+    },
+    "doctor_detention": {
+        "name": "Doctor Detention",
+        "action": "freeze every clock so the school bell never rings and the day never ends",
+        "personality": "a brisk, rule-quoting hall-monitor of a villain who hands out tidy yellow slips and secretly hums to themselves when no one is looking",
+        "backstory": "Doctor Detention keeps school open forever because the busy hallways feel safer and less lonely than an empty house after the bell; the real need is a place to belong once the day is over",
+        "weakness": "they cannot ignore a politely raised hand or a sincere question, and the smell of cafeteria pizza makes them lose track of every rule",
+        "softens": "let the final bell ring once the hero helped them find a club and friends to go home to, so the empty afternoons weren't lonely anymore",
+    },
+    "mister_meh": {
+        "name": "Mister Meh",
+        "action": "drain the excitement out of birthdays, games, and even superpowers until everything feels gray and boring",
+        "personality": "a flat, shrugging villain in head-to-toe beige who answers every wonder with 'eh, whatever' and a long, tired sigh",
+        "backstory": "Mister Meh was never once allowed to play or make a mess, so joy started to feel unfair — if he can't have fun, it is easier if no one does; the real need is permission to be delighted again",
+        "weakness": "a single genuine belly-laugh nearby cracks his gray haze, and he absolutely cannot keep a straight face around a really good (or really terrible) pun",
+        "softens": "let the color and fun rush back once the hero invited him into the game and showed him it was finally his turn to play",
+    },
+    "booger_baron": {
+        "name": "the Booger Baron",
+        "action": "fling sticky green goo and send a swarm of nose-shaped drones to keep everyone at arm's length",
+        "personality": "a theatrical, sniffly villain who calls everyone 'darling,' bows far too much, and is weirdly proud of how gross he is",
+        "backstory": "the Booger Baron grosses people out on purpose so they leave first — that way they can never reject him up close; the real need is to learn that a true friend won't be scared off",
+        "weakness": "he is helplessly ticklish, and a single offered tissue or a kind 'bless you' so surprises him that his whole goo-machine sputters out",
+        "softens": "wiped up the goo and called off the drones once the hero stayed anyway and offered to be his friend without flinching",
+    },
+    "llama_of_doom": {
+        "name": "the Llama of Doom",
+        "action": "stage enormous dramatic scenes and demand that all of llama-kind finally be crowned rulers of the town",
+        "personality": "a gloriously over-the-top drama-llama in a swishy cape who gasps, faints onto fainting-couches, and narrates their own villainy out loud",
+        "backstory": "the Llama of Doom feels completely invisible unless they are making a giant scene, so the bigger the drama, the more they feel seen; the real need is to matter to someone without having to perform",
+        "weakness": "they cannot resist an audience, a spotlight, or a round of applause — point a camera or ask for an encore and the whole evil plan turns into a one-llama show",
+        "softens": "took a bow and dropped the doom once the hero gave them a real role on the festival stage and a friend who would watch even the quiet moments",
+    },
+    "professor_picklejuice": {
+        "name": "Professor Picklejuice",
+        "action": "fire sour-pickle blasts and sweep every snack in town into a giant brine-filled vault",
+        "personality": "a giggling, briny mad-scientist who wears swim goggles, smells intensely of vinegar, and has named every single pickle in the lab",
+        "backstory": "Professor Picklejuice hoards snacks because they were never picked for a team or invited to a party — a full pantry feels like never being left out again; the real need is a seat at the table",
+        "weakness": "a single jar of peanut butter completely scrambles their sour-powers, and they cannot turn down a genuine invitation to share a snack",
+        "softens": "unsealed the brine vault and handed the snacks back once the hero saved them a seat and a plate at the town picnic",
+    },
+    "count_copypaste": {
+        "name": "Count Copy-Paste",
+        "action": "spin out dozens of slightly-wrong copies of himself that crowd the town and argue over who is the real one",
+        "personality": "a flustered, formal count who keeps insisting 'I am the original!' while his copies bicker, finish his sentences, and contradict him",
+        "backstory": "Count Copy-Paste makes copy after copy hoping one of them will finally be 'good enough,' because he is sure the real him is not; the real need is to believe the first, imperfect original was worthy all along",
+        "weakness": "the copies cannot agree on anything, so one honest compliment aimed at the REAL Count makes every duplicate freeze in confusion",
+        "softens": "let the copies fade once the hero convinced him the first, imperfect original was the one worth keeping all along",
     },
     "the_overlooked": {
         "name": "the Overlooked",
         "action": "sabotage the great festival because no one ever once chose them to lead",
+        "personality": "a quiet, watchful figure who lingers at the edge of every crowd, quick to point out that nobody noticed they were even there",
+        "backstory": "the Overlooked has been passed over for every team, role, and spotlight, and decided that if they can't be seen for doing good, they'll be seen for this; the real need is to have their real talent finally recognized",
+        "weakness": "they melt the instant someone remembers a small kind thing they once did, and they can't keep up the act when sincerely asked for help",
         "softens": "stood down the moment the hero made sure their real talent was finally seen",
-    },
-    "clockwork_sentinel": {
-        "name": "the Clockwork Sentinel",
-        "action": "freeze the whole town in place so that nobody can ever make a mistake",
-        "softens": "powered down its locks once it understood that mistakes are how people grow",
-    },
-    "tide_caller": {
-        "name": "the Tide Caller",
-        "action": "flood the harbor to win back the shore for the sea creatures the town pushed out",
-        "softens": "agreed to a fair plan that left room for both the town and the tide pools",
-    },
-    "ember_fox": {
-        "name": "the Ember Fox",
-        "action": "light warning fires because the town kept ignoring a danger that was real",
-        "softens": "let the flames die down once people finally listened and fixed what was wrong",
-    },
-    "the_collector": {
-        "name": "the Collector",
-        "action": "take one treasured thing from every family for a museum of what 'really matters'",
-        "softens": "returned every treasure and opened a museum the whole town built together",
-    },
-    "static_wraith": {
-        "name": "the Static Wraith",
-        "action": "scramble every message in town so that no one is able to tell a lie",
-        "softens": "let the signals clear once it saw that trust is rebuilt with honesty, not silence",
     },
     "the_gatekeeper": {
         "name": "the Gatekeeper",
         "action": "wall off the old quarter to keep every outsider away after being hurt once",
+        "personality": "a gruff, watchful guardian rattling a huge ring of keys — polite but immovable, certain that every gate is safer shut",
+        "backstory": "the Gatekeeper was hurt badly the last time they let someone in, so now they lock every door to make sure it can never happen again; the real need is to feel safe enough to belong again",
+        "weakness": "they cannot bring themselves to lock a gate against someone clearly in real trouble, and a shared cup of tea undoes their sternest rule",
         "softens": "opened the gate after the hero showed them they still belonged",
-    },
-    "nightshade_botanist": {
-        "name": "the Nightshade Botanist",
-        "action": "grow thorns over the gardens to stop people trampling the rarest plants",
-        "softens": "traded the thorns for a way to teach the town to tend the gardens instead",
     },
 }
 
@@ -552,71 +586,96 @@ ADVENTURER_POWERS: dict[str, dict] = {
     "super_speed": {
         "name": "Velocity",
         "verb": "blur into motion",
-        "ideal": "the_collector",
-        "also": ["the_archivist", "static_wraith", "mirror_warden", "the_overlooked"],
+        "ideal": "count_copypaste",
+        "also": [
+            "gigawatt",
+            "professor_picklejuice",
+            "booger_baron",
+            "lord_loading_screen",
+        ],
         "primary_problem": "return_what_was_taken",
     },
     "flying": {
         "name": "Skyborne",
         "verb": "rise above it all",
-        "ideal": "tide_caller",
+        "ideal": "llama_of_doom",
         "also": [
-            "ember_fox",
-            "clockwork_sentinel",
+            "booger_baron",
+            "gigawatt",
+            "doctor_detention",
             "the_gatekeeper",
-            "nightshade_botanist",
         ],
         "primary_problem": "expose_the_real_danger",
     },
     "super_strength": {
         "name": "Titan Strength",
         "verb": "haul aside what blocks the way",
-        "ideal": "clockwork_sentinel",
+        "ideal": "the_gatekeeper",
         "also": [
-            "the_archivist",
-            "nightshade_botanist",
-            "the_collector",
-            "the_gatekeeper",
+            "gigawatt",
+            "booger_baron",
+            "professor_picklejuice",
+            "lord_loading_screen",
         ],
         "primary_problem": "outsmart_the_trap",
     },
     "super_hearing": {
         "name": "Echo Sense",
         "verb": "tune in to the faintest sound",
-        "ideal": "static_wraith",
-        "also": ["mirror_warden", "the_overlooked", "ember_fox", "the_collector"],
+        "ideal": "the_overlooked",
+        "also": [
+            "count_copypaste",
+            "doctor_detention",
+            "mister_meh",
+            "the_gatekeeper",
+        ],
         "primary_problem": "uncover_the_truth",
     },
     "super_smile": {
         "name": "Disarming Charm",
         "verb": "win them over",
-        "ideal": "the_overlooked",
-        "also": ["the_gatekeeper", "mirror_warden", "tide_caller", "the_collector"],
+        "ideal": "mister_meh",
+        "also": [
+            "llama_of_doom",
+            "the_overlooked",
+            "booger_baron",
+            "professor_picklejuice",
+        ],
         "primary_problem": "give_them_a_voice",
     },
     "super_hugs": {
         "name": "Steadfast Heart",
         "verb": "stand beside them",
-        "ideal": "the_gatekeeper",
-        "also": ["mirror_warden", "the_overlooked", "ember_fox", "static_wraith"],
+        "ideal": "booger_baron",
+        "also": [
+            "the_gatekeeper",
+            "the_overlooked",
+            "mister_meh",
+            "doctor_detention",
+        ],
         "primary_problem": "earn_their_trust",
     },
     "super_whisper": {
         "name": "Calm Voice",
         "verb": "speak low and steady",
-        "ideal": "mirror_warden",
-        "also": ["static_wraith", "the_overlooked", "the_gatekeeper", "the_archivist"],
+        "ideal": "lord_loading_screen",
+        "also": [
+            "gigawatt",
+            "count_copypaste",
+            "the_gatekeeper",
+            "mister_meh",
+        ],
         "primary_problem": "mend_what_broke",
     },
     "super_sharing": {
         "name": "Fair Hand",
         "verb": "share it out fairly",
-        "ideal": "the_archivist",
+        "ideal": "professor_picklejuice",
         "also": [
-            "the_collector",
-            "tide_caller",
-            "clockwork_sentinel",
-            "nightshade_botanist",
+            "gigawatt",
+            "count_copypaste",
+            "doctor_detention",
+            "the_overlooked",
         ],
         "primary_problem": "find_the_fair_path",
     },
@@ -624,47 +683,60 @@ ADVENTURER_POWERS: dict[str, dict] = {
     "strategist": {
         "name": "Master Strategist",
         "verb": "out-plan the whole scheme",
-        "ideal": "clockwork_sentinel",
+        "ideal": "gigawatt",
         "also": [
-            "tide_caller",
-            "static_wraith",
-            "the_collector",
-            "nightshade_botanist",
+            "lord_loading_screen",
+            "count_copypaste",
+            "doctor_detention",
+            "llama_of_doom",
         ],
         "primary_problem": "outsmart_the_trap",
     },
     "gadgeteer": {
         "name": "Gadgeteer",
         "verb": "rig a clever gadget",
-        "ideal": "static_wraith",
-        "also": ["clockwork_sentinel", "the_collector", "ember_fox", "mirror_warden"],
+        "ideal": "doctor_detention",
+        "also": [
+            "gigawatt",
+            "lord_loading_screen",
+            "count_copypaste",
+            "professor_picklejuice",
+        ],
         "primary_problem": "uncover_the_truth",
     },
 }
 
 ADVENTURER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
-    "the_archivist": [
-        "return_what_was_taken",
-        "find_the_fair_path",
-        "give_them_a_voice",
-    ],
-    "mirror_warden": ["earn_their_trust", "mend_what_broke", "uncover_the_truth"],
-    "the_overlooked": ["give_them_a_voice", "mend_what_broke", "broker_a_truce"],
-    "clockwork_sentinel": ["outsmart_the_trap", "broker_a_truce", "find_the_fair_path"],
-    "tide_caller": ["find_the_fair_path", "broker_a_truce", "expose_the_real_danger"],
-    "ember_fox": ["expose_the_real_danger", "give_them_a_voice", "rally_the_allies"],
-    "the_collector": [
-        "return_what_was_taken",
-        "find_the_fair_path",
+    "gigawatt": ["outsmart_the_trap", "uncover_the_truth", "mend_what_broke"],
+    "lord_loading_screen": [
+        "mend_what_broke",
+        "outsmart_the_trap",
         "earn_their_trust",
     ],
-    "static_wraith": ["uncover_the_truth", "earn_their_trust", "mend_what_broke"],
-    "the_gatekeeper": ["earn_their_trust", "broker_a_truce", "rally_the_allies"],
-    "nightshade_botanist": [
-        "find_the_fair_path",
-        "expose_the_real_danger",
-        "rally_the_allies",
+    "doctor_detention": [
+        "uncover_the_truth",
+        "earn_their_trust",
+        "mend_what_broke",
     ],
+    "mister_meh": ["give_them_a_voice", "mend_what_broke", "rally_the_allies"],
+    "booger_baron": ["earn_their_trust", "mend_what_broke", "broker_a_truce"],
+    "llama_of_doom": [
+        "expose_the_real_danger",
+        "give_them_a_voice",
+        "broker_a_truce",
+    ],
+    "professor_picklejuice": [
+        "find_the_fair_path",
+        "return_what_was_taken",
+        "give_them_a_voice",
+    ],
+    "count_copypaste": [
+        "uncover_the_truth",
+        "outsmart_the_trap",
+        "mend_what_broke",
+    ],
+    "the_overlooked": ["give_them_a_voice", "uncover_the_truth", "mend_what_broke"],
+    "the_gatekeeper": ["earn_their_trust", "broker_a_truce", "rally_the_allies"],
 }
 
 

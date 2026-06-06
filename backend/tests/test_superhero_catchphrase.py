@@ -30,7 +30,7 @@ def test_adventurer_prompt_includes_catchphrase_when_supplied():
         hero_cape_style="matching",
         hero_emblem="lightning",
         hero_power="strategist",
-        villain_id="clockwork_sentinel",
+        villain_id="gigawatt",
         problem_id="outsmart_the_trap",
         hero_catchphrase=_PHRASE,
     )
@@ -49,7 +49,7 @@ def test_adventurer_prompt_omits_catchphrase_scaffolding_when_absent():
         hero_cape_style="matching",
         hero_emblem="lightning",
         hero_power="strategist",
-        villain_id="clockwork_sentinel",
+        villain_id="gigawatt",
         problem_id="outsmart_the_trap",
         hero_catchphrase=None,
     )
@@ -66,7 +66,7 @@ def test_adventurer_blank_catchphrase_is_noop(blank):
         hero_cape_style="matching",
         hero_emblem="lightning",
         hero_power="strategist",
-        villain_id="clockwork_sentinel",
+        villain_id="gigawatt",
         problem_id="outsmart_the_trap",
         hero_catchphrase=blank,
     )

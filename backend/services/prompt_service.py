@@ -759,11 +759,13 @@ Begin now. Stop at 350 words across all pages combined.
         )
         beat4_seed = (
             f"{character} looked closer and finally understood WHY "
-            f"{villain['name']} was doing this — there was a real need under the trouble."
+            f"{villain['name']} was doing this — {villain['backstory']}."
         )
         beat5_seed = (
             f"{character} used {power_name} ({power_verb}) — paired with a clever "
-            f"plan — to {problem['verb']} the situation ({problem['summary']})."
+            f"plan that turned {villain['name']}'s one funny weakness "
+            f"({villain['weakness']}) into the opening — to {problem['verb']} the "
+            f"situation ({problem['summary']})."
         )
         beat6_seed = (
             f"{villain['name']} {villain['softens']}. {character} had won not by "
@@ -784,8 +786,11 @@ HERO IDENTITY (use the hero's name at least FOUR times and the identity tag at l
 VILLAIN — the antagonist MUST be one of these named Adventurer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and make them the embodied source of conflict.
 - Name: {villain['name']} (use this exact name in the prose)
 - What they do: {villain['action']}
-- Their motive matters: {villain['name']} is NOT evil. They have a genuine, understandable reason — and sometimes a point worth hearing. The reader should end up understanding them, even while disagreeing with what they did.
+- Personality (write them with this exact voice — funny and larger-than-life): {villain['personality']}
+- Their motive matters: {villain['name']} is NOT evil. Under the funny, over-the-top trouble is a real and understandable need: {villain['backstory']}. Reveal this gradually so the reader ends up understanding them, even while disagreeing with what they did.
+- Their RIDICULOUS weakness — this is how the hero wins, through cleverness and never force: {villain['weakness']}
 - How they soften: {villain['softens']}
+- TONE: {villain['name']} is genuinely funny and fun to read, but never mean, gross-out cruel, or frightening. Keep the laughs kind.
 - DO NOT replace the villain with an abstract setting, weather pattern, riddle, puzzle, "mysterious place", or logic game. The conflict MUST be embodied by {villain['name']} — a character with a motive who acts, is understood, and changes.
 
 PROBLEM TO SOLVE:
