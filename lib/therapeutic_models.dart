@@ -16,7 +16,8 @@ enum TherapeuticGoal {
   transitions,
   selfEsteem,
   friendship,
-  focus;
+  focus,
+  boundaries;
 
   String get displayName {
     switch (this) {
@@ -46,6 +47,8 @@ enum TherapeuticGoal {
         return 'Making Friends';
       case TherapeuticGoal.focus:
         return 'Focus & Listening';
+      case TherapeuticGoal.boundaries:
+        return 'Setting Boundaries';
     }
   }
 
@@ -77,6 +80,8 @@ enum TherapeuticGoal {
         return 'Stories about being a good friend and finding kindred spirits';
       case TherapeuticGoal.focus:
         return 'Stories about listening, following directions, and paying attention';
+      case TherapeuticGoal.boundaries:
+        return 'Stories about saying no, noticing the "uh-oh" feeling, and respecting others\' limits';
     }
   }
 
@@ -108,6 +113,8 @@ enum TherapeuticGoal {
         return Icons.group;
       case TherapeuticGoal.focus:
         return Icons.hearing;
+      case TherapeuticGoal.boundaries:
+        return Icons.front_hand;
     }
   }
 
@@ -139,6 +146,8 @@ enum TherapeuticGoal {
         return Colors.lightGreen;
       case TherapeuticGoal.focus:
         return Colors.teal;
+      case TherapeuticGoal.boundaries:
+        return Colors.blueGrey;
     }
   }
 }
@@ -535,6 +544,42 @@ class TherapeuticScenario {
           'A walk in nature',
           'Eating a favorite meal slowly',
           'Watching a sunset',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'boundary_say_no',
+        title: 'It\'s Okay to Say No',
+        description: 'Character learns to set a limit and trust the "uh-oh" feeling',
+        goal: TherapeuticGoal.boundaries,
+        copingStrategies: [
+          'Notice the "uh-oh" feeling in your tummy',
+          'Say "stop" or "no thank you"',
+          'Walk away and tell a trusted grown-up',
+          'Remember: a real friend stays after you say no',
+        ],
+        positiveOutcome: 'Sets a limit calmly and still feels safe and liked',
+        suggestedPrompts: [
+          'A friend keeps asking for something that does not feel fair',
+          'Someone wants a hug when the character does not',
+          'A "secret" makes the character\'s tummy feel funny',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'boundary_respect_others',
+        title: 'When Someone Says Stop',
+        description: 'Character learns to respect other people\'s limits right away',
+        goal: TherapeuticGoal.boundaries,
+        copingStrategies: [
+          'Stop the first time someone says stop',
+          'Ask before touching, borrowing, or hugging',
+          'Watch faces and feelings for an "uh-oh"',
+          'Give friends space when they need it',
+        ],
+        positiveOutcome: 'Becomes the kind of friend others trust',
+        suggestedPrompts: [
+          'A friend does not want to play the same game',
+          'Someone needs quiet time alone',
+          'A companion says "please don\'t" during a game',
         ],
       ),
       const TherapeuticScenario(
