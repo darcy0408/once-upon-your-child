@@ -300,3 +300,7 @@ scrolled-down.png
 .antigravity/
 .windsurf/
 *.antigravity-workspace
+
+# Stranded Railway MCP tooling files — not part of the app build (MT-228)
+/package.json
+/package-lock.json
