@@ -163,6 +163,8 @@ git pull --rebase && git push
 ```
 Do NOT use `--force` or `--force-with-lease` to resolve a non-fast-forward — always rebase.
 
+**If the push is rejected by branch protection** (error mentions `protected branch`, force-push, or deletion blocked) — this is NOT a routine non-fast-forward. `main` is protected against force-push and deletion, so this rejection means something attempted to rewrite or delete history on `main`, which must never happen on a normal close. Do NOT retry, rebase around it, or work around it. **Stop and surface the exact error to Darcy** — it signals a real problem (e.g. a stale local `main`, a bad reset, or a misdirected push).
+
 ---
 
 ## Step 8 — Final report to user
