@@ -67,6 +67,10 @@ jobs:
     if: always()
     steps:
       - name: Send Rollback Notification
+        # Skip cleanly when Slack isn't configured, so the notify job doesn't
+        # fail (empty webhook -> action error) during a real rollback. Mirrors
+        # the guard in health-monitoring.yml. (MT-225)
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v3
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -84,3 +88,5 @@ jobs:
                 }
               ]
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
