@@ -150,6 +150,11 @@ class CompanionData {
   final String personality;
   final String? imagePathOverride;
   final Color? backgroundColor;
+
+  /// Crop anchor for the circular orb. Square source art (1024×1024) looks fine
+  /// centered; portrait/off-centre art needs a different anchor so BoxFit.cover
+  /// frames the face instead of the torso. Defaults to centre.
+  final Alignment imageAlignment;
   const CompanionData({
     required this.id,
     required this.name,
@@ -157,6 +162,7 @@ class CompanionData {
     this.personality = '',
     this.imagePathOverride,
     this.backgroundColor,
+    this.imageAlignment = Alignment.center,
   });
 
   String get imagePath =>
@@ -229,6 +235,9 @@ const explorerCompanions = [
   ),
 ];
 
+// Order = grid order (2 per row). Atlas + Kodiak (the two bespectacled
+// "thinker" companions) lead the top row; Nyx + Rockin' Robin fill the
+// bottom row, per Darcy's request to move Robin to the bottom.
 const adventurerCompanions = [
   CompanionData(
     id: 'atlas',
@@ -239,12 +248,12 @@ const adventurerCompanions = [
         'Atlas (Pattern Seer) is a blue-green scholar dragon with a compass medallion who knows every constellation. When the path is unclear he lifts his glasses and calculates. He admits when the map was wrong. Speaks in short verdicts — "Noted." "Risky." "Better." Catchphrases: "Look again." / "Follow the pattern."',
   ),
   CompanionData(
-    id: 'robin',
-    name: 'Rockin\' Robin',
-    tagline: 'Fierce loyalty. Zero chill.',
-    imagePathOverride: 'assets/images/companions/adventurer/robin.webp',
+    id: 'kodiak',
+    name: 'Kodiak',
+    tagline: 'Pack moves together. Never gives up on you.',
+    imagePathOverride: 'assets/images/companions/adventurer/kodiak.jpg',
     personality:
-        'Rockin\' Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
+        'Kodiak (Hope Engine) is a galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'ve got your left side."',
   ),
   CompanionData(
     id: 'nyx',
@@ -255,12 +264,12 @@ const adventurerCompanions = [
         'Nyx (Boundary Guardian) is a sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. She helps you say no, spot pressure, and choose the cleanest way out. When she trusts you enough to speak first, the information is always worth waiting for. Catchphrases: "No is complete." / "We leave—now."',
   ),
   CompanionData(
-    id: 'kodiak',
-    name: 'Kodiak',
-    tagline: 'Pack moves together. Never gives up on you.',
-    imagePathOverride: 'assets/images/companions/adventurer/kodiak.jpg',
+    id: 'robin',
+    name: 'Rockin\' Robin',
+    tagline: 'Fierce loyalty. Zero chill.',
+    imagePathOverride: 'assets/images/companions/adventurer/robin.webp',
     personality:
-        'Kodiak (Hope Engine) is a galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'ve got your left side."',
+        'Rockin\' Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
   ),
 ];
 
@@ -439,6 +448,7 @@ class CompanionImageGrid extends StatelessWidget {
           size: itemSize,
           imagePath: c.imagePath,
           backgroundColor: c.backgroundColor,
+          imageAlignment: c.imageAlignment,
           onTap: () {
             if (isSelected) {
               wizardData.companionNames.remove(c.name);
@@ -524,6 +534,7 @@ class _CompanionImageButton extends StatefulWidget {
   final double? size;
   final String? imagePath;
   final Color? backgroundColor;
+  final Alignment imageAlignment;
 
   const _CompanionImageButton({
     required this.id,
@@ -536,6 +547,7 @@ class _CompanionImageButton extends StatefulWidget {
     this.size,
     this.imagePath,
     this.backgroundColor,
+    this.imageAlignment = Alignment.center,
   });
 
   @override
@@ -627,6 +639,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
         width: size,
         height: size,
         fit: fit,
+        alignment: widget.imageAlignment,
         frameBuilder: (ctx, child, frame, _) =>
             frame == null ? SizedBox(width: size, height: size) : child,
         placeholder: Container(
