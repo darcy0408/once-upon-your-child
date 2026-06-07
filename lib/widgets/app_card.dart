@@ -30,9 +30,17 @@ class AppCard extends StatelessWidget {
           ),
         ],
       ),
+      // Wrap in a transparent Material so ListTile/SwitchListTile children have
+      // a Material ancestor for ink splashes. Without it, newer Flutter throws
+      // "ListTile background color or ink splashes may be invisible" (the
+      // DecoratedBox above has a background color), which fails widget tests
+      // under the CI Flutter channel. Transparency keeps the card's look intact.
       child: Padding(
         padding: padding,
-        child: child,
+        child: Material(
+          type: MaterialType.transparency,
+          child: child,
+        ),
       ),
     );
 

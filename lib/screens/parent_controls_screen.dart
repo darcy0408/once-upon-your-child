@@ -1750,15 +1750,22 @@ class _ControlTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
-      child: SwitchListTile(
-        title: Text(title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        activeThumbColor: const Color(0xFFFFD700),
-        value: value,
-        onChanged: onChanged,
+      // Transparent Material so the SwitchListTile has a Material ancestor for
+      // ink splashes (the DecoratedBox above has a background color). Without it
+      // newer Flutter throws "ListTile background color or ink splashes may be
+      // invisible", failing the widget test on the CI Flutter channel.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          title: Text(title,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+          subtitle: Text(subtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          activeThumbColor: const Color(0xFFFFD700),
+          value: value,
+          onChanged: onChanged,
+        ),
       ),
     );
   }
