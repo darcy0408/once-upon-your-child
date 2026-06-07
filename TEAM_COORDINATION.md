@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-07 | 13:38 | 2af4 | main (PR #250) | Continuation of a316: Slack alerting deferred → GitHub failure emails | [link](docs/sessions/2026-06-07-1338-2af4.md) |
 | 2026-06-07 | 13:10 | a316 | main (PR #241,#245) | COPPA gate MT-213 verified live + MT-214/226 confirmed + MT-225 Slack v3 | [link](docs/sessions/2026-06-07-1310-a316.md) |
 | 2026-06-05 | 16:12 | 1e9e | main (PRs) | Audit 14 + MT-221 + Companion Powers + MT-216 perf+nits | [link](docs/sessions/2026-06-05-1612-1e9e.md) |
 | 2026-06-05 | 07:59 | 980d | main | Backup outage fix + pyjwt/aiohttp CVEs + Cloudflare cutover prep | [link](docs/sessions/2026-06-05-0759-980d.md) |
