@@ -85,6 +85,52 @@ def test_adventurer_prompt_honors_kid_chosen_nemesis():
     assert "goo" not in p2
 
 
+def test_adventurer_prompt_weaves_in_custom_elements():
+    """MT-227 follow-up: a kid's free-text "Imagine It" idea (preserved through
+    Superhero Mode on WizardData.customElements) must reach the superhero
+    prompt — both via the direct builder and the age-based router that
+    story_tasks actually calls. The superhero path previously dropped
+    custom_elements entirely, so a typed aspect never showed up in the story."""
+    idea = "ride a magic wand"
+    direct = PromptService._build_superhero_prompt_adventurer(
+        character="Mia",
+        age=10,
+        hero_costume_color="violet",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="super_smile",
+        villain_id="gigawatt",
+        problem_id="outsmart_the_trap",
+        custom_elements=idea,
+    )
+    assert f"[USER_INPUT]{idea}[/USER_INPUT]" in direct
+    routed = PromptService.build_story_prompt(
+        character="Mia",
+        theme="superhero",
+        age=10,
+        hero_power="super_smile",
+        custom_elements=idea,
+    )
+    assert f"[USER_INPUT]{idea}[/USER_INPUT]" in routed
+
+
+def test_adventurer_prompt_omits_custom_block_when_empty():
+    """Back-compat: no custom idea => no KID's-own-idea block (a pure no-op)."""
+    prompt = PromptService._build_superhero_prompt_adventurer(
+        character="Mia",
+        age=10,
+        hero_costume_color="violet",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="super_smile",
+        villain_id="gigawatt",
+        problem_id="outsmart_the_trap",
+        custom_elements="",
+    )
+    assert "KID'S OWN STORY IDEA" not in prompt
+    assert "[USER_INPUT]" not in prompt
+
+
 # ---------------------------------------------------------------------------
 # Real-villain-with-a-motive — the Adventurer tone (Option 1).
 # ---------------------------------------------------------------------------

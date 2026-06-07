@@ -1051,6 +1051,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     hero_catchphrase=kwargs.get("hero_catchphrase"),
                     superhero_villain_id=sh_villain_id,
                     superhero_problem_id=sh_problem_id,
+                    # MT-227 follow-up: the kid's free-text "Imagine It" idea was
+                    # reaching the backend but the superhero prompt dropped it.
+                    # Thread it through so a typed aspect (e.g. "ride a magic
+                    # wand") actually shows up in a superhero story.
+                    custom_elements=custom_elements,
                 )
                 # (prompt_build_ms is computed after the if/elif chain below)
             # Use specialized prompts based on story mode flags
