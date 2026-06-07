@@ -5,6 +5,44 @@ import '../../theme/age_band_theme.dart';
 import '../safe_asset_image.dart';
 import '../star_burst_celebration.dart';
 
+// ---------------------------------------------------------------------------
+// Companion labelling — keep "people" reading like people.
+//
+// A photo-added person is stored as a pet entry with species == [kHumanSpecies]
+// so the backend can frame them correctly (`companion_type=human`). The display
+// layer must NEVER surface that raw "Human" string, and must not fall back to
+// "My Pet" for a person. These two helpers are the single source of truth for
+// both the companion grid and the pet/companion editor card.
+// ---------------------------------------------------------------------------
+
+/// Internal species value for a human companion. Sent to the backend verbatim;
+/// never shown to the user.
+const String kHumanSpecies = 'Human';
+
+bool isPersonSpecies(String? species) => (species ?? '') == kHumanSpecies;
+
+/// Friendly placeholder name used until the child types a real one.
+/// People become "My Friend"; animals keep the familiar "My Pet" wording.
+String defaultCompanionName(String? species, int index) {
+  if (isPersonSpecies(species)) {
+    return index == 0 ? 'My Friend' : 'My Friend ${index + 1}';
+  }
+  return index == 0 ? 'My Pet' : 'My Pet ${index + 1}';
+}
+
+/// Subtitle shown under a companion's name in the grid and cards.
+/// People show their relationship (or a warm "Friend" fallback) — never the
+/// clinical word "Human". Animals show their looks + species as before.
+String companionSubtitle({String? species, String? looks, String? relation}) {
+  if (isPersonSpecies(species)) {
+    final rel = (relation ?? '').trim();
+    if (rel.isEmpty) return 'Friend';
+    // Stored lowercase ("cousin", "grandma"); show it title-cased.
+    return rel[0].toUpperCase() + rel.substring(1);
+  }
+  return '${(looks ?? '').trim()} ${species ?? 'pet'}'.trim();
+}
+
 /// Data carrier for a showcase orb slot.
 class ShowcaseSlot {
   final String? id;
@@ -59,70 +97,79 @@ class GlowingCompanionOrb extends StatelessWidget {
       label: filled ? 'Remove companion' : 'Companion slot empty',
       child: GestureDetector(
         onTap: filled ? onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: _size + 12,
-          height: _size + 12,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: filled ? const Color(0xFFFFD700) : Colors.white24,
-            width: filled ? 3 : 2,
-          ),
-          boxShadow: filled
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withAlpha(160),
-                    blurRadius: 24,
-                    spreadRadius: 4,
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withAlpha(60),
-                    blurRadius: 40,
-                    spreadRadius: 8,
-                  ),
-                ]
-              : [],
-          color: filled ? null : Colors.white.withAlpha(8),
-        ),
-        child: ClipOval(
-          clipBehavior: Clip.antiAlias,
-          child: filled
-              ? Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    inner,
-                    // Subtle gold overlay tint
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.transparent,
-                            const Color(0xFFFFD700).withAlpha(30),
-                          ],
+        // Outer stack does NOT clip, so the remove badge can sit fully on the
+        // orb's edge instead of being sliced in half by the circular ClipOval.
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: _size + 12,
+              height: _size + 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: filled ? const Color(0xFFFFD700) : Colors.white24,
+                  width: filled ? 3 : 2,
+                ),
+                boxShadow: filled
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withAlpha(160),
+                          blurRadius: 24,
+                          spreadRadius: 4,
                         ),
-                      ),
-                    ),
-                    // "Tap to remove" hint on top-right
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFFFD700),
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withAlpha(60),
+                          blurRadius: 40,
+                          spreadRadius: 8,
                         ),
-                        child: const Icon(Icons.close,
-                            color: Colors.black, size: 12),
-                      ),
-                    ),
-                  ],
-                )
-              : Center(child: inner),
+                      ]
+                    : [],
+                color: filled ? null : Colors.white.withAlpha(8),
+              ),
+              child: ClipOval(
+                clipBehavior: Clip.antiAlias,
+                child: filled
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          inner,
+                          // Subtle gold overlay tint
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  const Color(0xFFFFD700).withAlpha(30),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Center(child: inner),
+              ),
+            ),
+            // "Tap to remove" badge — rendered in the non-clipping outer stack
+            // so the whole circle (and its X) is visible at the orb's edge.
+            if (filled)
+              Positioned(
+                top: -2,
+                right: -2,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFFFD700),
+                    border: Border.all(color: const Color(0xFF1A0E36), width: 1.5),
+                  ),
+                  child: const Icon(Icons.close, color: Colors.black, size: 13),
+                ),
+              ),
+          ],
         ),
-      ),
       ),
     );
   }
@@ -472,15 +519,18 @@ class CompanionImageGrid extends StatelessWidget {
       for (int i = 0; i < wizardData.pets.length; i++) {
         final petEntry = wizardData.pets[i];
         final petName = (petEntry['name'] ?? '').trim().isEmpty
-            ? 'My Pet ${i + 1}'
+            ? defaultCompanionName(petEntry['species'], i)
             : petEntry['name']!;
         final petId = 'my_pet_$i';
         final isSelected = wizardData.companionNames.contains(petName);
         buttons.add(_CompanionImageButton(
           id: petId,
           name: petName,
-          tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'
-              .trim(),
+          tagline: companionSubtitle(
+            species: petEntry['species'],
+            looks: petEntry['color'],
+            relation: petEntry['relation'],
+          ),
           isSelected: isSelected,
           photoBase64: wizardData.petAvatars[petName]?.imageBase64 ??
               wizardData.petPhotos[petName],

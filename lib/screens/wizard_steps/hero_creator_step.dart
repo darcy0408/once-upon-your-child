@@ -35,6 +35,8 @@ import '../../widgets/hero_creator/pet_card.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/hero_effects.dart';
 import '../../widgets/safe_asset_image.dart';
+import '../../utils/paywall_gate.dart';
+import '../../premium_upgrade_screen.dart';
 import '../../services/parental_consent_service.dart';
 import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
@@ -148,10 +150,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // "Add my pet" tap so the page doesn't open with three input fields visible.
   bool _showPetCardForSprout = false;
   bool _showPetCardForExplorer = false;
-  // Pending companion species — set by "Add a Friend" / "Add My Pet" buttons,
+  // Pending companion species — set by "Add a Person" / "Add a Pet" buttons,
   // consumed by the HeroPetCard to create the entry and open the editor.
   String? _pendingCompanionSpecies;
   int _pendingCompanionToken = 0; // increments to distinguish repeated adds of same species
+  // For "Add a Person": the chosen relationship ("cousin", "grandma", …) and
+  // whether they're a grown-up (drives the supportive-presence story framing).
+  String? _pendingCompanionRelation;
+  bool _pendingCompanionIsAdult = false;
 
   // Recent saved stories — powers the per-hero "Continue" affordance on the
   // welcome-back grid (page 0). Newest-first.
@@ -1715,7 +1721,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     for (int i = 0; i < widget.wizardData.pets.length; i++) {
       final pet = widget.wizardData.pets[i];
       final petName = (pet['name'] ?? '').trim().isEmpty
-          ? 'My Pet ${i + 1}'
+          ? defaultCompanionName(pet['species'], i)
           : pet['name']!;
       if (widget.wizardData.companionNames.contains(petName)) {
         slots.add(ShowcaseSlot(
@@ -1974,12 +1980,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => setState(() {
-                    _pendingCompanionSpecies = 'Human';
-                    _pendingCompanionToken++;
-                  }),
+                  onPressed: _startAddPerson,
                   icon: const Icon(Icons.person_add_rounded, size: 18),
-                  label: const Text('Add from Photo'),
+                  label: const Text('Add a Person'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Color(0xFF7C4DFF)),
@@ -1998,7 +2001,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     _pendingCompanionToken++;
                   }),
                   icon: const Icon(Icons.pets_rounded, size: 18),
-                  label: const Text('Add My Pet'),
+                  label: const Text('Add a Pet'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Color(0xFFFFD700)),
@@ -2011,41 +2014,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Premium "whole family" tier: invite an adult relative into the story.
-          OutlinedButton.icon(
-            onPressed: _showAdultRelativePicker,
-            icon: const Icon(Icons.family_restroom_rounded, size: 18),
-            label: const Text('Add a Grown-up'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: const BorderSide(color: Color(0xFFE0AAFF)),
-              minimumSize: const Size(double.infinity, 0),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 10),
+          // Premium signal UP FRONT — turning a photo into a magical portrait is
+          // a paid feature, so non-premium users would otherwise pick a
+          // relationship + take a photo only to be blocked at the end (a 403
+          // that reads like "the app is broken"). Tell them before they invest,
+          // and reassure that companions still join with their real photo.
+          if (!_isPremium)
+            InkWell(
+              onTap: _showCompanionPhotoPremiumInfo,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    const Text('✨', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Magical photo portraits are a Premium feature — your '
+                        'companion still joins with their real photo.',
+                        style: TextStyle(
+                          color: const Color(0xFFE0AAFF),
+                          fontSize: 11,
+                          fontFamily: band.uiFontFamily,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.info_outline_rounded,
+                        size: 14, color: Color(0xFFE0AAFF)),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (widget.wizardData.adultRelatives.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (var i = 0; i < widget.wizardData.adultRelatives.length; i++)
-                  _AdultRelativeChip(
-                    relative: widget.wizardData.adultRelatives[i],
-                    onRemove: () => setState(() {
-                      widget.wizardData.adultRelatives.removeAt(i);
-                    }),
-                  ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 10),
           // Photo-handling reassurance — Choose Your Companions audit P1 fix.
-          // Parents tapping "Add from Photo" on behalf of a 9-11 child need a
+          // Parents tapping "Add a Person" on behalf of a 9-11 child need a
           // visible signal that the photo isn't being stored.
           Row(
             children: [
@@ -2147,7 +2150,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               pendingNewSpecies: _pendingCompanionSpecies != null
                   ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
                   : null,
-              onPendingConsumed: () => setState(() => _pendingCompanionSpecies = null),
+              pendingRelation: _pendingCompanionRelation,
+              pendingIsAdult: _pendingCompanionIsAdult,
+              onPendingConsumed: _onPendingCompanionConsumed,
             ),
         ] else
           HeroPetCard(
@@ -2159,7 +2164,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             pendingNewSpecies: _pendingCompanionSpecies != null
                 ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
                 : null,
-            onPendingConsumed: () => setState(() => _pendingCompanionSpecies = null),
+            pendingRelation: _pendingCompanionRelation,
+            pendingIsAdult: _pendingCompanionIsAdult,
+            onPendingConsumed: _onPendingCompanionConsumed,
           ),
         const SizedBox(height: 8),
         if (_isPetAvatarGenerating)
@@ -2217,39 +2224,136 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
-  /// Premium "whole family" tier — invite an adult relative into the story.
-  /// Adults are stored separately from peer characters so the prompt builder
-  /// can frame them as supportive presence.
-  Future<void> _showAdultRelativePicker() async {
-    final result = await showModalBottomSheet<Map<String, String>>(
+  void _onPendingCompanionConsumed() {
+    setState(() {
+      _pendingCompanionSpecies = null;
+      _pendingCompanionRelation = null;
+      _pendingCompanionIsAdult = false;
+    });
+  }
+
+  /// "Add a Person" — first ask who they are (a friend/cousin, or a grown-up),
+  /// then run the existing photo + name flow as a Human companion. Grown-ups are
+  /// flagged so the story frames them as a supportive presence, never a villain.
+  Future<void> _startAddPerson() async {
+    final pick = await _showRelationshipPicker();
+    if (!mounted || pick == null) return;
+    setState(() {
+      _pendingCompanionSpecies = 'Human';
+      _pendingCompanionRelation = (pick['relation'] as String?)?.trim();
+      _pendingCompanionIsAdult = pick['isAdult'] == true;
+      _pendingCompanionToken++;
+    });
+  }
+
+  /// Bottom sheet: pick who's joining. Returns {relation, isAdult} or null if
+  /// dismissed. "Someone else" returns an empty relation (shows as "Friend").
+  /// Grown-up relations reuse the adult archetypes so the story keeps the
+  /// supportive-presence framing those carry.
+  Future<Map<String, dynamic>?> _showRelationshipPicker() {
+    const peers = [
+      {'relation': 'friend', 'label': 'Friend', 'icon': '🙂'},
+      {'relation': 'cousin', 'label': 'Cousin', 'icon': '🧒'},
+      {'relation': 'brother', 'label': 'Brother', 'icon': '👦'},
+      {'relation': 'sister', 'label': 'Sister', 'icon': '👧'},
+      {'relation': 'classmate', 'label': 'Classmate', 'icon': '🎒'},
+    ];
+    return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF1A1230),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetCtx) => _AdultRelativePickerSheet(),
+      builder: (sheetCtx) {
+        Widget chip(String label, String icon, String relation, bool isAdult) {
+          return ActionChip(
+            avatar: Text(icon, style: const TextStyle(fontSize: 16)),
+            label: Text(label),
+            backgroundColor: const Color(0xFF2A1F45),
+            labelStyle: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600),
+            onPressed: () => Navigator.of(sheetCtx)
+                .pop({'relation': relation, 'isAdult': isAdult}),
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 20, 20, 20 + MediaQuery.of(sheetCtx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Who's joining the story?",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                "You'll add their name and photo next.",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Family & friends',
+                style: TextStyle(
+                    color: Color(0xFFD4A0FF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final p in peers)
+                    chip(p['label']!, p['icon']!, p['relation']!, false),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Grown-ups',
+                style: TextStyle(
+                    color: Color(0xFFE0AAFF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'They show up as a supportive presence — never a villain.',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final a in CharacterArchetypes.adultArchetypes)
+                    chip(a.label, a.icon, a.relation, true),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.of(sheetCtx)
+                      .pop({'relation': '', 'isAdult': false}),
+                  child: const Text('Someone else',
+                      style: TextStyle(color: Colors.white70)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (!mounted || result == null) return;
-    final name = (result['name'] ?? '').trim();
-    final relation = (result['relation'] ?? '').trim();
-    if (name.isEmpty || relation.isEmpty) return;
-    final exists = widget.wizardData.adultRelatives.any(
-      (r) =>
-          (r['name'] ?? '').toLowerCase() == name.toLowerCase() &&
-          r['relation'] == relation,
-    );
-    if (exists) return;
-    setState(() {
-      widget.wizardData.adultRelatives.add({
-        'name': name,
-        'relation': relation,
-      });
-    });
   }
 
-  String _defaultPetNameForIndex(int index) =>
-      index == 0 ? 'My Pet' : 'My Pet ${index + 1}';
+  String _defaultPetNameForIndex(int index, [String? species]) =>
+      defaultCompanionName(species, index);
 
   Future<void> _pickPetPhoto({int? petIndex}) async {
     final source = await _showPhotoSourceDialog();
@@ -2277,7 +2381,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       final existingName =
           (widget.wizardData.pets[targetIndex]['name'] ?? '').trim().isNotEmpty
               ? widget.wizardData.pets[targetIndex]['name']!
-              : _defaultPetNameForIndex(targetIndex);
+              : _defaultPetNameForIndex(
+                  targetIndex, widget.wizardData.pets[targetIndex]['species']);
       widget.wizardData.pets[targetIndex]['name'] = existingName;
       // Store photo keyed by name in petPhotos (not petAvatars)
       widget.wizardData.petPhotos[existingName] = b64;
@@ -2386,7 +2491,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       if (response.statusCode != 200 && response.statusCode != 206) {
         try {
           final body = jsonDecode(response.body) as Map<String, dynamic>;
-          final message = body['message']?.toString().trim();
+          // Premium gate: turning a photo into a story portrait is a paid
+          // feature. The 403 body uses `code`/`error` (not `message`), so make
+          // the denial read as an upgrade prompt, not a broken "magic" failure.
+          final code = body['code']?.toString();
+          if (response.statusCode == 403 || code == 'upgrade_required') {
+            return const _PetAvatarGenerationResult.error(
+              '✨ Photo companions are a premium feature. You can still pick a magical companion for free!',
+            );
+          }
+          final message = (body['message'] ?? body['error'])?.toString().trim();
           if (message != null && message.isNotEmpty) {
             return _PetAvatarGenerationResult.error(message);
           }
@@ -2594,6 +2708,64 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// magic ✨" dialog in CustomAvatarScreen, but is reached BEFORE any selfie
   /// is captured — so the user never wastes a photo on a 403. The actionable
   /// path is to pick a ready-made hero from the gallery.
+  /// Explains, before the photo flow, that photo->portrait magic is Premium —
+  /// so a blocked generation never reads as a broken app.
+  Future<void> _showCompanionPhotoPremiumInfo() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2D1060),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Photo companions are Premium ✨',
+          style: GoogleFonts.nunito(
+              color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Turning a real photo into a magical story portrait is a Premium '
+          "feature. You can still add a companion with their real photo, and "
+          'the magical creatures are always free to bring along!',
+          style: GoogleFonts.quicksand(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Got it',
+                style: GoogleFonts.quicksand(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5F4BDB),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _openCompanionPhotoUpgrade();
+            },
+            child: Text('See Premium',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Routes to the upgrade screen through the COPPA-safe gate (kids get the
+  /// "ask a grown-up" math challenge before any pricing is shown).
+  Future<void> _openCompanionPhotoUpgrade() async {
+    if (!mounted) return;
+    await showPaywallGated<void>(
+      context: context,
+      showActualPaywall: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => const PremiumUpgradeScreen()),
+      ),
+    );
+  }
+
   Future<void> _showCustomAvatarUpgradeDialog() async {
     if (!mounted) return;
     await showDialog<void>(
@@ -3452,193 +3624,4 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         'big_feelings_quest' => 'Big Feelings!',
         _ => null,
       };
-}
-
-/// Chip showing a saved adult relative with a remove button.
-class _AdultRelativeChip extends StatelessWidget {
-  final Map<String, String> relative;
-  final VoidCallback onRemove;
-
-  const _AdultRelativeChip({required this.relative, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    final relation = relative['relation'] ?? '';
-    final label = relation.isEmpty
-        ? ''
-        : relation[0].toUpperCase() + relation.substring(1);
-    final name = relative['name'] ?? '';
-    final icon = CharacterArchetypes.adultArchetypes
-        .firstWhere(
-          (a) => a.relation == relation,
-          orElse: () => CharacterArchetypes.adultArchetypes.first,
-        )
-        .icon;
-    return Chip(
-      avatar: Text(icon, style: const TextStyle(fontSize: 18)),
-      label: Text(
-        label.isEmpty ? name : '$label $name',
-        style: const TextStyle(color: Colors.white),
-      ),
-      backgroundColor: const Color(0xFF3B2860),
-      side: const BorderSide(color: Color(0xFFE0AAFF)),
-      deleteIcon: const Icon(Icons.close_rounded, size: 18, color: Colors.white70),
-      onDeleted: onRemove,
-    );
-  }
-}
-
-/// Bottom-sheet picker for adult relatives — pick relation, type a name.
-class _AdultRelativePickerSheet extends StatefulWidget {
-  @override
-  State<_AdultRelativePickerSheet> createState() =>
-      _AdultRelativePickerSheetState();
-}
-
-class _AdultRelativePickerSheetState extends State<_AdultRelativePickerSheet> {
-  String? _selectedRelation;
-  final TextEditingController _nameController = TextEditingController();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Add a grown-up to the story',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'They\'ll show up as a supportive presence — not the hero, never a villain.',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final a in CharacterArchetypes.adultArchetypes)
-                ChoiceChip(
-                  label: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(a.icon, style: const TextStyle(fontSize: 18)),
-                        const SizedBox(width: 6),
-                        Text(a.label),
-                      ],
-                    ),
-                  ),
-                  selected: _selectedRelation == a.relation,
-                  onSelected: (_) =>
-                      setState(() => _selectedRelation = a.relation),
-                  backgroundColor: const Color(0xFF2A1F45),
-                  selectedColor: const Color(0xFFE0AAFF),
-                  labelStyle: TextStyle(
-                    color: _selectedRelation == a.relation
-                        ? Colors.black
-                        : Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
-          if (_selectedRelation != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              CharacterArchetypes.adultArchetypes
-                  .firstWhere((a) => a.relation == _selectedRelation)
-                  .tagline,
-              style: const TextStyle(
-                color: Color(0xFFE0AAFF),
-                fontStyle: FontStyle.italic,
-                fontSize: 13,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            autofocus: false,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Their name (optional)',
-              labelStyle: const TextStyle(color: Colors.white70),
-              hintText: 'e.g. Sarah, Joe, Nana',
-              hintStyle: const TextStyle(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF2A1F45),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _selectedRelation == null
-                      ? null
-                      : () {
-                          final relation = _selectedRelation!;
-                          final typedName = _nameController.text.trim();
-                          // Default the name to the relation label so the
-                          // prompt always has something workable.
-                          final fallbackLabel = CharacterArchetypes
-                              .adultArchetypes
-                              .firstWhere((a) => a.relation == relation)
-                              .label;
-                          final name =
-                              typedName.isEmpty ? fallbackLabel : typedName;
-                          Navigator.of(context)
-                              .pop({'name': name, 'relation': relation});
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE0AAFF),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Add to story',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../services/app_tts_service.dart';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
+import 'companion_widgets.dart' show kHumanSpecies, defaultCompanionName;
 
 class HeroPetCard extends StatefulWidget {
   final WizardData wizardData;
@@ -14,6 +15,12 @@ class HeroPetCard extends StatefulWidget {
   /// When non-null, creates a new companion with this species and opens the
   /// editor. The parent should reset this to null after the card processes it.
   final String? pendingNewSpecies;
+  /// Relationship for a pending person (e.g. "cousin", "grandma"). Stamped onto
+  /// the new companion so the card subtitle and story prompt can use it.
+  final String? pendingRelation;
+  /// True when the pending person is a grown-up — feeds the backend's
+  /// "supportive adult presence, never a villain" framing via the mapper.
+  final bool pendingIsAdult;
   final VoidCallback? onPendingConsumed;
 
   const HeroPetCard({
@@ -23,6 +30,8 @@ class HeroPetCard extends StatefulWidget {
     required this.onChanged,
     this.onSaveCompanion,
     this.pendingNewSpecies,
+    this.pendingRelation,
+    this.pendingIsAdult = false,
     this.onPendingConsumed,
   });
 
@@ -34,6 +43,9 @@ class _HeroPetCardState extends State<HeroPetCard> {
   late TextEditingController _nameCtrl;
   late TextEditingController _colorCtrl;
   String _species = 'Dog';
+  // Relationship + grown-up flag for a person companion (empty for pets).
+  String _relation = '';
+  bool _isAdult = false;
   int _selectedPetIndex = -1;
   bool _isEditing = false;
   final SpeechToText _speech = SpeechToText();
@@ -93,9 +105,11 @@ class _HeroPetCardState extends State<HeroPetCard> {
     if (widget.pendingNewSpecies != null &&
         widget.pendingNewSpecies != oldWidget.pendingNewSpecies) {
       final species = widget.pendingNewSpecies!.split(':').first;
+      final relation = widget.pendingRelation;
+      final isAdult = widget.pendingIsAdult;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        _addCompanionWithType(species);
+        _addCompanionWithType(species, relation: relation, isAdult: isAdult);
         widget.onPendingConsumed?.call();
         // The "Add from Photo" / "Add My Pet" buttons take their name
         // seriously — the user expects a photo prompt immediately, not a
@@ -232,7 +246,7 @@ class _HeroPetCardState extends State<HeroPetCard> {
     }
     final oldName = _pet?['name'] ?? 'My Pet';
     final newName = _nameCtrl.text.trim().isEmpty
-        ? 'My Pet ${_selectedPetIndex + 1}'
+        ? defaultCompanionName(_species, _selectedPetIndex)
         : _nameCtrl.text.trim();
     final photo = widget.wizardData.petPhotos[oldName];
     widget.wizardData.pets[_selectedPetIndex] = {
@@ -240,6 +254,10 @@ class _HeroPetCardState extends State<HeroPetCard> {
       'species': _species,
       'color': _colorCtrl.text.trim(),
       'personality': '',
+      // Preserve person metadata so a rebuild doesn't drop the relationship /
+      // grown-up framing the mapper relies on.
+      if (_relation.isNotEmpty) 'relation': _relation,
+      if (_isAdult) 'isAdult': 'true',
     };
     if (photo != null && oldName != newName) {
       widget.wizardData.petPhotos.remove(oldName);
@@ -263,6 +281,8 @@ class _HeroPetCardState extends State<HeroPetCard> {
     _nameCtrl.text = pet?['name'] ?? '';
     _colorCtrl.text = pet?['color'] ?? '';
     _species = pet?['species'] ?? 'Dog';
+    _relation = pet?['relation'] ?? '';
+    _isAdult = pet?['isAdult'] == 'true';
   }
 
   void _selectPet(int index, {bool edit = false}) {
@@ -276,13 +296,16 @@ class _HeroPetCardState extends State<HeroPetCard> {
 
   void _addAnotherPet() => _addCompanionWithType('Dog');
 
-  void _addCompanionWithType(String species) {
+  void _addCompanionWithType(String species,
+      {String? relation, bool isAdult = false}) {
     final nextIndex = widget.wizardData.pets.length;
     widget.wizardData.pets.add({
       'name': '',
       'species': species,
       'color': '',
       'personality': '',
+      if ((relation ?? '').isNotEmpty) 'relation': relation!,
+      if (isAdult) 'isAdult': 'true',
     });
     final petId = 'my_pet_$nextIndex';
     if (!widget.wizardData.selectedCompanions.contains(petId)) {
@@ -387,7 +410,10 @@ class _HeroPetCardState extends State<HeroPetCard> {
                 for (int i = 0; i < widget.wizardData.pets.length; i++)
                   ChoiceChip(
                     label: Text(
-                        widget.wizardData.pets[i]['name'] ?? 'Pet ${i + 1}'),
+                        (widget.wizardData.pets[i]['name'] ?? '').trim().isEmpty
+                            ? defaultCompanionName(
+                                widget.wizardData.pets[i]['species'], i)
+                            : widget.wizardData.pets[i]['name']!),
                     selected: i == _selectedPetIndex,
                     selectedColor: const Color(0xFFFFD700).withAlpha(40),
                     labelStyle: TextStyle(
@@ -612,7 +638,8 @@ class _HeroPetCardState extends State<HeroPetCard> {
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: _petFieldDecoration('Companion type'),
             items: _speciesOptions
-                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .map((s) => DropdownMenuItem(
+                    value: s, child: Text(s == kHumanSpecies ? 'Person' : s)))
                 .toList(),
             onChanged: (v) {
               if (v != null) {
@@ -637,7 +664,7 @@ class _HeroPetCardState extends State<HeroPetCard> {
                 _updatePet();
                 final savedIndex = _selectedPetIndex;
                 final savedName = _nameCtrl.text.trim().isEmpty
-                    ? 'My Pet${savedIndex > 0 ? ' ${savedIndex + 1}' : ''}'
+                    ? defaultCompanionName(_species, savedIndex)
                     : _nameCtrl.text.trim();
                 final savedSpecies = _species;
                 final savedDescription = _colorCtrl.text.trim();

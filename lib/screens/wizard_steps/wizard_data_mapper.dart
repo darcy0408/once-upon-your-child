@@ -131,6 +131,10 @@ class WizardDataMapper {
     // Separate companions into pets vs other characters
     final List<Map<String, dynamic>> companionsPets = [];
     final List<Map<String, dynamic>> companionsOther = [];
+    // Grown-up people added via "Add a Person" are stored as Human pets flagged
+    // isAdult. They must NOT be cast as pets — they feed the adult-family
+    // framing below (supportive presence, never a villain).
+    final List<Map<String, dynamic>> adultPersonEntries = [];
 
     for (final companionName in companionNames) {
       // Check if this companion is one of the main character's pets
@@ -138,14 +142,17 @@ class WizardDataMapper {
 
       if (isPet) {
         // Find the pet details
-        final petDetails = Map<String, dynamic>.from(
-          data.pets.firstWhere((pet) => pet['name'] == companionName),
-        );
+        final petMap = data.pets.firstWhere((pet) => pet['name'] == companionName);
+        final petDetails = Map<String, dynamic>.from(petMap);
         // Add avatar if available
         if (data.petAvatars.containsKey(companionName)) {
           petDetails['avatar_data'] = data.petAvatars[companionName]!.toJson();
         }
-        companionsPets.add(petDetails);
+        if (petMap['isAdult'] == 'true') {
+          adultPersonEntries.add(petDetails);
+        } else {
+          companionsPets.add(petDetails);
+        }
       } else {
         // It's another character or magical creature
         // Check if it's one of our special Power-Pairing companions and pass their full details/ability
@@ -247,6 +254,24 @@ class WizardDataMapper {
     final String? therapeuticPrompt =
         therapeuticParts.isNotEmpty ? therapeuticParts.join(' | ') : null;
 
+    // Merge legacy adult relatives (older saved data) with grown-up people added
+    // via the unified "Add a Person" flow. Both feed the backend's adult-family
+    // framing; people added with a photo also carry an avatar for illustration.
+    final List<Map<String, dynamic>> allAdultRelatives = [
+      ...data.adultRelatives
+          .where((r) => (r['name'] ?? '').trim().isNotEmpty)
+          .map((r) => <String, dynamic>{
+                'name': r['name']!.trim(),
+                'relation': (r['relation'] ?? '').trim(),
+                'avatar': null,
+              }),
+      ...adultPersonEntries.map((p) => <String, dynamic>{
+            'name': (p['name'] ?? '').toString().trim(),
+            'relation': (p['relation'] ?? '').toString().trim(),
+            'avatar': p['avatar_data'],
+          }),
+    ].where((r) => (r['name'] as String).isNotEmpty).toList();
+
     return {
       'character': data.characterName.isNotEmpty
           ? InputSanitizer.sanitizeName(data.characterName)
@@ -271,28 +296,27 @@ class WizardDataMapper {
       // readability in the prompt (e.g. "Mom Sarah", "Grandpa Joe").
       'additionalCharacters': [
         ...data.additionalCharacters,
-        ...data.adultRelatives
-            .where((r) => (r['name'] ?? '').trim().isNotEmpty)
-            .map((r) {
-              final n = r['name']!.trim();
-              final rel = (r['relation'] ?? '').trim();
-              final relTitle = rel.isNotEmpty
-                  ? rel[0].toUpperCase() + rel.substring(1)
-                  : '';
-              final displayName = relTitle.isNotEmpty ? '$relTitle $n' : n;
-              return {
-                'name': displayName,
-                'is_adult_relative': true,
-              };
-            }),
+        ...allAdultRelatives.map((r) {
+          final n = r['name'] as String;
+          final rel = (r['relation'] as String).trim();
+          final relTitle =
+              rel.isNotEmpty ? rel[0].toUpperCase() + rel.substring(1) : '';
+          final displayName = relTitle.isNotEmpty ? '$relTitle $n' : n;
+          return {
+            'name': displayName,
+            'is_adult_relative': true,
+          };
+        }),
       ],
       // Structured copy for future backend-prompt support without churning
       // the main payload key. Backend may read this when ready.
-      'adultRelatives': data.adultRelatives
-          .where((r) => (r['name'] ?? '').trim().isNotEmpty)
+      'adultRelatives': allAdultRelatives
           .map((r) => {
-                'name': r['name']!.trim(),
-                'relation': r['relation'] ?? 'relative',
+                'name': r['name'] as String,
+                'relation': (r['relation'] as String).isNotEmpty
+                    ? r['relation'] as String
+                    : 'relative',
+                if (r['avatar'] != null) 'avatar_data': r['avatar'],
               })
           .toList(),
       'characterDetails': characterDetails,
