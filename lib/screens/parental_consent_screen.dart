@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,16 +12,20 @@ import 'byok_setup_wizard.dart' show ParentalGateDialog;
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
-/// TEMP — PRE-LAUNCH TESTING ONLY. When true, the under-13 COPPA
-/// email-verification round-trip is skipped in ALL builds (release included);
-/// under-13 parents get the same simple checkbox consent screen as 13+, and
-/// self-attested consent is recorded directly (method 'self_attested',
-/// verified=false — honest, NOT mislabelled 'email_verified').
+/// COPPA launch gate (MT-213). When true, the under-13 email-verification
+/// round-trip is skipped: under-13 parents get the same simple checkbox consent
+/// screen as 13+, and self-attested consent is recorded directly (method
+/// 'self_attested', verified=false — honest, NOT mislabelled 'email_verified').
 ///
-/// This is NOT COPPA-verifiable consent. It is acceptable only for a closed
-/// tester build with no real end users. MUST be set back to `false` before
-/// launch to re-enable the email round-trip — tracked in docs/MANUAL_TASKS.md.
-const bool _kSkipEmailConsent = true;
+/// Self-attestation is NOT COPPA-verifiable consent, so it is gated to
+/// non-release builds only: `!kReleaseMode` is true in debug/profile (developer
+/// + Playwright/QA convenience) and false in release. RELEASE builds therefore
+/// always enforce the verifiable email round-trip
+/// (`POST /api/user/<id>/consent/request-verification` + `/verify`).
+///
+/// Do NOT hard-code this back to `true` — that would skip verifiable consent in
+/// production and reopen the COPPA gap.
+const bool _kSkipEmailConsent = !kReleaseMode;
 
 /// M-15 (CWE-489) — Consent test bypass.
 ///
