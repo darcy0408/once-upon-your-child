@@ -337,7 +337,10 @@ class _SceneImageButtonState extends State<SceneImageButton> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Color(0xCC1A0040)],
+                          // S-07: deepen the bottom scrim so the title and
+                          // description stay legible over the brightest tile
+                          // art (e.g. the rainbow world).
+                          colors: [Colors.transparent, Color(0xE61A0040)],
                         ),
                       ),
                       child: Column(
@@ -386,7 +389,10 @@ class _SceneImageButtonState extends State<SceneImageButton> {
                                 height: 1.15,
                               ),
                               textAlign: TextAlign.center,
-                              maxLines: 2,
+                              // S-01: allow a third line so the tightened
+                              // Adventurer hooks render in full instead of
+                              // truncating mid-word at narrow tile widths.
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],

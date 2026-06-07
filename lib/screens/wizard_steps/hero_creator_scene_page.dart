@@ -157,7 +157,9 @@ class HeroScenePage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          // S-04: extra breathing room so the heading clears the stepper /
+          // back-control seam above instead of reading clipped and crowded.
+          const SizedBox(height: 20),
           Text(
             placeTitle,
             textAlign: TextAlign.center,

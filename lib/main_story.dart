@@ -49,6 +49,7 @@ import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/life_quest_screen.dart';
 import 'screens/adult_meditation_screen.dart';
+import 'screens/dev/loading_preview_screen.dart';
 import 'widgets/safe_asset_image.dart';
 // welcome_screen and wizard_story_screen imported at top of file
 
@@ -77,6 +78,7 @@ class StoryCreatorApp extends ConsumerWidget {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
         '/story-home': (context) =>
             const StoryScreen(), // Keep old screen accessible
+        '/dev/loading-preview': (context) => const LoadingPreviewScreen(),
       },
       debugShowCheckedModeBanner: false,
       builder: (context, child) {

@@ -78,6 +78,38 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
 
   /// Loads the active profile's primary caregiver label and pushes the Life
   /// Quest screen with `grownup` interpolated. Falls back to "your grown-up".
+  /// Warm, progress-aware guard for the top-bar taps that navigate AWAY from
+  /// the wizard (Life Quests / Heroes). These are pushes, so a half-built
+  /// adventure is preserved underneath — but a child mid-creation deserves a
+  /// gentle "want to keep building?" check-in rather than silently jumping
+  /// away. Only prompts once they've actually started, and the default action
+  /// keeps them in the flow. Returns true when it's OK to leave (S-05).
+  Future<bool> _confirmLeaveWizard(String place) async {
+    final started = _currentStep > 0 ||
+        _wizardData.characterName.trim().isNotEmpty ||
+        _wizardData.characterId != null;
+    if (!started) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keep building your story?'),
+        content: Text(
+            'Your adventure is saved right here — pop over to $place and come back any time.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep building'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Go to $place'),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
+  }
+
   Future<void> _openLifeQuests() async {
     final activeId = await ChildProfileService().getActiveProfileId();
     final grownup = await CaregiverService().grownupLabelOrDefault(activeId);
@@ -528,7 +560,14 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                             label: band.band == AgeBand.sprout
                                 ? 'Big Feelings'
                                 : 'Life Quests',
-                            onPressed: _openLifeQuests,
+                            onPressed: () async {
+                              final place = band.band == AgeBand.sprout
+                                  ? 'Big Feelings'
+                                  : 'Life Quests';
+                              if (await _confirmLeaveWizard(place)) {
+                                await _openLifeQuests();
+                              }
+                            },
                           )
                         else
                           IconButton(
@@ -543,6 +582,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                             icon: Icons.people,
                             label: 'Heroes',
                             onPressed: () async {
+                              if (!await _confirmLeaveWizard('Heroes')) return;
+                              if (!context.mounted) return;
                               await Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) =>

@@ -130,7 +130,24 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       setState(() {
         _scrollProgress = (pos.pixels / pos.maxScrollExtent).clamp(0.0, 1.0);
       });
+    } else if (_scrollProgress < 1.0) {
+      // Notice fits without scrolling — nothing to read past, so the
+      // "scroll-to-bottom" gate is already satisfied.
+      setState(() => _scrollProgress = 1.0);
     }
+  }
+
+  /// On tall/desktop viewports the notice can fit entirely (maxScrollExtent
+  /// == 0), so [_onScroll] never fires and the read-gate would otherwise be
+  /// impossible to satisfy. Mark it read once we know nothing can scroll.
+  void _markReadIfNotScrollable() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (_scrollController.position.maxScrollExtent <= 0 &&
+          _scrollProgress < 1.0) {
+        setState(() => _scrollProgress = 1.0);
+      }
+    });
   }
 
   @override
@@ -596,6 +613,9 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     if (!mounted) return;
     if (passed) {
       setState(() => _parentGatePassed = true);
+      // The notice builds on this frame; if it fits without scrolling, the
+      // read-gate must be satisfied automatically (see _markReadIfNotScrollable).
+      _markReadIfNotScrollable();
     }
   }
 

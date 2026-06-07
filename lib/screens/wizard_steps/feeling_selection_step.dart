@@ -771,6 +771,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             textField: true,
             child: TextField(
               controller: _parentalNoteController,
+              // Explicit dark text: the field has a white fill but the app's
+              // dark theme would otherwise render typed text white-on-white
+              // (invisible). hintStyle was already dark; the input style was not.
+              style: const TextStyle(color: AppColors.textDark, fontSize: 14),
               decoration: InputDecoration(
                 hintText: _guardianNoteHint(age),
                 hintStyle: TextStyle(
@@ -855,6 +859,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                         child: TextField(
                           controller: _mathController,
                           keyboardType: TextInputType.number,
+                          // Dark text on the cream fill (theme default is
+                          // white, which would be invisible here).
+                          style: const TextStyle(
+                              color: AppColors.textDark, fontSize: 16),
                           decoration: InputDecoration(
                             hintText: 'Your answer…',
                             hintStyle: TextStyle(
@@ -1034,6 +1042,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                   textField: true,
                   child: TextField(
                     controller: _avoidController,
+                    // Dark text on the cream fill (theme default is white,
+                    // which would be invisible here).
+                    style: const TextStyle(
+                        color: AppColors.textDark, fontSize: 13),
                     decoration: InputDecoration(
                       hintText: 'e.g., spiders, loud noises, clowns',
                       hintStyle: TextStyle(

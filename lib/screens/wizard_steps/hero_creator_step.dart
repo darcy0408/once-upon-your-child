@@ -1730,22 +1730,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final maxSlots = band.band == AgeBand.sprout ? 1 : 3;
-    final emptyCount = (maxSlots - slots.length).clamp(0, maxSlots);
-
-    // P3 delight levers from the Adventurer Choose-Your-Companions audit:
-    // - #9 earned slot reveals: empty placeholders are faded until the child
-    //   picks at least one companion. Progressive disclosure rewards each
-    //   commitment instead of presenting all the empty space up front.
-    // - #10 bigger, more celebratory status line: typography scales up when a
-    //   team is set, and the "team complete" state gets a sparkle marker.
-    final teamComplete = slots.length >= maxSlots;
+    // One buddy is already a complete team — more is optional, up to maxSlots.
+    // Rather than pre-rendering every empty seat (which read as "you must fill
+    // all three"), show the child's chosen companions plus a SINGLE trailing
+    // "+" orb that quietly invites another. This keeps the earned-reveal
+    // delight (a fresh add-orb appears after each pick) without implying a
+    // quota, and the status line celebrates any team of one or more.
+    // (Founder direction 2026-06-05; supersedes the 3-empty-seat layout.)
+    final hasTeam = slots.isNotEmpty;
+    final showAddOrb = slots.length < maxSlots;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Filled slots
+            // Chosen companions
             for (int i = 0; i < slots.length; i++) ...[
               if (i > 0) const SizedBox(width: 16),
               GlowingCompanionOrb(
@@ -1759,11 +1759,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 }),
               ),
             ],
-            // Empty placeholder slots — faded until first commitment.
-            for (int i = 0; i < emptyCount; i++) ...[
-              if (slots.isNotEmpty || i > 0) const SizedBox(width: 16),
+            // A single optional "+" orb — an invitation to add another, not a
+            // seat that must be filled. Hidden once maxSlots is reached.
+            if (showAddOrb) ...[
+              if (hasTeam) const SizedBox(width: 16),
               AnimatedOpacity(
-                opacity: slots.isEmpty ? 0.35 : 1.0,
+                opacity: hasTeam ? 1.0 : 0.5,
                 duration: const Duration(milliseconds: 280),
                 child: const GlowingCompanionOrb(slot: null),
               ),
@@ -1774,20 +1775,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 220),
           style: TextStyle(
-            color: slots.isEmpty
-                ? Colors.white38
-                : teamComplete
-                    ? const Color(0xFFFFD700)
-                    : const Color(0xFFFFE08A),
-            fontSize: slots.isEmpty ? 13 : (teamComplete ? 16 : 14),
-            fontWeight: teamComplete ? FontWeight.w700 : FontWeight.w500,
-            fontStyle: slots.isEmpty ? FontStyle.italic : FontStyle.normal,
+            color: hasTeam ? const Color(0xFFFFE08A) : Colors.white38,
+            fontSize: hasTeam ? 15 : 13,
+            fontWeight: hasTeam ? FontWeight.w600 : FontWeight.w500,
+            fontStyle: hasTeam ? FontStyle.normal : FontStyle.italic,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (teamComplete) ...[
+              if (hasTeam) ...[
                 const Text('✨', style: TextStyle(fontSize: 14)),
                 const SizedBox(width: 6),
               ],
@@ -1795,14 +1792,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 slots.isEmpty
                     ? (maxSlots == 1
                         ? 'Tap a buddy to bring along!'
-                        : 'Tap a companion below to add them')
-                    : teamComplete
-                        ? 'Your team is set!'
-                        : slots.length == 1
-                            ? '${slots[0].name} is ready!'
-                            : 'Team forming — ${slots.length}/$maxSlots',
+                        : 'Tap a friend below — one buddy is plenty')
+                    : slots.length == 1
+                        ? '${slots[0].name} is ready to join you!'
+                        : slots.length == 2
+                            ? '${slots[0].name} & ${slots[1].name} are with you!'
+                            : 'What a team — everyone\'s here!',
               ),
-              if (teamComplete) ...[
+              if (hasTeam) ...[
                 const SizedBox(width: 6),
                 const Text('✨', style: TextStyle(fontSize: 14)),
               ],

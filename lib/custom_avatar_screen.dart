@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -16,6 +17,13 @@ import 'services/parental_consent_service.dart';
 import 'theme/age_band_theme.dart';
 import 'widgets/avatar_generating_view.dart';
 import 'widgets/safe_asset_image.dart';
+
+// Dev-only: when built with --dart-define=DEV_SAMPLE_PHOTO=true, the photo step
+// offers a button that injects a synthesized sample photo, so the real
+// generation flow (and its loading animation) can be exercised headlessly where
+// a native file chooser cannot be opened. Compile-time const → fully tree-shaken
+// out of release builds.
+const bool _kDevSamplePhoto = bool.fromEnvironment('DEV_SAMPLE_PHOTO');
 
 // ── Step definitions ─────────────────────────────────────────────────────────
 // sproutWelcome is only included in the step order for Sprout (3-5) band.
@@ -424,6 +432,26 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       final bytes = await picked.readAsBytes();
       if (mounted) setState(() => _imageBytes = bytes);
     }
+  }
+
+  /// Dev-only: synthesize a simple valid face image so the generation flow can
+  /// be exercised without a native file picker. Gated by [_kDevSamplePhoto].
+  Future<void> _useDevSamplePhoto() async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const s = 320.0;
+    canvas.drawRect(const Rect.fromLTWH(0, 0, s, s), Paint()..color = const Color(0xFF8FA8CF));
+    canvas.drawCircle(const Offset(160, 158), 80, Paint()..color = const Color(0xFFEAC6A0)); // face
+    canvas.drawCircle(const Offset(134, 142), 9, Paint()..color = const Color(0xFF3A2A1A)); // eyes
+    canvas.drawCircle(const Offset(186, 142), 9, Paint()..color = const Color(0xFF3A2A1A));
+    canvas.drawRRect(
+      RRect.fromLTRBR(140, 182, 180, 192, const Radius.circular(5)),
+      Paint()..color = const Color(0xFF8A5A3A),
+    ); // mouth
+    final img = await recorder.endRecording().toImage(s.toInt(), s.toInt());
+    final bd = await img.toByteData(format: ui.ImageByteFormat.png);
+    if (bd == null || !mounted) return;
+    setState(() => _imageBytes = bd.buffer.asUint8List());
   }
 
   // ── Avatar generation (API call unchanged) ──────────────────────────────────
@@ -1462,6 +1490,22 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               ),
             ),
           ),
+          if (_kDevSamplePhoto) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _useDevSamplePhoto,
+                icon: const Icon(Icons.science_rounded),
+                label: const Text('Use sample photo (dev)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.amber,
+                  side: const BorderSide(color: Colors.amber),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
+          ],
         ],
         if (_imageBytes != null) ...[
           const SizedBox(height: 10),

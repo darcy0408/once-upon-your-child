@@ -21,6 +21,10 @@ class ScenarioCard {
   final String? youngDescription;
   final String? youngConflictHook;
   final String? youngWorldBible;
+  // Adventurer-band (ages 9-11) picker description — a tight, fully-visible
+  // one-line hook (<=9 words) so the scene-picker tile never truncates
+  // mid-word at narrow widths (S-01). Falls back to [description] when null.
+  final String? adventurerDescription;
   // Age-appropriate alternatives for tweens/teens (ages 10+)
   final String? matureTitle;
   final String? matureDescription;
@@ -73,6 +77,7 @@ class ScenarioCard {
     this.youngDescription,
     this.youngConflictHook,
     this.youngWorldBible,
+    this.adventurerDescription,
     this.matureTitle,
     this.matureDescription,
     this.matureConflictHook,
@@ -107,6 +112,11 @@ class ScenarioCard {
     // Sprout band (ages 2-5) gets its own tile-matched description when available.
     if (age <= 5 && sproutDescription != null) return sproutDescription!;
     if (age <= 8 && youngDescription != null) return youngDescription!;
+    // Adventurer band (ages 9-12): prefer the tightened picker hook so tiles
+    // don't truncate; falls through to the standard description when unset.
+    if (age >= 9 && age <= 12 && adventurerDescription != null) {
+      return adventurerDescription!;
+    }
     if (age >= 13 && matureDescription != null) return matureDescription!;
     return description;
   }
@@ -210,6 +220,8 @@ class ScenarioData {
       illustration: 'images/scenarios/sleeping_dragon.webp',
       description:
           'Wake the kindest dragon to stop the volcano from sneezing rainbow lava!',
+      adventurerDescription:
+          'Wake the kindest dragon before the volcano sneezes lava!',
       conflictHook:
           'The Fire-Sneeze Dragon is about to wake up and needs a gentle lullaby.',
       sensoryPalette:
@@ -287,6 +299,8 @@ class ScenarioData {
       illustration: 'images/scenarios/sparkle_cave.webp',
       description:
           'A cave where echoes steal voices if you are too loud. Speak in whispers!',
+      adventurerDescription:
+          'Echoes steal voices here, so speak in whispers.',
       conflictHook:
           'The Echo-King has borrowed your friend\'s voice, and you need a clever riddle to get it back.',
       sensoryPalette:
@@ -362,6 +376,8 @@ class ScenarioData {
       illustration: 'images/scenarios/rainbow_land.webp',
       description:
           'Someone is erasing the world! Use your magic to paint it back to life.',
+      adventurerDescription:
+          'Someone is erasing the world — paint it back to life!',
       conflictHook:
           'The Great Eraser is turning everything gray, and only your creativity can stop it.',
       sensoryPalette:
@@ -462,6 +478,8 @@ class ScenarioData {
       illustration: 'images/scenarios/feelings_quest.webp',
       description:
           'Riding the waves of being worried or mad without getting swept away.',
+      adventurerDescription:
+          'Big feelings: ride worry and anger like waves.',
       conflictHook:
           'A giant storm-cloud of "Mad" has arrived. Can you find the calm center?',
       sensoryPalette:

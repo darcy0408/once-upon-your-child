@@ -301,6 +301,9 @@ class CreativeBriefWidget extends StatelessWidget {
                 color: const Color(0xFFFFD700), fontSize: 10),
             hintText: 'Enter name...',
             hintStyle: TextStyle(color: Colors.white.withAlpha(40)),
+            // Disable the global light-teal fill so the white input text shows
+            // on this dark screen (underline-only field by design).
+            filled: false,
             enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.white.withAlpha(40))),
             focusedBorder: const UnderlineInputBorder(
@@ -329,6 +332,9 @@ class CreativeBriefWidget extends StatelessWidget {
               hintText: 'e.g. to prove themselves, to reconnect with family',
               hintStyle: TextStyle(
                   color: Colors.white.withAlpha(35), fontSize: 14),
+              // Disable the global light-teal fill so the white input text shows
+              // on this dark screen (underline-only field by design).
+              filled: false,
               enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.white.withAlpha(30))),
               focusedBorder: const UnderlineInputBorder(

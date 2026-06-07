@@ -7,7 +7,7 @@ import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import 'avatar_loading_bands/sprout_egg_hatch.dart';
 import 'avatar_loading_bands/explorer_constellation.dart';
-import 'avatar_loading_bands/adventurer_treasure_map.dart';
+import 'avatar_loading_bands/adventurer_loot_card.dart';
 import 'avatar_loading_bands/creator_digital_canvas.dart';
 import 'avatar_loading_bands/adolescent_holographic_portal.dart';
 import 'avatar_loading_bands/adult_ink_wash.dart';
@@ -63,10 +63,10 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
       'Almost ready!',
     ],
     AgeBand.adventurer: [
-      'Analyzing reference',
-      'Sketching character',
-      'Rendering details',
-      'Finalizing',
+      'Charging the forge',
+      'Rolling rarity',
+      'Forging the card',
+      'Locking stats',
     ],
     AgeBand.creator: [
       'Processing',
@@ -115,14 +115,14 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
       'Almost ready to shine!',
     ],
     AgeBand.adventurer: [
-      'Charting the course...',
-      'The ink is flowing...',
-      'Marking the landmarks...',
-      'Your avatar is materializing...',
-      'Fine-tuning the details...',
-      'Mapping the final features...',
-      'The quest nears its end...',
-      'X marks the spot!',
+      'Charging the forge...',
+      'Tap to power up the crate!',
+      'Energy building...',
+      'Rolling for rarity...',
+      'The crate is about to crack!',
+      'Forging your hero card...',
+      'Locking in legendary stats...',
+      'Your hero is almost ready!',
     ],
     AgeBand.creator: [
       'Processing your design...',
@@ -421,7 +421,7 @@ class _AvatarGeneratingViewState extends State<AvatarGeneratingView> {
           onTap: _onBandTap,
         );
       case AgeBand.adventurer:
-        return AdventurerTreasureMap(
+        return AdventurerLootCard(
           stageSize: stageSize,
           progress: _progress,
           onTap: _onBandTap,
