@@ -76,9 +76,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     (label: '11', value: 11),
   ];
 
-  // Older age bands: grouped pill buttons (3 items in a single symmetrical row).
+  // Older age bands: grouped pill buttons in a symmetrical grid.
+  // MT-226: "12 – 14" was split into "12" (→ Adventurer) and "13 – 14"
+  // (→ Creator) so the Creator band (ages 13–14) is reachable. Age 12 still
+  // routes through parental consent because the gate is age < 13 (see
+  // _handleContinue); age 13 correctly skips consent.
   static const _olderAgeEntries = <({String label, int value})>[
-    (label: '12 – 14', value: 12),
+    (label: '12', value: 12),
+    (label: '13 – 14', value: 13),
     (label: '15 – 17', value: 16),
     (label: '18+', value: 21),
   ];
@@ -813,9 +818,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           const Expanded(child: Divider(color: Colors.white24)),
         ]),
         const SizedBox(height: 10),
-        // Pill buttons for older age bands — 3 in a single symmetrical row
+        // Pill buttons for older age bands — 4 in a symmetrical 2×2 grid
         GridView.count(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 8,
