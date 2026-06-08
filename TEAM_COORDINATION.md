@@ -11,9 +11,21 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-08 | 02:09 | 6a13 | adventurer-craft-fixes | GIT_MAINTENANCE (27 fossils deleted, MT-229) + cleared 4-PR queue #243/#249/#252/#242 | [link](docs/sessions/2026-06-08-0209-6a13.md) |
+| 2026-06-08 | 01:36 | 93f8 | adventurer-craft-fixes | Age-band scene art (#243) + Creator polish (#249) + Hero Saga superhero (#252) | [link](docs/sessions/2026-06-08-0136-93f8.md) |
 | 2026-06-08 | 01:35 | bca2 | session/audits | Audits 01+13 + erasure fix + launch tracker + continuity kit | [link](docs/sessions/2026-06-08-0135-bca2.md) |
+| 2026-06-07 | 15:36 | 67e7 | adventurer-craft-fixes | Boundary-skills feature: prompt→plan→2 approved examples→Phase 1 (#253 merged) | [link](docs/sessions/2026-06-07-1536-67e7.md) |
+| 2026-06-07 | 15:00 | eb2e | adventurer-craft-fixes | Companion overhaul: kill My Pet/Human + unify Add-a-Person + grown-up photos + premium signal (PR #246) | [link](docs/sessions/2026-06-07-1500-eb2e.md) |
 | 2026-06-07 | 13:38 | 2af4 | main (PR #250) | Continuation of a316: Slack alerting deferred → GitHub failure emails | [link](docs/sessions/2026-06-07-1338-2af4.md) |
+| 2026-06-07 | 13:12 | 69f9 | adventurer-craft-fixes | Adventurer companions grid polish (#244, merged): robin→bottom, Nyx restyle, atlas/kodiak retighten | [link](docs/sessions/2026-06-07-1312-69f9.md) |
 | 2026-06-07 | 13:10 | a316 | main (PR #241,#245) | COPPA gate MT-213 verified live + MT-214/226 confirmed + MT-225 Slack v3 | [link](docs/sessions/2026-06-07-1310-a316.md) |
+| 2026-06-07 | 13:10 | c9ad | adventurer-craft-fixes | Git maint + main branch-protection + fossil-branch audit (#247) | [link](docs/sessions/2026-06-07-1310-c9ad.md) |
+| 2026-06-07 | 00:23 | 6a94 | adventurer-craft-fixes | Cleared 99a5 backlog: integration #237 + hono #239 + age-pill #235 | [link](docs/sessions/2026-06-07-0023-6a94.md) |
+| 2026-06-06 | 23:30 | d5b0 | adventurer-craft-fixes | Recover villains #234 + MT-228 gate #238 + superhero custom-idea #240 | [link](docs/sessions/2026-06-06-2330-d5b0.md) |
+| 2026-06-06 | 14:00 | 99a5 | adventurer-craft-fixes | Adventurer loot-card loading + real-gen E2E + consent fix | [link](docs/sessions/2026-06-06-1400-99a5.md) |
+| 2026-06-06 | 12:10 | 62a2 | adventurer-craft-fixes | no-story RCA: superhero fixes #229 + gen-crash fix #233 merged | [link](docs/sessions/2026-06-06-1210-62a2.md) |
+| 2026-06-06 | 10:19 | 6441 | adventurer-craft-fixes | Setting-tile + companion-framing fixes + app-wide invisible-input sweep | [link](docs/sessions/2026-06-06-1019-6441.md) |
+| 2026-06-06 | 06:55 | a5f7 | adventurer-craft-fixes | Adventurer hero-name fixes shipped; villain overhaul designed+started, hit parallel write-race | [link](docs/sessions/2026-06-06-0655-a5f7.md) |
 | 2026-06-05 | 16:12 | 1e9e | main (PRs) | Audit 14 + MT-221 + Companion Powers + MT-216 perf+nits | [link](docs/sessions/2026-06-05-1612-1e9e.md) |
 | 2026-06-05 | 07:59 | 980d | main | Backup outage fix + pyjwt/aiohttp CVEs + Cloudflare cutover prep | [link](docs/sessions/2026-06-05-0759-980d.md) |
 | 2026-06-03 | 23:35 | 5807 | session/triage-docs | PR triage: merged #206/#209/#205/#188 (+2 review-nit fixes), closed #182 | [link](docs/sessions/2026-06-03-2335-5807.md) |
@@ -21,7 +33,6 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-06-03 | 09:55 | 9794 | session/finops | FinOps audit: F-01/02/04/05 fixed, F-03 verified (PR #205) | [link](docs/sessions/2026-06-03-0955-9794.md) |
 | 2026-06-03 | 06:26 | 3211 | main | Overnight sweep: fixed 5-day backup outage (#207) + 3 backlog code PRs (#206/#209/#210) + corrected stale MT-219/207 | [link](docs/sessions/2026-06-03-0626-3211.md) |
 | 2026-06-02 | 13:27 | a7e6 | main | GIT_MAINTENANCE: branch cleanup 13→6, rescued 4cd2 record, discarded pubspec.lock churn | [link](docs/sessions/2026-06-02-1327-a7e6.md) |
-| 2026-05-31 | 14:18 | 4cd2 | main | Greened main CI (#177) + removed redundant deploy workflow (#178) + Railway prod triage | [link](docs/sessions/2026-05-31-1418-4cd2.md) |
 | 2026-06-01 | 22:03 | 6b74 | main | Fixed broken main (Flutter compile #189) + CI analyze gate (#204) | [link](docs/sessions/2026-06-01-2203-6b74.md) |
 | 2026-06-01 | 22:03 | 4825 | main | Merged git-guard hook (#183) + closed redundant deploy PR (#180) + removed csp-fix worktree | [link](docs/sessions/2026-06-01-2203-4825.md) |
 | 2026-06-01 | 21:35 | 0d6c | main | Worktree-per-session tooling + start-session (PR #191) | [link](docs/sessions/2026-06-01-2135-0d6c.md) |
@@ -29,10 +40,11 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-06-01 | 18:17 | b34b | main | MT-208: clean-extracted #171 uniques → PR #185 merged, #171 closed | [link](docs/sessions/2026-06-01-1817-b34b.md) |
 | 2026-06-01 | 18:12 | 3830 | feat/superhero-chunk-c | C4 Adventurer nemesis backend fix (PR #188) + UX Audit 09 | [link](docs/sessions/2026-06-01-1812-3830.md) |
 | 2026-06-01 | 18:02 | 4c8f | main (PR #181) | Finished Superhero Chunk C (C2/C4) + merged PR #181 + worktree cleanup | [link](docs/sessions/2026-06-01-1802-4c8f.md) |
-| 2026-05-31 | 22:33 | 1eea | feat/superhero-mode-improvements | Superhero Mode overhaul + avatar→hero portrait → PR #181 | [link](docs/sessions/2026-05-31-2233-1eea.md) |
 | 2026-05-31 | 22:40 | f3f4 | main | Cleared Adventurer queue (5 PRs) + #179 CSP prod fix + multi-agent worktree setup | [link](docs/sessions/2026-05-31-2240-f3f4.md) |
-| 2026-05-31 | 14:39 | e178 | main | Cloudflare architecture orientation + memory fix | [link](docs/sessions/2026-05-31-1439-e178.md) |
 | 2026-05-31 | 22:37 | bc9b | chore/git-guard-hook | CI triage → delete redundant deploy workflow + git-guard hook | [link](docs/sessions/2026-05-31-2237-bc9b.md) |
+| 2026-05-31 | 22:33 | 1eea | feat/superhero-mode-improvements | Superhero Mode overhaul + avatar→hero portrait → PR #181 | [link](docs/sessions/2026-05-31-2233-1eea.md) |
+| 2026-05-31 | 14:39 | e178 | main | Cloudflare architecture orientation + memory fix | [link](docs/sessions/2026-05-31-1439-e178.md) |
+| 2026-05-31 | 14:18 | 4cd2 | main | Greened main CI (#177) + removed redundant deploy workflow (#178) + Railway prod triage | [link](docs/sessions/2026-05-31-1418-4cd2.md) |
 | 2026-05-31 | 09:35 | dfa7 | main | 24 PRs merged, 4 prod bugs fixed, Adventurer audit sweep 5 PRs in flight | [link](docs/sessions/2026-05-31-0935-dfa7.md) |
 | 2026-05-31 | 07:39 | 1262 | main | Frontend host Netlify→Cloudflare Pages + CYOA TTS fix | [link](docs/sessions/2026-05-31-0739-1262.md) |
 | 2026-05-31 | 07:38 | 27aa | feat-adventurer-9-12 | Adventurer 9-12: Superhero Mode + feelings curriculum | [link](docs/sessions/2026-05-31-0738-27aa.md) |
@@ -59,10 +71,10 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-05-21 | 09:24 | 4efd | main | Antigravity hand-off: test fixes + stt migration + idna CVE bump | [link](docs/sessions/2026-05-21-0924-4efd.md) |
 | 2026-05-19 | 23:15 | e02c | main | MT-169 fix absorbed by parallel race; MT-113 routine 3× uncommitted | [link](docs/sessions/2026-05-19-2315-e02c.md) |
 | 2026-05-19 | 23:15 | 1b55 | main | Briefing only; AI quality audit halted at clarifying-questions step | [link](docs/sessions/2026-05-19-2315-1b55.md) |
-| 2026-05-19 | 23:02 | c7b7 | main | R8 dry-run: 384 MB asset bloat; built WebP toolchain | [link](docs/sessions/2026-05-19-2302-c7b7.md) |
 | 2026-05-19 | 23:05 | d4b8 | main | wire chrome-devtools-mcp + smoke test surfaces prod outage | [link](docs/sessions/2026-05-19-2305-d4b8.md) |
 | 2026-05-19 | 23:05 | 45c8 | main | Domain + email + Google Cloud Program $350k AI-tier application submitted | [link](docs/sessions/2026-05-19-2305-45c8.md) |
 | 2026-05-19 | 23:03 | 5de1 | main | Legal & distribution readiness audit 04 + "Once Upon YOUR Child" brand sweep | [link](docs/sessions/2026-05-19-2303-5de1.md) |
+| 2026-05-19 | 23:02 | c7b7 | main | R8 dry-run: 384 MB asset bloat; built WebP toolchain | [link](docs/sessions/2026-05-19-2302-c7b7.md) |
 | 2026-05-19 | 17:07 | 5e43 | main | MT-169 fail-CLOSED illustration-quota cost breaker on Redis outage | [link](docs/sessions/2026-05-19-1707-5e43.md) |
 | 2026-05-19 | 17:07 | b617 | main | MT-168 Playwright partial-verify; blocked on Railway outage | [link](docs/sessions/2026-05-19-1707-b617.md) |
 | 2026-05-19 | 16:23 | 22c7 | main | MT-113 reopen — raise hour/day rate-limit above monthly quota | [link](docs/sessions/2026-05-19-1623-22c7.md) |
@@ -75,8 +87,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-05-19 | 13:58 | 9a8d | main | MT-156 resolved — mt150_smoke.py tracked under backend/tests/smoke/ | [link](docs/sessions/2026-05-19-1358-9a8d.md) |
 | 2026-05-19 | 13:53 | 8086 | main | Content-safety audit (Six Hats) + Critical/High mod fixes | [link](docs/sessions/2026-05-19-1353-8086.md) |
 | 2026-05-19 | 08:16 | 8e76 | main | MT-154/155 interactive-story + avatar fixes; MT-150 monetization verified | [link](docs/sessions/2026-05-19-0816-8e76.md) |
-| 2026-05-18 | 16:37 | 3dfa | main | MT-149 cost-reduction deploy smoke test (passed) | [link](docs/sessions/2026-05-18-1637-3dfa.md) |
 | 2026-05-18 | 16:38 | 7ce6 | main | Closed MT-153 — SECRET_KEY verified on story-weaver-app backend | [link](docs/sessions/2026-05-18-1638-7ce6.md) |
+| 2026-05-18 | 16:37 | 3dfa | main | MT-149 cost-reduction deploy smoke test (passed) | [link](docs/sessions/2026-05-18-1637-3dfa.md) |
 | 2026-05-18 | 14:48 | c859 | main | Investigated uncommitted coloring-chip (already committed by parallel session) | [link](docs/sessions/2026-05-18-1448-c859.md) |
 | 2026-05-18 | 13:54 | 61aa | main | Restored orphaned coloring-page UI entry point (end-page chip) | [link](docs/sessions/2026-05-18-1354-61aa.md) |
 | 2026-05-18 | 12:28 | 6774 | main | P0 production unblank + MT-141/147/151 + celery-beat live | [link](docs/sessions/2026-05-18-1228-6774.md) |
@@ -117,10 +129,10 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-05-11 | 23:41 | 6e04 | main | In-flight triage + Sentry triage reports (both blocked by MT-095) | [link](docs/sessions/2026-05-11-2341-6e04.md) |
 | 2026-05-11 | 23:38 | b5ad | main | No-op re-close after 0a90 | [link](docs/sessions/2026-05-11-2338-b5ad.md) |
 | 2026-05-11 | 23:23 | 66ef | main | Stripe race + price-id fixes via Playwright; multi-agent farm-out | [link](docs/sessions/2026-05-11-2323-66ef.md) |
-| 2026-05-11 | 23:21 | f8c1 | main | Phase 1 monetization: Stripe wiring + Flux Schnell routing + matrix ratifications | [link](docs/sessions/2026-05-11-2321-f8c1.md) |
+| 2026-05-11 | 23:23 | 953a | main | Close-session push policy + MT-087 cap UI widget tests | [link](docs/sessions/2026-05-11-2323-953a.md) |
 | 2026-05-11 | 23:22 | e33d | main | BYOK validation diagnosis (backend off) + post-hoc verify | [link](docs/sessions/2026-05-11-2322-e33d.md) |
 | 2026-05-11 | 23:22 | cbe9 | main | Wizard create-new: age picker, name gate, companion-orb dedupe | [link](docs/sessions/2026-05-11-2322-cbe9.md) |
-| 2026-05-11 | 23:23 | 953a | main | Close-session push policy + MT-087 cap UI widget tests | [link](docs/sessions/2026-05-11-2323-953a.md) |
+| 2026-05-11 | 23:21 | f8c1 | main | Phase 1 monetization: Stripe wiring + Flux Schnell routing + matrix ratifications | [link](docs/sessions/2026-05-11-2321-f8c1.md) |
 | 2026-05-11 | 22:53 | 0a90 | main | Sprout reader: page cap 8-12, JSON salvage, image text scrub | [link](docs/sessions/2026-05-11-2253-0a90.md) |
 | 2026-05-11 | 22:52 | b36c | main | Egg jokes + crack counter for Sprout avatar generation | [link](docs/sessions/2026-05-11-2252-b36c.md) |
 | 2026-05-11 | 15:57 | 08f3 | main | Sentry triage — 1 dev-noise issue, Seer over budget | [link](docs/sessions/2026-05-11-1557-08f3.md) |
@@ -147,13 +159,13 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-05-08 | 18:34 | 8015 | main | Imagine It card UX rework: full-screen route + visual press effect | [link](docs/sessions/2026-05-08-1834-8015.md) |
 | 2026-05-06 | 12:22 | 39bf | main | 4th Sprout quest draft: gratitude (Sunny Pup / Hot Cocoa Breath) | [link](docs/sessions/2026-05-06-1222-39bf.md) |
 | 2026-05-06 | 10:10 | c910 | main | Drafted 3 Sprout quests (mad/sad/scared) — parked for integration | [link](docs/sessions/2026-05-06-1010-c910.md) |
-| 2026-05-06 | 10:07 | 0d37 | main | Sprout cloud→animal-friends rebrand + breathing buddy | [link](docs/sessions/2026-05-06-1007-0d37.md) |
 | 2026-05-06 | 10:09 | 536f | main | Fix static breathing-orb in CopingPracticeSheet | [link](docs/sessions/2026-05-06-1009-536f.md) |
+| 2026-05-06 | 10:07 | 0d37 | main | Sprout cloud→animal-friends rebrand + breathing buddy | [link](docs/sessions/2026-05-06-1007-0d37.md) |
 | 2026-05-06 | 08:02 | 81f6 | main | Sprout polish: per-page art + backend caps + welcome-back | [link](docs/sessions/2026-05-06-0802-81f6.md) |
 | 2026-05-05 | 20:35 | d046 | main | Push 7-commit backlog: coping toolbox + Big Feelings wizard routing | [link](docs/sessions/2026-05-05-2035-d046.md) |
 | 2026-05-05 | 00:17 | 78ab | main | A6 raced + per-page BYOK illustration prefetcher spike | [link](docs/sessions/2026-05-05-0017-78ab.md) |
-| 2026-05-05 | 00:05 | 4af1 | main | Multi-agent Sprout sweep: TTS storm, A7 vocab, A8 audit | [link](docs/sessions/2026-05-05-0005-4af1.md) |
 | 2026-05-05 | 00:06 | b535 | main | A3 fix: page-turn no longer keeps prior page's scroll offset | [link](docs/sessions/2026-05-05-0006-b535.md) |
+| 2026-05-05 | 00:05 | 4af1 | main | Multi-agent Sprout sweep: TTS storm, A7 vocab, A8 audit | [link](docs/sessions/2026-05-05-0005-4af1.md) |
 | 2026-05-05 | 00:04 | 861c | main | A8 Sprout UX pass: responsive page + bigger kid taps | [link](docs/sessions/2026-05-05-0004-861c.md) |
 | 2026-05-05 | 00:03 | af96 | main | Sprout vocab rule (A7) — absorbed by parallel commit 6bccd443 | [link](docs/sessions/2026-05-05-0003-af96.md) |
 | 2026-05-05 | 00:02 | ebc0 | main | Fix misleading Pick a Path badge on linear stories | [link](docs/sessions/2026-05-05-0002-ebc0.md) |
@@ -175,37 +187,37 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | 2026-05-02 | 15:57 | 5653 | main | TTS quota 503 + Sprout scene tap auto-advance | [link](docs/sessions/2026-05-02-1557-5653.md) |
 | 2026-05-02 | 15:28 | 9471 | main | Quality audit script + adult band story-gen fixes | [link](docs/sessions/2026-05-02-1528-9471.md) |
 | 2026-05-02 | 14:05 | 9a69 | main | Sprout ocean tile code fix + girl archetype images | [link](docs/sessions/2026-05-02-1405-9a69.md) |
-| 2026-05-02 | 14:00 | 7e8d | main | MT-022 verified, MT-027 checkerboard fix, MT-023 diagnosed | [link](docs/sessions/2026-05-02-1400-7e8d.md) |
 | 2026-05-02 | 14:01 | ca0d | main | Adventurer mic support + MT-017 TTS audit + close-session push | [link](docs/sessions/2026-05-02-1401-ca0d.md) |
 | 2026-05-02 | 14:01 | c75e | main | Big Feelings rebrand + visual redesign + offline story fallback | [link](docs/sessions/2026-05-02-1401-c75e.md) |
 | 2026-05-02 | 14:01 | 487e | main | Sprout robotic-voice fix on photo step + Animal Friend boy image | [link](docs/sessions/2026-05-02-1401-487e.md) |
+| 2026-05-02 | 14:00 | 7e8d | main | MT-022 verified, MT-027 checkerboard fix, MT-023 diagnosed | [link](docs/sessions/2026-05-02-1400-7e8d.md) |
 | 2026-05-02 | 10:53 | 8ca2 | main | Big Feelings Scrollbar/ScrollController crash fix | [link](docs/sessions/2026-05-02-1053-8ca2.md) |
 | 2026-05-02 | 10:32 | dfad | main | Sprout archetype images + Gemini pet avatar key fix | [link](docs/sessions/2026-05-02-1032-dfad.md) |
-| 2026-05-02 | 10:18 | 599b | main | Age-band visual audit: fix 5 UI bugs | [link](docs/sessions/2026-05-02-1018-599b.md) |
 | 2026-05-02 | 10:19 | 9b2b | main | Sprout avatar simplification, ocean tile, story fallback fix | [link](docs/sessions/2026-05-02-1019-9b2b.md) |
+| 2026-05-02 | 10:18 | 599b | main | Age-band visual audit: fix 5 UI bugs | [link](docs/sessions/2026-05-02-1018-599b.md) |
 | 2026-05-02 | 09:45 | 19bb | main | No-op close (work already committed as 263f) | [link](docs/sessions/2026-05-02-0945-19bb.md) |
 | 2026-05-02 | 09:45 | 3297 | main | Configured Claude Code statusline on new computer | [link](docs/sessions/2026-05-02-0945-3297.md) |
 | 2026-05-01 | 23:30 | 263f | main | BYOK validation crash fix + white-on-cream text field | [link](docs/sessions/2026-05-01-2330-263f.md) |
 | 2026-05-01 | 23:21 | 8b6a | main | Six age-band visual audit + screenshot contention notes | [link](docs/sessions/2026-05-01-2321-8b6a.md) |
 | 2026-05-01 | 23:11 | e32c | main | Sprout UX redesign + TTS dual-voice fix | [link](docs/sessions/2026-05-01-2311-e32c.md) |
 | 2026-05-01 | 23:11 | 0151 | main | Welcome voice/UX fixes + wizard back-nav + Sprout review TTS | [link](docs/sessions/2026-05-01-2311-0151.md) |
-| 2026-04-22 | 10:17 | 5a52 | main | Session-handoff overhaul (per-session files + global manual tasks) | [link](docs/sessions/2026-04-22-1017-5a52.md) |
-| 2026-04-22 | 12:14 | 76e3 | main | Six Hats adult audit + BUG-012 error copy + BUG-010 guard | [link](docs/sessions/2026-04-22-1214-76e3.md) |
-| 2026-04-22 | 12:14 | a488 | main | Session-handoff follow-ups (read-count bump + rename) | [link](docs/sessions/2026-04-22-1214-a488.md) |
-| 2026-04-22 | 12:15 | c29c | main | BUG-001/002/003 status audit + CORS stale-entry cleanup | [link](docs/sessions/2026-04-22-1215-c29c.md) |
+| 2026-04-24 | 21:20 | 7dba | main | MT-013 BUG-002 retry cap — _maxPrewarmRetries const + skip wasted delay | [link](docs/sessions/2026-04-24-2120-7dba.md) |
+| 2026-04-24 | 19:22 | 9620 | main | MT-005 BUG-001 re-verify: 18+ wizard advance PASS + DDC blocker documented | [link](docs/sessions/2026-04-24-1922-9620.md) |
+| 2026-04-24 | 18:47 | b00e | main | Consolidated Playwright re-verify — 6 MTs closed (BUG-001✅ BUG-003✅ grids✅ gender✅) | [link](docs/sessions/2026-04-24-1847-b00e.md) |
 | 2026-04-22 | 12:16 | d1c2 | main | BYOK visible key + SnackBar fix; Sprout quests | [link](docs/sessions/2026-04-22-1216-d1c2.md) |
 | 2026-04-22 | 12:16 | 9b80 | main | TASK5 BYOK wizard re-check (no-op; already shipped) | [link](docs/sessions/2026-04-22-1216-9b80.md) |
 | 2026-04-22 | 12:16 | cd57 | main | Six Hats UX audit (general app) — context-continuation close | [link](docs/sessions/2026-04-22-1216-cd57.md) |
-| 2026-04-22 | 12:15 | c4ea | main | BUG-003 Stripe anon guard + BUG-002 TTS backoff verification | [link](docs/sessions/2026-04-22-1215-c4ea.md) |
 | 2026-04-22 | 12:16 | 8a9d | main | Archetype image grid for mature bands (creator/adolescent/adult) | [link](docs/sessions/2026-04-22-1216-8a9d.md) |
 | 2026-04-22 | 12:16 | 269f | main | Six Hats audit closeout — consent AppBar + Go Solo | [link](docs/sessions/2026-04-22-1216-269f.md) |
 | 2026-04-22 | 12:16 | 8972 | main | Session tooling: /close-session + /start-session overhaul | [link](docs/sessions/2026-04-22-1216-8972.md) |
+| 2026-04-22 | 12:16 | 7df8 | main | Six Hats creator review triage + BUG-010 auth guard | [link](docs/sessions/2026-04-22-1216-7df8.md) |
+| 2026-04-22 | 12:15 | c29c | main | BUG-001/002/003 status audit + CORS stale-entry cleanup | [link](docs/sessions/2026-04-22-1215-c29c.md) |
+| 2026-04-22 | 12:15 | c4ea | main | BUG-003 Stripe anon guard + BUG-002 TTS backoff verification | [link](docs/sessions/2026-04-22-1215-c4ea.md) |
 | 2026-04-22 | 12:15 | 2571 | main | BUG-002 TTS backoff root-cause fix + Playwright MCP isolation | [link](docs/sessions/2026-04-22-1215-2571.md) |
 | 2026-04-22 | 12:15 | 247a | main | Gender picker placeholder images wired in — all 6 bands | [link](docs/sessions/2026-04-22-1215-247a.md) |
-| 2026-04-22 | 12:16 | 7df8 | main | Six Hats creator review triage + BUG-010 auth guard | [link](docs/sessions/2026-04-22-1216-7df8.md) |
-| 2026-04-24 | 18:47 | b00e | main | Consolidated Playwright re-verify — 6 MTs closed (BUG-001✅ BUG-003✅ grids✅ gender✅) | [link](docs/sessions/2026-04-24-1847-b00e.md) |
-| 2026-04-24 | 19:22 | 9620 | main | MT-005 BUG-001 re-verify: 18+ wizard advance PASS + DDC blocker documented | [link](docs/sessions/2026-04-24-1922-9620.md) |
-| 2026-04-24 | 21:20 | 7dba | main | MT-013 BUG-002 retry cap — _maxPrewarmRetries const + skip wasted delay | [link](docs/sessions/2026-04-24-2120-7dba.md) |
+| 2026-04-22 | 12:14 | 76e3 | main | Six Hats adult audit + BUG-012 error copy + BUG-010 guard | [link](docs/sessions/2026-04-22-1214-76e3.md) |
+| 2026-04-22 | 12:14 | a488 | main | Session-handoff follow-ups (read-count bump + rename) | [link](docs/sessions/2026-04-22-1214-a488.md) |
+| 2026-04-22 | 10:17 | 5a52 | main | Session-handoff overhaul (per-session files + global manual tasks) | [link](docs/sessions/2026-04-22-1017-5a52.md) |
 | 2026-04-25 |  —    | 3a99 | main | MT-012 13-17 attestation gate + golden test cleanup | (no session file) |
 | 2026-04-25 | 08:28 | 5c15 | main | MT-003/MT-004: BUG-012 smoke-test + Flutter error display fix | [link](docs/sessions/2026-04-25-0828-5c15.md) |
 | 2026-04-25 | 08:36 | a38f | main | MT-012 audit (read-only) — premise stale; parallel session shipped fix | [link](docs/sessions/2026-04-25-0836-a38f.md) |

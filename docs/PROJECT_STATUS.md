@@ -1,6 +1,6 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-05-30
+**Last Updated:** 2026-06-08
 
 > Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name.
 
@@ -8,7 +8,9 @@
 
 The five launch-track development phases are complete. The app is deployed on Railway (backend + `grand-light` frontend; Netlify mirror is orphaned and slated for decommission). Phase 6 is in flight — Stripe monetization wiring, reliability hardening (FMEA fixes, prompt-template versioning, streaming backend), Play Store size optimization (WebP), a WCAG 2.2 AA accessibility audit, recurring security audits, and a story-quality eval/judge harness.
 
-Backlog: **53 open / 93 done** manual tasks (`docs/MANUAL_TASKS.md`) — most open items are browser/device verification, not code.
+Backlog: **85 open / 158 done** manual tasks (`docs/MANUAL_TASKS.md`; +3 wontfix) — most open items are browser/device verification, not code.
+
+Recent (June 2026, ~10 sessions): age-band scene-picker art for the aged-up bands (#243), Creator-band polish (#249), Hero Saga Phase 1 — a serialized Creator (13–14) superhero playable end-to-end (#252) with Phase 2 saga-continuity groundwork (backend `saga_state` + client hero persistence), the companion overhaul (kill My Pet/Human, unify Add-a-Person, grown-up photos, premium signal — #246), the boundary-skills SEL feature Phase 1 (#253), and a git-maintenance / branch-hygiene pass (27 fossil branches deleted, main branch-protection).
 
 ## Architecture
 
@@ -158,7 +160,7 @@ Stripe monetization wiring (checkout + webhooks, Family tier, free-tier illustra
 
 ## Known Issues
 
-1. **Manual-tasks backlog: 53 open items** (`docs/MANUAL_TASKS.md`) — overwhelmingly browser/device verification of shipped fixes rather than unstarted code. Notable open code-ish items: MT-129 (illustration↔avatar fidelity — text-fix shipped, awaiting paid-tier verify), MT-120 (per-power visual override paid-tier verify), MT-105 (Flutter integration-tests agent in worktree), MT-199 (Sprout pop-up reader, backlog), MT-200 (MT-099 global warm-bg polish).
+1. **Manual-tasks backlog: 85 open items** (`docs/MANUAL_TASKS.md`) — overwhelmingly browser/device verification of shipped fixes rather than unstarted code. Notable open code-ish items: MT-129 (illustration↔avatar fidelity — text-fix shipped, awaiting paid-tier verify), MT-120 (per-power visual override paid-tier verify), MT-105 (Flutter integration-tests agent in worktree), MT-199 (Sprout pop-up reader, backlog), MT-200 (MT-099 global warm-bg polish).
 2. **Reliability hardening not fully closed** — Phase 2+3 FMEA fixes done; prod migration done; some Railway verify + alerting still pending (see memory `reliability_hardening_2026_05`).
 3. **Railway native backups are Pro-only** — mitigated by external `pg_dump` → R2 workflow; verify the cron is healthy.
 4. **Dependabot deferred majors** — stripe → v15 (note: v15 has breaking changes — `stripe.error.*` removed, `StripeObject` lost `.get()`), elevenlabs floor, cryptography, protobuf. Each blocked on a manual smoke-test of the payment / TTS / crypto paths.
