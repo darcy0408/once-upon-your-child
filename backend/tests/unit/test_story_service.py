@@ -819,6 +819,7 @@ class TestSplitProseIntoPages:
             "themes": [],
             "characters_featured": [],
             "emotional_arc": None,
+            "saga_state": None,
         }
 
 
@@ -869,7 +870,52 @@ class TestStoryMetadataExtraction:
             "themes": [],
             "characters_featured": [],
             "emotional_arc": None,
+            "saga_state": None,
         }
+
+    def test_metadata_extracts_creator_saga_state(self):
+        """MT-235 Phase 2: the Creator (T9) tier emits a `saga_state` block; it
+        must be surfaced (trimmed, known keys only) so the Dart HeroSaga client
+        can persist it and replay it as `prior_saga` on the next Issue."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+
+        payload = self._build_json(
+            {
+                "saga_state": {
+                    "nemesis": "  The Benefactor  ",
+                    "nemesis_status": "still-at-large",
+                    "what_changed": "The harbor district trusts the hero now.",
+                    "next_hook": "A second mask appears in the crowd.",
+                    "ignored_extra": "should be dropped",
+                }
+            }
+        )
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(
+            payload, theme="superhero"
+        )
+        assert metadata["saga_state"] == {
+            "nemesis": "The Benefactor",  # trimmed
+            "nemesis_status": "still-at-large",
+            "what_changed": "The harbor district trusts the hero now.",
+            "next_hook": "A second mask appears in the crowd.",
+        }
+
+    def test_metadata_saga_state_absent_or_empty_is_none(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+
+        # Absent entirely.
+        payload = self._build_json()
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(
+            payload, theme="superhero"
+        )
+        assert metadata["saga_state"] is None
+
+        # Present but all blank/wrong-type → None (never an empty husk).
+        payload = self._build_json({"saga_state": {"nemesis": "   ", "next_hook": 42}})
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(
+            payload, theme="superhero"
+        )
+        assert metadata["saga_state"] is None
 
     def test_metadata_normalises_themes_to_lowercase_dedup_capped(self):
         from backend.services.story_service import _safe_extract_title_and_gem
@@ -951,6 +997,7 @@ class TestStoryMetadataExtraction:
             "themes": [],
             "characters_featured": [],
             "emotional_arc": None,
+            "saga_state": None,
         }
 
 

@@ -254,6 +254,112 @@ def test_build_story_prompt_age_15_not_creator():
     assert "Creator band" not in prompt
 
 
+# --- Phase 2: returnable saga continuity -----------------------------------
+def test_creator_issue_one_has_no_continuity_block():
+    """No prior_saga (Issue #1) -> a clean origin, no 'Previously' block."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+        prior_saga=None,
+    )
+    assert "CONTINUITY" not in prompt
+    assert "Previously" not in prompt
+
+
+def test_creator_prompt_weaves_prior_saga_continuity():
+    """A returning hero's saga_state becomes a 'Previously…' continuity block."""
+    prior = {
+        "issue_number": 4,
+        "nemesis": "the Optimizer",
+        "nemesis_status": "still-at-large",
+        "what_changed": "the transit grid trusts Mastermind now",
+        "next_hook": "a second Optimizer node went dark in the harbor",
+    }
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+        prior_saga=prior,
+    )
+    assert "CONTINUITY" in prompt
+    assert "ISSUE #4" in prompt
+    assert "the transit grid trusts Mastermind now" in prompt
+    assert "a second Optimizer node went dark in the harbor" in prompt
+    assert "still out there" in prompt  # humanized nemesis_status
+    assert "Previously" in prompt  # cold-open recap instruction
+
+
+def test_creator_continuity_renders_code_allies_and_choices():
+    prior = {
+        "nemesis": "Nightjar",
+        "nemesis_status": "stopped-and-accountable",
+        "hero_code": "never lie to the people who trust me",
+        "allies": ["Reza", "Detective Okafor"],
+        "key_choices": ["spared the courier", "exposed the mayor's deal"],
+    }
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Leo",
+        age=14,
+        hero_costume_color="navy",
+        hero_cape_style="none",
+        hero_emblem="bolt",
+        hero_power="super_hearing",
+        villain_id="nightjar",
+        problem_id="de_escalate_standoff",
+        prior_saga=prior,
+    )
+    assert "never lie to the people who trust me" in prompt
+    assert "Reza" in prompt and "Detective Okafor" in prompt
+    assert "spared the courier" in prompt
+    # "stopped-and-accountable" is humanized into the not-your-job-to-fix framing.
+    assert "not redeemed" in prompt
+    # Defaults to Issue #1 when no issue_number supplied but a saga exists.
+    assert "ISSUE #1" in prompt
+
+
+def test_creator_continuity_routes_through_build_story_prompt():
+    """prior_saga reaches the Creator tier via the public dispatcher."""
+    prior = {"issue_number": 2, "next_hook": "the harbor node is still dark"}
+    prompt = PromptService.build_story_prompt(
+        character="Mia",
+        theme="superhero",
+        age=13,
+        hero_power="strategist",
+        prior_saga=prior,
+    )
+    assert "Creator band" in prompt
+    assert "CONTINUITY" in prompt
+    assert "ISSUE #2" in prompt
+    assert "the harbor node is still dark" in prompt
+
+
+def test_creator_continuity_ignores_empty_saga_dict():
+    """An empty dict (no usable fields) must not emit a stray continuity block."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Ada",
+        age=13,
+        hero_costume_color="indigo",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="gadgeteer",
+        villain_id="cipher_zero",
+        problem_id="expose_the_conspiracy",
+        prior_saga={},
+    )
+    assert "CONTINUITY" not in prompt
+
+
 def test_creator_prompt_derives_villain_and_problem_when_missing():
     prompt = PromptService._build_superhero_prompt_creator(
         character="Jordan",

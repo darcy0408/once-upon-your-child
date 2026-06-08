@@ -32,6 +32,7 @@ import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/providers/hero_profile_provider.dart';
+import 'package:story_weaver_app/providers/hero_saga_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'superhero_entry_screen.dart';
 import 'wizard_data_mapper.dart';
@@ -356,8 +357,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
       // PERF-01: remember the length tier so streamed-char progress can be
       // scaled correctly for short vs. epic stories.
-      _storyLengthTier =
-          (requestData['storyLength'] as String?) ?? 'standard';
+      _storyLengthTier = (requestData['storyLength'] as String?) ?? 'standard';
       final activeChildProfileId =
           await ChildProfileService().getActiveProfileId();
       if (activeChildProfileId != null && activeChildProfileId.isNotEmpty) {
@@ -425,9 +425,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               !savedCharacterId.startsWith('temp-');
           if (isSavedCharacter) {
             try {
-              final existing =
-                  await ChronicleService.getChroniclesForCharacter(
-                      savedCharacterId);
+              final existing = await ChronicleService.getChroniclesForCharacter(
+                  savedCharacterId);
               if (!mounted) return;
               if (existing.isNotEmpty) {
                 // ChronicleService.getChroniclesForCharacter sorts by
@@ -498,6 +497,13 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         // repeating itself across stories.
         List<String>? recentVillains;
         List<String>? recentProblems;
+        // MT-235 Phase 2 (the returnable saga): a returning Creator hero's
+        // persisted continuity, sent as `prior_saga` so the T9 Creator prompt
+        // opens on a "Previously…" beat. Null for Issue #1 and every younger
+        // band, where the backend treats a missing block as a clean origin.
+        Map<String, dynamic>? priorSaga;
+        final isCreatorBand =
+            ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
         if (widget.wizardData.selectedScenario == 'superhero') {
           try {
             final heroCharacterId =
@@ -506,9 +512,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 await ref.read(heroProfileProvider(heroCharacterId).future);
             recentVillains = profile?.recentVillains;
             recentProblems = profile?.recentProblems;
+            if (isCreatorBand) {
+              final saga =
+                  await ref.read(heroSagaProvider(heroCharacterId).future);
+              // toPriorSaga() returns null until there is continuity (Issue #1
+              // is a clean origin), so this stays absent on the first play.
+              priorSaga = saga?.toPriorSaga();
+            }
           } catch (_) {
-            // Profile load failure is non-fatal — backend will pick any
-            // villain/problem when these lists are absent.
+            // Profile / saga load failure is non-fatal — backend will pick any
+            // villain/problem and start a clean origin when these are absent.
           }
         }
 
@@ -551,6 +564,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             heroNemesisId: requestData['heroNemesisId']?.toString(),
             recentVillains: recentVillains,
             recentProblems: recentProblems,
+            priorSaga: priorSaga,
             onProgress: (status) {
               if (mounted) {
                 setState(() => _loadingStatus = status);
@@ -570,25 +584,30 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             },
             // PERF-04: remember the task id so Cancel can abandon it.
             onTaskId: (id) => _activeTaskId = id,
-            progressPhases:
-                ageBandFromAge(requestData['age'] as int? ?? 5).isMature
-                    ? const [
-                        'Setting the scene...',
-                        'Developing your character...',
-                        'Writing your story...',
-                        'Adding depth and detail...',
-                        'Almost ready...',
-                      ]
-                    // FR-04 (Audit 14): give the younger bands staged progress
-                    // too, so a 15-30s wait shows movement instead of one frozen
-                    // line that reads as "stuck" to a 9-11 year old.
-                    : const [
-                        'Waking up your hero...',
-                        'Gathering your companions...',
-                        'Building your world...',
-                        'Writing your adventure...',
-                        'Almost ready...',
-                      ]);
+            progressPhases: ageBandFromAge(requestData['age'] as int? ?? 5)
+                    .isMature
+                ? const [
+                    'Setting the scene...',
+                    'Developing your character...',
+                    'Writing your story...',
+                    'Adding depth and detail...',
+                    'Almost ready...',
+                  ]
+                // FR-04 (Audit 14): give the younger bands staged progress
+                // too, so a 15-30s wait shows movement instead of one frozen
+                // line that reads as "stuck" to a 9-11 year old.
+                : const [
+                    'Waking up your hero...',
+                    'Gathering your companions...',
+                    'Building your world...',
+                    'Writing your adventure...',
+                    'Almost ready...',
+                  ]);
+
+        // MT-235 Phase 2: the cliffhanger thread this Creator Issue left
+        // dangling, captured from the just-recorded saga so the story-result
+        // screen can surface a "Next time…" teaser. Null for non-Creator stories.
+        String? sagaNextHook;
 
         // Superhero Mode: persist the villain/problem the backend chose
         // so the next story avoids them.
@@ -599,19 +618,43 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           final problemId = meta['problem_id']?.toString();
           final heroCharacterId =
               SuperheroEntryScreen.resolveCharacterId(widget.wizardData);
-          final controller =
-              ref.read(heroProfileControllerProvider.notifier);
+          final controller = ref.read(heroProfileControllerProvider.notifier);
           try {
             if (villainId != null && villainId.isNotEmpty) {
-              await controller.pushRecentVillain(
-                  heroCharacterId, villainId);
+              await controller.pushRecentVillain(heroCharacterId, villainId);
             }
             if (problemId != null && problemId.isNotEmpty) {
-              await controller.pushRecentProblem(
-                  heroCharacterId, problemId);
+              await controller.pushRecentProblem(heroCharacterId, problemId);
             }
           } catch (_) {
             // Persistence failure is non-fatal.
+          }
+
+          // MT-235 Phase 2 (the returnable saga): for a Creator hero, fold this
+          // Issue's emitted `saga_state` (nemesis / status / what_changed /
+          // next_hook — surfaced by the backend on superhero_meta) forward into
+          // the persisted HeroSaga so the NEXT Issue opens on continuity. The
+          // hero's personal code (the therapeutic throughline) is sourced from
+          // the Creator reflection field when present. Best-effort: a missing
+          // or partial saga_state is a no-op that never erases prior continuity.
+          if (isCreatorBand) {
+            final rawSaga = meta['saga_state'];
+            if (rawSaga is Map) {
+              final sagaState = Map<String, dynamic>.from(rawSaga);
+              final code = widget.wizardData.characterDesire?.trim();
+              try {
+                final updated = await ref
+                    .read(heroSagaControllerProvider.notifier)
+                    .recordIssue(
+                      heroCharacterId,
+                      sagaState,
+                      heroCode: (code != null && code.isNotEmpty) ? code : null,
+                    );
+                sagaNextHook = updated.nextHook;
+              } catch (_) {
+                // Saga persistence failure is non-fatal — the story still shows.
+              }
+            }
           }
         }
 
@@ -757,7 +800,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                           const []),
                   customElements:
                       requestData['customElements']?.toString() ?? '',
-                  wizardData: widget.wizardData)));
+                  wizardData: widget.wizardData,
+                  sagaNextHook: sagaNextHook)));
           if (mounted) {
             setState(() => _isGenerating = false);
           }
@@ -786,7 +830,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             errText.contains('rate-limit') ||
             errText.contains('too many requests')) {
           // Gemini free-tier exhaustion — commonly a BYOK key with limit:0.
-          errorMsg = 'Stories are taking a quick break — try again in a minute! ✨\n'
+          errorMsg =
+              'Stories are taking a quick break — try again in a minute! ✨\n'
               'Stories temporarily limited by API quota.';
         }
         setState(() {

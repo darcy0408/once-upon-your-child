@@ -1204,20 +1204,47 @@ def _normalize_emotional_arc(value) -> str | None:
     return arc[:_EMOTIONAL_ARC_MAX_LEN]
 
 
+def _normalize_saga_state(value):
+    """Sanitize the Creator-tier ``saga_state`` block the T9 superhero prompt
+    emits (MT-235 Phase 2 — the returnable saga). Returns a dict with only the
+    four known string keys (nemesis / nemesis_status / what_changed / next_hook),
+    each trimmed, or ``None`` when nothing usable is present. The Dart HeroSaga
+    client folds this forward into ``prior_saga`` on the next Issue."""
+    if not isinstance(value, dict):
+        return None
+    out = {}
+    for key in ("nemesis", "nemesis_status", "what_changed", "next_hook"):
+        raw = value.get(key)
+        if isinstance(raw, str) and raw.strip():
+            out[key] = raw.strip()
+    return out or None
+
+
 def _extract_story_metadata(data) -> dict:
-    """Pull themes / characters_featured / emotional_arc out of parsed JSON."""
+    """Pull themes / characters_featured / emotional_arc / saga_state out of parsed JSON."""
     if not isinstance(data, dict):
-        return {"themes": [], "characters_featured": [], "emotional_arc": None}
+        return {
+            "themes": [],
+            "characters_featured": [],
+            "emotional_arc": None,
+            "saga_state": None,
+        }
     return {
         "themes": _normalize_themes(data.get("themes")),
         "characters_featured": _normalize_characters_featured(
             data.get("characters_featured")
         ),
         "emotional_arc": _normalize_emotional_arc(data.get("emotional_arc")),
+        "saga_state": _normalize_saga_state(data.get("saga_state")),
     }
 
 
-_EMPTY_METADATA = {"themes": [], "characters_featured": [], "emotional_arc": None}
+_EMPTY_METADATA = {
+    "themes": [],
+    "characters_featured": [],
+    "emotional_arc": None,
+    "saga_state": None,
+}
 
 
 def _safe_extract_title_and_gem(text: str, theme: str):

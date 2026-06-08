@@ -739,6 +739,10 @@ class ApiServiceManager {
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
+    // MT-235 Phase 2 (the returnable saga): a returning Creator hero's
+    // HeroSaga.toPriorSaga() continuity payload, attached as `prior_saga` on the
+    // backend path. Null for Issue #1 / non-Creator stories.
+    Map<String, dynamic>? priorSaga,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -775,8 +779,8 @@ class ApiServiceManager {
     final Duration effectiveRequestTimeout = companionCount <= 0
         ? requestTimeout
         : Duration(
-            seconds: requestTimeout.inSeconds +
-                (companionCount * 30).clamp(0, 120),
+            seconds:
+                requestTimeout.inSeconds + (companionCount * 30).clamp(0, 120),
           );
 
     if (!useOwnKey || needsBackendForFeatures) {
@@ -840,6 +844,7 @@ class ApiServiceManager {
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
+          priorSaga: priorSaga,
         ),
       );
     }
@@ -1120,6 +1125,7 @@ class ApiServiceManager {
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
+    Map<String, dynamic>? priorSaga,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -1175,6 +1181,7 @@ class ApiServiceManager {
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
+          priorSaga: priorSaga,
         );
       } on StoryGenerationCancelled {
         // PERF-01 cancellation polish: a user-initiated cancel is terminal —
@@ -1257,6 +1264,11 @@ class ApiServiceManager {
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
+    // MT-235 Phase 2 (the returnable saga): a returning Creator hero's
+    // persisted continuity, HeroSaga.toPriorSaga(). Sent as `prior_saga` so the
+    // T9 Creator prompt can weave a "Previously…" block. Null on Issue #1 / non-
+    // Creator stories — the backend treats a missing block as a clean origin.
+    Map<String, dynamic>? priorSaga,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -1297,8 +1309,7 @@ class ApiServiceManager {
         'conflictHook': conflictHook,
       if (sensoryPalette != null && sensoryPalette.isNotEmpty)
         'sensoryPalette': sensoryPalette,
-      if (worldBible != null && worldBible.isNotEmpty)
-        'worldBible': worldBible,
+      if (worldBible != null && worldBible.isNotEmpty) 'worldBible': worldBible,
       if (moodPhysics != null) 'moodPhysics': moodPhysics,
       if (lifeChallenge != null && lifeChallenge.isNotEmpty)
         'lifeChallenge': lifeChallenge,
@@ -1310,7 +1321,9 @@ class ApiServiceManager {
     // Superhero Mode — only attach the costume/power + no-repeat hints when
     // the wizard selected that scenario. Backend route is gated on theme.
     if (theme == 'superhero') {
-      if (heroCostumeColor != null) body['hero_costume_color'] = heroCostumeColor;
+      if (heroCostumeColor != null) {
+        body['hero_costume_color'] = heroCostumeColor;
+      }
       if (heroCapeStyle != null) body['hero_cape_style'] = heroCapeStyle;
       if (heroEmblem != null) body['hero_emblem'] = heroEmblem;
       if (heroPower != null) body['hero_power'] = heroPower;
@@ -1325,6 +1338,12 @@ class ApiServiceManager {
       }
       if (recentProblems != null && recentProblems.isNotEmpty) {
         body['recent_problems'] = recentProblems;
+      }
+      // MT-235 Phase 2: a returning Creator hero's saga continuity. The backend
+      // reads kwargs['prior_saga'] and weaves a "Previously…" block for the
+      // T9 Creator tier; absent on Issue #1 / younger bands → a clean origin.
+      if (priorSaga != null && priorSaga.isNotEmpty) {
+        body['prior_saga'] = priorSaga;
       }
     }
 
@@ -1602,9 +1621,8 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
           .toList();
       final likes =
           (characterDetails['likes'] as List?)?.whereType<String>().toList();
-      final dislikes = (characterDetails['dislikes'] as List?)
-          ?.whereType<String>()
-          .toList();
+      final dislikes =
+          (characterDetails['dislikes'] as List?)?.whereType<String>().toList();
       final comfortItem = characterDetails['comfort_item'] as String?;
 
       if (fears != null && fears.isNotEmpty) {
@@ -1829,7 +1847,9 @@ Maintain plain text (no markdown fences).''';
     for (final p in companionPets ?? []) {
       final name = p['name'] as String?;
       final species = p['species'] as String?;
-      if (name != null) compParts.add(species != null ? '$name the $species' : name);
+      if (name != null) {
+        compParts.add(species != null ? '$name the $species' : name);
+      }
     }
     for (final c in companionCharacters ?? []) {
       final name = c is Map ? c['name'] as String? : c?.toString();
@@ -1844,10 +1864,14 @@ Maintain plain text (no markdown fences).''';
     final mandatoryStr = allMandatory.join(', ');
 
     final moodHint = switch (mood.toLowerCase()) {
-      'brave'      => 'gently brave — the challenge is real but never frightening, resolved with warmth and quiet confidence',
-      'funny'      => 'softly funny — gentle wordplay and cosy silliness, nothing rowdy or over-stimulating',
-      'friendship' => 'warm and connective — the bond between the heroes is the heart of every scene',
-      _            => 'deeply peaceful and soothing — every sentence should slow the listener\'s breathing',
+      'brave' =>
+        'gently brave — the challenge is real but never frightening, resolved with warmth and quiet confidence',
+      'funny' =>
+        'softly funny — gentle wordplay and cosy silliness, nothing rowdy or over-stimulating',
+      'friendship' =>
+        'warm and connective — the bond between the heroes is the heart of every scene',
+      _ =>
+        'deeply peaceful and soothing — every sentence should slow the listener\'s breathing',
     };
 
     return '''You are a master bedtime storyteller. Create a magical, soothing bedtime story.
@@ -1928,9 +1952,8 @@ No extra keys. No prose outside the JSON.''';
           .toList();
       final likes =
           (characterDetails['likes'] as List?)?.whereType<String>().toList();
-      final dislikes = (characterDetails['dislikes'] as List?)
-          ?.whereType<String>()
-          .toList();
+      final dislikes =
+          (characterDetails['dislikes'] as List?)?.whereType<String>().toList();
       final comfortItem = characterDetails['comfort_item'] as String?;
 
       if (fears != null && fears.isNotEmpty) {

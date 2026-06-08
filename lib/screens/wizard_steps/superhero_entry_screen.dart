@@ -12,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../models.dart';
 import '../../providers/hero_profile_provider.dart';
+import '../../providers/hero_saga_provider.dart';
 import '../../theme/age_band_theme.dart';
 import 'superhero_costume_screen.dart';
 import 'superhero_welcome_back_screen.dart';
@@ -31,7 +32,8 @@ class SuperheroEntryScreen extends ConsumerWidget {
   /// generates — so the same kid would have a null id on run 1's save and a
   /// real UUID on run 2's load, missing the welcome-back screen entirely.
   static String resolveCharacterId(WizardData wd) {
-    final name = wd.characterName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    final name =
+        wd.characterName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
     if (name.isNotEmpty) return 'name_$name';
     final raw = wd.characterId?.trim();
     if (raw != null && raw.isNotEmpty) return raw;
@@ -54,10 +56,19 @@ class SuperheroEntryScreen extends ConsumerWidget {
           SuperheroCostumeScreen(wizardData: wizardData, band: band),
       data: (profile) {
         if (profile != null && profile.power != null) {
+          // MT-235 Phase 2 (the returnable saga): for a returning Creator hero,
+          // surface the persisted continuity as a "Previously…" recap on the
+          // welcome-back screen. Younger bands have no saga and skip the watch.
+          // A saga read failure / first Issue simply yields a null saga → no
+          // recap, never a blocked welcome-back.
+          final saga = band == AgeBand.creator
+              ? ref.watch(heroSagaProvider(characterId)).valueOrNull
+              : null;
           return SuperheroWelcomeBackScreen(
             wizardData: wizardData,
             profile: profile,
             band: band,
+            saga: saga,
           );
         }
         return SuperheroCostumeScreen(wizardData: wizardData, band: band);

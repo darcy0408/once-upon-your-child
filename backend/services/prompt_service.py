@@ -37,6 +37,7 @@ class PromptService:
         superhero_villain_id: str | None = None,
         superhero_problem_id: str | None = None,
         custom_elements: str = "",
+        prior_saga: dict | None = None,
     ) -> str:
         """Build complete story generation prompt.
 
@@ -96,6 +97,7 @@ class PromptService:
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
+                    prior_saga=prior_saga,
                 )
             else:
                 return PromptService._build_superhero_prompt(
@@ -926,6 +928,7 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
         problem_id: str | None,
         hero_catchphrase: str | None = None,
         custom_elements: str = "",
+        prior_saga: dict | None = None,
     ) -> str:
         """Build the Creator-band (13-14) Hero Saga Issue prompt.
 
@@ -934,6 +937,17 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
         the band they are re-derived from the hero's power so a malformed
         request still produces a coherent Issue. Unknown powers fall back to
         ``super_smile`` (shared across all bands).
+
+        ``prior_saga`` (Phase 2 — the returnable saga) is the persisted
+        continuity for a returning hero, normally the previous Issue's emitted
+        ``saga_state`` plus a running issue count. When present it injects a
+        "Previously in this saga" block so the world remembers what came before;
+        when ``None`` (Issue #1) the Issue is a fresh origin. Recognised keys —
+        all optional: ``nemesis``, ``nemesis_status``, ``what_changed``,
+        ``next_hook`` (the emitted ``saga_state``), plus ``issue_number``,
+        ``hero_code``, ``allies`` (list), ``key_choices`` (list). Unknown keys
+        are ignored, so the Dart ``HeroSaga`` model can grow without a backend
+        change.
         """
         villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
             "creator"
@@ -990,6 +1004,75 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
             else ""
         )
 
+        # --- Continuity (Phase 2): weave a "Previously…" block from the prior
+        #     Issue's saga_state so a returning hero's world remembers. Absent
+        #     on Issue #1 (no prior_saga) -> a clean origin.
+        saga = prior_saga or {}
+        try:
+            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
+        except (TypeError, ValueError):
+            issue_number = 1
+        issue_number = max(issue_number, 1)
+
+        continuity_block = ""
+        if saga:
+            _status_human = {
+                "reconsidered": "has reconsidered, but trust is not restored",
+                "stopped-and-accountable": (
+                    "was stopped and held accountable — not redeemed, and not "
+                    f"{character}'s to 'fix'"
+                ),
+                "still-at-large": "is still out there",
+            }
+            prev_nemesis = (saga.get("nemesis") or "").strip()
+            prev_status = (saga.get("nemesis_status") or "").strip().lower()
+            prev_changed = (saga.get("what_changed") or "").strip()
+            prev_hook = (saga.get("next_hook") or "").strip()
+            code = (saga.get("hero_code") or "").strip()
+            allies = [
+                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
+            ]
+            key_choices = [
+                str(c).strip()
+                for c in (saga.get("key_choices") or [])
+                if str(c).strip()
+            ]
+            lines = []
+            if prev_nemesis:
+                st = _status_human.get(prev_status, prev_status or "remains a question")
+                lines.append(f"- Nemesis so far — {prev_nemesis}: {st}.")
+            if prev_changed:
+                lines.append(f"- What changed last Issue: {prev_changed}")
+            if prev_hook:
+                lines.append(
+                    f"- The dangling thread to honor (open on it or pay it off — do "
+                    f"NOT ignore or silently drop it): {prev_hook}"
+                )
+            if code:
+                lines.append(
+                    f"- {character}'s personal code (test it again, stay consistent "
+                    f"with it): {code}"
+                )
+            if allies:
+                lines.append(
+                    f"- Allies already in {character}'s corner (reuse them; do NOT "
+                    f"reintroduce as strangers): {', '.join(allies)}"
+                )
+            if key_choices:
+                lines.append(
+                    f"- Past choices that now define {character}: {'; '.join(key_choices)}"
+                )
+            if lines:
+                continuity_block = (
+                    f"\n\nCONTINUITY — THIS IS ISSUE #{issue_number} OF {character}'s "
+                    f"SAGA. The world remembers what came before; honor it and never "
+                    f"contradict it:\n"
+                    + "\n".join(lines)
+                    + f'\nWeave a light "Previously…" sense of momentum into the COLD '
+                    f"OPEN (a line or two, NOT a bulleted recap), then tell a NEW "
+                    f"self-contained case that moves the saga forward."
+                )
+
         return f"""HERO SAGA — SUPERHERO ISSUE (Ages 13-14 — Creator band)
 
 You are writing one self-contained "Issue" of an ongoing superhero saga for a sophisticated {age}-year-old reader. Aim for the register of strong YA / modern Marvel — intelligent, grounded, a little noir. Write UP, never down: this reader notices when a story is secretly for little kids.
@@ -999,7 +1082,7 @@ HERO IDENTITY:
 - Hero alias: "{alias}"
 - Look: {color} suit with {cape_phrase} and a {emblem} emblem (describe it once, briefly — restraint, not spectacle)
 - Power: {alias} — {power_verb}. Give the power a REAL LIMIT or COST so it can't simply solve the problem; the hero must out-think, not out-muscle.{catchphrase_identity_line}
-- This is an Issue in {character}'s saga: establish, lightly, who they are and the personal code they hold (what they refuse to do, what they fight for). Let that code be tested.
+- This is an Issue in {character}'s saga: establish, lightly, who they are and the personal code they hold (what they refuse to do, what they fight for). Let that code be tested.{continuity_block}
 
 THE ANTAGONIST — must be ONE of these named Creator villains and NO OTHER: {canonical_villain_names}. For this Issue it is {villain['name']}.
 - Name: {villain['name']} (use it in the prose)

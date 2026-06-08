@@ -105,6 +105,12 @@ class StoryResultScreen extends ConsumerStatefulWidget {
   /// directly instead of triggering regeneration.
   final String? persistedPageIllustrationsJson;
 
+  /// MT-235 Phase 2 (the returnable saga): the cliffhanger thread this Creator
+  /// superhero Issue left dangling (the persisted HeroSaga.nextHook). When set,
+  /// a tasteful "Next time…" card + a light one-tap reflection are surfaced at
+  /// the end of the story. Null for non-Creator / non-superhero stories.
+  final String? sagaNextHook;
+
   const StoryResultScreen({
     super.key,
     required this.title,
@@ -139,6 +145,7 @@ class StoryResultScreen extends ConsumerStatefulWidget {
     this.wizardData,
     this.persistedCoverImageBase64,
     this.persistedPageIllustrationsJson,
+    this.sagaNextHook,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -179,6 +186,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
   // Magic Typewriter state
   final Set<int> _revealedPages = {};
+
+  // MT-235 Phase 2: which one-tap saga reflection the Creator hero acknowledged
+  // at the cliffhanger (null until tapped). Cosmetic — confirms the beat landed.
+  int? _sagaReflectionChoice;
 
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
@@ -3095,6 +3106,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   color: _highContrastMode ? Colors.white : band.primary,
                 ),
               ),
+              // MT-235 Phase 2 (the returnable saga): the Creator superhero
+              // cliffhanger. Surfaces this Issue's dangling thread as a
+              // "Next time…" teaser + a light one-tap reflection, per the
+              // design doc. Null hook (non-Creator / non-superhero) → nothing.
+              ..._buildSagaCliffhanger(band: band),
               SizedBox(height: isSprout ? 16 : 28),
               Divider(
                 indent: 40,
@@ -3248,6 +3264,97 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// Sprout band: compact tile-style buttons in a horizontal Wrap, leaving
   /// vertical room for the celebration illustration.
   /// Other bands: keep the existing 260-wide vertical stack.
+  /// MT-235 Phase 2 (the returnable saga): the Creator superhero cliffhanger.
+  /// Renders a "Next time…" teaser from [StoryResultScreen.sagaNextHook] plus a
+  /// light one-tap reflection (per the design doc — growth framed as a choice,
+  /// never therapy-speak). Returns an empty list when there is no hook to show,
+  /// so non-Creator / non-superhero stories are entirely unaffected.
+  List<Widget> _buildSagaCliffhanger({required AgeBandThemeData band}) {
+    final hook = widget.sagaNextHook?.trim();
+    if (hook == null || hook.isEmpty) return const [];
+
+    final accent = _highContrastMode ? Colors.white : band.accent;
+    // The card sits on the band's light cream `surface`, so text uses the
+    // on-light color (in high-contrast mode the card goes dark → white text).
+    final onSurface = _highContrastMode ? Colors.white : band.textOnLight;
+
+    return [
+      const SizedBox(height: 28),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        decoration: BoxDecoration(
+          color: band.surface.withValues(alpha: _highContrastMode ? 0.15 : 0.9),
+          borderRadius: BorderRadius.circular(band.cardRadiusBase),
+          border: Border.all(color: accent.withValues(alpha: 0.4), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'NEXT TIME…',
+              style: GoogleFonts.quicksand(
+                fontSize: 12 * _textScale,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+                color: accent,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hook,
+              style: GoogleFonts.quicksand(
+                fontSize: 16 * _textScale,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+                fontStyle: FontStyle.italic,
+                color: _highContrastMode ? Colors.white : band.textOnLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Before the next Issue — what does this chapter say about who your hero is becoming?',
+              style: GoogleFonts.quicksand(
+                fontSize: 13 * _textScale,
+                fontWeight: FontWeight.w500,
+                color: onSurface.withValues(alpha: 0.75),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (i, label) in const [
+                  'Braver',
+                  'Wiser',
+                  'Still figuring it out',
+                ].indexed)
+                  ChoiceChip(
+                    label: Text(label),
+                    selected: _sagaReflectionChoice == i,
+                    onSelected: (_) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _sagaReflectionChoice = i);
+                    },
+                    labelStyle: GoogleFonts.quicksand(
+                      fontSize: 13 * _textScale,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          _sagaReflectionChoice == i ? Colors.black : onSurface,
+                    ),
+                    selectedColor: accent,
+                    backgroundColor: accent.withValues(alpha: 0.12),
+                    side: BorderSide(color: accent.withValues(alpha: 0.4)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
   List<Widget> _buildEndOfStoryCtas({
     required AgeBandThemeData band,
     required bool isSprout,

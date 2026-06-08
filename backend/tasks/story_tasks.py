@@ -1056,6 +1056,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # Thread it through so a typed aspect (e.g. "ride a magic
                     # wand") actually shows up in a superhero story.
                     custom_elements=custom_elements,
+                    # MT-235 Phase 2: a returning Creator hero's persisted saga
+                    # (previous Issue's saga_state + issue count). The Creator
+                    # tier weaves a "Previously…" block from it; absent on Issue
+                    # #1. Only the Dart HeroSaga client populates this today.
+                    prior_saga=kwargs.get("prior_saga") or kwargs.get("saga_state"),
                 )
                 # (prompt_build_ms is computed after the if/elif chain below)
             # Use specialized prompts based on story mode flags
@@ -1839,6 +1844,26 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             if superhero_meta is not None:
                 # Frontend uses these IDs to track recent_villains/recent_problems
                 # and avoid back-to-back duplicates on the next /generate-story call.
+                #
+                # MT-235 Phase 2 (the returnable saga): the Creator (T9) tier
+                # emits a `saga_state` object {nemesis, nemesis_status,
+                # what_changed, next_hook} the model wrote for THIS Issue. Fold
+                # it onto superhero_meta so the Dart HeroSaga client can persist
+                # it and replay it as `prior_saga` on the next Issue. Absent /
+                # non-Creator stories leave this off. Names are restored so the
+                # child sees their own hero name in the continuity recap.
+                try:
+                    _saga_state = story_metadata.get("saga_state")
+                except NameError:
+                    _saga_state = None
+                if isinstance(_saga_state, dict) and _saga_state:
+                    try:
+                        _saga_state = json.loads(
+                            restore_hero_name(json.dumps(_saga_state), real_hero_name)
+                        )
+                    except (TypeError, ValueError):
+                        pass
+                    superhero_meta = {**superhero_meta, "saga_state": _saga_state}
                 story_payload["superhero_meta"] = superhero_meta
 
             # Persist Story row (skipped for anonymous — Story.user_id is NOT NULL

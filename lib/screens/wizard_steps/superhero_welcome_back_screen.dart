@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models.dart';
+import '../../models/hero_saga.dart';
 import '../../models/local/hero_profile_local.dart';
 import '../../services/superhero_portrait_store.dart';
 import '../../theme/age_band_theme.dart';
@@ -28,12 +29,34 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
   /// so existing callers without a band keep current behavior.
   final AgeBand band;
 
+  /// MT-235 Phase 2 (the returnable saga): the returning Creator hero's
+  /// persisted continuity. When present AND it has continuity (at least one
+  /// completed Issue), a "Previously…" recap card is shown above the greeting.
+  /// Null for younger bands and a brand-new Creator hero (Issue #1).
+  final HeroSaga? saga;
+
   const SuperheroWelcomeBackScreen({
     super.key,
     required this.wizardData,
     required this.profile,
     this.band = AgeBand.sprout,
+    this.saga,
   });
+
+  /// Humanizes the backend `nemesis_status` vocabulary into a teen-appropriate
+  /// recap phrase. Falls back to the raw value (cleaned) for any unknown code.
+  static String humanizeNemesisStatus(String? status) {
+    switch (status) {
+      case 'reconsidered':
+        return 'had a change of heart';
+      case 'stopped-and-accountable':
+        return 'was stopped and held accountable';
+      case 'still-at-large':
+        return 'is still out there';
+      default:
+        return (status ?? '').replaceAll('-', ' ').trim();
+    }
+  }
 
   static const _emblemEmoji = <String, String>{
     'star': '⭐',
@@ -99,7 +122,8 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: _gold, width: 5),
         boxShadow: [
-          BoxShadow(color: _gold.withAlpha(140), blurRadius: 32, spreadRadius: 4),
+          BoxShadow(
+              color: _gold.withAlpha(140), blurRadius: 32, spreadRadius: 4),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -177,6 +201,81 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     );
   }
 
+  /// "Previously on…" recap card for a returning Creator hero with continuity.
+  /// Shows the Issue number, the nemesis + humanized status, and teases the
+  /// next_hook. Returns null when there is no saga continuity to show.
+  Widget? _buildPreviouslyCard() {
+    final s = saga;
+    if (s == null || !s.hasContinuity) return null;
+
+    final lines = <Widget>[];
+    final nemesis = s.nemesis?.trim();
+    if (nemesis != null && nemesis.isNotEmpty) {
+      final status = humanizeNemesisStatus(s.nemesisStatus);
+      lines.add(Text(
+        status.isEmpty ? nemesis : '$nemesis $status.',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.fredoka(
+          color: Colors.white.withAlpha(230),
+          fontSize: 15,
+        ),
+      ));
+    }
+    final hook = s.nextHook?.trim();
+    if (hook != null && hook.isNotEmpty) {
+      lines.add(const SizedBox(height: 8));
+      lines.add(Text(
+        hook,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.fredoka(
+          color: _gold.withAlpha(235),
+          fontSize: 16,
+          fontStyle: FontStyle.italic,
+          height: 1.3,
+        ),
+      ));
+    }
+    if (lines.isEmpty) return null;
+
+    // The next Issue is the completed count + 1.
+    final nextIssue = s.issueNumber + 1;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(64),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _gold.withAlpha(110), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'PREVIOUSLY IN YOUR SAGA',
+            style: GoogleFonts.fredoka(
+              color: _gold.withAlpha(210),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...lines,
+          const SizedBox(height: 12),
+          Text(
+            'Issue #$nextIssue begins…',
+            style: GoogleFonts.fredoka(
+              color: Colors.white.withAlpha(170),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _colorHex[profile.costumeColor] ?? const Color(0xFF8E24AA);
@@ -195,8 +294,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     final invitation = isExplorer
         ? 'Ready for your next mission?'
         : 'Ready for another adventure?';
-    final startCta =
-        isExplorer ? 'Start the mission!' : 'Yes! Start adventure';
+    final startCta = isExplorer ? 'Start the mission!' : 'Yes! Start adventure';
     final editCta = isExplorer ? 'Redesign my hero' : 'Edit my hero';
 
     return Scaffold(
@@ -215,103 +313,117 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
       body: Container(
         decoration: BoxDecoration(gradient: gradient),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Hero badge: the saved AI portrait if we have one, otherwise
-                // the colored emblem badge. FutureBuilder loads the portrait
-                // persisted by the reveal screen (keyed by characterId).
-                FutureBuilder<String?>(
-                  future: SuperheroPortraitStore.load(profile.characterId),
-                  builder: (context, snapshot) {
-                    final uri = snapshot.data;
-                    final bytes = _decodePortrait(uri);
-                    if (bytes != null) {
-                      return _portraitBadge(bytes);
-                    }
-                    return _emblemBadge(color, emblem, hasCape, isRainbowCape);
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  greetingLine,
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white.withAlpha(220),
-                    fontSize: 20,
-                  ),
-                ),
-                Text(
-                  '$heroName!',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    color: _gold,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    shadows: const [
-                      Shadow(
-                        color: Colors.black54,
-                        blurRadius: 6,
-                        offset: Offset(2, 2),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  invitation,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white.withAlpha(220),
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _gold,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height -
+                    MediaQuery.of(context).padding.vertical -
+                    kToolbarHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // MT-235 Phase 2: "Previously in your saga" recap for a
+                    // returning Creator hero with continuity (Creator-only; null
+                    // saga / no continuity renders nothing).
+                    if (_buildPreviouslyCard() case final card?) card,
+                    // Hero badge: the saved AI portrait if we have one, otherwise
+                    // the colored emblem badge. FutureBuilder loads the portrait
+                    // persisted by the reveal screen (keyed by characterId).
+                    FutureBuilder<String?>(
+                      future: SuperheroPortraitStore.load(profile.characterId),
+                      builder: (context, snapshot) {
+                        final uri = snapshot.data;
+                        final bytes = _decodePortrait(uri);
+                        if (bytes != null) {
+                          return _portraitBadge(bytes);
+                        }
+                        return _emblemBadge(
+                            color, emblem, hasCape, isRainbowCape);
+                      },
                     ),
-                    onPressed: () => _startAdventure(context),
-                    child: Text(
-                      startCta,
+                    const SizedBox(height: 24),
+                    Text(
+                      greetingLine,
                       style: GoogleFonts.fredoka(
+                        color: Colors.white.withAlpha(220),
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _gold,
-                      side: const BorderSide(color: _gold, width: 2),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () => _editHero(context),
-                    child: Text(
-                      editCta,
+                    Text(
+                      '$heroName!',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.fredoka(
-                        fontSize: 18,
+                        color: _gold,
+                        fontSize: 30,
                         fontWeight: FontWeight.bold,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 6,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      invitation,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white.withAlpha(220),
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _gold,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () => _startAdventure(context),
+                        child: Text(
+                          startCta,
+                          style: GoogleFonts.fredoka(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _gold,
+                          side: const BorderSide(color: _gold, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () => _editHero(context),
+                        child: Text(
+                          editCta,
+                          style: GoogleFonts.fredoka(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
