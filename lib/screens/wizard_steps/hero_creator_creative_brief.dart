@@ -232,8 +232,12 @@ class CreativeBriefWidget extends StatelessWidget {
         girlAsset = 'assets/images/ui/adult/woman_character_white.webp';
         break;
       case AgeBand.creator:
-        boyAsset = 'assets/images/ui/creator/creator_white.webp';
-        girlAsset = 'assets/images/ui/creator/creator_white.webp';
+        // Bug fix: both genders previously pointed at one generic image
+        // (creator_white.webp), so the picker showed the same figure twice
+        // (read as two girls). Use the dedicated older-silhouette Creator
+        // gender art that already exists alongside the other bands'.
+        boyAsset = 'assets/images/ui/gender/gender_creator_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_creator_girl.webp';
         break;
       case AgeBand.sprout:
       case AgeBand.explorer:
@@ -649,7 +653,7 @@ class CreativeBriefWidget extends StatelessWidget {
               );
             }),
             ChoiceChip(
-              label: Text('CUSTOM PREMISE',
+              label: Text('✏️ MY OWN IDEA',
                   style: GoogleFonts.sourceSans3(
                     color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
                     fontSize: 10,
@@ -688,7 +692,7 @@ class CreativeBriefWidget extends StatelessWidget {
             maxLines: 2,
             style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'Describe your world or premise...',
+              hintText: 'Type anything — e.g. ride a magic carpet, win the lottery, pull off a daring heist...',
               hintStyle: TextStyle(
                   color: Colors.white.withAlpha(40),
                   fontStyle: FontStyle.italic),
@@ -746,14 +750,14 @@ class CreativeBriefWidget extends StatelessWidget {
                     onChanged();
                   }),
               GenreChip(
-                  label: '💕 Romance',
-                  value: 'romance',
-                  selected: wizardData.selectedGenre == 'romance',
+                  label: '🤝 Friendship',
+                  value: 'friendship',
+                  selected: wizardData.selectedGenre == 'friendship',
                   onTap: () {
                     wizardData.selectedGenre =
-                        wizardData.selectedGenre == 'romance'
+                        wizardData.selectedGenre == 'friendship'
                             ? null
-                            : 'romance';
+                            : 'friendship';
                     onChanged();
                   }),
               GenreChip(
