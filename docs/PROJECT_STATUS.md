@@ -182,6 +182,8 @@ Stripe monetization wiring (checkout + webhooks, Family tier, free-tier illustra
 
 ## Resources
 
+- **[Launch Readiness Tracker](../LAUNCH_READINESS.md)** — deduplicated P0/P1/P2 view across all 14 audits + the backlog; start here for "what's left before launch"
+- **[Recovery & Vault Runbook](../RECOVERY.md)** — emergency "prod down / founder unavailable" runbook + credential-vault structure (bus-factor P0)
 - [Master Launch Plan](MASTER_LAUNCH_PLAN.md)
 - [Business Plan](BUSINESS_PLAN.md)
 - [COPPA Audit](COPPA_AUDIT.md)

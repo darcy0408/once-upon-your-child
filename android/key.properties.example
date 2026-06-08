@@ -1,0 +1,15 @@
+# Android release signing — TEMPLATE.
+# Copy this to `android/key.properties` and fill in real values, THEN keep the
+# real file (and the .jks keystore) OUT of git — both are gitignored.
+# Full steps: docs/ANDROID_KEYSTORE_RUNBOOK.md
+#
+# android/app/build.gradle.kts auto-loads android/key.properties if it exists
+# and signs release builds with it; if absent it falls back to debug signing
+# (which Google Play will NOT accept).
+
+storePassword=CHANGEME
+keyPassword=CHANGEME
+keyAlias=upload
+# Path to the keystore file. Relative paths resolve from android/app/.
+# Put upload-keystore.jks in android/app/ (gitignored), or use an absolute path.
+storeFile=upload-keystore.jks

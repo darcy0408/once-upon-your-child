@@ -88,14 +88,56 @@ def _is_already_anonymized(user: User) -> bool:
     return user.password_hash == "DELETED" or email.endswith("@deleted.local")
 
 
+def _delete_stripe_customer(customer_id: str | None) -> None:
+    """Best-effort deletion of the Stripe customer for an erased account.
+
+    Erasure of local data is the legally-required action and must never be
+    blocked by a Stripe outage or misconfiguration, so every failure here is
+    logged and swallowed rather than raised (GDPR Art.17(2) / CCPA
+    §1798.105(c): controllers must propagate erasure to processors).
+    """
+    if not customer_id:
+        return
+    try:
+        import os
+
+        import stripe
+
+        if not getattr(stripe, "api_key", None):
+            # The web process sets this via init_stripe_api at boot, but the
+            # Celery worker (which runs the retention purge) does not, so resolve
+            # it here the same way config does. Env var is STRIPE_SECRET_KEY
+            # (STRIPE_API_KEY is an accepted alias) — see config/__init__.py.
+            stripe.api_key = os.getenv("STRIPE_SECRET_KEY") or os.getenv(
+                "STRIPE_API_KEY"
+            )
+        if not stripe.api_key:
+            logger.warning(
+                "Erasure: STRIPE_API_KEY not configured; could not delete "
+                "Stripe customer %s. Record it for manual deletion.",
+                customer_id,
+            )
+            return
+        stripe.Customer.delete(customer_id)
+        logger.info("Erasure: deleted Stripe customer %s", customer_id)
+    except Exception:
+        logger.exception(
+            "Erasure: failed to delete Stripe customer %s; local data was "
+            "still erased. Manual deletion at Stripe may be required.",
+            customer_id,
+        )
+
+
 def purge_user_data(user: User, *, commit: bool = True) -> None:
     """Delete all child content for ``user`` and anonymise the user row.
 
     This is the single source of truth for COPPA right-to-erasure and the
     data-retention purge job. It deletes characters, linear stories,
-    interactive stories (and their cascade), achievements and consent records,
-    then anonymises the user record and bumps ``token_version`` so any
-    outstanding access tokens are revoked.
+    interactive stories (and their cascade), achievements, consent records and
+    their transient verification codes, and the parent-authored hidden Big
+    Feelings guidance, then anonymises the user record, bumps ``token_version``
+    so any outstanding access tokens are revoked, and propagates the erasure to
+    Stripe (best-effort).
 
     The caller owns the transaction unless ``commit=True`` (the default), in
     which case this function commits. On any error the caller should roll back.
@@ -111,7 +153,8 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
         UserAchievement,
     )
     from backend.models.character import Character
-    from backend.models.consent_record import ConsentRecord
+    from backend.models.consent_record import ConsentRecord, ConsentVerificationCode
+    from backend.models.parent_hidden_context import ParentHiddenContext
     from backend.models.story import Story
 
     user_id = user.id
@@ -139,10 +182,20 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     UserAchievement.query.filter_by(user_id=user_id).delete()
     AchievementStats.query.filter_by(user_id=user_id).delete()
 
-    # --- Delete consent records ---
+    # --- Delete consent records + transient verification codes ---
+    # Codes carry an FK to consent_record.id, so they must go first.
+    ConsentVerificationCode.query.filter_by(user_id=user_id).delete()
     ConsentRecord.query.filter_by(user_id=user_id).delete()
 
+    # --- Delete parent-authored hidden Big Feelings guidance ---
+    # Child-sensitive emotional data (trigger / coping tool / repair goal);
+    # right-to-erasure must remove it (COPPA §312.7 / GDPR Art.17).
+    ParentHiddenContext.query.filter_by(user_id=user_id).delete()
+
     # --- Anonymize user record ---
+    # Capture the Stripe customer id before nulling it so erasure can be
+    # propagated to Stripe after the local transaction commits.
+    stripe_customer_id = user.stripe_customer_id
     anon_id = str(uuid.uuid4())[:8]
     user.username = f"deleted_{anon_id}"
     user.email = f"deleted_{anon_id}@deleted.local"
@@ -161,6 +214,9 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
 
     if commit:
         db.session.commit()
+
+    # Propagate erasure to Stripe (best-effort; never blocks local erasure).
+    _delete_stripe_customer(stripe_customer_id)
 
 
 def purge_inactive_accounts(inactive_days: int | None = None) -> dict:

@@ -1,0 +1,34 @@
+Field,Source,Destination,Retention,Lawful Basis,Child-Owned,PII Class
+Child first name,Welcome name input (welcome_screen.dart:986),SharedPreferences (_kUserNameKey); injected into prompt then scrubbed (story_tasks.py:1156) before Gemini,Until local delete; not persisted server-side as a column,VPC required (under-13) / contractual (13+),Yes,Identifier
+Declared age,Age picker (welcome_screen.dart:875),SharedPreferences (user_age); User.declared_age; ConsentRecord.child_age,Until erasure; nulled on purge_user_data (data_retention.py:150),VPC required (under-13) / contractual,Yes,Identifier
+is_under_13 flag,Derived from age (user_routes.py:196),User.is_under_13 (Postgres/Railway),Until erasure; reset on purge,VPC required (under-13),Yes,Inferred
+Character name,Character creation (character.py:9),Postgres Character.name; prompt to Gemini (scrubbed),Until erasure; deleted on purge (data_retention.py:136),VPC / contractual,Yes,Identifier
+Character age/gender/appearance,Character creation (character.py:10-25),Postgres Character; image prompts to Gemini/OpenRouter/Replicate/Cloudflare,Until erasure; deleted on purge,VPC / contractual,Yes,Sensitive
+Personality/fears/likes/dislikes/goals,Character creation (character.py:46-52),Postgres Character; prompt to Gemini,Until erasure; deleted on purge,VPC / contractual,Yes,Behavioral
+Siblings/friends/pets (family structure),Character creation (character.py:51-53),Postgres Character; prompt to Gemini,Until erasure; deleted on purge,VPC / contractual,Yes,Sensitive
+Comfort item,Character creation (character.py:55),Postgres Character; prompt to Gemini,Until erasure; deleted on purge,VPC / contractual,Yes,Sensitive
+Big feelings text,Feelings input (privacy_policy notice line 275),Prompt to Gemini; SharedPreferences (big_feelings_repair_goal),Transient per policy; SharedPreferences persists until local delete,VPC / contractual,Yes,Sensitive
+Parent hidden context (feeling/trigger/coping/repair goal),Parent Controls Big Feelings (character_routes.py:255),Postgres ParentHiddenContext; influences prompt to Gemini,NOT deleted on purge (PRIV-04 gap),VPC / legitimate interest (parent),Parent,Sensitive
+Feelings check-in emotion+intensity,Feelings Corner (feelings_analytics_service.dart:17),Firebase Analytics (consent+age>=13 gated only),Per Firebase retention (Unverified),Consent (analytics),Mixed,Inferred
+Photo for avatar,image_picker (avatar_routes.py:275),Uploaded to server then to AI image provider; NOT stored server-side,Not persisted server-side; transient,VPC + explicit photo opt-in,Yes,Sensitive
+Generated avatar image_base64,AI provider output (character.py:27),Postgres Character.avatar_data,Until erasure; deleted on purge,VPC / contractual,Yes,Sensitive
+Parent/guardian email,Consent screen (parental_consent_screen.dart:422),SharedPreferences (parent_email); ConsentRecord.parent_email; Resend (verification email),ConsentRecord deleted on purge; SharedPreferences persists; Resend (Unverified),Contractual / VPC mechanism,Parent,Identifier
+Account email (registered),Registration (user.py:12),Postgres User.email,Anonymized on purge (data_retention.py:148),Contractual,Parent,Identifier
+Username,Registration (user.py:11),Postgres User.username,Anonymized on purge,Contractual,Parent,Identifier
+Password hash,Registration (user.py:13),Postgres User.password_hash,Set to DELETED on purge,Contractual,Parent,Sensitive
+IP address (consent),request.remote_addr (user_routes.py:262),Postgres ConsentRecord.ip_address,Deleted on purge (ConsentRecord purged),Legitimate interest (VPC evidence),Mixed,Identifier
+IP address (audit log),request.remote_addr (audit.py:35),Postgres AuditLog.ip_address,NOT deleted on purge (PRIV-09); 90-day job is comment-only,Legitimate interest (security),Mixed,Identifier
+User-agent / request_id,app_helpers.py:234,Logs / breadcrumbs (scrubbed),Log retention (Unverified),Legitimate interest,Mixed,Behavioral
+Consent method/verified/policy_version,Consent flow (consent_record.py:34-54),Postgres ConsentRecord,Deleted on purge,Legal obligation (COPPA record),Parent,Identifier
+Consent verification code hash,Email round-trip (consent_record.py:103),Postgres ConsentVerificationCode,NOT deleted on purge (PRIV-04); 15-min expiry only,Legal obligation,Parent,Sensitive
+Stripe customer id,Checkout (user.py:27),Postgres User.stripe_customer_id; Stripe,Nulled locally on purge; NOT deleted at Stripe (PRIV-05),Contractual,Parent,Identifier
+Payment card data,Stripe Checkout (stripe_routes.py),Stripe only (never stored by app),Stripe retention (Unverified),Contractual,Parent,Sensitive
+Gemini API key (BYOK),BYOK wizard (user.py:37),Postgres User.gemini_api_key_encrypted (encrypted),Nulled on purge,Contractual,Parent,Sensitive
+Stories created count / usage counters,Generation (user.py:30-52),Postgres User,Reset on purge,Legitimate interest,Mixed,Behavioral
+Story title/theme/body,Generation (story_routes.py),Postgres Story; prompt/output via Gemini/ElevenLabs,Until erasure; deleted on purge,VPC / contractual,Yes,Behavioral
+Interactive story segments/choices,Pick-a-path (data_retention.py:120-130),Postgres InteractiveStory cascade,Deleted on purge,VPC / contractual,Yes,Behavioral
+Achievements/milestones,Gameplay (data_retention.py:138),Postgres UserAchievement/AchievementStats,Deleted on purge,Legitimate interest,Yes,Behavioral
+Screen-time limits / bedtime,Parent Controls (parental_consent_service.dart:15-18),SharedPreferences only,Until local delete,Legitimate interest (parent),Parent,Behavioral
+Story narration audio,Generated story text (privacy_policy line 322),ElevenLabs TTS,Transient (Unverified at ElevenLabs),VPC / contractual,Yes,Sensitive
+Crash/error diagnostics,SentryFlutter (main.dart:20),Sentry (consent+age>=13 gated; scrubbed),Sentry retention (Unverified),Legitimate interest,Mixed,Behavioral
+Analytics usage events,Firebase (firebase_analytics_service.dart:88),Firebase/Google Analytics (consent+age>=13 gated),Firebase retention (Unverified),Consent,Mixed,Behavioral
