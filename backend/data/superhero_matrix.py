@@ -740,6 +740,242 @@ ADVENTURER_VILLAIN_PROBLEMS: dict[str, list[str]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Creator-band (ages 12-14) matrix — "Hero Saga" Phase 1.
+# A comic-book city, not a fantasy realm. Antagonists are codenamed, morally
+# complex figures with a real point of view — a leaker who calls it justice, a
+# benefactor who controls heroes "for their own good", a vigilante who tramples
+# the innocent chasing the guilty. Tone is action + MYSTERY: the hero
+# investigates, out-thinks, de-escalates, and exposes the truth. Resolution is
+# ALWAYS non-violent — through courage, reasoning, empathy, teamwork, or
+# BOUNDARIES — NEVER through violence, weapons, killing, or fear.
+#
+# IMPORTANT (therapeutic): empathy is NOT universal redemption. Some villains
+# reconsider when genuinely reached; others — the manipulative or unsafe ones —
+# are simply STOPPED and held accountable without being harmed or humiliated.
+# The ``softens`` beat carries each villain's correct resolution: a changed
+# conviction for the reachable ones, a boundary/exposure/accountability for the
+# rest. We never imply a child is responsible for fixing someone who won't
+# change. No romance.
+# ---------------------------------------------------------------------------
+CREATOR_VILLAINS: dict[str, dict] = {
+    "cipher_zero": {
+        "name": "Cipher Zero",
+        "action": "leak every private secret in the city, certain that total transparency is the only real justice",
+        "softens": "sealed the leaks once the hero proved that privacy is dignity, not a cover for lies",
+    },
+    "the_optimizer": {
+        "name": "the Optimizer",
+        "action": "rewrite the city's systems to erase every risk — and every freedom along with it",
+        "softens": "powered down the controls after seeing that a life with no choices isn't safe, it's hollow",
+    },
+    "the_understudy": {
+        "name": "the Understudy",
+        "action": "sabotage the city's brightest stars after a lifetime of being the overlooked second-best",
+        "softens": "stepped out of the shadows the moment the hero made their real gift impossible to ignore",
+    },
+    "the_magnate": {
+        "name": "the Magnate",
+        "action": "buy up the old district and quietly erase the people who built it, sure he is 'improving' it",
+        "softens": "signed a plan that kept the community inside its own future once the hero showed what value really means",
+    },
+    "riptide": {
+        "name": "Riptide",
+        "action": "flood the harbor to take the coast back for the wildlife the city paved over",
+        "softens": "agreed to a fair plan that left room for both the city and the sea once someone finally listened",
+    },
+    "redact": {
+        "name": "Redact",
+        "action": "erase inconvenient history so the city can never be shamed by its past",
+        "softens": "restored the records after learning that facing the past is the only way to not repeat it",
+    },
+    "gridlock": {
+        "name": "Gridlock",
+        "action": "freeze the whole city's transit to force everyone to stop ignoring a danger they caused",
+        "softens": "let the city move again the moment the real hazard was finally taken seriously and fixed",
+    },
+    "the_mirror": {
+        "name": "the Mirror",
+        "action": "expose powerful hypocrites by stealing their reputations — ruining innocent bystanders in the crossfire",
+        "softens": "was stopped and its reputation-thefts undone — the innocent cleared and the record set straight — held to account without being humiliated, even though it never fully owned the harm",
+    },
+    "nightjar": {
+        "name": "Nightjar",
+        "action": "hunt wrongdoers as a vigilante, trampling the law and the innocent in the chase",
+        "softens": "was stopped before crossing the final line and made to answer for the people it hurt — the hero held the boundary instead of becoming what it chased",
+    },
+    "the_benefactor": {
+        "name": "the Benefactor",
+        "action": "secretly pull the strings of the city's heroes like puppets, 'for their own good'",
+        "softens": "had its hidden strings cut and its control exposed to the whole city, so it could no longer puppet anyone — whether or not it ever admitted it was wrong",
+    },
+}
+
+CREATOR_PROBLEMS: dict[str, dict] = {
+    "expose_the_conspiracy": {
+        "name": "Expose the conspiracy",
+        "verb": "uncover",
+        "summary": "piece together and reveal a hidden scheme",
+    },
+    "clear_the_framed": {
+        "name": "Clear the framed",
+        "verb": "prove the innocence of",
+        "summary": "prove an innocent person was set up",
+    },
+    "de_escalate_standoff": {
+        "name": "Defuse the standoff",
+        "verb": "talk down",
+        "summary": "end a dangerous standoff without force",
+    },
+    "protect_the_source": {
+        "name": "Protect the source",
+        "verb": "safeguard",
+        "summary": "keep a vulnerable witness safe",
+    },
+    "outwit_the_mastermind": {
+        "name": "Outwit the mastermind",
+        "verb": "out-think",
+        "summary": "beat a clever plan with a cleverer one",
+    },
+    "broker_the_deal": {
+        "name": "Broker the deal",
+        "verb": "negotiate",
+        "summary": "find terms both sides can live with",
+    },
+    "reveal_the_cover_up": {
+        "name": "Reveal the cover-up",
+        "verb": "bring to light",
+        "summary": "make a buried truth public",
+    },
+    "win_back_trust": {
+        "name": "Win back trust",
+        "verb": "win back",
+        "summary": "rebuild trust the hero or city broke",
+    },
+    "rescue_without_harm": {
+        "name": "Rescue without harm",
+        "verb": "get everyone out safely",
+        "summary": "save people while harming no one — not even the villain",
+    },
+    "choose_the_harder_right": {
+        "name": "Choose the harder right",
+        "verb": "make the costly right call for",
+        "summary": "do the right thing when it costs the hero something",
+    },
+}
+
+# Creator powers reuse the 8 base IDs (so the existing picker keeps working)
+# with Creator-tier names/verbs, plus 2 Creator-only powers (strategist,
+# gadgeteer) tuned to the action+mystery register. A deliberately curated mix
+# across lanes — movement, force, perception, influence, empathy, mind, tech —
+# so every pick plays differently. Powers win through wits and heart, not force.
+CREATOR_POWERS: dict[str, dict] = {
+    "super_speed": {
+        "name": "Overclock",
+        "verb": "move faster than the moment",
+        "ideal": "gridlock",
+        "also": ["the_optimizer", "riptide", "the_mirror", "nightjar"],
+        "primary_problem": "rescue_without_harm",
+    },
+    "flying": {
+        "name": "Skyline",
+        "verb": "take the high vantage",
+        "ideal": "riptide",
+        "also": ["gridlock", "the_magnate", "redact", "the_benefactor"],
+        "primary_problem": "reveal_the_cover_up",
+    },
+    "super_strength": {
+        "name": "Kinetic",
+        "verb": "move the immovable",
+        "ideal": "the_optimizer",
+        "also": ["gridlock", "the_magnate", "riptide", "redact"],
+        "primary_problem": "rescue_without_harm",
+    },
+    "super_hearing": {
+        "name": "Signal Sense",
+        "verb": "catch the whisper under the noise",
+        "ideal": "the_mirror",
+        "also": ["cipher_zero", "redact", "nightjar", "the_understudy"],
+        "primary_problem": "expose_the_conspiracy",
+    },
+    "super_smile": {
+        "name": "Magnetism",
+        # NOT mind-control: this power inspires cooperation, steadies courage,
+        # and helps people actually hear each other — it never overrides anyone's
+        # choices. The T9 prompt must enforce this.
+        "verb": "rally people to pull together and hear each other",
+        "ideal": "the_understudy",
+        "also": ["the_magnate", "the_mirror", "the_benefactor", "riptide"],
+        "primary_problem": "win_back_trust",
+    },
+    "super_hugs": {
+        "name": "Anchor",
+        "verb": "stand with them when it's hardest",
+        "ideal": "nightjar",
+        "also": ["the_understudy", "the_mirror", "the_benefactor", "gridlock"],
+        "primary_problem": "win_back_trust",
+    },
+    "super_whisper": {
+        "name": "Cool Head",
+        "verb": "speak calm into the chaos",
+        "ideal": "the_benefactor",
+        "also": ["nightjar", "gridlock", "the_optimizer", "cipher_zero"],
+        "primary_problem": "de_escalate_standoff",
+    },
+    "super_sharing": {
+        "name": "Equalizer",
+        "verb": "make it fair for everyone",
+        "ideal": "the_magnate",
+        "also": ["redact", "riptide", "the_optimizer", "cipher_zero"],
+        "primary_problem": "broker_the_deal",
+    },
+    # Creator-only powers — frontend exposes these only when band==creator.
+    "strategist": {
+        "name": "Mastermind",
+        "verb": "out-plan the entire scheme",
+        "ideal": "the_optimizer",
+        "also": ["the_benefactor", "cipher_zero", "gridlock", "the_mirror"],
+        "primary_problem": "outwit_the_mastermind",
+    },
+    "gadgeteer": {
+        "name": "Technomancer",
+        "verb": "engineer the perfect solve",
+        "ideal": "cipher_zero",
+        "also": ["redact", "the_benefactor", "gridlock", "the_mirror"],
+        "primary_problem": "expose_the_conspiracy",
+    },
+}
+
+CREATOR_VILLAIN_PROBLEMS: dict[str, list[str]] = {
+    "cipher_zero": [
+        "expose_the_conspiracy",
+        "protect_the_source",
+        "reveal_the_cover_up",
+    ],
+    "the_optimizer": [
+        "outwit_the_mastermind",
+        "de_escalate_standoff",
+        "choose_the_harder_right",
+    ],
+    "the_understudy": ["win_back_trust", "broker_the_deal", "choose_the_harder_right"],
+    "the_magnate": ["broker_the_deal", "reveal_the_cover_up", "win_back_trust"],
+    "riptide": ["broker_the_deal", "reveal_the_cover_up", "rescue_without_harm"],
+    "redact": [
+        "reveal_the_cover_up",
+        "expose_the_conspiracy",
+        "choose_the_harder_right",
+    ],
+    "gridlock": ["rescue_without_harm", "de_escalate_standoff", "reveal_the_cover_up"],
+    "the_mirror": ["clear_the_framed", "expose_the_conspiracy", "win_back_trust"],
+    "nightjar": ["de_escalate_standoff", "choose_the_harder_right", "clear_the_framed"],
+    "the_benefactor": [
+        "win_back_trust",
+        "outwit_the_mastermind",
+        "de_escalate_standoff",
+    ],
+}
+
+
 _BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
     "sprout": (VILLAINS, PROBLEMS, POWERS, VILLAIN_PROBLEMS),
     "explorer": (
@@ -753,6 +989,12 @@ _BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
         ADVENTURER_PROBLEMS,
         ADVENTURER_POWERS,
         ADVENTURER_VILLAIN_PROBLEMS,
+    ),
+    "creator": (
+        CREATOR_VILLAINS,
+        CREATOR_PROBLEMS,
+        CREATOR_POWERS,
+        CREATOR_VILLAIN_PROBLEMS,
     ),
 }
 
@@ -904,6 +1146,10 @@ __all__ = [
     "ADVENTURER_PROBLEMS",
     "ADVENTURER_POWERS",
     "ADVENTURER_VILLAIN_PROBLEMS",
+    "CREATOR_VILLAINS",
+    "CREATOR_PROBLEMS",
+    "CREATOR_POWERS",
+    "CREATOR_VILLAIN_PROBLEMS",
     "pick_pairing",
     "get_band_tables",
     "apply_nemesis_override",

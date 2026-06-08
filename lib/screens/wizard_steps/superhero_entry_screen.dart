@@ -43,9 +43,9 @@ class SuperheroEntryScreen extends ConsumerWidget {
     final characterId = resolveCharacterId(wizardData);
     final async = ref.watch(heroProfileProvider(characterId));
     // Derive band from the character's age. The Superhero flow supports
-    // Sprout (3-5), Explorer (6-8), and Adventurer (9-12) — each with its own
-    // palette, copy register, power roster, and backend prompt tier. Creator+
-    // (12+) has no superhero tier yet and is not offered the entry button.
+    // Sprout (3-5), Explorer (6-8), Adventurer (9-12), and Creator (13-14 —
+    // Hero Saga) — each with its own palette, copy register, power roster, and
+    // backend prompt tier (T9_SUPERHERO_CREATOR). 15+ has no tier yet.
     final band = ageBandFromAge(wizardData.characterAge);
 
     return async.when(

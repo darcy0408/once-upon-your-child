@@ -165,5 +165,6 @@ def test_get_band_tables_returns_correct_set():
 
 
 def test_get_band_tables_unknown_band_falls_back_to_sprout():
-    v, _, _, _ = get_band_tables("creator")  # not a superhero band
+    # "adult" has no superhero tier yet; any unrecognized band falls back.
+    v, _, _, _ = get_band_tables("nonexistent_band")
     assert v is VILLAINS

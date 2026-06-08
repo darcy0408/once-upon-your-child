@@ -51,8 +51,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _ColorOption(id: 'pink', label: 'Pink', color: Color(0xFFEC407A)),
   ];
 
-  // C2: Adventurer (9-12) sees cooler "suit theme" names instead of plain color
-  // words — same color ids, just a less babyish label. Keyed by color id.
+  // C2: Adventurer (9-12) and Creator (13-14) see cooler "suit theme" names
+  // instead of plain color words — same color ids, just a less babyish label.
   static const Map<String, String> _adventurerColorNames = {
     'red': 'Inferno',
     'blue': 'Frostbite',
@@ -62,9 +62,10 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     'pink': 'Nova',
   };
 
-  /// Display label for a costume color, band-aware (Adventurer gets suit themes).
+  /// Display label for a costume color, band-aware (Adventurer + Creator get
+  /// suit themes; younger bands keep plain color words).
   String _colorLabel(_ColorOption c) =>
-      widget.band == AgeBand.adventurer
+      (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
           ? (_adventurerColorNames[c.id] ?? c.label)
           : c.label;
 
@@ -91,7 +92,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   ];
 
   List<_EmblemOption> get _emblems => (widget.band == AgeBand.explorer ||
-          widget.band == AgeBand.adventurer)
+          widget.band == AgeBand.adventurer ||
+          widget.band == AgeBand.creator)
       ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
       : _baseEmblems;
 

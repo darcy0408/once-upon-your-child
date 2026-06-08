@@ -165,13 +165,51 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     'super_sharing': _BandCopy('Fair Hand', 'Make it fair for everyone.'),
   };
 
+  // Creator adds two extra power IDs (must match backend CREATOR_POWERS).
+  static const List<_PowerOption> _creatorExtraPowers = [
+    _PowerOption(
+      id: 'strategist',
+      emoji: '🧠',
+      name: 'Mastermind',
+      description: 'Out-plan the whole scheme.',
+    ),
+    _PowerOption(
+      id: 'gadgeteer',
+      emoji: '🛠️',
+      name: 'Technomancer',
+      description: 'Engineer the perfect solve.',
+    ),
+  ];
+
+  // Creator-tier (13-14) display overrides for the shared 8 power IDs. Names
+  // must match the backend `CREATOR_POWERS` map so the picked power reads
+  // identically in the generated Issue. Cutesy emoji are overridden so the
+  // grid doesn't read young for this band.
+  static const Map<String, _BandCopy> _creatorNameOverrides = {
+    'super_speed': _BandCopy('Overclock', 'Move faster than the moment.'),
+    'flying': _BandCopy('Skyline', 'Own the high vantage.'),
+    'super_strength': _BandCopy('Kinetic', 'Move the immovable.'),
+    'super_hearing':
+        _BandCopy('Signal Sense', 'Catch the whisper under the noise.', emoji: '📡'),
+    'super_smile':
+        _BandCopy('Magnetism', 'Rally people to pull together.', emoji: '🧲'),
+    'super_hugs':
+        _BandCopy('Anchor', 'Stand with them when it counts.', emoji: '⚓'),
+    'super_whisper':
+        _BandCopy('Cool Head', 'Speak calm into the chaos.', emoji: '😌'),
+    'super_sharing':
+        _BandCopy('Equalizer', 'Make it fair for everyone.', emoji: '⚖️'),
+  };
+
   /// Returns the band-appropriate power list, with band renames applied.
   List<_PowerOption> get powers {
     final overrides = widget.band == AgeBand.explorer
         ? _explorerNameOverrides
         : widget.band == AgeBand.adventurer
             ? _adventurerNameOverrides
-            : null;
+            : widget.band == AgeBand.creator
+                ? _creatorNameOverrides
+                : null;
     final base = _sproutPowers.map((p) {
       if (overrides == null) return p;
       final override = overrides[p.id];
@@ -187,6 +225,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       base.addAll(_explorerExtraPowers);
     } else if (widget.band == AgeBand.adventurer) {
       base.addAll(_adventurerExtraPowers);
+    } else if (widget.band == AgeBand.creator) {
+      base.addAll(_creatorExtraPowers);
     }
     return base;
   }
@@ -241,7 +281,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     // cancelable — a null result aborts the confirm so the kid can re-pick.
     var displayName = formulaName;
     final isOlder = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator;
     if (isOlder) {
       final result = await _showNameAndCatchphraseChooser(
         formulaName: formulaName,
@@ -251,9 +292,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       wd.heroCatchphrase = result.catchphrase;
     }
 
-    // C4: Adventurer (9-12) optional nemesis pick. Dismiss = null = the server
-    // surprise-picks, so a null result does NOT abort the confirm.
-    if (widget.band == AgeBand.adventurer) {
+    // C4: Adventurer (9-12) + Creator (13-14) optional nemesis pick. Dismiss =
+    // null = the server surprise-picks, so a null result does NOT abort confirm.
+    if (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator) {
       wd.heroNemesisId = await _showNemesisPicker(initial: wd.heroNemesisId);
       if (!mounted) return;
     }
@@ -317,9 +358,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     Navigator.of(context).pop(true);
   }
 
-  HeroNameRegister get _nameRegister => widget.band == AgeBand.adventurer
-      ? HeroNameRegister.adventurer
-      : HeroNameRegister.explorer;
+  HeroNameRegister get _nameRegister =>
+      (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
+          ? HeroNameRegister.adventurer
+          : HeroNameRegister.explorer;
 
   /// B2 + B3: shows a bottom sheet letting Explorer/Adventurer kids pick a
   /// funny codename (generated options + the "{power} {name}" formula option +
@@ -350,6 +392,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _NemesisPickerSheet(
         initial: initial,
+        nemeses: widget.band == AgeBand.creator
+            ? _creatorNemeses
+            : _adventurerNemeses,
         gradient: themeForBand(widget.band).backgroundGradient,
       ),
     );
@@ -360,7 +405,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     final hasSelection = _selectedPowerId != null;
     // Explorer + Adventurer get the older, less babyish copy.
     final isOlder = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator;
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = isOlder ? 'Choose your power' : 'Pick your power!';
     final heading = isOlder
@@ -979,12 +1025,44 @@ const List<_Nemesis> _adventurerNemeses = [
       'Walls off the old quarter to keep every outsider away after being hurt once.', '🔒'),
 ];
 
+/// Creator (13-14) "Hero Saga" arch-villain roster — ids + names mirror backend
+/// CREATOR_VILLAINS (backend/data/superhero_matrix.py). Blurbs lead with each
+/// villain's BELIEF, so a 13-14 picks a nemesis whose argument they can almost
+/// agree with; the backend carries the full motive + resolution.
+const List<_Nemesis> _creatorNemeses = [
+  _Nemesis('cipher_zero', 'Cipher Zero',
+      'Leaks every secret in the city, certain that total transparency is the only real justice.', '🛰️'),
+  _Nemesis('the_optimizer', 'the Optimizer',
+      'Rewrites the city to erase every risk — and every freedom along with it.', '⚙️'),
+  _Nemesis('the_understudy', 'the Understudy',
+      "Sabotages the city's stars after a lifetime of being the overlooked second-best.", '🎭'),
+  _Nemesis('the_magnate', 'the Magnate',
+      "Buys up the old district and erases the people who built it, sure he's improving it.", '💰'),
+  _Nemesis('riptide', 'Riptide',
+      'Floods the harbor to take the coast back for the wildlife the city paved over.', '🌊'),
+  _Nemesis('redact', 'Redact',
+      'Erases inconvenient history so the city can never be shamed by its past.', '▪️'),
+  _Nemesis('gridlock', 'Gridlock',
+      'Freezes the whole city to force everyone to face a danger they keep ignoring.', '🚦'),
+  _Nemesis('the_mirror', 'the Mirror',
+      'Exposes powerful hypocrites — but ruins innocent bystanders in the crossfire.', '🪞'),
+  _Nemesis('nightjar', 'Nightjar',
+      'A vigilante who hunts wrongdoers, trampling the law and the innocent in the chase.', '🦅'),
+  _Nemesis('the_benefactor', 'the Benefactor',
+      "Secretly controls the city's heroes like puppets, 'for their own good.'", '🎩'),
+];
+
 /// C4 nemesis picker bottom sheet. Pops the chosen villain id, or null for
 /// "Surprise me" / dismissed.
 class _NemesisPickerSheet extends StatefulWidget {
   final String? initial;
+  final List<_Nemesis> nemeses;
   final Gradient gradient;
-  const _NemesisPickerSheet({required this.initial, required this.gradient});
+  const _NemesisPickerSheet({
+    required this.initial,
+    required this.nemeses,
+    required this.gradient,
+  });
 
   @override
   State<_NemesisPickerSheet> createState() => _NemesisPickerSheetState();
@@ -1038,7 +1116,7 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                       title: 'Surprise me',
                       blurb: 'Let the story pick a villain for you.',
                     ),
-                    for (final n in _adventurerNemeses)
+                    for (final n in widget.nemeses)
                       _tile(
                         selected: _selected == n.id,
                         onTap: () => setState(() => _selected = n.id),

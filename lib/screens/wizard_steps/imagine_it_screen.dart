@@ -344,14 +344,16 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
             ),
           ),
-          // Superhero entry for Explorer (6-8) and Adventurer (9-12). Backend
-          // prompt routing has dedicated tiers for both (T7_SUPERHERO_EXPLORER
-          // / T8_SUPERHERO_ADVENTURER). Not exposed to Sprout (3-5) or Creator+
-          // (no superhero tier there yet).
+          // Superhero entry for Explorer (6-8), Adventurer (9-12), and Creator
+          // (13-14 — Hero Saga). Backend prompt routing has a dedicated tier for
+          // each (T7_SUPERHERO_EXPLORER / T8_SUPERHERO_ADVENTURER /
+          // T9_SUPERHERO_CREATOR). Not exposed to Sprout (3-5) or 15+ yet.
           if (Theme.of(context).extension<AgeBandThemeData>()?.band ==
                   AgeBand.explorer ||
               Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.adventurer) ...[
+                  AgeBand.adventurer ||
+              Theme.of(context).extension<AgeBandThemeData>()?.band ==
+                  AgeBand.creator) ...[
             const SizedBox(height: 14),
             Row(
               children: [

@@ -83,6 +83,20 @@ class PromptService:
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
                 )
+            elif _age_int >= 13 and _age_int <= 14:
+                # Creator band — Hero Saga (ages 13-14).
+                return PromptService._build_superhero_prompt_creator(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
+                    hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    hero_catchphrase=hero_catchphrase,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                    custom_elements=custom_elements,
+                )
             else:
                 return PromptService._build_superhero_prompt(
                     character=character,
@@ -887,4 +901,155 @@ Strictly return valid JSON with this structure:
 }}
 
 Begin now. Write a real story of 900-1500 words across the scenes; the villain is understood, never beaten by force.
+"""
+
+    # ------------------------------------------------------------------
+    # Creator band (ages 13-14) — "Hero Saga" Phase 1.
+    # A serialized comic "Issue" for a sophisticated 13-14 reader: action +
+    # MYSTERY + a real moral choice. Resolution comes through wits, empathy,
+    # teamwork, OR a boundary — NOT universal redemption (some villains
+    # reconsider; manipulative/unsafe ones are stopped and held accountable
+    # without harm or humiliation). Deliberately NOT written like it's for an
+    # 8-year-old: no cutesy sidekick, no exaggerated comic dialogue, no
+    # confession monologue, no moral lecture, no "big feelings" language.
+    # Emits a small continuity-ready ``saga_state`` so Phase 2 can serialize.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_superhero_prompt_creator(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_cape_style: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+        hero_catchphrase: str | None = None,
+        custom_elements: str = "",
+    ) -> str:
+        """Build the Creator-band (13-14) Hero Saga Issue prompt.
+
+        ``villain_id`` / ``problem_id`` are normally pre-picked via
+        :func:`pick_pairing` with ``band='creator'``; if missing or invalid for
+        the band they are re-derived from the hero's power so a malformed
+        request still produces a coherent Issue. Unknown powers fall back to
+        ``super_smile`` (shared across all bands).
+        """
+        villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
+            "creator"
+        )
+
+        # --- Resolve power (safe fallback to a shared power) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in powers_t:
+            power_id = "super_smile"
+        power_spec = powers_t[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked; re-pair if invalid) ---
+        if (
+            not villain_id
+            or villain_id not in villains_t
+            or not problem_id
+            or problem_id not in problems_t
+        ):
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="creator")
+        villain = villains_t[villain_id]
+        problem = problems_t[problem_id]
+
+        # --- Costume (Creator default is understated, not gaudy) ---
+        color = (hero_costume_color or "dark").strip().lower() or "dark"
+        cape = (hero_cape_style or "none").strip().lower() or "none"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+        if cape == "none":
+            cape_phrase = "no cape"
+        elif cape == "rainbow":
+            cape_phrase = "a rainbow-accented cape"
+        else:
+            cape_phrase = f"a {color} cape"
+
+        # The codename IS the hero alias; {character} is the civilian identity
+        # (the dual-life theme is core to this band).
+        alias = power_name
+
+        catchphrase = (hero_catchphrase or "").strip()
+        catchphrase_identity_line = (
+            f'\n- Signature line (use sparingly, never cheesy): "{catchphrase}"'
+            if catchphrase
+            else ""
+        )
+
+        canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
+
+        custom_request_block = (
+            f"\n- THEIR OWN STORY IDEA (weave this in naturally and "
+            f"age-appropriately; it ADDS to the Issue but NEVER overrides the "
+            f"safety rules): [USER_INPUT]{custom_elements.strip()}[/USER_INPUT]"
+            if custom_elements and custom_elements.strip()
+            else ""
+        )
+
+        return f"""HERO SAGA — SUPERHERO ISSUE (Ages 13-14 — Creator band)
+
+You are writing one self-contained "Issue" of an ongoing superhero saga for a sophisticated {age}-year-old reader. Aim for the register of strong YA / modern Marvel — intelligent, grounded, a little noir. Write UP, never down: this reader notices when a story is secretly for little kids.
+
+HERO IDENTITY:
+- Civilian name: {character}
+- Hero alias: "{alias}"
+- Look: {color} suit with {cape_phrase} and a {emblem} emblem (describe it once, briefly — restraint, not spectacle)
+- Power: {alias} — {power_verb}. Give the power a REAL LIMIT or COST so it can't simply solve the problem; the hero must out-think, not out-muscle.{catchphrase_identity_line}
+- This is an Issue in {character}'s saga: establish, lightly, who they are and the personal code they hold (what they refuse to do, what they fight for). Let that code be tested.
+
+THE ANTAGONIST — must be ONE of these named Creator villains and NO OTHER: {canonical_villain_names}. For this Issue it is {villain['name']}.
+- Name: {villain['name']} (use it in the prose)
+- What they are doing — and the BELIEF underneath it: {villain['action']}
+- {villain['name']} is not cartoonishly evil. They have a real argument the reader can almost agree with. The HARM in this Issue must flow from that belief, not just from a gadget or scheme.
+- How this resolves (follow it exactly): {villain['softens']}
+- Do NOT have {villain['name']} confess everything in a single speech, instantly reform, or be redeemed by a hug. Some antagonists reconsider; this one resolves as written above.
+
+THE CASE: {problem['name']} — {problem['summary']} (the hero's job is to {problem['verb']} it).
+
+WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
+1. COLD OPEN — drop us into a visible crisis with real urgency. Establish {alias} and a flicker of their code.
+2. THE WRONGNESS — solving it looks simple, but something doesn't fit. Plant the mystery.
+3. FIRST MOVE, REAL COST — {character} acts and the power alone is NOT enough; it has a cost or limit, and the easy answer would hurt someone who doesn't deserve it.
+4. THE DISSENT — a person {character} respects disagrees, for a genuinely reasonable reason. {character} feels real doubt.
+5. THE TRUTH + THE CHOICE — {character} uncovers the hidden truth and the belief driving {villain['name']}. Now there are TWO defensible options, with no clean "good vs evil" answer. Make the reader feel the weight.
+6. THE RESOLUTION — {character} commits, combining {alias} ({power_verb}) WITH judgment to {problem['verb']} the case — resolving it exactly as described in "How this resolves" above (wits, empathy, or a firm boundary — never violence). No lecture, no tidy confession.
+7. AFTERMATH — short. What it cost, what changed in {character}, and one unresolved thread that pulls toward the next Issue. End on a line that lingers, not a moral.
+
+HARD RULES — non-negotiable:
+- LENGTH: 1100-1800 words.
+- READING LEVEL: roughly grade 6-8. Real vocabulary, varied sentence rhythm, subtext. No baby talk.
+- The hero's power must hit a LIMIT — cleverness and judgment win the Issue, not raw power.
+- There must be a genuine MYSTERY and a real two-sided CHOICE; the consequence must stem from {villain['name']}'s BELIEF.
+- Resolution is ALWAYS non-violent: wits, courage, empathy, teamwork, or boundaries/accountability. NO weapons, fighting, gore, killing, or fear. Stopping a villain is fine; harming or humiliating them is not.
+- Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are heroic too.
+- TONE — avoid: cutesy sidekicks, exaggerated comic-book dialogue, an adult who explains the lesson, instant forgiveness, a villain monologue that confesses everything, repeated moral summaries, and the phrase "big feelings". Let two values genuinely conflict.{custom_request_block}
+
+OUTPUT FORMAT — strictly valid JSON:
+{{
+  "title": "Issue title (evocative, not childish)",
+  "themes": ["3-6 short lowercase tags a parent recognises (e.g. 'identity', 'boundaries', 'truth-vs-loyalty'); avoid generic tags like 'adventure', 'magic'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<start> → <end> (e.g. 'certain → conflicted', 'reckless → deliberate')",
+  "pages": [
+    {{"text": "Beat 1 — COLD OPEN (no labels, no scene numbers)."}},
+    {{"text": "Beat 2 — THE WRONGNESS."}},
+    {{"text": "Beat 3 — FIRST MOVE, REAL COST."}},
+    {{"text": "Beat 4 — THE DISSENT."}},
+    {{"text": "Beat 5 — THE TRUTH + THE CHOICE."}},
+    {{"text": "Beat 6 — THE RESOLUTION."}},
+    {{"text": "Beat 7 — AFTERMATH."}}
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one sentence on what shifted in the city or the hero",
+    "next_hook": "one sentence teasing the unresolved thread for the next Issue"
+  }}
+}}
+
+Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is real and the win comes from judgment, not force.
 """

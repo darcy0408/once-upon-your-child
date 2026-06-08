@@ -194,9 +194,31 @@ void main() {
     expect(find.text('🦸'), findsOneWidget);
   });
 
-  testWidgets('Creator band does NOT show the superhero button',
+  testWidgets('Creator band shows the "Be a superhero!" button',
       (tester) async {
-    await expectNoSuperheroButton(tester, band: AgeBand.creator);
+    // The Creator (13-14) "Hero Saga" superhero entry was added alongside
+    // Explorer/Adventurer (backend tier T9_SUPERHERO_CREATOR). imagine_it_screen
+    // renders the gated button for explorer/adventurer/creator.
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = _makeWizardData(age: 13);
+    final imagineCtl = TextEditingController();
+    final wishCtl = TextEditingController();
+    addTearDown(imagineCtl.dispose);
+    addTearDown(wishCtl.dispose);
+
+    await tester.pumpWidget(_bootstrap(
+      wizardData: wd,
+      band: AgeBand.creator,
+      imagineCtl: imagineCtl,
+      wishCtl: wishCtl,
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Be a superhero!'), findsOneWidget);
+    expect(find.text('🦸'), findsOneWidget);
   });
 
   testWidgets('Adolescent band does NOT show the superhero button',
