@@ -67,6 +67,16 @@ jobs:
           cd ios
           pod install --repo-update
 
+      # MT-239: SwiftPM's binary-artifact cache can land a partial/duplicate
+      # Sentry.xcframework.zip ("already exists in file system"), which fails
+      # `xcodebuild` package resolution and is NOT cleared by a plain re-run.
+      # Clear it before building so a poisoned entry can't block the build.
+      - name: Clear poisoned SwiftPM artifact cache (MT-239)
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf ios/.build
+
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 

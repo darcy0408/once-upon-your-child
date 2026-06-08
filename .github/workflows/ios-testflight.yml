@@ -63,6 +63,14 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
 
+      # MT-239: clear SwiftPM's binary-artifact cache before resolving packages,
+      # so a poisoned/duplicate Sentry.xcframework.zip can't fail the build.
+      - name: Clear poisoned SwiftPM artifact cache (MT-239)
+        run: |
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
+          rm -rf ios/.build
+
       - name: Build signed IPA for App Store Connect
         env:
           IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
