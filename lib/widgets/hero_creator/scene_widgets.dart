@@ -56,7 +56,20 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
-    const asset = 'assets/images/scenarios/imagine_it_btn_pressed.webp';
+    // Audit S-02: the shared Imagine It art is a ~5-6yo girl with a picture
+    // book — far too young for the older bands. Each band from Adventurer up
+    // serves its own age-tuned, textless dreamscape; Sprout/Explorer keep the
+    // original. (Resolver mirrors sceneAsset() in hero_creator_scene_page.dart.)
+    final sceneArtDir = switch (band.band) {
+      AgeBand.adventurer => 'adventurer',
+      AgeBand.creator => 'creator',
+      AgeBand.adolescent => 'adolescent',
+      AgeBand.adult => 'adult',
+      _ => null,
+    };
+    final asset = sceneArtDir != null
+        ? 'assets/images/scenarios/$sceneArtDir/imagine_it.webp'
+        : 'assets/images/scenarios/imagine_it_btn_pressed.webp';
 
     return Semantics(
       button: true,

@@ -181,6 +181,10 @@ flutter:
     - assets/images/scenes/adolescent/
     - assets/images/scenes/adult/
     - assets/images/scenarios/
+    - assets/images/scenarios/adventurer/
+    - assets/images/scenarios/creator/
+    - assets/images/scenarios/adolescent/
+    - assets/images/scenarios/adult/
     - assets/images/themes/
     - assets/feelings_faces/
     - assets/mood_lanterns/

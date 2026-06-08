@@ -101,32 +101,60 @@ class HeroScenePage extends StatelessWidget {
     String? descriptionFor(String id) =>
         isAdventurer ? scenarioById(id)?.descriptionForAge(age) : null;
 
+    // Audit S-02 (age-review-choose-your-setting-adventurer-20260605): the
+    // shared scenario art was authored for the YOUNG bands and reads far too
+    // young for the older bands — picture-book owl, ~5-6yo girl on the Imagine
+    // It card. Each band from Adventurer up gets its own age-tuned art set
+    // (Adventurer cinematic magical-realism; Creator clean editorial; teen
+    // cinematic-teal; Adult refined minimal/amber), textless and never babyish.
+    // Sprout/Explorer keep the original shared art. The same image backs the
+    // normal + pressed state — the press feedback is the scale/dim animation in
+    // SceneImageButton, not a separate asset.
+    final String? sceneArtDir = switch (band.band) {
+      AgeBand.adventurer => 'adventurer',
+      AgeBand.creator => 'creator',
+      AgeBand.adolescent => 'adolescent',
+      AgeBand.adult => 'adult',
+      _ => null,
+    };
+    String sceneAsset(String id, String fallback) => sceneArtDir != null
+        ? 'assets/images/scenarios/$sceneArtDir/$id.webp'
+        : fallback;
+
     final featuredButtons = [
       SceneButtonData(
         id: 'vanishing_colors',
         label: scenarioById('vanishing_colors')?.titleForAge(age) ?? 'Vanishing Colors',
-        normalAsset: 'assets/images/scenarios/rainbow_land_btn.webp',
-        pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.webp',
+        normalAsset: sceneAsset(
+            'vanishing_colors', 'assets/images/scenarios/rainbow_land_btn.webp'),
+        pressedAsset: sceneAsset('vanishing_colors',
+            'assets/images/scenarios/rainbow_land_btn_pressed.webp'),
         thematicQuestion: thematicQuestionFor('vanishing_colors'),
         description: descriptionFor('vanishing_colors'),
       ),
       SceneButtonData(
         id: 'crystal_cavern',
         label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
-        normalAsset: band.band == AgeBand.sprout
-            ? 'assets/images/ui/sprout/tiles/ocean.webp'
-            : 'assets/images/scenarios/crystal_cave_btn.webp',
-        pressedAsset: band.band == AgeBand.sprout
-            ? 'assets/images/ui/sprout/tiles/ocean.webp'
-            : 'assets/images/scenarios/crystal_cave_btn_pressed.webp',
+        normalAsset: sceneAsset(
+            'crystal_cavern',
+            band.band == AgeBand.sprout
+                ? 'assets/images/ui/sprout/tiles/ocean.webp'
+                : 'assets/images/scenarios/crystal_cave_btn.webp'),
+        pressedAsset: sceneAsset(
+            'crystal_cavern',
+            band.band == AgeBand.sprout
+                ? 'assets/images/ui/sprout/tiles/ocean.webp'
+                : 'assets/images/scenarios/crystal_cave_btn_pressed.webp'),
         thematicQuestion: thematicQuestionFor('crystal_cavern'),
         description: descriptionFor('crystal_cavern'),
       ),
       SceneButtonData(
         id: 'volcano_dragons',
         label: scenarioById('volcano_dragons')?.titleForAge(age) ?? 'Volcano Dragons',
-        normalAsset: 'assets/images/scenarios/dragon_friends_btn.webp',
-        pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.webp',
+        normalAsset: sceneAsset(
+            'volcano_dragons', 'assets/images/scenarios/dragon_friends_btn.webp'),
+        pressedAsset: sceneAsset('volcano_dragons',
+            'assets/images/scenarios/dragon_friends_btn_pressed.webp'),
         thematicQuestion: thematicQuestionFor('volcano_dragons'),
         description: descriptionFor('volcano_dragons'),
       ),
@@ -139,8 +167,10 @@ class HeroScenePage extends StatelessWidget {
       SceneButtonData(
         id: 'big_feelings_quest',
         label: scenarioById('big_feelings_quest')?.titleForAge(age) ?? 'Life Quest',
-        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.webp',
-        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.webp',
+        normalAsset: sceneAsset(
+            'big_feelings_quest', 'assets/images/scenarios/my_big_feelings_btn.webp'),
+        pressedAsset: sceneAsset('big_feelings_quest',
+            'assets/images/scenarios/my_big_feelings_btn_pressed.webp'),
         thematicQuestion: thematicQuestionFor('big_feelings_quest'),
         description: descriptionFor('big_feelings_quest'),
       ),
