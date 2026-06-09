@@ -420,6 +420,16 @@ class HeroStoryTypePage extends StatelessWidget {
       data.interactiveMode = mode == 'pickpath';
     }
 
+    // MT-051: which of the two high-value Explorer modes gets the spotlight
+    // pill this session. Deterministic and session-stable (no Random, no
+    // persistence): a hash of the character name picks one consistently for a
+    // given child, falling back to the calendar day so it still rotates when
+    // the name is empty. Exactly one of Rhyme Time / Pick a Path is lit; the
+    // orbs gate on AgeBand.explorer so all other bands are unaffected.
+    final bool rhymeSpotlighted = data.characterName.isNotEmpty
+        ? data.characterName.hashCode.isEven
+        : DateTime.now().day.isEven;
+
     final storyTitle = band.band == AgeBand.sprout
         ? 'What story do you want?'
         : band.band == AgeBand.adventurer
@@ -536,6 +546,12 @@ class HeroStoryTypePage extends StatelessWidget {
                           setStoryMode('rhyme');
                           onChanged();
                         },
+                        // MT-051: Explorer-only rotating spotlight nudging kids
+                        // toward the two high-value modes they skip. Exactly one
+                        // of Rhyme Time / Pick a Path is spotlighted per session,
+                        // chosen deterministically (no Random, no persistence).
+                        spotlight: band.band == AgeBand.explorer &&
+                            rhymeSpotlighted,
                         primaryColor: const Color(0xFF00D4DD),
                         secondaryColor: const Color(0xFF7FDDFF),
                       ),
@@ -561,6 +577,10 @@ class HeroStoryTypePage extends StatelessWidget {
                           setStoryMode('pickpath');
                           onChanged();
                         },
+                        // MT-051: the complement of the Rhyme Time spotlight —
+                        // exactly one of the two is lit at a time (Explorer-only).
+                        spotlight: band.band == AgeBand.explorer &&
+                            !rhymeSpotlighted,
                         primaryColor: const Color(0xFF9E6CFF),
                         secondaryColor: const Color(0xFFFFB3E6),
                       ),

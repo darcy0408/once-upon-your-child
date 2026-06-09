@@ -14,6 +14,11 @@ class ImageModeOrb extends StatefulWidget {
   final Color primaryColor;
   final Color secondaryColor;
 
+  /// When true and the orb is not selected, renders a small "✨ Try this!"
+  /// pill in the top-right badge slot to nudge attention toward this mode.
+  /// Never shown alongside the active checkmark (suppressed when [isActive]).
+  final bool spotlight;
+
   const ImageModeOrb({
     super.key,
     required this.modeType,
@@ -23,6 +28,7 @@ class ImageModeOrb extends StatefulWidget {
     this.subtitle,
     this.primaryColor = const Color(0xFFAA88FF),
     this.secondaryColor = const Color(0xFFFF88CC),
+    this.spotlight = false,
   });
 
   @override
@@ -264,6 +270,39 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                             Icons.check,
                             color: Colors.white,
                             size: 14,
+                          ),
+                        ),
+                      ),
+                    // Spotlight nudge pill — reuses the active-badge pill
+                    // styling for visual consistency. Only shown when the orb
+                    // is NOT selected, so it never fights the active checkmark.
+                    if (widget.spotlight && !widget.isActive)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(11),
+                            color: primaryColor.withValues(alpha: 0.9),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            '✨ Try this!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                              height: 1.0,
+                            ),
                           ),
                         ),
                       ),
