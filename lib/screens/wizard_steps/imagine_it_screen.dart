@@ -75,8 +75,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     if (!_speechInitialized) return;
     if (!_speechAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Microphone unavailable on this device')),
+        const SnackBar(content: Text('Microphone unavailable on this device')),
       );
       return;
     }
@@ -86,8 +85,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
       return;
     }
     setState(() => _isListening = true);
-    unawaited(AppTtsService.instance
-        .speak('Tell me your big story idea!'));
+    unawaited(AppTtsService.instance.speak('Tell me your big story idea!'));
     await _speech.listen(
       listenOptions: SpeechListenOptions(
         partialResults: true,
@@ -113,8 +111,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     final value = widget.wizardData.customElements.trim();
     if (value.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Tell us your story idea first!')),
+        const SnackBar(content: Text('Tell us your story idea first!')),
       );
       return;
     }
@@ -228,43 +225,40 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                   label: 'Story idea',
                   textField: true,
                   child: TextField(
-                  controller: widget.imagineItController,
-                  maxLines: 5,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  decoration: InputDecoration(
-                    hintText:
-                        'e.g. ride a magic carpet, trick a witch, swim like a fish, visit Mexico…',
-                    hintStyle: const TextStyle(
-                        color: _gold,
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic),
-                    filled: true,
-                    fillColor: Colors.white.withAlpha(18),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          BorderSide(color: _gold.withAlpha(100)),
+                    controller: widget.imagineItController,
+                    maxLines: 5,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText:
+                          'e.g. ride a magic carpet, trick a witch, swim like a fish, visit Mexico…',
+                      hintStyle: const TextStyle(
+                          color: _gold,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: _gold.withAlpha(100)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: _gold, width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: _gold.withAlpha(120)),
+                      ),
+                      contentPadding: const EdgeInsets.all(14),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          const BorderSide(color: _gold, width: 2),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          BorderSide(color: _gold.withAlpha(120)),
-                    ),
-                    contentPadding: const EdgeInsets.all(14),
+                    onChanged: (value) {
+                      setState(() {
+                        widget.wizardData.customElements = value;
+                        widget.wishController.text = value;
+                      });
+                    },
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      widget.wizardData.customElements = value;
-                      widget.wishController.text = value;
-                    });
-                  },
-                ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -344,16 +338,18 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
             ),
           ),
-          // Superhero entry for Explorer (6-8), Adventurer (9-12), and Creator
-          // (13-14 — Hero Saga). Backend prompt routing has a dedicated tier for
-          // each (T7_SUPERHERO_EXPLORER / T8_SUPERHERO_ADVENTURER /
-          // T9_SUPERHERO_CREATOR). Not exposed to Sprout (3-5) or 15+ yet.
+          // Superhero entry for Explorer (6-8), Adventurer (9-12), Creator
+          // (13-14 — Hero Saga), and Adolescent (15-17 — antihero "double
+          // life"). Backend prompt routing has a dedicated tier for each
+          // (T7/T8/T9 + T10_ANTIHERO_ADOLESCENT). Not exposed to Sprout or Adult.
           if (Theme.of(context).extension<AgeBandThemeData>()?.band ==
                   AgeBand.explorer ||
               Theme.of(context).extension<AgeBandThemeData>()?.band ==
                   AgeBand.adventurer ||
               Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.creator) ...[
+                  AgeBand.creator ||
+              Theme.of(context).extension<AgeBandThemeData>()?.band ==
+                  AgeBand.adolescent) ...[
             const SizedBox(height: 14),
             Row(
               children: [
@@ -395,8 +391,8 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                 onPressed: () async {
                   final result = await Navigator.of(context).push<bool>(
                     MaterialPageRoute(
-                      builder: (_) => SuperheroEntryScreen(
-                          wizardData: widget.wizardData),
+                      builder: (_) =>
+                          SuperheroEntryScreen(wizardData: widget.wizardData),
                     ),
                   );
                   if (!mounted) return;
@@ -427,7 +423,11 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
       (emoji: '🦅', label: 'Learn to fly', fill: 'learning to fly'),
       (emoji: '🦄', label: 'Meet a unicorn', fill: 'meeting a unicorn'),
       (emoji: '🦖', label: 'Meet a dinosaur', fill: 'meeting a dinosaur'),
-      (emoji: '🐉', label: 'Dragon friend', fill: 'making friends with a dragon'),
+      (
+        emoji: '🐉',
+        label: 'Dragon friend',
+        fill: 'making friends with a dragon'
+      ),
       (emoji: '🦸', label: 'Be a superhero', fill: 'being a superhero'),
     ];
     final hasInput = widget.wizardData.customElements.trim().isNotEmpty;
@@ -513,7 +513,8 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                 style: GoogleFonts.fredoka(
                   color: _isListening ? _gold : Colors.white.withAlpha(210),
                   fontSize: 18,
-                  fontWeight: _isListening ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      _isListening ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
@@ -546,11 +547,10 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                   if (idea.label == 'Be a superhero') {
                     // Superhero Mode entry point — push the dispatcher
                     // which routes to welcome-back or costume picker.
-                    final result =
-                        await Navigator.of(context).push<bool>(
+                    final result = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(
-                        builder: (_) => SuperheroEntryScreen(
-                            wizardData: widget.wizardData),
+                        builder: (_) =>
+                            SuperheroEntryScreen(wizardData: widget.wizardData),
                       ),
                     );
                     if (!mounted) return;
@@ -576,8 +576,8 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   width: 100,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                   decoration: BoxDecoration(
                     color: selected
                         ? _gold.withAlpha(50)
@@ -600,8 +600,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(idea.emoji,
-                          style: const TextStyle(fontSize: 32)),
+                      Text(idea.emoji, style: const TextStyle(fontSize: 32)),
                       const SizedBox(height: 4),
                       Text(
                         idea.label,
@@ -622,14 +621,12 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
             const SizedBox(height: 20),
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFF2ECC71).withAlpha(30),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: const Color(0xFF2ECC71).withAlpha(160),
-                    width: 1.5),
+                    color: const Color(0xFF2ECC71).withAlpha(160), width: 1.5),
               ),
               child: Row(
                 children: [
@@ -655,43 +652,43 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
             label: 'Story idea',
             textField: true,
             child: TextField(
-            controller: widget.imagineItController,
-            maxLines: 1,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: hasInput
-                  ? 'Tap to change the idea…'
-                  : '✍️  Grown-ups: type an idea here',
-              hintStyle: TextStyle(
-                color: Colors.white.withAlpha(100),
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
+              controller: widget.imagineItController,
+              maxLines: 1,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: hasInput
+                    ? 'Tap to change the idea…'
+                    : '✍️  Grown-ups: type an idea here',
+                hintStyle: TextStyle(
+                  color: Colors.white.withAlpha(100),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+                filled: true,
+                fillColor: Colors.white.withAlpha(12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: _gold.withAlpha(70)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: _gold.withAlpha(160), width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               ),
-              filled: true,
-              fillColor: Colors.white.withAlpha(12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _gold.withAlpha(70)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    BorderSide(color: _gold.withAlpha(160), width: 1.5),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white24),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              onChanged: (value) {
+                setState(() {
+                  widget.wizardData.customElements = value;
+                  widget.wishController.text = value;
+                });
+              },
             ),
-            onChanged: (value) {
-              setState(() {
-                widget.wizardData.customElements = value;
-                widget.wishController.text = value;
-              });
-            },
-          ),
           ),
           const SizedBox(height: 18),
           SizedBox(

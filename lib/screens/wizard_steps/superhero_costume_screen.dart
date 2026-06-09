@@ -64,10 +64,11 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   /// Display label for a costume color, band-aware (Adventurer + Creator get
   /// suit themes; younger bands keep plain color words).
-  String _colorLabel(_ColorOption c) =>
-      (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
-          ? (_adventurerColorNames[c.id] ?? c.label)
-          : c.label;
+  String _colorLabel(_ColorOption c) => (widget.band == AgeBand.adventurer ||
+          widget.band == AgeBand.creator ||
+          widget.band == AgeBand.adolescent)
+      ? (_adventurerColorNames[c.id] ?? c.label)
+      : c.label;
 
   static const _capes = <_CapeOption>[
     _CapeOption(id: 'none', label: 'No cape', emoji: '🦸'),
@@ -93,7 +94,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   List<_EmblemOption> get _emblems => (widget.band == AgeBand.explorer ||
           widget.band == AgeBand.adventurer ||
-          widget.band == AgeBand.creator)
+          widget.band == AgeBand.creator ||
+          widget.band == AgeBand.adolescent)
       ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
       : _baseEmblems;
 
@@ -111,14 +113,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
       );
     } else {
       // Final page — go to power picker.
-      Navigator.of(context).push(
+      Navigator.of(context)
+          .push(
         MaterialPageRoute<bool>(
           builder: (_) => SuperheroPowerScreen(
             wizardData: widget.wizardData,
             band: widget.band,
           ),
         ),
-      ).then((result) {
+      )
+          .then((result) {
         if (!mounted) return;
         // If the power picker completed successfully, propagate the pop.
         if (result == true) {
@@ -143,7 +147,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
       widget.wizardData.heroCapeStyle = cape.id;
       widget.wizardData.heroEmblem = emblem.id;
     });
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute<bool>(
         builder: (_) => SuperheroPowerScreen(
           wizardData: widget.wizardData,
@@ -151,7 +156,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           surprise: true,
         ),
       ),
-    ).then((result) {
+    )
+        .then((result) {
       if (!mounted) return;
       if (result == true) {
         Navigator.of(context).pop(true);
@@ -172,7 +178,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   Widget build(BuildContext context) {
     // Explorer + Adventurer share the older, less babyish copy.
     final isExplorer = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     // Pull the canonical band gradient instead of hardcoding a new palette.
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = isExplorer ? 'Design Your Hero!' : 'Make Your Hero!';
@@ -282,7 +290,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   Widget _buildColorPage() {
     // Explorer + Adventurer share the older, less babyish copy.
     final isExplorer = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
@@ -358,7 +368,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   Widget _buildCapePage() {
     // Explorer + Adventurer share the older, less babyish copy.
     final isExplorer = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(
@@ -366,7 +378,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           _pageHeader(
             '🦸',
             isExplorer ? 'Choose your cape' : 'Pick your cape!',
-            isExplorer ? 'Every hero needs a signature cape' : 'A cape makes you fly!',
+            isExplorer
+                ? 'Every hero needs a signature cape'
+                : 'A cape makes you fly!',
           ),
           const SizedBox(height: 22),
           ..._capes.map((cape) {
@@ -382,8 +396,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                   decoration: BoxDecoration(
                     gradient: isRainbow
                         ? const LinearGradient(
@@ -451,7 +465,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   Widget _buildEmblemPage() {
     // Explorer + Adventurer share the older, less babyish copy.
     final isExplorer = widget.band == AgeBand.explorer ||
-        widget.band == AgeBand.adventurer;
+        widget.band == AgeBand.adventurer ||
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       child: Column(

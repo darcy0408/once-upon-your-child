@@ -288,7 +288,8 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     // Explorer + Adventurer + Creator share the older, mission-flavored copy.
     final isExplorer = band == AgeBand.explorer ||
         band == AgeBand.adventurer ||
-        band == AgeBand.creator;
+        band == AgeBand.creator ||
+        band == AgeBand.adolescent;
     final gradient = themeForBand(band).backgroundGradient;
     final greetingLine = isExplorer ? 'Welcome back,' : 'Welcome back,';
     final invitation = isExplorer

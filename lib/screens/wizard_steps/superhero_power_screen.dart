@@ -156,9 +156,11 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   static const Map<String, _BandCopy> _adventurerNameOverrides = {
     'super_speed': _BandCopy('Velocity', 'Move before they can blink.'),
     'flying': _BandCopy('Skyborne', 'Take the high ground.'),
-    'super_strength': _BandCopy('Titan Strength', 'Shift what no one else can.'),
+    'super_strength':
+        _BandCopy('Titan Strength', 'Shift what no one else can.'),
     'super_hearing': _BandCopy('Echo Sense', 'Catch the faintest clue.'),
-    'super_smile': _BandCopy('Disarming Charm', 'Win people over.', emoji: '😎'),
+    'super_smile':
+        _BandCopy('Disarming Charm', 'Win people over.', emoji: '😎'),
     'super_hugs':
         _BandCopy('Steadfast Heart', 'Stand by anyone.', emoji: '🛡️'),
     'super_whisper': _BandCopy('Calm Voice', 'Steady the storm.'),
@@ -189,8 +191,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     'super_speed': _BandCopy('Overclock', 'Move faster than the moment.'),
     'flying': _BandCopy('Skyline', 'Own the high vantage.'),
     'super_strength': _BandCopy('Kinetic', 'Move the immovable.'),
-    'super_hearing':
-        _BandCopy('Signal Sense', 'Catch the whisper under the noise.', emoji: '📡'),
+    'super_hearing': _BandCopy(
+        'Signal Sense', 'Catch the whisper under the noise.',
+        emoji: '📡'),
     'super_smile':
         _BandCopy('Magnetism', 'Rally people to pull together.', emoji: '🧲'),
     'super_hugs':
@@ -207,7 +210,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         ? _explorerNameOverrides
         : widget.band == AgeBand.adventurer
             ? _adventurerNameOverrides
-            : widget.band == AgeBand.creator
+            : (widget.band == AgeBand.creator ||
+                    widget.band == AgeBand.adolescent)
                 ? _creatorNameOverrides
                 : null;
     final base = _sproutPowers.map((p) {
@@ -225,7 +229,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       base.addAll(_explorerExtraPowers);
     } else if (widget.band == AgeBand.adventurer) {
       base.addAll(_adventurerExtraPowers);
-    } else if (widget.band == AgeBand.creator) {
+    } else if (widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent) {
       base.addAll(_creatorExtraPowers);
     }
     return base;
@@ -282,7 +287,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     var displayName = formulaName;
     final isOlder = widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
-        widget.band == AgeBand.creator;
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     if (isOlder) {
       final result = await _showNameAndCatchphraseChooser(
         formulaName: formulaName,
@@ -327,9 +333,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       ..updatedAt = DateTime.now();
 
     try {
-      await ref
-          .read(heroProfileControllerProvider.notifier)
-          .save(profile);
+      await ref.read(heroProfileControllerProvider.notifier).save(profile);
     } catch (_) {
       // Persistence failure should not block the wizard — the in-memory
       // wizardData still has everything we need for THIS story. The next
@@ -406,12 +410,12 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     // Explorer + Adventurer get the older, less babyish copy.
     final isOlder = widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
-        widget.band == AgeBand.creator;
+        widget.band == AgeBand.creator ||
+        widget.band == AgeBand.adolescent;
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = isOlder ? 'Choose your power' : 'Pick your power!';
-    final heading = isOlder
-        ? 'What is your hero power?'
-        : 'What is your superpower?';
+    final heading =
+        isOlder ? 'What is your hero power?' : 'What is your superpower?';
     final ctaIdle = isOlder ? 'Choose this power' : 'Pick this power!';
     final ctaEmpty = 'Tap a power above';
     return Scaffold(
@@ -725,7 +729,8 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
   void _rerollNames() {
     HapticFeedback.lightImpact();
     setState(() {
-      _nameOptions = HeroFunnyNameGenerator.pickNames(widget.register, count: 3);
+      _nameOptions =
+          HeroFunnyNameGenerator.pickNames(widget.register, count: 3);
       // If the previously-selected name was a generated one that's now gone,
       // fall back to the formula name. Custom-typed names are preserved.
       final typed = _customNameCtl.text.trim();
@@ -740,8 +745,9 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
 
   void _confirmChoice() {
     final typedName = _customNameCtl.text.trim();
-    final heroName =
-        typedName.isNotEmpty ? typedName : (_selectedName ?? widget.formulaName);
+    final heroName = typedName.isNotEmpty
+        ? typedName
+        : (_selectedName ?? widget.formulaName);
 
     final typedPhrase = _customCatchphraseCtl.text.trim();
     final catchphrase =
@@ -869,29 +875,29 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               label: 'Character name',
               textField: true,
               child: TextField(
-              controller: _customNameCtl,
-              style: GoogleFonts.fredoka(color: Colors.white),
-              cursorColor: _gold,
-              decoration: InputDecoration(
-                hintText: 'Or type my own name…',
-                hintStyle:
-                    GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
-                // Explicit dark-translucent fill so white text/hint stay
-                // readable even if a global inputDecorationTheme forces a
-                // light fill (matches the withAlpha(20) chips above).
-                filled: true,
-                fillColor: Colors.white.withAlpha(20),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.white24),
+                controller: _customNameCtl,
+                style: GoogleFonts.fredoka(color: Colors.white),
+                cursorColor: _gold,
+                decoration: InputDecoration(
+                  hintText: 'Or type my own name…',
+                  hintStyle:
+                      GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                  // Explicit dark-translucent fill so white text/hint stay
+                  // readable even if a global inputDecorationTheme forces a
+                  // light fill (matches the withAlpha(20) chips above).
+                  filled: true,
+                  fillColor: Colors.white.withAlpha(20),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: _gold, width: 2),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: _gold, width: 2),
-                ),
+                onChanged: (_) => setState(() {}),
               ),
-              onChanged: (_) => setState(() {}),
-            ),
             ),
             const SizedBox(height: 22),
             Text(
@@ -933,33 +939,33 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               label: 'Your superhero catchphrase',
               textField: true,
               child: TextField(
-              controller: _customCatchphraseCtl,
-              style: GoogleFonts.fredoka(color: Colors.white),
-              cursorColor: _gold,
-              decoration: InputDecoration(
-                hintText: 'Or type my own catchphrase…',
-                hintStyle:
-                    GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
-                // Explicit dark-translucent fill so white text/hint stay
-                // readable even if a global inputDecorationTheme forces a
-                // light fill (matches the withAlpha(20) chips above).
-                filled: true,
-                fillColor: Colors.white.withAlpha(20),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.white24),
+                controller: _customCatchphraseCtl,
+                style: GoogleFonts.fredoka(color: Colors.white),
+                cursorColor: _gold,
+                decoration: InputDecoration(
+                  hintText: 'Or type my own catchphrase…',
+                  hintStyle:
+                      GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                  // Explicit dark-translucent fill so white text/hint stay
+                  // readable even if a global inputDecorationTheme forces a
+                  // light fill (matches the withAlpha(20) chips above).
+                  filled: true,
+                  fillColor: Colors.white.withAlpha(20),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: _gold, width: 2),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: _gold, width: 2),
-                ),
+                onChanged: (_) => setState(() {
+                  if (_customCatchphraseCtl.text.isNotEmpty) {
+                    _selectedCatchphrase = null;
+                  }
+                }),
               ),
-              onChanged: (_) => setState(() {
-                if (_customCatchphraseCtl.text.isNotEmpty) {
-                  _selectedCatchphrase = null;
-                }
-              }),
-            ),
             ),
             const SizedBox(height: 22),
             SizedBox(
@@ -1003,26 +1009,56 @@ class _Nemesis {
 }
 
 const List<_Nemesis> _adventurerNemeses = [
-  _Nemesis('gigawatt', 'Gigawatt',
-      "Buries the town in 'helpful' gadgets that take over every chore — whether you want it or not.", '⚡'),
-  _Nemesis('lord_loading_screen', 'Lord Loading Screen',
-      'Makes every door, game, and lesson stall and buffer so nothing ever quite finishes.', '⏳'),
-  _Nemesis('doctor_detention', 'Doctor Detention',
-      'Freezes every clock so the bell never rings and school never, ever ends.', '🔔'),
-  _Nemesis('mister_meh', 'Mister Meh',
-      'Drains the fun out of birthdays, games, and even superpowers until everything feels gray.', '😑'),
-  _Nemesis('booger_baron', 'The Booger Baron',
-      "Flings sticky green goo and nose-shaped drones to keep everyone at arm's length.", '🤧'),
-  _Nemesis('llama_of_doom', 'The Llama of Doom',
-      'Stages giant dramatic scenes and demands that llamas finally rule the whole town.', '🦙'),
-  _Nemesis('professor_picklejuice', 'Professor Picklejuice',
-      'Fires sour-pickle blasts and locks every snack in town inside a giant brine vault.', '🥒'),
-  _Nemesis('count_copypaste', 'Count Copy-Paste',
-      "Spins out dozens of arguing copies of himself, each one sure it's the real Count.", '📋'),
-  _Nemesis('the_overlooked', 'The Overlooked',
-      'Sabotages the big festival because no one ever once chose them to lead.', '👤'),
-  _Nemesis('the_gatekeeper', 'The Gatekeeper',
-      'Walls off the old quarter to keep every outsider away after being hurt once.', '🔒'),
+  _Nemesis(
+      'gigawatt',
+      'Gigawatt',
+      "Buries the town in 'helpful' gadgets that take over every chore — whether you want it or not.",
+      '⚡'),
+  _Nemesis(
+      'lord_loading_screen',
+      'Lord Loading Screen',
+      'Makes every door, game, and lesson stall and buffer so nothing ever quite finishes.',
+      '⏳'),
+  _Nemesis(
+      'doctor_detention',
+      'Doctor Detention',
+      'Freezes every clock so the bell never rings and school never, ever ends.',
+      '🔔'),
+  _Nemesis(
+      'mister_meh',
+      'Mister Meh',
+      'Drains the fun out of birthdays, games, and even superpowers until everything feels gray.',
+      '😑'),
+  _Nemesis(
+      'booger_baron',
+      'The Booger Baron',
+      "Flings sticky green goo and nose-shaped drones to keep everyone at arm's length.",
+      '🤧'),
+  _Nemesis(
+      'llama_of_doom',
+      'The Llama of Doom',
+      'Stages giant dramatic scenes and demands that llamas finally rule the whole town.',
+      '🦙'),
+  _Nemesis(
+      'professor_picklejuice',
+      'Professor Picklejuice',
+      'Fires sour-pickle blasts and locks every snack in town inside a giant brine vault.',
+      '🥒'),
+  _Nemesis(
+      'count_copypaste',
+      'Count Copy-Paste',
+      "Spins out dozens of arguing copies of himself, each one sure it's the real Count.",
+      '📋'),
+  _Nemesis(
+      'the_overlooked',
+      'The Overlooked',
+      'Sabotages the big festival because no one ever once chose them to lead.',
+      '👤'),
+  _Nemesis(
+      'the_gatekeeper',
+      'The Gatekeeper',
+      'Walls off the old quarter to keep every outsider away after being hurt once.',
+      '🔒'),
 ];
 
 /// Creator (13-14) "Hero Saga" arch-villain roster — ids + names mirror backend
@@ -1030,26 +1066,56 @@ const List<_Nemesis> _adventurerNemeses = [
 /// villain's BELIEF, so a 13-14 picks a nemesis whose argument they can almost
 /// agree with; the backend carries the full motive + resolution.
 const List<_Nemesis> _creatorNemeses = [
-  _Nemesis('cipher_zero', 'Cipher Zero',
-      'Leaks every secret in the city, certain that total transparency is the only real justice.', '🛰️'),
-  _Nemesis('the_optimizer', 'the Optimizer',
-      'Rewrites the city to erase every risk — and every freedom along with it.', '⚙️'),
-  _Nemesis('the_understudy', 'the Understudy',
-      "Sabotages the city's stars after a lifetime of being the overlooked second-best.", '🎭'),
-  _Nemesis('the_magnate', 'the Magnate',
-      "Buys up the old district and erases the people who built it, sure he's improving it.", '💰'),
-  _Nemesis('riptide', 'Riptide',
-      'Floods the harbor to take the coast back for the wildlife the city paved over.', '🌊'),
-  _Nemesis('redact', 'Redact',
-      'Erases inconvenient history so the city can never be shamed by its past.', '▪️'),
-  _Nemesis('gridlock', 'Gridlock',
-      'Freezes the whole city to force everyone to face a danger they keep ignoring.', '🚦'),
-  _Nemesis('the_mirror', 'the Mirror',
-      'Exposes powerful hypocrites — but ruins innocent bystanders in the crossfire.', '🪞'),
-  _Nemesis('nightjar', 'Nightjar',
-      'A vigilante who hunts wrongdoers, trampling the law and the innocent in the chase.', '🦅'),
-  _Nemesis('the_benefactor', 'the Benefactor',
-      "Secretly controls the city's heroes like puppets, 'for their own good.'", '🎩'),
+  _Nemesis(
+      'cipher_zero',
+      'Cipher Zero',
+      'Leaks every secret in the city, certain that total transparency is the only real justice.',
+      '🛰️'),
+  _Nemesis(
+      'the_optimizer',
+      'the Optimizer',
+      'Rewrites the city to erase every risk — and every freedom along with it.',
+      '⚙️'),
+  _Nemesis(
+      'the_understudy',
+      'the Understudy',
+      "Sabotages the city's stars after a lifetime of being the overlooked second-best.",
+      '🎭'),
+  _Nemesis(
+      'the_magnate',
+      'the Magnate',
+      "Buys up the old district and erases the people who built it, sure he's improving it.",
+      '💰'),
+  _Nemesis(
+      'riptide',
+      'Riptide',
+      'Floods the harbor to take the coast back for the wildlife the city paved over.',
+      '🌊'),
+  _Nemesis(
+      'redact',
+      'Redact',
+      'Erases inconvenient history so the city can never be shamed by its past.',
+      '▪️'),
+  _Nemesis(
+      'gridlock',
+      'Gridlock',
+      'Freezes the whole city to force everyone to face a danger they keep ignoring.',
+      '🚦'),
+  _Nemesis(
+      'the_mirror',
+      'the Mirror',
+      'Exposes powerful hypocrites — but ruins innocent bystanders in the crossfire.',
+      '🪞'),
+  _Nemesis(
+      'nightjar',
+      'Nightjar',
+      'A vigilante who hunts wrongdoers, trampling the law and the innocent in the chase.',
+      '🦅'),
+  _Nemesis(
+      'the_benefactor',
+      'the Benefactor',
+      "Secretly controls the city's heroes like puppets, 'for their own good.'",
+      '🎩'),
 ];
 
 /// C4 nemesis picker bottom sheet. Pops the chosen villain id, or null for
@@ -1096,9 +1162,7 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
             children: [
               Text('Choose your nemesis',
                   style: GoogleFonts.fredoka(
-                      color: _gold,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold)),
+                      color: _gold, fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text('Every great hero needs a worthy rival. (Optional!)',
                   textAlign: TextAlign.center,
@@ -1139,7 +1203,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                         borderRadius: BorderRadius.circular(18)),
                   ),
                   onPressed: () => Navigator.of(context).pop(_selected),
-                  child: Text(_selected == null ? 'Surprise me!' : 'Lock it in!',
+                  child: Text(
+                      _selected == null ? 'Surprise me!' : 'Lock it in!',
                       style: GoogleFonts.fredoka(
                           fontSize: 18, fontWeight: FontWeight.bold)),
                 ),

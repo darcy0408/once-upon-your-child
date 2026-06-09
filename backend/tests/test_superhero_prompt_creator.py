@@ -243,14 +243,15 @@ def test_build_story_prompt_age_12_still_adventurer_not_creator():
     assert "Creator band" not in prompt
 
 
-def test_build_story_prompt_age_15_not_creator():
-    """Adolescent (15) has no superhero tier yet — must not hit the Creator branch."""
+def test_build_story_prompt_age_15_routes_adolescent_not_creator():
+    """Adolescent (15-17) now routes to the antihero tier, never Creator."""
     prompt = PromptService.build_story_prompt(
         character="Maya",
         theme="superhero",
         age=15,
         hero_power="super_smile",
     )
+    assert "Adolescent band" in prompt
     assert "Creator band" not in prompt
 
 

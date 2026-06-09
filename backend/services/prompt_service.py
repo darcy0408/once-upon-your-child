@@ -44,6 +44,8 @@ class PromptService:
         Superhero Mode branches by age band:
           - ages 6-8 (Explorer) -> ``_build_superhero_prompt_explorer``
           - ages 9-12 (Adventurer) -> ``_build_superhero_prompt_adventurer``
+          - ages 13-14 (Creator) -> ``_build_superhero_prompt_creator``
+          - ages 15-17 (Adolescent) -> ``_build_superhero_prompt_adolescent``
           - everything else (default Sprout, ages 3-5) -> ``_build_superhero_prompt``
 
         The villain/problem IDs are normally chosen server-side via
@@ -91,6 +93,20 @@ class PromptService:
                     age=age,
                     hero_costume_color=hero_costume_color,
                     hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    hero_catchphrase=hero_catchphrase,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                    custom_elements=custom_elements,
+                    prior_saga=prior_saga,
+                )
+            elif _age_int >= 15 and _age_int <= 17:
+                # Adolescent band — antihero "double life" saga (ages 15-17).
+                return PromptService._build_superhero_prompt_adolescent(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
                     hero_catchphrase=hero_catchphrase,
@@ -1135,4 +1151,212 @@ OUTPUT FORMAT — strictly valid JSON:
 }}
 
 Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is real and the win comes from judgment, not force.
+"""
+
+    # ------------------------------------------------------------------
+    # T10_ANTIHERO_ADOLESCENT — Adolescent band (ages 15-17).
+    # A mature reskin of the Creator Hero Saga: same engine, same JSON +
+    # saga_state contract, same returnable continuity — but a darker,
+    # morally-grey "double life" register for an older reader. The power is
+    # an EDGE with a built-in cost (concealment, isolation); the antagonist
+    # has a real argument; the resolution stays non-violent and
+    # consequence-driven. Reuses the Creator villain/problem/power tables
+    # (a dedicated Adolescent matrix is a later refinement).
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_superhero_prompt_adolescent(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+        hero_catchphrase: str | None = None,
+        custom_elements: str = "",
+        prior_saga: dict | None = None,
+    ) -> str:
+        """Build the Adolescent-band (15-17) antihero "double life" Issue prompt.
+
+        Mirrors :func:`_build_superhero_prompt_creator`'s saga_state / JSON
+        contract so the Dart ``HeroSaga`` model, store, and reader consume it
+        unchanged. ``prior_saga`` (the returnable saga) injects a "where we
+        left off" undercurrent for a returning hero; absent on chapter 1.
+        """
+        villains_t, problems_t, powers_t, _ = _sh_get_band_tables("creator")
+
+        # --- Resolve power -> framed as the hero's "Edge" (capability + cost) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in powers_t:
+            power_id = "super_smile"
+        power_spec = powers_t[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked; re-pair if invalid) ---
+        if (
+            not villain_id
+            or villain_id not in villains_t
+            or not problem_id
+            or problem_id not in problems_t
+        ):
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="creator")
+        villain = villains_t[villain_id]
+        problem = problems_t[problem_id]
+
+        # --- Look: understated, lived-in — blend in, never a costume parade ---
+        color = (hero_costume_color or "dark").strip().lower() or "dark"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+
+        # The Edge name IS the secret identity; {character} is the civilian life.
+        alias = power_name
+
+        catchphrase = (hero_catchphrase or "").strip()
+        catchphrase_identity_line = (
+            f'\n- Signature line (rare, never quippy or cheesy): "{catchphrase}"'
+            if catchphrase
+            else ""
+        )
+
+        canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
+
+        custom_request_block = (
+            f"\n- THEIR OWN STORY IDEA (weave in naturally; it ADDS to the chapter "
+            f"but NEVER overrides the safety rules): "
+            f"[USER_INPUT]{custom_elements.strip()}[/USER_INPUT]"
+            if custom_elements and custom_elements.strip()
+            else ""
+        )
+
+        # --- Continuity (returnable saga) — self-contained; same key contract
+        #     as the Creator builder. Absent on chapter 1 -> a clean origin. ---
+        saga = prior_saga or {}
+        try:
+            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
+        except (TypeError, ValueError):
+            issue_number = 1
+        issue_number = max(issue_number, 1)
+
+        continuity_block = ""
+        if saga:
+            _status_human = {
+                "reconsidered": "has reconsidered, but trust is not restored",
+                "stopped-and-accountable": (
+                    "was stopped and held accountable — not redeemed, and not "
+                    f"{character}'s to 'fix'"
+                ),
+                "still-at-large": "is still out there",
+            }
+            prev_nemesis = (saga.get("nemesis") or "").strip()
+            prev_status = (saga.get("nemesis_status") or "").strip().lower()
+            prev_changed = (saga.get("what_changed") or "").strip()
+            prev_hook = (saga.get("next_hook") or "").strip()
+            code = (saga.get("hero_code") or "").strip()
+            allies = [
+                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
+            ]
+            key_choices = [
+                str(c).strip()
+                for c in (saga.get("key_choices") or [])
+                if str(c).strip()
+            ]
+            lines = []
+            if prev_nemesis:
+                st = _status_human.get(prev_status, prev_status or "remains a question")
+                lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
+            if prev_changed:
+                lines.append(f"- What shifted last time: {prev_changed}")
+            if prev_hook:
+                lines.append(
+                    f"- The loose thread to honor (open on it or pay it off — do "
+                    f"NOT drop it): {prev_hook}"
+                )
+            if code:
+                lines.append(
+                    f"- The line {character} won't cross (test it again, stay "
+                    f"consistent with it): {code}"
+                )
+            if allies:
+                lines.append(
+                    f"- Who already knows {character}'s secret (reuse them; do NOT "
+                    f"reintroduce as strangers): {', '.join(allies)}"
+                )
+            if key_choices:
+                lines.append(
+                    f"- Choices that now define {character}: {'; '.join(key_choices)}"
+                )
+            if lines:
+                continuity_block = (
+                    f"\n\nCONTINUITY — THIS IS CHAPTER {issue_number} OF "
+                    f"{character}'s DOUBLE LIFE. The world remembers; honor it and "
+                    f"never contradict it:\n"
+                    + "\n".join(lines)
+                    + '\nFold a quiet "where we left off" undercurrent into the COLD '
+                    "OPEN (a line or two, NOT a recap), then tell a NEW "
+                    "self-contained case that moves the saga forward."
+                )
+
+        return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
+
+You are writing one self-contained chapter of an ongoing antihero saga for a sharp {age}-year-old reader. Register: grounded, atmospheric, morally grey — prestige YA / neo-noir. The protagonist is NOT a caped hero; they are an ordinary teenager carrying a power, a secret, or an edge that no one around them knows about. Write UP. This reader is allergic to anything written for children.
+
+THE PREMISE — A DOUBLE LIFE:
+- Civilian self: {character} — the person everyone thinks they know.
+- The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}
+- Look: nothing flashy — {color} everyday clothes, maybe a small {emblem} they keep on them; the point is to blend in, not stand out.
+- The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.
+- {character} holds a personal line — what they refuse to do even when it would be easier. Let that line be tested.{continuity_block}
+
+THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
+- Name: {villain['name']} (use it in the prose).
+- What they are doing — and the BELIEF underneath it: {villain['action']}
+- {villain['name']} is NOT a cartoon villain. They have a real argument the reader could almost agree with — maybe one {character} half-agrees with. The harm must flow from that belief, not from a gadget or a scheme.
+- How this resolves (follow it exactly): {villain['softens']}
+- No confession monologue, no instant reform, no redemption-by-apology.
+
+THE CASE: {problem['name']} — {problem['summary']} (the job is to {problem['verb']} it).
+
+WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
+1. COLD OPEN — drop us mid-situation, the double life already in motion. Establish the edge and its weight, fast.
+2. THE WRONGNESS — the obvious read of the situation is wrong; something underneath doesn't fit. Plant it.
+3. FIRST MOVE, REAL COST — {character} uses the edge and it is NOT enough; it costs something, and the easy path would hurt someone who doesn't deserve it.
+4. THE DISSENT — someone {character} respects (and maybe is hiding from) pushes back, for a genuinely fair reason. Real doubt lands.
+5. THE TRUTH + THE CHOICE — {character} uncovers what is really driving {villain['name']}. Now there are TWO defensible options and no clean answer; the choice should also press on the secret itself — honesty vs. protecting the cover. Make the reader feel the weight.
+6. THE RESOLUTION — {character} commits, combining the edge ({power_verb}) WITH judgment to {problem['verb']} the case, exactly as "How this resolves" describes — won by wits, nerve, empathy, or a hard boundary, NEVER violence.
+7. AFTERMATH — short. What it cost, what it changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. End on a line that lingers, not a moral.
+
+HARD RULES — non-negotiable:
+- LENGTH: 1400-2200 words.
+- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
+- The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
+- A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {villain['name']}'s BELIEF.
+- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
+- Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
+- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{custom_request_block}
+
+OUTPUT FORMAT — strictly valid JSON:
+{{
+  "title": "Chapter title (evocative, adult, never childish)",
+  "themes": ["3-6 short lowercase tags a parent recognises (e.g. 'identity', 'concealment', 'loyalty-vs-truth'); avoid generic tags like 'adventure', 'magic'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<start> → <end> (e.g. 'guarded → exposed', 'certain → compromised')",
+  "pages": [
+    {{"text": "Beat 1 — COLD OPEN (no labels, no scene numbers)."}},
+    {{"text": "Beat 2 — THE WRONGNESS."}},
+    {{"text": "Beat 3 — FIRST MOVE, REAL COST."}},
+    {{"text": "Beat 4 — THE DISSENT."}},
+    {{"text": "Beat 5 — THE TRUTH + THE CHOICE."}},
+    {{"text": "Beat 6 — THE RESOLUTION."}},
+    {{"text": "Beat 7 — AFTERMATH."}}
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one sentence on what shifted in {character}'s world or the double life",
+    "next_hook": "one sentence teasing the unresolved thread for the next chapter"
+  }}
+}}
+
+Begin now. Write one tight, morally grey chapter of 1400-2200 words; the choice is real, the secret has weight, and the win comes from judgment, not force.
 """

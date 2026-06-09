@@ -45,9 +45,10 @@ class SuperheroEntryScreen extends ConsumerWidget {
     final characterId = resolveCharacterId(wizardData);
     final async = ref.watch(heroProfileProvider(characterId));
     // Derive band from the character's age. The Superhero flow supports
-    // Sprout (3-5), Explorer (6-8), Adventurer (9-12), and Creator (13-14 —
-    // Hero Saga) — each with its own palette, copy register, power roster, and
-    // backend prompt tier (T9_SUPERHERO_CREATOR). 15+ has no tier yet.
+    // Sprout (3-5), Explorer (6-8), Adventurer (9-12), Creator (13-14 — Hero
+    // Saga), and Adolescent (15-17 — antihero "double life"); each has its own
+    // copy register, power roster, and backend prompt tier (T7/T8/T9 +
+    // T10_ANTIHERO_ADOLESCENT). Adult (18+): no tier yet.
     final band = ageBandFromAge(wizardData.characterAge);
 
     return async.when(
@@ -61,7 +62,7 @@ class SuperheroEntryScreen extends ConsumerWidget {
           // welcome-back screen. Younger bands have no saga and skip the watch.
           // A saga read failure / first Issue simply yields a null saga → no
           // recap, never a blocked welcome-back.
-          final saga = band == AgeBand.creator
+          final saga = (band == AgeBand.creator || band == AgeBand.adolescent)
               ? ref.watch(heroSagaProvider(characterId)).valueOrNull
               : null;
           return SuperheroWelcomeBackScreen(

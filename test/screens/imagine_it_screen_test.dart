@@ -5,10 +5,10 @@
 //   (a) The Explorer band renders the "Be a superhero!" button inside the
 //       standard input panel.
 //   (b) Tapping the button pushes [SuperheroEntryScreen].
-//   (c) The button shows for Explorer AND Adventurer (backend prompt routing
-//       has dedicated tiers T7_SUPERHERO_EXPLORER / T8_SUPERHERO_ADVENTURER).
-//       Creator/Adolescent/Adult must NOT see it. The Sprout band uses a
-//       different input path entirely (idea-tile, no gated button).
+//   (c) The button shows for Explorer / Adventurer / Creator / Adolescent
+//       (each has a dedicated backend tier: T7/T8/T9 + T10_ANTIHERO_ADOLESCENT).
+//       Adult must NOT see it. The Sprout band uses a different input path
+//       entirely (idea-tile, no gated button).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -221,17 +221,39 @@ void main() {
     expect(find.text('🦸'), findsOneWidget);
   });
 
-  testWidgets('Adolescent band does NOT show the superhero button',
+  testWidgets('Adolescent band shows the "Be a superhero!" button',
       (tester) async {
-    await expectNoSuperheroButton(tester, band: AgeBand.adolescent);
+    // The Adolescent (15-17) antihero "double life" entry was added alongside
+    // the others (backend tier T10_ANTIHERO_ADOLESCENT). imagine_it_screen
+    // renders the gated button for explorer/adventurer/creator/adolescent.
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = _makeWizardData(age: 16);
+    final imagineCtl = TextEditingController();
+    final wishCtl = TextEditingController();
+    addTearDown(imagineCtl.dispose);
+    addTearDown(wishCtl.dispose);
+
+    await tester.pumpWidget(_bootstrap(
+      wizardData: wd,
+      band: AgeBand.adolescent,
+      imagineCtl: imagineCtl,
+      wishCtl: wishCtl,
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Be a superhero!'), findsOneWidget);
+    expect(find.text('🦸'), findsOneWidget);
   });
 
-  testWidgets('Adult band does NOT show the superhero button',
-      (tester) async {
+  testWidgets('Adult band does NOT show the superhero button', (tester) async {
     await expectNoSuperheroButton(tester, band: AgeBand.adult);
   });
 
-  testWidgets('Sprout band does NOT show the gated superhero button '
+  testWidgets(
+      'Sprout band does NOT show the gated superhero button '
       '(it has its own idea-tile path)', (tester) async {
     // Sprout renders _buildSproutInput() which never includes the gated
     // gold-outlined button; the superhero entry is exposed there as one of
