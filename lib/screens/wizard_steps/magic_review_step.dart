@@ -288,7 +288,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final onboarding = OnboardingService();
     final count = await onboarding.getCountdownCount();
     if (!mounted) return;
-    if (!reduceMotion && band.band != AgeBand.sprout && count < 3) {
+    if (!reduceMotion &&
+        !band.band.isMature &&
+        band.band != AgeBand.sprout &&
+        count < 3) {
       await onboarding.incrementCountdownCount();
       // Speak phrase asynchronously — don't await so countdown runs concurrently.
       AppTtsService.instance.speak('3... 2... 1... Let the magic begin!');

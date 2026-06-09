@@ -137,9 +137,8 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
     final onboardingDone = age != null && savedName.isNotEmpty && !reConsent;
     // Pre-load saved characters before showing the wizard so HeroCreatorStep's
     // initState can pick the "Welcome back" page synchronously when any exist.
-    final characters = onboardingDone
-        ? await _preloadSavedCharacters()
-        : const <Character>[];
+    final characters =
+        onboardingDone ? await _preloadSavedCharacters() : const <Character>[];
 
     if (!mounted) return;
     setState(() {
@@ -296,7 +295,7 @@ class _StoryScreenState extends State<StoryScreen> {
     final isAdult = ageBandFromAge(age) == AgeBand.adult;
 
     const int feelingsIdx = 1; // Reflect for adults, Feelings for others
-    const int libraryIdx  = 2;
+    const int libraryIdx = 2;
     const int settingsIdx = 3;
 
     // Handle navigation to different screens
@@ -844,6 +843,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     const SizedBox(height: 16),
                   ],
                   _buildCharacterPortraitRow(),
+                  _buildJumpBackInRow(),
                   if (_selectedCharacter != null)
                     _ContinueAsHeroChip(character: _selectedCharacter!),
                   const SizedBox(height: 40),
@@ -914,20 +914,22 @@ class _StoryScreenState extends State<StoryScreen> {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                          backgroundColor:
-                              Theme.of(context).extension<AgeBandThemeData>()?.primary ??
-                                  Colors.deepPurpleAccent,
+                          backgroundColor: Theme.of(context)
+                                  .extension<AgeBandThemeData>()
+                                  ?.primary ??
+                              Colors.deepPurpleAccent,
                           shadowColor: (Theme.of(context)
-                                          .extension<AgeBandThemeData>()
-                                          ?.primary ??
-                                      Colors.deepPurpleAccent)
-                                  .withValues(alpha: 0.6),
+                                      .extension<AgeBandThemeData>()
+                                      ?.primary ??
+                                  Colors.deepPurpleAccent)
+                              .withValues(alpha: 0.6),
                           elevation: 6,
                         ),
                         label: Text(_interactiveMode
                             ? 'Start Interactive Story'
-                            : _homeCtaLabel(
-                                Theme.of(context).extension<AgeBandThemeData>()?.band)),
+                            : _homeCtaLabel(Theme.of(context)
+                                .extension<AgeBandThemeData>()
+                                ?.band)),
                       ),
                     ),
                   ],
@@ -991,8 +993,8 @@ class _StoryScreenState extends State<StoryScreen> {
     final cutoff = DateTime.now().subtract(const Duration(days: 30));
     for (final story in _savedStories) {
       if (story.createdAt.isBefore(cutoff)) continue;
-      final match = story.characters
-          .any((c) => c.name.trim().toLowerCase() == target);
+      final match =
+          story.characters.any((c) => c.name.trim().toLowerCase() == target);
       if (match) return story;
     }
     return null;
@@ -1033,15 +1035,107 @@ class _StoryScreenState extends State<StoryScreen> {
         builder: (_) => StoryResultScreen(
           title: story.title,
           storyText: story.storyText,
-          characterName: story.characters.isNotEmpty
-              ? story.characters.first.name
-              : null,
+          characterName:
+              story.characters.isNotEmpty ? story.characters.first.name : null,
           storyId: story.identifier,
           persistedCoverImageBase64: story.coverImageBase64,
           persistedPageIllustrationsJson: story.pageIllustrationsJson,
         ),
       ),
     ).then((_) => _loadSavedStories());
+  }
+
+  /// "Jump back in" shelf for mature bands (Creator / Adolescent / Adult):
+  /// a horizontal row of the most recent saved stories so a returning user
+  /// can resume without digging into the Library tab. Hidden when there are
+  /// no saved stories. Younger bands rely on the per-hero Continue sheet.
+  Widget _buildJumpBackInRow() {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    if (band == null || !band.band.isMature || _savedStories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final recent = _savedStories.take(8).toList();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              'Jump back in',
+              style: TextStyle(
+                color: band.textOnDark,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: band.uiFontFamily,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 152,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: recent.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) => _jumpBackCard(recent[i], band),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _jumpBackCard(StoryLocal story, AgeBandThemeData band) {
+    ImageProvider? cover;
+    final raw = story.coverImageBase64;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final normalized = raw.contains(',') ? raw.split(',').last : raw;
+        cover = MemoryImage(base64Decode(normalized));
+      } catch (_) {
+        cover = null;
+      }
+    }
+    return GestureDetector(
+      onTap: () => _openSavedStory(story),
+      child: SizedBox(
+        width: 112,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  color: band.surface,
+                  image: cover != null
+                      ? DecorationImage(image: cover, fit: BoxFit.cover)
+                      : null,
+                ),
+                child: cover == null
+                    ? Icon(Icons.auto_stories, color: band.accent, size: 34)
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              story.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: band.textOnDark,
+                fontSize: 12,
+                height: 1.2,
+                fontFamily: band.uiFontFamily,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showContinueOrNewSheet(Character character, StoryLocal recent) {
@@ -1345,8 +1439,8 @@ class _StoryScreenState extends State<StoryScreen> {
     final band = Theme.of(context).extension<AgeBandThemeData>();
     final accent = band?.primary ?? const Color(0xFF2E7D32);
     final fill = band?.accent ?? Colors.green.shade600;
-    final olderFraming = band != null &&
-        (band.band == AgeBand.adventurer || band.band.isMature);
+    final olderFraming =
+        band != null && (band.band == AgeBand.adventurer || band.band.isMature);
     final headerTitle = olderFraming ? 'Mission Log' : 'Achievement Journey';
 
     return Card(
@@ -1864,8 +1958,8 @@ class _ContinueAsHeroChip extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          SuperheroEntryScreen(wizardData: _wizardDataFor(character)),
+                      builder: (_) => SuperheroEntryScreen(
+                          wizardData: _wizardDataFor(character)),
                     ),
                   );
                 },

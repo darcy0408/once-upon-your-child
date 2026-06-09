@@ -139,7 +139,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         _step = 0; // Skip teaser and age picker; still need a name.
       });
       if (ageBandFromAge(savedAge) == AgeBand.creator) {
-        unawaited(_speak("Welcome back! What should we call you?", rateScale: 0.85));
+        unawaited(
+            _speak("Welcome back! What should we call you?", rateScale: 0.85));
       } else {
         unawaited(_speak("Welcome back! What's your name?", rateScale: 0.85));
       }
@@ -172,8 +173,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (mounted) setState(() {});
   }
 
-  Future<void> _speak(String text, {bool awaitCompletion = false, double rateScale = 0.85}) async {
-    await AppTtsService.instance.speak(text, awaitCompletion: awaitCompletion, rateScale: rateScale);
+  Future<void> _speak(String text,
+      {bool awaitCompletion = false, double rateScale = 0.85}) async {
+    await AppTtsService.instance
+        .speak(text, awaitCompletion: awaitCompletion, rateScale: rateScale);
   }
 
   /// Strips common introductory phrases so "my name is Jessica" → "Jessica".
@@ -291,14 +294,15 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       _speech.stop();
       setState(() => _celebratingName = true);
       unawaited(_burstController.trigger());
-      final isMature = _selectedAge != null && ageBandFromAge(_selectedAge!).isMature;
+      final isMature =
+          _selectedAge != null && ageBandFromAge(_selectedAge!).isMature;
       final greeting = isMature ? 'Hi, $name.' : 'Hi, $name! Nice to meet you!';
       AppTtsService.instance
           .speak(
-            greeting,
-            awaitCompletion: true,
-            rateScale: isMature ? 0.85 : 0.72,
-          )
+        greeting,
+        awaitCompletion: true,
+        rateScale: isMature ? 0.85 : 0.72,
+      )
           .then((_) {
         if (mounted) {
           setState(() {
@@ -321,62 +325,64 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       backgroundColor: const Color(0xFF120226),
       body: Stack(children: [
         Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF120226), Color(0xFF2A0A4E)],
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF120226), Color(0xFF2A0A4E)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xl,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: _buildStep(),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.xl,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: _buildStep(),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-      if (_step > 0)
+        if (_step > 0)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: SafeArea(
+              child: IconButton(
+                icon:
+                    const Icon(Icons.arrow_back_ios_new, color: Colors.white54),
+                tooltip: 'Back',
+                onPressed: _goBack,
+              ),
+            ),
+          ),
+        // Labeled parent button — more visible than a bare gear icon
         Positioned(
           top: 8,
-          left: 8,
+          right: 8,
           child: SafeArea(
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white54),
-              tooltip: 'Back',
-              onPressed: _goBack,
+            child: TextButton.icon(
+              icon: const Icon(Icons.shield_outlined,
+                  size: 18, color: Colors.white54),
+              label: const Text(
+                'Parent',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
+              ),
             ),
           ),
         ),
-      // Labeled parent button — more visible than a bare gear icon
-      Positioned(
-        top: 8,
-        right: 8,
-        child: SafeArea(
-          child: TextButton.icon(
-            icon: const Icon(Icons.shield_outlined, size: 18, color: Colors.white54),
-            label: const Text(
-              'Parent',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
-            ),
-          ),
-        ),
-      ),
       ]),
     );
   }
@@ -443,8 +449,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _goldColor,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 36, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(40)),
                   elevation: 8,
@@ -496,63 +502,65 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
         Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // ── Speech bubble (centred — no mascot image) ──────────────────────
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Container(
-            key: ValueKey(typedName.isEmpty),
-            constraints: const BoxConstraints(maxWidth: 220),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD54F),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(40),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Speech bubble (centred — no mascot image) ──────────────────────
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                key: ValueKey(typedName.isEmpty),
+                constraints: const BoxConstraints(maxWidth: 220),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD54F),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(40),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: typedName.isEmpty
-                ? Text(
-                    "What's your name?",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF3E2723),
-                    ),
-                  )
-                : TweenAnimationBuilder<double>(
-                    key: ValueKey(typedName),
-                    tween: Tween(begin: 1.2, end: 1.0),
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.elasticOut,
-                    builder: (_, scale, child) =>
-                        Transform.scale(scale: scale, child: child),
-                    child: Text(
-                      typedName,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF3E2723),
+                child: typedName.isEmpty
+                    ? Text(
+                        "What's your name?",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF3E2723),
+                        ),
+                      )
+                    : TweenAnimationBuilder<double>(
+                        key: ValueKey(typedName),
+                        tween: Tween(begin: 1.2, end: 1.0),
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.elasticOut,
+                        builder: (_, scale, child) =>
+                            Transform.scale(scale: scale, child: child),
+                        child: Text(
+                          typedName,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.nunito(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF3E2723),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _buildNameFieldAndButton(
-          hintText: _speechEnabled ? "Or type it here…" : "What's your name?",
-          buttonLabel: "That's me!",
-          buttonLeadingIcon: Icons.auto_awesome,
-          buttonLeadingColor: _goldColor,
-        ),
-      ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildNameFieldAndButton(
+              hintText:
+                  _speechEnabled ? "Or type it here…" : "What's your name?",
+              buttonLabel: "That's me!",
+              buttonLeadingIcon: Icons.auto_awesome,
+              buttonLeadingColor: _goldColor,
+            ),
+          ],
         ), // Column
       ],
     ); // Stack
@@ -566,7 +574,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: AppSpacing.lg),
-        const Icon(Icons.account_circle_outlined, color: creatorAccent, size: 52),
+        const Icon(Icons.account_circle_outlined,
+            color: creatorAccent, size: 52),
         const SizedBox(height: AppSpacing.md),
         Text(
           'Set up your profile',
@@ -599,11 +608,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }) {
     final accent = accentColor ?? const Color(0xFF7B2FBE);
     final fieldStyle = fieldFontFamily == 'sourceSans3'
-        ? GoogleFonts.sourceSans3(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w500)
-        : GoogleFonts.fredoka(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w500);
+        ? GoogleFonts.sourceSans3(
+            color: Colors.white, fontSize: 22, fontWeight: FontWeight.w500)
+        : GoogleFonts.fredoka(
+            color: Colors.white, fontSize: 26, fontWeight: FontWeight.w500);
     final hintStyle = fieldFontFamily == 'sourceSans3'
         ? GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 18)
-        : GoogleFonts.fredoka(color: _goldColor.withAlpha(130), fontSize: 20, fontWeight: FontWeight.w500);
+        : GoogleFonts.fredoka(
+            color: _goldColor.withAlpha(130),
+            fontSize: 20,
+            fontWeight: FontWeight.w500);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -624,7 +638,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   color: _isListening ? const Color(0xFF9E6CFF) : accent,
                   boxShadow: [
                     BoxShadow(
-                      color: (_isListening ? const Color(0xFF9E6CFF) : accent).withAlpha(140),
+                      color: (_isListening ? const Color(0xFF9E6CFF) : accent)
+                          .withAlpha(140),
                       blurRadius: _isListening ? 24 : 14,
                       spreadRadius: _isListening ? 4 : 0,
                     ),
@@ -647,7 +662,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             const SizedBox(height: 4),
             Text(
               'Your browser will ask for microphone permission',
-              style: GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 11),
+              style:
+                  GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 11),
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
@@ -706,39 +722,42 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           child: Opacity(
             opacity: _nameController.text.trim().isEmpty ? 0.4 : 1.0,
             child: _PressableButton(
-            onPressed: _nameController.text.trim().isEmpty ? null : _advanceFromName,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                gradient: LinearGradient(
-                  colors: [accent, accent.withAlpha(200)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withAlpha(100),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+              onPressed:
+                  _nameController.text.trim().isEmpty ? null : _advanceFromName,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  gradient: LinearGradient(
+                    colors: [accent, accent.withAlpha(200)],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(buttonLeadingIcon, color: buttonLeadingColor, size: 22),
-                  const SizedBox(width: 8),
-                  Text(
-                    buttonLabel,
-                    style: GoogleFonts.sourceSans3(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withAlpha(100),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(buttonLeadingIcon,
+                        color: buttonLeadingColor, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      buttonLabel,
+                      style: GoogleFonts.sourceSans3(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         ),
       ],
@@ -796,9 +815,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   value: entry.value,
                   size: circleSize,
                   selected: _selectedAge == entry.value,
-                  onTap: _submitting
-                      ? null
-                      : () => _onAgeSelected(entry.value),
+                  onTap: _submitting ? null : () => _onAgeSelected(entry.value),
                 );
               }).toList(),
             );
@@ -868,13 +885,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           ),
         ),
       );
-      if (mounted) setState(() { _submitting = false; _step = 0; });
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _step = 0;
+        });
+      }
       if (granted == true) {
         // Consent obtained — now safe to persist the child's name and age.
         // M-10: age and age band are persisted here, only after consent.
         await const ParentalConsentService().saveDeclaredAge(_selectedAge!);
         if (mounted) {
-          await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
+          await ref
+              .read(ageBandNotifierProvider.notifier)
+              .setAge(_selectedAge!);
         }
         // M-9: reconcile analytics with the consent result. Under-13 ⇒ stays
         // off regardless (applyConsentDecision enforces the age >= 13 gate).
@@ -952,15 +976,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF1A0533),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             'Just so you know',
             style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
           ),
           content: const Text(
-            'Since you\'re under 18, please make sure a parent or guardian '
-            'knows you\'re using this app.',
+            'Story Weaver uses AI to write your stories. Since you\'re under '
+            '18, your parent or guardian should know you\'re using it. If they '
+            'don\'t yet, let them know.',
             style: TextStyle(color: Colors.white70, height: 1.5),
           ),
           actions: [
@@ -1038,7 +1063,6 @@ class _PressableButtonState extends State<_PressableButton> {
   }
 }
 
-
 /// Wide pill button for grouped older age bands (e.g. "9 – 11").
 class _AgeBandButton extends StatefulWidget {
   const _AgeBandButton({
@@ -1063,7 +1087,8 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+      onTapDown:
+          widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
       onTapUp: (_) {
         setState(() => _pressed = false);
         widget.onTap?.call();
@@ -1086,7 +1111,12 @@ class _AgeBandButtonState extends State<_AgeBandButton> {
                 ? Border.all(color: _gold, width: 2.5)
                 : Border.all(color: Colors.white24, width: 1.5),
             boxShadow: widget.selected
-                ? [BoxShadow(color: _gold.withAlpha(90), blurRadius: 14, spreadRadius: 1)]
+                ? [
+                    BoxShadow(
+                        color: _gold.withAlpha(90),
+                        blurRadius: 14,
+                        spreadRadius: 1)
+                  ]
                 : [],
           ),
           alignment: Alignment.center,
@@ -1140,8 +1170,9 @@ class _AgeCircleState extends State<_AgeCircle> {
       label: 'Age ${widget.label}',
       hint: widget.selected ? "Selected" : "Double tap to select",
       child: GestureDetector(
-        onTapDown:
-            widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+        onTapDown: widget.onTap != null
+            ? (_) => setState(() => _pressed = true)
+            : null,
         onTapUp: (_) {
           setState(() => _pressed = false);
           widget.onTap?.call();

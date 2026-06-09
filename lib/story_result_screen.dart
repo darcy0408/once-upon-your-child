@@ -245,9 +245,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// readers (explorer / adventurer) get a single dismissible banner above
   /// the pages instead, to stay less ad-heavy. Sprout never trips quota.
   bool get _useInlineQuotaUpsell {
-    final band = Theme.of(context)
-        .extension<AgeBandThemeData>()
-        ?.band;
+    final band = Theme.of(context).extension<AgeBandThemeData>()?.band;
     if (band == null) return false;
     return band == AgeBand.creator ||
         band == AgeBand.adolescent ||
@@ -317,7 +315,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       case AgeBand.adventurer:
         return 'Reading Level: Middle Grade';
       case AgeBand.creator:
-        return 'Young Adult';
+        return 'Teen';
       case AgeBand.adolescent:
         return 'Young Adult';
       case AgeBand.adult:
@@ -730,7 +728,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       if (data is String && data.isNotEmpty) {
         try {
           // Handle potential data URL prefix
-          final String base64Str = data.contains(',') ? data.split(',').last : data;
+          final String base64Str =
+              data.contains(',') ? data.split(',').last : data;
           decoded.add(
             _InlineIllustration(
               bytes: base64Decode(base64Str),
@@ -811,7 +810,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // fires every page request with characterAppearance=null and the
     // illustrations don't match the character the user created.
     // _loadCharacterDetails() re-invokes this once the fetch settles.
-    if (widget.characterId != null && _character == null && !_characterLoadDone) {
+    if (widget.characterId != null &&
+        _character == null &&
+        !_characterLoadDone) {
       return;
     }
     final settings = ref.read(settingsProvider);
@@ -858,8 +859,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       theme: widget.theme,
       characterAppearance: characterAppearance,
       companions: _illustrationCompanions(),
-      sceneRequirements:
-          (widget.customElements?.trim().isEmpty ?? true) ? null : widget.customElements,
+      sceneRequirements: (widget.customElements?.trim().isEmpty ?? true)
+          ? null
+          : widget.customElements,
       heroPower: widget.wizardData?.heroPower,
       // Server key is used for Sprout AND ages-6+ non-BYOK (Flux Schnell route).
       allowServerKey: allowServerKey,
@@ -925,9 +927,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // the prompt doesn't tell the model "wearing <everyday outfit>" and fight
     // the costume in the reference image. Everything else (hair/eyes/skin/etc.)
     // still describes the same child and is kept.
-    final usingHeroPortrait = widget.wizardData?.selectedScenario ==
-            'superhero' &&
-        (widget.wizardData?.heroPortraitUrl?.trim().isNotEmpty ?? false);
+    final usingHeroPortrait =
+        widget.wizardData?.selectedScenario == 'superhero' &&
+            (widget.wizardData?.heroPortraitUrl?.trim().isNotEmpty ?? false);
     final outfitForPayload = usingHeroPortrait ? null : outfit;
 
     final payload = <String, dynamic>{
@@ -1077,8 +1079,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       }
     }
 
-    final newFeatureUnlocks =
-        await _progressionService.incrementStoriesCreated(widget.characterAge ?? 8);
+    final newFeatureUnlocks = await _progressionService
+        .incrementStoriesCreated(widget.characterAge ?? 8);
     if (mounted && newFeatureUnlocks.isNotEmpty) {
       // Disabled per user feedback
       // await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
@@ -1409,7 +1411,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   List<Map<String, String>> _buildCompanionPrompts() {
     final companions = <Map<String, String>>[];
 
-    final companionPets = widget.companionPets ?? const <Map<String, dynamic>>[];
+    final companionPets =
+        widget.companionPets ?? const <Map<String, dynamic>>[];
     for (final pet in companionPets) {
       final name = pet['name']?.toString().trim();
       if (name == null || name.isEmpty) continue;
@@ -1755,8 +1758,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// current AI-generated story. No backend endpoint — a mailto: to the
   /// support address keeps the report path lightweight and store-compliant.
   Future<void> _reportContent() async {
-    final subject = Uri.encodeComponent(
-        'Content report: "${widget.title}"');
+    final subject = Uri.encodeComponent('Content report: "${widget.title}"');
     final body = Uri.encodeComponent(
       'Please describe what seemed wrong or unsafe in this AI-generated '
       'story or its illustrations:\n\n\n'
@@ -1779,9 +1781,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-              'Email darcy@onceuponyourchild.app to report this content '
-              '(address copied to clipboard).'),
+          content:
+              Text('Email darcy@onceuponyourchild.app to report this content '
+                  '(address copied to clipboard).'),
         ),
       );
     }
@@ -1859,7 +1861,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   Future<String?> _captureCoverImageBase64() async {
     if (_inlineIllustrations.isEmpty) return null;
     try {
-      final bytes = await _compressImageForWeb(_inlineIllustrations.first.bytes);
+      final bytes =
+          await _compressImageForWeb(_inlineIllustrations.first.bytes);
       return base64Encode(bytes);
     } catch (_) {
       return null;
@@ -1914,7 +1917,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         final characters = _character != null
             ? [_character!]
             : (widget.characterName != null && widget.characterName!.isNotEmpty)
-                ? [Character(id: widget.characterId ?? '', name: widget.characterName!, age: widget.characterAge ?? 0, role: 'Hero')]
+                ? [
+                    Character(
+                        id: widget.characterId ?? '',
+                        name: widget.characterName!,
+                        age: widget.characterAge ?? 0,
+                        role: 'Hero')
+                  ]
                 : <Character>[];
         final newStory = SavedStory(
           title: widget.title,
@@ -2095,8 +2104,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                     IconButton(
                       tooltip: 'Dismiss',
                       icon: Icon(Icons.close,
-                          size: 18,
-                          color: lavender.withValues(alpha: 0.6)),
+                          size: 18, color: lavender.withValues(alpha: 0.6)),
                       onPressed: () => setState(() {
                         _quotaBannerDismissed = true;
                       }),
@@ -2477,8 +2485,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         try {
           final stories = await _offlineService.getAllStories();
           final match = stories.firstWhere(
-            (s) =>
-                s.title == widget.title && s.storyText == widget.storyText,
+            (s) => s.title == widget.title && s.storyText == widget.storyText,
             orElse: () => stories.isNotEmpty
                 ? stories.first
                 : throw StateError('no stories'),
@@ -2592,9 +2599,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       // its illustration (and the next one) jump the queue.
       final prefetcher = _perPagePrefetcher;
       if (prefetcher != null) {
-        final textIndex = _hasCoverIllustration
-            ? _currentPageIndex - 1
-            : _currentPageIndex;
+        final textIndex =
+            _hasCoverIllustration ? _currentPageIndex - 1 : _currentPageIndex;
         if (textIndex >= 0) prefetcher.prioritize(textIndex);
       }
 
@@ -2906,10 +2912,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final bgColor = _highContrastMode
         ? Colors.black
-        : (band.preferDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFFFF8E7));
+        : (band.preferDarkMode
+            ? const Color(0xFF1A1A2E)
+            : const Color(0xFFFFF8E7));
     final textColor = _highContrastMode
         ? Colors.white
-        : (band.preferDarkMode ? const Color(0xFFE0E0E0) : const Color(0xFF2C3E50));
+        : (band.preferDarkMode
+            ? const Color(0xFFE0E0E0)
+            : const Color(0xFF2C3E50));
 
     return Container(
       decoration: BoxDecoration(
@@ -3128,7 +3138,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   style: GoogleFonts.quicksand(
                     fontSize: (isSprout ? 13 : 15) * _textScale,
                     fontWeight: FontWeight.w600,
-                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                    color:
+                        _highContrastMode ? Colors.white70 : Colors.grey[600],
                   ),
                 ),
                 SizedBox(height: isSprout ? 4 : 8),
@@ -3158,7 +3169,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                               vertical: isSprout ? 4 : 8,
                             ),
                             child: AnimatedScale(
-                              scale: _hasExplicitlyRated && _storyRating == entry.stars ? 1.3 : 1.0,
+                              scale: _hasExplicitlyRated &&
+                                      _storyRating == entry.stars
+                                  ? 1.3
+                                  : 1.0,
                               duration: const Duration(milliseconds: 200),
                               child: Text(
                                 entry.emoji,
@@ -3178,7 +3192,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   style: GoogleFonts.quicksand(
                     fontSize: 16 * _textScale,
                     fontWeight: FontWeight.w600,
-                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                    color:
+                        _highContrastMode ? Colors.white70 : Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -3237,7 +3252,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return SizedBox(
       width: 260,
       child: ElevatedButton.icon(
@@ -3543,30 +3559,25 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             Positioned(
               top: 18,
               left: 24,
-              child: Icon(Icons.auto_awesome,
-                  color: Colors.white70, size: 28),
+              child: Icon(Icons.auto_awesome, color: Colors.white70, size: 28),
             ),
             Positioned(
               top: 36,
               right: 30,
-              child: Icon(Icons.auto_awesome,
-                  color: Colors.white, size: 44),
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 44),
             ),
             Positioned(
               bottom: 28,
               left: 60,
-              child: Icon(Icons.auto_awesome,
-                  color: Colors.white, size: 36),
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 36),
             ),
             Positioned(
               bottom: 14,
               right: 56,
-              child: Icon(Icons.auto_awesome,
-                  color: Colors.white70, size: 22),
+              child: Icon(Icons.auto_awesome, color: Colors.white70, size: 22),
             ),
             Center(
-              child: Icon(Icons.auto_awesome,
-                  color: Colors.white, size: 64),
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 64),
             ),
           ],
         ),
@@ -3997,378 +4008,400 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           // On narrow phones, reclaim every pixel for the page itself.
                           final isNarrowArea = areaConstraints.maxWidth < 400;
                           final isShortArea = areaConstraints.maxHeight < 560;
-                          final outerHorizontal = isNarrowArea
-                              ? band.space(8)
-                              : band.space(24);
+                          final outerHorizontal =
+                              isNarrowArea ? band.space(8) : band.space(24);
                           final titleSize = isNarrowArea
                               ? band.heading(20)
                               : band.heading(28);
-                          final titleSpacing = isShortArea
-                              ? band.space(8)
-                              : band.space(20);
+                          final titleSpacing =
+                              isShortArea ? band.space(8) : band.space(20);
                           // Sprout doesn't read; the reading-level pill is for parents
                           // and only adds clutter on the kid's reading screen. Hide it
                           // for sprout, and on any short viewport where space is precious.
                           final showReadingLevel =
                               band.band != AgeBand.sprout && !isShortArea;
                           return Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: outerHorizontal),
-                        child: Column(
-                          children: [
-                            SizedBox(height: titleSpacing),
-                            Text(
-                              widget.title,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.merriweather(
-                                fontSize: titleSize,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    offset: const Offset(0, 2),
-                                    blurRadius: 4,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: outerHorizontal),
+                            child: Column(
+                              children: [
+                                SizedBox(height: titleSpacing),
+                                Text(
+                                  widget.title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.merriweather(
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color:
+                                            Colors.black.withValues(alpha: 0.3),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Thin gold rule under the title — evokes a
+                                // chapter heading and ties the title to the
+                                // book below it.
+                                SizedBox(height: band.space(8)),
+                                Container(
+                                  width: isNarrowArea ? 90 : 140,
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(1),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.gold.withValues(alpha: 0.0),
+                                        AppColors.gold,
+                                        AppColors.gold.withValues(alpha: 0.0),
+                                      ],
+                                      stops: const [0.0, 0.5, 1.0],
+                                    ),
+                                  ),
+                                ),
+                                if (showReadingLevel) ...[
+                                  SizedBox(height: band.space(8)),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: band.space(12),
+                                      vertical: band.space(6),
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.15),
+                                      borderRadius:
+                                          BorderRadius.circular(band.radiusMd),
+                                      border: Border.all(
+                                        color:
+                                            band.accent.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _readingLevelLabel(band),
+                                      style: GoogleFonts.quicksand(
+                                        color: band.accentLight,
+                                        fontSize: band.body(12),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                   ),
                                 ],
-                              ),
-                            ),
-                            // Thin gold rule under the title — evokes a
-                            // chapter heading and ties the title to the
-                            // book below it.
-                            SizedBox(height: band.space(8)),
-                            Container(
-                              width: isNarrowArea ? 90 : 140,
-                              height: 2,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(1),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.gold.withValues(alpha: 0.0),
-                                    AppColors.gold,
-                                    AppColors.gold.withValues(alpha: 0.0),
-                                  ],
-                                  stops: const [0.0, 0.5, 1.0],
+                                // Persistent AI-transparency label. Required by
+                                // Google Play's Generative-AI policy, Apple, and
+                                // EU AI Act Art. 50: this story and its artwork
+                                // are machine-generated. Tap for details.
+                                SizedBox(height: band.space(8)),
+                                GestureDetector(
+                                  onTap: _showAiInfo,
+                                  child: const AiGeneratedBadge(
+                                    label: 'Created with AI',
+                                  ),
                                 ),
-                              ),
-                            ),
-                            if (showReadingLevel) ...[
-                              SizedBox(height: band.space(8)),
-                              Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: band.space(12),
-                                vertical: band.space(6),
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius:
-                                    BorderRadius.circular(band.radiusMd),
-                                border: Border.all(
-                                  color: band.accent.withValues(alpha: 0.55),
-                                ),
-                              ),
-                              child: Text(
-                                _readingLevelLabel(band),
-                                style: GoogleFonts.quicksand(
-                                  color: band.accentLight,
-                                  fontSize: band.body(12),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            ],
-                            // Persistent AI-transparency label. Required by
-                            // Google Play's Generative-AI policy, Apple, and
-                            // EU AI Act Art. 50: this story and its artwork
-                            // are machine-generated. Tap for details.
-                            SizedBox(height: band.space(8)),
-                            GestureDetector(
-                              onTap: _showAiInfo,
-                              child: const AiGeneratedBadge(
-                                label: 'Created with AI',
-                              ),
-                            ),
-                            SizedBox(
-                                height: isShortArea
-                                    ? band.space(12)
-                                    : band.space(24)),
-                            Expanded(
-                              child: _isLoading
-                                  ? const Center(
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white))
-                                  : Column(
-                                      children: [
-                                        // Free-tier illustration cap banner.
-                                        // Shown once per story for younger
-                                        // bands (per-page cards cover older
-                                        // bands). BYOK + Sprout never trip.
-                                        if (_perPagePrefetcher != null &&
-                                            !_useInlineQuotaUpsell)
-                                          _buildQuotaBanner(),
-                                        // Story Content - ENHANCED PAGE FLIP OR READER VIEW
-                                        Expanded(
-                                          child: RepaintBoundary(
-                                            key: _storyBoundaryKey,
-                                            child: _isReaderLayout
-                                                ? _buildReaderView()
-                                                : Listener(
-                                              onPointerDown: _onFlipStarted,
-                                              onPointerMove: _onFlipUpdated,
-                                              onPointerUp: _onFlipEnded,
-                                              onPointerCancel: _onFlipEnded,
-                                              // MT-099: ground the leaf inside a
-                                              // visible open hardback (leather
-                                              // rim + warm body + stacked-leaves
-                                              // footer) instead of floating it on
-                                              // the purple background. Decorative
-                                              // only; disabled in high contrast.
-                                              child: OpenBookFrame(
-                                                palette:
-                                                    BookLeatherPalette.forBand(
-                                                        band),
-                                                enabled: !_highContrastMode,
-                                                showFooter: !isShortArea,
-                                                child: Stack(
-                                                children: [
-                                                  PageFlipBuilder(
-                                                    key: _pageFlipKey,
-                                                    frontBuilder: (context) =>
-                                                        _buildStoryPage(
-                                                            _currentPageIndex),
-                                                    backBuilder: (context) =>
-                                                        _currentPageIndex <
-                                                                _totalPages - 1
-                                                            ? _buildStoryPage(
-                                                                _currentPageIndex +
-                                                                    1)
-                                                            : _buildStoryPage(
-                                                                _currentPageIndex),
-                                                    flipAxis: Axis.horizontal,
-                                                    maxTilt:
-                                                        0.005, // Increased tilt for more 3D feel
-                                                    maxScale: 0.1,
-                                                    onFlipComplete:
-                                                        _handlePageFlip,
-                                                    // Reduce-motion: kill the
-                                                    // drag-flip 3D animation;
-                                                    // page turns stay instant.
-                                                    interactiveFlipEnabled:
-                                                        !reduceMotion,
-                                                  ),
-                                                  // Dynamic Shadow Overlay
-                                                  if (_flipShadowIntensity > 0)
-                                                    IgnorePointer(
-                                                      child: AnimatedContainer(
-                                                        duration:
-                                                            const Duration(
-                                                                milliseconds:
-                                                                    100),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          gradient:
-                                                              LinearGradient(
-                                                            begin: Alignment(
-                                                                _flipShadowAlignment -
-                                                                    0.2,
-                                                                0),
-                                                            end: Alignment(
-                                                                _flipShadowAlignment +
-                                                                    0.2,
-                                                                0),
-                                                            colors: [
-                                                              Colors
-                                                                  .transparent,
-                                                              Colors.black
-                                                                  .withValues(
-                                                                      alpha:
-                                                                          _flipShadowIntensity),
-                                                              Colors
-                                                                  .transparent,
+                                SizedBox(
+                                    height: isShortArea
+                                        ? band.space(12)
+                                        : band.space(24)),
+                                Expanded(
+                                  child: _isLoading
+                                      ? const Center(
+                                          child: CircularProgressIndicator(
+                                              color: Colors.white))
+                                      : Column(
+                                          children: [
+                                            // Free-tier illustration cap banner.
+                                            // Shown once per story for younger
+                                            // bands (per-page cards cover older
+                                            // bands). BYOK + Sprout never trip.
+                                            if (_perPagePrefetcher != null &&
+                                                !_useInlineQuotaUpsell)
+                                              _buildQuotaBanner(),
+                                            // Story Content - ENHANCED PAGE FLIP OR READER VIEW
+                                            Expanded(
+                                              child: RepaintBoundary(
+                                                key: _storyBoundaryKey,
+                                                child: _isReaderLayout
+                                                    ? _buildReaderView()
+                                                    : Listener(
+                                                        onPointerDown:
+                                                            _onFlipStarted,
+                                                        onPointerMove:
+                                                            _onFlipUpdated,
+                                                        onPointerUp:
+                                                            _onFlipEnded,
+                                                        onPointerCancel:
+                                                            _onFlipEnded,
+                                                        // MT-099: ground the leaf inside a
+                                                        // visible open hardback (leather
+                                                        // rim + warm body + stacked-leaves
+                                                        // footer) instead of floating it on
+                                                        // the purple background. Decorative
+                                                        // only; disabled in high contrast.
+                                                        child: OpenBookFrame(
+                                                          palette:
+                                                              BookLeatherPalette
+                                                                  .forBand(
+                                                                      band),
+                                                          enabled:
+                                                              !_highContrastMode,
+                                                          showFooter:
+                                                              !isShortArea,
+                                                          child: Stack(
+                                                            children: [
+                                                              PageFlipBuilder(
+                                                                key:
+                                                                    _pageFlipKey,
+                                                                frontBuilder:
+                                                                    (context) =>
+                                                                        _buildStoryPage(
+                                                                            _currentPageIndex),
+                                                                backBuilder: (context) => _currentPageIndex <
+                                                                        _totalPages -
+                                                                            1
+                                                                    ? _buildStoryPage(
+                                                                        _currentPageIndex +
+                                                                            1)
+                                                                    : _buildStoryPage(
+                                                                        _currentPageIndex),
+                                                                flipAxis: Axis
+                                                                    .horizontal,
+                                                                maxTilt:
+                                                                    0.005, // Increased tilt for more 3D feel
+                                                                maxScale: 0.1,
+                                                                onFlipComplete:
+                                                                    _handlePageFlip,
+                                                                // Reduce-motion: kill the
+                                                                // drag-flip 3D animation;
+                                                                // page turns stay instant.
+                                                                interactiveFlipEnabled:
+                                                                    !reduceMotion,
+                                                              ),
+                                                              // Dynamic Shadow Overlay
+                                                              if (_flipShadowIntensity >
+                                                                  0)
+                                                                IgnorePointer(
+                                                                  child:
+                                                                      AnimatedContainer(
+                                                                    duration: const Duration(
+                                                                        milliseconds:
+                                                                            100),
+                                                                    decoration:
+                                                                        BoxDecoration(
+                                                                      gradient:
+                                                                          LinearGradient(
+                                                                        begin: Alignment(
+                                                                            _flipShadowAlignment -
+                                                                                0.2,
+                                                                            0),
+                                                                        end: Alignment(
+                                                                            _flipShadowAlignment +
+                                                                                0.2,
+                                                                            0),
+                                                                        colors: [
+                                                                          Colors
+                                                                              .transparent,
+                                                                          Colors
+                                                                              .black
+                                                                              .withValues(alpha: _flipShadowIntensity),
+                                                                          Colors
+                                                                              .transparent,
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              // Magical sparkle burst on flip
+                                                              // — suppressed under reduce
+                                                              // motion (it's pure motion).
+                                                              if (!reduceMotion)
+                                                                Positioned.fill(
+                                                                  child:
+                                                                      _FlipSparkles(
+                                                                    trigger:
+                                                                        _flipBurstTrigger,
+                                                                    fromRight:
+                                                                        _flipBurstFromRight,
+                                                                    largeBurst:
+                                                                        _isYoungUser,
+                                                                  ),
+                                                                ),
+                                                              // Left arrow (previous page)
+                                                              if (_currentPageIndex >
+                                                                  0)
+                                                                Positioned(
+                                                                  left: 0,
+                                                                  top: 0,
+                                                                  bottom: 0,
+                                                                  width: isNarrowArea
+                                                                      ? 48
+                                                                      : (_isYoungUser
+                                                                          ? 80
+                                                                          : 56),
+                                                                  child:
+                                                                      _PageArrowOverlay(
+                                                                    direction:
+                                                                        _PageArrowDirection
+                                                                            .left,
+                                                                    onTap:
+                                                                        _goToPreviousStoryPage,
+                                                                    alwaysVisible:
+                                                                        _isYoungUser,
+                                                                    buttonSize: isNarrowArea
+                                                                        ? 44
+                                                                        : (_isYoungUser
+                                                                            ? 64
+                                                                            : 48),
+                                                                    iconSize: isNarrowArea
+                                                                        ? 28
+                                                                        : (_isYoungUser
+                                                                            ? 44
+                                                                            : 32),
+                                                                  ),
+                                                                ),
+                                                              // Right arrow (next page)
+                                                              if (_currentPageIndex <
+                                                                  _totalPages -
+                                                                      1)
+                                                                Positioned(
+                                                                  right: 0,
+                                                                  top: 0,
+                                                                  bottom: 0,
+                                                                  width: isNarrowArea
+                                                                      ? 48
+                                                                      : (_isYoungUser
+                                                                          ? 80
+                                                                          : 56),
+                                                                  child:
+                                                                      _PageArrowOverlay(
+                                                                    direction:
+                                                                        _PageArrowDirection
+                                                                            .right,
+                                                                    onTap:
+                                                                        _goToNextStoryPage,
+                                                                    alwaysVisible:
+                                                                        _isYoungUser,
+                                                                    buttonSize: isNarrowArea
+                                                                        ? 44
+                                                                        : (_isYoungUser
+                                                                            ? 64
+                                                                            : 48),
+                                                                    iconSize: isNarrowArea
+                                                                        ? 28
+                                                                        : (_isYoungUser
+                                                                            ? 44
+                                                                            : 32),
+                                                                  ),
+                                                                ),
                                                             ],
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  // Magical sparkle burst on flip
-                                                  // — suppressed under reduce
-                                                  // motion (it's pure motion).
-                                                  if (!reduceMotion)
-                                                    Positioned.fill(
-                                                      child: _FlipSparkles(
-                                                        trigger:
-                                                            _flipBurstTrigger,
-                                                        fromRight:
-                                                            _flipBurstFromRight,
-                                                        largeBurst:
-                                                            _isYoungUser,
-                                                      ),
-                                                    ),
-                                                  // Left arrow (previous page)
-                                                  if (_currentPageIndex > 0)
-                                                    Positioned(
-                                                      left: 0,
-                                                      top: 0,
-                                                      bottom: 0,
-                                                      width: isNarrowArea
-                                                          ? 48
-                                                          : (_isYoungUser
-                                                              ? 80
-                                                              : 56),
-                                                      child: _PageArrowOverlay(
-                                                        direction:
-                                                            _PageArrowDirection
-                                                                .left,
-                                                        onTap:
-                                                            _goToPreviousStoryPage,
-                                                        alwaysVisible:
-                                                            _isYoungUser,
-                                                        buttonSize: isNarrowArea
-                                                            ? 44
-                                                            : (_isYoungUser
-                                                                ? 64
-                                                                : 48),
-                                                        iconSize: isNarrowArea
-                                                            ? 28
-                                                            : (_isYoungUser
-                                                                ? 44
-                                                                : 32),
-                                                      ),
-                                                    ),
-                                                  // Right arrow (next page)
-                                                  if (_currentPageIndex <
-                                                      _totalPages - 1)
-                                                    Positioned(
-                                                      right: 0,
-                                                      top: 0,
-                                                      bottom: 0,
-                                                      width: isNarrowArea
-                                                          ? 48
-                                                          : (_isYoungUser
-                                                              ? 80
-                                                              : 56),
-                                                      child: _PageArrowOverlay(
-                                                        direction:
-                                                            _PageArrowDirection
-                                                                .right,
-                                                        onTap:
-                                                            _goToNextStoryPage,
-                                                        alwaysVisible:
-                                                            _isYoungUser,
-                                                        buttonSize: isNarrowArea
-                                                            ? 44
-                                                            : (_isYoungUser
-                                                                ? 64
-                                                                : 48),
-                                                        iconSize: isNarrowArea
-                                                            ? 28
-                                                            : (_isYoungUser
-                                                                ? 44
-                                                                : 32),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                        // Footer controls
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: _highContrastMode
-                                                ? Colors.grey[900]
-                                                : Colors.grey[50],
-                                            borderRadius:
-                                                const BorderRadius.vertical(
-                                                    bottom:
-                                                        Radius.circular(24)),
-                                            border: Border(
-                                              top: BorderSide(
+                                            // Footer controls
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
+                                              decoration: BoxDecoration(
                                                 color: _highContrastMode
-                                                    ? Colors.grey[800]!
-                                                    : Colors.grey[200]!,
+                                                    ? Colors.grey[900]
+                                                    : Colors.grey[50],
+                                                borderRadius:
+                                                    const BorderRadius.vertical(
+                                                        bottom: Radius.circular(
+                                                            24)),
+                                                border: Border(
+                                                  top: BorderSide(
+                                                    color: _highContrastMode
+                                                        ? Colors.grey[800]!
+                                                        : Colors.grey[200]!,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
-                                          child: Wrap(
-                                            alignment:
-                                                WrapAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                WrapCrossAlignment.center,
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: [
-                                              if (_totalPages > 1)
-                                                Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    IconButton(
-                                                      tooltip: 'Previous page',
-                                                      onPressed:
-                                                          _currentPageIndex > 0
-                                                              ? _goToPreviousStoryPage
-                                                              : null,
-                                                      icon: const Icon(Icons
-                                                          .arrow_back_rounded),
-                                                      color: AppColors.primary,
-                                                    ),
-                                                    // The "Page N of M" text
-                                                    // now lives in the bottom
-                                                    // corner of the page
-                                                    // itself (MT-099 d) — the
-                                                    // footer keeps only the
-                                                    // prev/next controls.
-                                                    IconButton(
-                                                      tooltip: 'Next page',
-                                                      onPressed:
-                                                          _currentPageIndex <
+                                              child: Wrap(
+                                                alignment:
+                                                    WrapAlignment.spaceBetween,
+                                                crossAxisAlignment:
+                                                    WrapCrossAlignment.center,
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                children: [
+                                                  if (_totalPages > 1)
+                                                    Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        IconButton(
+                                                          tooltip:
+                                                              'Previous page',
+                                                          onPressed:
+                                                              _currentPageIndex >
+                                                                      0
+                                                                  ? _goToPreviousStoryPage
+                                                                  : null,
+                                                          icon: const Icon(Icons
+                                                              .arrow_back_rounded),
+                                                          color:
+                                                              AppColors.primary,
+                                                        ),
+                                                        // The "Page N of M" text
+                                                        // now lives in the bottom
+                                                        // corner of the page
+                                                        // itself (MT-099 d) — the
+                                                        // footer keeps only the
+                                                        // prev/next controls.
+                                                        IconButton(
+                                                          tooltip: 'Next page',
+                                                          onPressed: _currentPageIndex <
                                                                   _totalPages -
                                                                       1
                                                               ? _goToNextStoryPage
                                                               : null,
-                                                      icon: const Icon(Icons
-                                                          .arrow_forward_rounded),
-                                                      color: AppColors.primary,
+                                                          icon: const Icon(Icons
+                                                              .arrow_forward_rounded),
+                                                          color:
+                                                              AppColors.primary,
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
-                                                ),
-                                              // NEW: Storybook progress indicator instead of "Chapter X of Y"
-                                              StorybookProgressIndicator(
-                                                currentPage:
-                                                    _currentPageIndex + 1,
-                                                totalPages: _totalPages,
-                                                isCompleted:
-                                                    _currentPageIndex >=
-                                                        _totalPages - 1,
-                                                stageLabel: _currentPageIndex >=
-                                                        _totalPages - 1
-                                                    ? null
-                                                    : (_adventureSteps.length >
-                                                            _currentPageIndex
-                                                        ? _adventureSteps[
-                                                                _currentPageIndex]
-                                                            .replaceAll(
-                                                                RegExp(
-                                                                    r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'),
-                                                                '')
-                                                        : null),
+                                                  // NEW: Storybook progress indicator instead of "Chapter X of Y"
+                                                  StorybookProgressIndicator(
+                                                    currentPage:
+                                                        _currentPageIndex + 1,
+                                                    totalPages: _totalPages,
+                                                    isCompleted:
+                                                        _currentPageIndex >=
+                                                            _totalPages - 1,
+                                                    stageLabel: _currentPageIndex >=
+                                                            _totalPages - 1
+                                                        ? null
+                                                        : (_adventureSteps
+                                                                    .length >
+                                                                _currentPageIndex
+                                                            ? _adventureSteps[
+                                                                    _currentPageIndex]
+                                                                .replaceAll(
+                                                                    RegExp(
+                                                                        r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'),
+                                                                    '')
+                                                            : null),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
                             ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      );
+                          );
                         },
                       ),
                     ),
@@ -4384,7 +4417,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
-                isFreeTier: (widget.subscription?.isFree ?? true) && !widget.usedUserApiKey && !ref.watch(settingsProvider).useOwnApiKey,
+                isFreeTier: (widget.subscription?.isFree ?? true) &&
+                    !widget.usedUserApiKey &&
+                    !ref.watch(settingsProvider).useOwnApiKey,
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,
@@ -4473,7 +4508,8 @@ class _PostStoryActionBar extends StatelessWidget {
     // Sprout (2-5) gets bigger CTA padding and label so the button feels
     // friendly to small fingers and easy to spot.
     final isSprout = band.band == AgeBand.sprout;
-    final primaryCtaVerticalPadding = isSprout ? 22.0 : (isYoungUser ? 18.0 : 14.0);
+    final primaryCtaVerticalPadding =
+        isSprout ? 22.0 : (isYoungUser ? 18.0 : 14.0);
     final primaryCtaFontSize = isSprout ? 22.0 : (isYoungUser ? 19.0 : 17.0);
     // The mid-story upsell + quick rating clutter the screen on every page
     // turn. Defer them to the end-of-story page where the kid is done reading
@@ -4609,7 +4645,8 @@ class _PostStoryActionBar extends StatelessWidget {
                       onTap: () => onQuickRate(entry.stars),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(entry.emoji, style: const TextStyle(fontSize: 24)),
+                        child: Text(entry.emoji,
+                            style: const TextStyle(fontSize: 24)),
                       ),
                     ),
                 ],
@@ -4638,8 +4675,8 @@ class _PostStoryActionBar extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: band.primary,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                      vertical: primaryCtaVerticalPadding),
+                  padding:
+                      EdgeInsets.symmetric(vertical: primaryCtaVerticalPadding),
                   shape: const StadiumBorder(),
                   elevation: 4,
                 ),
@@ -5068,6 +5105,7 @@ class _FlipSparkles extends StatefulWidget {
 
   final int trigger;
   final bool fromRight;
+
   /// When true, render a denser/bigger constellation with a longer animation
   /// — used for the Sprout band where the page-flip celebration needs to be
   /// more obvious to keep the toddler's attention.
@@ -5262,8 +5300,12 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
         duration: const Duration(milliseconds: 500),
         child: Center(
           child: Container(
-            width: widget.alwaysVisible ? widget.buttonSize : widget.buttonSize * 0.83,
-            height: widget.alwaysVisible ? widget.buttonSize : widget.buttonSize * 0.83,
+            width: widget.alwaysVisible
+                ? widget.buttonSize
+                : widget.buttonSize * 0.83,
+            height: widget.alwaysVisible
+                ? widget.buttonSize
+                : widget.buttonSize * 0.83,
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(widget.alwaysVisible ? 80 : 40),
               shape: BoxShape.circle,
@@ -5274,7 +5316,9 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
             child: Icon(
               isLeft ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
               color: Colors.white,
-              size: widget.alwaysVisible ? widget.iconSize : widget.iconSize * 0.875,
+              size: widget.alwaysVisible
+                  ? widget.iconSize
+                  : widget.iconSize * 0.875,
             ),
           ),
         ),

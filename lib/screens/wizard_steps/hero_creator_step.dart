@@ -90,6 +90,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late PageController _heroPageController;
   late PageController _sproutCarouselController;
   int _heroPage = 0;
+
   /// Guards the story-type page (Page 6) against double-advance. A Sprout may
   /// tap several mode cards in quick succession, each scheduling an
   /// auto-advance — only the first should cross into the next wizard step.
@@ -102,12 +103,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
+
   /// MT-151: lifetime count of AI photo-avatars this account has generated,
   /// fetched from the backend's `feature-unlocks` endpoint. Every account gets
   /// ONE free custom avatar; after that it is premium. When a non-premium user
   /// has already used their free one, the photo-avatar card shows a "Premium"
   /// badge and routes straight to the upgrade dialog — skipping the selfie.
   int _customAvatarsUsed = 0;
+
   /// Premium "Whose turn is it?" feature — character_id of the last hero,
   /// loaded from SharedPreferences. Null when there's no prior story or only
   /// one kid character is saved.
@@ -121,8 +124,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final SpeechToText _speech = SpeechToText();
   bool _speechAvailable = false;
   String _listeningFor = '';
+
   /// Debounce timer for TTS name echo (Sprout band only).
   Timer? _nameEchoTimer;
+
   /// Sprout companion auto-advance timer. Re-armed on each tap so changing
   /// minds before the delay elapses doesn't fire two advances.
   Timer? _sproutCompanionAdvanceTimer;
@@ -133,7 +138,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool _allowPhotoAvatar = false;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
-  String _petAvatarGeneratingSpecies = 'Dog'; // tracks species being generated for display text
+  String _petAvatarGeneratingSpecies =
+      'Dog'; // tracks species being generated for display text
   late TextEditingController _friendNameController;
 
   // ─── Creative Brief scroll anchors (mature bands) ────────────────────────────
@@ -153,7 +159,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // Pending companion species — set by "Add a Person" / "Add a Pet" buttons,
   // consumed by the HeroPetCard to create the entry and open the editor.
   String? _pendingCompanionSpecies;
-  int _pendingCompanionToken = 0; // increments to distinguish repeated adds of same species
+  int _pendingCompanionToken =
+      0; // increments to distinguish repeated adds of same species
   // For "Add a Person": the chosen relationship ("cousin", "grandma", …) and
   // whether they're a grown-up (drives the supportive-presence story framing).
   String? _pendingCompanionRelation;
@@ -403,8 +410,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ? 'his'
               : 'their';
       final activeId = await ChildProfileService().getActiveProfileId();
-      final grownup =
-          await CaregiverService().grownupLabelOrDefault(activeId);
+      final grownup = await CaregiverService().grownupLabelOrDefault(activeId);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -586,10 +592,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _briefConfigController,
         ]) {
           if (c != controller) {
-            try { c.collapse(); } catch (_) {}
+            try {
+              c.collapse();
+            } catch (_) {}
           }
         }
-        try { controller.expand(); } catch (_) {}
+        try {
+          controller.expand();
+        } catch (_) {}
         final ctx = key.currentContext;
         if (ctx != null) {
           Scrollable.ensureVisible(
@@ -831,8 +841,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),
@@ -859,7 +869,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (age <= 5) {
       unawaited(_speakForSprout(spokenName));
     } else if (age <= 8) {
-      unawaited(_speakArchetypeForExplorer(spokenName, archetype.specialAbility));
+      unawaited(
+          _speakArchetypeForExplorer(spokenName, archetype.specialAbility));
     }
 
     // Page 3 is archetype-only — auto-advance once an archetype is chosen.
@@ -969,7 +980,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       debugPrint('⚠️ Character save failed: $e');
       backendOk = false;
       caughtError = e;
-      isLocalBackendDown = e.toString().contains('Cannot reach the local backend');
+      isLocalBackendDown =
+          e.toString().contains('Cannot reach the local backend');
     }
     // Mirror to local Isar so a backend outage doesn't lose the character.
     await _persistLocalCharacter(synced: backendOk);
@@ -1049,7 +1061,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   TextStyle _bandTitleStyle(AgeBandThemeData band, {double baseFontSize = 24}) {
     if (band.band.isMature) {
       return GoogleFonts.sourceSans3(
-        color: const Color(0xFFFFD700),
+        color: band.accent,
         fontSize: baseFontSize * band.headingScale,
         fontWeight: FontWeight.bold,
       );
@@ -1415,8 +1427,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         backgroundColor: color,
         child: Icon(icon, color: Colors.white),
       ),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
@@ -1545,7 +1556,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     featured: true,
                     icon: Icons.camera_alt_rounded,
                     title: 'Turn YOU into a cartoon hero!',
-                    subtitle: 'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
+                    subtitle:
+                        'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
                     badgeText: _customAvatarLocked ? '✨ Premium ✨' : null,
                     onTap: _customAvatarLocked
                         ? _showCustomAvatarUpgradeDialog
@@ -1558,8 +1570,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12),
                         child: Text('or',
-                            style: TextStyle(
-                                color: Colors.white60, fontSize: 12)),
+                            style:
+                                TextStyle(color: Colors.white60, fontSize: 12)),
                       ),
                       Expanded(child: Divider(color: Colors.white24)),
                     ],
@@ -1671,9 +1683,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Explorer/Adventurer/Creator/Adolescent/Adult), so the same selected ID
     // would match in every band and render a duplicate orb per band. Keep
     // only the first match per id, preferring the active band's image.
-    final activeBand =
-        Theme.of(context).extension<AgeBandThemeData>()?.band ??
-            AgeBand.explorer;
+    final activeBand = Theme.of(context).extension<AgeBandThemeData>()?.band ??
+        AgeBand.explorer;
     final preferredById = <String, CompanionData>{};
     for (final c in allKnownCompanions) {
       if (!widget.wizardData.selectedCompanions.contains(c.id)) continue;
@@ -2076,7 +2087,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             GestureDetector(
               onTap: () => setState(() => _showPetCardForSprout = true),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(12),
@@ -2103,10 +2115,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           else
             HeroPetCard(
               wizardData: widget.wizardData,
-              onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
+              onPickPhoto: ({int? petIndex}) =>
+                  _pickPetPhoto(petIndex: petIndex),
               onChanged: () => setState(() {}),
-              onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
-                  _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+              onSaveCompanion: (
+                      {required int petIndex,
+                      required String name,
+                      required String species,
+                      required String description}) =>
+                  _onSaveCompanion(
+                      petIndex: petIndex,
+                      name: name,
+                      species: species,
+                      description: description),
             ),
         ] else if (band.band == AgeBand.explorer) ...[
           // Explorer: pet form is hidden behind a single tap so the page
@@ -2116,7 +2137,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             GestureDetector(
               onTap: () => setState(() => _showPetCardForExplorer = true),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(12),
@@ -2143,10 +2165,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           else
             HeroPetCard(
               wizardData: widget.wizardData,
-              onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
+              onPickPhoto: ({int? petIndex}) =>
+                  _pickPetPhoto(petIndex: petIndex),
               onChanged: () => setState(() {}),
-              onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
-                  _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+              onSaveCompanion: (
+                      {required int petIndex,
+                      required String name,
+                      required String species,
+                      required String description}) =>
+                  _onSaveCompanion(
+                      petIndex: petIndex,
+                      name: name,
+                      species: species,
+                      description: description),
               pendingNewSpecies: _pendingCompanionSpecies != null
                   ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
                   : null,
@@ -2159,8 +2190,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             wizardData: widget.wizardData,
             onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
             onChanged: () => setState(() {}),
-            onSaveCompanion: ({required int petIndex, required String name, required String species, required String description}) =>
-                _onSaveCompanion(petIndex: petIndex, name: name, species: species, description: description),
+            onSaveCompanion: (
+                    {required int petIndex,
+                    required String name,
+                    required String species,
+                    required String description}) =>
+                _onSaveCompanion(
+                    petIndex: petIndex,
+                    name: name,
+                    species: species,
+                    description: description),
             pendingNewSpecies: _pendingCompanionSpecies != null
                 ? '$_pendingCompanionSpecies:$_pendingCompanionToken'
                 : null,
@@ -2186,7 +2225,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _petAvatarGeneratingSpecies == 'Human'
                       ? 'Bringing them into the story as a character...'
                       : 'Transforming your pet into magical Pixar style...',
-                  style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+                  style:
+                      const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
                   softWrap: true,
                 ),
               ),
@@ -2428,7 +2468,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final result = await _generateMagicalPetAvatar(
       petName: name,
       species: species,
-      looksDescription: description.isEmpty ? (species == 'Human' ? name : species) : description,
+      looksDescription: description.isEmpty
+          ? (species == 'Human' ? name : species)
+          : description,
       photoBytes: photoBytes,
       filename: 'companion_photo.jpg',
     );
@@ -2437,7 +2479,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final success = !result.isError;
     final message = result.message ??
         (success
-            ? (species == 'Human' ? '✨ $name is ready for the adventure!' : '✨ Magical pet avatar ready!')
+            ? (species == 'Human'
+                ? '✨ $name is ready for the adventure!'
+                : '✨ Magical pet avatar ready!')
             : "Oops! Magic isn't working on that picture. Want to pick a companion instead?");
     setState(() {
       _isPetAvatarGenerating = false;
@@ -2446,7 +2490,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: success ? const Color(0xFF4CAF50) : const Color(0xFF6D4C41),
+        backgroundColor:
+            success ? const Color(0xFF4CAF50) : const Color(0xFF6D4C41),
       ),
     );
   }
@@ -2473,8 +2518,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           looksDescription.trim().isEmpty ? species : looksDescription;
       request.fields['owner_favorite_color'] =
           widget.wizardData.favoriteColor.toLowerCase();
-      request.fields['owner_age'] =
-          widget.wizardData.characterAge.toString();
+      request.fields['owner_age'] = widget.wizardData.characterAge.toString();
       if (species == 'Human') {
         request.fields['companion_type'] = 'human';
       }
@@ -2616,8 +2660,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// upsell — a non-premium account that has already used its one free custom
   /// avatar. Tapping the card then opens the upgrade dialog instead of the
   /// selfie flow, so no selfie is wasted.
-  bool get _customAvatarLocked =>
-      !_isPremium && _customAvatarsUsed >= 1;
+  bool get _customAvatarLocked => !_isPremium && _customAvatarsUsed >= 1;
 
   Future<void> _openAvatarGallery() async {
     if (!mounted) return;
@@ -2716,8 +2759,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2D1060),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Photo companions are Premium ✨',
           style: GoogleFonts.nunito(
@@ -2772,8 +2814,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF2D1060),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Unlock more magic ✨',
           style: GoogleFonts.nunito(
@@ -2826,8 +2867,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildArchetypeSceneImage(ArchetypeData archetype, AgeBand ageBand) {
     final gender = widget.wizardData.characterGender;
-    final imagePath = archetype.imagePathForBand(ageBand, gender: gender.isNotEmpty ? gender : null);
-    final fallbackPath = gender.isNotEmpty ? archetype.imagePathForBand(ageBand) : null;
+    final imagePath = archetype.imagePathForBand(ageBand,
+        gender: gender.isNotEmpty ? gender : null);
+    final fallbackPath =
+        gender.isNotEmpty ? archetype.imagePathForBand(ageBand) : null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -2838,12 +2881,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             fallbackPath: fallbackPath,
             fit: BoxFit.cover,
             alignment: Alignment.topCenter,
-            placeholder: Center(child: Text(archetype.icon ?? '✨',
-                style: const TextStyle(fontSize: 64))),
+            placeholder: Center(
+                child: Text(archetype.icon ?? '✨',
+                    style: const TextStyle(fontSize: 64))),
           )
         else
-          Center(child: Text(archetype.icon ?? '✨',
-              style: const TextStyle(fontSize: 72))),
+          Center(
+              child: Text(archetype.icon ?? '✨',
+                  style: const TextStyle(fontSize: 72))),
       ],
     );
   }
@@ -2912,8 +2957,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       // wizard's final-step Make-Magic button stays disabled (isComplete
       // requires a non-empty name) and the bug looks like "the GO button
       // doesn't work." Gate the advance instead and prompt for a name.
-      if (_heroPage == 1 &&
-          widget.wizardData.characterName.trim().isEmpty) {
+      if (_heroPage == 1 && widget.wizardData.characterName.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('What\'s your hero\'s name?'),
           backgroundColor: const Color(0xFFFF6B6B),
@@ -2940,33 +2984,33 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         label: 'Character name',
         textField: true,
         child: TextField(
-        controller: _nameController,
-        focusNode: _nameFocusNode,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.sourceSans3(
-          fontSize: nameFontSize,
-          color: Colors.white70,
-          fontWeight: FontWeight.w600,
-        ),
-        decoration: InputDecoration(
-          hintText: 'Character name',
-          hintStyle: const TextStyle(color: Colors.white30),
-          filled: true,
-          fillColor: Colors.white.withAlpha(10),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(band.buttonRadiusBase),
-            borderSide: const BorderSide(color: Colors.white24),
+          controller: _nameController,
+          focusNode: _nameFocusNode,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.sourceSans3(
+            fontSize: nameFontSize,
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(band.buttonRadiusBase),
-            borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
+          decoration: InputDecoration(
+            hintText: 'Character name',
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: Colors.white.withAlpha(10),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+              borderSide: const BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+              borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          onChanged: (v) =>
+              setState(() => widget.wizardData.characterName = v.trim()),
         ),
-        onChanged: (v) =>
-            setState(() => widget.wizardData.characterName = v.trim()),
-      ),
       );
     }
 
@@ -3011,9 +3055,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           Text(
             isListening ? 'Listening…' : 'Tap to say your name!',
             style: GoogleFonts.fredoka(
-              color: isListening
-                  ? const Color(0xFFFFD700)
-                  : Colors.white70,
+              color: isListening ? const Color(0xFFFFD700) : Colors.white70,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -3036,42 +3078,42 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 label: 'Character name',
                 textField: true,
                 child: TextField(
-                controller: _nameController,
-                focusNode: _nameFocusNode,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.fredoka(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  hintText: 'or type it here',
-                  hintStyle: GoogleFonts.fredoka(
-                    color: Colors.white38,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                  controller: _nameController,
+                  focusNode: _nameFocusNode,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.fredoka(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    hintText: 'or type it here',
+                    hintStyle: GoogleFonts.fredoka(
+                      color: Colors.white38,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onChanged: (v) {
+                    setState(() => widget.wizardData.characterName = v.trim());
+                    // Debounced TTS echo: speak the name 600 ms after last keystroke.
+                    _nameEchoTimer?.cancel();
+                    if (v.trim().isNotEmpty) {
+                      _nameEchoTimer = Timer(
+                        const Duration(milliseconds: 600),
+                        () {
+                          if (mounted) {
+                            AppTtsService.instance
+                                .speak(v.trim(), rateScale: 0.8);
+                          }
+                        },
+                      );
+                    }
+                  },
                 ),
-                onChanged: (v) {
-                  setState(() => widget.wizardData.characterName = v.trim());
-                  // Debounced TTS echo: speak the name 600 ms after last keystroke.
-                  _nameEchoTimer?.cancel();
-                  if (v.trim().isNotEmpty) {
-                    _nameEchoTimer = Timer(
-                      const Duration(milliseconds: 600),
-                      () {
-                        if (mounted) {
-                          AppTtsService.instance
-                              .speak(v.trim(), rateScale: 0.8);
-                        }
-                      },
-                    );
-                  }
-                },
-              ),
               ),
             ),
           ),
@@ -3160,7 +3202,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(100),
+                            blurRadius: 12)
+                      ]
                     : [],
               ),
               child: ClipRRect(
@@ -3171,18 +3217,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     _buildArchetypeSceneImage(a, ageBand),
                     if (isSelected)
                       Positioned(
-                        top: 8, right: 8,
+                        top: 8,
+                        right: 8,
                         child: Container(
-                          decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Color(0xFFFFD700), shape: BoxShape.circle),
                           padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                          child: const Icon(Icons.check,
+                              size: 16, color: Colors.black),
                         ),
                       ),
                     Positioned(
-                      bottom: 4, left: 6, right: 6,
+                      bottom: 4,
+                      left: 6,
+                      right: 6,
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: Colors.black.withAlpha(140),
                             borderRadius: BorderRadius.circular(10),
@@ -3221,7 +3273,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ),
             );
           } else {
-            card = GestureDetector(onTap: () => _selectArchetype(a), child: card);
+            card =
+                GestureDetector(onTap: () => _selectArchetype(a), child: card);
           }
 
           return card;
@@ -3263,7 +3316,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(100),
+                            blurRadius: 12)
+                      ]
                     : [],
               ),
               child: ClipRRect(
@@ -3277,12 +3334,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       right: 0,
                       bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Colors.black.withAlpha(210), Colors.transparent],
+                            colors: [
+                              Colors.black.withAlpha(210),
+                              Colors.transparent
+                            ],
                           ),
                         ),
                         child: Column(
@@ -3299,11 +3360,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                             if (showDescriptions) ...[
                               const SizedBox(height: 2),
                               Text(
-                                a.descriptionForAge(widget.wizardData.characterAge),
+                                a.descriptionForAge(
+                                    widget.wizardData.characterAge),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11),
                               ),
                             ],
                           ],
@@ -3320,7 +3383,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                          child: const Icon(Icons.check,
+                              size: 16, color: Colors.black),
                         ),
                       ),
                   ],
@@ -3416,17 +3480,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             widget.wizardData.heroQuest = words;
           }
           if (result.finalResult) {
-          _listeningFor = '';
-          // Sprout: read back the name so young kids hear confirmation
-          if (field == 'name' && words.isNotEmpty) {
-            final bandData = Theme.of(context).extension<AgeBandThemeData>();
-            if (bandData?.band == AgeBand.sprout) {
-              final firstName = words.split(' ').first;
-              unawaited(AppTtsService.instance
-                  .speak('Hi $firstName! That\'s a lovely name!'));
+            _listeningFor = '';
+            // Sprout: read back the name so young kids hear confirmation
+            if (field == 'name' && words.isNotEmpty) {
+              final bandData = Theme.of(context).extension<AgeBandThemeData>();
+              if (bandData?.band == AgeBand.sprout) {
+                final firstName = words.split(' ').first;
+                unawaited(AppTtsService.instance
+                    .speak('Hi $firstName! That\'s a lovely name!'));
+              }
             }
           }
-        }
         });
       },
     );
@@ -3580,7 +3644,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         3 => "Who is your hero? Tap the one you like!",
         4 => "Tap your buddy to bring them along!",
         5 => "Where should we go? Tap the picture you want.",
-        6 => "What kind of story do you want? Story Quest, Rhyme Time, or Learning to Read! Then tap Make Magic!",
+        6 =>
+          "What kind of story do you want? Story Quest, Rhyme Time, or Learning to Read! Then tap Make Magic!",
         _ => null,
       };
       if (prompt != null) await _speakForSprout(prompt);

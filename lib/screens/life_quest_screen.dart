@@ -34,7 +34,6 @@ const Set<String> _crisisQuestIds = {
 /// (parent who said yes once shouldn't be re-prompted on a second open).
 const String _sensitivityAckPrefix = 'life_quest.sensitivity_ack.';
 
-
 /// Launch a Life Quest: shows quest selector, then plays the quest.
 class LifeQuestScreen extends StatefulWidget {
   const LifeQuestScreen({
@@ -55,9 +54,11 @@ class LifeQuestScreen extends StatefulWidget {
   final String pronoun;
   final String pronounCap;
   final String possessive;
+
   /// Primary caregiver label (e.g. "Mommy", "Grandma"). Defaults to
   /// "your grown-up" when no Family info has been set in Parent Controls.
   final String grownup;
+
   /// Pre-filter quests by emotion (from the feelings badge grid).
   final String? selectedEmotion;
 
@@ -87,15 +88,15 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   bool get _isSprout => ageBandFromAge(widget.childAge) == AgeBand.sprout;
   bool get _isExplorer => ageBandFromAge(widget.childAge) == AgeBand.explorer;
-  bool get _isAdventurer => ageBandFromAge(widget.childAge) == AgeBand.adventurer;
+  bool get _isAdventurer =>
+      ageBandFromAge(widget.childAge) == AgeBand.adventurer;
 
   /// Friends that have at least one Sprout quest. Empty friends (e.g. Sunny Pup
   /// while no happy stories exist) are hidden from the entry grid so a
   /// 4-year-old doesn't tap the brightest-looking option and hit a dead end.
   List<SproutFriend> get _activeFriends => SproutFriend.values
       .where((friend) => allLifeQuests.any((q) =>
-          q.friend == friend &&
-          q.recommendedBands.contains(AgeBand.sprout)))
+          q.friend == friend && q.recommendedBands.contains(AgeBand.sprout)))
       .toList();
 
   @override
@@ -149,11 +150,12 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   List<LifeQuestScenario> get _matchingQuests {
     final band = ageBandFromAge(widget.childAge);
-    var quests = allLifeQuests
-        .where((q) => q.recommendedBands.contains(band))
-        .toList();
+    var quests =
+        allLifeQuests.where((q) => q.recommendedBands.contains(band)).toList();
     if (widget.selectedEmotion != null) {
-      quests = quests.where((q) => q.emotions.contains(widget.selectedEmotion)).toList();
+      quests = quests
+          .where((q) => q.emotions.contains(widget.selectedEmotion))
+          .toList();
     }
     // Sprout: when a friend is selected, only show quests for that friend.
     if (_isSprout && _selectedFriend != null) {
@@ -356,9 +358,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     }
     final quests = _matchingQuests;
     final isYoung = widget.childAge <= 8;
-    final headerTitle = _isSprout
-        ? _selectedFriend!.displayName
-        : 'Pick Your Quest';
+    final headerTitle =
+        _isSprout ? _selectedFriend!.displayName : 'Pick Your Quest';
     return Column(
       children: [
         // Header
@@ -368,9 +369,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             children: [
               IconButton(
                 icon: Icon(
-                  _isSprout
-                      ? Icons.arrow_back_ios_new_rounded
-                      : Icons.close,
+                  _isSprout ? Icons.arrow_back_ios_new_rounded : Icons.close,
                   color: Colors.white60,
                 ),
                 tooltip: _isSprout ? 'Back to friends' : null,
@@ -397,9 +396,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Text(
-            _isSprout
-                ? "Tap a story you'd like to hear!"
-                : _selectorSubtitle(),
+            _isSprout ? "Tap a story you'd like to hear!" : _selectorSubtitle(),
             textAlign: TextAlign.center,
             style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
@@ -604,8 +601,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '— tap to practice anytime',
-                  style: _chromeStyle(band,
-                      color: Colors.white54, fontSize: 11),
+                  style:
+                      _chromeStyle(band, color: Colors.white54, fontSize: 11),
                 ),
               ],
             ),
@@ -654,9 +651,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           Text(
             'Stories to practice',
             style: _chromeStyle(band,
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700),
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 8),
           Text(
@@ -714,7 +709,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () { _startQuest(quest); },
+          onTap: () {
+            _startQuest(quest);
+          },
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -793,7 +790,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               // TTS toggle
               IconButton(
                 icon: Icon(
-                  _ttsEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                  _ttsEnabled
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
                   color: Colors.white60,
                 ),
                 tooltip: _ttsEnabled ? 'Mute narration' : 'Unmute narration',
@@ -938,8 +937,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             ),
             child: Text(
               _interpolate(choice.text),
-              style: _chromeStyle(band,
-                  fontSize: 15, fontWeight: FontWeight.w500),
+              style:
+                  _chromeStyle(band, fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
         ),
@@ -981,7 +980,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     const Text('💬', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 6),
                     Text(
-                      'For a grown-up to ask',
+                      band.band.isMature
+                          ? 'To reflect on'
+                          : 'For a grown-up to ask',
                       style: _chromeStyle(band,
                           color: Colors.white60,
                           fontSize: 11,
@@ -1023,7 +1024,8 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
         ],
         // Secondary actions
         OutlinedButton.icon(
-          icon: Icon(_isSprout ? Icons.pets_rounded : Icons.explore_rounded, size: 18),
+          icon: Icon(_isSprout ? Icons.pets_rounded : Icons.explore_rounded,
+              size: 18),
           label: Text(_isSprout ? 'Pick another friend' : 'Try another quest'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white70,
@@ -1066,10 +1068,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 extension _SproutFriendDisplay on SproutFriend {
   String get displayName {
     switch (this) {
-      case SproutFriend.pup:   return 'Sunny Pup';
-      case SproutFriend.bunny: return 'Rainy Bunny';
-      case SproutFriend.lion:  return 'Roary Lion';
-      case SproutFriend.mouse: return 'Shy Mouse';
+      case SproutFriend.pup:
+        return 'Sunny Pup';
+      case SproutFriend.bunny:
+        return 'Rainy Bunny';
+      case SproutFriend.lion:
+        return 'Roary Lion';
+      case SproutFriend.mouse:
+        return 'Shy Mouse';
     }
   }
 
@@ -1077,30 +1083,42 @@ extension _SproutFriendDisplay on SproutFriend {
   /// Maps each friend to its emotion-keyed art asset.
   String get assetName {
     switch (this) {
-      case SproutFriend.pup:   return 'happy';
-      case SproutFriend.bunny: return 'sad';
-      case SproutFriend.lion:  return 'mad';
-      case SproutFriend.mouse: return 'scared';
+      case SproutFriend.pup:
+        return 'happy';
+      case SproutFriend.bunny:
+        return 'sad';
+      case SproutFriend.lion:
+        return 'mad';
+      case SproutFriend.mouse:
+        return 'scared';
     }
   }
 
   /// Tint used for the friend card's gradient + border.
   Color get tintColor {
     switch (this) {
-      case SproutFriend.pup:   return const Color(0xFFFFCB47); // warm yellow
-      case SproutFriend.bunny: return const Color(0xFF8FB8E8); // soft sky blue
-      case SproutFriend.lion:  return const Color(0xFFFFA07A); // warm coral
-      case SproutFriend.mouse: return const Color(0xFFB39DDB); // pale lavender
+      case SproutFriend.pup:
+        return const Color(0xFFFFCB47); // warm yellow
+      case SproutFriend.bunny:
+        return const Color(0xFF8FB8E8); // soft sky blue
+      case SproutFriend.lion:
+        return const Color(0xFFFFA07A); // warm coral
+      case SproutFriend.mouse:
+        return const Color(0xFFB39DDB); // pale lavender
     }
   }
 
   /// Fallback emoji shown if the asset image fails to load.
   String get fallbackEmoji {
     switch (this) {
-      case SproutFriend.pup:   return '🐶';
-      case SproutFriend.bunny: return '🐰';
-      case SproutFriend.lion:  return '🦁';
-      case SproutFriend.mouse: return '🐭';
+      case SproutFriend.pup:
+        return '🐶';
+      case SproutFriend.bunny:
+        return '🐰';
+      case SproutFriend.lion:
+        return '🦁';
+      case SproutFriend.mouse:
+        return '🐭';
     }
   }
 }

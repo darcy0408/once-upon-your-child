@@ -16,6 +16,7 @@ class GenderImageButton extends StatefulWidget {
   });
 
   final String gender;
+
   /// Display label shown below the image. Defaults to [gender] if not provided.
   final String? label;
   final String assetPath;
@@ -37,6 +38,10 @@ class _GenderImageButtonState extends State<GenderImageButton> {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final bool useDecorative = band.band == AgeBand.explorer;
+    // Mature bands use their own accent for the selected highlight so the
+    // gender picker matches the recolored Creative Brief; younger bands keep
+    // the established gold.
+    final accent = band.band.isMature ? band.accent : const Color(0xFFFFD700);
     return Semantics(
       button: true,
       selected: widget.isSelected,
@@ -44,105 +49,101 @@ class _GenderImageButtonState extends State<GenderImageButton> {
       onTap: widget.onTap,
       excludeSemantics: true,
       child: GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedScale(
-          scale: _pressed ? 1.08 : (_hovered ? 1.04 : 1.0),
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1828),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: widget.isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(160),
-                            blurRadius: 28,
-                            spreadRadius: 4,
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(80),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                  border: Border.all(
-                    color: widget.isSelected
-                        ? const Color(0xFFFFD700)
-                        : _hovered
-                            ? const Color(0xFFFFD700).withAlpha(100)
-                            : Colors.white30,
-                    width: widget.isSelected ? 3.5 : 1.5,
-                  ),
-                ),
-                child: Container(
-                  width: widget.width,
-                  height: widget.height,
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: AnimatedScale(
+            scale: _pressed ? 1.08 : (_hovered ? 1.04 : 1.0),
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1828),
-                    borderRadius: BorderRadius.circular(17),
-                    image: DecorationImage(
-                      image: AssetImage(widget.assetPath),
-                      fit: BoxFit.contain,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: widget.isSelected
+                        ? [
+                            BoxShadow(
+                              color: accent.withAlpha(160),
+                              blurRadius: 28,
+                              spreadRadius: 4,
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(80),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                    border: Border.all(
+                      color: widget.isSelected
+                          ? accent
+                          : _hovered
+                              ? accent.withAlpha(100)
+                              : Colors.white30,
+                      width: widget.isSelected ? 3.5 : 1.5,
                     ),
                   ),
-                  foregroundDecoration: _pressed
-                      ? const BoxDecoration(
-                          color: Color(0x44FFFFFF),
-                          borderRadius: BorderRadius.all(Radius.circular(17)),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 10),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: useDecorative
-                    ? GoogleFonts.cinzelDecorative(
-                        color: widget.isSelected
-                            ? const Color(0xFFFFD700)
-                            : Colors.white70,
-                        fontSize: 15,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        shadows: [
-                          Shadow(
-                            color: widget.isSelected
-                                ? const Color(0xFFFFD700)
-                                : const Color(0x00FFD700),
-                            blurRadius: widget.isSelected ? 10.0 : 0.0,
-                          ),
-                        ],
-                      )
-                    : GoogleFonts.sourceSans3(
-                        color: widget.isSelected
-                            ? const Color(0xFFFFD700)
-                            : Colors.white70,
-                        fontSize: 15,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                  child: Container(
+                    width: widget.width,
+                    height: widget.height,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1828),
+                      borderRadius: BorderRadius.circular(17),
+                      image: DecorationImage(
+                        image: AssetImage(widget.assetPath),
+                        fit: BoxFit.contain,
                       ),
-                child: Text(widget.label ?? widget.gender),
-              ),
-            ],
+                    ),
+                    foregroundDecoration: _pressed
+                        ? const BoxDecoration(
+                            color: Color(0x44FFFFFF),
+                            borderRadius: BorderRadius.all(Radius.circular(17)),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: useDecorative
+                      ? GoogleFonts.cinzelDecorative(
+                          color: widget.isSelected ? accent : Colors.white70,
+                          fontSize: 15,
+                          fontWeight: widget.isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          shadows: [
+                            Shadow(
+                              color: widget.isSelected
+                                  ? accent
+                                  : const Color(0x00FFD700),
+                              blurRadius: widget.isSelected ? 10.0 : 0.0,
+                            ),
+                          ],
+                        )
+                      : GoogleFonts.sourceSans3(
+                          color: widget.isSelected ? accent : Colors.white70,
+                          fontSize: 15,
+                          fontWeight: widget.isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                  child: Text(widget.label ?? widget.gender),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -258,78 +259,79 @@ class _ThemedNameInputState extends State<ThemedNameInput>
                 label: "Your hero's name",
                 textField: true,
                 child: TextField(
-                controller: widget.controller,
-                focusNode: widget.focusNode,
-                textAlign: TextAlign.center,
-                style: useDecorative
-                    ? GoogleFonts.cinzelDecorative(
-                        fontSize: widget.fontSize,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        shadows: const [
-                          Shadow(color: Color(0xFFFFD54F), blurRadius: 6)
-                        ],
-                      )
-                    : GoogleFonts.sourceSans3(
-                        fontSize: widget.fontSize,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                decoration: InputDecoration(
-                  hintText: "Type your hero's name...",
-                  hintStyle: useDecorative
+                  controller: widget.controller,
+                  focusNode: widget.focusNode,
+                  textAlign: TextAlign.center,
+                  style: useDecorative
                       ? GoogleFonts.cinzelDecorative(
-                          color: const Color(0xFFFFE082).withAlpha(180),
-                          fontSize: widget.fontSize * 0.85,
-                          fontWeight: FontWeight.w400,
+                          fontSize: widget.fontSize,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          shadows: const [
+                            Shadow(color: Color(0xFFFFD54F), blurRadius: 6)
+                          ],
                         )
-                      : TextStyle(
-                          color: Colors.white30,
-                          fontSize: widget.fontSize * 0.85,
+                      : GoogleFonts.sourceSans3(
+                          fontSize: widget.fontSize,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
                         ),
-                  border: InputBorder.none,
-                  filled: false,
-                  suffixIcon: widget.onMicTap != null
-                      ? Semantics(
-                          button: true,
-                          label: widget.isListening
-                              ? 'Stop listening'
-                              : 'Tap and speak',
-                          child: GestureDetector(
-                            onTap: widget.onMicTap,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.all(8),
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: widget.isListening
-                                    ? Colors.red.shade400
-                                    : const Color(0xFFFFD54F).withAlpha(50),
-                                border: Border.all(
+                  decoration: InputDecoration(
+                    hintText: "Type your hero's name...",
+                    hintStyle: useDecorative
+                        ? GoogleFonts.cinzelDecorative(
+                            color: const Color(0xFFFFE082).withAlpha(180),
+                            fontSize: widget.fontSize * 0.85,
+                            fontWeight: FontWeight.w400,
+                          )
+                        : TextStyle(
+                            color: Colors.white30,
+                            fontSize: widget.fontSize * 0.85,
+                          ),
+                    border: InputBorder.none,
+                    filled: false,
+                    suffixIcon: widget.onMicTap != null
+                        ? Semantics(
+                            button: true,
+                            label: widget.isListening
+                                ? 'Stop listening'
+                                : 'Tap and speak',
+                            child: GestureDetector(
+                              onTap: widget.onMicTap,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                margin: const EdgeInsets.all(8),
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
                                   color: widget.isListening
-                                      ? Colors.red
-                                      : const Color(0xFFFFD54F).withAlpha(180),
-                                  width: 1.5,
+                                      ? Colors.red.shade400
+                                      : const Color(0xFFFFD54F).withAlpha(50),
+                                  border: Border.all(
+                                    color: widget.isListening
+                                        ? Colors.red
+                                        : const Color(0xFFFFD54F)
+                                            .withAlpha(180),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  widget.isListening
+                                      ? Icons.mic
+                                      : Icons.mic_none_rounded,
+                                  size: 18,
+                                  color: widget.isListening
+                                      ? Colors.white
+                                      : const Color(0xFFFFD54F),
                                 ),
                               ),
-                              child: Icon(
-                                widget.isListening
-                                    ? Icons.mic
-                                    : Icons.mic_none_rounded,
-                                size: 18,
-                                color: widget.isListening
-                                    ? Colors.white
-                                    : const Color(0xFFFFD54F),
-                              ),
                             ),
-                          ),
-                        )
-                      : null,
+                          )
+                        : null,
+                  ),
+                  onChanged: widget.onChanged,
                 ),
-                onChanged: widget.onChanged,
-              ),
               ),
             ),
           ),
@@ -374,39 +376,41 @@ class _PressableArrowButtonState extends State<PressableArrowButton> {
             enabled: widget.enabled,
             label: widget.hint ?? 'Next',
             child: GestureDetector(
-              onTapDown:
-                  widget.enabled ? (_) => setState(() => _pressed = true) : null,
-              onTapUp:
-                  widget.enabled ? (_) => setState(() => _pressed = false) : null,
+              onTapDown: widget.enabled
+                  ? (_) => setState(() => _pressed = true)
+                  : null,
+              onTapUp: widget.enabled
+                  ? (_) => setState(() => _pressed = false)
+                  : null,
               onTapCancel: () => setState(() => _pressed = false),
               onTap: widget.enabled ? widget.onTap : null,
               child: AnimatedScale(
-              scale: _pressed ? 0.86 : 1.0,
-              duration: const Duration(milliseconds: 80),
-              child: AnimatedContainer(
+                scale: _pressed ? 0.86 : 1.0,
                 duration: const Duration(milliseconds: 80),
-                width: btnSize,
-                height: btnSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: _pressed
-                        ? [const Color(0xFFD070FF), const Color(0xFF8B4FD8)]
-                        : [const Color(0xFF9B3FD8), const Color(0xFF5B1BAA)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFD700)
-                          .withAlpha(_pressed ? 200 : 100),
-                      blurRadius: _pressed ? 32 : 20,
-                      spreadRadius: _pressed ? 4 : 0,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 80),
+                  width: btnSize,
+                  height: btnSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: _pressed
+                          ? [const Color(0xFFD070FF), const Color(0xFF8B4FD8)]
+                          : [const Color(0xFF9B3FD8), const Color(0xFF5B1BAA)],
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700)
+                            .withAlpha(_pressed ? 200 : 100),
+                        blurRadius: _pressed ? 32 : 20,
+                        spreadRadius: _pressed ? 4 : 0,
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: btnSize * 0.5),
                 ),
-                child: Icon(Icons.arrow_forward_rounded,
-                    color: Colors.white, size: btnSize * 0.5),
               ),
-            ),
             ),
           ),
           if (widget.hint != null) ...[

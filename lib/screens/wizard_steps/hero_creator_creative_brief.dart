@@ -93,14 +93,14 @@ class CreativeBriefWidget extends StatelessWidget {
 
   // ── section builders ───────────────────────────────────────────────────────
 
-  Widget _buildBriefHeader() {
+  Widget _buildBriefHeader(Color accent) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Build Your Story',
           style: GoogleFonts.sourceSans3(
-            color: const Color(0xFFFFD700),
+            color: accent,
             fontSize: 14,
             fontWeight: FontWeight.w900,
             letterSpacing: 4.0,
@@ -108,7 +108,7 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Shape your story.',
+          'Set the character, world, and tone.',
           style: GoogleFonts.sourceSans3(
             color: Colors.white70,
             fontSize: 16,
@@ -116,13 +116,14 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Divider(color: Color(0xFFFFD700), thickness: 2, endIndent: 200),
+        Divider(color: accent, thickness: 2, endIndent: 200),
       ],
     );
   }
 
   Widget _buildBriefSection(
     BuildContext context,
+    Color accent,
     String title,
     Widget content, {
     bool initiallyExpanded = false,
@@ -143,7 +144,7 @@ class CreativeBriefWidget extends StatelessWidget {
             Text(
               title.toUpperCase(),
               style: GoogleFonts.sourceSans3(
-                color: const Color(0xFFFFD700).withAlpha(180),
+                color: accent.withAlpha(180),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
@@ -162,14 +163,14 @@ class CreativeBriefWidget extends StatelessWidget {
             ],
           ],
         ),
-        iconColor: const Color(0xFFFFD700),
+        iconColor: accent,
         collapsedIconColor: Colors.white30,
         children: [content],
       ),
     );
   }
 
-  Widget _buildRestoreCharacterSection(BuildContext context) {
+  Widget _buildRestoreCharacterSection(BuildContext context, Color accent) {
     if (availableCharacters.isEmpty) return const SizedBox.shrink();
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -178,7 +179,7 @@ class CreativeBriefWidget extends StatelessWidget {
         title: Text(
           'RESTORE PREVIOUS CHARACTER',
           style: GoogleFonts.sourceSans3(
-            color: const Color(0xFFFFD700),
+            color: accent,
             fontSize: 11,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.0,
@@ -189,8 +190,8 @@ class CreativeBriefWidget extends StatelessWidget {
           style: TextStyle(
               color: Colors.white.withAlpha(80), fontSize: 10, height: 1.5),
         ),
-        iconColor: const Color(0xFFFFD700),
-        collapsedIconColor: const Color(0xFFFFD700),
+        iconColor: accent,
+        collapsedIconColor: accent,
         children: availableCharacters.map((char) {
           final avatarData = char.generatedAvatar?.imageBase64;
           return ListTile(
@@ -208,8 +209,7 @@ class CreativeBriefWidget extends StatelessWidget {
             subtitle: Text(char.role,
                 style: TextStyle(
                     color: Colors.white.withAlpha(100), fontSize: 11)),
-            trailing: const Icon(Icons.file_upload_outlined,
-                color: Color(0xFFFFD700), size: 18),
+            trailing: Icon(Icons.file_upload_outlined, color: accent, size: 18),
             onTap: () => onLoadCharacter(char),
           );
         }).toList(),
@@ -224,8 +224,10 @@ class CreativeBriefWidget extends StatelessWidget {
     final String girlAsset;
     switch (ageBand) {
       case AgeBand.adolescent:
-        boyAsset = 'assets/images/archetypes/adolescent/master_creator_boy.webp';
-        girlAsset = 'assets/images/archetypes/adolescent/master_creator_girl.webp';
+        boyAsset =
+            'assets/images/archetypes/adolescent/master_creator_boy.webp';
+        girlAsset =
+            'assets/images/archetypes/adolescent/master_creator_girl.webp';
         break;
       case AgeBand.adult:
         boyAsset = 'assets/images/ui/adult/man_character_white.webp';
@@ -291,7 +293,9 @@ class CreativeBriefWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildBriefIdentityInputs(BuildContext context, AgeBandThemeData band) {
+  Widget _buildBriefIdentityInputs(
+      BuildContext context, AgeBandThemeData band) {
+    final accent = band.accent;
     final ageBand = ageBandFromAge(wizardData.characterAge);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,17 +305,16 @@ class CreativeBriefWidget extends StatelessWidget {
           style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 18),
           decoration: InputDecoration(
             labelText: 'PROTAGONIST NAME',
-            labelStyle: GoogleFonts.sourceSans3(
-                color: const Color(0xFFFFD700), fontSize: 10),
+            labelStyle: GoogleFonts.sourceSans3(color: accent, fontSize: 10),
             hintText: 'Enter name...',
-            hintStyle: TextStyle(color: Colors.white.withAlpha(40)),
+            hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
             // Disable the global light-teal fill so the white input text shows
             // on this dark screen (underline-only field by design).
             filled: false,
             enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.white.withAlpha(40))),
-            focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFFFFD700))),
+            focusedBorder:
+                UnderlineInputBorder(borderSide: BorderSide(color: accent)),
           ),
           onChanged: (v) => wizardData.characterName = v,
         ),
@@ -330,23 +333,23 @@ class CreativeBriefWidget extends StatelessWidget {
             label: 'What your character wants',
             textField: true,
             child: TextField(
-            controller: characterDesireController,
-            style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 16),
-            decoration: InputDecoration(
-              hintText: 'e.g. to prove themselves, to reconnect with family',
-              hintStyle: TextStyle(
-                  color: Colors.white.withAlpha(35), fontSize: 14),
-              // Disable the global light-teal fill so the white input text shows
-              // on this dark screen (underline-only field by design).
-              filled: false,
-              enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withAlpha(30))),
-              focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF7C4DFF))),
+              controller: characterDesireController,
+              style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: 'e.g. to prove themselves, to reconnect with family',
+                hintStyle:
+                    TextStyle(color: Colors.white.withAlpha(120), fontSize: 14),
+                // Disable the global light-teal fill so the white input text shows
+                // on this dark screen (underline-only field by design).
+                filled: false,
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white.withAlpha(30))),
+                focusedBorder:
+                    UnderlineInputBorder(borderSide: BorderSide(color: accent)),
+              ),
+              onChanged: (v) =>
+                  wizardData.characterDesire = v.trim().isEmpty ? null : v,
             ),
-            onChanged: (v) =>
-                wizardData.characterDesire = v.trim().isEmpty ? null : v,
-          ),
           ),
         ],
         const SizedBox(height: 12),
@@ -396,16 +399,16 @@ class CreativeBriefWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFFFFD700)
-                          : Colors.white.withAlpha(40),
+                      color: isSelected ? accent : Colors.white.withAlpha(40),
                       width: isSelected ? 2.5 : 1,
                     ),
                     boxShadow: isSelected
-                        ? [BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(80),
-                            blurRadius: 10,
-                          )]
+                        ? [
+                            BoxShadow(
+                              color: accent.withAlpha(80),
+                              blurRadius: 10,
+                            )
+                          ]
                         : [],
                   ),
                   child: ClipRRect(
@@ -462,8 +465,8 @@ class CreativeBriefWidget extends StatelessWidget {
                             top: 6,
                             right: 6,
                             child: Container(
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFD700),
+                              decoration: BoxDecoration(
+                                color: accent,
                                 shape: BoxShape.circle,
                               ),
                               padding: const EdgeInsets.all(2),
@@ -483,7 +486,7 @@ class CreativeBriefWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildBriefPersonalitySliders(BuildContext context) {
+  Widget _buildBriefPersonalitySliders(BuildContext context, Color accent) {
     final sliders = wizardData.personalitySliders;
     final age = wizardData.characterAge;
 
@@ -497,6 +500,7 @@ class CreativeBriefWidget extends StatelessWidget {
       children: [
         _buildBriefSlider(
           context,
+          accent,
           'Energy Level',
           def('expressiveness').leftLabelForAge(age),
           def('expressiveness').rightLabelForAge(age),
@@ -505,6 +509,7 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         _buildBriefSlider(
           context,
+          accent,
           'Social Style',
           def('sociability').leftLabelForAge(age),
           def('sociability').rightLabelForAge(age),
@@ -513,6 +518,7 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         _buildBriefSlider(
           context,
+          accent,
           'CONSTRUCTIVE LOGIC',
           def('problem_solving').leftLabelForAge(age),
           def('problem_solving').rightLabelForAge(age),
@@ -521,6 +527,7 @@ class CreativeBriefWidget extends StatelessWidget {
         ),
         _buildBriefSlider(
           context,
+          accent,
           'ADVENTURE TOLERANCE',
           def('adventure').leftLabelForAge(age),
           def('adventure').rightLabelForAge(age),
@@ -533,6 +540,7 @@ class CreativeBriefWidget extends StatelessWidget {
 
   Widget _buildBriefSlider(
     BuildContext context,
+    Color accent,
     String label,
     String left,
     String right,
@@ -546,8 +554,8 @@ class CreativeBriefWidget extends StatelessWidget {
         children: [
           Text(label,
               style: GoogleFonts.sourceSans3(
-                  color: Colors.white.withAlpha(80),
-                  fontSize: 9,
+                  color: Colors.white.withAlpha(140),
+                  fontSize: 11,
                   fontWeight: FontWeight.bold)),
           Row(
             children: [
@@ -557,10 +565,10 @@ class CreativeBriefWidget extends StatelessWidget {
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: const Color(0xFFFFD700),
+                    activeTrackColor: accent,
                     inactiveTrackColor: Colors.white12,
-                    thumbColor: const Color(0xFFFFD700),
-                    overlayColor: const Color(0xFFFFD700).withAlpha(32),
+                    thumbColor: accent,
+                    overlayColor: accent.withAlpha(32),
                     trackHeight: 2,
                     thumbShape:
                         const RoundSliderThumbShape(enabledThumbRadius: 6),
@@ -606,6 +614,7 @@ class CreativeBriefWidget extends StatelessWidget {
   }
 
   Widget _buildBriefWorldInputs(BuildContext context, AgeBandThemeData band) {
+    final accent = band.accent;
     final scenarios =
         ScenarioData.all.where((s) => s.id != 'safe_space').toList();
     final isCustom = wizardData.selectedScenario == 'safe_space';
@@ -636,26 +645,25 @@ class CreativeBriefWidget extends StatelessWidget {
                 },
                 color: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return const Color(0xFFFFD700).withAlpha(40);
+                    return accent.withAlpha(40);
                   }
                   return const Color(0xFF1A0A2E);
                 }),
                 labelStyle: GoogleFonts.sourceSans3(
-                  color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                  color: isSelected ? accent : Colors.white70,
                   fontSize: 10,
                 ),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide(
-                        color: isSelected
-                            ? const Color(0xFFFFD700)
-                            : Colors.white.withAlpha(40))),
+                        color:
+                            isSelected ? accent : Colors.white.withAlpha(40))),
               );
             }),
             ChoiceChip(
               label: Text('✏️ MY OWN IDEA',
                   style: GoogleFonts.sourceSans3(
-                    color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
+                    color: isCustom ? accent : Colors.white70,
                     fontSize: 10,
                   )),
               selected: isCustom,
@@ -665,20 +673,18 @@ class CreativeBriefWidget extends StatelessWidget {
               },
               color: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return const Color(0xFFFFD700).withAlpha(40);
+                  return accent.withAlpha(40);
                 }
                 return const Color(0xFF1A0A2E);
               }),
               labelStyle: GoogleFonts.sourceSans3(
-                color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
+                color: isCustom ? accent : Colors.white70,
                 fontSize: 10,
               ),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                      color: isCustom
-                          ? const Color(0xFFFFD700)
-                          : Colors.white.withAlpha(40))),
+                      color: isCustom ? accent : Colors.white.withAlpha(40))),
             ),
           ],
         ),
@@ -688,25 +694,26 @@ class CreativeBriefWidget extends StatelessWidget {
             label: 'Describe your world or premise',
             textField: true,
             child: TextField(
-            controller: imagineItController,
-            maxLines: 2,
-            style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Type anything — e.g. ride a magic carpet, win the lottery, pull off a daring heist...',
-              hintStyle: TextStyle(
-                  color: Colors.white.withAlpha(40),
-                  fontStyle: FontStyle.italic),
-              filled: true,
-              fillColor: Colors.white.withAlpha(10),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none),
+              controller: imagineItController,
+              maxLines: 2,
+              style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText:
+                    'Type anything — e.g. ride a magic carpet, win the lottery, pull off a daring heist...',
+                hintStyle: TextStyle(
+                    color: Colors.white.withAlpha(120),
+                    fontStyle: FontStyle.italic),
+                filled: true,
+                fillColor: Colors.white.withAlpha(10),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+              ),
+              onChanged: (v) {
+                wizardData.customElements = v;
+                wishController.text = v;
+              },
             ),
-            onChanged: (v) {
-              wizardData.customElements = v;
-              wishController.text = v;
-            },
-          ),
           ),
         ],
       ],
@@ -714,6 +721,7 @@ class CreativeBriefWidget extends StatelessWidget {
   }
 
   Widget _buildBriefConfigInputs(BuildContext context, AgeBandThemeData band) {
+    final accent = band.accent;
     final showGenreChips = band.band.isMature;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,7 +745,9 @@ class CreativeBriefWidget extends StatelessWidget {
                   selected: wizardData.selectedGenre == 'mystery',
                   onTap: () {
                     wizardData.selectedGenre =
-                        wizardData.selectedGenre == 'mystery' ? null : 'mystery';
+                        wizardData.selectedGenre == 'mystery'
+                            ? null
+                            : 'mystery';
                     onChanged();
                   }),
               GenreChip(
@@ -807,6 +817,7 @@ class CreativeBriefWidget extends StatelessWidget {
             Expanded(
               child: _buildBriefDropdown(
                 context,
+                accent,
                 'NARRATIVE MODE',
                 wizardData.interactiveMode
                     ? 'Interactive'
@@ -823,6 +834,7 @@ class CreativeBriefWidget extends StatelessWidget {
             Expanded(
               child: _buildBriefDropdown(
                 context,
+                accent,
                 'TARGET DURATION',
                 _lengthToLabel(wizardData.storyLength),
                 ['Short', 'Medium', 'Long'],
@@ -840,6 +852,7 @@ class CreativeBriefWidget extends StatelessWidget {
 
   Widget _buildBriefDropdown(
     BuildContext context,
+    Color accent,
     String label,
     String value,
     List<String> options,
@@ -850,8 +863,8 @@ class CreativeBriefWidget extends StatelessWidget {
       children: [
         Text(label,
             style: GoogleFonts.sourceSans3(
-                color: Colors.white.withAlpha(80),
-                fontSize: 9,
+                color: Colors.white.withAlpha(140),
+                fontSize: 11,
                 fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Container(
@@ -865,10 +878,8 @@ class CreativeBriefWidget extends StatelessWidget {
               value: options.contains(value) ? value : options.first,
               dropdownColor: const Color(0xFF2C1B47),
               isExpanded: true,
-              style:
-                  GoogleFonts.sourceSans3(color: Colors.white, fontSize: 12),
-              icon: const Icon(Icons.keyboard_arrow_down,
-                  color: Color(0xFFFFD700), size: 18),
+              style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 12),
+              icon: Icon(Icons.keyboard_arrow_down, color: accent, size: 18),
               onChanged: onValueChanged,
               items: options
                   .map((o) => DropdownMenuItem(value: o, child: Text(o)))
@@ -886,6 +897,7 @@ class CreativeBriefWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final accent = band.accent;
     return SingleChildScrollView(
       controller: briefScrollController,
       physics: const BouncingScrollPhysics(),
@@ -893,12 +905,13 @@ class CreativeBriefWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBriefHeader(),
+          _buildBriefHeader(accent),
           const SizedBox(height: 16),
-          _buildRestoreCharacterSection(context),
+          _buildRestoreCharacterSection(context, accent),
           const SizedBox(height: 16),
           _buildBriefSection(
             context,
+            accent,
             'Character & Role',
             _buildBriefIdentityInputs(context, band),
             initiallyExpanded: true,
@@ -907,12 +920,14 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
           _buildBriefSection(
             context,
+            accent,
             'Personality',
-            _buildBriefPersonalitySliders(context),
+            _buildBriefPersonalitySliders(context, accent),
             optional: true,
           ),
           _buildBriefSection(
             context,
+            accent,
             'Cast & Companions',
             _buildBriefCompanionsInputs(),
             optional: true,
@@ -921,6 +936,7 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
           _buildBriefSection(
             context,
+            accent,
             'World & Setting',
             _buildBriefWorldInputs(context, band),
             optional: true,
@@ -929,6 +945,7 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
           _buildBriefSection(
             context,
+            accent,
             'Story Options',
             _buildBriefConfigInputs(context, band),
             optional: true,
@@ -942,7 +959,7 @@ class CreativeBriefWidget extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onContinue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
+                  backgroundColor: accent,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(

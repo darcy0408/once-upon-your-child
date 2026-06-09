@@ -19,7 +19,8 @@ enum SortOption {
 final _showOnlyFavoritesProvider = StateProvider<bool>((ref) => false);
 final _showOnlyInteractiveProvider = StateProvider<bool>((ref) => false);
 final _selectedThemeFilterProvider = StateProvider<String>((ref) => 'All');
-final _sortOptionProvider = StateProvider<SortOption>((ref) => SortOption.newest);
+final _sortOptionProvider =
+    StateProvider<SortOption>((ref) => SortOption.newest);
 final _compactListProvider = StateProvider<bool>((ref) => false);
 
 const List<String> _themes = [
@@ -42,7 +43,8 @@ class SavedStoriesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final storiesAsync = ref.watch(storyListProvider);
     final showOnlyFavorites = ref.watch(_showOnlyFavoritesProvider);
     final showOnlyInteractive = ref.watch(_showOnlyInteractiveProvider);
@@ -50,7 +52,8 @@ class SavedStoriesScreen extends ConsumerWidget {
     final currentSort = ref.watch(_sortOptionProvider);
     final isCompact = ref.watch(_compactListProvider);
     // Sprout always uses large cards; Creator can toggle compact list
-    final showCompactToggle = band.band == AgeBand.creator || band.band == AgeBand.adventurer;
+    final showCompactToggle =
+        band.band == AgeBand.creator || band.band == AgeBand.adventurer;
     final useCompact = showCompactToggle && isCompact;
 
     return Scaffold(
@@ -61,23 +64,28 @@ class SavedStoriesScreen extends ConsumerWidget {
         elevation: 0,
         title: Text(
           band.band == AgeBand.sprout ? 'My Story Shelf' : 'My Stories',
-          style: TextStyle(fontFamily: band.uiFontFamily, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontFamily: band.uiFontFamily, fontWeight: FontWeight.bold),
         ),
         actions: [
           if (showCompactToggle)
             IconButton(
-              icon: Icon(isCompact ? Icons.grid_view_rounded : Icons.list_rounded),
+              icon: Icon(
+                  isCompact ? Icons.grid_view_rounded : Icons.list_rounded),
               tooltip: isCompact ? 'Card view' : 'List view',
-              onPressed: () => ref.read(_compactListProvider.notifier).state = !isCompact,
+              onPressed: () =>
+                  ref.read(_compactListProvider.notifier).state = !isCompact,
             ),
           IconButton(
             icon: Icon(
               showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
               color: showOnlyFavorites ? Colors.red.shade300 : Colors.white70,
             ),
-            tooltip: showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
+            tooltip:
+                showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
             onPressed: () {
-              ref.read(_showOnlyFavoritesProvider.notifier).state = !showOnlyFavorites;
+              ref.read(_showOnlyFavoritesProvider.notifier).state =
+                  !showOnlyFavorites;
             },
           ),
         ],
@@ -102,8 +110,12 @@ class SavedStoriesScreen extends ConsumerWidget {
                       style: const TextStyle(fontSize: 56)),
                   const SizedBox(height: 12),
                   Text(
-                    'No stories saved yet!',
-                    style: TextStyle(color: Colors.white70, fontSize: 16,
+                    band.band.isMature
+                        ? 'Nothing here yet. Start your first story.'
+                        : 'No stories saved yet!',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
                         fontFamily: band.uiFontFamily),
                   ),
                 ],
@@ -125,28 +137,34 @@ class SavedStoriesScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-
                 if (filteredStories.isEmpty)
                   SliverFillRemaining(
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.filter_alt_off, size: 64,
-                              color: Colors.white38),
+                          Icon(Icons.filter_alt_off,
+                              size: 64, color: Colors.white38),
                           const SizedBox(height: 16),
                           Text(
                             'No stories match your filters',
-                            style: TextStyle(
-                                fontSize: 16, color: Colors.white70),
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.white70),
                           ),
                           const SizedBox(height: 8),
                           TextButton(
                             onPressed: () {
-                              ref.read(_showOnlyFavoritesProvider.notifier).state = false;
-                              ref.read(_selectedThemeFilterProvider.notifier).state = 'All';
-                              ref.read(_showOnlyInteractiveProvider.notifier).state = false;
-                              ref.read(_sortOptionProvider.notifier).state = SortOption.newest;
+                              ref
+                                  .read(_showOnlyFavoritesProvider.notifier)
+                                  .state = false;
+                              ref
+                                  .read(_selectedThemeFilterProvider.notifier)
+                                  .state = 'All';
+                              ref
+                                  .read(_showOnlyInteractiveProvider.notifier)
+                                  .state = false;
+                              ref.read(_sortOptionProvider.notifier).state =
+                                  SortOption.newest;
                             },
                             child: const Text('Clear Filters',
                                 style: TextStyle(color: Colors.white70)),
@@ -183,10 +201,12 @@ class SavedStoriesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     sliver: SliverGrid(
                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: band.band == AgeBand.sprout ? 600 : 400,
+                        maxCrossAxisExtent:
+                            band.band == AgeBand.sprout ? 600 : 400,
                         mainAxisSpacing: 16,
                         crossAxisSpacing: 16,
-                        childAspectRatio: band.band == AgeBand.sprout ? 1.1 : 0.85,
+                        childAspectRatio:
+                            band.band == AgeBand.sprout ? 1.1 : 0.85,
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -204,7 +224,6 @@ class SavedStoriesScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
@@ -223,9 +242,8 @@ class SavedStoriesScreen extends ConsumerWidget {
         builder: (_) => StoryResultScreen(
           title: story.title,
           storyText: story.storyText,
-          characterName: story.characters.isNotEmpty
-              ? story.characters.first.name
-              : null,
+          characterName:
+              story.characters.isNotEmpty ? story.characters.first.name : null,
           storyId: story.identifier,
           // Re-open the saved story with its persisted illustrations so the
           // pictures appear immediately without regenerating them.
@@ -244,7 +262,8 @@ class SavedStoriesScreen extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         Text(
           label,
@@ -258,7 +277,8 @@ class SavedStoriesScreen extends ConsumerWidget {
     await ref.read(storyListProvider.notifier).toggleFavorite(story.identifier);
   }
 
-  Future<void> _deleteStory(BuildContext context, WidgetRef ref, StoryLocal story) async {
+  Future<void> _deleteStory(
+      BuildContext context, WidgetRef ref, StoryLocal story) async {
     await ref.read(storyListProvider.notifier).deleteStory(story.identifier);
     await _refreshStories(ref);
     if (!context.mounted) return;
@@ -313,7 +333,8 @@ class SavedStoriesScreen extends ConsumerWidget {
                         theme,
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.white70,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       selected: isSelected,
@@ -327,7 +348,8 @@ class SavedStoriesScreen extends ConsumerWidget {
                         ),
                       ),
                       onSelected: (_) {
-                        ref.read(_selectedThemeFilterProvider.notifier).state = theme;
+                        ref.read(_selectedThemeFilterProvider.notifier).state =
+                            theme;
                       },
                     ),
                   ),
@@ -336,7 +358,7 @@ class SavedStoriesScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Filters & Sort - wrap to prevent overflow on narrow screens
           Wrap(
             spacing: 8,
@@ -359,14 +381,17 @@ class SavedStoriesScreen extends ConsumerWidget {
                 checkmarkColor: Colors.white,
                 backgroundColor: Colors.white10,
                 onSelected: (selected) {
-                  ref.read(_showOnlyFavoritesProvider.notifier).state = selected;
+                  ref.read(_showOnlyFavoritesProvider.notifier).state =
+                      selected;
                 },
               ),
               FilterChip(
                 avatar: Icon(
                   Icons.touch_app,
                   size: 16,
-                  color: showOnlyInteractive ? Colors.white : Colors.purple.shade200,
+                  color: showOnlyInteractive
+                      ? Colors.white
+                      : Colors.purple.shade200,
                 ),
                 label: const Text('Interactive'),
                 selected: showOnlyInteractive,
@@ -377,12 +402,14 @@ class SavedStoriesScreen extends ConsumerWidget {
                 checkmarkColor: Colors.white,
                 backgroundColor: Colors.white10,
                 onSelected: (selected) {
-                  ref.read(_showOnlyInteractiveProvider.notifier).state = selected;
+                  ref.read(_showOnlyInteractiveProvider.notifier).state =
+                      selected;
                 },
               ),
               // Sort Dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(16),
@@ -394,7 +421,8 @@ class SavedStoriesScreen extends ConsumerWidget {
                     isDense: true,
                     dropdownColor: band.gradientEnd,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
-                    icon: const Icon(Icons.sort, size: 18, color: Colors.white70),
+                    icon:
+                        const Icon(Icons.sort, size: 18, color: Colors.white70),
                     items: const [
                       DropdownMenuItem(
                         value: SortOption.newest,
@@ -406,11 +434,13 @@ class SavedStoriesScreen extends ConsumerWidget {
                       ),
                       DropdownMenuItem(
                         value: SortOption.favoritesFirst,
-                        child: Text('Favorites first', style: TextStyle(fontSize: 12)),
+                        child: Text('Favorites first',
+                            style: TextStyle(fontSize: 12)),
                       ),
                       DropdownMenuItem(
                         value: SortOption.byCharacter,
-                        child: Text('By character', style: TextStyle(fontSize: 12)),
+                        child: Text('By character',
+                            style: TextStyle(fontSize: 12)),
                       ),
                     ],
                     onChanged: (value) {
@@ -427,7 +457,8 @@ class SavedStoriesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(int total, int favorites, int showing, AgeBandThemeData band) {
+  Widget _buildStatsRow(
+      int total, int favorites, int showing, AgeBandThemeData band) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(12),
@@ -441,7 +472,8 @@ class SavedStoriesScreen extends ConsumerWidget {
         children: [
           Flexible(child: _buildStat(Icons.library_books, '$total', 'Total')),
           Container(width: 1, height: 24, color: Colors.white12),
-          Flexible(child: _buildStat(Icons.favorite, '$favorites', 'Favorites')),
+          Flexible(
+              child: _buildStat(Icons.favorite, '$favorites', 'Favorites')),
           Container(width: 1, height: 24, color: Colors.white12),
           Flexible(child: _buildStat(Icons.visibility, '$showing', 'Showing')),
         ],
@@ -517,8 +549,16 @@ class _SwipeableStoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dismissible(
       key: ValueKey('dismiss_${story.identifier}'),
-      background: _SwipeBg(color: Colors.teal.shade600, icon: Icons.share, label: 'Share', alignment: Alignment.centerLeft),
-      secondaryBackground: _SwipeBg(color: Colors.red.shade600, icon: Icons.delete_outline, label: 'Delete', alignment: Alignment.centerRight),
+      background: _SwipeBg(
+          color: Colors.teal.shade600,
+          icon: Icons.share,
+          label: 'Share',
+          alignment: Alignment.centerLeft),
+      secondaryBackground: _SwipeBg(
+          color: Colors.red.shade600,
+          icon: Icons.delete_outline,
+          label: 'Delete',
+          alignment: Alignment.centerRight),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           onShare();
@@ -562,11 +602,20 @@ class _SwipeableStoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final charName = story.characters.isNotEmpty ? story.characters.first.name : null;
+    final charName =
+        story.characters.isNotEmpty ? story.characters.first.name : null;
     return Dismissible(
       key: ValueKey('dismiss_tile_${story.identifier}'),
-      background: _SwipeBg(color: Colors.teal.shade600, icon: Icons.share, label: 'Share', alignment: Alignment.centerLeft),
-      secondaryBackground: _SwipeBg(color: Colors.red.shade600, icon: Icons.delete_outline, label: 'Delete', alignment: Alignment.centerRight),
+      background: _SwipeBg(
+          color: Colors.teal.shade600,
+          icon: Icons.share,
+          label: 'Share',
+          alignment: Alignment.centerLeft),
+      secondaryBackground: _SwipeBg(
+          color: Colors.red.shade600,
+          icon: Icons.delete_outline,
+          label: 'Delete',
+          alignment: Alignment.centerRight),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           onShare();
@@ -584,7 +633,8 @@ class _SwipeableStoryTile extends StatelessWidget {
         ),
         child: ListTile(
           onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           title: Text(
             story.title,
             maxLines: 1,
@@ -626,7 +676,8 @@ class _SwipeableStoryTile extends StatelessWidget {
                 ),
               const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white60, size: 18),
+                icon: const Icon(Icons.more_vert,
+                    color: Colors.white60, size: 18),
                 tooltip: 'More actions',
                 onPressed: () => _showActionsMenu(context),
                 padding: EdgeInsets.zero,
@@ -658,20 +709,34 @@ class _SwipeableStoryTile extends StatelessWidget {
                   color: story.isFavorite ? Colors.red : Colors.white70,
                 ),
                 title: Text(
-                  story.isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                  story.isFavorite
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites',
                   style: const TextStyle(color: Colors.white),
                 ),
-                onTap: () { Navigator.pop(context); onToggleFavorite(); },
+                onTap: () {
+                  Navigator.pop(context);
+                  onToggleFavorite();
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.share, color: Colors.white70),
-                title: const Text('Share', style: TextStyle(color: Colors.white)),
-                onTap: () { Navigator.pop(context); onShare(); },
+                title:
+                    const Text('Share', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  onShare();
+                },
               ),
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                title: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
-                onTap: () { Navigator.pop(context); onDelete(); },
+                leading:
+                    const Icon(Icons.delete_outline, color: Colors.redAccent),
+                title: const Text('Delete',
+                    style: TextStyle(color: Colors.redAccent)),
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete();
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -712,7 +777,8 @@ class _SwipeBg extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white, size: 24),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
+          Text(label,
+              style: const TextStyle(color: Colors.white, fontSize: 11)),
         ],
       ),
     );
