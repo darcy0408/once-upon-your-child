@@ -52,7 +52,7 @@ class FlavorConfig {
             : defaultBackend;
         return FlavorConfig._internal(
           flavor: Flavor.production,
-          name: 'Story Weaver',
+          name: 'Once Upon YOUR Child',
           backendUrl: backendUrl,
           primaryColor: Colors.deepPurple,
           bannerLabel: '',
@@ -71,7 +71,7 @@ class FlavorConfig {
             : stagingBackend;
         return FlavorConfig._internal(
           flavor: Flavor.staging,
-          name: 'Story Weaver (Staging)',
+          name: 'Once Upon YOUR Child (Staging)',
           backendUrl: backendUrl,
           primaryColor: Colors.orange,
           bannerLabel: 'STAGING',
@@ -93,7 +93,7 @@ class FlavorConfig {
             : devBackend;
         return FlavorConfig._internal(
           flavor: Flavor.development,
-          name: 'Story Weaver (Dev)',
+          name: 'Once Upon YOUR Child (Dev)',
           backendUrl: backendUrl,
           primaryColor: Colors.green.shade700,
           bannerLabel: 'DEV',

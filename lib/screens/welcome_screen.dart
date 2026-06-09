@@ -417,13 +417,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               ),
               const SizedBox(height: 24),
               Text(
-                'Story Weaver',
+                'Once Upon\nYOUR Child',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cinzelDecorative(
                   fontSize: 34,
                   fontWeight: FontWeight.bold,
                   color: _goldColor,
-                  height: 1.1,
+                  height: 1.15,
                 ),
               ),
               const SizedBox(height: 16),
