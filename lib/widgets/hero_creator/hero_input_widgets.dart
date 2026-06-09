@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/age_band_theme.dart';
+import '../../utils/motion_utils.dart';
 
 class GenderImageButton extends StatefulWidget {
   const GenderImageButton({
@@ -192,7 +193,9 @@ class _ThemedNameInputState extends State<ThemedNameInput>
 
   void _onFocusChange() {
     setState(() => _focused = widget.focusNode.hasFocus);
-    if (_focused) {
+    // Skip the looping focus glow under reduce-motion (WCAG 2.2 AA SC 2.2.2
+    // Pause, Stop, Hide); focus is still conveyed via the border colour.
+    if (_focused && !MotionPrefs.reduceMotion(context)) {
       _glowCtrl.repeat(reverse: true);
     } else {
       _glowCtrl.stop();

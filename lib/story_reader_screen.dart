@@ -15,6 +15,7 @@ import 'package:story_weaver_app/services/audio_ambience_service.dart';
 import 'package:story_weaver_app/services/tts_api_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/utils/motion_utils.dart';
 import 'package:story_weaver_app/widgets/voice_picker_sheet.dart';
 
 class StoryReaderScreen extends ConsumerStatefulWidget {
@@ -100,6 +101,15 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     _setupAudioPlayerListeners();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _onFirstFrame());
+  }
+
+  /// Starts the "now playing" pulse on the play button — but only when motion
+  /// is allowed. Under reduce-motion the looping pulse is skipped (WCAG 2.2 AA
+  /// SC 2.2.2 Pause, Stop, Hide); playback state is still conveyed via the
+  /// play/stop icon, so no information is lost.
+  void _startPlayPulse() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    _pulseController.repeat(reverse: true);
   }
 
   /// Age-band-appropriate playback rate (AudioPlayer scale: 1.0 = normal).
@@ -425,7 +435,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
         _usingNeural2 = true;
         _currentWordIndex = -1;
         _wordTimestamps = result.wordTimestamps;
-        _pulseController.repeat(reverse: true);
+        _startPlayPulse();
       });
       await _audioPlayer.play(BytesSource(result.audioBytes));
       await _audioPlayer.setPlaybackRate(_playbackRate);
@@ -438,7 +448,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
         _isPlaying = true;
         _usingNeural2 = false;
         _currentWordIndex = -1;
-        _pulseController.repeat(reverse: true);
+        _startPlayPulse();
       });
       await _tts.speak(widget.storyText);
     }
@@ -572,14 +582,14 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       if (!mounted) return;
       setState(() {
         _isPlaying = true;
-        _pulseController.repeat(reverse: true);
+        _startPlayPulse();
       });
     } else {
       await _tts.speak(widget.storyText);
       if (!mounted) return;
       setState(() {
         _isPlaying = true;
-        _pulseController.repeat(reverse: true);
+        _startPlayPulse();
       });
     }
   }

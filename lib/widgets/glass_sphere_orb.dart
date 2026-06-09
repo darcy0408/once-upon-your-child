@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../utils/motion_utils.dart';
 
 /// Glass Sphere Orb with animated galaxy/swirl energy inside
 /// Based on reference design: crystal clear sphere with magical swirling colors
@@ -44,13 +45,26 @@ class _GlassSphereOrbState extends State<GlassSphereOrb>
     _galaxyController = AnimationController(
       duration: const Duration(seconds: 6),
       vsync: this,
-    )..repeat();
+    );
 
     _floatController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    )..repeat(reverse: true);
+    );
+    // Looping galaxy/float/shimmer animations started in didChangeDependencies
+    // so MotionPrefs.reduceMotion is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop,
+    // Hide).
+  }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!MotionPrefs.reduceMotion(context)) {
+      if (!_galaxyController.isAnimating) _galaxyController.repeat();
+      if (!_floatController.isAnimating) {
+        _floatController.repeat(reverse: true);
+      }
+    }
     _syncShimmerState();
   }
 
@@ -63,7 +77,9 @@ class _GlassSphereOrbState extends State<GlassSphereOrb>
   }
 
   void _syncShimmerState() {
-    if (widget.isActive || _isHovering) {
+    // Skip the looping shimmer under reduce-motion (WCAG 2.2 AA SC 2.2.2).
+    if ((widget.isActive || _isHovering) &&
+        !MotionPrefs.reduceMotion(context)) {
       if (!_shimmerController.isAnimating) {
         _shimmerController.repeat();
       }

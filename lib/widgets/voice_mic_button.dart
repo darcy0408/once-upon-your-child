@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../utils/motion_utils.dart';
+
 /// A pulsing mic button that records speech and returns the transcribed text.
 ///
 /// Usage:
@@ -78,7 +80,11 @@ class _VoiceMicButtonState extends State<VoiceMicButton>
       _listening = true;
       _lastHeard = '';
     });
-    _pulseController.repeat(reverse: true);
+    // Skip the looping listening pulse under reduce-motion (WCAG 2.2 AA SC
+    // 2.2.2); the red mic colour still signals active listening.
+    if (!MotionPrefs.reduceMotion(context)) {
+      _pulseController.repeat(reverse: true);
+    }
 
     await _speech.listen(
       onResult: (result) {

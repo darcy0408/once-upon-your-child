@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/app_tts_service.dart';
+import '../utils/motion_utils.dart';
 
 /// A golden speaker button that reads a prompt aloud via TTS.
 /// Place in the AppBar or header row of each wizard step.
@@ -40,7 +41,11 @@ class _MagicEarButtonState extends State<MagicEarButton>
       return;
     }
     setState(() => _isSpeaking = true);
-    _pulseCtrl.repeat(reverse: true);
+    // Skip the looping speaking pulse under reduce-motion (WCAG 2.2 AA SC
+    // 2.2.2); the stop icon still signals that audio is playing.
+    if (!MotionPrefs.reduceMotion(context)) {
+      _pulseCtrl.repeat(reverse: true);
+    }
     try {
       await AppTtsService.instance.speak(
         widget.spokenText,

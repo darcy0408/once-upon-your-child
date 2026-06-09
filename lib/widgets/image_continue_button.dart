@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
+import '../utils/motion_utils.dart';
 import 'safe_asset_image.dart';
 
 /// Image-based Continue Button using the Codex-generated PNG asset.
@@ -39,17 +40,30 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.04).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    if (widget.isEnabled) _pulseController.repeat(reverse: true);
+    // Looping pulse started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isEnabled) _startPulse();
   }
 
   @override
   void didUpdateWidget(ImageContinueButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isEnabled && !oldWidget.isEnabled) {
-      _pulseController.repeat(reverse: true);
+      _startPulse();
     } else if (!widget.isEnabled && oldWidget.isEnabled) {
       _pulseController.stop();
     }
+  }
+
+  /// Starts the looping pulse only when motion is allowed.
+  void _startPulse() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
   }
 
   @override

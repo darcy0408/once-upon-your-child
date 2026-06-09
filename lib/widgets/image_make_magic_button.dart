@@ -83,26 +83,35 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
+    // Looping idle/glow/ring animations started in didChangeDependencies so
+    // MotionPrefs.reduceMotion is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop,
+    // Hide).
+  }
 
-    if (widget.isEnabled) {
-      _idleController.repeat(reverse: true);
-      _glowController.repeat(reverse: true);
-      _ringController.repeat();
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isEnabled) _startIdleAnimations();
   }
 
   @override
   void didUpdateWidget(ImageMakeMagicButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isEnabled && !oldWidget.isEnabled) {
-      _idleController.repeat(reverse: true);
-      _glowController.repeat(reverse: true);
-      _ringController.repeat();
+      _startIdleAnimations();
     } else if (!widget.isEnabled && oldWidget.isEnabled) {
       _idleController.stop();
       _glowController.stop();
       _ringController.stop();
     }
+  }
+
+  /// Starts the looping idle/glow/ring animations only when motion is allowed.
+  void _startIdleAnimations() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_idleController.isAnimating) _idleController.repeat(reverse: true);
+    if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
+    if (!_ringController.isAnimating) _ringController.repeat();
   }
 
   @override

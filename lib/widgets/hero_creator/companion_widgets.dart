@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
+import '../../utils/motion_utils.dart';
 import '../safe_asset_image.dart';
 import '../star_burst_celebration.dart';
 
@@ -627,9 +628,10 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     );
-    // Set phase offset before repeat so companions bob at different times.
+    // Set phase offset so companions bob at different times. The looping bob
+    // itself starts in didChangeDependencies so MotionPrefs.reduceMotion is
+    // honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
     _floatCtrl.value = (widget.id.hashCode.abs() % 100) / 100.0;
-    _floatCtrl.repeat(reverse: true);
     _floatAnim = Tween<double>(begin: -5, end: 5).animate(
       CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
     );
@@ -666,6 +668,11 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
     super.didChangeDependencies();
     if (widget.photoBase64 == null) {
       precacheImage(AssetImage(_normalImage), context);
+    }
+    // Start the looping bob only when motion is allowed (WCAG 2.2 AA SC 2.2.2
+    // Pause, Stop, Hide).
+    if (!MotionPrefs.reduceMotion(context) && !_floatCtrl.isAnimating) {
+      _floatCtrl.repeat(reverse: true);
     }
   }
 

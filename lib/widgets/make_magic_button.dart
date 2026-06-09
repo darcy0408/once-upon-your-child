@@ -58,20 +58,30 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
+    // Looping pulse started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
+  }
 
-    if (widget.isEnabled) {
-      _pulseController.repeat(reverse: true);
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isEnabled) _startPulse();
   }
 
   @override
   void didUpdateWidget(MakeMagicButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isEnabled && !oldWidget.isEnabled) {
-      _pulseController.repeat(reverse: true);
+      _startPulse();
     } else if (!widget.isEnabled && oldWidget.isEnabled) {
       _pulseController.stop();
     }
+  }
+
+  /// Starts the looping pulse only when motion is allowed.
+  void _startPulse() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
   }
 
   @override

@@ -52,6 +52,10 @@ class _WiggleWidgetState extends State<WiggleWidget>
 
   void _start() {
     if (!mounted) return;
+    // Don't loop under reduce-motion (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide);
+    // build() already returns the bare child in that case, but skip the
+    // controller too so it isn't quietly looping off-screen.
+    if (MotionPrefs.reduceMotion(context)) return;
     if (widget.repeat) {
       _ctrl.repeat(reverse: true);
     } else {

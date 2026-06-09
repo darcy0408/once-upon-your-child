@@ -2761,7 +2761,14 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
     super.initState();
     _ctrl =
         AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    if (widget.isReady) _ctrl.repeat(reverse: true);
+    // Looping pulse started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
+  }
+
+  @override
+  didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isReady) _startPulse();
   }
 
   @override
@@ -2769,11 +2776,17 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
     super.didUpdateWidget(old);
     if (widget.isReady != old.isReady) {
       if (widget.isReady) {
-        _ctrl.repeat(reverse: true);
+        _startPulse();
       } else {
         _ctrl.stop();
       }
     }
+  }
+
+  /// Starts the looping "cast spell" pulse only when motion is allowed.
+  void _startPulse() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_ctrl.isAnimating) _ctrl.repeat(reverse: true);
   }
 
   @override

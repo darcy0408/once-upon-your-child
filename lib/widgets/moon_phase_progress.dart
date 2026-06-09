@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/age_band_theme.dart';
+import '../utils/motion_utils.dart';
 
 /// Gold step wizard progress indicator.
 ///
@@ -203,18 +204,31 @@ class _GoldStepCircleState extends State<_GoldStepCircle>
     _glowAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
     );
-    if (widget.isActive) _glowCtrl.repeat(reverse: true);
+    // Looping glow started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isActive) _startGlow();
   }
 
   @override
   void didUpdateWidget(_GoldStepCircle oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
-      _glowCtrl.repeat(reverse: true);
+      _startGlow();
     } else if (!widget.isActive && oldWidget.isActive) {
       _glowCtrl.stop();
       _glowCtrl.value = 0;
     }
+  }
+
+  /// Starts the looping glow pulse only when motion is allowed.
+  void _startGlow() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_glowCtrl.isAnimating) _glowCtrl.repeat(reverse: true);
   }
 
   @override

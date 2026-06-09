@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/motion_utils.dart';
 import 'magical_float.dart';
 
 /// Rectangular card for story mode selection.
@@ -39,20 +40,31 @@ class _ImageModeOrbState extends State<ImageModeOrb>
       duration: const Duration(milliseconds: 1800),
       vsync: this,
     );
-    if (widget.isActive) {
-      _pulseController.repeat(reverse: true);
-    }
+    // Looping pulse started in didChangeDependencies so MotionPrefs.reduceMotion
+    // is honored (WCAG 2.2 AA SC 2.2.2 Pause, Stop, Hide).
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isActive) _startPulse();
   }
 
   @override
   void didUpdateWidget(covariant ImageModeOrb oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
-      _pulseController.repeat(reverse: true);
+      _startPulse();
     } else if (!widget.isActive && oldWidget.isActive) {
       _pulseController.stop();
       _pulseController.value = 0;
     }
+  }
+
+  /// Starts the looping pulse only when motion is allowed.
+  void _startPulse() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    if (!_pulseController.isAnimating) _pulseController.repeat(reverse: true);
   }
 
   @override
