@@ -741,12 +741,12 @@ class CreativeBriefWidget extends StatelessWidget {
                     onChanged();
                   }),
               GenreChip(
-                  label: '👻 Horror',
-                  value: 'horror',
-                  selected: wizardData.selectedGenre == 'horror',
+                  label: '👻 Spooky',
+                  value: 'spooky',
+                  selected: wizardData.selectedGenre == 'spooky',
                   onTap: () {
                     wizardData.selectedGenre =
-                        wizardData.selectedGenre == 'horror' ? null : 'horror';
+                        wizardData.selectedGenre == 'spooky' ? null : 'spooky';
                     onChanged();
                   }),
               GenreChip(
@@ -767,17 +767,6 @@ class CreativeBriefWidget extends StatelessWidget {
                   onTap: () {
                     wizardData.selectedGenre =
                         wizardData.selectedGenre == 'sci-fi' ? null : 'sci-fi';
-                    onChanged();
-                  }),
-              GenreChip(
-                  label: '🏚️ Dystopia',
-                  value: 'dystopia',
-                  selected: wizardData.selectedGenre == 'dystopia',
-                  onTap: () {
-                    wizardData.selectedGenre =
-                        wizardData.selectedGenre == 'dystopia'
-                            ? null
-                            : 'dystopia';
                     onChanged();
                   }),
               GenreChip(
