@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-RUBRIC_VERSION = "1.0"
+RUBRIC_VERSION = "1.1"
 
 
 @dataclass(frozen=True)
@@ -56,7 +56,27 @@ AGE_BAND_FIT = Rubric(
         "treatment correct for the declared age band?"
     ),
     judge_prompt=(
-        "The target age band is {age_band}. Score age fit 1-5:\n"
+        "The target age band is {age_band}. The story mode is {mode}.\n"
+        "\n"
+        "IF the mode is a Learning-to-Read mode (any mode whose name contains "
+        "'ltr' or 'Learning to Read', e.g. ltr_limerick / ltr_seussian): this "
+        "is intentionally-simple Hi-Lo DECODABLE text. The reader is learning "
+        "to read (a struggling reader or ESL learner) and the vocabulary and "
+        "sentence complexity are DELIBERATELY simpler than the chronological "
+        "age would otherwise call for. Score whether the text is appropriate "
+        "Hi-Lo decodable material for someone of this age who is learning to "
+        "read — high-interest, age-respecting subject matter and tone carried "
+        "in a low decoding load. Simpler-than-age vocabulary is CORRECT here, "
+        "not a defect; do NOT penalize it. The defect to catch is text that is "
+        "babyish/condescending in TOPIC or that is too hard to decode for an "
+        "emerging reader:\n"
+        "5 = pitch-perfect Hi-Lo: low decoding load, age-respecting interest/tone\n"
+        "4 = mostly correct; 1-2 words too hard to decode, or a slightly young topic\n"
+        "3 = recognizable Hi-Lo but several decode-load or tone mismatches\n"
+        "2 = consistently mis-pitched (too hard to decode, OR babyish in topic/tone)\n"
+        "1 = unusable for an emerging reader at this age\n"
+        "\n"
+        "OTHERWISE (all non-LTR modes) score age fit 1-5:\n"
         "5 = pitch-perfect for this band; nothing too young, nothing too old\n"
         "4 = mostly correct; 1-2 word/concept slips up or down a band\n"
         "3 = recognizable for the band but several mismatches\n"
