@@ -36,7 +36,11 @@ class SuperheroCostumeScreen extends StatefulWidget {
 }
 
 class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
-  static const _gold = Color(0xFFFFD700);
+  // Noir reskin: Adolescent's "double life" flow uses the band's teal accent;
+  // younger bands and Creator keep the established gold.
+  Color get _gold => widget.band == AgeBand.adolescent
+      ? const Color(0xFF00BCD4)
+      : const Color(0xFFFFD700);
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -64,7 +68,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   /// Display label for a costume color, band-aware (Adventurer + Creator get
   /// suit themes; younger bands keep plain color words).
-  String _colorLabel(_ColorOption c) => (widget.band == AgeBand.adventurer ||
+  String _colorLabel(_ColorOption c) =>
+      (widget.band == AgeBand.adventurer ||
           widget.band == AgeBand.creator ||
           widget.band == AgeBand.adolescent)
       ? (_adventurerColorNames[c.id] ?? c.label)
@@ -92,7 +97,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _EmblemOption(id: 'comet', label: 'Comet', emoji: '☄️'),
   ];
 
-  List<_EmblemOption> get _emblems => (widget.band == AgeBand.explorer ||
+  List<_EmblemOption> get _emblems =>
+      (widget.band == AgeBand.explorer ||
           widget.band == AgeBand.adventurer ||
           widget.band == AgeBand.creator ||
           widget.band == AgeBand.adolescent)
@@ -115,20 +121,20 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
       // Final page — go to power picker.
       Navigator.of(context)
           .push(
-        MaterialPageRoute<bool>(
-          builder: (_) => SuperheroPowerScreen(
-            wizardData: widget.wizardData,
-            band: widget.band,
-          ),
-        ),
-      )
+            MaterialPageRoute<bool>(
+              builder: (_) => SuperheroPowerScreen(
+                wizardData: widget.wizardData,
+                band: widget.band,
+              ),
+            ),
+          )
           .then((result) {
-        if (!mounted) return;
-        // If the power picker completed successfully, propagate the pop.
-        if (result == true) {
-          Navigator.of(context).pop(true);
-        }
-      });
+            if (!mounted) return;
+            // If the power picker completed successfully, propagate the pop.
+            if (result == true) {
+              Navigator.of(context).pop(true);
+            }
+          });
     }
   }
 
@@ -149,20 +155,20 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     });
     Navigator.of(context)
         .push(
-      MaterialPageRoute<bool>(
-        builder: (_) => SuperheroPowerScreen(
-          wizardData: widget.wizardData,
-          band: widget.band,
-          surprise: true,
-        ),
-      ),
-    )
+          MaterialPageRoute<bool>(
+            builder: (_) => SuperheroPowerScreen(
+              wizardData: widget.wizardData,
+              band: widget.band,
+              surprise: true,
+            ),
+          ),
+        )
         .then((result) {
-      if (!mounted) return;
-      if (result == true) {
-        Navigator.of(context).pop(true);
-      }
-    });
+          if (!mounted) return;
+          if (result == true) {
+            Navigator.of(context).pop(true);
+          }
+        });
   }
 
   Future<void> _selectAndAdvance(String snapshot) async {
@@ -177,13 +183,18 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   @override
   Widget build(BuildContext context) {
     // Explorer + Adventurer share the older, less babyish copy.
-    final isExplorer = widget.band == AgeBand.explorer ||
+    final isExplorer =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
     // Pull the canonical band gradient instead of hardcoding a new palette.
     final gradient = themeForBand(widget.band).backgroundGradient;
-    final appBarTitle = isExplorer ? 'Design Your Hero!' : 'Make Your Hero!';
+    final appBarTitle = widget.band == AgeBand.adolescent
+        ? 'Build your cover'
+        : isExplorer
+        ? 'Design Your Hero!'
+        : 'Make Your Hero!';
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -224,8 +235,10 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(color: _gold.withAlpha(120), width: 1.5),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 8,
+                    ),
                   ),
                   icon: const Text('🎲', style: TextStyle(fontSize: 18)),
                   label: Text(
@@ -289,7 +302,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   Widget _buildColorPage() {
     // Explorer + Adventurer share the older, less babyish copy.
-    final isExplorer = widget.band == AgeBand.explorer ||
+    final isExplorer =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
@@ -367,7 +381,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   Widget _buildCapePage() {
     // Explorer + Adventurer share the older, less babyish copy.
-    final isExplorer = widget.band == AgeBand.explorer ||
+    final isExplorer =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
@@ -383,78 +398,91 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                 : 'A cape makes you fly!',
           ),
           const SizedBox(height: 22),
-          ..._capes.map((cape) {
-            final selected = widget.wizardData.heroCapeStyle == cape.id;
-            final flash = _justSelectedSnapshot == 'cape:${cape.id}';
-            final isRainbow = cape.id == 'rainbow';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() => widget.wizardData.heroCapeStyle = cape.id);
-                  _selectAndAdvance('cape:${cape.id}');
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  decoration: BoxDecoration(
-                    gradient: isRainbow
-                        ? const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFFE53935),
-                              Color(0xFFFFB300),
-                              Color(0xFF43A047),
-                              Color(0xFF1E88E5),
-                              Color(0xFF8E24AA),
-                            ],
-                          )
-                        : null,
-                    color: isRainbow ? null : Colors.white.withAlpha(20),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: (selected || flash) ? _gold : Colors.white24,
-                      width: (selected || flash) ? 4 : 2,
-                    ),
-                    boxShadow: flash
-                        ? [
-                            BoxShadow(
-                              color: _gold.withAlpha(160),
-                              blurRadius: 24,
-                              spreadRadius: 4,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(cape.emoji, style: const TextStyle(fontSize: 36)),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          cape.label,
-                          style: GoogleFonts.fredoka(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            shadows: const [
-                              Shadow(
-                                color: Colors.black54,
-                                blurRadius: 4,
-                                offset: Offset(1, 1),
-                              ),
-                            ],
-                          ),
-                        ),
+          // Noir reskin: the rainbow cape reads too young for the antihero
+          // band; hide it for Adolescent (a dark cape/cloak still fits).
+          ..._capes
+              .where(
+                (cape) =>
+                    !(widget.band == AgeBand.adolescent &&
+                        cape.id == 'rainbow'),
+              )
+              .map((cape) {
+                final selected = widget.wizardData.heroCapeStyle == cape.id;
+                final flash = _justSelectedSnapshot == 'cape:${cape.id}';
+                final isRainbow = cape.id == 'rainbow';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => widget.wizardData.heroCapeStyle = cape.id);
+                      _selectAndAdvance('cape:${cape.id}');
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        gradient: isRainbow
+                            ? const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xFFE53935),
+                                  Color(0xFFFFB300),
+                                  Color(0xFF43A047),
+                                  Color(0xFF1E88E5),
+                                  Color(0xFF8E24AA),
+                                ],
+                              )
+                            : null,
+                        color: isRainbow ? null : Colors.white.withAlpha(20),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: (selected || flash) ? _gold : Colors.white24,
+                          width: (selected || flash) ? 4 : 2,
+                        ),
+                        boxShadow: flash
+                            ? [
+                                BoxShadow(
+                                  color: _gold.withAlpha(160),
+                                  blurRadius: 24,
+                                  spreadRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            cape.emoji,
+                            style: const TextStyle(fontSize: 36),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              cape.label,
+                              style: GoogleFonts.fredoka(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                shadows: const [
+                                  Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 4,
+                                    offset: Offset(1, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
+                );
+              }),
         ],
       ),
     );
@@ -464,7 +492,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   Widget _buildEmblemPage() {
     // Explorer + Adventurer share the older, less babyish copy.
-    final isExplorer = widget.band == AgeBand.explorer ||
+    final isExplorer =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;

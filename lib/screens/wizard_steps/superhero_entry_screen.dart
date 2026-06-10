@@ -20,10 +20,7 @@ import 'superhero_welcome_back_screen.dart';
 class SuperheroEntryScreen extends ConsumerWidget {
   final WizardData wizardData;
 
-  const SuperheroEntryScreen({
-    super.key,
-    required this.wizardData,
-  });
+  const SuperheroEntryScreen({super.key, required this.wizardData});
 
   /// Resolves a STABLE per-child key for the HeroProfile SharedPreferences
   /// record. Uses the child's name first (which is set in wizard step 1 and
@@ -32,8 +29,10 @@ class SuperheroEntryScreen extends ConsumerWidget {
   /// generates — so the same kid would have a null id on run 1's save and a
   /// real UUID on run 2's load, missing the welcome-back screen entirely.
   static String resolveCharacterId(WizardData wd) {
-    final name =
-        wd.characterName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+    final name = wd.characterName.trim().toLowerCase().replaceAll(
+      RegExp(r'\s+'),
+      '_',
+    );
     if (name.isNotEmpty) return 'name_$name';
     final raw = wd.characterId?.trim();
     if (raw != null && raw.isNotEmpty) return raw;
@@ -87,12 +86,18 @@ class SuperheroEntryScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                band == AgeBand.adolescent
+                    ? const Color(0xFF00BCD4)
+                    : const Color(0xFFFFD700),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Getting your hero ready…',
+              band == AgeBand.adolescent
+                  ? 'Going under…'
+                  : 'Getting your hero ready…',
               style: GoogleFonts.fredoka(
                 color: Colors.white.withAlpha(220),
                 fontSize: 18,

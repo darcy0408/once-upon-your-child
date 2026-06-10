@@ -49,7 +49,10 @@ class SuperheroPowerScreen extends ConsumerStatefulWidget {
 }
 
 class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
-  static const _gold = Color(0xFFFFD700);
+  // Noir reskin: Adolescent uses the band's teal accent; others keep gold.
+  Color get _gold => widget.band == AgeBand.adolescent
+      ? const Color(0xFF00BCD4)
+      : const Color(0xFFFFD700);
 
   // Sprout power set — preserved exactly. Explorer reuses these 8 IDs but
   // overrides the display labels (see `_explorerNameOverrides`).
@@ -497,11 +500,22 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
     final gradient = themeForBand(widget.band).backgroundGradient;
-    final appBarTitle = isOlder ? 'Choose your power' : 'Pick your power!';
-    final heading = isOlder
+    final isAdolescent = widget.band == AgeBand.adolescent;
+    final appBarTitle = isAdolescent
+        ? 'Choose your edge'
+        : isOlder
+        ? 'Choose your power'
+        : 'Pick your power!';
+    final heading = isAdolescent
+        ? "What's your edge?"
+        : isOlder
         ? 'What is your hero power?'
         : 'What is your superpower?';
-    final ctaIdle = isOlder ? 'Choose this power' : 'Pick this power!';
+    final ctaIdle = isAdolescent
+        ? 'Lock in this edge'
+        : isOlder
+        ? 'Choose this power'
+        : 'Pick this power!';
     final ctaEmpty = 'Tap a power above';
     return Scaffold(
       extendBodyBehindAppBar: true,
