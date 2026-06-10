@@ -1160,8 +1160,8 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
     # morally-grey "double life" register for an older reader. The power is
     # an EDGE with a built-in cost (concealment, isolation); the antagonist
     # has a real argument; the resolution stays non-violent and
-    # consequence-driven. Reuses the Creator villain/problem/power tables
-    # (a dedicated Adolescent matrix is a later refinement).
+    # consequence-driven. Uses the dedicated Adolescent "Edge" matrix
+    # (social/identity-scale antagonists; powers with a built-in cost).
     # ------------------------------------------------------------------
     @staticmethod
     def _build_superhero_prompt_adolescent(
@@ -1183,7 +1183,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
         unchanged. ``prior_saga`` (the returnable saga) injects a "where we
         left off" undercurrent for a returning hero; absent on chapter 1.
         """
-        villains_t, problems_t, powers_t, _ = _sh_get_band_tables("creator")
+        villains_t, problems_t, powers_t, _ = _sh_get_band_tables("adolescent")
 
         # --- Resolve power -> framed as the hero's "Edge" (capability + cost) ---
         power_id = (hero_power or "").strip().lower() or "super_smile"
@@ -1200,7 +1200,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             or not problem_id
             or problem_id not in problems_t
         ):
-            villain_id, problem_id = _sh_pick_pairing(power_id, band="creator")
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="adolescent")
         villain = villains_t[villain_id]
         problem = problems_t[problem_id]
 

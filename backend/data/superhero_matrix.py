@@ -976,8 +976,205 @@ CREATOR_VILLAIN_PROBLEMS: dict[str, list[str]] = {
 }
 
 
+# ── Adolescent (15-17) — antihero "double life" matrix (T10) ────────────────
+# A distinct, more mature register than Creator: antagonists operate at a
+# social / identity / personal scale a teenager actually lives in (secrets,
+# reputation, belonging, surveillance), each with a real argument. Powers are
+# framed as an "Edge" with a built-in cost. Resolution stays non-violent and
+# consequence-driven; nobody is "fixed" by a hug.
+ADOLESCENT_VILLAINS: dict[str, dict] = {
+    "the_archivist": {
+        "name": "the Archivist",
+        "action": "collect every private secret in the school and rank everyone by them, certain that total exposure is the only honesty",
+        "softens": "shut the archive down once the hero proved a person is more than their worst moment",
+    },
+    "echo": {
+        "name": "Echo",
+        "action": "turn every rumor into a verdict, certain the crowd is never wrong",
+        "softens": "let the noise die once the hero showed that the loudest story isn't the true one",
+    },
+    "the_gatekeeper": {
+        "name": "the Gatekeeper",
+        "action": "decide who belongs and quietly freeze out everyone who doesn't, sure it is protecting the group",
+        "softens": "opened the circle once the hero made the real cost of belonging-by-exclusion impossible to ignore",
+    },
+    "blank": {
+        "name": "Blank",
+        "action": "erase people's pasts to give them a 'clean slate' — whether they asked for it or not",
+        "softens": "restored what it took once the hero proved a past you can't see is one you can't grow from",
+    },
+    "the_double": {
+        "name": "the Double",
+        "action": "live a second life pulling strings the hero can't trace, a mirror of the hero's own secret",
+        "softens": "was drawn into the open and held to account once the hero refused to use the same methods",
+    },
+    "the_warden": {
+        "name": "the Warden",
+        "action": "watch everyone 'for their own safety,' trading every freedom for the feeling of control",
+        "softens": "powered down the watch after seeing that a cage is still a cage, however kind",
+    },
+    "ledger": {
+        "name": "Ledger",
+        "action": "out every hypocrite by ruining them, sure the collateral damage is just the price of truth",
+        "softens": "was stopped and the innocent it burned were cleared — held to account without being humiliated, even though it never fully owned the harm",
+    },
+    "the_patron": {
+        "name": "the Patron",
+        "action": "quietly bankroll and steer the people around the hero, 'for their own good'",
+        "softens": "had its hidden hand exposed so it could no longer steer anyone, whether or not it ever admitted it was wrong",
+    },
+}
+
+ADOLESCENT_PROBLEMS: dict[str, dict] = {
+    "expose_the_setup": {
+        "name": "Expose the setup",
+        "verb": "uncover",
+        "summary": "piece together and reveal who engineered it",
+    },
+    "clear_the_framed": {
+        "name": "Clear the framed",
+        "verb": "prove the innocence of",
+        "summary": "prove someone was set up to take the fall",
+    },
+    "protect_the_cover": {
+        "name": "Protect the cover",
+        "verb": "keep the secret of",
+        "summary": "shield a secret — maybe the hero's own — without lying to the people who matter",
+    },
+    "defuse_the_pileon": {
+        "name": "Defuse the pile-on",
+        "verb": "cool down",
+        "summary": "stop a crowd before it ruins someone",
+    },
+    "outthink_the_schemer": {
+        "name": "Out-think the schemer",
+        "verb": "out-think",
+        "summary": "beat a clever plan with a cleverer one",
+    },
+    "surface_the_truth": {
+        "name": "Surface the buried truth",
+        "verb": "bring to light",
+        "summary": "make a hidden truth public the right way",
+    },
+    "win_back_trust": {
+        "name": "Win back trust",
+        "verb": "win back",
+        "summary": "rebuild trust the hero broke",
+    },
+    "choose_the_costly_right": {
+        "name": "Choose the costly right",
+        "verb": "make the costly right call for",
+        "summary": "do the right thing when it costs the hero their cover or their standing",
+    },
+}
+
+# Edge roster — the 8 base power IDs (so the picker keeps working) reframed as
+# capabilities with a COST, plus 2 Adolescent-only Edges (strategist/gadgeteer
+# IDs reused for the frontend extras). Powers win through judgment, never force.
+ADOLESCENT_POWERS: dict[str, dict] = {
+    "super_hearing": {
+        "name": "Read the Room",
+        "verb": "sense what people are really feeling or hiding — and never be able to switch it off",
+        "ideal": "echo",
+        "also": ["the_archivist", "the_double", "ledger", "the_warden"],
+        "primary_problem": "expose_the_setup",
+    },
+    "flying": {
+        "name": "Ghost",
+        "verb": "move unseen and unheard — the better you hide, the more alone you are",
+        "ideal": "the_warden",
+        "also": ["the_archivist", "blank", "the_double", "the_patron"],
+        "primary_problem": "surface_the_truth",
+    },
+    "super_speed": {
+        "name": "Borrowed Time",
+        "verb": "buy back a few seconds for a second try — each rewind frays something",
+        "ideal": "the_double",
+        "also": ["echo", "the_gatekeeper", "the_warden", "ledger"],
+        "primary_problem": "clear_the_framed",
+    },
+    "super_strength": {
+        "name": "Nerve",
+        "verb": "hold the line when anyone else would fold",
+        "ideal": "the_gatekeeper",
+        "also": ["the_warden", "the_patron", "blank", "the_double"],
+        "primary_problem": "choose_the_costly_right",
+    },
+    "super_smile": {
+        "name": "Pull",
+        # NOT mind-control: gets people to actually listen and choose together;
+        # never overrides anyone's will. The T10 prompt enforces this.
+        "verb": "get people to actually listen and pull together — without ever overriding their choice",
+        "ideal": "the_gatekeeper",
+        "also": ["echo", "ledger", "the_patron", "the_archivist"],
+        "primary_problem": "win_back_trust",
+    },
+    "super_hugs": {
+        "name": "Anchor",
+        "verb": "stand with someone when it's hardest",
+        "ideal": "ledger",
+        "also": ["blank", "the_gatekeeper", "echo", "the_archivist"],
+        "primary_problem": "win_back_trust",
+    },
+    "super_whisper": {
+        "name": "Cool Head",
+        "verb": "speak calm into the chaos",
+        "ideal": "echo",
+        "also": ["the_double", "the_warden", "the_gatekeeper", "the_patron"],
+        "primary_problem": "defuse_the_pileon",
+    },
+    "super_sharing": {
+        "name": "The Fixer",
+        "verb": "even the odds so it's fair for everyone",
+        "ideal": "the_patron",
+        "also": ["blank", "the_gatekeeper", "ledger", "the_archivist"],
+        "primary_problem": "choose_the_costly_right",
+    },
+    # Adolescent-only Edges — frontend exposes these only when band==adolescent.
+    "strategist": {
+        "name": "The Tell",
+        "verb": "always know when someone is lying — including the people you love",
+        "ideal": "the_double",
+        "also": ["the_patron", "the_archivist", "echo", "ledger"],
+        "primary_problem": "expose_the_setup",
+    },
+    "gadgeteer": {
+        "name": "Bend the Odds",
+        "verb": "tilt the small probabilities your way — the luck has to come from somewhere",
+        "ideal": "the_patron",
+        "also": ["the_gatekeeper", "blank", "the_warden", "ledger"],
+        "primary_problem": "outthink_the_schemer",
+    },
+}
+
+ADOLESCENT_VILLAIN_PROBLEMS: dict[str, list[str]] = {
+    "the_archivist": ["expose_the_setup", "protect_the_cover", "surface_the_truth"],
+    "echo": ["defuse_the_pileon", "clear_the_framed", "surface_the_truth"],
+    "the_gatekeeper": [
+        "win_back_trust",
+        "choose_the_costly_right",
+        "defuse_the_pileon",
+    ],
+    "blank": ["surface_the_truth", "clear_the_framed", "choose_the_costly_right"],
+    "the_double": ["protect_the_cover", "clear_the_framed", "outthink_the_schemer"],
+    "the_warden": [
+        "surface_the_truth",
+        "defuse_the_pileon",
+        "choose_the_costly_right",
+    ],
+    "ledger": ["clear_the_framed", "expose_the_setup", "win_back_trust"],
+    "the_patron": ["outthink_the_schemer", "win_back_trust", "surface_the_truth"],
+}
+
+
 _BAND_TABLES: dict[str, tuple[dict, dict, dict, dict]] = {
     "sprout": (VILLAINS, PROBLEMS, POWERS, VILLAIN_PROBLEMS),
+    "adolescent": (
+        ADOLESCENT_VILLAINS,
+        ADOLESCENT_PROBLEMS,
+        ADOLESCENT_POWERS,
+        ADOLESCENT_VILLAIN_PROBLEMS,
+    ),
     "explorer": (
         EXPLORER_VILLAINS,
         EXPLORER_PROBLEMS,

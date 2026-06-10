@@ -3541,6 +3541,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 onSelectArchetype: _selectArchetype,
                 companionShowcase: _buildCompanionShowcase(),
                 companionGrid: _buildCompanionGrid(),
+                onLaunchSuperhero: _launchSuperheroFromStoryType,
               )
             else
               PageView(

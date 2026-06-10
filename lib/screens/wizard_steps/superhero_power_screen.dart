@@ -156,13 +156,21 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   static const Map<String, _BandCopy> _adventurerNameOverrides = {
     'super_speed': _BandCopy('Velocity', 'Move before they can blink.'),
     'flying': _BandCopy('Skyborne', 'Take the high ground.'),
-    'super_strength':
-        _BandCopy('Titan Strength', 'Shift what no one else can.'),
+    'super_strength': _BandCopy(
+      'Titan Strength',
+      'Shift what no one else can.',
+    ),
     'super_hearing': _BandCopy('Echo Sense', 'Catch the faintest clue.'),
-    'super_smile':
-        _BandCopy('Disarming Charm', 'Win people over.', emoji: '😎'),
-    'super_hugs':
-        _BandCopy('Steadfast Heart', 'Stand by anyone.', emoji: '🛡️'),
+    'super_smile': _BandCopy(
+      'Disarming Charm',
+      'Win people over.',
+      emoji: '😎',
+    ),
+    'super_hugs': _BandCopy(
+      'Steadfast Heart',
+      'Stand by anyone.',
+      emoji: '🛡️',
+    ),
     'super_whisper': _BandCopy('Calm Voice', 'Steady the storm.'),
     'super_sharing': _BandCopy('Fair Hand', 'Make it fair for everyone.'),
   };
@@ -192,28 +200,96 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     'flying': _BandCopy('Skyline', 'Own the high vantage.'),
     'super_strength': _BandCopy('Kinetic', 'Move the immovable.'),
     'super_hearing': _BandCopy(
-        'Signal Sense', 'Catch the whisper under the noise.',
-        emoji: '📡'),
-    'super_smile':
-        _BandCopy('Magnetism', 'Rally people to pull together.', emoji: '🧲'),
-    'super_hugs':
-        _BandCopy('Anchor', 'Stand with them when it counts.', emoji: '⚓'),
-    'super_whisper':
-        _BandCopy('Cool Head', 'Speak calm into the chaos.', emoji: '😌'),
-    'super_sharing':
-        _BandCopy('Equalizer', 'Make it fair for everyone.', emoji: '⚖️'),
+      'Signal Sense',
+      'Catch the whisper under the noise.',
+      emoji: '📡',
+    ),
+    'super_smile': _BandCopy(
+      'Magnetism',
+      'Rally people to pull together.',
+      emoji: '🧲',
+    ),
+    'super_hugs': _BandCopy(
+      'Anchor',
+      'Stand with them when it counts.',
+      emoji: '⚓',
+    ),
+    'super_whisper': _BandCopy(
+      'Cool Head',
+      'Speak calm into the chaos.',
+      emoji: '😌',
+    ),
+    'super_sharing': _BandCopy(
+      'Equalizer',
+      'Make it fair for everyone.',
+      emoji: '⚖️',
+    ),
   };
+
+  // Adolescent-tier (15-17) "Edge" display overrides for the shared 8 power
+  // IDs. Names MUST match the backend `ADOLESCENT_POWERS` map so the picked
+  // Edge reads identically in the generated chapter. Every Edge has a cost.
+  static const Map<String, _BandCopy> _adolescentNameOverrides = {
+    'super_speed': _BandCopy(
+      'Borrowed Time',
+      'Buy back a few seconds — at a cost.',
+    ),
+    'flying': _BandCopy('Ghost', 'Move unseen. Easy to vanish for real.'),
+    'super_strength': _BandCopy('Nerve', 'Hold the line when others fold.'),
+    'super_hearing': _BandCopy(
+      'Read the Room',
+      'Read what people hide. Can\'t switch it off.',
+      emoji: '👁️',
+    ),
+    'super_smile': _BandCopy(
+      'Pull',
+      'Get people to actually listen.',
+      emoji: '🧲',
+    ),
+    'super_hugs': _BandCopy(
+      'Anchor',
+      'Stand with them when it\'s hardest.',
+      emoji: '⚓',
+    ),
+    'super_whisper': _BandCopy(
+      'Cool Head',
+      'Speak calm into the chaos.',
+      emoji: '🧊',
+    ),
+    'super_sharing': _BandCopy(
+      'The Fixer',
+      'Even the odds for everyone.',
+      emoji: '⚖️',
+    ),
+  };
+
+  // Adolescent adds two Edge IDs (must match backend ADOLESCENT_POWERS).
+  static const List<_PowerOption> _adolescentExtraPowers = [
+    _PowerOption(
+      id: 'strategist',
+      emoji: '🎭',
+      name: 'The Tell',
+      description: 'Know when anyone is lying.',
+    ),
+    _PowerOption(
+      id: 'gadgeteer',
+      emoji: '🎲',
+      name: 'Bend the Odds',
+      description: 'Tilt the odds — luck has a price.',
+    ),
+  ];
 
   /// Returns the band-appropriate power list, with band renames applied.
   List<_PowerOption> get powers {
     final overrides = widget.band == AgeBand.explorer
         ? _explorerNameOverrides
         : widget.band == AgeBand.adventurer
-            ? _adventurerNameOverrides
-            : (widget.band == AgeBand.creator ||
-                    widget.band == AgeBand.adolescent)
-                ? _creatorNameOverrides
-                : null;
+        ? _adventurerNameOverrides
+        : widget.band == AgeBand.creator
+        ? _creatorNameOverrides
+        : widget.band == AgeBand.adolescent
+        ? _adolescentNameOverrides
+        : null;
     final base = _sproutPowers.map((p) {
       if (overrides == null) return p;
       final override = overrides[p.id];
@@ -229,9 +305,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       base.addAll(_explorerExtraPowers);
     } else if (widget.band == AgeBand.adventurer) {
       base.addAll(_adventurerExtraPowers);
-    } else if (widget.band == AgeBand.creator ||
-        widget.band == AgeBand.adolescent) {
+    } else if (widget.band == AgeBand.creator) {
       base.addAll(_creatorExtraPowers);
+    } else if (widget.band == AgeBand.adolescent) {
+      base.addAll(_adolescentExtraPowers);
     }
     return base;
   }
@@ -278,14 +355,16 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     // "Gadgeteer jason" — kids type lowercase and the formula must still read
     // like a proper hero codename.
     final heroFirstName = _titleCaseName(wd.characterName.trim());
-    final formulaName =
-        heroFirstName.isNotEmpty ? '${power.name} $heroFirstName' : power.name;
+    final formulaName = heroFirstName.isNotEmpty
+        ? '${power.name} $heroFirstName'
+        : power.name;
 
     // B2 + B3: Explorer (6-8) and Adventurer (9-12) get a funny-name + optional
     // catchphrase chooser. Sprout keeps the silent formula name. The chooser is
     // cancelable — a null result aborts the confirm so the kid can re-pick.
     var displayName = formulaName;
-    final isOlder = widget.band == AgeBand.explorer ||
+    final isOlder =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
@@ -342,10 +421,14 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
 
     if (!mounted) return;
 
-    // Superhero portrait reveal (Explorer + Adventurer): turn the kid's existing
-    // avatar into a superhero image. Best-effort — the reveal screen fails soft
-    // and never blocks the wizard, so we only gate on having a source avatar.
-    if (isOlder && wd.generatedAvatar?.imageBase64.contains(',') == true) {
+    // Superhero portrait reveal: turn the kid's existing avatar into a
+    // superhero image. Best-effort — fails soft and never blocks the wizard.
+    // Skipped for Adolescent: mature bands build heroes via the Creative Brief
+    // (no avatar generation), and the comic "ISSUE #1" reveal would read young.
+    // A noir reveal is future polish if the band ever gains avatar generation.
+    if (isOlder &&
+        widget.band != AgeBand.adolescent &&
+        wd.generatedAvatar?.imageBase64.contains(',') == true) {
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
           builder: (_) => SuperheroRevealScreen(
@@ -364,8 +447,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
 
   HeroNameRegister get _nameRegister =>
       (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
-          ? HeroNameRegister.adventurer
-          : HeroNameRegister.explorer;
+      ? HeroNameRegister.adventurer
+      : HeroNameRegister.explorer;
 
   /// B2 + B3: shows a bottom sheet letting Explorer/Adventurer kids pick a
   /// funny codename (generated options + the "{power} {name}" formula option +
@@ -408,14 +491,16 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
   Widget build(BuildContext context) {
     final hasSelection = _selectedPowerId != null;
     // Explorer + Adventurer get the older, less babyish copy.
-    final isOlder = widget.band == AgeBand.explorer ||
+    final isOlder =
+        widget.band == AgeBand.explorer ||
         widget.band == AgeBand.adventurer ||
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = isOlder ? 'Choose your power' : 'Pick your power!';
-    final heading =
-        isOlder ? 'What is your hero power?' : 'What is your superpower?';
+    final heading = isOlder
+        ? 'What is your hero power?'
+        : 'What is your superpower?';
     final ctaIdle = isOlder ? 'Choose this power' : 'Pick this power!';
     final ctaEmpty = 'Tap a power above';
     return Scaffold(
@@ -450,7 +535,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: _gold.withAlpha(28),
                             borderRadius: BorderRadius.circular(16),
@@ -485,10 +572,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                           ),
                         ),
                       ],
-                      Text(
-                        '✨',
-                        style: const TextStyle(fontSize: 40),
-                      ),
+                      Text('✨', style: const TextStyle(fontSize: 40)),
                       const SizedBox(height: 4),
                       Text(
                         heading,
@@ -517,7 +601,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 12),
+                                horizontal: 8,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: selected
                                     ? _gold.withAlpha(40)
@@ -540,8 +626,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(p.emoji,
-                                      style: const TextStyle(fontSize: 44)),
+                                  Text(
+                                    p.emoji,
+                                    style: const TextStyle(fontSize: 44),
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     p.name,
@@ -592,8 +680,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                             width: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 3,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.black),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
                             ),
                           )
                         : Text(
@@ -711,10 +800,9 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
   void initState() {
     super.initState();
     _rerollNames();
-    _catchphraseOptions = SuperheroNameGenerator.generateIdeas(count: 4)
-        .map((i) => i.catchPhrase)
-        .toSet()
-        .toList();
+    _catchphraseOptions = SuperheroNameGenerator.generateIdeas(
+      count: 4,
+    ).map((i) => i.catchPhrase).toSet().toList();
     // Default selection: the formula name (always present as an option).
     _selectedName = widget.formulaName;
   }
@@ -729,8 +817,10 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
   void _rerollNames() {
     HapticFeedback.lightImpact();
     setState(() {
-      _nameOptions =
-          HeroFunnyNameGenerator.pickNames(widget.register, count: 3);
+      _nameOptions = HeroFunnyNameGenerator.pickNames(
+        widget.register,
+        count: 3,
+      );
       // If the previously-selected name was a generated one that's now gone,
       // fall back to the formula name. Custom-typed names are preserved.
       final typed = _customNameCtl.text.trim();
@@ -750,8 +840,9 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
         : (_selectedName ?? widget.formulaName);
 
     final typedPhrase = _customCatchphraseCtl.text.trim();
-    final catchphrase =
-        typedPhrase.isNotEmpty ? typedPhrase : _selectedCatchphrase;
+    final catchphrase = typedPhrase.isNotEmpty
+        ? typedPhrase
+        : _selectedCatchphrase;
 
     HapticFeedback.mediumImpact();
     Navigator.of(context).pop(
@@ -846,7 +937,8 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ),
                 _chip(
                   label: widget.formulaName,
-                  selected: _selectedName == widget.formulaName &&
+                  selected:
+                      _selectedName == widget.formulaName &&
                       _customNameCtl.text.isEmpty,
                   onTap: () {
                     _customNameCtl.clear();
@@ -880,8 +972,9 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own name…',
-                  hintStyle:
-                      GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                  hintStyle: GoogleFonts.fredoka(
+                    color: Colors.white.withAlpha(140),
+                  ),
                   // Explicit dark-translucent fill so white text/hint stay
                   // readable even if a global inputDecorationTheme forces a
                   // light fill (matches the withAlpha(20) chips above).
@@ -924,12 +1017,15 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 for (final phrase in _catchphraseOptions)
                   _chip(
                     label: phrase,
-                    selected: _selectedCatchphrase == phrase &&
+                    selected:
+                        _selectedCatchphrase == phrase &&
                         _customCatchphraseCtl.text.isEmpty,
                     onTap: () {
                       _customCatchphraseCtl.clear();
-                      setState(() => _selectedCatchphrase =
-                          _selectedCatchphrase == phrase ? null : phrase);
+                      setState(
+                        () => _selectedCatchphrase =
+                            _selectedCatchphrase == phrase ? null : phrase,
+                      );
                     },
                   ),
               ],
@@ -944,8 +1040,9 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own catchphrase…',
-                  hintStyle:
-                      GoogleFonts.fredoka(color: Colors.white.withAlpha(140)),
+                  hintStyle: GoogleFonts.fredoka(
+                    color: Colors.white.withAlpha(140),
+                  ),
                   // Explicit dark-translucent fill so white text/hint stay
                   // readable even if a global inputDecorationTheme forces a
                   // light fill (matches the withAlpha(20) chips above).
@@ -1010,55 +1107,65 @@ class _Nemesis {
 
 const List<_Nemesis> _adventurerNemeses = [
   _Nemesis(
-      'gigawatt',
-      'Gigawatt',
-      "Buries the town in 'helpful' gadgets that take over every chore — whether you want it or not.",
-      '⚡'),
+    'gigawatt',
+    'Gigawatt',
+    "Buries the town in 'helpful' gadgets that take over every chore — whether you want it or not.",
+    '⚡',
+  ),
   _Nemesis(
-      'lord_loading_screen',
-      'Lord Loading Screen',
-      'Makes every door, game, and lesson stall and buffer so nothing ever quite finishes.',
-      '⏳'),
+    'lord_loading_screen',
+    'Lord Loading Screen',
+    'Makes every door, game, and lesson stall and buffer so nothing ever quite finishes.',
+    '⏳',
+  ),
   _Nemesis(
-      'doctor_detention',
-      'Doctor Detention',
-      'Freezes every clock so the bell never rings and school never, ever ends.',
-      '🔔'),
+    'doctor_detention',
+    'Doctor Detention',
+    'Freezes every clock so the bell never rings and school never, ever ends.',
+    '🔔',
+  ),
   _Nemesis(
-      'mister_meh',
-      'Mister Meh',
-      'Drains the fun out of birthdays, games, and even superpowers until everything feels gray.',
-      '😑'),
+    'mister_meh',
+    'Mister Meh',
+    'Drains the fun out of birthdays, games, and even superpowers until everything feels gray.',
+    '😑',
+  ),
   _Nemesis(
-      'booger_baron',
-      'The Booger Baron',
-      "Flings sticky green goo and nose-shaped drones to keep everyone at arm's length.",
-      '🤧'),
+    'booger_baron',
+    'The Booger Baron',
+    "Flings sticky green goo and nose-shaped drones to keep everyone at arm's length.",
+    '🤧',
+  ),
   _Nemesis(
-      'llama_of_doom',
-      'The Llama of Doom',
-      'Stages giant dramatic scenes and demands that llamas finally rule the whole town.',
-      '🦙'),
+    'llama_of_doom',
+    'The Llama of Doom',
+    'Stages giant dramatic scenes and demands that llamas finally rule the whole town.',
+    '🦙',
+  ),
   _Nemesis(
-      'professor_picklejuice',
-      'Professor Picklejuice',
-      'Fires sour-pickle blasts and locks every snack in town inside a giant brine vault.',
-      '🥒'),
+    'professor_picklejuice',
+    'Professor Picklejuice',
+    'Fires sour-pickle blasts and locks every snack in town inside a giant brine vault.',
+    '🥒',
+  ),
   _Nemesis(
-      'count_copypaste',
-      'Count Copy-Paste',
-      "Spins out dozens of arguing copies of himself, each one sure it's the real Count.",
-      '📋'),
+    'count_copypaste',
+    'Count Copy-Paste',
+    "Spins out dozens of arguing copies of himself, each one sure it's the real Count.",
+    '📋',
+  ),
   _Nemesis(
-      'the_overlooked',
-      'The Overlooked',
-      'Sabotages the big festival because no one ever once chose them to lead.',
-      '👤'),
+    'the_overlooked',
+    'The Overlooked',
+    'Sabotages the big festival because no one ever once chose them to lead.',
+    '👤',
+  ),
   _Nemesis(
-      'the_gatekeeper',
-      'The Gatekeeper',
-      'Walls off the old quarter to keep every outsider away after being hurt once.',
-      '🔒'),
+    'the_gatekeeper',
+    'The Gatekeeper',
+    'Walls off the old quarter to keep every outsider away after being hurt once.',
+    '🔒',
+  ),
 ];
 
 /// Creator (13-14) "Hero Saga" arch-villain roster — ids + names mirror backend
@@ -1067,55 +1174,65 @@ const List<_Nemesis> _adventurerNemeses = [
 /// agree with; the backend carries the full motive + resolution.
 const List<_Nemesis> _creatorNemeses = [
   _Nemesis(
-      'cipher_zero',
-      'Cipher Zero',
-      'Leaks every secret in the city, certain that total transparency is the only real justice.',
-      '🛰️'),
+    'cipher_zero',
+    'Cipher Zero',
+    'Leaks every secret in the city, certain that total transparency is the only real justice.',
+    '🛰️',
+  ),
   _Nemesis(
-      'the_optimizer',
-      'the Optimizer',
-      'Rewrites the city to erase every risk — and every freedom along with it.',
-      '⚙️'),
+    'the_optimizer',
+    'the Optimizer',
+    'Rewrites the city to erase every risk — and every freedom along with it.',
+    '⚙️',
+  ),
   _Nemesis(
-      'the_understudy',
-      'the Understudy',
-      "Sabotages the city's stars after a lifetime of being the overlooked second-best.",
-      '🎭'),
+    'the_understudy',
+    'the Understudy',
+    "Sabotages the city's stars after a lifetime of being the overlooked second-best.",
+    '🎭',
+  ),
   _Nemesis(
-      'the_magnate',
-      'the Magnate',
-      "Buys up the old district and erases the people who built it, sure he's improving it.",
-      '💰'),
+    'the_magnate',
+    'the Magnate',
+    "Buys up the old district and erases the people who built it, sure he's improving it.",
+    '💰',
+  ),
   _Nemesis(
-      'riptide',
-      'Riptide',
-      'Floods the harbor to take the coast back for the wildlife the city paved over.',
-      '🌊'),
+    'riptide',
+    'Riptide',
+    'Floods the harbor to take the coast back for the wildlife the city paved over.',
+    '🌊',
+  ),
   _Nemesis(
-      'redact',
-      'Redact',
-      'Erases inconvenient history so the city can never be shamed by its past.',
-      '▪️'),
+    'redact',
+    'Redact',
+    'Erases inconvenient history so the city can never be shamed by its past.',
+    '▪️',
+  ),
   _Nemesis(
-      'gridlock',
-      'Gridlock',
-      'Freezes the whole city to force everyone to face a danger they keep ignoring.',
-      '🚦'),
+    'gridlock',
+    'Gridlock',
+    'Freezes the whole city to force everyone to face a danger they keep ignoring.',
+    '🚦',
+  ),
   _Nemesis(
-      'the_mirror',
-      'the Mirror',
-      'Exposes powerful hypocrites — but ruins innocent bystanders in the crossfire.',
-      '🪞'),
+    'the_mirror',
+    'the Mirror',
+    'Exposes powerful hypocrites — but ruins innocent bystanders in the crossfire.',
+    '🪞',
+  ),
   _Nemesis(
-      'nightjar',
-      'Nightjar',
-      'A vigilante who hunts wrongdoers, trampling the law and the innocent in the chase.',
-      '🦅'),
+    'nightjar',
+    'Nightjar',
+    'A vigilante who hunts wrongdoers, trampling the law and the innocent in the chase.',
+    '🦅',
+  ),
   _Nemesis(
-      'the_benefactor',
-      'the Benefactor',
-      "Secretly controls the city's heroes like puppets, 'for their own good.'",
-      '🎩'),
+    'the_benefactor',
+    'the Benefactor',
+    "Secretly controls the city's heroes like puppets, 'for their own good.'",
+    '🎩',
+  ),
 ];
 
 /// C4 nemesis picker bottom sheet. Pops the chosen villain id, or null for
@@ -1160,14 +1277,23 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             children: [
-              Text('Choose your nemesis',
-                  style: GoogleFonts.fredoka(
-                      color: _gold, fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                'Choose your nemesis',
+                style: GoogleFonts.fredoka(
+                  color: _gold,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Every great hero needs a worthy rival. (Optional!)',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                      color: Colors.white.withAlpha(200), fontSize: 14)),
+              Text(
+                'Every great hero needs a worthy rival. (Optional!)',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.fredoka(
+                  color: Colors.white.withAlpha(200),
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView(
@@ -1200,13 +1326,17 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18)),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
                   ),
                   onPressed: () => Navigator.of(context).pop(_selected),
                   child: Text(
-                      _selected == null ? 'Surprise me!' : 'Lock it in!',
-                      style: GoogleFonts.fredoka(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                    _selected == null ? 'Surprise me!' : 'Lock it in!',
+                    style: GoogleFonts.fredoka(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -1237,8 +1367,9 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color:
-                  selected ? _gold.withAlpha(40) : Colors.white.withAlpha(20),
+              color: selected
+                  ? _gold.withAlpha(40)
+                  : Colors.white.withAlpha(20),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected ? _gold : Colors.white24,
@@ -1253,16 +1384,22 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: GoogleFonts.fredoka(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        title,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(blurb,
-                          style: GoogleFonts.fredoka(
-                              color: Colors.white.withAlpha(200),
-                              fontSize: 12)),
+                      Text(
+                        blurb,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white.withAlpha(200),
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),

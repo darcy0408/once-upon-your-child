@@ -40,6 +40,7 @@ class CreativeBriefWidget extends StatelessWidget {
     required this.onSelectArchetype,
     required this.companionShowcase,
     required this.companionGrid,
+    this.onLaunchSuperhero,
   });
 
   final WizardData wizardData;
@@ -64,6 +65,11 @@ class CreativeBriefWidget extends StatelessWidget {
   final void Function(ArchetypeData archetype) onSelectArchetype;
   final Widget companionShowcase;
   final Widget companionGrid;
+
+  /// Launches the superhero / antihero flow (costume -> Edge -> saga). Null
+  /// for bands without a backend tier; when set, a "double life" entry CTA is
+  /// shown. Supplied for Creator (T9) and Adolescent (T10).
+  final Future<void> Function()? onLaunchSuperhero;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -891,6 +897,78 @@ class CreativeBriefWidget extends StatelessWidget {
     );
   }
 
+  // ── antihero entry ───────────────────────────────────────────────────────
+
+  /// "Live a double life" CTA shown only for bands with a backend antihero
+  /// tier (Creator T9 / Adolescent T10) when [onLaunchSuperhero] is supplied.
+  /// Launches the costume -> Edge -> saga flow. Empty box otherwise.
+  Widget _buildAntiheroEntry(
+      BuildContext context, AgeBandThemeData band, Color accent) {
+    final launch = onLaunchSuperhero;
+    final supported =
+        band.band == AgeBand.creator || band.band == AgeBand.adolescent;
+    if (launch == null || !supported) return const SizedBox.shrink();
+    final isAdolescent = band.band == AgeBand.adolescent;
+    final title = isAdolescent ? 'Live a double life' : 'Start a Hero Saga';
+    final subtitle = isAdolescent
+        ? 'An antihero saga — real stakes, a real cost'
+        : 'Design your own hero — real villain, real stakes';
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: Divider(color: accent.withAlpha(60))),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or',
+                  style: GoogleFonts.sourceSans3(
+                      color: accent.withAlpha(160), fontSize: 12),
+                ),
+              ),
+              Expanded(child: Divider(color: accent.withAlpha(60))),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => launch(),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: accent, width: 2),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.sourceSans3(
+                      color: accent,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.sourceSans3(
+                        color: Colors.white60, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -977,6 +1055,7 @@ class CreativeBriefWidget extends StatelessWidget {
               ),
             ),
           ),
+          _buildAntiheroEntry(context, band, accent),
           const SizedBox(height: 40),
         ],
       ),
