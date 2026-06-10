@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-09 | 23:00 | b559 | main | Git reconcile + 7-branch cleanup; MT-248 launch-gate research + Chunk-A validation | [link](docs/sessions/2026-06-09-2300-b559.md) |
 | 2026-06-09 | 07:22 | 9ba3 | main | Solo blitz: 5 PRs merged (a11y/brand/chips/rubric/spotlight) + 9 decisions + MT-137 Gemini/ElevenLabs launch-gate finding | [link](docs/sessions/2026-06-09-0722-9ba3.md) |
 | 2026-06-08 | 18:47 | caba | main | Solo-backlog sweep: MT-239 iOS fix (#254) + docs-rescue/A/B (#256) + MT-235 Phase 2 saga (#257) + retired adv-craft branch | [link](docs/sessions/2026-06-08-1847-caba.md) |
 | 2026-06-08 | 02:09 | 6a13 | adventurer-craft-fixes | GIT_MAINTENANCE (27 fossils deleted, MT-229) + cleared 4-PR queue #243/#249/#252/#242 | [link](docs/sessions/2026-06-08-0209-6a13.md) |
