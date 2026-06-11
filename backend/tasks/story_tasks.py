@@ -22,6 +22,7 @@ from backend.database import db
 from backend.models.character import Character
 from backend.models.story import Story
 from backend.models.user import User
+from backend.services.anthropic_story_generator import ClaudeDirectStoryGenerator
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from backend.services.prompt_service import PromptService
 from backend.services.prompt_versioning import resolve as _resolve_prompt_version
@@ -146,7 +147,7 @@ def _resolve_story_provider() -> str:
     if not provider:
         provider = os.environ.get("STORY_GEN_PROVIDER") or "gemini"
     provider = str(provider).strip().lower()
-    if provider not in ("gemini", "openrouter", "auto"):
+    if provider not in ("gemini", "openrouter", "claude", "auto"):
         logger.warning(
             "STORY_GEN_PROVIDER=%r is not a recognized value; defaulting to 'gemini'.",
             provider,
@@ -292,6 +293,36 @@ def _try_openrouter(
     return None
 
 
+def _try_claude(
+    prompt: str, user_tier: str | None, provider_sequence: list[str]
+) -> str | None:
+    """Attempt direct-Anthropic (Claude) story generation. Returns text on
+    success, None on failure (any failure mode appends a tagged entry to
+    provider_sequence). MT-248: Claude's terms permit child-directed apps."""
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        logger.warning("ANTHROPIC_API_KEY not set. Skipping Claude (direct).")
+        provider_sequence.append("claude(fail:no_key)")
+        return None
+
+    try:
+        logger.info("Attempting story generation with Claude (direct)...")
+        claude_generator = ClaudeDirectStoryGenerator(user_tier=user_tier)
+        story_text = claude_generator.generate_story(prompt)
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with Claude (direct).")
+            provider_sequence.append("claude(success)")
+            return story_text
+
+        logger.warning("Claude (direct) returned a 'Sorry' message.")
+        provider_sequence.append(
+            f"claude(fail:{_classify_provider_failure(message=story_text)})"
+        )
+    except Exception as exc:
+        logger.exception("Claude (direct) failed.")
+        provider_sequence.append(f"claude(fail:{_classify_provider_failure(exc=exc)})")
+    return None
+
+
 def _generate_story_text_with_metadata(
     prompt: str,
     theme: str,
@@ -305,6 +336,7 @@ def _generate_story_text_with_metadata(
     Sequencing is controlled by STORY_GEN_PROVIDER (app.config + env):
         'gemini'     — Gemini -> OpenRouter -> static  (legacy default)
         'openrouter' — OpenRouter -> static            (skip Gemini; ToS-compliant)
+        'claude'     — Claude (direct) -> static       (skip Gemini; MT-248 launch-gate)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
 
     `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
@@ -323,6 +355,13 @@ def _generate_story_text_with_metadata(
         text = _try_openrouter(prompt, user_tier, provider_sequence)
         if text is not None:
             return text, "openrouter", provider_sequence
+
+    elif provider_choice == "claude":
+        # Direct Anthropic only — do NOT fall back to Gemini (MT-248 launch-gate;
+        # Claude's terms permit minors with safeguards, Gemini's prohibit them).
+        text = _try_claude(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "claude", provider_sequence
 
     elif provider_choice == "auto":
         # Rollback-safe: try OpenRouter first; if it fails for any reason, fall

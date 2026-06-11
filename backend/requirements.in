@@ -14,6 +14,15 @@ google-genai==2.7.0
 google-api-core==2.30.3
 google-auth==2.50.0
 
+# Anthropic Claude (direct) — MT-248 launch-gate story-text provider.
+# Activated only when STORY_GEN_PROVIDER=claude; the generator lazy-imports
+# this so the app still boots if it's absent. Hand-pinned into requirements.txt
+# (anthropic + jiter + docstring-parser, with hashes) rather than via a full
+# pip-compile, to avoid the Python-3.13 audioop-lts lockfile landmine; the other
+# transitive deps (anyio/distro/httpx/pydantic/sniffio/typing-extensions) were
+# already pinned and satisfy anthropic's constraints.
+anthropic>=0.69.0
+
 # Utilities
 requests==2.34.2
 Jinja2==3.1.6

@@ -135,6 +135,7 @@ class Config:
     # Values:
     #   'gemini'     — legacy behavior: Gemini -> OpenRouter -> static fallback.
     #   'openrouter' — target:          OpenRouter -> static fallback (skip Gemini entirely).
+    #   'claude'     — MT-248 launch-gate: Claude (direct Anthropic) -> static (skip Gemini).
     #   'auto'       — rollback-safe:   OpenRouter -> Gemini -> static fallback.
     # Defaults to 'gemini' so production behavior is unchanged until the flag is
     # flipped after OpenRouter ToS verification (see audit/MT-171-OPENROUTER-MIGRATION-BRIEF.md).

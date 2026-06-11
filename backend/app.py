@@ -462,10 +462,11 @@ def create_app(config_name):
     if _provider_raw is None:
         _provider_raw = app.config.get("STORY_GEN_PROVIDER", "gemini")
     _provider = (_provider_raw or "gemini").strip().lower()
-    if _provider not in ("gemini", "openrouter", "auto"):
+    if _provider not in ("gemini", "openrouter", "claude", "auto"):
         logger.warning(
             "STORY_GEN_PROVIDER=%r is not a recognized value "
-            "(expected 'gemini' | 'openrouter' | 'auto'); defaulting to 'gemini'.",
+            "(expected 'gemini' | 'openrouter' | 'claude' | 'auto'); "
+            "defaulting to 'gemini'.",
             _provider_raw,
         )
         _provider = "gemini"
