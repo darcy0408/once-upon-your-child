@@ -288,14 +288,18 @@ class SuperheroNameGenerator {
 
 /// Reader register for the funny-name picker (B2). Sprout keeps its
 /// auto-generated formula name and never reaches this generator — only
-/// Explorer (6-8) and Adventurer (9-12) pick a "cool" funny name.
-enum HeroNameRegister { explorer, adventurer }
+/// Explorer (6-8), Adventurer (9-12), and Adolescent (15-17) pick a "cool"
+/// funny name.
+enum HeroNameRegister { explorer, adventurer, adolescent }
 
-/// Generates COOL, kid-safe superhero codenames for the Explorer/Adventurer
-/// funny-name picker (Chunk B2). These pools are intentionally separate from
-/// the therapeutic [SuperheroNameGenerator] archetype names ("Captain
-/// High-Five"), which read too young for 9-12s. Names here are playful but
-/// not cutesy ("The Quiet Storm", "Nightcircuit", "Sir Reacts-a-Lot").
+/// Generates COOL, kid-safe superhero codenames for the Explorer/Adventurer/
+/// Adolescent funny-name picker (Chunk B2). These pools are intentionally
+/// separate from the therapeutic [SuperheroNameGenerator] archetype names
+/// ("Captain High-Five"), which read too young for 9-12s. Names here are
+/// playful but not cutesy ("The Quiet Storm", "Nightcircuit", "Sir
+/// Reacts-a-Lot"). The Adolescent pool goes a notch older and darker — a
+/// neo-noir / prestige-YA register fit for a teen antihero living a double
+/// life ("Nightjar", "The Static", "Halflight").
 ///
 /// Determinism: when an optional [Random] (seeded) is supplied the output is
 /// reproducible, which the sanity test relies on.
@@ -356,8 +360,36 @@ class HeroFunnyNameGenerator {
     'The Brave Badger',
   ];
 
-  static List<String> _poolFor(HeroNameRegister register) =>
-      register == HeroNameRegister.adventurer ? adventurerNames : explorerNames;
+  // Adolescent 15-17 — neo-noir / prestige-YA. Understated, grounded,
+  // morally-grey, alias-like; the codename a teenager leading a double life
+  // would actually pick. No "Captain/Sir/Major/Doctor", no goofy alliteration,
+  // no cutesy/wholesome tone, no power-explicit names. Still strictly kid-safe:
+  // no violence, weapons, drugs, gore, or edgelord shock — just darker mood.
+  static const List<String> adolescentNames = [
+    'Nightjar',
+    'The Static',
+    'Cipher',
+    'Halflight',
+    'Greyline',
+    'The Tally',
+    'Holloway',
+    'Nocturne',
+    'The Undertow',
+    'Ashen',
+    'Tessellate',
+    'The Long Hush',
+  ];
+
+  static List<String> _poolFor(HeroNameRegister register) {
+    switch (register) {
+      case HeroNameRegister.explorer:
+        return explorerNames;
+      case HeroNameRegister.adventurer:
+        return adventurerNames;
+      case HeroNameRegister.adolescent:
+        return adolescentNames;
+    }
+  }
 
   /// Returns [count] DISTINCT funny names for the given [register]. If the
   /// pool is smaller than [count] the whole (shuffled) pool is returned.

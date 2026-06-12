@@ -10,9 +10,11 @@ import 'package:story_weaver_app/superhero_name_generator.dart';
 
 void main() {
   group('HeroFunnyNameGenerator pools', () {
-    test('Explorer + Adventurer pools are non-empty and distinct sets', () {
+    test('Explorer + Adventurer + Adolescent pools are non-empty and distinct '
+        'sets', () {
       expect(HeroFunnyNameGenerator.explorerNames, isNotEmpty);
       expect(HeroFunnyNameGenerator.adventurerNames, isNotEmpty);
+      expect(HeroFunnyNameGenerator.adolescentNames, isNotEmpty);
 
       // No duplicates within each pool.
       expect(
@@ -22,6 +24,10 @@ void main() {
       expect(
         HeroFunnyNameGenerator.adventurerNames.toSet().length,
         HeroFunnyNameGenerator.adventurerNames.length,
+      );
+      expect(
+        HeroFunnyNameGenerator.adolescentNames.toSet().length,
+        HeroFunnyNameGenerator.adolescentNames.length,
       );
     });
 
@@ -62,7 +68,8 @@ void main() {
       expect(a, b);
     });
 
-    test('explorer and adventurer registers draw from different pools', () {
+    test('explorer, adventurer, and adolescent registers draw from different '
+        'pools', () {
       final exp = HeroFunnyNameGenerator.pickNames(
         HeroNameRegister.explorer,
         count: 99, // larger than pool → whole pool back
@@ -73,8 +80,50 @@ void main() {
         count: 99,
         random: Random(1),
       );
+      final ado = HeroFunnyNameGenerator.pickNames(
+        HeroNameRegister.adolescent,
+        count: 99,
+        random: Random(1),
+      );
       expect(exp.toSet(), HeroFunnyNameGenerator.explorerNames.toSet());
       expect(adv.toSet(), HeroFunnyNameGenerator.adventurerNames.toSet());
+      expect(ado.toSet(), HeroFunnyNameGenerator.adolescentNames.toSet());
+    });
+
+    test('Adolescent pool reads neo-noir — contains the spec exemplars', () {
+      // Codenames called out in the antihero design brief must be present so a
+      // 15-17 never sees the wholesome Explorer/Adventurer names.
+      expect(
+        HeroFunnyNameGenerator.adolescentNames,
+        containsAll(<String>['Nightjar', 'Halflight']),
+      );
+    });
+
+    test('Adolescent pickNames returns DISTINCT names only from its pool', () {
+      final names = HeroFunnyNameGenerator.pickNames(
+        HeroNameRegister.adolescent,
+        count: 3,
+        random: Random(42),
+      );
+      expect(names.length, 3);
+      expect(names.toSet().length, 3, reason: 'names must be distinct');
+      for (final n in names) {
+        expect(HeroFunnyNameGenerator.adolescentNames, contains(n));
+      }
+    });
+
+    test('Adolescent pickNames is deterministic for a fixed seed', () {
+      final a = HeroFunnyNameGenerator.pickNames(
+        HeroNameRegister.adolescent,
+        count: 3,
+        random: Random(7),
+      );
+      final b = HeroFunnyNameGenerator.pickNames(
+        HeroNameRegister.adolescent,
+        count: 3,
+        random: Random(7),
+      );
+      expect(a, b);
     });
   });
 }

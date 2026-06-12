@@ -23,6 +23,7 @@ class HeroSaga {
     this.nemesis,
     this.nemesisStatus,
     this.whatChanged,
+    this.whatItCost,
     this.nextHook,
     this.allies = const [],
     this.keyChoices = const [],
@@ -49,6 +50,10 @@ class HeroSaga {
 
   /// One-line "what shifted in the city or the hero" from the last Issue.
   final String? whatChanged;
+
+  /// One-line "what the edge/choice COST the hero" from the last Issue — the
+  /// consequence ledger, surfaced so the cost carries across chapters.
+  final String? whatItCost;
 
   /// The unresolved thread the last Issue left dangling; the next Issue should
   /// open on it or pay it off.
@@ -79,6 +84,7 @@ class HeroSaga {
     String? nemesis,
     String? nemesisStatus,
     String? whatChanged,
+    String? whatItCost,
     String? nextHook,
     List<String>? allies,
     List<String>? keyChoices,
@@ -91,6 +97,7 @@ class HeroSaga {
       nemesis: nemesis ?? this.nemesis,
       nemesisStatus: nemesisStatus ?? this.nemesisStatus,
       whatChanged: whatChanged ?? this.whatChanged,
+      whatItCost: whatItCost ?? this.whatItCost,
       nextHook: nextHook ?? this.nextHook,
       allies: allies ?? this.allies,
       keyChoices: keyChoices ?? this.keyChoices,
@@ -141,6 +148,7 @@ class HeroSaga {
       nemesis: pick('nemesis', nemesis),
       nemesisStatus: pick('nemesis_status', nemesisStatus),
       whatChanged: pick('what_changed', whatChanged),
+      whatItCost: pick('what_it_cost', whatItCost),
       nextHook: pick('next_hook', nextHook),
       heroCode: code,
       allies: merge(allies, newAllies),
@@ -161,6 +169,7 @@ class HeroSaga {
       if (nemesis != null) 'nemesis': nemesis,
       if (nemesisStatus != null) 'nemesis_status': nemesisStatus,
       if (whatChanged != null) 'what_changed': whatChanged,
+      if (whatItCost != null) 'what_it_cost': whatItCost,
       if (nextHook != null) 'next_hook': nextHook,
       if (heroCode != null) 'hero_code': heroCode,
       if (allies.isNotEmpty) 'allies': allies,
@@ -175,6 +184,7 @@ class HeroSaga {
         'nemesis': nemesis,
         'nemesis_status': nemesisStatus,
         'what_changed': whatChanged,
+        'what_it_cost': whatItCost,
         'next_hook': nextHook,
         'allies': allies,
         'key_choices': keyChoices,
@@ -194,6 +204,7 @@ class HeroSaga {
       nemesis: map['nemesis'] as String?,
       nemesisStatus: map['nemesis_status'] as String?,
       whatChanged: map['what_changed'] as String?,
+      whatItCost: map['what_it_cost'] as String?,
       nextHook: map['next_hook'] as String?,
       allies: strList(map['allies']),
       keyChoices: strList(map['key_choices']),

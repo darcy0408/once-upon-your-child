@@ -1149,6 +1149,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     hero_emblem=kwargs.get("hero_emblem"),
                     hero_power=hero_power,
                     hero_catchphrase=kwargs.get("hero_catchphrase"),
+                    hero_secret=kwargs.get("hero_secret"),
+                    hero_tell=kwargs.get("hero_tell"),
+                    hero_line=kwargs.get("hero_line"),
                     superhero_villain_id=sh_villain_id,
                     superhero_problem_id=sh_problem_id,
                     # MT-227 follow-up: the kid's free-text "Imagine It" idea was

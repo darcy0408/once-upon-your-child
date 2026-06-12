@@ -201,9 +201,41 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     );
   }
 
-  /// "Previously on…" recap card for a returning Creator hero with continuity.
-  /// Shows the Issue number, the nemesis + humanized status, and teases the
-  /// next_hook. Returns null when there is no saga continuity to show.
+  /// Band-aware card font: the Adolescent (15-17) recap should not read like a
+  /// kids' app, so it uses SourceSans3; Creator (and any other band) keeps the
+  /// rounded, friendly Fredoka. Mirrors the wizard's `_noirAwareText` intent.
+  TextStyle _cardFont({
+    required Color color,
+    required double fontSize,
+    FontWeight? fontWeight,
+    FontStyle? fontStyle,
+    double? letterSpacing,
+    double? height,
+  }) {
+    if (band == AgeBand.adolescent) {
+      return GoogleFonts.sourceSans3(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontStyle: fontStyle,
+        letterSpacing: letterSpacing,
+        height: height,
+      );
+    }
+    return GoogleFonts.fredoka(
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      fontStyle: fontStyle,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  /// "Previously on…" recap card for a returning hero with continuity. Reads
+  /// like a ledger entry: the nemesis + humanized status, what changed, the
+  /// COST the edge exacted, then the forward-looking next_hook. Returns null
+  /// when there is no saga continuity to show.
   Widget? _buildPreviouslyCard() {
     final s = saga;
     if (s == null || !s.hasContinuity) return null;
@@ -215,19 +247,59 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
       lines.add(Text(
         status.isEmpty ? nemesis : '$nemesis $status.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.fredoka(
+        style: _cardFont(
           color: Colors.white.withAlpha(230),
           fontSize: 15,
         ),
       ));
     }
+    final changed = s.whatChanged?.trim();
+    if (changed != null && changed.isNotEmpty) {
+      lines.add(const SizedBox(height: 8));
+      lines.add(Text(
+        changed,
+        textAlign: TextAlign.center,
+        style: _cardFont(
+          color: Colors.white.withAlpha(205),
+          fontSize: 14,
+          height: 1.3,
+        ),
+      ));
+    }
+    final cost = s.whatItCost?.trim();
+    if (cost != null && cost.isNotEmpty) {
+      lines.add(const SizedBox(height: 10));
+      lines.add(Text(
+        'The cost:',
+        textAlign: TextAlign.center,
+        style: _cardFont(
+          color: _gold.withAlpha(220),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+        ),
+      ));
+      lines.add(const SizedBox(height: 2));
+      lines.add(Text(
+        cost,
+        textAlign: TextAlign.center,
+        style: _cardFont(
+          color: Colors.white.withAlpha(235),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
+        ),
+      ));
+    }
     final hook = s.nextHook?.trim();
     if (hook != null && hook.isNotEmpty) {
-      lines.add(const SizedBox(height: 8));
+      lines.add(const SizedBox(height: 12));
+      lines.add(Divider(color: _gold.withAlpha(70), height: 1));
+      lines.add(const SizedBox(height: 12));
       lines.add(Text(
         hook,
         textAlign: TextAlign.center,
-        style: GoogleFonts.fredoka(
+        style: _cardFont(
           color: _gold.withAlpha(235),
           fontSize: 16,
           fontStyle: FontStyle.italic,
@@ -253,7 +325,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
         children: [
           Text(
             'PREVIOUSLY IN YOUR SAGA',
-            style: GoogleFonts.fredoka(
+            style: _cardFont(
               color: _gold.withAlpha(210),
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -265,7 +337,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Issue #$nextIssue begins…',
-            style: GoogleFonts.fredoka(
+            style: _cardFont(
               color: Colors.white.withAlpha(170),
               fontSize: 13,
               fontWeight: FontWeight.w600,

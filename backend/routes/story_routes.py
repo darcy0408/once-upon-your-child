@@ -774,6 +774,11 @@ def create_story_blueprint(
             "hero_emblem": payload.get("hero_emblem"),
             "hero_power": payload.get("hero_power"),
             "hero_catchphrase": payload.get("hero_catchphrase"),
+            # Adolescent (15-17) antihero "identity" fields — only meaningful
+            # for the T10 double-life prompt; other bands ignore them.
+            "hero_secret": payload.get("hero_secret"),
+            "hero_tell": payload.get("hero_tell"),
+            "hero_line": payload.get("hero_line"),
             "hero_nemesis_id": payload.get("hero_nemesis_id"),
             "recent_villains": payload.get("recent_villains") or [],
             "recent_problems": payload.get("recent_problems") or [],

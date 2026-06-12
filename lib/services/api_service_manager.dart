@@ -736,6 +736,9 @@ class ApiServiceManager {
     String? heroEmblem,
     String? heroPower,
     String? heroCatchphrase,
+    String? heroSecret,
+    String? heroTell,
+    String? heroLine,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -841,6 +844,9 @@ class ApiServiceManager {
           heroEmblem: heroEmblem,
           heroPower: heroPower,
           heroCatchphrase: heroCatchphrase,
+          heroSecret: heroSecret,
+          heroTell: heroTell,
+          heroLine: heroLine,
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
@@ -1122,6 +1128,9 @@ class ApiServiceManager {
     String? heroEmblem,
     String? heroPower,
     String? heroCatchphrase,
+    String? heroSecret,
+    String? heroTell,
+    String? heroLine,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -1178,6 +1187,9 @@ class ApiServiceManager {
           heroEmblem: heroEmblem,
           heroPower: heroPower,
           heroCatchphrase: heroCatchphrase,
+          heroSecret: heroSecret,
+          heroTell: heroTell,
+          heroLine: heroLine,
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
@@ -1261,6 +1273,9 @@ class ApiServiceManager {
     String? heroEmblem,
     String? heroPower,
     String? heroCatchphrase,
+    String? heroSecret,
+    String? heroTell,
+    String? heroLine,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -1329,6 +1344,15 @@ class ApiServiceManager {
       if (heroPower != null) body['hero_power'] = heroPower;
       if (heroCatchphrase != null && heroCatchphrase.trim().isNotEmpty) {
         body['hero_catchphrase'] = heroCatchphrase.trim();
+      }
+      if (heroSecret != null && heroSecret.trim().isNotEmpty) {
+        body['hero_secret'] = heroSecret.trim();
+      }
+      if (heroTell != null && heroTell.trim().isNotEmpty) {
+        body['hero_tell'] = heroTell.trim();
+      }
+      if (heroLine != null && heroLine.trim().isNotEmpty) {
+        body['hero_line'] = heroLine.trim();
       }
       if (heroNemesisId != null && heroNemesisId.trim().isNotEmpty) {
         body['hero_nemesis_id'] = heroNemesisId.trim();

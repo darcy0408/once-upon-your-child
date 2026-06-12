@@ -1,13 +1,17 @@
 // Superhero Mode (Sprout 3-5, Explorer 6-8, Adventurer 9-12) — 3-tap costume picker.
 //
 // Three sequential pages inside a single Scaffold (PageView controlled
-// programmatically): color → cape → emblem. Auto-advances on color tap;
-// cape and emblem require explicit tap-then-advance with a brief
-// confirmation animation.
+// programmatically). Page order is band-aware:
+//   • Adolescent (15-17): color → mark(emblem) → identity (the noir "double
+//     life" prompts; no cape page).
+//   • Every other band: color → cape → emblem (unchanged).
+// Auto-advances on color tap; cape and emblem require explicit tap-then-advance
+// with a brief confirmation animation; the identity page has its own Continue.
 //
 // Writes selections back to [WizardData.heroCostumeColor], heroCapeStyle,
-// heroEmblem. Does NOT save the HeroProfile yet — that happens after the
-// power picker completes (see [SuperheroPowerScreen]).
+// heroEmblem, and (Adolescent only) heroSecret / heroTell / heroLine. Does NOT
+// save the HeroProfile yet — that happens after the power picker completes
+// (see [SuperheroPowerScreen]).
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -45,6 +49,12 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   String? _justSelectedSnapshot;
+
+  // Adolescent-only "Identity" page: a custom-text controller per prompt so a
+  // teen can write their own answer instead of (or overriding) a preset chip.
+  final TextEditingController _secretController = TextEditingController();
+  final TextEditingController _tellController = TextEditingController();
+  final TextEditingController _lineController = TextEditingController();
 
   static const _colors = <_ColorOption>[
     _ColorOption(id: 'red', label: 'Red', color: Color(0xFFE53935)),
@@ -108,11 +118,21 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _secretController.dispose();
+    _tellController.dispose();
+    _lineController.dispose();
     super.dispose();
   }
 
+  // Band-aware page order. Adolescent's noir "double life" flow drops the cape
+  // page and adds an Identity page: [Color, Mark(emblem), Identity]. Every other
+  // band keeps the original [Color, Cape, Emblem] exactly as before.
+  List<Widget> get _pages => widget.band == AgeBand.adolescent
+      ? [_buildColorPage(), _buildEmblemPage(), _buildIdentityPage()]
+      : [_buildColorPage(), _buildCapePage(), _buildEmblemPage()];
+
   void _advance() {
-    if (_currentPage < 2) {
+    if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
@@ -144,13 +164,26 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   /// shows a "surprise" banner and a reroll so it stays playful and editable.
   void _surpriseMe() {
     final rng = Random();
+    final isAdolescent = widget.band == AgeBand.adolescent;
     final color = _colors[rng.nextInt(_colors.length)];
-    final cape = _capes[rng.nextInt(_capes.length)];
-    final emblem = _emblems[rng.nextInt(_emblems.length)];
+    // Adolescent's flow has no cape page and filters out a few too-young
+    // emblems — keep surprise inside that same allowed set so it can't pick a
+    // mark the grid hides, and leave heroSecret/heroTell/heroLine unset (the
+    // backend falls back gracefully when they're blank).
+    final emblemPool = isAdolescent
+        ? _emblems
+              .where(
+                (e) => !(e.id == 'heart' || e.id == 'paw' || e.id == 'rainbow'),
+              )
+              .toList()
+        : _emblems;
+    final emblem = emblemPool[rng.nextInt(emblemPool.length)];
     HapticFeedback.mediumImpact();
     setState(() {
       widget.wizardData.heroCostumeColor = color.id;
-      widget.wizardData.heroCapeStyle = cape.id;
+      if (!isAdolescent) {
+        widget.wizardData.heroCapeStyle = _capes[rng.nextInt(_capes.length)].id;
+      }
       widget.wizardData.heroEmblem = emblem.id;
     });
     Navigator.of(context)
@@ -204,7 +237,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           appBarTitle,
-          style: GoogleFonts.fredoka(
+          style: _noirAwareText(
+            widget.band == AgeBand.adolescent,
             color: _gold,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -221,12 +255,14 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              _ProgressDots(currentPage: _currentPage, total: 3),
+              _ProgressDots(currentPage: _currentPage, total: _pages.length),
               const SizedBox(height: 10),
               // One-tap "build me a random hero" — high-replayability shortcut.
               Semantics(
                 button: true,
-                label: 'Surprise me — build a random superhero',
+                label: widget.band == AgeBand.adolescent
+                    ? 'Randomize — build a cover for me'
+                    : 'Surprise me — build a random superhero',
                 child: TextButton.icon(
                   onPressed: _surpriseMe,
                   style: TextButton.styleFrom(
@@ -242,8 +278,11 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                   ),
                   icon: const Text('🎲', style: TextStyle(fontSize: 18)),
                   label: Text(
-                    'Surprise me!',
-                    style: GoogleFonts.fredoka(
+                    widget.band == AgeBand.adolescent
+                        ? 'Randomize'
+                        : 'Surprise me!',
+                    style: _noirAwareText(
+                      widget.band == AgeBand.adolescent,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: _gold,
@@ -257,11 +296,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   onPageChanged: (p) => setState(() => _currentPage = p),
-                  children: [
-                    _buildColorPage(),
-                    _buildCapePage(),
-                    _buildEmblemPage(),
-                  ],
+                  children: _pages,
                 ),
               ),
             ],
@@ -279,7 +314,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: _noirAwareText(
+            widget.band == AgeBand.adolescent,
             color: _gold,
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -289,7 +325,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: _noirAwareText(
+            widget.band == AgeBand.adolescent,
             color: Colors.white.withAlpha(210),
             fontSize: 16,
           ),
@@ -354,7 +391,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                   child: Center(
                     child: Text(
                       _colorLabel(c),
-                      style: GoogleFonts.fredoka(
+                      style: _noirAwareText(
+                        widget.band == AgeBand.adolescent,
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -463,7 +501,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                           Expanded(
                             child: Text(
                               cape.label,
-                              style: GoogleFonts.fredoka(
+                              style: _noirAwareText(
+                                widget.band == AgeBand.adolescent,
                                 color: Colors.white,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -503,8 +542,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         children: [
           _pageHeader(
             '✨',
-            isExplorer ? 'Choose your emblem' : 'Pick your symbol!',
-            isExplorer ? 'Your hero\'s signature mark' : 'Tap your hero emblem',
+            widget.band == AgeBand.adolescent
+                ? 'Choose your mark'
+                : isExplorer
+                ? 'Choose your emblem'
+                : 'Pick your symbol!',
+            widget.band == AgeBand.adolescent
+                ? 'One small thing you keep on you'
+                : isExplorer
+                ? 'Your hero\'s signature mark'
+                : 'Tap your hero emblem',
           ),
           const SizedBox(height: 22),
           GridView.count(
@@ -514,7 +561,15 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: 1,
-            children: _emblems.map((e) {
+            children: _emblems
+                .where(
+                  (e) =>
+                      !(widget.band == AgeBand.adolescent &&
+                          (e.id == 'heart' ||
+                              e.id == 'paw' ||
+                              e.id == 'rainbow')),
+                )
+                .map((e) {
               final selected = widget.wizardData.heroEmblem == e.id;
               final flash = _justSelectedSnapshot == 'emblem:${e.id}';
               return GestureDetector(
@@ -548,7 +603,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                       const SizedBox(height: 6),
                       Text(
                         e.label,
-                        style: GoogleFonts.fredoka(
+                        style: _noirAwareText(
+                          widget.band == AgeBand.adolescent,
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -562,6 +618,217 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Page 3 (Adolescent only): identity / double life ───────────────────────
+  //
+  // Replaces the cape page for the noir band. Three optional prompts that let a
+  // teen define the texture of their double life. Each writes to a nullable
+  // WizardData field (heroSecret / heroTell / heroLine); all three may stay
+  // blank — Continue is always enabled and the backend falls back gracefully.
+
+  // Preset chips per prompt. Tone is grounded prestige-YA, not cutesy.
+  static const _secretChips = <String>[
+    "That I'm not okay",
+    'What I can really do',
+    "Who I'm protecting",
+    "A mistake I haven't owned",
+    "That I've changed",
+  ];
+  static const _tellChips = <String>[
+    'I go quiet',
+    'I overexplain',
+    'I disappear',
+    "I can't meet their eyes",
+    'I get too calm',
+  ];
+  static const _lineChips = <String>[
+    'Never sell out a friend',
+    'No hitting first',
+    "Don't lie to family",
+    'Never use it on someone weaker',
+    "No deal I can't undo",
+  ];
+
+  Widget _buildIdentityPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _pageHeader(
+            '🎭',
+            'Your double life',
+            'Three things that make this real. All optional.',
+          ),
+          const SizedBox(height: 24),
+          _identitySection(
+            header: 'What are you hiding?',
+            chips: _secretChips,
+            controller: _secretController,
+            current: widget.wizardData.heroSecret,
+            hint: 'Or write your own…',
+            onSelected: (value) => widget.wizardData.heroSecret = value,
+          ),
+          const SizedBox(height: 28),
+          _identitySection(
+            header: 'What gives you away?',
+            chips: _tellChips,
+            controller: _tellController,
+            current: widget.wizardData.heroTell,
+            hint: 'Or write your own…',
+            onSelected: (value) => widget.wizardData.heroTell = value,
+          ),
+          const SizedBox(height: 28),
+          _identitySection(
+            header: "The line you won't cross?",
+            chips: _lineChips,
+            controller: _lineController,
+            current: widget.wizardData.heroLine,
+            hint: 'Or write your own…',
+            onSelected: (value) => widget.wizardData.heroLine = value,
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _advance,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _gold,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                'Continue',
+                style: _noirAwareText(
+                  true,
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One identity prompt: a noir header line, a wrap of single-select chips,
+  /// and a "write your own" TextField that overrides the chip when typed in.
+  /// Selection is reflected by comparing [current] to each chip label; typing
+  /// in the field clears the chip highlight (the field value becomes the
+  /// answer). All state lives on [wizardData] + the per-prompt controller.
+  Widget _identitySection({
+    required String header,
+    required List<String> chips,
+    required TextEditingController controller,
+    required String? current,
+    required String hint,
+    required ValueChanged<String?> onSelected,
+  }) {
+    // The chip is "active" only when the saved answer matches a preset AND the
+    // custom field is empty (typing always takes precedence).
+    final customActive = controller.text.trim().isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          header,
+          style: _noirAwareText(
+            true,
+            color: _gold,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: chips.map((label) {
+            final selected = !customActive && current == label;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  // Selecting a chip overrides any custom text.
+                  controller.clear();
+                  onSelected(label);
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(selected ? 38 : 20),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selected ? _gold : Colors.white24,
+                    width: selected ? 3 : 2,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: _noirAwareText(
+                    true,
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller,
+          maxLines: 1,
+          textInputAction: TextInputAction.done,
+          style: _noirAwareText(true, color: Colors.white, fontSize: 15),
+          cursorColor: _gold,
+          onChanged: (value) {
+            // Typing overrides any chip: the trimmed field becomes the answer,
+            // or null when cleared.
+            setState(() {
+              final trimmed = value.trim();
+              onSelected(trimmed.isEmpty ? null : trimmed);
+            });
+          },
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: _noirAwareText(
+              true,
+              color: Colors.white.withAlpha(120),
+              fontSize: 15,
+            ),
+            filled: true,
+            fillColor: Colors.white.withAlpha(14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: customActive ? _gold : Colors.white24,
+                width: customActive ? 3 : 2,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: _gold, width: 3),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -631,4 +898,32 @@ class _EmblemOption {
     required this.label,
     required this.emoji,
   });
+}
+
+/// Band-aware text style for the costume builder. The Adolescent (15-17) noir
+/// "cover" flow uses a crisper grotesque (Source Sans 3) so it reads less
+/// childish; every younger band keeps the original rounded Fredoka exactly as
+/// before. Pass `noir: true` only for [AgeBand.adolescent].
+TextStyle _noirAwareText(
+  bool noir, {
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? letterSpacing,
+  List<Shadow>? shadows,
+}) {
+  final base = noir
+      ? GoogleFonts.sourceSans3(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+        )
+      : GoogleFonts.fredoka(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+        );
+  return shadows == null ? base : base.copyWith(shadows: shadows);
 }

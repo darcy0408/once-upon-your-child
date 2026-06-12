@@ -34,6 +34,9 @@ class PromptService:
         hero_emblem: str | None = None,
         hero_power: str | None = None,
         hero_catchphrase: str | None = None,
+        hero_secret: str | None = None,
+        hero_tell: str | None = None,
+        hero_line: str | None = None,
         superhero_villain_id: str | None = None,
         superhero_problem_id: str | None = None,
         custom_elements: str = "",
@@ -110,6 +113,9 @@ class PromptService:
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
                     hero_catchphrase=hero_catchphrase,
+                    hero_secret=hero_secret,
+                    hero_tell=hero_tell,
+                    hero_line=hero_line,
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
@@ -1043,6 +1049,7 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
             prev_nemesis = (saga.get("nemesis") or "").strip()
             prev_status = (saga.get("nemesis_status") or "").strip().lower()
             prev_changed = (saga.get("what_changed") or "").strip()
+            prev_cost = (saga.get("what_it_cost") or "").strip()
             prev_hook = (saga.get("next_hook") or "").strip()
             code = (saga.get("hero_code") or "").strip()
             allies = [
@@ -1059,6 +1066,11 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
                 lines.append(f"- Nemesis so far — {prev_nemesis}: {st}.")
             if prev_changed:
                 lines.append(f"- What changed last Issue: {prev_changed}")
+            if prev_cost:
+                lines.append(
+                    f"- Still owed from last time: {prev_cost} — let it weigh on "
+                    f"{character}, don't reset it."
+                )
             if prev_hook:
                 lines.append(
                     f"- The dangling thread to honor (open on it or pay it off — do "
@@ -1146,6 +1158,7 @@ OUTPUT FORMAT — strictly valid JSON:
     "nemesis": "{villain['name']}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in the city or the hero",
+    "what_it_cost": "one sentence on what the hero's choice or power COST them this Issue — concrete, never abstract",
     "next_hook": "one sentence teasing the unresolved thread for the next Issue"
   }}
 }}
@@ -1173,6 +1186,9 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
         villain_id: str | None,
         problem_id: str | None,
         hero_catchphrase: str | None = None,
+        hero_secret: str | None = None,
+        hero_tell: str | None = None,
+        hero_line: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> str:
@@ -1218,6 +1234,39 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             else ""
         )
 
+        # --- Adolescent "identity" fields (all optional) -------------------
+        # When provided, make the double-life premise concrete; when blank,
+        # fall back to the generic prose (mirrors catchphrase_identity_line).
+        secret = (hero_secret or "").strip()
+        tell = (hero_tell or "").strip()
+        line = (hero_line or "").strip()
+
+        # hero_line: concrete personal-line sentence when set, else generic.
+        personal_line_sentence = (
+            f"{character}'s personal line — what they will not do even when it "
+            f'costs them: "{line}". Let it be tested directly.'
+            if line
+            else (
+                f"{character} holds a personal line — what they refuse to do even "
+                f"when it would be easier. Let that line be tested."
+            )
+        )
+
+        # hero_secret: extra premise bullet when set, else omitted.
+        secret_bullet = (
+            f"\n- What {character} hides from the people closest to them: "
+            f'"{secret}". The concealment is the wound; let the story press on it.'
+            if secret
+            else ""
+        )
+
+        # hero_tell: folded into the concealment engine line when set, else omitted.
+        tell_fragment = (
+            f' {character}\'s tell — how they slip when it gets close: "{tell}".'
+            if tell
+            else ""
+        )
+
         canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
 
         custom_request_block = (
@@ -1250,6 +1299,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             prev_nemesis = (saga.get("nemesis") or "").strip()
             prev_status = (saga.get("nemesis_status") or "").strip().lower()
             prev_changed = (saga.get("what_changed") or "").strip()
+            prev_cost = (saga.get("what_it_cost") or "").strip()
             prev_hook = (saga.get("next_hook") or "").strip()
             code = (saga.get("hero_code") or "").strip()
             allies = [
@@ -1266,6 +1316,11 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
                 lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
             if prev_changed:
                 lines.append(f"- What shifted last time: {prev_changed}")
+            if prev_cost:
+                lines.append(
+                    f"- Still owed from last time: {prev_cost} — let it weigh on "
+                    f"{character}, don't reset it."
+                )
             if prev_hook:
                 lines.append(
                     f"- The loose thread to honor (open on it or pay it off — do "
@@ -1302,10 +1357,10 @@ You are writing one self-contained chapter of an ongoing antihero saga for a sha
 
 THE PREMISE — A DOUBLE LIFE:
 - Civilian self: {character} — the person everyone thinks they know.
-- The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}
+- The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}{secret_bullet}
 - Look: nothing flashy — {color} everyday clothes, maybe a small {emblem} they keep on them; the point is to blend in, not stand out.
-- The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.
-- {character} holds a personal line — what they refuse to do even when it would be easier. Let that line be tested.{continuity_block}
+- The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{tell_fragment}
+- {personal_line_sentence}{continuity_block}
 
 THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
 - Name: {villain['name']} (use it in the prose).
@@ -1354,6 +1409,7 @@ OUTPUT FORMAT — strictly valid JSON:
     "nemesis": "{villain['name']}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in {character}'s world or the double life",
+    "what_it_cost": "one sentence on what using the edge COST {character} this chapter — concrete (a frayed bond, a near-miss, a line bent), never abstract",
     "next_hook": "one sentence teasing the unresolved thread for the next chapter"
   }}
 }}

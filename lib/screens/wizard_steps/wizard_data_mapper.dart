@@ -366,6 +366,17 @@ class WizardDataMapper {
         if (data.heroCatchphrase != null &&
             data.heroCatchphrase!.trim().isNotEmpty)
           'heroCatchphrase': data.heroCatchphrase!.trim(),
+        // Adolescent identity — optional free text from teens; sanitized
+        // (prompt-injection / HTML / length) since these are open inputs.
+        if (data.heroSecret != null && data.heroSecret!.trim().isNotEmpty)
+          'heroSecret':
+              InputSanitizer.sanitizeText(data.heroSecret!, maxLength: 120),
+        if (data.heroTell != null && data.heroTell!.trim().isNotEmpty)
+          'heroTell':
+              InputSanitizer.sanitizeText(data.heroTell!, maxLength: 120),
+        if (data.heroLine != null && data.heroLine!.trim().isNotEmpty)
+          'heroLine':
+              InputSanitizer.sanitizeText(data.heroLine!, maxLength: 120),
         // C4 nemesis — optional; only emitted when the kid chose an arch-villain
         // (null = server surprise-picks).
         if (data.heroNemesisId != null &&

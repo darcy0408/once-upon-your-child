@@ -141,6 +141,14 @@ def test_adolescent_prompt_emits_continuity_saga_state():
     assert "next_hook" in prompt
 
 
+def test_adolescent_prompt_saga_state_includes_what_it_cost():
+    """Consequence ledger: the edge's COST is captured into saga_state."""
+    prompt = _build()
+    assert "what_it_cost" in prompt
+    # The cost contract is concrete, not abstract.
+    assert "COST Maya this chapter" in prompt
+
+
 def test_adolescent_prompt_has_1400_2200_word_budget():
     prompt = _build(
         hero_power="super_hearing",
@@ -209,6 +217,7 @@ def test_adolescent_prompt_weaves_prior_saga_continuity():
         "nemesis": "the Archivist",
         "nemesis_status": "still-at-large",
         "what_changed": "the school board sided with the Archivist",
+        "what_it_cost": "Maya let her best friend take the blame to stay hidden",
         "next_hook": "a second ledger surfaced in the records room",
     }
     prompt = _build(prior_saga=prior)
@@ -218,6 +227,9 @@ def test_adolescent_prompt_weaves_prior_saga_continuity():
     assert "a second ledger surfaced in the records room" in prompt
     assert "still out there" in prompt
     assert "where we left off" in prompt
+    # The prior chapter's cost is carried forward into the continuity block.
+    assert "Maya let her best friend take the blame to stay hidden" in prompt
+    assert "Still owed from last time" in prompt
 
 
 def test_adolescent_continuity_routes_through_build_story_prompt():
@@ -249,3 +261,62 @@ def test_adolescent_prompt_derives_villain_and_problem_when_missing():
     prompt = _build(hero_power="super_speed", villain_id=None, problem_id=None)
     assert any(v["name"] in prompt for v in ADOLESCENT_VILLAINS.values())
     assert any(p["verb"] in prompt for p in ADOLESCENT_PROBLEMS.values())
+
+
+# --- Identity fields (hero_secret / hero_tell / hero_line) ------------------
+def test_adolescent_prompt_injects_identity_fields_when_provided():
+    secret = "they failed the exam they pretend they aced"
+    tell = "they go quiet and pick at their sleeve"
+    line = "never sell out a friend to save themselves"
+    prompt = _build(
+        hero_secret=secret,
+        hero_tell=tell,
+        hero_line=line,
+    )
+    # Each user value appears verbatim in the prompt prose.
+    assert secret in prompt
+    assert tell in prompt
+    assert line in prompt
+    # hero_line replaces the generic personal-line sentence.
+    assert "will not do even when it costs them" in prompt
+    assert "Let it be tested directly." in prompt
+    # hero_secret adds the concealment-wound bullet.
+    assert "hides from the people closest to them" in prompt
+    # hero_tell folds into the concealment engine.
+    assert "how they slip when it gets close" in prompt
+
+
+def test_adolescent_prompt_identity_fields_fall_back_when_omitted():
+    prompt = _build()
+    # Generic personal-line sentence is used when hero_line is blank.
+    assert "refuse to do even when it would be easier" in prompt
+    assert "Let that line be tested." in prompt
+    # No secret bullet / tell fragment when those are blank.
+    assert "hides from the people closest to them" not in prompt
+    assert "how they slip when it gets close" not in prompt
+
+
+def test_adolescent_prompt_identity_fields_blank_strings_fall_back():
+    prompt = _build(hero_secret="", hero_tell="   ", hero_line="")
+    assert "refuse to do even when it would be easier" in prompt
+    assert "hides from the people closest to them" not in prompt
+    assert "how they slip when it gets close" not in prompt
+
+
+def test_adolescent_identity_fields_route_through_build_story_prompt():
+    secret = "they are the one who leaked the photos"
+    tell = "they overcorrect and become too helpful"
+    line = "no collateral damage to bystanders"
+    prompt = PromptService.build_story_prompt(
+        character="Maya",
+        theme="superhero",
+        age=16,
+        hero_power="strategist",
+        hero_secret=secret,
+        hero_tell=tell,
+        hero_line=line,
+    )
+    assert "Adolescent band" in prompt
+    assert secret in prompt
+    assert tell in prompt
+    assert line in prompt

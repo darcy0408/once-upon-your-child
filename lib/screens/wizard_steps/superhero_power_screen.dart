@@ -358,7 +358,11 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     // "Gadgeteer jason" — kids type lowercase and the formula must still read
     // like a proper hero codename.
     final heroFirstName = _titleCaseName(wd.characterName.trim());
-    final formulaName = heroFirstName.isNotEmpty
+    // Adolescent (15-17): the Edge name alone IS a clean noir alias ("Ghost",
+    // "Borrowed Time") — don't append the kid's first name.
+    final formulaName = widget.band == AgeBand.adolescent
+        ? power.name
+        : heroFirstName.isNotEmpty
         ? '${power.name} $heroFirstName'
         : power.name;
 
@@ -448,8 +452,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     Navigator.of(context).pop(true);
   }
 
-  HeroNameRegister get _nameRegister =>
-      (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
+  HeroNameRegister get _nameRegister => widget.band == AgeBand.adolescent
+      ? HeroNameRegister.adolescent
+      : (widget.band == AgeBand.adventurer || widget.band == AgeBand.creator)
       ? HeroNameRegister.adventurer
       : HeroNameRegister.explorer;
 
@@ -526,7 +531,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           appBarTitle,
-          style: GoogleFonts.fredoka(
+          style: _noirAwareText(
+            widget.band == AgeBand.adolescent,
             color: _gold,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -563,9 +569,13 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Here\'s your surprise hero! Tap a power to '
-                                  'change it, or roll again.',
-                                  style: GoogleFonts.fredoka(
+                                  widget.band == AgeBand.adolescent
+                                      ? 'Here\'s a starting point. Tap an edge '
+                                            'to change it, or reshuffle.'
+                                      : 'Here\'s your surprise hero! Tap a power '
+                                            'to change it, or roll again.',
+                                  style: _noirAwareText(
+                                    widget.band == AgeBand.adolescent,
                                     color: Colors.white.withAlpha(230),
                                     fontSize: 13,
                                   ),
@@ -591,7 +601,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                       Text(
                         heading,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.fredoka(
+                        style: _noirAwareText(
+                          widget.band == AgeBand.adolescent,
                           color: _gold,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
@@ -648,7 +659,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                                   Text(
                                     p.name,
                                     textAlign: TextAlign.center,
-                                    style: GoogleFonts.fredoka(
+                                    style: _noirAwareText(
+                                      widget.band == AgeBand.adolescent,
                                       color: Colors.white,
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -658,7 +670,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                                   Text(
                                     p.description,
                                     textAlign: TextAlign.center,
-                                    style: GoogleFonts.fredoka(
+                                    style: _noirAwareText(
+                                      widget.band == AgeBand.adolescent,
                                       color: Colors.white.withAlpha(200),
                                       fontSize: 12,
                                     ),
@@ -701,7 +714,8 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
                           )
                         : Text(
                             hasSelection ? ctaIdle : ctaEmpty,
-                            style: GoogleFonts.fredoka(
+                            style: _noirAwareText(
+                              widget.band == AgeBand.adolescent,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -889,7 +903,8 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.fredoka(
+          style: _noirAwareText(
+            widget.register == HeroNameRegister.adolescent,
             color: Colors.white,
             fontSize: 15,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
@@ -927,8 +942,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Pick your hero name',
-              style: GoogleFonts.fredoka(
+              widget.register == HeroNameRegister.adolescent
+                  ? 'Choose your alias'
+                  : 'Pick your hero name',
+              style: _noirAwareText(
+                widget.register == HeroNameRegister.adolescent,
                 color: _gold,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -969,7 +987,8 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   icon: const Text('🎲', style: TextStyle(fontSize: 18)),
                   label: Text(
                     'Reroll names',
-                    style: GoogleFonts.fredoka(
+                    style: _noirAwareText(
+                      widget.register == HeroNameRegister.adolescent,
                       color: _gold,
                       fontWeight: FontWeight.bold,
                     ),
@@ -982,11 +1001,15 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               textField: true,
               child: TextField(
                 controller: _customNameCtl,
-                style: GoogleFonts.fredoka(color: Colors.white),
+                style: _noirAwareText(
+                  widget.register == HeroNameRegister.adolescent,
+                  color: Colors.white,
+                ),
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own name…',
-                  hintStyle: GoogleFonts.fredoka(
+                  hintStyle: _noirAwareText(
+                    widget.register == HeroNameRegister.adolescent,
                     color: Colors.white.withAlpha(140),
                   ),
                   // Explicit dark-translucent fill so white text/hint stay
@@ -1008,8 +1031,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
             ),
             const SizedBox(height: 22),
             Text(
-              'Add a catchphrase (optional)',
-              style: GoogleFonts.fredoka(
+              widget.register == HeroNameRegister.adolescent
+                  ? 'A line that\'s yours (optional)'
+                  : 'Add a catchphrase (optional)',
+              style: _noirAwareText(
+                widget.register == HeroNameRegister.adolescent,
                 color: _gold,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1017,8 +1043,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Your hero can shout this at the big moment.',
-              style: GoogleFonts.fredoka(
+              widget.register == HeroNameRegister.adolescent
+                  ? 'Something they\'d actually say. Or leave it blank.'
+                  : 'Your hero can shout this at the big moment.',
+              style: _noirAwareText(
+                widget.register == HeroNameRegister.adolescent,
                 color: Colors.white.withAlpha(200),
                 fontSize: 13,
               ),
@@ -1050,11 +1079,15 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               textField: true,
               child: TextField(
                 controller: _customCatchphraseCtl,
-                style: GoogleFonts.fredoka(color: Colors.white),
+                style: _noirAwareText(
+                  widget.register == HeroNameRegister.adolescent,
+                  color: Colors.white,
+                ),
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own catchphrase…',
-                  hintStyle: GoogleFonts.fredoka(
+                  hintStyle: _noirAwareText(
+                    widget.register == HeroNameRegister.adolescent,
                     color: Colors.white.withAlpha(140),
                   ),
                   // Explicit dark-translucent fill so white text/hint stay
@@ -1092,8 +1125,11 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                 ),
                 onPressed: _confirmChoice,
                 child: Text(
-                  'That\'s my hero!',
-                  style: GoogleFonts.fredoka(
+                  widget.register == HeroNameRegister.adolescent
+                      ? 'Lock in alias'
+                      : 'That\'s my hero!',
+                  style: _noirAwareText(
+                    widget.register == HeroNameRegister.adolescent,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1426,4 +1462,31 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
       ),
     );
   }
+}
+
+/// Adolescent (15-17) noir reskin uses a clean sans (Source Sans 3) so the
+/// "Edge"/alias screens don't read young; every other band keeps the rounded
+/// Fredoka. [noir] is the band/register gate so younger bands are untouched.
+TextStyle _noirAwareText(
+  bool noir, {
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? letterSpacing,
+  List<Shadow>? shadows,
+}) {
+  final base = noir
+      ? GoogleFonts.sourceSans3(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+        )
+      : GoogleFonts.fredoka(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: color,
+          letterSpacing: letterSpacing,
+        );
+  return shadows == null ? base : base.copyWith(shadows: shadows);
 }

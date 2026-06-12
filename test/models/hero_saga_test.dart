@@ -9,12 +9,14 @@ void main() {
     String nemesis = 'the Optimizer',
     String status = 'still-at-large',
     String changed = 'the transit grid trusts Mastermind now',
+    String cost = 'Mastermind burned a friendship to crack the grid',
     String hook = 'a second Optimizer node went dark in the harbor',
   }) =>
       {
         'nemesis': nemesis,
         'nemesis_status': status,
         'what_changed': changed,
+        'what_it_cost': cost,
         'next_hook': hook,
       };
 
@@ -37,6 +39,7 @@ void main() {
       expect(next.nemesis, 'the Optimizer');
       expect(next.nemesisStatus, 'still-at-large');
       expect(next.whatChanged, 'the transit grid trusts Mastermind now');
+      expect(next.whatItCost, 'Mastermind burned a friendship to crack the grid');
       expect(next.nextHook, 'a second Optimizer node went dark in the harbor');
       expect(next.updatedAt, fixedNow);
     });
@@ -93,6 +96,7 @@ void main() {
       expect(payload['nemesis'], 'the Optimizer');
       expect(payload['nemesis_status'], 'still-at-large');
       expect(payload['what_changed'], isNotNull);
+      expect(payload['what_it_cost'], 'Mastermind burned a friendship to crack the grid');
       expect(payload['next_hook'], isNotNull);
       expect(payload['hero_code'], 'protect the overlooked');
       expect(payload['allies'], ['Reza']);
@@ -122,6 +126,7 @@ void main() {
       expect(restored.nemesis, original.nemesis);
       expect(restored.nemesisStatus, original.nemesisStatus);
       expect(restored.whatChanged, original.whatChanged);
+      expect(restored.whatItCost, original.whatItCost);
       expect(restored.nextHook, original.nextHook);
       expect(restored.heroCode, original.heroCode);
       expect(restored.allies, original.allies);

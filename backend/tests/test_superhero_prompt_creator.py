@@ -169,6 +169,22 @@ def test_creator_prompt_emits_continuity_saga_state():
     assert "next_hook" in prompt
 
 
+def test_creator_prompt_saga_state_includes_what_it_cost():
+    """Consequence ledger: what the hero's choice/power COST is captured."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="blue",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+    )
+    assert "what_it_cost" in prompt
+    assert "COST them this Issue" in prompt
+
+
 def test_creator_prompt_has_1100_1800_word_budget():
     prompt = PromptService._build_superhero_prompt_creator(
         character="Sam",
@@ -280,6 +296,7 @@ def test_creator_prompt_weaves_prior_saga_continuity():
         "nemesis": "the Optimizer",
         "nemesis_status": "still-at-large",
         "what_changed": "the transit grid trusts Mastermind now",
+        "what_it_cost": "Mastermind burned a friendship to crack the grid",
         "next_hook": "a second Optimizer node went dark in the harbor",
     }
     prompt = PromptService._build_superhero_prompt_creator(
@@ -299,6 +316,9 @@ def test_creator_prompt_weaves_prior_saga_continuity():
     assert "a second Optimizer node went dark in the harbor" in prompt
     assert "still out there" in prompt  # humanized nemesis_status
     assert "Previously" in prompt  # cold-open recap instruction
+    # The prior Issue's cost is carried forward into the continuity block.
+    assert "Mastermind burned a friendship to crack the grid" in prompt
+    assert "Still owed from last time" in prompt
 
 
 def test_creator_continuity_renders_code_allies_and_choices():
