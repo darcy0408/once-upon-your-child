@@ -136,6 +136,8 @@ class Config:
     #   'gemini'     — legacy behavior: Gemini -> OpenRouter -> static fallback.
     #   'openrouter' — target:          OpenRouter -> static fallback (skip Gemini entirely).
     #   'claude'     — MT-248 launch-gate: Claude (direct Anthropic) -> static (skip Gemini).
+    #   'openai'     — MT-248 launch-gate: OpenAI (direct, GPT-5 mini) -> static (skip Gemini).
+    #   'tiered'     — MT-248 split: free -> OpenAI, paid -> Claude, cross-fallback -> static.
     #   'auto'       — rollback-safe:   OpenRouter -> Gemini -> static fallback.
     # Defaults to 'gemini' so production behavior is unchanged until the flag is
     # flipped after OpenRouter ToS verification (see audit/MT-171-OPENROUTER-MIGRATION-BRIEF.md).

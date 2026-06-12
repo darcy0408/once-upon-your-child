@@ -23,6 +23,15 @@ google-auth==2.50.0
 # already pinned and satisfy anthropic's constraints.
 anthropic>=0.69.0
 
+# OpenAI (direct) — MT-248 launch-gate story-text provider for the free/volume
+# tier (GPT-5 mini). Activated only when STORY_GEN_PROVIDER=openai or =tiered;
+# the generator lazy-imports this so the app still boots if it's absent.
+# Hand-pinned into requirements.txt (openai==2.41.1 + tqdm, with hashes) rather
+# than via a full pip-compile, to avoid the Python-3.13 audioop-lts lockfile
+# landmine; openai's other transitive deps (anyio/distro/httpx/jiter/pydantic/
+# sniffio/typing-extensions) were already pinned and satisfy its constraints.
+openai>=1.68.0
+
 # Utilities
 requests==2.34.2
 Jinja2==3.1.6

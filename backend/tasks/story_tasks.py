@@ -23,6 +23,7 @@ from backend.models.character import Character
 from backend.models.story import Story
 from backend.models.user import User
 from backend.services.anthropic_story_generator import ClaudeDirectStoryGenerator
+from backend.services.openai_story_generator import OpenAIStoryGenerator
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from backend.services.prompt_service import PromptService
 from backend.services.prompt_versioning import resolve as _resolve_prompt_version
@@ -147,7 +148,7 @@ def _resolve_story_provider() -> str:
     if not provider:
         provider = os.environ.get("STORY_GEN_PROVIDER") or "gemini"
     provider = str(provider).strip().lower()
-    if provider not in ("gemini", "openrouter", "claude", "auto"):
+    if provider not in ("gemini", "openrouter", "claude", "openai", "tiered", "auto"):
         logger.warning(
             "STORY_GEN_PROVIDER=%r is not a recognized value; defaulting to 'gemini'.",
             provider,
@@ -323,6 +324,37 @@ def _try_claude(
     return None
 
 
+def _try_openai(
+    prompt: str, user_tier: str | None, provider_sequence: list[str]
+) -> str | None:
+    """Attempt direct-OpenAI (GPT-5 mini) story generation. Returns text on
+    success, None on failure (any failure mode appends a tagged entry to
+    provider_sequence). MT-248: OpenAI's terms permit child-directed apps with
+    COPPA safeguards — the same eligibility class as Claude, unlike Gemini."""
+    if not os.getenv("OPENAI_API_KEY"):
+        logger.warning("OPENAI_API_KEY not set. Skipping OpenAI (direct).")
+        provider_sequence.append("openai(fail:no_key)")
+        return None
+
+    try:
+        logger.info("Attempting story generation with OpenAI (direct)...")
+        openai_generator = OpenAIStoryGenerator(user_tier=user_tier)
+        story_text = openai_generator.generate_story(prompt)
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with OpenAI (direct).")
+            provider_sequence.append("openai(success)")
+            return story_text
+
+        logger.warning("OpenAI (direct) returned a 'Sorry' message.")
+        provider_sequence.append(
+            f"openai(fail:{_classify_provider_failure(message=story_text)})"
+        )
+    except Exception as exc:
+        logger.exception("OpenAI (direct) failed.")
+        provider_sequence.append(f"openai(fail:{_classify_provider_failure(exc=exc)})")
+    return None
+
+
 def _generate_story_text_with_metadata(
     prompt: str,
     theme: str,
@@ -337,6 +369,9 @@ def _generate_story_text_with_metadata(
         'gemini'     — Gemini -> OpenRouter -> static  (legacy default)
         'openrouter' — OpenRouter -> static            (skip Gemini; ToS-compliant)
         'claude'     — Claude (direct) -> static       (skip Gemini; MT-248 launch-gate)
+        'openai'     — OpenAI (direct) -> static       (skip Gemini; MT-248 launch-gate)
+        'tiered'     — free -> OpenAI, paid -> Claude, cross-fallback -> static
+                       (the MT-248 cost/quality split; never touches Gemini)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
 
     `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
@@ -362,6 +397,32 @@ def _generate_story_text_with_metadata(
         text = _try_claude(prompt, user_tier, provider_sequence)
         if text is not None:
             return text, "claude", provider_sequence
+
+    elif provider_choice == "openai":
+        # Direct OpenAI only — do NOT fall back to Gemini (MT-248 launch-gate;
+        # OpenAI's terms permit minors with COPPA safeguards, Gemini's prohibit
+        # child-directed apps). GPT-5 mini is the taste-test value winner.
+        text = _try_openai(prompt, user_tier, provider_sequence)
+        if text is not None:
+            return text, "openai", provider_sequence
+
+    elif provider_choice == "tiered":
+        # MT-248 cost/quality split: free tier -> OpenAI (GPT-5 mini: cheapest,
+        # fast, quality held across the n=5 taste test); paid tiers -> Claude
+        # (Haiku: warmest, best therapeutic/relational scaffolding). The other
+        # COPPA-eligible provider is the cross-fallback so a single-vendor
+        # outage degrades to the sibling rather than to the static story.
+        # Gemini is NEVER touched (its ToS is the whole reason for this flag).
+        is_free = (user_tier or "").strip().lower() == "free"
+        order = (
+            ((_try_openai, "openai"), (_try_claude, "claude"))
+            if is_free
+            else ((_try_claude, "claude"), (_try_openai, "openai"))
+        )
+        for try_fn, provider_name in order:
+            text = try_fn(prompt, user_tier, provider_sequence)
+            if text is not None:
+                return text, provider_name, provider_sequence
 
     elif provider_choice == "auto":
         # Rollback-safe: try OpenRouter first; if it fails for any reason, fall

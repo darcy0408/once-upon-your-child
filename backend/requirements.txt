@@ -1503,6 +1503,10 @@ multidict==6.7.1 \
     # via
     #   aiohttp
     #   yarl
+openai==2.41.1 \
+    --hash=sha256:a939565f350cb7443cb843b801b88c716ac8024b492fb94ca269d5f6b1bbefd6 \
+    --hash=sha256:23d617a0432457ad844973bee8f540be9da90894f7c5686852d2d365da058f57
+    # via -r backend/requirements.in
 ordered-set==4.1.0 \
     --hash=sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562 \
     --hash=sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8
@@ -2227,6 +2231,10 @@ tenacity==9.1.4 \
     --hash=sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55 \
     --hash=sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a
     # via google-genai
+tqdm==4.68.2 \
+    --hash=sha256:d4240441fb5353290b87d6a85968c9decc131a99b8c7faa28269d829de669ede \
+    --hash=sha256:89c230e8dbc67c7615c142487111222f878c77427ea09549960f62389e258add
+    # via openai
 typing-extensions==4.15.0 \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
