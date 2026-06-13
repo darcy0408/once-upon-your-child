@@ -51,6 +51,7 @@ class HeroSagaStore {
     String characterId,
     Map<String, dynamic> sagaState, {
     String? heroCode,
+    String? title,
     List<String> newAllies = const [],
     List<String> newKeyChoices = const [],
   }) async {
@@ -59,6 +60,7 @@ class HeroSagaStore {
     final updated = current.recordIssue(
       sagaState,
       heroCode: heroCode,
+      title: title,
       newAllies: newAllies,
       newKeyChoices: newKeyChoices,
     );

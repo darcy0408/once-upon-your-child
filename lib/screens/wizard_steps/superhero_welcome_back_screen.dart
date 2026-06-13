@@ -17,6 +17,7 @@ import '../../models/hero_saga.dart';
 import '../../models/local/hero_profile_local.dart';
 import '../../services/superhero_portrait_store.dart';
 import '../../theme/age_band_theme.dart';
+import '../saga_record_screen.dart';
 import 'superhero_costume_screen.dart';
 
 class SuperheroWelcomeBackScreen extends StatelessWidget {
@@ -89,6 +90,22 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     wizardData.selectedScenario = 'superhero';
     wizardData.customElements = 'being a superhero';
     Navigator.of(context).pop(true);
+  }
+
+  /// Opens the full noir "Saga Record" ledger for the returning hero. Only
+  /// wired in when there is continuity to show (gated at the call site).
+  void _viewRecord(BuildContext context) {
+    final s = saga;
+    if (s == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SagaRecordScreen(
+          saga: s,
+          heroAlias: profile.heroName,
+          band: band,
+        ),
+      ),
+    );
   }
 
   Future<void> _editHero(BuildContext context) async {
@@ -402,6 +419,34 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     // returning Creator hero with continuity (Creator-only; null
                     // saga / no continuity renders nothing).
                     if (_buildPreviouslyCard() case final card?) card,
+                    // "View your record →" — opens the full noir ledger. Only
+                    // when there is continuity to show (matches the recap card's
+                    // own gate). Subtle text button so it never competes with
+                    // the start/edit CTAs below.
+                    if (saga != null && saga!.hasContinuity) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: TextButton(
+                          onPressed: () => _viewRecord(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: _gold,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'View your record →',
+                            style: _cardFont(
+                              color: _gold.withAlpha(220),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     // Hero badge: the saved AI portrait if we have one, otherwise
                     // the colored emblem badge. FutureBuilder loads the portrait
                     // persisted by the reveal screen (keyed by characterId).

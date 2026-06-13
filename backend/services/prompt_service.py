@@ -1172,7 +1172,9 @@ OUTPUT FORMAT — strictly valid JSON:
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in the city or the hero",
     "what_it_cost": "one sentence on what the hero's choice or power COST them this Issue — concrete, never abstract",
-    "next_hook": "one sentence teasing the unresolved thread for the next Issue"
+    "next_hook": "one sentence teasing the unresolved thread for the next Issue",
+    "allies": ["names of 1-3 people who, by the end of this Issue, know or share {character}'s secret, or are recurring allies/rivals/mentors in the saga — names only, no descriptions"],
+    "defining_choice": "one sentence naming the key moral CHOICE {character} made this Issue — the decision that now defines them — concrete and specific"
   }}
 }}
 
@@ -1436,7 +1438,9 @@ OUTPUT FORMAT — strictly valid JSON:
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in {character}'s world or the double life",
     "what_it_cost": "one sentence on what using the edge COST {character} this chapter — concrete (a frayed bond, a near-miss, a line bent), never abstract",
-    "next_hook": "one sentence teasing the unresolved thread for the next chapter"
+    "next_hook": "one sentence teasing the unresolved thread for the next chapter",
+    "allies": ["names of 1-3 people who, by the end of this chapter, know or share {character}'s secret, or are recurring allies/rivals/mentors in the saga — names only, no descriptions"],
+    "defining_choice": "one sentence naming the key moral CHOICE {character} made this chapter — the decision that now defines them — concrete and specific"
   }}
 }}
 

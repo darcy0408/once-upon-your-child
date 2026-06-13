@@ -185,6 +185,26 @@ def test_creator_prompt_saga_state_includes_what_it_cost():
     assert "COST them this Issue" in prompt
 
 
+def test_creator_prompt_saga_state_includes_allies_and_defining_choice():
+    """Recurring cast + defining-choices ledger are emitted into saga_state."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="blue",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+    )
+    assert "allies" in prompt
+    assert "defining_choice" in prompt
+    # allies is a names-only recurring-cast contract tied to the secret.
+    assert "share Maya's secret" in prompt
+    # defining_choice names the Issue's key moral choice.
+    assert "CHOICE Maya made this Issue" in prompt
+
+
 def test_creator_prompt_has_1100_1800_word_budget():
     prompt = PromptService._build_superhero_prompt_creator(
         character="Sam",

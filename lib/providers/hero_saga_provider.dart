@@ -49,6 +49,7 @@ class HeroSagaController extends _$HeroSagaController {
     String characterId,
     Map<String, dynamic> sagaState, {
     String? heroCode,
+    String? title,
     List<String> newAllies = const [],
     List<String> newKeyChoices = const [],
   }) async {
@@ -56,6 +57,7 @@ class HeroSagaController extends _$HeroSagaController {
       characterId,
       sagaState,
       heroCode: heroCode,
+      title: title,
       newAllies: newAllies,
       newKeyChoices: newKeyChoices,
     );

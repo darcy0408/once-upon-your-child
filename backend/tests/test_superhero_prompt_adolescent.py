@@ -149,6 +149,17 @@ def test_adolescent_prompt_saga_state_includes_what_it_cost():
     assert "COST Maya this chapter" in prompt
 
 
+def test_adolescent_prompt_saga_state_includes_allies_and_defining_choice():
+    """Recurring cast + defining-choices ledger are emitted into saga_state."""
+    prompt = _build()
+    assert "allies" in prompt
+    assert "defining_choice" in prompt
+    # allies is a names-only recurring-cast contract tied to the secret.
+    assert "share Maya's secret" in prompt
+    # defining_choice names the chapter's key moral choice.
+    assert "CHOICE Maya made this chapter" in prompt
+
+
 def test_adolescent_prompt_has_1400_2200_word_budget():
     prompt = _build(
         hero_power="super_hearing",

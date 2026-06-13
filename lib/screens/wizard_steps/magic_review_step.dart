@@ -500,13 +500,20 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         // repeating itself across stories.
         List<String>? recentVillains;
         List<String>? recentProblems;
-        // MT-235 Phase 2 (the returnable saga): a returning Creator hero's
-        // persisted continuity, sent as `prior_saga` so the T9 Creator prompt
-        // opens on a "Previously…" beat. Null for Issue #1 and every younger
-        // band, where the backend treats a missing block as a clean origin.
+        // MT-235 Phase 2 (the returnable saga): a returning Creator OR
+        // Adolescent antihero's persisted continuity, sent as `prior_saga` so
+        // the superhero prompt opens on a "Previously…" beat. Null for Issue #1
+        // and every band outside the saga set, where the backend treats a
+        // missing block as a clean origin.
         Map<String, dynamic>? priorSaga;
-        final isCreatorBand =
-            ageBandFromAge(widget.wizardData.characterAge) == AgeBand.creator;
+        final sagaAgeBand = ageBandFromAge(widget.wizardData.characterAge);
+        final isCreatorBand = sagaAgeBand == AgeBand.creator;
+        final isAdolescentBand = sagaAgeBand == AgeBand.adolescent;
+        // MT-235 / antihero saga: the returnable saga now serves BOTH the
+        // Creator (13-14) and the Adolescent antihero (15-17) bands. Both have
+        // the welcome-back recap card + backend continuity/consequence-callback
+        // wired; this gate is what feeds them the persisted saga data.
+        final isSagaBand = isCreatorBand || isAdolescentBand;
         if (widget.wizardData.selectedScenario == 'superhero') {
           try {
             final heroCharacterId =
@@ -515,7 +522,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 await ref.read(heroProfileProvider(heroCharacterId).future);
             recentVillains = profile?.recentVillains;
             recentProblems = profile?.recentProblems;
-            if (isCreatorBand) {
+            if (isSagaBand) {
               final saga =
                   await ref.read(heroSagaProvider(heroCharacterId).future);
               // toPriorSaga() returns null until there is continuity (Issue #1
@@ -610,9 +617,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     'Almost ready...',
                   ]);
 
-        // MT-235 Phase 2: the cliffhanger thread this Creator Issue left
-        // dangling, captured from the just-recorded saga so the story-result
-        // screen can surface a "Next time…" teaser. Null for non-Creator stories.
+        // MT-235 Phase 2: the cliffhanger thread this saga Issue left dangling,
+        // captured from the just-recorded saga so the story-result screen can
+        // surface a "Next time…" teaser. Null for non-saga bands (anything
+        // younger than Creator / outside the Adolescent antihero band).
         String? sagaNextHook;
 
         // Superhero Mode: persist the villain/problem the backend chose
@@ -636,25 +644,48 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             // Persistence failure is non-fatal.
           }
 
-          // MT-235 Phase 2 (the returnable saga): for a Creator hero, fold this
-          // Issue's emitted `saga_state` (nemesis / status / what_changed /
-          // next_hook — surfaced by the backend on superhero_meta) forward into
-          // the persisted HeroSaga so the NEXT Issue opens on continuity. The
-          // hero's personal code (the therapeutic throughline) is sourced from
-          // the Creator reflection field when present. Best-effort: a missing
-          // or partial saga_state is a no-op that never erases prior continuity.
-          if (isCreatorBand) {
+          // MT-235 Phase 2 (the returnable saga): for a Creator OR Adolescent
+          // antihero, fold this Issue's emitted `saga_state` (nemesis / status /
+          // what_changed / next_hook — plus allies / defining_choice — surfaced
+          // by the backend on superhero_meta) forward into the persisted
+          // HeroSaga so the NEXT Issue opens on continuity. The hero's personal
+          // code (the moral throughline) is sourced band-aware below. Best-
+          // effort: a missing or partial saga_state is a no-op that never erases
+          // prior continuity.
+          if (isSagaBand) {
             final rawSaga = meta['saga_state'];
             if (rawSaga is Map) {
               final sagaState = Map<String, dynamic>.from(rawSaga);
-              final code = widget.wizardData.characterDesire?.trim();
+              // hero_code source is band-aware: the Creator brief surfaces
+              // characterDesire, but the Adolescent antihero brief HIDES that
+              // field — for adolescents the moral throughline is the line they
+              // won't cross (heroLine), falling back to what they hide
+              // (heroSecret). Null-safe: trim, empty -> null.
+              String? sourceCode;
+              if (isAdolescentBand) {
+                final line = widget.wizardData.heroLine?.trim();
+                final secret = widget.wizardData.heroSecret?.trim();
+                if (line != null && line.isNotEmpty) {
+                  sourceCode = line;
+                } else if (secret != null && secret.isNotEmpty) {
+                  sourceCode = secret;
+                }
+              } else {
+                final desire = widget.wizardData.characterDesire?.trim();
+                if (desire != null && desire.isNotEmpty) sourceCode = desire;
+              }
               try {
                 final updated = await ref
                     .read(heroSagaControllerProvider.notifier)
                     .recordIssue(
                       heroCharacterId,
                       sagaState,
-                      heroCode: (code != null && code.isNotEmpty) ? code : null,
+                      // sourceCode is already trimmed-or-null per the
+                      // band-aware resolution above; recordIssue re-guards too.
+                      heroCode: sourceCode,
+                      // The just-generated Issue's title, for the Saga Record
+                      // history. recordIssue trims and null-empties it.
+                      title: result.title,
                     );
                 sagaNextHook = updated.nextHook;
               } catch (_) {

@@ -64,6 +64,126 @@ void main() {
       expect(s2.nextHook, 'a second Optimizer node went dark in the harbor');
     });
 
+    test(
+        'auto-captures allies + defining_choice emitted in saga_state '
+        '(and they survive json round-trip)', () {
+      final state = sagaState()
+        ..['allies'] = ['Liam', 'Chloe']
+        ..['defining_choice'] = 'chose to protect a friend over the cover';
+      final saga =
+          const HeroSaga(characterId: 'c1').recordIssue(state, now: fixedNow);
+
+      // allies array folded in from saga_state.
+      expect(saga.allies, containsAll(<String>['Liam', 'Chloe']));
+      // defining_choice folded into keyChoices.
+      expect(saga.keyChoices,
+          contains('chose to protect a friend over the cover'));
+
+      // Survives persistence.
+      final restored = HeroSaga.fromJson('c1', saga.toJson());
+      expect(restored.allies, saga.allies);
+      expect(restored.keyChoices, saga.keyChoices);
+      expect(restored.keyChoices,
+          contains('chose to protect a friend over the cover'));
+    });
+
+    test(
+        'auto-captured allies union with explicit newAllies and guard bad types',
+        () {
+      final state = sagaState()
+        ..['allies'] = ['Chloe', 42, null] // mixed types — only Strings kept
+        ..['defining_choice'] = '   '; // blank choice ignored
+      final saga = const HeroSaga(characterId: 'c1')
+          .recordIssue(state, newAllies: ['Reza']);
+      expect(saga.allies, containsAll(<String>['Reza', 'Chloe']));
+      expect(saga.allies.contains('42'), isFalse);
+      // Blank defining_choice does not add an entry.
+      expect(saga.keyChoices, isEmpty);
+    });
+
+    test('appends a HeroSagaChapter built from the title + saga_state', () {
+      final state = sagaState(
+        nemesis: 'the Optimizer',
+        status: 'still-at-large',
+        cost: 'Mastermind burned a friendship to crack the grid',
+      )..['defining_choice'] = 'chose to protect a friend over the cover';
+      final saga = const HeroSaga(characterId: 'c1')
+          .recordIssue(state, title: '  Grid Lock  ', now: fixedNow);
+
+      expect(saga.chapters.length, 1);
+      final ch = saga.chapters.single;
+      // Records the NEW issue number (issueNumber + 1 = 1 from a fresh saga).
+      expect(ch.issueNumber, 1);
+      // Title is trimmed.
+      expect(ch.title, 'Grid Lock');
+      expect(ch.nemesis, 'the Optimizer');
+      expect(ch.nemesisStatus, 'still-at-large');
+      expect(ch.cost, 'Mastermind burned a friendship to crack the grid');
+      expect(ch.choice, 'chose to protect a friend over the cover');
+    });
+
+    test('an empty/whitespace title records a null chapter title', () {
+      final saga = const HeroSaga(characterId: 'c1')
+          .recordIssue(sagaState(), title: '   ');
+      expect(saga.chapters.single.title, isNull);
+    });
+
+    test('chapters accumulate one per recorded Issue', () {
+      var saga = const HeroSaga(characterId: 'c1');
+      saga = saga.recordIssue(sagaState(), title: 'Issue One');
+      saga = saga.recordIssue(sagaState(), title: 'Issue Two');
+      expect(saga.chapters.length, 2);
+      expect(saga.chapters[0].issueNumber, 1);
+      expect(saga.chapters[0].title, 'Issue One');
+      expect(saga.chapters[1].issueNumber, 2);
+      expect(saga.chapters[1].title, 'Issue Two');
+    });
+
+    test('chapters survive a toJson -> fromJson round-trip', () {
+      final state = sagaState()
+        ..['defining_choice'] = 'spared the courier';
+      final saga = const HeroSaga(characterId: 'c1')
+          .recordIssue(state, title: 'Round Trip', now: fixedNow);
+      final restored = HeroSaga.fromJson('c1', saga.toJson());
+
+      expect(restored.chapters.length, 1);
+      final ch = restored.chapters.single;
+      expect(ch.issueNumber, 1);
+      expect(ch.title, 'Round Trip');
+      expect(ch.nemesis, saga.chapters.single.nemesis);
+      expect(ch.nemesisStatus, saga.chapters.single.nemesisStatus);
+      expect(ch.cost, saga.chapters.single.cost);
+      expect(ch.choice, 'spared the courier');
+    });
+
+    test('chapters are capped to the most recent kSagaChapterCap entries', () {
+      var saga = const HeroSaga(characterId: 'c1');
+      final total = HeroSaga.kSagaChapterCap + 5;
+      for (var i = 0; i < total; i++) {
+        saga = saga.recordIssue(sagaState(), title: 'Issue ${i + 1}');
+      }
+      expect(saga.chapters.length, HeroSaga.kSagaChapterCap);
+      // The issueNumber still climbs past the cap (count is independent).
+      expect(saga.issueNumber, total);
+      // Only the most recent entries survive: oldest kept is issue #6.
+      expect(saga.chapters.first.issueNumber, total - HeroSaga.kSagaChapterCap + 1);
+      expect(saga.chapters.last.issueNumber, total);
+    });
+
+    test('an old JSON blob without chapters loads as an empty list (no throw)', () {
+      final saga = HeroSaga.fromJson('c1', {
+        'issue_number': 3,
+        'nemesis': 'the Optimizer',
+        'allies': ['Reza'],
+        // no 'chapters' key at all — predates the field.
+      });
+      expect(saga.chapters, isEmpty);
+      expect(saga.issueNumber, 3);
+      // A bad-typed chapters value is also tolerated.
+      final saga2 = HeroSaga.fromJson('c1', {'chapters': 'nope'});
+      expect(saga2.chapters, isEmpty);
+    });
+
     test('merges allies/choices, dedupes, and caps at kSagaListCap', () {
       var saga = const HeroSaga(characterId: 'c1');
       // Two issues add an overlapping ally ("Reza") plus enough to exceed the cap.
