@@ -226,6 +226,13 @@ class CreativeBriefWidget extends StatelessWidget {
   Widget _buildBriefGenderSelector(AgeBandThemeData band) {
     final ageBand = band.band;
 
+    // Adolescent (15-17) antihero band uses a clean 3-way He/She/They pill
+    // control instead of the Boy/Girl image buttons — there is no neutral
+    // image asset, and the noir teen UI reads better as text pills.
+    if (ageBand == AgeBand.adolescent) {
+      return _buildAdolescentPronounSelector(band);
+    }
+
     final String boyAsset;
     final String girlAsset;
     switch (ageBand) {
@@ -299,10 +306,104 @@ class CreativeBriefWidget extends StatelessWidget {
     );
   }
 
+  /// Adolescent-only pronoun pill control showing He / She / They.
+  ///
+  /// LABEL vs STORED VALUE — IMPORTANT, NOT A BUG:
+  /// The teen SEES "He" / "She" / "They", but we STORE backend/asset-safe
+  /// values in [wizardData.characterGender]:
+  ///   "He"   -> 'Boy'
+  ///   "She"  -> 'Girl'
+  ///   "They" -> 'Nonbinary'
+  /// Many places across the app derive pronouns/art from the exact strings
+  /// 'Boy' / 'Girl' (main_story.dart, wizard_story_screen.dart, archetype art
+  /// keys, etc.), so He/She keep those existing values to avoid rippling
+  /// changes everywhere. 'Nonbinary' is the new third value; the backend
+  /// receives explicit pronouns via wizard_data_mapper (see CHANGE A there).
+  Widget _buildAdolescentPronounSelector(AgeBandThemeData band) {
+    final accent = band.accent;
+    final stored = wizardData.characterGender;
+
+    // (display label, stored value) pairs.
+    const options = <(String, String)>[
+      ('He', 'Boy'),
+      ('She', 'Girl'),
+      ('They', 'Nonbinary'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PRONOUN',
+          style: GoogleFonts.sourceSans3(
+            color: Colors.white.withAlpha(100),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A0A2E),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withAlpha(40)),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: options.map((opt) {
+              final label = opt.$1;
+              final value = opt.$2;
+              final isSelected = stored == value;
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    wizardData.characterGender = value;
+                    onChanged();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? accent.withAlpha(40) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: isSelected ? accent : Colors.transparent,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [BoxShadow(color: accent.withAlpha(70), blurRadius: 8)]
+                          : const [],
+                    ),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.sourceSans3(
+                        color: isSelected ? accent : Colors.white70,
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.w900 : FontWeight.w600,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBriefIdentityInputs(
       BuildContext context, AgeBandThemeData band) {
     final accent = band.accent;
     final ageBand = ageBandFromAge(wizardData.characterAge);
+    // Adolescent (15-17) antihero trims the dense brief: the desire field and
+    // the CORE ARCHETYPE grid are hidden because the dedicated Identity + Edge
+    // steps cover that ground. Gated strictly to this band.
+    final isAdolescent = band.band == AgeBand.adolescent;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -324,7 +425,11 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
           onChanged: (v) => wizardData.characterName = v,
         ),
-        if (ageBand.isMature) ...[
+        // Desire field: mature bands only, but hidden for Adolescent — the
+        // Identity step's secret/tell/line already captures motivation, so
+        // this field bloats the form. characterDesire stays null when hidden,
+        // which the mapper guards (only emitted when non-null/non-empty).
+        if (ageBand.isMature && !isAdolescent) ...[
           const SizedBox(height: 20),
           Text(
             'What does your character want more than anything?',
@@ -976,6 +1081,11 @@ class CreativeBriefWidget extends StatelessWidget {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final accent = band.accent;
+    // Adolescent antihero hides the personality sliders section — it competes
+    // with the richer Identity + Edge steps and bloats the form. Sliders stay
+    // at their WizardData defaults (all 50), which the superhero/adolescent
+    // path does not depend on. Gated strictly to this band.
+    final isAdolescent = band.band == AgeBand.adolescent;
     return SingleChildScrollView(
       controller: briefScrollController,
       physics: const BouncingScrollPhysics(),
@@ -996,13 +1106,14 @@ class CreativeBriefWidget extends StatelessWidget {
             sectionKey: briefCharacterKey,
             tileController: briefCharacterController,
           ),
-          _buildBriefSection(
-            context,
-            accent,
-            'Personality',
-            _buildBriefPersonalitySliders(context, accent),
-            optional: true,
-          ),
+          if (!isAdolescent)
+            _buildBriefSection(
+              context,
+              accent,
+              'Personality',
+              _buildBriefPersonalitySliders(context, accent),
+              optional: true,
+            ),
           _buildBriefSection(
             context,
             accent,

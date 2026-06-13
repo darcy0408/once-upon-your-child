@@ -38,6 +38,22 @@ class WizardDataMapper {
     // Gender is always available — used by illustration prompt
     characterDetails['gender'] = data.characterGender;
 
+    // Explicit pronouns derived from the stored gender so server prose is
+    // correct regardless of any client-side Boy/Girl ternaries. The backend
+    // reads char_details.get('pronouns') and interpolates it. Applied for ALL
+    // bands: harmless for younger ones (they only ever store Boy/Girl) and it
+    // makes they/them explicit for the adolescent 'Nonbinary' value introduced
+    // by the He/She/They pronoun selector.
+    final pronouns = switch (data.characterGender) {
+      'Girl' => 'she/her',
+      'Boy' => 'he/him',
+      'Nonbinary' => 'they/them',
+      _ => '',
+    };
+    if (pronouns.isNotEmpty) {
+      characterDetails['pronouns'] = pronouns;
+    }
+
     // Hair/skin from manual picks (may be empty if user skipped that step)
     if (data.selectedHairStyle.isNotEmpty) {
       characterDetails['hair'] = data.selectedHairStyle;

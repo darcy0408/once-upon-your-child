@@ -257,6 +257,41 @@ def test_adolescent_continuity_ignores_empty_saga_dict():
     assert "CONTINUITY" not in prompt
 
 
+# --- B1: consequence callback mandate --------------------------------------
+def test_adolescent_callback_mandate_fires_on_prior_cost():
+    """A returning chapter's prior cost must be forced to COME DUE this chapter."""
+    prior = {
+        "issue_number": 4,
+        "nemesis": "the Archivist",
+        "nemesis_status": "still-at-large",
+        "what_changed": "the school board sided with the Archivist",
+        "what_it_cost": "Maya let her best friend take the blame to stay hidden",
+        "next_hook": "a second ledger surfaced in the records room",
+    }
+    prompt = _build(prior_saga=prior)
+    assert "CONSEQUENCE CALLBACK" in prompt
+    assert "Maya let her best friend take the blame to stay hidden" in prompt
+
+
+def test_adolescent_callback_mandate_absent_on_chapter_one():
+    """Chapter 1 (no prior saga) -> no consequence-callback mandate."""
+    prompt = _build(prior_saga=None)
+    assert "CONSEQUENCE CALLBACK" not in prompt
+
+
+def test_adolescent_callback_mandate_falls_back_to_last_key_choice():
+    """With no prior cost, the most recent key choice must come due instead."""
+    prior = {
+        "nemesis": "the Archivist",
+        "nemesis_status": "stopped-and-accountable",
+        "key_choices": ["covered for her brother", "leaked the roster"],
+    }
+    prompt = _build(prior_saga=prior)
+    assert "CONSEQUENCE CALLBACK" in prompt
+    # Fires on the LAST key choice, not the first.
+    assert "leaked the roster" in prompt
+
+
 def test_adolescent_prompt_derives_villain_and_problem_when_missing():
     prompt = _build(hero_power="super_speed", villain_id=None, problem_id=None)
     assert any(v["name"] in prompt for v in ADOLESCENT_VILLAINS.values())

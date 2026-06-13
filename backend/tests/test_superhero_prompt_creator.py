@@ -381,6 +381,71 @@ def test_creator_continuity_ignores_empty_saga_dict():
     assert "CONTINUITY" not in prompt
 
 
+# --- B1: consequence callback mandate --------------------------------------
+def test_creator_callback_mandate_fires_on_prior_cost():
+    """A returning Issue's prior cost must be forced to COME DUE this Issue."""
+    prior = {
+        "issue_number": 4,
+        "nemesis": "the Optimizer",
+        "nemesis_status": "still-at-large",
+        "what_changed": "the transit grid trusts Mastermind now",
+        "what_it_cost": "Mastermind burned a friendship to crack the grid",
+        "next_hook": "a second Optimizer node went dark in the harbor",
+    }
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+        prior_saga=prior,
+    )
+    assert "CONSEQUENCE CALLBACK" in prompt
+    assert "Mastermind burned a friendship to crack the grid" in prompt
+
+
+def test_creator_callback_mandate_absent_on_issue_one():
+    """Issue #1 (no prior saga) -> no consequence-callback mandate."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+        prior_saga=None,
+    )
+    assert "CONSEQUENCE CALLBACK" not in prompt
+
+
+def test_creator_callback_mandate_falls_back_to_last_key_choice():
+    """With no prior cost, the most recent key choice must come due instead."""
+    prior = {
+        "nemesis": "Nightjar",
+        "nemesis_status": "stopped-and-accountable",
+        "key_choices": ["spared the courier", "exposed the mayor's deal"],
+    }
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Leo",
+        age=14,
+        hero_costume_color="navy",
+        hero_cape_style="none",
+        hero_emblem="bolt",
+        hero_power="super_hearing",
+        villain_id="nightjar",
+        problem_id="de_escalate_standoff",
+        prior_saga=prior,
+    )
+    assert "CONSEQUENCE CALLBACK" in prompt
+    # Fires on the LAST key choice, not the first.
+    assert "exposed the mayor's deal" in prompt
+
+
 def test_creator_prompt_derives_villain_and_problem_when_missing():
     prompt = PromptService._build_superhero_prompt_creator(
         character="Jordan",

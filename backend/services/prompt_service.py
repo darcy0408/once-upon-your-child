@@ -1037,6 +1037,7 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
         issue_number = max(issue_number, 1)
 
         continuity_block = ""
+        callback_mandate = ""
         if saga:
             _status_human = {
                 "reconsidered": "has reconsidered, but trust is not restored",
@@ -1101,6 +1102,18 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
                     f"self-contained case that moves the saga forward."
                 )
 
+            callback_source = prev_cost or (key_choices[-1] if key_choices else "")
+            if callback_source:
+                callback_mandate = (
+                    "\n\nCONSEQUENCE CALLBACK (non-negotiable): the debt "
+                    f'{character} carries from a past Issue — "{callback_source}" — must COME '
+                    f"DUE in this Issue, concretely and EARLY (by Beat 2): someone it affected "
+                    f"brings it up, it closes off an option {character} would otherwise take, "
+                    f"or a smaller price must be paid before the case can move. It has to "
+                    f"CHANGE what {character} can do here — not just tint the mood. In the "
+                    f"AFTERMATH, show whether this Issue eased that debt or deepened it."
+                )
+
         return f"""HERO SAGA — SUPERHERO ISSUE (Ages 13-14 — Creator band)
 
 You are writing one self-contained "Issue" of an ongoing superhero saga for a sophisticated {age}-year-old reader. Aim for the register of strong YA / modern Marvel — intelligent, grounded, a little noir. Write UP, never down: this reader notices when a story is secretly for little kids.
@@ -1128,7 +1141,7 @@ WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 4. THE DISSENT — a person {character} respects disagrees, for a genuinely reasonable reason. {character} feels real doubt.
 5. THE TRUTH + THE CHOICE — {character} uncovers the hidden truth and the belief driving {villain['name']}. Now there are TWO defensible options, with no clean "good vs evil" answer. Make the reader feel the weight.
 6. THE RESOLUTION — {character} commits, combining {alias} ({power_verb}) WITH judgment to {problem['verb']} the case — resolving it exactly as described in "How this resolves" above (wits, empathy, or a firm boundary — never violence). No lecture, no tidy confession.
-7. AFTERMATH — short. What it cost, what changed in {character}, and one unresolved thread that pulls toward the next Issue. End on a line that lingers, not a moral.
+7. AFTERMATH — short. What it cost, what changed in {character}, and one unresolved thread that pulls toward the next Issue. End on a line that lingers, not a moral.{callback_mandate}
 
 HARD RULES — non-negotiable:
 - LENGTH: 1100-1800 words.
@@ -1287,6 +1300,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
         issue_number = max(issue_number, 1)
 
         continuity_block = ""
+        callback_mandate = ""
         if saga:
             _status_human = {
                 "reconsidered": "has reconsidered, but trust is not restored",
@@ -1351,6 +1365,18 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
                     "self-contained case that moves the saga forward."
                 )
 
+            callback_source = prev_cost or (key_choices[-1] if key_choices else "")
+            if callback_source:
+                callback_mandate = (
+                    "\n\nCONSEQUENCE CALLBACK (non-negotiable): the debt "
+                    f'{character} carries from before — "{callback_source}" — must COME DUE '
+                    f"in this chapter, concretely and EARLY (by Beat 2): someone it touched "
+                    f"raises it, it closes off an option {character} would otherwise take, or "
+                    f"a smaller price must be paid before the case can move. It has to CHANGE "
+                    f"what {character} can do here — not sit in the background as mood. In the "
+                    f"AFTERMATH, show whether this chapter eased that debt or deepened it."
+                )
+
         return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
 
 You are writing one self-contained chapter of an ongoing antihero saga for a sharp {age}-year-old reader. Register: grounded, atmospheric, morally grey — prestige YA / neo-noir. The protagonist is NOT a caped hero; they are an ordinary teenager carrying a power, a secret, or an edge that no one around them knows about. Write UP. This reader is allergic to anything written for children.
@@ -1378,7 +1404,7 @@ WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 4. THE DISSENT — someone {character} respects (and maybe is hiding from) pushes back, for a genuinely fair reason. Real doubt lands.
 5. THE TRUTH + THE CHOICE — {character} uncovers what is really driving {villain['name']}. Now there are TWO defensible options and no clean answer; the choice should also press on the secret itself — honesty vs. protecting the cover. Make the reader feel the weight.
 6. THE RESOLUTION — {character} commits, combining the edge ({power_verb}) WITH judgment to {problem['verb']} the case, exactly as "How this resolves" describes — won by wits, nerve, empathy, or a hard boundary, NEVER violence.
-7. AFTERMATH — short. What it cost, what it changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. End on a line that lingers, not a moral.
+7. AFTERMATH — short. What it cost, what it changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. End on a line that lingers, not a moral.{callback_mandate}
 
 HARD RULES — non-negotiable:
 - LENGTH: 1400-2200 words.

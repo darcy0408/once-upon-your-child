@@ -168,8 +168,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     final color = _colors[rng.nextInt(_colors.length)];
     // Adolescent's flow has no cape page and filters out a few too-young
     // emblems — keep surprise inside that same allowed set so it can't pick a
-    // mark the grid hides, and leave heroSecret/heroTell/heroLine unset (the
-    // backend falls back gracefully when they're blank).
+    // mark the grid hides. heroSecret/heroTell/heroLine get seeded below from
+    // the same chip lists the Identity page offers.
     final emblemPool = isAdolescent
         ? _emblems
               .where(
@@ -183,6 +183,14 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
       widget.wizardData.heroCostumeColor = color.id;
       if (!isAdolescent) {
         widget.wizardData.heroCapeStyle = _capes[rng.nextInt(_capes.length)].id;
+      } else {
+        // Adolescent's signature step is Identity — seed it too so a random
+        // cover isn't left blank on the band's defining page. Controllers stay
+        // empty, so the seeded field drives the chip-highlight + backend.
+        widget.wizardData.heroSecret =
+            _secretChips[rng.nextInt(_secretChips.length)];
+        widget.wizardData.heroTell = _tellChips[rng.nextInt(_tellChips.length)];
+        widget.wizardData.heroLine = _lineChips[rng.nextInt(_lineChips.length)];
       }
       widget.wizardData.heroEmblem = emblem.id;
     });
@@ -350,8 +358,14 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         children: [
           _pageHeader(
             '🎨',
-            isExplorer ? 'Choose your hero color' : 'Pick your hero color!',
-            isExplorer
+            widget.band == AgeBand.adolescent
+                ? 'Choose your colors'
+                : isExplorer
+                ? 'Choose your hero color'
+                : 'Pick your hero color!',
+            widget.band == AgeBand.adolescent
+                ? 'What you wear when you need to blend in'
+                : isExplorer
                 ? 'Tap the color that matches your hero'
                 : 'Tap a color to choose',
           ),
