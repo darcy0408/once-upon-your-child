@@ -84,9 +84,10 @@ edge-tts>=7.0.0
 # provider (same neural voices as Edge, real-time = no retention, commercially
 # licensed for a kids' app). Activated only when AZURE_SPEECH_KEY +
 # AZURE_SPEECH_REGION are set; azure_tts_service lazy-imports it so the app boots
-# without it. NOTE (owner): added to requirements.in only — hand-pin into
-# requirements.txt (it ships platform wheels; mind the Python-version lockfile
-# landmine) before deploying with Azure TTS enabled.
+# without it. Hand-pinned into requirements.txt (azure-cognitiveservices-speech
+# ==1.50.0 — the Linux x86_64 manylinux wheel — plus its one transitive dep
+# azure-core==1.41.0; requests/typing-extensions were already pinned) rather than
+# a full pip-compile, to avoid the Python-version lockfile landmine.
 azure-cognitiveservices-speech>=1.40.0
 
 # Testing (development only)

@@ -335,6 +335,13 @@ audioop-lts==0.2.2 ; python_version >= "3.13" \
     --hash=sha256:fbdd522624141e40948ab3e8cdae6e04c748d78710e9f0f8d4dae2750831de19 \
     --hash=sha256:fd3d4602dc64914d462924a08c1a9816435a2155d74f325853c1f1ac3b2d9800
     # via -r requirements.in
+azure-cognitiveservices-speech==1.50.0 \
+    --hash=sha256:e58faf51d82963b395c06a7e65dd6bead71c242e013695c62949ff8b9607d77e
+    # via -r backend/requirements.in
+azure-core==1.41.0 \
+    --hash=sha256:522b4011e8180b1a3dcd2024396a4e7fe9ac37fb8597db47163d230b5efe892d \
+    --hash=sha256:f46ff5dfcd230f25cf1c19e8a34b8dc08a337b2503e268bb600a16c00db8ad5a
+    # via azure-cognitiveservices-speech
 bcrypt==5.0.0 \
     --hash=sha256:046ad6db88edb3c5ece4369af997938fb1c19d6a699b9c1b27b0db432faae4c4 \
     --hash=sha256:0c418ca99fd47e9c59a301744d63328f17798b5947b0f791e9af3c1c499c2d0a \
