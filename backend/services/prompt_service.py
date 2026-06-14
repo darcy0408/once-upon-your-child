@@ -183,6 +183,23 @@ class PromptService:
             All three elements must combine in a cinematic moment to save the day.
             """)
 
+            sections.append("""
+            EMOTIONAL HEART (this is what makes a story land — follow it closely):
+            1. THEME AS SPINE: Make the theme the emotional through-line of the whole
+               story, not a label or a tacked-on lesson. Set the feeling up early, let
+               it be real (not skipped over) in the middle, and resolve it in a way the
+               hero earns through their own choices.
+            2. SHOW, DON'T TELL: Convey feelings through the body, the senses, and small
+               concrete actions (a tight chest, fidgeting hands, a held breath) rather
+               than naming them outright ("she felt sad").
+            3. EARNED CLOSING REFRAME: End on ONE warm, simple insight the child can
+               carry — a line that reflects the theme back in a fresh light and feels
+               true, never preachy. Do NOT summarize the moral or write "she learned
+               that...". Let it land quietly, in the hero's own quiet realization or a
+               few gentle words from a companion, tied to what actually happened in
+               THIS story.
+            """)
+
         # Age-appropriate content
         age_guidelines = PromptService._get_age_guidelines(age)
         sections.append(age_guidelines)
