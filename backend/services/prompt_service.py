@@ -13,6 +13,37 @@ except ImportError:
     from data.superhero_matrix import pick_pairing as _sh_pick_pairing
     from services.emotion_service import EmotionService
 
+from dataclasses import dataclass
+
+
+@dataclass
+class _AntiheroBrief:
+    """Shared computed setup for the Adolescent (15-17) antihero builders.
+
+    Produced by :func:`PromptService._antihero_brief` and consumed by the
+    single-shot builder plus the two-phase (crux) builders. Holds the resolved
+    power/villain/problem and the pre-assembled prose fragments so every builder
+    renders an identical premise / antagonist / case / continuity setup.
+    """
+
+    character: str
+    age: int
+    alias: str
+    power_name: str
+    power_verb: str
+    color: str
+    emblem: str
+    villain: dict
+    problem: dict
+    canonical_villain_names: str
+    catchphrase_identity_line: str
+    secret_bullet: str
+    tell_fragment: str
+    personal_line_sentence: str
+    continuity_block: str
+    custom_request_block: str
+    issue_number: int
+
 
 class PromptService:
     @staticmethod
@@ -1199,6 +1230,436 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
 """
 
     # ------------------------------------------------------------------
+    # _antihero_brief — shared setup for the Adolescent (15-17) builders.
+    # Computes the resolved power/villain/problem and the pre-assembled prose
+    # fragments (identity, continuity, custom-request) that the single-shot
+    # builder AND the two-phase crux builders all render identically.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _antihero_brief(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+        hero_catchphrase: str | None = None,
+        hero_secret: str | None = None,
+        hero_tell: str | None = None,
+        hero_line: str | None = None,
+        custom_elements: str = "",
+        prior_saga: dict | None = None,
+    ) -> "_AntiheroBrief":
+        """Resolve the shared Adolescent-antihero setup into an `_AntiheroBrief`."""
+        villains_t, problems_t, powers_t, _ = _sh_get_band_tables("adolescent")
+
+        # --- Resolve power -> framed as the hero's "Edge" (capability + cost) ---
+        power_id = (hero_power or "").strip().lower() or "super_smile"
+        if power_id not in powers_t:
+            power_id = "super_smile"
+        power_spec = powers_t[power_id]
+        power_name = power_spec["name"]
+        power_verb = power_spec["verb"]
+
+        # --- Resolve villain + problem (server-picked; re-pair if invalid) ---
+        if (
+            not villain_id
+            or villain_id not in villains_t
+            or not problem_id
+            or problem_id not in problems_t
+        ):
+            villain_id, problem_id = _sh_pick_pairing(power_id, band="adolescent")
+        villain = villains_t[villain_id]
+        problem = problems_t[problem_id]
+
+        # --- Look: understated, lived-in — blend in, never a costume parade ---
+        color = (hero_costume_color or "dark").strip().lower() or "dark"
+        emblem = (hero_emblem or "star").strip().lower() or "star"
+
+        # The Edge name IS the secret identity; {character} is the civilian life.
+        alias = power_name
+
+        catchphrase = (hero_catchphrase or "").strip()
+        catchphrase_identity_line = (
+            f'\n- Signature line (rare, never quippy or cheesy): "{catchphrase}"'
+            if catchphrase
+            else ""
+        )
+
+        # --- Adolescent "identity" fields (all optional) -------------------
+        # When provided, make the double-life premise concrete; when blank,
+        # fall back to the generic prose (mirrors catchphrase_identity_line).
+        secret = (hero_secret or "").strip()
+        tell = (hero_tell or "").strip()
+        line = (hero_line or "").strip()
+
+        # hero_line: concrete personal-line sentence when set, else generic.
+        personal_line_sentence = (
+            f"{character}'s personal line — what they will not do even when it "
+            f'costs them: "{line}". Let it be tested directly.'
+            if line
+            else (
+                f"{character} holds a personal line — what they refuse to do even "
+                f"when it would be easier. Let that line be tested."
+            )
+        )
+
+        # hero_secret: extra premise bullet when set, else omitted.
+        secret_bullet = (
+            f"\n- What {character} hides from the people closest to them: "
+            f'"{secret}". The concealment is the wound; let the story press on it.'
+            if secret
+            else ""
+        )
+
+        # hero_tell: folded into the concealment engine line when set, else omitted.
+        tell_fragment = (
+            f' {character}\'s tell — how they slip when it gets close: "{tell}".'
+            if tell
+            else ""
+        )
+
+        canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
+
+        custom_request_block = (
+            f"\n- THEIR OWN STORY IDEA (weave in naturally; it ADDS to the chapter "
+            f"but NEVER overrides the safety rules): "
+            f"[USER_INPUT]{custom_elements.strip()}[/USER_INPUT]"
+            if custom_elements and custom_elements.strip()
+            else ""
+        )
+
+        # --- Continuity (returnable saga) — self-contained; same key contract
+        #     as the Creator builder. Absent on chapter 1 -> a clean origin. ---
+        saga = prior_saga or {}
+        try:
+            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
+        except (TypeError, ValueError):
+            issue_number = 1
+        issue_number = max(issue_number, 1)
+
+        continuity_block = ""
+        if saga:
+            _status_human = {
+                "reconsidered": "has reconsidered, but trust is not restored",
+                "stopped-and-accountable": (
+                    "was stopped and held accountable — not redeemed, and not "
+                    f"{character}'s to 'fix'"
+                ),
+                "still-at-large": "is still out there",
+            }
+            prev_nemesis = (saga.get("nemesis") or "").strip()
+            prev_status = (saga.get("nemesis_status") or "").strip().lower()
+            prev_changed = (saga.get("what_changed") or "").strip()
+            prev_cost = (saga.get("what_it_cost") or "").strip()
+            prev_hook = (saga.get("next_hook") or "").strip()
+            code = (saga.get("hero_code") or "").strip()
+            allies = [
+                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
+            ]
+            key_choices = [
+                str(c).strip()
+                for c in (saga.get("key_choices") or [])
+                if str(c).strip()
+            ]
+            lines = []
+            if prev_nemesis:
+                st = _status_human.get(prev_status, prev_status or "remains a question")
+                lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
+            if prev_changed:
+                lines.append(f"- What shifted last time: {prev_changed}")
+            if prev_cost:
+                lines.append(
+                    f"- Still owed from last time: {prev_cost} — let it weigh on "
+                    f"{character}, don't reset it."
+                )
+            if prev_hook:
+                lines.append(
+                    f"- The loose thread to honor (open on it or pay it off — do "
+                    f"NOT drop it): {prev_hook}"
+                )
+            if code:
+                lines.append(
+                    f"- The line {character} won't cross (test it again, stay "
+                    f"consistent with it): {code}"
+                )
+            if allies:
+                lines.append(
+                    f"- Who already knows {character}'s secret (reuse them; do NOT "
+                    f"reintroduce as strangers): {', '.join(allies)}"
+                )
+            if key_choices:
+                lines.append(
+                    f"- Choices that now define {character}: {'; '.join(key_choices)}"
+                )
+            if lines:
+                continuity_block = (
+                    f"\n\nCONTINUITY — THIS IS CHAPTER {issue_number} OF "
+                    f"{character}'s DOUBLE LIFE. The world remembers; honor it and "
+                    f"never contradict it:\n"
+                    + "\n".join(lines)
+                    + '\nFold a quiet "where we left off" undercurrent into the COLD '
+                    "OPEN (a line or two, NOT a recap), then tell a NEW "
+                    "self-contained case that moves the saga forward."
+                )
+
+        return _AntiheroBrief(
+            character=character,
+            age=age,
+            alias=alias,
+            power_name=power_name,
+            power_verb=power_verb,
+            color=color,
+            emblem=emblem,
+            villain=villain,
+            problem=problem,
+            canonical_villain_names=canonical_villain_names,
+            catchphrase_identity_line=catchphrase_identity_line,
+            secret_bullet=secret_bullet,
+            tell_fragment=tell_fragment,
+            personal_line_sentence=personal_line_sentence,
+            continuity_block=continuity_block,
+            custom_request_block=custom_request_block,
+            issue_number=issue_number,
+        )
+
+    # ------------------------------------------------------------------
+    # _antihero_premise_block — the shared premise+antagonist+case prose that
+    # opens every Adolescent chapter (single-shot AND both crux phases). Built
+    # from an `_AntiheroBrief`; identical across builders by construction.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _antihero_premise_block(b: "_AntiheroBrief") -> str:
+        character = b.character
+        return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
+
+You are writing one self-contained chapter of an ongoing antihero saga for a sharp {b.age}-year-old reader. Register: grounded, atmospheric, morally grey — prestige YA / neo-noir. The protagonist is NOT a caped hero; they are an ordinary teenager carrying a power, a secret, or an edge that no one around them knows about. Write UP. This reader is allergic to anything written for children.
+
+THE PREMISE — A DOUBLE LIFE:
+- Civilian self: {character} — the person everyone thinks they know.
+- The secret / edge: "{b.alias}" — {b.power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{b.catchphrase_identity_line}{b.secret_bullet}
+- Look: nothing flashy — {b.color} everyday clothes, maybe a small {b.emblem} they keep on them; the point is to blend in, not stand out.
+- The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{b.tell_fragment}
+- {b.personal_line_sentence}{b.continuity_block}
+
+THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {b.canonical_villain_names}. For this chapter it is {b.villain['name']}.
+- Name: {b.villain['name']} (use it in the prose).
+- What they are doing — and the BELIEF underneath it: {b.villain['action']}
+- {b.villain['name']} is NOT a cartoon villain. They have a real argument the reader could almost agree with — maybe one {character} half-agrees with. The harm must flow from that belief, not from a gadget or a scheme.
+- How this resolves (follow it exactly): {b.villain['softens']}
+- No confession monologue, no instant reform, no redemption-by-apology.
+
+THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.problem['verb']} it)."""
+
+    # ------------------------------------------------------------------
+    # _antihero_hard_rules — the shared non-negotiable safety/tone block.
+    # Identical across single-shot AND both crux phases so the model-authored
+    # choice cards in part 1 obey the same rules as the prose.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _antihero_hard_rules(b: "_AntiheroBrief", *, length: str) -> str:
+        character = b.character
+        return f"""HARD RULES — non-negotiable:
+- LENGTH: {length}.
+- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
+- The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
+- A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {b.villain['name']}'s BELIEF.
+- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
+- Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
+- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{b.custom_request_block}"""
+
+    # ------------------------------------------------------------------
+    # _build_antihero_prompt_part1 — interactive crux, phase 1.
+    # Beats 1-4 + the SETUP of Beat 5 (reveal the truth + frame the two-sided
+    # choice), then STOP. Emits `crux` + two in-voice `choices`. NO saga_state.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_antihero_prompt_part1(
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+        hero_catchphrase: str | None = None,
+        hero_secret: str | None = None,
+        hero_tell: str | None = None,
+        hero_line: str | None = None,
+        custom_elements: str = "",
+        prior_saga: dict | None = None,
+    ) -> str:
+        """Phase 1 of the interactive crux: Beats 1-4 + the two-sided choice.
+
+        Reuses :func:`_antihero_brief` for an identical premise / antagonist /
+        case / continuity setup, then instructs the model to write only Beats
+        1-4 plus the SETUP of Beat 5 (reveal the truth and frame the dilemma)
+        and STOP. Emits a ``crux`` line and a two-option ``choices`` array; no
+        ``saga_state`` (the chapter isn't resolved yet).
+        """
+        b = PromptService._antihero_brief(
+            character=character,
+            age=age,
+            hero_costume_color=hero_costume_color,
+            hero_emblem=hero_emblem,
+            hero_power=hero_power,
+            villain_id=villain_id,
+            problem_id=problem_id,
+            hero_catchphrase=hero_catchphrase,
+            hero_secret=hero_secret,
+            hero_tell=hero_tell,
+            hero_line=hero_line,
+            custom_elements=custom_elements,
+            prior_saga=prior_saga,
+        )
+        premise = PromptService._antihero_premise_block(b)
+        hard_rules = PromptService._antihero_hard_rules(b, length="800-1300 words")
+        character = b.character
+        villain = b.villain
+
+        return f"""{premise}
+
+THIS IS PART 1 OF 2 — write only the SETUP of the chapter and STOP at the crux.
+WRITE THESE BEATS IN ORDER (plain prose, DO NOT label or number scenes):
+1. COLD OPEN — drop us mid-situation, the double life already in motion. Establish the edge and its weight, fast.
+2. THE WRONGNESS — the obvious read of the situation is wrong; something underneath doesn't fit. Plant it.
+3. FIRST MOVE, REAL COST — {character} uses the edge and it is NOT enough; it costs something, and the easy path would hurt someone who doesn't deserve it.
+4. THE DISSENT — someone {character} respects (and maybe is hiding from) pushes back, for a genuinely fair reason. Real doubt lands.
+5. THE TRUTH + THE CRUX (SETUP ONLY) — {character} uncovers what is really driving {villain['name']}. Lay out TWO defensible options with no clean answer; the dilemma must also press on the secret itself — honesty vs. protecting the cover. STOP HERE. Do NOT resolve the choice, do NOT show {character} deciding, do NOT write the aftermath. End on the held breath before the decision.
+
+{hard_rules}
+- DO NOT resolve the chapter. The reader makes the choice; you only set it up.
+- The two options must be GENUINELY two-sided — each a real value with a real cost, no clean-good / obviously-right answer. They must press on the secret and the double life (honesty vs. protecting the cover).
+
+OUTPUT FORMAT — strictly valid JSON:
+{{
+  "title": "Chapter title (evocative, adult, never childish)",
+  "themes": ["3-6 short lowercase tags a parent recognises (e.g. 'identity', 'concealment', 'loyalty-vs-truth'); avoid generic tags like 'adventure', 'magic'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<start> → <crux> (e.g. 'guarded → cornered', 'certain → torn')",
+  "pages": [
+    {{"text": "Beat 1 — COLD OPEN (no labels, no scene numbers)."}},
+    {{"text": "Beat 2 — THE WRONGNESS."}},
+    {{"text": "Beat 3 — FIRST MOVE, REAL COST."}},
+    {{"text": "Beat 4 — THE DISSENT, then THE TRUTH + the crux setup. End on the held breath before {character} decides."}}
+  ],
+  "crux": "one-sentence framing of the dilemma {character} now faces — the two values in collision, no clean answer",
+  "choices": [
+    {{"id": "a", "text": "in-voice option A — a real value {character} could choose, ~10-18 words; presses on the secret/cover"}},
+    {{"id": "b", "text": "in-voice option B — a competing, equally-defensible value, ~10-18 words; no clean-good option"}}
+  ]
+}}
+
+Begin now. Write Beats 1-4 plus the crux setup of a tight, morally grey chapter; stop on the held breath before the choice. Make both options hurt.
+"""
+
+    # ------------------------------------------------------------------
+    # _build_antihero_prompt_part2 — interactive crux, phase 2.
+    # Given the reader's chosen option + the part-1 prose, write Beats 5-7
+    # (resolve THE chosen path, resolution, aftermath) and emit the full
+    # saga_state with defining_choice/what_it_cost templated from the choice.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_antihero_prompt_part2(
+        chosen_choice: dict,
+        part1_pages: list,
+        character: str,
+        age: int,
+        hero_costume_color: str | None,
+        hero_emblem: str | None,
+        hero_power: str | None,
+        villain_id: str | None,
+        problem_id: str | None,
+        hero_catchphrase: str | None = None,
+        hero_secret: str | None = None,
+        hero_tell: str | None = None,
+        hero_line: str | None = None,
+        custom_elements: str = "",
+        prior_saga: dict | None = None,
+    ) -> str:
+        """Phase 2 of the interactive crux: resolve the reader's chosen path.
+
+        Reuses :func:`_antihero_brief` for the identical setup, prepends a
+        "STORY SO FAR" block built from ``part1_pages``, and instructs the model
+        to write Beats 5-7 consistent with that prose AND with the reader's
+        ``chosen_choice``. The emitted ``saga_state`` templates the chosen
+        choice text into ``defining_choice`` / ``what_it_cost`` so the saga
+        ledger reflects the decision the reader actually made.
+        """
+        b = PromptService._antihero_brief(
+            character=character,
+            age=age,
+            hero_costume_color=hero_costume_color,
+            hero_emblem=hero_emblem,
+            hero_power=hero_power,
+            villain_id=villain_id,
+            problem_id=problem_id,
+            hero_catchphrase=hero_catchphrase,
+            hero_secret=hero_secret,
+            hero_tell=hero_tell,
+            hero_line=hero_line,
+            custom_elements=custom_elements,
+            prior_saga=prior_saga,
+        )
+        premise = PromptService._antihero_premise_block(b)
+        hard_rules = PromptService._antihero_hard_rules(b, length="800-1300 words")
+        character = b.character
+        power_verb = b.power_verb
+        villain = b.villain
+        problem = b.problem
+
+        chosen_text = str((chosen_choice or {}).get("text") or "").strip()
+        chosen_id = str((chosen_choice or {}).get("id") or "").strip()
+
+        pages = part1_pages or []
+        story_so_far = "\n\n".join(str(p).strip() for p in pages if str(p).strip())
+
+        return f"""{premise}
+
+THIS IS PART 2 OF 2 — the reader has already read Beats 1-4 and the crux setup,
+and has MADE THE CHOICE. Write only the resolution (Beats 5-7), fully consistent
+with everything below. Do NOT recap, re-open, or contradict what already happened.
+
+STORY SO FAR (Beats 1-4 + the crux setup — already written, treat as canon):
+\"\"\"
+{story_so_far}
+\"\"\"
+
+THE CHOICE THE READER MADE (option {chosen_id}): "{chosen_text}"
+This is now {character}'s decision. Commit to it fully — write the path that follows
+from THIS choice, with its real cost. Do NOT relitigate it or show the other option.
+
+WRITE THESE BEATS IN ORDER (plain prose, DO NOT label or number scenes):
+5. THE CHOICE, RESOLVED — {character} acts on "{chosen_text}". Show the decision in motion and what it immediately costs.
+6. THE RESOLUTION — {character} combines the edge ({power_verb}) WITH judgment to {problem['verb']} the case, exactly as "How this resolves" describes — won by wits, nerve, empathy, or a hard boundary, NEVER violence.
+7. AFTERMATH — short. What the choice cost, what it changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. End on a line that lingers, not a moral.
+
+{hard_rules}
+- Stay 100% consistent with the STORY SO FAR and with the choice "{chosen_text}".
+
+OUTPUT FORMAT — strictly valid JSON:
+{{
+  "pages": [
+    {{"text": "Beat 5 — THE CHOICE, RESOLVED ({character} acts on the chosen path; no labels, no scene numbers)."}},
+    {{"text": "Beat 6 — THE RESOLUTION."}},
+    {{"text": "Beat 7 — AFTERMATH."}}
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one sentence on what shifted in {character}'s world or the double life",
+    "what_it_cost": "one sentence on what the choice \\"{chosen_text}\\" COST {character} this chapter — concrete (a frayed bond, a near-miss, a line bent), never abstract",
+    "next_hook": "one sentence teasing the unresolved thread for the next chapter",
+    "allies": ["names of 1-3 people who, by the end of this chapter, know or share {character}'s secret, or are recurring allies/rivals/mentors in the saga — names only, no descriptions"],
+    "defining_choice": "one sentence naming the key moral CHOICE {character} made this chapter — this MUST be the choice the reader picked: \\"{chosen_text}\\" — phrased concretely as the decision that now defines them"
+  }}
+}}
+
+Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the win comes from judgment, not force, and the cost is real.
+"""
+
     # T10_ANTIHERO_ADOLESCENT — Adolescent band (ages 15-17).
     # A mature reskin of the Creator Hero Saga: same engine, same JSON +
     # saga_state contract, same returnable continuity — but a darker,

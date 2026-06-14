@@ -22,7 +22,12 @@ from ..models.story import Story
 from ..routes.subscription_routes import require_premium
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..services.story_service import transform_parent_context_to_story_guidance
-from ..tasks.story_tasks import generate_story_task
+from ..tasks.story_tasks import (
+    AntiheroGenerationError,
+    generate_story_task,
+    run_antihero_part1,
+    run_antihero_part2,
+)
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..utils.audit import audit_log
 from ..utils.validators import (
@@ -568,6 +573,47 @@ def _generate_flux_illustration(**kwargs) -> list:
     return images
 
 
+# ===========================================================================
+# "The Crux Choice" — shared kwargs for the two-phase Adolescent antihero routes.
+#
+# DECISION: this is a NEW helper used ONLY by /generate-antihero-crux and
+# /generate-antihero-resolution. It does NOT extract shared lines out of
+# generate_story_endpoint, so that endpoint's output stays byte-for-byte
+# identical (its existing tests in test_story_routes_async.py remain a
+# regression guard). It assembles the same hero_*/prior_saga/character kwargs
+# the existing endpoint builds for the adolescent superhero case.
+# ===========================================================================
+def _build_antihero_task_kwargs(payload: dict, user, resolved_age: int) -> dict:
+    """Assemble the brief inputs the part1/part2 builders need from a request.
+
+    Mirrors the adolescent superhero subset of generate_story_endpoint's
+    ``task_kwargs``: identity fields (hero_secret/tell/line), the Edge fields
+    (power/costume/emblem/catchphrase), the returnable ``prior_saga``, the
+    character reference and resolved age, plus custom_elements. ``user`` is the
+    authenticated ``request.current_user``.
+    """
+    user_tier = getattr(user, "subscription_tier", "free") or "free"
+    return {
+        "user_id": user.id,
+        "user_tier": user_tier,
+        "character_id": payload.get("character_id"),
+        "character": payload.get("character"),
+        "age": resolved_age,
+        "hero_costume_color": payload.get("hero_costume_color"),
+        "hero_emblem": payload.get("hero_emblem"),
+        "hero_power": payload.get("hero_power"),
+        "hero_catchphrase": payload.get("hero_catchphrase"),
+        "hero_secret": payload.get("hero_secret"),
+        "hero_tell": payload.get("hero_tell"),
+        "hero_line": payload.get("hero_line"),
+        "custom_elements": payload.get("customElements", "")
+        or payload.get("custom_elements", "")
+        or "",
+        # The returnable saga (returning hero); absent on chapter 1.
+        "prior_saga": payload.get("prior_saga") or payload.get("saga_state"),
+    }
+
+
 def create_story_blueprint(
     limiter,
     cache,
@@ -942,6 +988,398 @@ def create_story_blueprint(
                     ),
                     500,
                 )
+
+    # =====================================================================
+    # "The Crux Choice" — two-phase Adolescent antihero routes (Phase 2).
+    #
+    # /generate-antihero-crux        — runs part 1 (Beats 1-4 + the choice),
+    #     charges the daily quota ONCE here, caches a minimal continuation
+    #     context under a uuid token (~30-min TTL), returns awaiting_choice.
+    # /generate-antihero-resolution  — runs part 2 (Beats 5-7) conditioned on
+    #     the chosen option, assembles the full 7-beat story, lifts saga_state
+    #     onto superhero_meta, PERSISTS the Story row, consumes the token, and
+    #     returns the complete story. Does NOT charge quota again.
+    #
+    # Fully additive: generate_story_endpoint / generate_story_task are untouched.
+    # =====================================================================
+    _ANTIHERO_CONTINUATION_TTL = 1800  # 30 minutes (design: ~30-min TTL)
+
+    @story_bp.route("/generate-antihero-crux", methods=["POST"])
+    @require_auth
+    @require_parental_consent
+    @limiter.limit(lambda: get_tier_limits() or "1000/minute")
+    def generate_antihero_crux_endpoint():
+        """Part 1 of the interactive crux: setup + the two-sided choice.
+
+        Full preamble (auth, quota CHECK, IDOR/owned-character, age resolve),
+        then run_antihero_part1. Charges the daily quota ONCE here, caches the
+        continuation context under a uuid token, and returns
+        ``200 {status:"awaiting_choice", continuation_token, story:{...}}``.
+        """
+        from ..utils.sanitizer import sanitize_story_request
+
+        payload = request.get_json(silent=True) or {}
+        payload = sanitize_story_request(payload)
+
+        user_id = request.current_user.id
+        user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
+
+        # Daily AI generation quota — circuit breaker (same as /generate-story).
+        allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
+        if not allowed:
+            audit_log(
+                "ai_quota_exceeded",
+                user_id=user_id,
+                data={"tier": user_tier, "count": current_count, "limit": daily_limit},
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Daily story limit reached",
+                        "code": "QUOTA_EXCEEDED",
+                        "limit": daily_limit,
+                        "used": current_count,
+                        "message": "You've reached your story limit for today. Come back tomorrow!",
+                    }
+                ),
+                429,
+            )
+
+        # Validate character ownership (IDOR guard, same as /generate-story).
+        character_id = payload.get("character_id")
+        owned_character = None
+        if character_id:
+            char = db.session.get(Character, character_id)
+            if not char:
+                return jsonify({"error": "Character not found"}), 404
+            if char.user_id and str(char.user_id) != str(user_id):
+                logger.warning(
+                    f"IDOR attempt: User {user_id} tried to generate antihero "
+                    f"story for character {character_id}"
+                )
+                return jsonify({"error": "Unauthorized"}), 403
+            owned_character = char
+
+        if not character_id and not payload.get("character"):
+            return jsonify({"error": "character_id or character is required"}), 400
+
+        resolved_age = _resolve_age(
+            payload.get("age") or payload.get("character_age") or 16,
+            default=16,
+            verified_age=_verified_age_anchor(owned_character),
+        )
+
+        kw = _build_antihero_task_kwargs(payload, request.current_user, resolved_age)
+        # Resolve the character display name for the prompt (owned char wins).
+        character_name = (
+            owned_character.name
+            if owned_character is not None
+            else (kw.get("character") or "the hero")
+        )
+        if isinstance(character_name, dict):
+            character_name = character_name.get("name", "the hero")
+
+        try:
+            part1 = run_antihero_part1(
+                character=character_name,
+                age=resolved_age,
+                user_tier=user_tier,
+                hero_power=kw.get("hero_power"),
+                hero_costume_color=kw.get("hero_costume_color"),
+                hero_emblem=kw.get("hero_emblem"),
+                hero_catchphrase=kw.get("hero_catchphrase"),
+                hero_secret=kw.get("hero_secret"),
+                hero_tell=kw.get("hero_tell"),
+                hero_line=kw.get("hero_line"),
+                custom_elements=kw.get("custom_elements", ""),
+                prior_saga=kw.get("prior_saga"),
+            )
+        except AntiheroGenerationError as exc:
+            logger.error("antihero crux part-1 failed: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong starting your chapter. Please try again.",
+                    }
+                ),
+                502,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("antihero crux part-1 unexpected error: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong starting your chapter. Please try again.",
+                    }
+                ),
+                500,
+            )
+
+        # Charge the daily quota ONCE, here in part 1 (design: quota-once).
+        increment_daily_quota(user_id, user_tier)
+
+        # Cache a MINIMAL, json-serializable continuation context for part 2.
+        continuation_token = str(uuid.uuid4())
+        continuation_context = {
+            "user_id": str(user_id),
+            "user_tier": user_tier,
+            "character_id": character_id,
+            "character": character_name,
+            "age": resolved_age,
+            "hero_power": kw.get("hero_power"),
+            "hero_costume_color": kw.get("hero_costume_color"),
+            "hero_emblem": kw.get("hero_emblem"),
+            "hero_catchphrase": kw.get("hero_catchphrase"),
+            "hero_secret": kw.get("hero_secret"),
+            "hero_tell": kw.get("hero_tell"),
+            "hero_line": kw.get("hero_line"),
+            "custom_elements": kw.get("custom_elements", ""),
+            "prior_saga": kw.get("prior_saga"),
+            "villain_id": part1["villain_id"],
+            "problem_id": part1["problem_id"],
+            "part1_pages": part1["pages"],
+            "choices": part1["choices"],
+            "title": part1["title"],
+        }
+        try:
+            cache.set(
+                f"antihero-crux:{continuation_token}",
+                continuation_context,
+                timeout=_ANTIHERO_CONTINUATION_TTL,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to cache antihero continuation context for token %s",
+                continuation_token,
+                exc_info=True,
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong starting your chapter. Please try again.",
+                    }
+                ),
+                500,
+            )
+
+        audit_log(
+            "antihero_crux_started",
+            user_id=user_id,
+            data={"tier": user_tier},
+        )
+        return (
+            jsonify(
+                {
+                    "status": "awaiting_choice",
+                    "continuation_token": continuation_token,
+                    "story": {
+                        "title": part1["title"],
+                        "pages": part1["pages"],
+                        "crux": part1["crux"],
+                        "choices": part1["choices"],
+                    },
+                }
+            ),
+            200,
+        )
+
+    @story_bp.route("/generate-antihero-resolution", methods=["POST"])
+    @require_auth
+    @require_parental_consent
+    @limiter.limit(lambda: get_tier_limits() or "1000/minute")
+    def generate_antihero_resolution_endpoint():
+        """Part 2 of the interactive crux: resolve the reader's chosen path.
+
+        Body: ``{continuation_token, choice_id}``. Rehydrates the cached part-1
+        context (404 if missing/expired), validates ``choice_id``, runs
+        run_antihero_part2, assembles the full 7-beat story, lifts saga_state
+        onto superhero_meta, persists the Story row, consumes the token, and
+        returns ``200 {status:"complete", story:{...}}``. Does NOT re-charge
+        quota.
+        """
+        payload = request.get_json(silent=True) or {}
+        user_id = request.current_user.id
+
+        continuation_token = payload.get("continuation_token")
+        choice_id = payload.get("choice_id")
+        if not continuation_token or not choice_id:
+            return (
+                jsonify({"error": "continuation_token and choice_id are required"}),
+                400,
+            )
+
+        cache_key = f"antihero-crux:{continuation_token}"
+        ctx = None
+        try:
+            ctx = cache.get(cache_key)
+        except Exception:
+            logger.warning(
+                "Failed to read antihero continuation context for token %s",
+                continuation_token,
+                exc_info=True,
+            )
+        if not ctx:
+            # Missing or expired (TTL elapsed) — 410 Gone is the precise signal.
+            return (
+                jsonify(
+                    {
+                        "error": "continuation token not found or expired",
+                        "code": "TOKEN_EXPIRED",
+                    }
+                ),
+                410,
+            )
+
+        # Same-user check: a token may only be resolved by its owner.
+        if str(ctx.get("user_id")) != str(user_id):
+            logger.warning(
+                "IDOR attempt: user %s tried to resolve antihero token owned by %s",
+                user_id,
+                ctx.get("user_id"),
+            )
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Validate choice_id against the cached choices; resolve {id, text}.
+        choices = ctx.get("choices") or []
+        chosen_choice = next(
+            (c for c in choices if str(c.get("id")) == str(choice_id)), None
+        )
+        if chosen_choice is None:
+            return (
+                jsonify(
+                    {
+                        "error": "invalid choice_id",
+                        "valid_choices": [c.get("id") for c in choices],
+                    }
+                ),
+                400,
+            )
+
+        try:
+            part2 = run_antihero_part2(
+                chosen_choice=chosen_choice,
+                part1_pages=ctx.get("part1_pages") or [],
+                character=ctx.get("character") or "the hero",
+                age=ctx.get("age", 16),
+                user_tier=ctx.get("user_tier"),
+                hero_power=ctx.get("hero_power"),
+                hero_costume_color=ctx.get("hero_costume_color"),
+                hero_emblem=ctx.get("hero_emblem"),
+                hero_catchphrase=ctx.get("hero_catchphrase"),
+                hero_secret=ctx.get("hero_secret"),
+                hero_tell=ctx.get("hero_tell"),
+                hero_line=ctx.get("hero_line"),
+                custom_elements=ctx.get("custom_elements", ""),
+                prior_saga=ctx.get("prior_saga"),
+                villain_id=ctx.get("villain_id"),
+                problem_id=ctx.get("problem_id"),
+            )
+        except AntiheroGenerationError as exc:
+            logger.error("antihero crux part-2 failed: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong finishing your chapter. Please try again.",
+                    }
+                ),
+                502,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("antihero crux part-2 unexpected error: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "error": "STORY_FAILED",
+                        "message": "Something went wrong finishing your chapter. Please try again.",
+                    }
+                ),
+                500,
+            )
+
+        # Assemble the full 7-beat story: part-1 pages + part-2 resolution pages.
+        part1_pages = ctx.get("part1_pages") or []
+        full_pages = list(part1_pages) + list(part2["pages"])
+        title = ctx.get("title") or "Untitled Chapter"
+        story_body = "\n\n".join(full_pages)
+
+        # Lift saga_state onto superhero_meta, mirroring generate_story_task's
+        # shape so the client's existing superhero_meta.saga_state parsing +
+        # HeroSaga.recordIssue work unchanged. The raw saga_state (incl.
+        # defining_choice / what_it_cost / allies) is preserved.
+        superhero_meta = {
+            "villain_id": ctx.get("villain_id"),
+            "problem_id": ctx.get("problem_id"),
+            "hero_power": ctx.get("hero_power") or "strategist",
+            "band": "adolescent",
+            "saga_state": part2["saga_state"],
+        }
+
+        story_id = str(uuid.uuid4())
+        story_payload = {
+            "id": story_id,
+            "title": title,
+            "story_text": story_body,
+            "theme": "superhero",
+            "pages": full_pages,
+            "total_pages": len(full_pages),
+            "total_words": sum(len(p.split()) for p in full_pages),
+            "superhero_meta": superhero_meta,
+        }
+
+        # Persist the Story row (skipped for anonymous; mirrors generate_story_task).
+        character_id = ctx.get("character_id")
+        if user_id and user_id != "anonymous":
+            try:
+                db.session.add(
+                    Story(
+                        id=story_id,
+                        user_id=str(user_id),
+                        character_id=character_id if character_id else None,
+                        title=title[:200] if title else None,
+                        theme="superhero",
+                        content=story_payload,
+                    )
+                )
+                db.session.commit()
+                logger.info(
+                    "antihero_story_persisted id=%s character_id=%s",
+                    story_id,
+                    character_id,
+                )
+            except Exception:  # noqa: BLE001
+                db.session.rollback()
+                logger.exception(
+                    "Failed to persist antihero Story row (story still returned)."
+                )
+
+        # Consume the continuation token (one resolution per crux).
+        try:
+            cache.delete(cache_key)
+        except Exception:
+            logger.warning(
+                "Failed to delete antihero continuation token %s",
+                continuation_token,
+                exc_info=True,
+            )
+
+        audit_log(
+            "antihero_resolution_completed",
+            user_id=user_id,
+            data={"tier": ctx.get("user_tier")},
+        )
+        return (
+            jsonify(
+                {
+                    "status": "complete",
+                    "story": story_payload,
+                }
+            ),
+            200,
+        )
 
     @story_bp.route("/generate-story-mock", methods=["POST"])
     def generate_story_mock_endpoint():

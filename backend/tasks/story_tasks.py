@@ -904,6 +904,298 @@ def _enforce_sprout_word_cap(
     return truncated_body, truncated_pages, info
 
 
+# ===========================================================================
+# "The Crux Choice" — two-phase Adolescent antihero run helpers (Phase 2).
+#
+# These are SYNCHRONOUS, single-LLM-call helpers (NOT Celery tasks) used by the
+# /generate-antihero-crux and /generate-antihero-resolution routes. Each wraps
+# exactly: prompt build (the part1/part2 builder) + one
+# _generate_story_text_with_metadata call + a JSON parse for the NEW contract
+# (part1: pages[4]+crux+choices, NO saga_state; part2: pages[3]+saga_state) +
+# moderation. They deliberately do NOT touch the single-shot generate_story_task
+# path — all of this is additive.
+#
+# Retry: one attempt per phase (Phase-2 scope). Unlike generate_story_task's
+# 2-3 attempt validation loop, the crux flow keeps it minimal; a malformed
+# parse raises AntiheroGenerationError so the route can surface a 5xx (mirrors
+# how generate_story_task lets a failed extract bubble into the except->raise).
+# The full validation/retry loop can be added in a later phase if needed.
+# ===========================================================================
+
+_ANTIHERO_THEME = "superhero"  # reuse the superhero provider/fallback labelling
+_ANTIHERO_BAND = "adolescent"  # ages 15-17 villain/problem matrix
+
+
+class AntiheroGenerationError(Exception):
+    """Raised when a crux part-1/part-2 generation cannot be parsed/validated.
+
+    The route catches this and returns a 5xx, mirroring how generate_story_task
+    surfaces a failed extract (the bare ``except Exception -> raise`` at the
+    bottom of the task).
+    """
+
+
+def _parse_crux_json(text: str):
+    """Parse a part-1/part-2 antihero LLM response into a dict.
+
+    The new crux contracts carry ``crux``/``choices`` (part 1) and
+    ``saga_state`` (part 2) which the shared ``_safe_extract_title_and_gem``
+    extractor does NOT surface (and whose ``_normalize_saga_state`` would strip
+    ``defining_choice``/``allies``/``what_it_cost`` — the exact fields the saga
+    loop needs). So we json-decode the raw payload directly here, reusing only
+    the same markdown/brace-slice cleanup the shared extractor applies.
+
+    Returns the decoded dict, or raises ``AntiheroGenerationError`` if no JSON
+    object can be located/decoded.
+    """
+    clean = (text or "").strip()
+    clean = re.sub(r"^\s*```(?:json)?\s*\n?", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\n?\s*```\s*$", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"^\s*\*\*\s*", "", clean)
+    clean = re.sub(r"\s*\*\*\s*$", "", clean)
+
+    start = clean.find("{")
+    end = clean.rfind("}")
+    sliced = clean[start : end + 1] if (start >= 0 and end > start) else clean
+    for candidate in (sliced, clean):
+        try:
+            decoder = json.JSONDecoder()
+            data, _ = decoder.raw_decode(candidate.strip())
+            if isinstance(data, dict):
+                return data
+        except json.JSONDecodeError:
+            try:
+                data = json.loads(candidate)
+                if isinstance(data, dict):
+                    return data
+            except json.JSONDecodeError:
+                continue
+    raise AntiheroGenerationError("Could not parse JSON from antihero response.")
+
+
+def _pages_from_json(data) -> list[str]:
+    """Pull a list[str] of page texts from a parsed crux JSON dict."""
+    pages_input = data.get("pages", []) if isinstance(data, dict) else []
+    pages: list[str] = []
+    if isinstance(pages_input, list):
+        for p in pages_input:
+            if isinstance(p, dict):
+                t = p.get("text", "")
+                if t and t.strip():
+                    pages.append(t.strip())
+            elif isinstance(p, str) and p.strip():
+                pages.append(p.strip())
+    elif isinstance(pages_input, str) and pages_input.strip():
+        pages = [pages_input.strip()]
+    return pages
+
+
+def _resolve_antihero_pairing(hero_power, villain_id, problem_id):
+    """Resolve the (villain_id, problem_id) pair for the Adolescent band.
+
+    Mirrors generate_story_task's superhero pairing logic but pinned to
+    band='adolescent'. When the caller already has a pair (part 2, where the
+    case MUST stay identical to part 1), pass them through unchanged. Otherwise
+    pick from the matrix, falling back to a band-safe default on an unknown
+    power (same ValueError handling generate_story_task uses).
+    """
+    if villain_id and problem_id:
+        return villain_id, problem_id
+    try:
+        return _superhero_pick_pairing(
+            hero_power or "strategist",
+            band=_ANTIHERO_BAND,
+        )
+    except ValueError:
+        # Unknown power id — fall back to a default power valid for the band.
+        return _superhero_pick_pairing("strategist", band=_ANTIHERO_BAND)
+
+
+def _moderate_antihero_text(text: str, age, *, label: str) -> bool:
+    """Run the same two-layer moderation generate_story_task uses on one blob.
+
+    Returns True when the text is SAFE, False when flagged. Mirrors the task's
+    keyword-filter + LLM-classifier sequence (fail-closed for the adolescent
+    band's classifier the same way the task fails closed for <=12, except here
+    the band is 15-17 so we fail OPEN like the task does for older readers —
+    matching existing behaviour). The caller decides what to do with a flag.
+    """
+    if not text or not text.strip():
+        return True
+    from backend.utils.app_helpers import make_filter_story_content
+    from backend.utils.content_moderator import moderate_story_content
+
+    _filter_fn = make_filter_story_content(logger)
+    _, keyword_flagged = _filter_fn(text, age)
+    if keyword_flagged:
+        logger.warning("antihero moderation: keyword filter flagged %s.", label)
+        return False
+    try:
+        _age = int(age) if age is not None else 16
+    except (TypeError, ValueError):
+        _age = 16
+    # 15-17 band: classifier fails OPEN on outage (same as the task for >12),
+    # but OpenRouter-authored prose would fail closed there; the crux flow
+    # doesn't expose the provider, so keep it simple and fail open on outage.
+    llm_safe, reason = moderate_story_content(text, _age, fail_closed=False)
+    if not llm_safe:
+        logger.warning(
+            "antihero moderation: LLM classifier flagged %s (%s).", label, reason
+        )
+    return llm_safe
+
+
+def run_antihero_part1(**kwargs) -> dict:
+    """Phase-1 of the crux: generate Beats 1-4 + the two-sided choice setup.
+
+    Synchronous single-LLM-call helper (NOT a Celery task). Resolves the
+    Adolescent villain/problem pairing the SAME way generate_story_task does
+    (band='adolescent'), builds the part-1 prompt, generates, parses
+    title/pages(4)/crux/choices(2), and MODERATES the prose AND each choice
+    text (both are shown to a 15-17yo reader).
+
+    Returns ``{title, pages, crux, choices, villain_id, problem_id}``.
+    Raises ``AntiheroGenerationError`` on a malformed/unsafe response so the
+    route can return a 5xx.
+    """
+    character = kwargs.get("character") or "the hero"
+    age = kwargs.get("age", 16)
+    hero_power = kwargs.get("hero_power")
+    user_tier = (kwargs.get("user_tier") or "").strip().lower() or None
+
+    villain_id, problem_id = _resolve_antihero_pairing(
+        hero_power, kwargs.get("villain_id"), kwargs.get("problem_id")
+    )
+
+    prompt = PromptService._build_antihero_prompt_part1(
+        character=character,
+        age=age,
+        hero_costume_color=kwargs.get("hero_costume_color"),
+        hero_emblem=kwargs.get("hero_emblem"),
+        hero_power=hero_power,
+        villain_id=villain_id,
+        problem_id=problem_id,
+        hero_catchphrase=kwargs.get("hero_catchphrase"),
+        hero_secret=kwargs.get("hero_secret"),
+        hero_tell=kwargs.get("hero_tell"),
+        hero_line=kwargs.get("hero_line"),
+        custom_elements=kwargs.get("custom_elements", "") or "",
+        prior_saga=kwargs.get("prior_saga"),
+    )
+
+    story_text, _provider, _seq = _generate_story_text_with_metadata(
+        prompt,
+        _ANTIHERO_THEME,
+        character,
+        user_tier=user_tier,
+    )
+
+    data = _parse_crux_json(story_text)
+    title = (data.get("title") or "Untitled Chapter").strip()
+    pages = _pages_from_json(data)
+    crux = (data.get("crux") or "").strip()
+    raw_choices = data.get("choices") or []
+
+    choices: list[dict] = []
+    if isinstance(raw_choices, list):
+        for c in raw_choices:
+            if isinstance(c, dict):
+                cid = str(c.get("id") or "").strip()
+                ctext = str(c.get("text") or "").strip()
+                if cid and ctext:
+                    choices.append({"id": cid, "text": ctext})
+
+    if len(pages) < 1 or len(choices) != 2 or not crux:
+        raise AntiheroGenerationError(
+            f"Part-1 contract violated: {len(pages)} pages, "
+            f"{len(choices)} choices, crux={'yes' if crux else 'no'}."
+        )
+
+    # Moderate the prose AND the two choice cards (model-authored, child-visible).
+    prose_blob = f"{title}\n\n" + "\n\n".join(pages)
+    if not _moderate_antihero_text(prose_blob, age, label="part1 prose"):
+        raise AntiheroGenerationError("Part-1 prose failed moderation.")
+    for ch in choices:
+        if not _moderate_antihero_text(ch["text"], age, label=f"choice {ch['id']}"):
+            raise AntiheroGenerationError(
+                f"Part-1 choice {ch['id']} failed moderation."
+            )
+
+    return {
+        "title": title,
+        "pages": pages,
+        "crux": crux,
+        "choices": choices,
+        "villain_id": villain_id,
+        "problem_id": problem_id,
+    }
+
+
+def run_antihero_part2(**kwargs) -> dict:
+    """Phase-2 of the crux: resolve the reader's chosen path (Beats 5-7).
+
+    Synchronous single-LLM-call helper. Takes ``chosen_choice`` (dict) +
+    ``part1_pages`` (list) + the SAME villain_id/problem_id resolved in part 1
+    (passed in so the case stays consistent) + the brief inputs. Builds the
+    part-2 prompt, generates, and parses pages(3) + the full ``saga_state``.
+
+    Crucially the raw saga_state is preserved (parsed directly, NOT routed
+    through ``_normalize_saga_state`` which would drop
+    ``defining_choice``/``what_it_cost``/``allies`` — the very fields the Dart
+    HeroSaga.recordIssue captures). Returns ``{pages, saga_state}``; the route
+    assembles the full story and persists. Raises ``AntiheroGenerationError``
+    on a malformed/unsafe response.
+    """
+    chosen_choice = kwargs.get("chosen_choice") or {}
+    part1_pages = kwargs.get("part1_pages") or []
+    character = kwargs.get("character") or "the hero"
+    age = kwargs.get("age", 16)
+    hero_power = kwargs.get("hero_power")
+    user_tier = (kwargs.get("user_tier") or "").strip().lower() or None
+    villain_id = kwargs.get("villain_id")
+    problem_id = kwargs.get("problem_id")
+
+    prompt = PromptService._build_antihero_prompt_part2(
+        chosen_choice=chosen_choice,
+        part1_pages=part1_pages,
+        character=character,
+        age=age,
+        hero_costume_color=kwargs.get("hero_costume_color"),
+        hero_emblem=kwargs.get("hero_emblem"),
+        hero_power=hero_power,
+        villain_id=villain_id,
+        problem_id=problem_id,
+        hero_catchphrase=kwargs.get("hero_catchphrase"),
+        hero_secret=kwargs.get("hero_secret"),
+        hero_tell=kwargs.get("hero_tell"),
+        hero_line=kwargs.get("hero_line"),
+        custom_elements=kwargs.get("custom_elements", "") or "",
+        prior_saga=kwargs.get("prior_saga"),
+    )
+
+    story_text, _provider, _seq = _generate_story_text_with_metadata(
+        prompt,
+        _ANTIHERO_THEME,
+        character,
+        user_tier=user_tier,
+    )
+
+    data = _parse_crux_json(story_text)
+    pages = _pages_from_json(data)
+    saga_state = data.get("saga_state")
+
+    if len(pages) < 1 or not isinstance(saga_state, dict) or not saga_state:
+        raise AntiheroGenerationError(
+            f"Part-2 contract violated: {len(pages)} pages, "
+            f"saga_state={'dict' if isinstance(saga_state, dict) else 'missing'}."
+        )
+
+    if not _moderate_antihero_text("\n\n".join(pages), age, label="part2 prose"):
+        raise AntiheroGenerationError("Part-2 prose failed moderation.")
+
+    return {"pages": pages, "saga_state": saga_state}
+
+
 @celery.task(
     bind=True,
     name="tasks.generate_story",
