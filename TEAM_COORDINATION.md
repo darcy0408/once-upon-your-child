@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-14 | 12:08 | 7092 | saga-loop-adventurer | Adolescent antihero overhaul (#269-271) + Crux Choice backend (#273) + saga loop→Adventurer/Explorer (#274) | [link](docs/sessions/2026-06-14-1208-7092.md) |
 | 2026-06-14 | 12:08 | f312 | main | Story-gen LIVE off Gemini → OpenAI GPT-5 mini + EMOTIONAL HEART prompt | [link](docs/sessions/2026-06-14-1208-f312.md) |
 | 2026-06-14 | 12:08 | 4022 | saga-loop-adventurer | Designed Story Notes age-gated transparency layer (MT-254) from ethics-class thread | [link](docs/sessions/2026-06-14-1208-4022.md) |
 | 2026-06-12 | 14:07 | 6563 | main (PR #266) | Reconciled+shipped direct-Anthropic claude story-gen provider (#266); lockfile pinned; openai-provider analyzed | [link](docs/sessions/2026-06-12-1407-6563.md) |
