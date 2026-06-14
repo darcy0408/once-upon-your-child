@@ -21,11 +21,6 @@ POST /tts/synthesize
 
 GET /tts/voices
   Returns: { "voices": [...] }  — curated voice list for the picker UI.
-
-POST /tts/transcribe
-  Body: multipart form-data with "audio" file (webm/mp4/wav/mp3)
-  Returns: { "text": str }
-  Used for Speech-to-Text via ElevenLabs.
 """
 
 import base64
@@ -169,6 +164,52 @@ def _edge_synthesize(text, voice_id, speed):
         )
     except Exception as e:
         logger.error("Edge TTS fallback failed: %s", e)
+        return None
+
+
+# Azure AI Speech — the licensed primary narration provider (MT-248). Dormant
+# until AZURE_SPEECH_KEY + AZURE_SPEECH_REGION are set; once configured it serves
+# first and the prohibited/unlicensed providers (ElevenLabs, Gemini, Edge) are
+# bypassed. The SDK is lazy-imported so the app boots without it installed.
+_azure_service = None
+
+
+def _get_azure_service():
+    """Lazy-init the Azure AI Speech service (only when SDK + key/region set)."""
+    global _azure_service
+    if _azure_service is not None:
+        return _azure_service
+
+    try:
+        from backend.azure_tts_service import AzureTTSService
+    except ImportError:
+        try:
+            from azure_tts_service import AzureTTSService
+        except ImportError:
+            logger.warning("azure_tts_service module not found")
+            return None
+
+    if not AzureTTSService.available():
+        return None
+    _azure_service = AzureTTSService()
+    logger.info("Azure AI Speech initialised")
+    return _azure_service
+
+
+def _azure_synthesize(text, voice_id, speed):
+    """
+    Synthesize narration via Azure AI Speech.
+    Returns (audio_bytes, word_timestamps) or None if unavailable.
+    """
+    service = _get_azure_service()
+    if service is None:
+        return None
+    try:
+        return service.generate_speech_with_timestamps(
+            text=text, voice_id=voice_id, speed=speed
+        )
+    except Exception as e:
+        logger.error("Azure AI Speech failed: %s", e)
         return None
 
 
@@ -325,6 +366,18 @@ def create_tts_blueprint(limiter, require_auth):
         word_timestamps = []
         provider = None
 
+        # Azure AI Speech — the licensed primary provider (MT-248). When
+        # configured it serves FIRST and the prohibited/unlicensed providers
+        # (ElevenLabs, Gemini Flash TTS, Edge) are bypassed entirely; an Azure
+        # failure falls straight through to the client's on-device voice.
+        azure_enabled = _get_azure_service() is not None
+        if azure_enabled:
+            elevenlabs_ok = False  # never use the prohibited premium path
+            azure_result = _azure_synthesize(text, voice_id, speed)
+            if azure_result is not None and azure_result[0]:
+                audio_bytes, word_timestamps = azure_result
+                provider = "azure"
+
         if elevenlabs_ok:
             try:
                 if character_voice_id:
@@ -368,33 +421,35 @@ def create_tts_blueprint(limiter, require_auth):
                 elevenlabs_ok = False
                 audio_bytes = None
 
-        # Gemini Flash TTS — the DEFAULT paid voice (F-01). Also serves as the
-        # fallback when an opted-in ElevenLabs request is unconfigured, over its
-        # monthly budget, or returned no audio. ~30% of the ElevenLabs per-char
-        # cost; Edge stays below as the final free fallback.
-        if not audio_bytes:
+        # Legacy chain — used ONLY when Azure is not configured. Gemini Flash TTS
+        # (default paid) then free Edge TTS. Both are under-18-barred / not
+        # commercially licensed for a kids' app (MT-248) and are bypassed the
+        # moment Azure goes live; kept as the pre-Azure fallback so dev/preview
+        # narration still works before the Azure key is set.
+        if not audio_bytes and not azure_enabled:
             gemini_result = _gemini_synthesize(text, voice_id, speed)
             if gemini_result is not None and gemini_result[0]:
                 audio_bytes, word_timestamps = gemini_result
                 provider = "gemini"
 
-        # Free Edge TTS fallback — used when both ElevenLabs and Gemini are
-        # unavailable, e.g. no GEMINI_API_KEY configured, or Gemini errored.
-        if not audio_bytes:
+        if not audio_bytes and not azure_enabled:
             edge_result = _edge_synthesize(text, voice_id, speed)
-            if edge_result is None or not edge_result[0]:
-                # No TTS available — client falls back to its on-device voice.
-                return (
-                    jsonify(
-                        {
-                            "error": "TTS service unavailable",
-                            "message": "Narration is unavailable right now.",
-                        }
-                    ),
-                    503,
-                )
-            audio_bytes, word_timestamps = edge_result
-            provider = "edge"
+            if edge_result is not None and edge_result[0]:
+                audio_bytes, word_timestamps = edge_result
+                provider = "edge"
+
+        if not audio_bytes:
+            # No online TTS available (Azure failed, or the legacy chain is
+            # exhausted) — the client falls back to its on-device voice.
+            return (
+                jsonify(
+                    {
+                        "error": "TTS service unavailable",
+                        "message": "Narration is unavailable right now.",
+                    }
+                ),
+                503,
+            )
 
         if user_id:
             increment_tts_quota(user_id, user_tier)
@@ -454,58 +509,5 @@ def create_tts_blueprint(limiter, require_auth):
                 "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
             }
         )
-
-    @tts_bp.route("/tts/transcribe", methods=["POST"])
-    @require_auth
-    @limiter.limit("30 per hour", key_func=lambda: request.remote_addr)
-    def transcribe():
-        """
-        Transcribe audio to text using ElevenLabs Speech-to-Text.
-        Accepts multipart form-data with an "audio" file field.
-        Returns { "text": str } or 503 if STT is unavailable.
-        """
-        import os
-
-        api_key = os.environ.get("ELEVENLABS_API_KEY")
-        if not api_key:
-            return (
-                jsonify(
-                    {
-                        "error": "STT service unavailable",
-                        "message": "ELEVENLABS_API_KEY not configured",
-                    }
-                ),
-                503,
-            )
-
-        if "audio" not in request.files:
-            return jsonify({"error": "audio file required"}), 400
-
-        audio_file = request.files["audio"]
-        audio_bytes = audio_file.read()
-        if not audio_bytes:
-            return jsonify({"error": "Empty audio file"}), 400
-
-        try:
-            from elevenlabs.client import ElevenLabs
-
-            client = ElevenLabs(api_key=api_key)
-            result = client.speech_to_text.convert(
-                audio=audio_bytes,
-                model_id="scribe_v1",
-            )
-            text = result.text if hasattr(result, "text") else str(result)
-            return jsonify({"text": text.strip()})
-        except Exception as e:
-            logger.error("ElevenLabs STT error: %s", e)
-            return (
-                jsonify(
-                    {
-                        "error": "STT_FAILED",
-                        "message": "Voice transcription is unavailable right now. Please try again in a moment.",
-                    }
-                ),
-                500,
-            )
 
     return tts_bp
