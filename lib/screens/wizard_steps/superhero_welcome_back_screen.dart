@@ -30,10 +30,10 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
   /// so existing callers without a band keep current behavior.
   final AgeBand band;
 
-  /// MT-235 Phase 2 (the returnable saga): the returning Creator hero's
-  /// persisted continuity. When present AND it has continuity (at least one
-  /// completed Issue), a "Previously…" recap card is shown above the greeting.
-  /// Null for younger bands and a brand-new Creator hero (Issue #1).
+  /// MT-235 Phase 2 (the returnable saga): the returning Adventurer/Creator/
+  /// Adolescent hero's persisted continuity. When present AND it has continuity
+  /// (at least one completed Issue), a "Previously…" recap card is shown above
+  /// the greeting. Null for younger bands and a brand-new hero (Issue #1).
   final HeroSaga? saga;
 
   const SuperheroWelcomeBackScreen({
@@ -416,8 +416,9 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // MT-235 Phase 2: "Previously in your saga" recap for a
-                    // returning Creator hero with continuity (Creator-only; null
-                    // saga / no continuity renders nothing).
+                    // returning Adventurer/Creator/Adolescent hero with
+                    // continuity (driven by the saga object; null saga / no
+                    // continuity renders nothing).
                     if (_buildPreviouslyCard() case final card?) card,
                     // "View your record →" — opens the full noir ledger. Only
                     // when there is continuity to show (matches the recap card's

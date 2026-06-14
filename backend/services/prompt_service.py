@@ -106,6 +106,7 @@ class PromptService:
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
+                    prior_saga=prior_saga,
                 )
             elif _age_int >= 9 and _age_int <= 12:
                 return PromptService._build_superhero_prompt_adventurer(
@@ -119,6 +120,7 @@ class PromptService:
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
+                    prior_saga=prior_saga,
                 )
             elif _age_int >= 13 and _age_int <= 14:
                 # Creator band — Hero Saga (ages 13-14).
@@ -590,6 +592,7 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         problem_id: str | None,
         hero_catchphrase: str | None = None,
         custom_elements: str = "",
+        prior_saga: dict | None = None,
     ) -> str:
         """Build the 5-paragraph Superhero Mode prompt for Explorer-band readers.
 
@@ -600,6 +603,19 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         still produces a coherent story rather than a 500. Unknown powers
         (including the Sprout-only fallback case) fall back to ``super_smile``,
         a power ID both bands share.
+
+        ``prior_saga`` (the returnable saga) is the persisted continuity for a
+        returning hero — normally the previous Issue's emitted ``saga_state``
+        plus a running issue count. When present it injects a very gentle
+        "LAST TIME…" recap so the story remembers the friends and the villain
+        who came before; when ``None`` (Issue #1) the story is a fresh start.
+        Recognised keys — all optional: ``nemesis``, ``nemesis_status``,
+        ``what_changed``, ``next_hook`` (the emitted ``saga_state``), plus
+        ``issue_number``, ``allies`` (list), ``key_choices`` (list). Unknown
+        keys are ignored, so the Dart ``HeroSaga`` model can grow without a
+        backend change. Tuned for 6-8: warm, short, and friendly — there is
+        deliberately NO "debt" / "cost" / consequence-callback mandate and NO
+        noir (those belong to the older bands only).
         """
         villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
             "explorer"
@@ -695,6 +711,65 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
             if custom_elements and custom_elements.strip()
             else ""
         )
+
+        # --- Continuity (returnable saga): weave a very gentle "LAST TIME…"
+        #     recap from the prior Issue's saga_state so a returning hero's
+        #     world remembers the friends and the villain who came before.
+        #     Tuned for 6-8 — warm, short, and friendly. There is intentionally
+        #     NO "still owed / cost comes due / consequence callback" mandate,
+        #     no "debt", and no noir (those are older-band mechanics). Allies
+        #     return as FRIENDS (reuse, do not reintroduce). Absent on Issue #1
+        #     (no prior_saga) -> "".
+        saga = prior_saga or {}
+        try:
+            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
+        except (TypeError, ValueError):
+            issue_number = 1
+        issue_number = max(issue_number, 1)
+
+        continuity_block = ""
+        if saga:
+            # Same saga vocabulary the recap expects, made warm and simple for
+            # this age band (friendly-adventure register, never a moral debt).
+            _status_human = {
+                "reconsidered": "is being kinder now",
+                "stopped-and-accountable": "stopped and said sorry",
+                "still-at-large": "is back, up to something new",
+            }
+            prev_nemesis = (saga.get("nemesis") or "").strip()
+            prev_status = (saga.get("nemesis_status") or "").strip().lower()
+            prev_changed = (saga.get("what_changed") or "").strip()
+            prev_hook = (saga.get("next_hook") or "").strip()
+            allies = [
+                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
+            ]
+            lines = []
+            if prev_nemesis:
+                st = _status_human.get(prev_status, prev_status or "is back again")
+                lines.append(f"- The villain {prev_nemesis} {st}.")
+            if prev_changed:
+                lines.append(f"- What happened last time: {prev_changed}")
+            if prev_hook:
+                lines.append(
+                    f"- The little hook for this new adventure (open the story on "
+                    f"it): {prev_hook}"
+                )
+            if allies:
+                lines.append(
+                    f"- Friends who came along before (bring them back as "
+                    f"{character}'s friends — do NOT introduce them like strangers): "
+                    f"{', '.join(allies)}"
+                )
+            if lines:
+                continuity_block = (
+                    f"\n\nLAST TIME — THIS IS ADVENTURE #{issue_number} FOR "
+                    f"{character}. Remember what happened before and keep it true:\n"
+                    + "\n".join(lines)
+                    + f'\nStart with a quick, friendly "Last time…" beat in the HERO '
+                    f"INTRO (just one or two short sentences), then tell a brand-new "
+                    f"adventure of its own."
+                )
+
         return f"""SUPERHERO MODE STORY (Ages 6-8 — Explorer band)
 
 You are writing a short-chapter superhero story for a {age}-year-old early reader.
@@ -703,7 +778,7 @@ HERO IDENTITY (use the hero's name at least THREE times and the identity tag at 
 - Hero name: {character}
 - Identity tag: "{identity_tag}"
 - Costume: {color} suit with {cape_phrase} and a {emblem} emblem
-- Signature power: {power_name} ({power_verb}){catchphrase_identity_line}
+- Signature power: {power_name} ({power_verb}){catchphrase_identity_line}{continuity_block}
 
 VILLAIN — the antagonist MUST be one of these named Explorer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and use them as the embodied source of conflict.
 - Name: {villain['name']} (use this exact name in the prose)
@@ -761,7 +836,15 @@ Strictly return valid JSON with this structure:
     {{
       "text": "Paragraph 5 — the RESOLUTION VIA EMPATHY OR CLEVERNESS paragraph (with one line of hero dialogue)."
     }}
-  ]
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one warm sentence on what is better now in the town or for the hero",
+    "next_hook": "one sentence teasing the next little adventure to come",
+    "allies": ["names of 1-3 friends who, by the end of this story, now know or help {character} — returning friends in the saga — names only, no descriptions"],
+    "defining_choice": "one sentence naming the kind, brave, or clever thing {character} did this time — simple and specific"
+  }}
 }}
 
 Begin now. Stop at 350 words across all pages combined.
@@ -791,6 +874,7 @@ Begin now. Stop at 350 words across all pages combined.
         problem_id: str | None,
         hero_catchphrase: str | None = None,
         custom_elements: str = "",
+        prior_saga: dict | None = None,
     ) -> str:
         """Build the 6-scene Superhero Mode prompt for Adventurer-band readers.
 
@@ -800,6 +884,19 @@ Begin now. Stop at 350 words across all pages combined.
         derives a sensible pair from the hero's power so a malformed request
         still produces a coherent story rather than a 500. Unknown powers fall
         back to ``super_smile``, a power ID all three bands share.
+
+        ``prior_saga`` (the returnable saga) is the persisted continuity for a
+        returning hero — normally the previous Issue's emitted ``saga_state``
+        plus a running issue count. When present it injects a light
+        "PREVIOUSLY IN YOUR SAGA" momentum block so the world remembers what
+        came before; when ``None`` (Issue #1) the story is a fresh start.
+        Recognised keys — all optional: ``nemesis``, ``nemesis_status``,
+        ``what_changed``, ``next_hook`` (the emitted ``saga_state``), plus
+        ``issue_number``, ``allies`` (list), ``key_choices`` (list). Unknown
+        keys are ignored, so the Dart ``HeroSaga`` model can grow without a
+        backend change. Tuned for 9-12: exciting and warm, NOT a "debt" — there
+        is deliberately NO mature "cost comes due" / consequence-callback
+        mandate (that belongs to the Creator/Adolescent bands only).
         """
         villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
             "adventurer"
@@ -899,6 +996,72 @@ Begin now. Stop at 350 words across all pages combined.
             if custom_elements and custom_elements.strip()
             else ""
         )
+
+        # --- Continuity (returnable saga): weave a light "PREVIOUSLY IN YOUR
+        #     SAGA" momentum block from the prior Issue's saga_state so a
+        #     returning hero's world remembers. Tuned for 9-12 — exciting and
+        #     warm, NOT noir and NOT a "debt": there is intentionally NO
+        #     "still owed / cost comes due / consequence callback" mandate
+        #     (that's a mature-band mechanic). Absent on Issue #1 -> "".
+        saga = prior_saga or {}
+        try:
+            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
+        except (TypeError, ValueError):
+            issue_number = 1
+        issue_number = max(issue_number, 1)
+
+        continuity_block = ""
+        if saga:
+            # Same vocabulary the creator/recap expects, humanized warmly for
+            # this age band (heroic-adventure register, never a moral debt).
+            _status_human = {
+                "reconsidered": "is rethinking things now",
+                "stopped-and-accountable": "was stopped and is owning what they did",
+                "still-at-large": "is still out there, up to something new",
+            }
+            prev_nemesis = (saga.get("nemesis") or "").strip()
+            prev_status = (saga.get("nemesis_status") or "").strip().lower()
+            prev_changed = (saga.get("what_changed") or "").strip()
+            prev_hook = (saga.get("next_hook") or "").strip()
+            allies = [
+                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
+            ]
+            key_choices = [
+                str(c).strip()
+                for c in (saga.get("key_choices") or [])
+                if str(c).strip()
+            ]
+            lines = []
+            if prev_nemesis:
+                st = _status_human.get(prev_status, prev_status or "is still a mystery")
+                lines.append(f"- The nemesis you've faced — {prev_nemesis}: {st}.")
+            if prev_changed:
+                lines.append(f"- What changed last issue: {prev_changed}")
+            if prev_hook:
+                lines.append(
+                    f"- The thread left hanging to pick back up (open on it or pay "
+                    f"it off — do NOT ignore or quietly drop it): {prev_hook}"
+                )
+            if allies:
+                lines.append(
+                    f"- Friends already in {character}'s corner (bring them back; do "
+                    f"NOT reintroduce them as strangers): {', '.join(allies)}"
+                )
+            if key_choices:
+                lines.append(
+                    f"- Moments that already define {character}: {'; '.join(key_choices)}"
+                )
+            if lines:
+                continuity_block = (
+                    f"\n\nPREVIOUSLY IN YOUR SAGA — THIS IS ISSUE #{issue_number} OF "
+                    f"{character}'s STORY. The world remembers what happened; honor it "
+                    f"and never contradict it:\n"
+                    + "\n".join(lines)
+                    + f'\nWeave a quick "Previously…" beat of momentum into the HERO '
+                    f"INTRO (a line or two, NOT a bulleted recap), then tell a NEW "
+                    f"self-contained adventure that moves the saga forward."
+                )
+
         return f"""SUPERHERO MODE STORY (Ages 9-12 — Adventurer band)
 
 You are writing a substantial, single-sitting superhero story for a {age}-year-old confident reader who loves real stakes and clever heroes (think Percy Jackson / Marvel, written for this age).
@@ -907,7 +1070,7 @@ HERO IDENTITY (use the hero's name at least FOUR times and the identity tag at l
 - Hero name: {character}
 - Identity tag: "{identity_tag}"
 - Costume: {color} suit with {cape_phrase} and a {emblem} emblem
-- Signature power: {power_name} ({power_verb}) — give the power a real LIMIT or COST so victory takes cleverness, not just raw power.{catchphrase_identity_line}
+- Signature power: {power_name} ({power_verb}) — give the power a real LIMIT or COST so victory takes cleverness, not just raw power.{catchphrase_identity_line}{continuity_block}
 
 VILLAIN — the antagonist MUST be one of these named Adventurer villains and NO OTHER: {canonical_villain_list}. For THIS story the chosen villain is {villain['name']} — name them explicitly and make them the embodied source of conflict.
 - Name: {villain['name']} (use this exact name in the prose)
@@ -969,7 +1132,15 @@ Strictly return valid JSON with this structure:
     {{
       "text": "Scene 6 — RESOLUTION + GROWTH (with the hero's reflective dialogue)."
     }}
-  ]
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one sentence on what shifted in the city or the hero",
+    "next_hook": "one sentence teasing an unresolved thread that pulls toward the next issue",
+    "allies": ["names of 1-3 people who, by the end of this story, now know or help {character} — recurring friends/allies in the saga — names only, no descriptions"],
+    "defining_choice": "one sentence naming the key moment that defined {character} this issue — a moment of courage, kindness, or cleverness — concrete and specific"
+  }}
 }}
 
 Begin now. Write a real story of 900-1500 words across the scenes; the villain is understood, never beaten by force.

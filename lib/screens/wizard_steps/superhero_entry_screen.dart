@@ -56,12 +56,16 @@ class SuperheroEntryScreen extends ConsumerWidget {
           SuperheroCostumeScreen(wizardData: wizardData, band: band),
       data: (profile) {
         if (profile != null && profile.power != null) {
-          // MT-235 Phase 2 (the returnable saga): for a returning Creator hero,
-          // surface the persisted continuity as a "Previously…" recap on the
-          // welcome-back screen. Younger bands have no saga and skip the watch.
-          // A saga read failure / first Issue simply yields a null saga → no
-          // recap, never a blocked welcome-back.
-          final saga = (band == AgeBand.creator || band == AgeBand.adolescent)
+          // MT-235 Phase 2 (the returnable saga): for a returning Explorer,
+          // Adventurer, Creator, or Adolescent hero, surface the persisted
+          // continuity as a "Previously…" recap on the welcome-back screen.
+          // Younger bands (Sprout) have no saga and skip the watch. A saga read
+          // failure / first Issue simply yields a null saga → no recap, never a
+          // blocked welcome-back.
+          final saga = (band == AgeBand.explorer ||
+                  band == AgeBand.adventurer ||
+                  band == AgeBand.creator ||
+                  band == AgeBand.adolescent)
               ? ref.watch(heroSagaProvider(characterId)).valueOrNull
               : null;
           return SuperheroWelcomeBackScreen(

@@ -509,11 +509,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         final sagaAgeBand = ageBandFromAge(widget.wizardData.characterAge);
         final isCreatorBand = sagaAgeBand == AgeBand.creator;
         final isAdolescentBand = sagaAgeBand == AgeBand.adolescent;
-        // MT-235 / antihero saga: the returnable saga now serves BOTH the
-        // Creator (13-14) and the Adolescent antihero (15-17) bands. Both have
-        // the welcome-back recap card + backend continuity/consequence-callback
-        // wired; this gate is what feeds them the persisted saga data.
-        final isSagaBand = isCreatorBand || isAdolescentBand;
+        final isAdventurerBand = sagaAgeBand == AgeBand.adventurer;
+        final isExplorerBand = sagaAgeBand == AgeBand.explorer;
+        // MT-235 / antihero saga: the returnable saga now serves the
+        // Explorer (6-8), Adventurer (9-12), Creator (13-14), and Adolescent
+        // antihero (15-17) bands. Each has the welcome-back recap card + backend
+        // continuity/consequence-callback wired (Explorer/Adventurer omit
+        // what_it_cost by design); this gate is what feeds them the persisted
+        // saga data.
+        final isSagaBand = isCreatorBand ||
+            isAdolescentBand ||
+            isAdventurerBand ||
+            isExplorerBand;
         if (widget.wizardData.selectedScenario == 'superhero') {
           try {
             final heroCharacterId =
@@ -660,9 +667,13 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               // characterDesire, but the Adolescent antihero brief HIDES that
               // field — for adolescents the moral throughline is the line they
               // won't cross (heroLine), falling back to what they hide
-              // (heroSecret). Null-safe: trim, empty -> null.
+              // (heroSecret). The Explorer (6-8) and Adventurer (9-12) briefs
+              // reliably surface none of these, so hero_code stays null — the
+              // saga works fine without it. Null-safe: trim, empty -> null.
               String? sourceCode;
-              if (isAdolescentBand) {
+              if (isAdventurerBand || isExplorerBand) {
+                sourceCode = null;
+              } else if (isAdolescentBand) {
                 final line = widget.wizardData.heroLine?.trim();
                 final secret = widget.wizardData.heroSecret?.trim();
                 if (line != null && line.isNotEmpty) {
