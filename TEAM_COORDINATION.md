@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-14 | 12:08 | 4022 | saga-loop-adventurer | Designed Story Notes age-gated transparency layer (MT-254) from ethics-class thread | [link](docs/sessions/2026-06-14-1208-4022.md) |
 | 2026-06-12 | 14:07 | 6563 | main (PR #266) | Reconciled+shipped direct-Anthropic claude story-gen provider (#266); lockfile pinned; openai-provider analyzed | [link](docs/sessions/2026-06-12-1407-6563.md) |
 | 2026-06-10 | 19:57 | 1ed9 | main | Adolescent antihero saga shipped end-to-end (#263/#264/#265/#267) + UX audit fixes | [link](docs/sessions/2026-06-10-1957-1ed9.md) |
 | 2026-06-09 | 23:00 | b559 | main | Git reconcile + 7-branch cleanup; MT-248 launch-gate research + Chunk-A validation | [link](docs/sessions/2026-06-09-2300-b559.md) |
