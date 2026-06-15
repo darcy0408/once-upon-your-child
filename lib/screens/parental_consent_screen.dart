@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
@@ -324,7 +322,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       "• OpenRouter, Replicate, Cloudflare Workers AI — AI image and avatar generation. Receive image prompts, and on the photo-avatar path the child's photo.",
                                       style: textWhite70),
                                   const Text(
-                                      '• ElevenLabs — text-to-speech narration. Receives generated story text.',
+                                      '• Microsoft (Azure AI Speech / Edge) and Google (Gemini Flash TTS) — voice narration. Receive generated story text to convert it to spoken audio.',
                                       style: textWhite70),
                                   const Text(
                                       '• Stripe — payment processing. Receives parent payment info; never child data.',
@@ -485,95 +483,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.lg),
-                            // ── ElevenLabs kudos ─────────────────────────────────────────
-                            GestureDetector(
-                              onTap: _openElevenLabsImpactProgram,
-                              child: Container(
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(8),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                      color: Colors.white.withAlpha(30),
-                                      width: 1),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        SvgPicture.network(
-                                          'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg',
-                                          height: 22,
-                                          semanticsLabel: 'ElevenLabs',
-                                          placeholderBuilder: (_) => Text(
-                                            'ElevenLabs',
-                                            style: GoogleFonts.fredoka(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFFFD700)
-                                                .withAlpha(40),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            border: Border.all(
-                                                color: const Color(0xFFFFD700)
-                                                    .withAlpha(120)),
-                                          ),
-                                          child: Text(
-                                            'Proud Partner',
-                                            style: GoogleFonts.fredoka(
-                                              color: const Color(0xFFFFD700),
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: AppSpacing.sm),
-                                    Text(
-                                      'Story Weaver uses ElevenLabs to bring stories to life with natural, expressive voices. '
-                                      'Beyond storytelling, ElevenLabs is doing incredible work through their Impact Program — '
-                                      'providing free access to their voice technology for people who have lost the ability to '
-                                      'speak, and tools that help people with visual impairments experience the world through sound. '
-                                      'We\'re proud to partner with a company whose technology genuinely changes lives.',
-                                      style: GoogleFonts.fredoka(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.open_in_new,
-                                            color: Color(0xFFFFD700), size: 13),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Learn about their Impact Program',
-                                          style: GoogleFonts.fredoka(
-                                            color: const Color(0xFFFFD700),
-                                            fontSize: 12,
-                                            decoration:
-                                                TextDecoration.underline,
-                                            decorationColor:
-                                                const Color(0xFFFFD700),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -593,20 +502,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         "Could you look at this together with me? It takes about a minute. "
         "Thanks!";
     await SharePlus.instance.share(ShareParams(text: message));
-  }
-
-  /// STORE-7 — opens the ElevenLabs Impact Program page. Apple Kids-Category
-  /// 1.3/5.1.4 requires external links to sit behind a parental gate, so this
-  /// routes through the same [ParentalGateDialog] used for the consent action.
-  Future<void> _openElevenLabsImpactProgram() async {
-    // Already past the consent parental gate — re-confirm only if somehow not.
-    final passed =
-        _parentGatePassed || await ParentalGateDialog.show(context);
-    if (!passed || !mounted) return;
-    await launchUrl(
-      Uri.parse('https://elevenlabs.io/impact-program'),
-      mode: LaunchMode.externalApplication,
-    );
   }
 
   /// CMP-6 — parental gate guarding the consent action. The parent must solve

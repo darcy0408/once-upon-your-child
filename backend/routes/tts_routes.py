@@ -13,6 +13,12 @@ ElevenLabs supports). When opted in it serves first, then falls through to
 Gemini then Edge if unavailable or over its monthly character budget.
 The 'provider' field in the response indicates which tier served the request.
 
+Azure AI Speech is the licensed primary provider (MT-248): when configured it
+serves all narration and the providers above are bypassed. ElevenLabs is
+additionally HARD-GATED off for users flagged is_under_13 (their terms forbid
+processing audio for under-13s) — guaranteeing under-13s never reach it even in
+the Azure-unavailable fallback path.
+
 POST /tts/synthesize
   Body: { "text": str, "voice_id": str (optional) }
   Returns: { "audio_base64": str, "format": "mp3", "voice_id": str, "provider": str }
@@ -284,6 +290,14 @@ def create_tts_blueprint(limiter, require_auth):
             else None
         )
         user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
+        # ElevenLabs' terms forbid processing audio for users under 13, and this
+        # app serves under-13 children. ElevenLabs is therefore hard-gated off
+        # for them server-side (can't be opted back in by the client). When Azure
+        # AI Speech is configured it already serves everyone and ElevenLabs is
+        # never used; this gate guarantees under-13s never reach ElevenLabs even
+        # in the Azure-unavailable fallback (they get Gemini Flash TTS -> Edge).
+        # is_under_13 is set during COPPA onboarding.
+        is_under_13 = bool(getattr(request.current_user, "is_under_13", False))
         if user_id:
             allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
             if not allowed:
@@ -316,7 +330,16 @@ def create_tts_blueprint(limiter, require_auth):
         # chain below.
         premium_voice = bool(data.get("premium_voice"))
         wants_dialogue = bool((data.get("character_voice_id") or "").strip())
-        if premium_voice or wants_dialogue:
+        if (premium_voice or wants_dialogue) and is_under_13:
+            # Opted into a premium/dialogue ElevenLabs voice, but the user is
+            # under 13 — refuse ElevenLabs and let the default Gemini -> Edge
+            # chain serve the narration instead.
+            audit_log(
+                "tts_elevenlabs_under13_blocked",
+                user_id=user_id,
+                data={"premium_voice": premium_voice, "wants_dialogue": wants_dialogue},
+            )
+        elif premium_voice or wants_dialogue:
             service = _get_tts_service()
             elevenlabs_ok = service is not None
 

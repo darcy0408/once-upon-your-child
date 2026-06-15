@@ -149,7 +149,10 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 | **OpenRouter** | Image prompts; on the photo-avatar path, the child's photo | Routes AI image-generation requests |
 | **Replicate** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation |
 | **Cloudflare Workers AI** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation |
-| **ElevenLabs** | Generated story text | Text-to-speech narration |
+| **Microsoft (Azure AI Speech)** | Generated story text | Voice narration — primary provider |
+| **Google (Gemini Flash TTS)** | Generated story text | Voice narration — fallback |
+| **Microsoft (Edge TTS)** | Generated story text | Voice narration — fallback |
+| **ElevenLabs** | Generated story text | Premium/character voice narration (ages 13+ only; never for under-13) |
 | **Stripe** | Parent payment information (handled directly by Stripe; we never store full card details) | Subscription and payment processing |
 | **Railway** | All app data — profiles, stories, preferences (stored in the United States) | Cloud hosting and infrastructure |
 | **Firebase / Google Analytics** | Anonymized app usage events (consent-gated, off by default, not enabled for children under 13) | App analytics |

@@ -111,18 +111,63 @@ def _post_synthesize(
     text: str = "Once upon a time, a brave hero set out on a quest.",
     voice_id: Optional[str] = None,
     premium_voice: bool = False,
+    character_voice_id: Optional[str] = None,
 ) -> tuple:
     """POST /tts/synthesize and return (status, json).
 
-    ElevenLabs is opt-in after F-01 — pass ``premium_voice=True`` to request it.
+    ElevenLabs is opt-in after F-01 — pass ``premium_voice=True`` (or a
+    ``character_voice_id`` for dialogue synthesis) to request it.
     """
     payload = {"text": text}
     if voice_id is not None:
         payload["voice_id"] = voice_id
     if premium_voice:
         payload["premium_voice"] = True
+    if character_voice_id is not None:
+        payload["character_voice_id"] = character_voice_id
     resp = client.post("/tts/synthesize", json=payload, headers=headers)
     return resp.status_code, resp.get_json()
+
+
+@pytest.fixture
+def under13_user(app):
+    """A free-tier user flagged ``is_under_13`` during COPPA onboarding."""
+    from backend.database import db
+    from backend.models import User
+
+    with app.app_context():
+        user = User(
+            id="under13_user_001",
+            username="under13user",
+            email="under13@example.com",
+            password_hash="hashed_password",
+            subscription_tier="free",
+            role="user",
+            is_under_13=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+        db.session.delete(user)
+        db.session.commit()
+
+
+@pytest.fixture
+def under13_user_headers(under13_user):
+    """Auth headers for the under-13 user."""
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    payload = {
+        "user_id": under13_user.id,
+        "sub": under13_user.id,
+        "email": under13_user.email,
+        "subscription_tier": "free",
+        "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+    }
+    token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
 # ---------------------------------------------------------------------------
@@ -373,3 +418,64 @@ class TestTtsDisabledKillSwitch:
         tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
         tts.gemini.generate_speech_with_timestamps.assert_not_called()
         tts.edge.generate_speech_with_timestamps.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Under-13 ElevenLabs hard-gate (ElevenLabs ToS forbids under-13 audio)
+# ---------------------------------------------------------------------------
+
+
+class TestUnder13ElevenLabsGate:
+    """A user flagged ``is_under_13`` must NEVER reach ElevenLabs, even when they
+    opt in via ``premium_voice`` or request dialogue (``character_voice_id``).
+    They are served by the Gemini -> Edge chain instead."""
+
+    def test_under13_premium_voice_skips_elevenlabs_serves_gemini(
+        self, client, under13_user_headers, tts: TTSMocks
+    ) -> None:
+        # Explicit premium opt-in, but the user is under 13 — ElevenLabs is
+        # refused and Gemini serves the narration.
+        status, body = _post_synthesize(
+            client, under13_user_headers, premium_voice=True
+        )
+
+        assert status == 200
+        assert body["provider"] == "gemini"
+        assert base64.b64decode(body["audio_base64"]) == b"gemini-audio"
+        # ElevenLabs must not have been invoked by ANY path (timestamps, chunked,
+        # or dialogue).
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.elevenlabs.generate_speech_chunked.assert_not_called()
+        tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
+        tts.gemini.generate_speech_with_timestamps.assert_called_once()
+
+    def test_under13_dialogue_request_skips_elevenlabs_serves_gemini(
+        self, client, under13_user_headers, tts: TTSMocks
+    ) -> None:
+        # character_voice_id normally forces ElevenLabs (only multi-voice
+        # provider). Under 13 it must still be refused — no dialogue synthesis.
+        status, body = _post_synthesize(
+            client, under13_user_headers, character_voice_id="some-character-voice"
+        )
+
+        assert status == 200
+        assert body["provider"] == "gemini"
+        tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.gemini.generate_speech_with_timestamps.assert_called_once()
+
+    def test_under13_falls_through_to_edge_when_gemini_unavailable(
+        self, client, under13_user_headers, tts: TTSMocks, mocker
+    ) -> None:
+        # The gate must not strand under-13 users: with Gemini down they still
+        # get the free Edge voice, never ElevenLabs.
+        mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=None)
+
+        status, body = _post_synthesize(
+            client, under13_user_headers, premium_voice=True
+        )
+
+        assert status == 200
+        assert body["provider"] == "edge"
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.edge.generate_speech_with_timestamps.assert_called_once()

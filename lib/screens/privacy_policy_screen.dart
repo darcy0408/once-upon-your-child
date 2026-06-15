@@ -98,7 +98,7 @@ We share only the minimum data required for each service to function. Each provi
 - OpenRouter — routes AI image-generation requests. Receives image prompts, and on the photo-avatar path the child's photo.
 - Replicate — AI image and avatar generation. Receives image prompts, and on the photo-avatar path the child's photo.
 - Cloudflare Workers AI — AI image and avatar generation. Receives image prompts, and on the photo-avatar path the child's photo.
-- ElevenLabs — text-to-speech narration. Receives generated story text.
+- Voice narration (text-to-speech): the generated story text is sent to Microsoft (Azure AI Speech, the primary provider, and Edge TTS) and Google (Gemini Flash TTS). For ages 13+ only, premium/character voices may additionally use ElevenLabs (never for children under 13).
 - Stripe — subscription and payment processing. Receives parent payment information; we never store full card details.
 - Railway — cloud hosting and infrastructure (United States). Stores all app data: profiles, stories, preferences.
 - Firebase / Google Analytics — app analytics. Receives anonymized usage events (consent-gated, off by default, not enabled for children under 13).
