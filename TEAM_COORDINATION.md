@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-15 | 15:01 | 0447 | session/u13gate | Under-13 ElevenLabs gate + Azure-accurate disclosure salvaged → #281 merged; closed #275 (MT-261) | [link](docs/sessions/2026-06-15-1501-0447.md) |
 | 2026-06-15 | 06:40 | 9128 | worktree-story-notes-mt254 | Built entire MT-254 Story Notes transparency layer (PR #279, 8 commits) | [link](docs/sessions/2026-06-15-0640-9128.md) |
 | 2026-06-14 | 18:45 | a3af | main | MT-248 launch-gate FULLY cleared — Azure AI Speech narration LIVE, /tts/transcribe deleted | [link](docs/sessions/2026-06-14-1845-a3af.md) |
 | 2026-06-14 | 18:14 | b816 | main (worktree) | Greened #273 lint gate (Black + flake8) + merged #273 (Crux backend) & #274 (Adventurer/Explorer saga) | [link](docs/sessions/2026-06-14-1814-b816.md) |
