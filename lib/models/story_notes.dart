@@ -14,6 +14,7 @@
 //   • Explorer 6-8    → names the skill gently + a co-read question
 //   • Adventurer 9-12 → direct, but preserves the child's sense of agency
 //   • Creator/Adolescent/Adult 13+ → full transparency, respects autonomy
+import '../data/parent_focus_keys.dart';
 import '../theme/age_band_theme.dart';
 
 /// How directly the Story Notes disclosure names the guided lesson.
@@ -62,10 +63,11 @@ class StoryNotesContent {
 
 /// Child-safe phrasing for each parent-selected focus.
 ///
-/// The keys MUST match the `trigger` values written by the Big Feelings panel
-/// (`_triggerData` in parent_controls_screen.dart) — that is the vocabulary the
-/// backend `practiced` field will carry. TODO(MT-254): unify these two maps
-/// into one shared source so the labels can never drift apart.
+/// Keyed by [ParentFocusKeys] — the single source of truth shared with the
+/// Big Feelings parent picker (`_triggerData` in parent_controls_screen.dart).
+/// This map MUST cover every key in [ParentFocusKeys.all]; the guard test in
+/// test/models/story_notes_test.dart fails if one is missing (which would
+/// silently degrade that focus's disclosure to generic copy).
 class _FocusCopy {
   /// A short phrase for direct/transparent tones, e.g. `hearing "no"`.
   final String short;
@@ -78,27 +80,27 @@ class _FocusCopy {
 }
 
 const Map<String, _FocusCopy> _focusCopy = {
-  'a limit is set': _FocusCopy(
+  ParentFocusKeys.limitSet: _FocusCopy(
     'hearing "no"',
     'hearing "no" — and finding a way to feel calm again after',
   ),
-  'a sibling conflict starts': _FocusCopy(
+  ParentFocusKeys.siblingConflict: _FocusCopy(
     'working things out with a sibling',
     'cooling down after a fight with a sibling and finding a way back to each other',
   ),
-  'a friendship bump happens': _FocusCopy(
+  ParentFocusKeys.friendshipBump: _FocusCopy(
     'repairing a friendship',
     'sitting with hurt feelings and finding a way to reconnect with a friend',
   ),
-  'nighttime feels uncertain': _FocusCopy(
+  ParentFocusKeys.nighttimeUncertain: _FocusCopy(
     'facing nighttime worries',
     'feeling brave and steady when the dark feels big',
   ),
-  'a transition happens': _FocusCopy(
+  ParentFocusKeys.transition: _FocusCopy(
     'handling a hard change',
     'staying steady when things change all of a sudden',
   ),
-  'meltdown when stuck': _FocusCopy(
+  ParentFocusKeys.meltdownWhenStuck: _FocusCopy(
     'pushing through frustration',
     'staying calm when something feels too hard — and asking for help',
   ),

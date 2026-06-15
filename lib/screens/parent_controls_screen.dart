@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../data/parent_focus_keys.dart';
 import '../models/story_notes.dart';
 import '../providers/highlight_color_provider.dart';
 import '../services/api_service_manager.dart';
@@ -78,7 +79,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
         List<String> defaultRepair,
       })>[
     (
-      value: 'a limit is set',
+      value: ParentFocusKeys.limitSet,
       label: 'Hearing no',
       emoji: '🚫',
       description:
@@ -87,7 +88,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       defaultRepair: ['try again with warmth'],
     ),
     (
-      value: 'a sibling conflict starts',
+      value: ParentFocusKeys.siblingConflict,
       label: 'Sibling conflict',
       emoji: '🧒',
       description: 'Sibling friction, sharing space, and calmer re-entry.',
@@ -95,7 +96,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       defaultRepair: ['say sorry simply', 'use gentle words'],
     ),
     (
-      value: 'a friendship bump happens',
+      value: ParentFocusKeys.friendshipBump,
       label: 'Friendship hurt',
       emoji: '💔',
       description: 'Navigate hurt feelings, repair, and reconnecting.',
@@ -103,7 +104,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       defaultRepair: ['use gentle words'],
     ),
     (
-      value: 'nighttime feels uncertain',
+      value: ParentFocusKeys.nighttimeUncertain,
       label: 'Bedtime worry',
       emoji: '🌙',
       description: 'Comfort around nighttime fear and small brave steps.',
@@ -111,7 +112,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       defaultRepair: ['try again with warmth'],
     ),
     (
-      value: 'a transition happens',
+      value: ParentFocusKeys.transition,
       label: 'Hard transitions',
       emoji: '🔄',
       description: 'Smoother switches between activities with less overwhelm.',
@@ -119,7 +120,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       defaultRepair: ['try again with warmth'],
     ),
     (
-      value: 'meltdown when stuck',
+      value: ParentFocusKeys.meltdownWhenStuck,
       label: 'Meltdown when stuck',
       emoji: '🧩',
       description: 'Frustration tolerance, help-seeking, and trying again.',

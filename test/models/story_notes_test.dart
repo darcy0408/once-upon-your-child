@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:story_weaver_app/data/parent_focus_keys.dart';
 import 'package:story_weaver_app/models/story_notes.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 
@@ -129,6 +130,46 @@ void main() {
       );
       expect(notes.body, isNot(contains('some_unmapped_focus')));
       expect(notes.body, contains('something your grown-up wanted to help'));
+    });
+  });
+
+  // Drift guard (MT-254, option B): the parent picker (_triggerData) and the
+  // child disclosure (_focusCopy) both key off ParentFocusKeys. If a canonical
+  // key gains a parent option but no disclosure copy, the focus silently
+  // degrades to the generic fallback — exactly the values-regression we want
+  // CI to catch. We verify through the public API so neither private map needs
+  // exposing: every canonical key must produce a specific, named disclosure.
+  group('ParentFocusKeys ↔ _focusCopy drift guard', () {
+    // The generic fallbacks that stand in when a key has no copy. If any of
+    // these appears for a canonical key, the disclosure has drifted.
+    const fallbacks = [
+      'something your grown-up wanted to help with', // gentle
+      'something they wanted to help with', // direct
+      'something they wanted to open up', // transparent
+    ];
+
+    test('every canonical focus key resolves to specific disclosure copy', () {
+      expect(ParentFocusKeys.all, isNotEmpty);
+      for (final key in ParentFocusKeys.all) {
+        // Use a transparent band so the full skill phrase is surfaced.
+        final notes = buildStoryNotes(
+          focusValue: key,
+          band: AgeBand.adolescent,
+        );
+        for (final fallback in fallbacks) {
+          expect(
+            notes.body,
+            isNot(contains(fallback)),
+            reason: 'Focus key "$key" is in ParentFocusKeys but has no entry '
+                'in _focusCopy (story_notes.dart) — its disclosure fell back '
+                'to generic copy. Add a _FocusCopy entry for it.',
+          );
+        }
+      }
+    });
+
+    test('canonical keys are unique (no accidental duplicate)', () {
+      expect(ParentFocusKeys.all.toSet().length, ParentFocusKeys.all.length);
     });
   });
 }
