@@ -21,6 +21,10 @@ class StoryLocal {
   String? coverImageBase64; // base64 of the cover illustration bytes
   String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
 
+  // Story Notes (MT-254): parent-selected focus(es) this story was guided
+  // toward. Persisted so a re-opened guided story still offers the disclosure.
+  String? practiced;
+
   static StoryLocal fromJson(Map<String, dynamic> json) {
     return StoryLocal()
       ..storyId = json['storyId']?.toString() ?? ''
@@ -37,7 +41,9 @@ class StoryLocal {
       ..wisdomGem = json['wisdomGem']?.toString()
       ..charactersJson = json['charactersJson']?.toString()
       ..coverImageBase64 = json['coverImageBase64']?.toString()
-      ..pageIllustrationsJson = json['pageIllustrationsJson']?.toString();
+      ..pageIllustrationsJson = json['pageIllustrationsJson']?.toString()
+      ..practiced =
+          json['practiced']?.toString() ?? json['practiced_focus']?.toString();
   }
 
   static StoryLocal fromSavedStory(SavedStory saved) {
@@ -72,6 +78,7 @@ class StoryLocal {
       'charactersJson': charactersJson,
       'coverImageBase64': coverImageBase64,
       'pageIllustrationsJson': pageIllustrationsJson,
+      'practiced': practiced,
     };
   }
 

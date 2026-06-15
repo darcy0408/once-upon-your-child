@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../models/story_notes.dart';
 import '../providers/highlight_color_provider.dart';
 import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
@@ -18,6 +19,7 @@ import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../services/screen_time_service.dart';
 import '../settings_screen.dart';
+import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
 import 'subscription_management_screen.dart';
@@ -142,6 +144,9 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   int _todayUsage = 0;
   String? _activeProfileId;
   String? _activeProfileName;
+  // MT-254: the child's recorded age, used to render a preview of exactly what
+  // they could see if they tap "Why this story? 💛" after a guided story.
+  int? _recordedAge;
 
   // Family / Caregivers
   final _caregiverService = CaregiverService();
@@ -250,6 +255,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       // COPPA: analytics is never collected for under-13s — the toggle is
       // disabled for them so a parent cannot enable it.
       _analyticsAgeAllowed = recordedAge != null && recordedAge >= 13;
+      _recordedAge = recordedAge;
       _loading = false;
     });
   }
@@ -324,7 +330,13 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
 
   String _privacyNote() {
     if (_activeProfileName == null || _activeProfileName!.isEmpty) return '';
-    return 'Saved privately for $_activeProfileName only. Your child will never see these choices.';
+    // MT-254: be honest. These settings stay private — your child never sees
+    // this screen — but older kids can choose to learn a story was gently
+    // guided (the "Why this story? 💛" note), so guidance is transparent, not
+    // hidden.
+    return 'Saved privately for $_activeProfileName only. Your child never '
+        'sees this screen — and for older kids, each story offers an optional '
+        'note explaining it was gently guided.';
   }
 
   @override
@@ -1467,7 +1479,106 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           const SizedBox(height: AppSpacing.sm),
         ],
 
+        // MT-254: the guaranteed parent-side disclosure. Even if the child
+        // never taps "Why this story?", the adult sees here exactly what the
+        // child could see — rendered by the same builder, at the child's band.
+        _buildChildDisclosurePreview(),
       ],
+    );
+  }
+
+  /// Shows the parent a live preview of the age-gated Story Notes disclosure
+  /// their child can pull up after a guided story. Hidden until both a focus is
+  /// chosen and the child's age is known. Previews ALL selected focuses (in the
+  /// card order), matching the backend's `practiced` echo.
+  Widget _buildChildDisclosurePreview() {
+    final age = _recordedAge;
+    if (age == null || _selectedTriggers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final selected = _triggerData
+        .where((t) => _selectedTriggers.contains(t.value))
+        .map((t) => t.value)
+        .toList();
+    if (selected.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final notes = buildStoryNotes(
+      focusValue: selected.join(', '),
+      band: ageBandFromAge(age),
+      heroName: _activeProfileName,
+      caregiverName: _caregivers.primary,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD76A).withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD76A).withAlpha(80)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.visibility_outlined,
+                  color: Color(0xFFFFD700), size: 18),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  _activeProfileName == null || _activeProfileName!.isEmpty
+                      ? 'What your child can choose to see'
+                      : 'What $_activeProfileName can choose to see',
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'After a guided story, this is the optional note your child can '
+            'open. They are never forced to — but you can always see it here.',
+            style: GoogleFonts.fredoka(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            notes.headline,
+            style: GoogleFonts.fredoka(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            notes.body,
+            style: GoogleFonts.fredoka(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          if (notes.coReadPrompt != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '💛 ${notes.coReadPrompt}',
+              style: GoogleFonts.fredoka(
+                color: Colors.white60,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

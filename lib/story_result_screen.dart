@@ -54,6 +54,7 @@ import 'widgets/open_book_frame.dart';
 import 'utils/motion_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/byok_setup_wizard.dart';
+import 'screens/story_notes_screen.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
 import 'settings_screen.dart';
@@ -111,6 +112,21 @@ class StoryResultScreen extends ConsumerStatefulWidget {
   /// the end of the story. Null for non-Creator / non-superhero stories.
   final String? sagaNextHook;
 
+  /// Story Notes (MT-254): the parent-selected focus this story actually
+  /// practiced — the backend `practiced` field, one of the Big Feelings
+  /// trigger values. When set, a quiet "Why this story? 💛" button is offered
+  /// at the end so the child (or a co-reading adult) can pull up an
+  /// age-appropriate explanation of what the story was guided toward. Null for
+  /// stories that carried no hidden parent context → no button, no change.
+  final String? practicedFocus;
+
+  /// Story Notes (MT-254): the age the disclosure's directness should match —
+  /// the age of the child this story was written for. Used ONLY to pick the
+  /// disclosure band, so a re-opened story discloses at the right level even
+  /// when the app is currently themed to a different profile. Null on the live
+  /// path (where [characterAge] already carries the right age).
+  final int? practicedAge;
+
   const StoryResultScreen({
     super.key,
     required this.title,
@@ -146,6 +162,8 @@ class StoryResultScreen extends ConsumerStatefulWidget {
     this.persistedCoverImageBase64,
     this.persistedPageIllustrationsJson,
     this.sagaNextHook,
+    this.practicedFocus,
+    this.practicedAge,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -1945,7 +1963,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           pageIllustrationsJson: await _capturePageIllustrationsJson(),
         );
 
-        final storyLocal = StoryLocal.fromSavedStory(newStory);
+        final storyLocal = StoryLocal.fromSavedStory(newStory)
+          // Story Notes (MT-254): persist the guided focus so re-opening this
+          // story still offers the "Why this story? 💛" disclosure.
+          ..practiced = widget.practicedFocus;
         await _offlineService.saveStory(storyLocal);
         // saveStory assigns a millisecond-timestamp storyId in-place when the
         // incoming record has none — capture it so _toggleFavorite (and any
@@ -3121,6 +3142,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               // "Next time…" teaser + a light one-tap reflection, per the
               // design doc. Null hook (non-Creator / non-superhero) → nothing.
               ..._buildSagaCliffhanger(band: band),
+              // Story Notes (MT-254): the quiet "Why this story? 💛" pull
+              // trigger. Only present when this story carried a parent-selected
+              // focus; tapping it opens the age-gated disclosure of what the
+              // story practiced. Empty (nothing rendered) otherwise.
+              ..._buildStoryNotesEntry(band: band),
               SizedBox(height: isSprout ? 16 : 28),
               Divider(
                 indent: 40,
@@ -3367,6 +3393,36 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             ),
           ],
         ),
+      ),
+    ];
+  }
+
+  /// Story Notes entry (MT-254) — the quiet "Why this story? 💛" pull trigger.
+  ///
+  /// Returns an empty list when this story carried no parent-selected focus, so
+  /// ordinary stories are entirely unaffected. When a [practicedFocus] is
+  /// present, surfaces [StoryNotesButton]; tapping it opens the age-gated
+  /// disclosure built from the band + focus. The caregiver name is left to its
+  /// warm default for now (TODO(MT-254): thread the per-child caregiver label).
+  List<Widget> _buildStoryNotesEntry({required AgeBandThemeData band}) {
+    final focus = widget.practicedFocus?.trim();
+    if (focus == null || focus.isEmpty) return const [];
+    // Match the disclosure's directness to the child the story was written for
+    // (persisted age on reopen, live age otherwise) rather than whatever band
+    // the app is currently themed to. Falls back to the themed band only when
+    // no age is known.
+    final disclosureAge = widget.practicedAge ?? widget.characterAge;
+    final disclosureBand = (disclosureAge != null &&
+            disclosureAge >= 3 &&
+            disclosureAge <= 100)
+        ? ageBandFromAge(disclosureAge)
+        : band.band;
+    return [
+      const SizedBox(height: 12),
+      StoryNotesButton(
+        focusValue: focus,
+        band: disclosureBand,
+        heroName: widget.characterName,
       ),
     ];
   }

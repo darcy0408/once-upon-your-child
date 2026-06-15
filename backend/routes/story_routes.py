@@ -774,11 +774,23 @@ def create_story_blueprint(
             verified_age=_verified_age_anchor(owned_character),
         )
 
+        # Story Notes (MT-254): the focus(es) this story is guided toward,
+        # echoed back to the client so it can offer the age-gated "Why this
+        # story? 💛" disclosure. The prompt weaves in EVERY configured trigger
+        # (comma-joined), so we echo them all — the client names them naturally
+        # (capped at 3). None for non-Big-Feelings requests → no button.
+        practiced_focus = None
+        if transformed_parent_guidance:
+            _trigger = transformed_parent_guidance.get("trigger")
+            if _trigger and _trigger.strip():
+                practiced_focus = _trigger.strip()
+
         task_kwargs = {
             "character_id": payload.get("character_id"),
             "character": payload.get("character"),
             "character_details": character_details,
             "theme": theme,
+            "practiced_focus": practiced_focus,
             "user_id": user_id,
             "user_tier": user_tier,  # Drives tier-aware text-model selection
             "include_illustrations": payload.get("include_illustrations", False),

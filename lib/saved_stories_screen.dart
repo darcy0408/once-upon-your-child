@@ -249,6 +249,11 @@ class SavedStoriesScreen extends ConsumerWidget {
           // pictures appear immediately without regenerating them.
           persistedCoverImageBase64: story.coverImageBase64,
           persistedPageIllustrationsJson: story.pageIllustrationsJson,
+          practicedFocus: story.practiced,
+          // Disclose at the band of the child this story was written for, even
+          // if a different profile is active now.
+          practicedAge:
+              story.characters.isNotEmpty ? story.characters.first.age : null,
         ),
       ),
     );

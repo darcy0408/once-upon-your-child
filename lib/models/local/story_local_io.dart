@@ -42,6 +42,12 @@ class StoryLocal {
   String? coverImageBase64; // base64 of the cover illustration bytes
   String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
 
+  // Story Notes (MT-254): the parent-selected focus(es) this story was guided
+  // toward (comma-joined Big Feelings trigger values). Persisted so a re-opened
+  // guided story still offers the "Why this story? 💛" disclosure. Null for
+  // ordinary stories.
+  String? practiced;
+
   static StoryLocal fromJson(Map<String, dynamic> json) {
     return StoryLocal()
       ..storyId = json['id']?.toString() ?? json['storyId']?.toString() ?? ''
@@ -61,6 +67,7 @@ class StoryLocal {
       ..coverImageBase64 = json['coverImageBase64'] ?? json['cover_image_base64']
       ..pageIllustrationsJson =
           json['pageIllustrationsJson'] ?? json['page_illustrations_json']
+      ..practiced = json['practiced'] ?? json['practiced_focus']
       ..isSyncedToServer = true;
   }
 
@@ -96,6 +103,7 @@ class StoryLocal {
         'characters': _decodeCharacters().map((c) => c.toJson()).toList(),
         'coverImageBase64': coverImageBase64,
         'pageIllustrationsJson': pageIllustrationsJson,
+        'practiced': practiced,
       };
 
   @ignore

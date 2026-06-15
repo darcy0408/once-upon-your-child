@@ -30,6 +30,12 @@ class StoryGenerationResult {
   /// recents lists so the backend can avoid repeats on the next story.
   final Map<String, dynamic>? superheroMeta;
 
+  /// Story Notes (MT-254): the parent-selected focus this story was guided
+  /// toward (a Big Feelings trigger value, e.g. `'a limit is set'`). Null when
+  /// the story carried no hidden parent context — the client then offers no
+  /// "Why this story? 💛" disclosure.
+  final String? practiced;
+
   const StoryGenerationResult({
     required this.storyText,
     this.title,
@@ -40,6 +46,7 @@ class StoryGenerationResult {
     this.pages = const [],
     this.adventureSteps = const [],
     this.superheroMeta,
+    this.practiced,
   });
 
   factory StoryGenerationResult.fromBackend(Map<String, dynamic> json) {
@@ -67,6 +74,12 @@ class StoryGenerationResult {
     final Map<String, dynamic>? superheroMeta =
         rawMeta is Map<String, dynamic> ? rawMeta : null;
 
+    final dynamic rawPracticed = storyData['practiced'] ?? json['practiced'];
+    final String? practiced =
+        (rawPracticed is String && rawPracticed.trim().isNotEmpty)
+            ? rawPracticed.trim()
+            : null;
+
     return StoryGenerationResult(
       storyText: storyText,
       title: (storyData['title'] ?? json['title']) as String?,
@@ -77,6 +90,7 @@ class StoryGenerationResult {
       pages: rawPages,
       adventureSteps: rawSteps,
       superheroMeta: superheroMeta,
+      practiced: practiced,
     );
   }
 }

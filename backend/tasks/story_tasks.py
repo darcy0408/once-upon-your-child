@@ -2236,6 +2236,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 "story_duration": story_duration,
                 "adventure_report": post_story.get("adventure_report", {}),
             }
+            # Story Notes (MT-254): echo the parent-selected focus this story was
+            # guided toward, so the client can offer the age-gated "Why this
+            # story? 💛" disclosure. Only present for Big Feelings stories that
+            # carried a hidden parent context; absent otherwise.
+            _practiced_focus = kwargs.get("practiced_focus")
+            if _practiced_focus:
+                story_payload["practiced"] = _practiced_focus
             if superhero_meta is not None:
                 # Frontend uses these IDs to track recent_villains/recent_problems
                 # and avoid back-to-back duplicates on the next /generate-story call.

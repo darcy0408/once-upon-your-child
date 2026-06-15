@@ -1040,6 +1040,11 @@ class _StoryScreenState extends State<StoryScreen> {
           storyId: story.identifier,
           persistedCoverImageBase64: story.coverImageBase64,
           persistedPageIllustrationsJson: story.pageIllustrationsJson,
+          practicedFocus: story.practiced,
+          // Disclose at the band of the child this story was written for, even
+          // if a different profile is active now.
+          practicedAge:
+              story.characters.isNotEmpty ? story.characters.first.age : null,
         ),
       ),
     ).then((_) => _loadSavedStories());

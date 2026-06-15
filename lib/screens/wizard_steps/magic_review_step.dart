@@ -849,7 +849,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   customElements:
                       requestData['customElements']?.toString() ?? '',
                   wizardData: widget.wizardData,
-                  sagaNextHook: sagaNextHook)));
+                  sagaNextHook: sagaNextHook,
+                  practicedFocus: result.practiced)));
           if (mounted) {
             setState(() => _isGenerating = false);
           }

@@ -1,5 +1,38 @@
 # Hidden Parent Layer and Shared Emotion Engine Spec
 
+> **ADDENDUM — MT-254 (2026-06-14): age-gated transparency reverses `child_visibility: hidden` for older bands.**
+>
+> The original spec below mandates that parent context is fully hidden from the
+> child (`child_visibility: "hidden"`, "Do not expose parent-entered context to
+> the child"). That remains true for the *raw configuration* — a child never
+> sees the parent's trigger/coping/repair selections or the setup screen. But
+> hiding the *fact that a story was guided* is itself the ethical problem this
+> product is trying not to have: persuasion concealed inside a story a child
+> trusts. So this addendum overrides the visibility rule as follows.
+>
+> **What changed:** after a guided story, the child is offered an optional,
+> age-appropriate disclosure ("Story Notes" — the quiet "Why this story? 💛"
+> button) naming what the story practiced. Directness scales with band:
+>
+> - **Sprout 3-5** — relational only ("a grown-up who loves you picked this 💛"); no lesson named (a 3-5yo can't process persuasion).
+> - **Explorer 6-8** — names the skill gently + a co-read question.
+> - **Adventurer 9-12** — direct, but agency-preserving ("the choices were really yours").
+> - **Creator / Adolescent / Adult 13+** — full transparency, respects autonomy.
+>
+> **What did NOT change:** the raw parent config stays private (the child never
+> sees the settings screen or the verbatim selections); the disclosure names the
+> *skill*, not the parent's notes. Disclosure lives at the *edge* of the story
+> (a separate screen), never inside it, so engagement is preserved.
+>
+> **Pull, not push:** the child reveal is opt-in (a button), so it never nags.
+> Disclosure to the trusted adult is instead *guaranteed* via a parent-side
+> "what each story practiced" view. Implementation: `lib/models/story_notes.dart`
+> (directness ladder), `lib/screens/story_notes_screen.dart` (reveal + button),
+> backend `practiced` field on the story-gen response. The `child_visibility`
+> field in the schema below should now be read as
+> `"age_gated_disclosure"` for the disclosure layer, while the stored config
+> retains `"hidden"`.
+
 ## Purpose
 
 Define a hidden parent-controlled layer for one story theme that helps children:
