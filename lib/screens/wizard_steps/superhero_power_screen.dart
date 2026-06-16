@@ -237,7 +237,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
       'Borrowed Time',
       'Buy back a few seconds — at a cost.',
     ),
-    'flying': _BandCopy('Ghost', 'Move unseen. Easy to vanish for real.'),
+    'flying': _BandCopy(
+      'Ghost',
+      'Move unseen and unheard — the better you hide, the more alone you are.',
+    ),
     'super_strength': _BandCopy('Nerve', 'Hold the line when others fold.'),
     'super_hearing': _BandCopy(
       'Read the Room',
