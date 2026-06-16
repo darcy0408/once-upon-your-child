@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-16 | 15:19 | 41fd | main | Robin cross = intentional memorial; MT-264 reclassified wontfix | [link](docs/sessions/2026-06-16-1519-41fd.md) |
 | 2026-06-15 | 22:10 | 3799 | main | MT-254 dup-build (#282) closed redundant; verified shipped #279/#286 | [link](docs/sessions/2026-06-15-2210-3799.md) |
 | 2026-06-15 | 17:37 | b3be | main | Resolved MT-254 dup-build, drove #279 to merge, +MT-260 harness | [link](docs/sessions/2026-06-15-1737-b3be.md) |
 | 2026-06-15 | 15:01 | 0447 | session/u13gate | Under-13 ElevenLabs gate + Azure-accurate disclosure salvaged → #281 merged; closed #275 (MT-261) | [link](docs/sessions/2026-06-15-1501-0447.md) |
