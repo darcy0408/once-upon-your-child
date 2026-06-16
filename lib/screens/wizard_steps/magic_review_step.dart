@@ -209,9 +209,13 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       final scenario =
           ScenarioData.getById(widget.wizardData.selectedScenario!);
       if (scenario != null) {
-        return scenario.illustration.startsWith('assets/')
-            ? scenario.illustration
-            : 'assets/${scenario.illustration}';
+        // MT-262: serve the age-appropriate illustration, not the shared-root
+        // (babyish) art. illustrationForAge returns an already-prefixed
+        // scenes/<band>/ path for Explorer+/Adventurer+, or the bare
+        // illustration/sproutIllustration which still needs the assets/ prefix.
+        final path =
+            scenario.illustrationForAge(widget.wizardData.characterAge);
+        return path.startsWith('assets/') ? path : 'assets/$path';
       }
     }
     return 'assets/images/scenarios/magic_door.webp';
@@ -2165,7 +2169,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   MagicOrbWidget(
                     imagePath: _scenarioImage,
                     size: orbSize * 0.95,
-                    glowColor: AppColors.gold,
+                    glowColor: band.accent, // MT-262: was hardcoded gold
                     topLabel: _scenarioLabel,
                     label: data.characterName.isNotEmpty
                         ? data.characterName
