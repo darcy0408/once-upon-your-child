@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
@@ -2949,6 +2950,29 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  // MT-267: Sprout (3-5) pre-readers can't type, and web mic STT often fails
+  // silently — so an empty-name hard gate stranded them on page 1 behind a red
+  // error they couldn't read. A friendly, gender-neutral "Surprise me!" name
+  // gives a tap-only path that guarantees the child is never stuck.
+  static const List<String> _surpriseHeroNames = [
+    'Pip', 'Juno', 'Milo', 'Luna', 'Finn', 'Nova', 'Remy', 'Sunny',
+    'Bo', 'Kit', 'Ivy', 'Max', 'Zara', 'Leo', 'Mika', 'Pax',
+  ];
+
+  void _pickSurpriseName() {
+    final current = widget.wizardData.characterName.trim();
+    // Don't hand back the same name twice in a row.
+    final pool = _surpriseHeroNames.where((n) => n != current).toList();
+    final name = pool[Random().nextInt(pool.length)];
+    setState(() {
+      _nameController.text = name;
+      widget.wizardData.characterName = name;
+    });
+    // Read it back so a pre-reader hears who their hero is.
+    _nameEchoTimer?.cancel();
+    AppTtsService.instance.speak(name, rateScale: 0.8);
+  }
+
   void _handleGenderSelection(String gender) {
     setState(() => widget.wizardData.characterGender = gender);
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -2958,6 +2982,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       // requires a non-empty name) and the bug looks like "the GO button
       // doesn't work." Gate the advance instead and prompt for a name.
       if (_heroPage == 1 && widget.wizardData.characterName.trim().isEmpty) {
+        final band = Theme.of(context).extension<AgeBandThemeData>();
+        // MT-267: a Sprout can't read the red error or use the text field, so
+        // never block them — give a friendly surprise name and continue. They
+        // can still mic/type/Surprise-me a different one. Older bands (who can
+        // read + type) keep the gentle prompt-to-name.
+        if (band?.band == AgeBand.sprout) {
+          _pickSurpriseName();
+          _heroNextPage();
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('What\'s your hero\'s name?'),
           backgroundColor: const Color(0xFFFF6B6B),
@@ -3058,6 +3092,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               color: isListening ? const Color(0xFFFFD700) : Colors.white70,
               fontSize: 15,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          // MT-267: tap-only "Surprise me!" so a pre-reader who can't type and
+          // can't get the mic to work is never stuck on page 1 without a name.
+          Semantics(
+            button: true,
+            label: 'Surprise me with a name',
+            child: GestureDetector(
+              onTap: _pickSurpriseName,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD54F).withAlpha(40),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFFFD54F),
+                    width: 2,
+                  ),
+                ),
+                child: Text(
+                  '🎲  Surprise me!',
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
