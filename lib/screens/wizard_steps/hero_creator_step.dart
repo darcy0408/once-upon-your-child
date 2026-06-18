@@ -341,10 +341,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         });
         _maybeAdvanceFromStylePage();
         _sparkleCtrl.forward(from: 0);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✨ Your avatar is ready!'),
-          backgroundColor: Color(0xFF4CAF50),
-          duration: Duration(seconds: 3),
+        // MT-276: the no-sparkle bands (Creator/Adolescent/Adult) shouldn't get
+        // the "✨ ... !" baby-talk toast — match the band's sparkle intensity.
+        final hasSparkle =
+            themeForAge(widget.wizardData.characterAge).sparkleIntensity > 0;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              hasSparkle ? '✨ Your avatar is ready!' : 'Your avatar is ready.'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 3),
         ));
       }
       state.consumeAvatar();
