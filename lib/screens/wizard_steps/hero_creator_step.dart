@@ -2924,29 +2924,93 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final gender = widget.wizardData.characterGender;
     final isAdult = ageBand == AgeBand.adult;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final isYoung =
+        ageBand == AgeBand.sprout || ageBand == AgeBand.explorer;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        GenderImageButton(
-          gender: 'Boy',
-          label: isAdult ? 'Man' : null,
-          assetPath: boyAsset,
-          isSelected: gender == 'Boy',
-          width: 140,
-          height: 180,
-          onTap: () => _handleGenderSelection('Boy'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GenderImageButton(
+              gender: 'Boy',
+              label: isAdult ? 'Man' : null,
+              assetPath: boyAsset,
+              isSelected: gender == 'Boy',
+              width: 140,
+              height: 180,
+              onTap: () => _handleGenderSelection('Boy'),
+            ),
+            SizedBox(width: band.space(32)),
+            GenderImageButton(
+              gender: 'Girl',
+              label: isAdult ? 'Woman' : null,
+              assetPath: girlAsset,
+              isSelected: gender == 'Girl',
+              width: 140,
+              height: 180,
+              onTap: () => _handleGenderSelection('Girl'),
+            ),
+          ],
         ),
-        SizedBox(width: band.space(32)),
-        GenderImageButton(
-          gender: 'Girl',
-          label: isAdult ? 'Woman' : null,
-          assetPath: girlAsset,
-          isSelected: gender == 'Girl',
-          width: 140,
-          height: 180,
-          onTap: () => _handleGenderSelection('Girl'),
-        ),
+        SizedBox(height: band.space(16)),
+        _buildNeutralGenderOption(band, isYoung, gender == 'Nonbinary'),
       ],
+    );
+  }
+
+  // MT-265: a non-binary escape hatch on the image picker so the wizard is no
+  // longer a hard Boy/Girl gate. Young bands (Sprout/Explorer) get a playful
+  // "Surprise me!" that randomizes + auto-advances (and doubles as a skip for
+  // pre-readers who don't think in gender terms); older bands get a deliberate
+  // "They" pill storing the canonical 'Nonbinary' value, which already flows to
+  // they/them pronouns everywhere (wizard_data_mapper, main_story, scaffolds).
+  Widget _buildNeutralGenderOption(
+      AgeBandThemeData band, bool isYoung, bool isSelected) {
+    final label = isYoung ? '✨ Surprise me!' : 'They';
+    final textStyle = isYoung
+        ? GoogleFonts.fredoka(
+            color: isSelected ? band.accent : Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          )
+        : GoogleFonts.sourceSans3(
+            color: isSelected ? band.accent : Colors.white70,
+            fontSize: 15,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+            letterSpacing: 1.0,
+          );
+    return Semantics(
+      button: true,
+      label: isYoung ? 'Surprise me' : 'They',
+      child: GestureDetector(
+        onTap: () {
+          if (isYoung) {
+            // True surprise: pick any of the three so neutral is a real outcome.
+            const opts = ['Boy', 'Girl', 'Nonbinary'];
+            _handleGenderSelection(opts[Random().nextInt(opts.length)]);
+          } else {
+            _handleGenderSelection('Nonbinary');
+          }
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: band.space(28),
+            vertical: band.space(12),
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? band.accent.withAlpha(50)
+                : Colors.white.withAlpha(15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSelected ? band.accent : Colors.white.withAlpha(60),
+              width: isSelected ? 2 : 1.5,
+            ),
+          ),
+          child: Text(label, style: textStyle),
+        ),
+      ),
     );
   }
 

@@ -302,7 +302,44 @@ class CreativeBriefWidget extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        // MT-265: neutral "They" option alongside the gendered art, matching
+        // the adolescent He/She/They selector. Stores the canonical 'Nonbinary'
+        // value (-> they/them pronouns via wizard_data_mapper).
+        Center(child: _buildBriefNeutralPill(band, gender == 'Nonbinary')),
       ],
+    );
+  }
+
+  Widget _buildBriefNeutralPill(AgeBandThemeData band, bool isSelected) {
+    final accent = band.accent;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        wizardData.characterGender = 'Nonbinary';
+        onChanged();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? accent.withAlpha(40) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? accent : Colors.white.withAlpha(60),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          'They',
+          style: GoogleFonts.sourceSans3(
+            color: isSelected ? accent : Colors.white70,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+            letterSpacing: 1.0,
+          ),
+        ),
+      ),
     );
   }
 
