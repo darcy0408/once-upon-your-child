@@ -2028,6 +2028,20 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
                     f"AFTERMATH, show whether this chapter eased that debt or deepened it."
                 )
 
+        # When the secret is about the teen's own wellbeing/struggle, bend the arc
+        # toward being seen and supported — never romanticize distress or isolation.
+        # Fires whenever a secret is set; the model judges whether it applies.
+        secret_care_mandate = (
+            f"\n- If {character}'s secret is about their own wellbeing or struggle, "
+            f"the chapter must move them at least one step toward being SEEN by "
+            f"someone who responds with care (not pity, not fixing), and the "
+            f"AFTERMATH must leave a thread of connection or hope alongside the "
+            f"unresolved case. Distress is never aesthetic; isolation is never the "
+            f"resolution."
+            if secret
+            else ""
+        )
+
         return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
 
 You are writing one self-contained chapter of an ongoing antihero saga for a sharp {age}-year-old reader. Register: grounded, atmospheric, morally grey — prestige YA / neo-noir. The protagonist is NOT a caped hero; they are an ordinary teenager carrying a power, a secret, or an edge that no one around them knows about. Write UP. This reader is allergic to anything written for children.
@@ -2037,7 +2051,7 @@ THE PREMISE — A DOUBLE LIFE:
 - The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}{secret_bullet}
 - Look: nothing flashy — {color} everyday clothes, maybe a small {emblem} they keep on them; the point is to blend in, not stand out.
 - The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{tell_fragment}
-- {personal_line_sentence}{continuity_block}
+- {personal_line_sentence}{secret_care_mandate}{continuity_block}
 
 THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
 - Name: {villain['name']} (use it in the prose).
