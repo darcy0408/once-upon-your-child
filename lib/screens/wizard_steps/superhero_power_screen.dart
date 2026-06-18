@@ -49,10 +49,12 @@ class SuperheroPowerScreen extends ConsumerStatefulWidget {
 }
 
 class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
-  // Noir reskin: Adolescent uses the band's teal accent; others keep gold.
-  Color get _gold => widget.band == AgeBand.adolescent
-      ? const Color(0xFF00BCD4)
-      : const Color(0xFFFFD700);
+  // Noir reskin: Adolescent (teal) and Creator (purple) use the band accent;
+  // the gold-themed younger bands (Explorer/Adventurer) keep gold. (MT-273)
+  Color get _gold =>
+      (widget.band == AgeBand.adolescent || widget.band == AgeBand.creator)
+          ? themeForBand(widget.band).accent
+          : const Color(0xFFFFD700);
 
   // Sprout power set — preserved exactly. Explorer reuses these 8 IDs but
   // overrides the display labels (see `_explorerNameOverrides`).
@@ -547,7 +549,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const _ProgressDots(currentPage: 2, total: 3),
+              _ProgressDots(currentPage: 2, total: 3, color: _gold),
               const SizedBox(height: 6),
               Expanded(
                 child: SingleChildScrollView(
@@ -737,8 +739,13 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
 class _ProgressDots extends StatelessWidget {
   final int currentPage;
   final int total;
+  final Color color;
 
-  const _ProgressDots({required this.currentPage, required this.total});
+  const _ProgressDots({
+    required this.currentPage,
+    required this.total,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -756,9 +763,7 @@ class _ProgressDots extends StatelessWidget {
               height: filled ? 14 : 10,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: filled
-                    ? const Color(0xFFFFD700)
-                    : Colors.white.withAlpha(80),
+                color: filled ? color : Colors.white.withAlpha(80),
               ),
             ),
           );

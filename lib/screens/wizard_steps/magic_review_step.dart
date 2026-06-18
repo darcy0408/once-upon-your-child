@@ -2199,7 +2199,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         data.characterName,
                         style: (band.band.isMature)
                             ? GoogleFonts.sourceSans3(
-                                color: const Color(0xFFFFD700),
+                                color: band.accent, // MT-273: was gold
                                 fontSize: band.heading(16),
                                 fontWeight: FontWeight.bold,
                               )

@@ -40,11 +40,12 @@ class SuperheroCostumeScreen extends StatefulWidget {
 }
 
 class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
-  // Noir reskin: Adolescent's "double life" flow uses the band's teal accent;
-  // younger bands and Creator keep the established gold.
-  Color get _gold => widget.band == AgeBand.adolescent
-      ? const Color(0xFF00BCD4)
-      : const Color(0xFFFFD700);
+  // Noir reskin: Adolescent (teal) and Creator (purple) use the band accent;
+  // the gold-themed younger bands keep the established gold. (MT-273)
+  Color get _gold =>
+      (widget.band == AgeBand.adolescent || widget.band == AgeBand.creator)
+          ? themeForBand(widget.band).accent
+          : const Color(0xFFFFD700);
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -263,7 +264,10 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              _ProgressDots(currentPage: _currentPage, total: _pages.length),
+              _ProgressDots(
+                  currentPage: _currentPage,
+                  total: _pages.length,
+                  color: _gold),
               const SizedBox(height: 10),
               // One-tap "build me a random hero" — high-replayability shortcut.
               Semantics(
@@ -850,8 +854,13 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 class _ProgressDots extends StatelessWidget {
   final int currentPage;
   final int total;
+  final Color color;
 
-  const _ProgressDots({required this.currentPage, required this.total});
+  const _ProgressDots({
+    required this.currentPage,
+    required this.total,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -869,9 +878,7 @@ class _ProgressDots extends StatelessWidget {
               height: filled ? 14 : 10,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: filled
-                    ? const Color(0xFFFFD700)
-                    : Colors.white.withAlpha(80),
+                color: filled ? color : Colors.white.withAlpha(80),
               ),
             ),
           );
