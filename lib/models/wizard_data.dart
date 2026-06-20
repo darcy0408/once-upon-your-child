@@ -99,6 +99,9 @@ class WizardData {
                             // Backend key: hero_secret.
   String? heroTell;         // how they give themselves away. Backend key: hero_tell.
   String? heroLine;         // the line they won't cross. Backend key: hero_line.
+  String? heroSeenBy;       // who gets to see the real them — the authenticity
+                            // counterweight to the concealment fields above.
+                            // Backend key: hero_seen_by.
   String? heroPortraitUrl;  // data URI of the AI superhero portrait built from the
                             // child's avatar (Explorer/Adventurer). Null until the
                             // reveal screen generates it; best-effort, never required.
@@ -167,6 +170,7 @@ class WizardData {
     c.heroSecret = heroSecret;
     c.heroTell = heroTell;
     c.heroLine = heroLine;
+    c.heroSeenBy = heroSeenBy;
     c.heroPortraitUrl = heroPortraitUrl;
     c.heroNemesisId = heroNemesisId;
     c.characterDesire = characterDesire;
@@ -255,6 +259,7 @@ class WizardData {
       'hero_secret': heroSecret,
       'hero_tell': heroTell,
       'hero_line': heroLine,
+      'hero_seen_by': heroSeenBy,
       'hero_nemesis_id': heroNemesisId,
       'characterDesire': characterDesire,
     };
@@ -342,6 +347,7 @@ class WizardData {
     d.heroSecret = (json['hero_secret'] ?? json['heroSecret']) as String?;
     d.heroTell = (json['hero_tell'] ?? json['heroTell']) as String?;
     d.heroLine = (json['hero_line'] ?? json['heroLine']) as String?;
+    d.heroSeenBy = (json['hero_seen_by'] ?? json['heroSeenBy']) as String?;
     d.heroNemesisId =
         (json['hero_nemesis_id'] ?? json['heroNemesisId']) as String?;
     d.characterDesire = json['characterDesire'] as String?;

@@ -56,6 +56,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   final TextEditingController _secretController = TextEditingController();
   final TextEditingController _tellController = TextEditingController();
   final TextEditingController _lineController = TextEditingController();
+  final TextEditingController _seenByController = TextEditingController();
 
   static const _colors = <_ColorOption>[
     _ColorOption(id: 'red', label: 'Red', color: Color(0xFFE53935)),
@@ -122,6 +123,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _secretController.dispose();
     _tellController.dispose();
     _lineController.dispose();
+    _seenByController.dispose();
     super.dispose();
   }
 
@@ -192,6 +194,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
             _secretChips[rng.nextInt(_secretChips.length)];
         widget.wizardData.heroTell = _tellChips[rng.nextInt(_tellChips.length)];
         widget.wizardData.heroLine = _lineChips[rng.nextInt(_lineChips.length)];
+        widget.wizardData.heroSeenBy =
+            _seenByChips[rng.nextInt(_seenByChips.length)];
       }
       widget.wizardData.heroEmblem = emblem.id;
     });
@@ -641,10 +645,14 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   // ── Page 3 (Adolescent only): identity / double life ───────────────────────
   //
-  // Replaces the cape page for the noir band. Three optional prompts that let a
+  // Replaces the cape page for the noir band. Four optional prompts that let a
   // teen define the texture of their double life. Each writes to a nullable
-  // WizardData field (heroSecret / heroTell / heroLine); all three may stay
-  // blank — Continue is always enabled and the backend falls back gracefully.
+  // WizardData field (heroSecret / heroTell / heroLine / heroSeenBy); all four
+  // may stay blank — Continue is always enabled and the backend falls back
+  // gracefully. The fourth ("who sees the real you") is the authenticity
+  // counterweight to the three concealment prompts: it gives the story a person
+  // to move toward, so a secret like "That I'm not okay" bends toward being
+  // seen, never deeper hiding (MT-266).
 
   // Preset chips per prompt. Tone is grounded prestige-YA, not cutesy.
   static const _secretChips = <String>[
@@ -668,6 +676,13 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     'Never use it on someone weaker',
     "No deal I can't undo",
   ];
+  static const _seenByChips = <String>[
+    'One friend who knows everything',
+    "A sibling who'd never tell",
+    "Someone I haven't told yet",
+    "The person I'm scared to lose",
+    'No one — not yet',
+  ];
 
   Widget _buildIdentityPage() {
     return SingleChildScrollView(
@@ -678,7 +693,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           _pageHeader(
             '🎭',
             'Your double life',
-            'Three things that make this real. All optional.',
+            'Four things that make this real. All optional.',
           ),
           const SizedBox(height: 24),
           _identitySection(
@@ -706,6 +721,15 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
             current: widget.wizardData.heroLine,
             hint: 'Or write your own…',
             onSelected: (value) => widget.wizardData.heroLine = value,
+          ),
+          const SizedBox(height: 28),
+          _identitySection(
+            header: 'Who gets to see the real you?',
+            chips: _seenByChips,
+            controller: _seenByController,
+            current: widget.wizardData.heroSeenBy,
+            hint: 'Or write your own…',
+            onSelected: (value) => widget.wizardData.heroSeenBy = value,
           ),
           const SizedBox(height: 32),
           SizedBox(

@@ -235,4 +235,40 @@ void main() {
       expect(WizardData().toJson()['hero_nemesis_id'], isNull);
     });
   });
+
+  group('WizardData heroSeenBy (MT-266 authenticity field)', () {
+    test('toJson emits snake_case hero_seen_by', () {
+      final d = WizardData()..heroSeenBy = 'my sister who never tells';
+      expect(d.toJson()['hero_seen_by'], 'my sister who never tells');
+    });
+
+    test('fromJson restores hero_seen_by (snake_case)', () {
+      final d = WizardData.fromJson({'hero_seen_by': 'one friend who knows'});
+      expect(d.heroSeenBy, 'one friend who knows');
+    });
+
+    test('fromJson falls back to legacy camelCase heroSeenBy', () {
+      final d = WizardData.fromJson({'heroSeenBy': 'no one — not yet'});
+      expect(d.heroSeenBy, 'no one — not yet');
+    });
+
+    test('toJson then fromJson round-trips heroSeenBy', () {
+      final original = WizardData()..heroSeenBy = 'the person I trust';
+      final restored = WizardData.fromJson(original.toJson());
+      expect(restored.heroSeenBy, 'the person I trust');
+    });
+
+    test('clone() preserves heroSeenBy and is independent', () {
+      final original = WizardData()..heroSeenBy = 'my best friend';
+      final copy = original.clone();
+      expect(copy.heroSeenBy, 'my best friend');
+      copy.heroSeenBy = 'someone else';
+      expect(original.heroSeenBy, 'my best friend');
+    });
+
+    test('heroSeenBy defaults to null (optional, blank = unchanged behavior)', () {
+      expect(WizardData().heroSeenBy, isNull);
+      expect(WizardData().toJson()['hero_seen_by'], isNull);
+    });
+  });
 }

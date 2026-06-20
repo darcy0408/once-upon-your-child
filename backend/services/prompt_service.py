@@ -40,6 +40,7 @@ class _AntiheroBrief:
     secret_bullet: str
     tell_fragment: str
     personal_line_sentence: str
+    seen_by_bullet: str
     continuity_block: str
     custom_request_block: str
     issue_number: int
@@ -68,6 +69,7 @@ class PromptService:
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
+        hero_seen_by: str | None = None,
         superhero_villain_id: str | None = None,
         superhero_problem_id: str | None = None,
         custom_elements: str = "",
@@ -149,6 +151,7 @@ class PromptService:
                     hero_secret=hero_secret,
                     hero_tell=hero_tell,
                     hero_line=hero_line,
+                    hero_seen_by=hero_seen_by,
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
@@ -1419,6 +1422,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
+        hero_seen_by: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> "_AntiheroBrief":
@@ -1464,6 +1468,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
         secret = (hero_secret or "").strip()
         tell = (hero_tell or "").strip()
         line = (hero_line or "").strip()
+        seen_by = (hero_seen_by or "").strip()
 
         # hero_line: concrete personal-line sentence when set, else generic.
         personal_line_sentence = (
@@ -1476,10 +1481,14 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             )
         )
 
-        # hero_secret: extra premise bullet when set, else omitted.
+        # hero_secret: extra premise bullet when set, else omitted. MT-266: the
+        # secret may be a distress disclosure ("That I'm not okay"), so the
+        # pressure must crack toward being KNOWN, never toward deeper hiding —
+        # the chapter never romanticizes vanishing or concealment as a solution.
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
-            f'"{secret}". The concealment is the wound; let the story press on it.'
+            f'"{secret}". The concealment is the wound — let the pressure crack '
+            f"toward being known, never toward deeper hiding."
             if secret
             else ""
         )
@@ -1489,6 +1498,21 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             f' {character}\'s tell — how they slip when it gets close: "{tell}".'
             if tell
             else ""
+        )
+
+        # hero_seen_by: MT-266 authenticity counterweight to the concealment
+        # fields. Gives the chapter a person to move toward; when blank, a gentle
+        # generic anchor so the arc still bends toward connection, not isolation.
+        seen_by_bullet = (
+            f"\n- The one person {character} could let see the real them: "
+            f'"{seen_by}". Move a step toward being known by them this chapter — '
+            f"earned, not tidy; a crack of honesty, not a neat resolution."
+            if seen_by
+            else (
+                f"\n- Somewhere in {character}'s life is one person who could see "
+                f"the real them. Let the chapter lean, even slightly, toward being "
+                f"known rather than further hidden."
+            )
         )
 
         canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
@@ -1590,6 +1614,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             secret_bullet=secret_bullet,
             tell_fragment=tell_fragment,
             personal_line_sentence=personal_line_sentence,
+            seen_by_bullet=seen_by_bullet,
             continuity_block=continuity_block,
             custom_request_block=custom_request_block,
             issue_number=issue_number,
@@ -1612,7 +1637,7 @@ THE PREMISE — A DOUBLE LIFE:
 - The secret / edge: "{b.alias}" — {b.power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{b.catchphrase_identity_line}{b.secret_bullet}
 - Look: nothing flashy — {b.color} everyday clothes, maybe a small {b.emblem} they keep on them; the point is to blend in, not stand out.
 - The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{b.tell_fragment}
-- {b.personal_line_sentence}{b.continuity_block}
+- {b.personal_line_sentence}{b.seen_by_bullet}{b.continuity_block}
 
 THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {b.canonical_villain_names}. For this chapter it is {b.villain['name']}.
 - Name: {b.villain['name']} (use it in the prose).
@@ -1659,6 +1684,7 @@ THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.probl
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
+        hero_seen_by: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> str:
@@ -1682,6 +1708,7 @@ THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.probl
             hero_secret=hero_secret,
             hero_tell=hero_tell,
             hero_line=hero_line,
+            hero_seen_by=hero_seen_by,
             custom_elements=custom_elements,
             prior_saga=prior_saga,
         )
@@ -1747,6 +1774,7 @@ Begin now. Write Beats 1-4 plus the crux setup of a tight, morally grey chapter;
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
+        hero_seen_by: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> str:
@@ -1771,6 +1799,7 @@ Begin now. Write Beats 1-4 plus the crux setup of a tight, morally grey chapter;
             hero_secret=hero_secret,
             hero_tell=hero_tell,
             hero_line=hero_line,
+            hero_seen_by=hero_seen_by,
             custom_elements=custom_elements,
             prior_saga=prior_saga,
         )
@@ -1853,6 +1882,7 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
+        hero_seen_by: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> str:
@@ -1904,6 +1934,7 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         secret = (hero_secret or "").strip()
         tell = (hero_tell or "").strip()
         line = (hero_line or "").strip()
+        seen_by = (hero_seen_by or "").strip()
 
         # hero_line: concrete personal-line sentence when set, else generic.
         personal_line_sentence = (
@@ -1916,10 +1947,14 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
             )
         )
 
-        # hero_secret: extra premise bullet when set, else omitted.
+        # hero_secret: extra premise bullet when set, else omitted. MT-266: the
+        # secret may be a distress disclosure ("That I'm not okay"), so the
+        # pressure must crack toward being KNOWN, never toward deeper hiding —
+        # the chapter never romanticizes vanishing or concealment as a solution.
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
-            f'"{secret}". The concealment is the wound; let the story press on it.'
+            f'"{secret}". The concealment is the wound — let the pressure crack '
+            f"toward being known, never toward deeper hiding."
             if secret
             else ""
         )
@@ -1929,6 +1964,21 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
             f' {character}\'s tell — how they slip when it gets close: "{tell}".'
             if tell
             else ""
+        )
+
+        # hero_seen_by: MT-266 authenticity counterweight to the concealment
+        # fields. Gives the chapter a person to move toward; when blank, a gentle
+        # generic anchor so the arc still bends toward connection, not isolation.
+        seen_by_bullet = (
+            f"\n- The one person {character} could let see the real them: "
+            f'"{seen_by}". Move a step toward being known by them this chapter — '
+            f"earned, not tidy; a crack of honesty, not a neat resolution."
+            if seen_by
+            else (
+                f"\n- Somewhere in {character}'s life is one person who could see "
+                f"the real them. Let the chapter lean, even slightly, toward being "
+                f"known rather than further hidden."
+            )
         )
 
         canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
@@ -2051,7 +2101,7 @@ THE PREMISE — A DOUBLE LIFE:
 - The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}{secret_bullet}
 - Look: nothing flashy — {color} everyday clothes, maybe a small {emblem} they keep on them; the point is to blend in, not stand out.
 - The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{tell_fragment}
-- {personal_line_sentence}{secret_care_mandate}{continuity_block}
+- {personal_line_sentence}{seen_by_bullet}{secret_care_mandate}{continuity_block}
 
 THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
 - Name: {villain['name']} (use it in the prose).

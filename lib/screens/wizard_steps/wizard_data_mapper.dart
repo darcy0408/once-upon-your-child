@@ -393,6 +393,9 @@ class WizardDataMapper {
         if (data.heroLine != null && data.heroLine!.trim().isNotEmpty)
           'heroLine':
               InputSanitizer.sanitizeText(data.heroLine!, maxLength: 120),
+        if (data.heroSeenBy != null && data.heroSeenBy!.trim().isNotEmpty)
+          'heroSeenBy':
+              InputSanitizer.sanitizeText(data.heroSeenBy!, maxLength: 120),
         // C4 nemesis — optional; only emitted when the kid chose an arch-villain
         // (null = server surprise-picks).
         if (data.heroNemesisId != null &&

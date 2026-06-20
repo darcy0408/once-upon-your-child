@@ -606,6 +606,7 @@ def _build_antihero_task_kwargs(payload: dict, user, resolved_age: int) -> dict:
         "hero_secret": payload.get("hero_secret"),
         "hero_tell": payload.get("hero_tell"),
         "hero_line": payload.get("hero_line"),
+        "hero_seen_by": payload.get("hero_seen_by"),
         "custom_elements": payload.get("customElements", "")
         or payload.get("custom_elements", "")
         or "",
@@ -837,6 +838,7 @@ def create_story_blueprint(
             "hero_secret": payload.get("hero_secret"),
             "hero_tell": payload.get("hero_tell"),
             "hero_line": payload.get("hero_line"),
+            "hero_seen_by": payload.get("hero_seen_by"),
             "hero_nemesis_id": payload.get("hero_nemesis_id"),
             "recent_villains": payload.get("recent_villains") or [],
             "recent_problems": payload.get("recent_problems") or [],
@@ -1103,6 +1105,7 @@ def create_story_blueprint(
                 hero_secret=kw.get("hero_secret"),
                 hero_tell=kw.get("hero_tell"),
                 hero_line=kw.get("hero_line"),
+                hero_seen_by=kw.get("hero_seen_by"),
                 custom_elements=kw.get("custom_elements", ""),
                 prior_saga=kw.get("prior_saga"),
             )
@@ -1147,6 +1150,7 @@ def create_story_blueprint(
             "hero_secret": kw.get("hero_secret"),
             "hero_tell": kw.get("hero_tell"),
             "hero_line": kw.get("hero_line"),
+            "hero_seen_by": kw.get("hero_seen_by"),
             "custom_elements": kw.get("custom_elements", ""),
             "prior_saga": kw.get("prior_saga"),
             "villain_id": part1["villain_id"],
@@ -1284,6 +1288,7 @@ def create_story_blueprint(
                 hero_secret=ctx.get("hero_secret"),
                 hero_tell=ctx.get("hero_tell"),
                 hero_line=ctx.get("hero_line"),
+                hero_seen_by=ctx.get("hero_seen_by"),
                 custom_elements=ctx.get("custom_elements", ""),
                 prior_saga=ctx.get("prior_saga"),
                 villain_id=ctx.get("villain_id"),

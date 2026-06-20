@@ -585,6 +585,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             heroSecret: requestData['heroSecret']?.toString(),
             heroTell: requestData['heroTell']?.toString(),
             heroLine: requestData['heroLine']?.toString(),
+            heroSeenBy: requestData['heroSeenBy']?.toString(),
             heroNemesisId: requestData['heroNemesisId']?.toString(),
             recentVillains: recentVillains,
             recentProblems: recentProblems,

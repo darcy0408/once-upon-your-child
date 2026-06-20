@@ -332,6 +332,24 @@ def test_adolescent_prompt_injects_identity_fields_when_provided():
     assert "how they slip when it gets close" in prompt
 
 
+def test_adolescent_secret_care_mandate_and_seen_by_coexist():
+    # MT-266 reconciliation (a784): the wellbeing secret-care mandate (ff751112)
+    # and the #292 seen_by bullet + softened secret framing must BOTH render on
+    # the same chapter prompt — they are complementary, not either/or.
+    prompt = _build(
+        hero_secret="That I'm not okay",
+        hero_seen_by="her best friend Dani",
+    )
+    # #292 (b): concrete person to move toward.
+    assert "her best friend Dani" in prompt
+    assert "could let see the real them" in prompt
+    # #292 (a): softened secret framing.
+    assert "crack toward being known, never toward deeper hiding" in prompt
+    # ff751112: wellbeing care mandate.
+    assert "move them at least one step toward being SEEN" in prompt
+    assert "isolation is never the" in prompt
+
+
 def test_adolescent_prompt_identity_fields_fall_back_when_omitted():
     prompt = _build()
     # Generic personal-line sentence is used when hero_line is blank.
@@ -347,6 +365,45 @@ def test_adolescent_prompt_identity_fields_blank_strings_fall_back():
     assert "refuse to do even when it would be easier" in prompt
     assert "hides from the people closest to them" not in prompt
     assert "how they slip when it gets close" not in prompt
+
+
+# --- hero_seen_by: authenticity counterweight + secret safety (MT-266) -------
+def test_adolescent_prompt_injects_seen_by_when_provided():
+    seen_by = "her little brother who never asks questions"
+    prompt = _build(hero_seen_by=seen_by)
+    # The user value appears verbatim as the "person to move toward".
+    assert seen_by in prompt
+    assert "could let see the real them" in prompt
+    assert "Move a step toward being known" in prompt
+
+
+def test_adolescent_prompt_seen_by_generic_anchor_when_blank():
+    # Even with no field, the arc must lean toward connection, not isolation.
+    prompt = _build()
+    assert "one person who could see" in prompt
+    assert "toward being known rather than further hidden" in prompt
+
+
+def test_adolescent_secret_bullet_bends_toward_being_known_not_hiding():
+    # MT-266 safety: a distress disclosure must crack toward being seen,
+    # never toward deeper hiding (the old "press on it" wording is gone).
+    prompt = _build(hero_secret="That I'm not okay")
+    assert "That I'm not okay" in prompt
+    assert "crack toward being known, never toward deeper hiding" in prompt
+    assert "let the story press on it" not in prompt
+
+
+def test_adolescent_seen_by_routes_through_build_story_prompt():
+    seen_by = "the friend who waits for her after practice"
+    prompt = PromptService.build_story_prompt(
+        character="Maya",
+        theme="superhero",
+        age=16,
+        hero_power="strategist",
+        hero_seen_by=seen_by,
+    )
+    assert "Adolescent band" in prompt
+    assert seen_by in prompt
 
 
 def test_adolescent_identity_fields_route_through_build_story_prompt():

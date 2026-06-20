@@ -1079,6 +1079,7 @@ def run_antihero_part1(**kwargs) -> dict:
         hero_secret=kwargs.get("hero_secret"),
         hero_tell=kwargs.get("hero_tell"),
         hero_line=kwargs.get("hero_line"),
+        hero_seen_by=kwargs.get("hero_seen_by"),
         custom_elements=kwargs.get("custom_elements", "") or "",
         prior_saga=kwargs.get("prior_saga"),
     )
@@ -1169,6 +1170,7 @@ def run_antihero_part2(**kwargs) -> dict:
         hero_secret=kwargs.get("hero_secret"),
         hero_tell=kwargs.get("hero_tell"),
         hero_line=kwargs.get("hero_line"),
+        hero_seen_by=kwargs.get("hero_seen_by"),
         custom_elements=kwargs.get("custom_elements", "") or "",
         prior_saga=kwargs.get("prior_saga"),
     )
@@ -1444,6 +1446,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     hero_secret=kwargs.get("hero_secret"),
                     hero_tell=kwargs.get("hero_tell"),
                     hero_line=kwargs.get("hero_line"),
+                    hero_seen_by=kwargs.get("hero_seen_by"),
                     superhero_villain_id=sh_villain_id,
                     superhero_problem_id=sh_problem_id,
                     # MT-227 follow-up: the kid's free-text "Imagine It" idea was

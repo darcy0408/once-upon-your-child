@@ -739,6 +739,7 @@ class ApiServiceManager {
     String? heroSecret,
     String? heroTell,
     String? heroLine,
+    String? heroSeenBy,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -847,6 +848,7 @@ class ApiServiceManager {
           heroSecret: heroSecret,
           heroTell: heroTell,
           heroLine: heroLine,
+          heroSeenBy: heroSeenBy,
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
@@ -1131,6 +1133,7 @@ class ApiServiceManager {
     String? heroSecret,
     String? heroTell,
     String? heroLine,
+    String? heroSeenBy,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -1190,6 +1193,7 @@ class ApiServiceManager {
           heroSecret: heroSecret,
           heroTell: heroTell,
           heroLine: heroLine,
+          heroSeenBy: heroSeenBy,
           heroNemesisId: heroNemesisId,
           recentVillains: recentVillains,
           recentProblems: recentProblems,
@@ -1276,6 +1280,7 @@ class ApiServiceManager {
     String? heroSecret,
     String? heroTell,
     String? heroLine,
+    String? heroSeenBy,
     String? heroNemesisId,
     List<String>? recentVillains,
     List<String>? recentProblems,
@@ -1353,6 +1358,9 @@ class ApiServiceManager {
       }
       if (heroLine != null && heroLine.trim().isNotEmpty) {
         body['hero_line'] = heroLine.trim();
+      }
+      if (heroSeenBy != null && heroSeenBy.trim().isNotEmpty) {
+        body['hero_seen_by'] = heroSeenBy.trim();
       }
       if (heroNemesisId != null && heroNemesisId.trim().isNotEmpty) {
         body['hero_nemesis_id'] = heroNemesisId.trim();
