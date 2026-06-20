@@ -8,6 +8,7 @@ import '../../character_traits_data.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/hero_creator/genre_chip.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
+import '../../widgets/hero_creator/scene_widgets.dart';
 import '../../widgets/safe_asset_image.dart';
 
 /// The Creative Brief form shown to mature-band users (creator / adolescent / adult)
@@ -633,6 +634,78 @@ class CreativeBriefWidget extends StatelessWidget {
         ScenarioData.all.where((s) => s.id != 'safe_space').toList();
     final isCustom = wizardData.selectedScenario == 'safe_space';
 
+    // MT-269: surface the band's bespoke editorial scene art + thematic
+    // questions inside the accordion's World step (previously bare ALL-CAPS
+    // ChoiceChips, so `scenarios/<band>/*.webp` and `creatorThematicQuestion`
+    // were unreachable). The accordion is mature-only; each mature band has a
+    // dedicated, textless `scenarios/<band>/` set authored for its age.
+    final sceneDir = switch (band.band) {
+      AgeBand.creator => 'creator',
+      AgeBand.adolescent => 'adolescent',
+      AgeBand.adult => 'adult',
+      _ => 'creator',
+    };
+    String artFor(String id) => 'assets/images/scenarios/$sceneDir/$id.webp';
+    String? questionFor(ScenarioCard s) => band.band == AgeBand.adult
+        ? s.adultThematicQuestion
+        : band.band == AgeBand.creator
+            ? s.creatorThematicQuestion
+            : null;
+    // Worlds with bespoke per-band art get the real render; the rest fall back
+    // to an accent-gradient tile (+ emoji + thematic question) so the grid is
+    // uniform and no world is dropped (MT-269). Keep in sync with the files
+    // under assets/images/scenarios/<band>/.
+    const artBackedIds = {
+      'vanishing_colors',
+      'crystal_cavern',
+      'volcano_dragons',
+      'big_feelings_quest',
+    };
+
+    final sceneTiles = <Widget>[
+      ...scenarios.map((s) {
+        final hasArt = artBackedIds.contains(s.id);
+        final art = artFor(s.id);
+        return SceneImageButton(
+          data: SceneButtonData(
+            id: s.id,
+            label: s.titleForBand(band.band),
+            normalAsset: art,
+            pressedAsset: art,
+            thematicQuestion: questionFor(s),
+            useAccentGradient: !hasArt,
+            emoji: s.emoji,
+          ),
+          isSelected: wizardData.selectedScenario == s.id,
+          showThematicQuestion: true,
+          accentColor: accent,
+          onTap: () {
+            wizardData.selectedScenario =
+                wizardData.selectedScenario == s.id ? null : s.id;
+            onChanged();
+          },
+        );
+      }),
+      // "My Own Idea" reuses the band's imagine_it art and opens the custom
+      // premise field below (selectedScenario == 'safe_space').
+      SceneImageButton(
+        data: SceneButtonData(
+          id: 'safe_space',
+          label: 'My Own Idea',
+          normalAsset: artFor('imagine_it'),
+          pressedAsset: artFor('imagine_it'),
+          thematicQuestion: 'Start from your own premise',
+        ),
+        isSelected: isCustom,
+        showThematicQuestion: true,
+        accentColor: accent,
+        onTap: () {
+          wizardData.selectedScenario = isCustom ? null : 'safe_space';
+          onChanged();
+        },
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -644,63 +717,14 @@ class CreativeBriefWidget extends StatelessWidget {
               fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ...scenarios.map((s) {
-              final isSelected = wizardData.selectedScenario == s.id;
-              return ChoiceChip(
-                label: Text(s.titleForBand(band.band).toUpperCase()),
-                selected: isSelected,
-                onSelected: (v) {
-                  wizardData.selectedScenario = v ? s.id : null;
-                  onChanged();
-                },
-                color: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return accent.withAlpha(40);
-                  }
-                  return const Color(0xFF1A0A2E);
-                }),
-                labelStyle: GoogleFonts.sourceSans3(
-                  color: isSelected ? accent : Colors.white70,
-                  fontSize: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                        color:
-                            isSelected ? accent : Colors.white.withAlpha(40))),
-              );
-            }),
-            ChoiceChip(
-              label: Text('✏️ MY OWN IDEA',
-                  style: GoogleFonts.sourceSans3(
-                    color: isCustom ? accent : Colors.white70,
-                    fontSize: 10,
-                  )),
-              selected: isCustom,
-              onSelected: (v) {
-                wizardData.selectedScenario = v ? 'safe_space' : null;
-                onChanged();
-              },
-              color: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return accent.withAlpha(40);
-                }
-                return const Color(0xFF1A0A2E);
-              }),
-              labelStyle: GoogleFonts.sourceSans3(
-                color: isCustom ? accent : Colors.white70,
-                fontSize: 10,
-              ),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(
-                      color: isCustom ? accent : Colors.white.withAlpha(40))),
-            ),
-          ],
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 360 / 220,
+          children: sceneTiles,
         ),
         if (isCustom) ...[
           const SizedBox(height: 16),

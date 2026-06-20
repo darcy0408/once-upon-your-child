@@ -236,6 +236,15 @@ class SceneButtonData {
   /// explains itself). Sourced from `ScenarioCard.descriptionForAge`.
   final String? description;
 
+  /// When true the tile renders an accent gradient (with [emoji], if given)
+  /// instead of loading [normalAsset] — used for worlds that have no bespoke
+  /// per-band art yet, so the grid stays uniform instead of showing a harsh
+  /// placeholder box (MT-269).
+  final bool useAccentGradient;
+
+  /// Large glyph centered in the gradient fallback tile.
+  final String? emoji;
+
   const SceneButtonData({
     required this.id,
     required this.label,
@@ -243,6 +252,8 @@ class SceneButtonData {
     required this.pressedAsset,
     this.thematicQuestion,
     this.description,
+    this.useAccentGradient = false,
+    this.emoji,
   });
 }
 
@@ -258,6 +269,11 @@ class SceneImageButton extends StatefulWidget {
   /// the Adventurer band so each world tile self-explains.
   final bool showDescription;
 
+  /// Selection accent (border / glow / check badge). Defaults to the legacy
+  /// gold; mature bands that intentionally dropped gold (Creator purple,
+  /// Adolescent teal — MT-273) pass `band.accent` instead.
+  final Color accentColor;
+
   const SceneImageButton({
     super.key,
     required this.data,
@@ -266,6 +282,7 @@ class SceneImageButton extends StatefulWidget {
     this.labelFontSize = 13.0,
     this.showThematicQuestion = false,
     this.showDescription = false,
+    this.accentColor = const Color(0xFFFFD700),
   });
 
   @override
@@ -305,14 +322,14 @@ class _SceneImageButtonState extends State<SceneImageButton> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: widget.isSelected
-                    ? const Color(0xFFFFD700)
+                    ? widget.accentColor
                     : Colors.transparent,
                 width: widget.isSelected ? 3 : 0,
               ),
               boxShadow: widget.isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFFFD700).withAlpha(120),
+                        color: widget.accentColor.withAlpha(120),
                         blurRadius: 16,
                         spreadRadius: 2,
                       )
@@ -325,19 +342,41 @@ class _SceneImageButtonState extends State<SceneImageButton> {
                 children: [
                   AspectRatio(
                     aspectRatio: 360 / 220,
-                    child: SafeAssetImage(
-                      asset,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: Container(
-                        color: const Color(0xFF3A1070),
-                        child: Center(
-                          child: Text(widget.data.label,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 14)),
-                        ),
-                      ),
-                    ),
+                    child: widget.data.useAccentGradient
+                        ? Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  widget.accentColor.withAlpha(90),
+                                  const Color(0xFF140A24),
+                                ],
+                              ),
+                            ),
+                            child: widget.data.emoji != null
+                                ? Center(
+                                    child: Text(
+                                      widget.data.emoji!,
+                                      style: const TextStyle(fontSize: 44),
+                                    ),
+                                  )
+                                : null,
+                          )
+                        : SafeAssetImage(
+                            asset,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            placeholder: Container(
+                              color: const Color(0xFF3A1070),
+                              child: Center(
+                                child: Text(widget.data.label,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 14)),
+                              ),
+                            ),
+                          ),
                   ),
                   Positioned(
                     left: 0,
@@ -419,8 +458,8 @@ class _SceneImageButtonState extends State<SceneImageButton> {
                       right: 6,
                       child: Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFFD700),
+                        decoration: BoxDecoration(
+                          color: widget.accentColor,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.check,
