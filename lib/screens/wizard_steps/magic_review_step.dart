@@ -1090,7 +1090,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           return 'Easy reader';
         case AgeBand.explorer:
         case AgeBand.adventurer:
-          return 'Rhyme Time story';
+          // MT-278: this is the "Easy Reader" mode — match the button the user
+          // tapped, not "Rhyme Time story" (which is the separate rhyme mode).
+          return 'Easy Reader';
         case AgeBand.creator:
         case AgeBand.adolescent:
         case AgeBand.adult:
