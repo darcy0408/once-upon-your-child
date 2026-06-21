@@ -41,6 +41,7 @@ class _AntiheroBrief:
     tell_fragment: str
     personal_line_sentence: str
     seen_by_bullet: str
+    secret_care_mandate: str
     continuity_block: str
     custom_request_block: str
     issue_number: int
@@ -1599,6 +1600,22 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
                     "self-contained case that moves the saga forward."
                 )
 
+        # MT-266(a)/MT-290: when the secret is about the teen's own wellbeing or
+        # struggle, bend the arc toward being seen and supported — never
+        # romanticize distress or isolation. Mirrors the single-shot builder's
+        # mandate so the interactive CRUX path (parts 1 & 2) is guarded too.
+        # Fires whenever a secret is set; the model judges whether it applies.
+        secret_care_mandate = (
+            f"\n- If {character}'s secret is about their own wellbeing or struggle, "
+            f"the chapter must move them at least one step toward being SEEN by "
+            f"someone who responds with care (not pity, not fixing), and the "
+            f"AFTERMATH must leave a thread of connection or hope alongside the "
+            f"unresolved case. Distress is never aesthetic; isolation is never the "
+            f"resolution."
+            if secret
+            else ""
+        )
+
         return _AntiheroBrief(
             character=character,
             age=age,
@@ -1615,6 +1632,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             tell_fragment=tell_fragment,
             personal_line_sentence=personal_line_sentence,
             seen_by_bullet=seen_by_bullet,
+            secret_care_mandate=secret_care_mandate,
             continuity_block=continuity_block,
             custom_request_block=custom_request_block,
             issue_number=issue_number,
@@ -1637,7 +1655,7 @@ THE PREMISE — A DOUBLE LIFE:
 - The secret / edge: "{b.alias}" — {b.power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{b.catchphrase_identity_line}{b.secret_bullet}
 - Look: nothing flashy — {b.color} everyday clothes, maybe a small {b.emblem} they keep on them; the point is to blend in, not stand out.
 - The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{b.tell_fragment}
-- {b.personal_line_sentence}{b.seen_by_bullet}{b.continuity_block}
+- {b.personal_line_sentence}{b.seen_by_bullet}{b.secret_care_mandate}{b.continuity_block}
 
 THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {b.canonical_villain_names}. For this chapter it is {b.villain['name']}.
 - Name: {b.villain['name']} (use it in the prose).

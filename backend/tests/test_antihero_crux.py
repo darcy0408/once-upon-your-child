@@ -132,6 +132,42 @@ def test_part1_derives_villain_when_missing():
     assert any(v["name"] in prompt for v in ADOLESCENT_VILLAINS.values())
 
 
+# --- MT-266(a)/MT-290: wellbeing secret-care mandate on the crux path -------
+# The mandate landed in the single-shot builder for MT-266(a) but originally
+# missed the shared `_antihero_premise_block`, so the interactive crux path
+# (parts 1 & 2) generated for the SAME band with the SAME "That I'm not okay"
+# secret had no being-seen guardrail. These lock it in across both phases.
+_MANDATE_MARKER = "Distress is never aesthetic; isolation is never the resolution"
+
+
+def test_part1_applies_secret_care_mandate_when_secret_set():
+    prompt = _part1(hero_secret=_SECRET)
+    assert _MANDATE_MARKER in prompt
+    assert "move them at least one step toward being SEEN" in prompt
+
+
+def test_part1_omits_secret_care_mandate_when_no_secret():
+    prompt = _part1()
+    assert _MANDATE_MARKER not in prompt
+
+
+def test_part2_applies_secret_care_mandate_when_secret_set():
+    prompt = _part2(hero_secret=_SECRET)
+    assert _MANDATE_MARKER in prompt
+    assert "thread of connection or hope" in prompt
+
+
+def test_crux_and_single_shot_share_identical_mandate_text():
+    """Parity guard: the crux mandate must match the single-shot wording so the
+    two paths can never drift on the safety wording again."""
+    crux = _part1(hero_secret=_SECRET)
+    single = PromptService._build_superhero_prompt_adolescent(
+        **dict(_BASE, hero_secret=_SECRET)
+    )
+    assert _MANDATE_MARKER in crux
+    assert _MANDATE_MARKER in single
+
+
 # --- Part 2: resolution conditioned on the chosen path ----------------------
 def test_part2_includes_story_so_far_block():
     prompt = _part2()
