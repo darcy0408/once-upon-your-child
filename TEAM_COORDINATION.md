@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-21 | 07:48 | 3058 | main | MT-263 art replaced + MT-266a secret-care mandate; MT-266b dup-discarded vs #292 | [link](docs/sessions/2026-06-21-0748-3058.md) |
 | 2026-06-21 | 07:48 | ccee | main | UX-audit sweep: 5 fixes merged + gender picker Boy/Girl-only | [link](docs/sessions/2026-06-21-0748-ccee.md) |
 | 2026-06-19 | 08:29 | a784 | main | MT-266(a+b) #292 + MT-269 #296 shipped; MT-268 art-blocked | [link](docs/sessions/2026-06-19-0829-a784.md) |
 | 2026-06-16 | 15:19 | 41fd | main | Robin cross = intentional memorial; MT-264 reclassified wontfix | [link](docs/sessions/2026-06-16-1519-41fd.md) |
