@@ -246,6 +246,52 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                               ],
                             ),
                             const SizedBox(height: AppSpacing.sm),
+                            // Not-therapy boundary + crisis resource
+                            // (parent-facing). The product touches feelings
+                            // ("big feelings", Life Quests, the older-band
+                            // "secret" mechanic), so a parent must understand
+                            // it is NOT therapeutic and where real help lives.
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color:
+                                        const Color(0xFFC9A678).withAlpha(150)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.favorite_rounded,
+                                          size: 18, color: Color(0xFFC9A678)),
+                                      const SizedBox(width: AppSpacing.xs),
+                                      Text(
+                                        'For stories — not therapy',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFC9A678),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
+                                    'Story Weaver is for fun and imagination. It is not therapy, counseling, or medical advice, and is not a substitute for professional care. If your child is struggling with their feelings or safety, please reach out to a professional.',
+                                    style: textWhite70,
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
+                                    'Free, confidential help is available 24/7 — call or text 988 (Suicide & Crisis Lifeline), or text HOME to 741741.',
+                                    style: textWhite70,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
                             // Notice to Parents box
                             Container(
                               padding: const EdgeInsets.all(AppSpacing.md),
@@ -316,10 +362,16 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
-                                      '• Google Gemini — AI story-text and illustration generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image prompts.',
+                                      '• OpenAI — AI story-text generation. Receives a pseudonymized hero token, story details, themes, and any "big feelings" text shared.',
                                       style: textWhite70),
                                   const Text(
-                                      "• OpenRouter, Replicate, Cloudflare Workers AI — AI image and avatar generation. Receive image prompts, and on the photo-avatar path the child's photo.",
+                                      '• Cloudflare Workers AI — AI story-page illustrations (primary). Receives image prompts.',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• Google Gemini — AI avatar generation, and a fallback for story illustrations. Receives image prompts (and on the photo-avatar path, the child\'s photo).',
+                                      style: textWhite70),
+                                  const Text(
+                                      "• OpenRouter, Replicate — additional AI image/avatar generation (fallback). Receive image prompts, and on the photo-avatar path the child's photo.",
                                       style: textWhite70),
                                   const Text(
                                       '• Microsoft (Azure AI Speech / Edge) and Google (Gemini Flash TTS) — voice narration. Receive generated story text to convert it to spoken audio.',
