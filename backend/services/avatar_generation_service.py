@@ -43,24 +43,49 @@ class AvatarGenerationService:
             "yes",
         )
 
-        # If no primary generator provided, try to import and create Gemini
+        # Primary avatar generator. MT-295: OpenAI (gpt-image-2) is the PRIMARY
+        # provider — its API permits child-directed apps with COPPA safeguards,
+        # unlike Gemini, whose ToS prohibit them. A spike confirmed gpt-image-2
+        # stylizes a child's photo into a cartoon avatar with strong likeness.
+        if self.image_generator is None:
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openai_key:
+                try:
+                    try:
+                        from backend.openai_image_generator import (
+                            OpenAIImageGenerator,
+                        )
+                    except ImportError:
+                        from openai_image_generator import OpenAIImageGenerator
+
+                    self.image_generator = OpenAIImageGenerator(api_key=openai_key)
+                    logger.info(
+                        "AvatarGenerationService initialized with OpenAIImageGenerator (gpt-image-2)"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to initialize OpenAIImageGenerator: {e}")
+                    self.image_generator = None
+
+        # Legacy Gemini fallback — only when there is NO OpenAI key AND Gemini
+        # is not explicitly disabled. Gemini's ToS forbid child-directed apps,
+        # so production should never reach this branch (it stays for local/dev
+        # setups without an OpenAI key). Set DISABLE_GEMINI_IMAGE=1 to forbid it.
         if self.image_generator is None and not disable_gemini:
             try:
-                # Try backend-prefixed import first (for Flask app context)
                 from backend.gemini_image_generator import GeminiImageGenerator
 
                 self.image_generator = GeminiImageGenerator()
-                logger.info(
-                    "AvatarGenerationService initialized with GeminiImageGenerator"
+                logger.warning(
+                    "AvatarGenerationService fell back to GeminiImageGenerator "
+                    "(no OPENAI_API_KEY) — Gemini's ToS prohibit child-directed apps"
                 )
             except ImportError:
-                # Fall back to direct import (for standalone scripts)
                 try:
                     from gemini_image_generator import GeminiImageGenerator
 
                     self.image_generator = GeminiImageGenerator()
-                    logger.info(
-                        "AvatarGenerationService initialized with GeminiImageGenerator (direct import)"
+                    logger.warning(
+                        "AvatarGenerationService fell back to GeminiImageGenerator (direct import)"
                     )
                 except Exception as e:
                     logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
@@ -547,65 +572,32 @@ Maintain the character's facial features while converting them into the target a
 
     def _analyze_photo_features(self, photo_bytes: bytes) -> dict:
         """
-        Best-effort photo feature extraction via Gemini vision.
-        Returns dict with keys: hair_style, skin_tone, distinguishing.
-        Returns empty dict on any failure (including timeout — MT-155).
+        Best-effort photo feature extraction (hair_style, skin_tone,
+        distinguishing). MT-295: delegates to the active image generator's
+        ``analyze_photo_features`` (OpenAI vision) instead of calling Gemini
+        directly, so the avatar path never touches Gemini. Returns {} on any
+        failure or timeout (non-fatal — MT-155). Legacy generators without the
+        method simply yield {} (enrichment skipped, generation proceeds).
         """
-        if self.image_generator is None:
+        gen = self.image_generator
+        if gen is None or not hasattr(gen, "analyze_photo_features"):
             return {}
         try:
-            from google import genai as _genai
-            from google.genai import types
-
-            api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key:
-                return {}
-
-            client = _genai.Client(api_key=api_key)
-            analysis_prompt = (
-                "Analyze this photo for character illustration reference. "
-                "Return ONLY a JSON object with these keys:\n"
-                '- "hair_style": brief description of hair color and style (e.g. "wavy brown shoulder-length")\n'
-                '- "skin_tone": neutral descriptor on a light/medium/olive/tan/deep scale\n'
-                '- "distinguishing": one notable visual feature if any (e.g. "round glasses", "curly bangs", "freckles"), or empty string\n'
-                "Use visually neutral terms only. No racial, ethnic, or nationality descriptors."
-            )
-
-            from backend.gemini_image_generator import _detect_mime_type
-
-            mime_type = _detect_mime_type(photo_bytes)
-
-            # Bound the vision call with a non-blocking timeout. On timeout the
-            # executor is released immediately (wait=False) and we fall through
-            # to the empty-dict path, so a slow analysis call cannot stall the
-            # request — generation proceeds without photo descriptors.
+            # Bound the vision call with a non-blocking timeout so a slow
+            # analysis can't stall the request — on timeout the executor is
+            # released (wait=False) and we fall through to {}.
             import concurrent.futures as _cf
 
             _executor = _cf.ThreadPoolExecutor(max_workers=1)
             try:
-                _future = _executor.submit(
-                    client.models.generate_content,
-                    model="gemini-2.5-flash",
-                    contents=[
-                        analysis_prompt,
-                        types.Part.from_bytes(data=photo_bytes, mime_type=mime_type),
-                    ],
-                )
-                response = _future.result(timeout=self._PHOTO_ANALYSIS_TIMEOUT_SECONDS)
+                _future = _executor.submit(gen.analyze_photo_features, photo_bytes)
+                result = _future.result(timeout=self._PHOTO_ANALYSIS_TIMEOUT_SECONDS)
             finally:
                 _executor.shutdown(wait=False, cancel_futures=True)
 
-            text = response.text.strip()
-            # Strip markdown code fences if present
-            if text.startswith("```"):
-                text = re.sub(r"^```(?:json)?\s*", "", text)
-                text = re.sub(r"\s*```$", "", text)
-
-            import json
-
-            result = json.loads(text)
             if isinstance(result, dict):
-                logger.info(f"Photo analysis extracted: {result}")
+                if result:
+                    logger.info(f"Photo analysis extracted: {result}")
                 return result
             return {}
         except Exception as e:
