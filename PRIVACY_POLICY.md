@@ -145,10 +145,11 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 
 | Provider | Data category received | Purpose |
 |---|---|---|
-| **Google Gemini** | A pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, and image prompts | AI story-text and illustration generation |
-| **OpenRouter** | Image prompts; on the photo-avatar path, the child's photo | Routes AI image-generation requests |
-| **Replicate** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation |
-| **Cloudflare Workers AI** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation |
+| **OpenAI** | A pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, image/avatar prompts; on the photo-avatar path, the child's photo | AI story-text and character-avatar generation |
+| **Cloudflare Workers AI** | Image prompts | AI story-page illustrations — primary provider |
+| **Replicate** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation — fallback |
+| **OpenRouter** | Image prompts; on the photo-avatar path, the child's photo | Routes AI image-generation requests — fallback |
+| **Google Gemini** | Image prompts | AI story-illustration fallback (also a voice-narration option — see Gemini Flash TTS below) |
 | **Microsoft (Azure AI Speech)** | Generated story text | Voice narration — primary provider |
 | **Google (Gemini Flash TTS)** | Generated story text | Voice narration — fallback |
 | **Microsoft (Edge TTS)** | Generated story text | Voice narration — fallback |
@@ -159,7 +160,7 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 | **Sentry** | Crash and error diagnostics | Error monitoring and stability |
 | **Resend** | Parent/guardian email address | Sending COPPA parental-consent verification emails |
 
-The exact AI image provider used (Google Gemini, OpenRouter, Replicate, or Cloudflare Workers AI) may vary by build and availability.
+The exact AI image provider used may vary by build and availability: story-page illustrations use Cloudflare Workers AI (with Replicate, then Gemini, as fallbacks), and character avatars use OpenAI (with Replicate as fallback).
 
 **Photo avatars (optional).** If you choose to create a character avatar from a photo, the photo is sent to our servers and then to the active AI image provider solely to generate the cartoon avatar. It is not stored on our servers, is not used for advertising or any other purpose, and is not sold or shared. Photo-based avatars are turned off by default and require a parent or guardian to opt in.
 

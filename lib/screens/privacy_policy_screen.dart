@@ -94,10 +94,11 @@ We do not provide end-to-end encryption. Story content and account data are proc
               content: '''
 We share only the minimum data required for each service to function. Each provider's own privacy policy governs its processing.
 
-- Google Gemini — AI story-text and illustration generation. Receives a pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, and image prompts.
-- OpenRouter — routes AI image-generation requests. Receives image prompts, and on the photo-avatar path the child's photo.
-- Replicate — AI image and avatar generation. Receives image prompts, and on the photo-avatar path the child's photo.
-- Cloudflare Workers AI — AI image and avatar generation. Receives image prompts, and on the photo-avatar path the child's photo.
+- OpenAI — AI story-text and character-avatar generation. Receives a pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, image/avatar prompts, and — only on the photo-avatar path — the child's photo.
+- Cloudflare Workers AI — AI story-page illustrations (primary provider). Receives image prompts.
+- Replicate — AI image and avatar generation (fallback). Receives image prompts, and on the photo-avatar path the child's photo.
+- OpenRouter — routes AI image-generation requests (fallback). Receives image prompts, and on the photo-avatar path the child's photo.
+- Google Gemini — a fallback provider for story illustrations (receives image prompts), and a voice-narration option (Gemini Flash TTS; see narration below).
 - Voice narration (text-to-speech): the generated story text is sent to Microsoft (Azure AI Speech, the primary provider, and Edge TTS) and Google (Gemini Flash TTS). For ages 13+ only, premium/character voices may additionally use ElevenLabs (never for children under 13).
 - Stripe — subscription and payment processing. Receives parent payment information; we never store full card details.
 - Railway — cloud hosting and infrastructure (United States). Stores all app data: profiles, stories, preferences.
