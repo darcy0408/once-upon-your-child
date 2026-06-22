@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-22 | 17:18 | 054d | main | OpenAI avatar migration + Gemini retirement, Dependabot HIGH, MT-290 | [link](docs/sessions/2026-06-22-1718-054d.md) |
 | 2026-06-21 | 07:50 | 2a7d | main | Reconciled #292 w/ MT-266a mandate; merged #292+#296 | [link](docs/sessions/2026-06-21-0750-2a7d.md) |
 | 2026-06-21 | 07:48 | 3058 | main | MT-263 art replaced + MT-266a secret-care mandate; MT-266b dup-discarded vs #292 | [link](docs/sessions/2026-06-21-0748-3058.md) |
 | 2026-06-21 | 07:48 | ccee | main | UX-audit sweep: 5 fixes merged + gender picker Boy/Girl-only | [link](docs/sessions/2026-06-21-0748-ccee.md) |
