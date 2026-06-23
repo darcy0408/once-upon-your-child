@@ -460,7 +460,7 @@ def _get_age_band(age: int) -> str:
         return "11-13"
     if age < 15:
         return "13-15"
-    if age <= 18:
+    if age <= 17:
         return "15-18"
     return "adult"
 

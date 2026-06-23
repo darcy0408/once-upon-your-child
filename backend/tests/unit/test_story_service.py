@@ -55,14 +55,14 @@ class TestAgeBandClassification:
         assert _get_age_band(14) == "13-15"
 
     def test_age_band_late_teens(self):
-        """Test ages 15-18 are classified correctly"""
+        """Test ages 15-17 are classified as the teen (15-18) tier"""
         assert _get_age_band(15) == "15-18"
         assert _get_age_band(16) == "15-18"
         assert _get_age_band(17) == "15-18"
-        assert _get_age_band(18) == "15-18"
 
     def test_age_band_adult(self):
-        """Test ages 19+ are classified as adult"""
+        """Test ages 18+ are classified as adult (18 is the Adult-band floor)"""
+        assert _get_age_band(18) == "adult"
         assert _get_age_band(19) == "adult"
         assert _get_age_band(25) == "adult"
         assert _get_age_band(99) == "adult"
