@@ -17,9 +17,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models.dart';
 import '../../theme/age_band_theme.dart';
+import '../../widgets/crisis_resources_panel.dart';
+import '../../widgets/parent_sensitivity_interstitial.dart';
 import 'superhero_power_screen.dart';
 
 class SuperheroCostumeScreen extends StatefulWidget {
@@ -57,6 +60,18 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   final TextEditingController _tellController = TextEditingController();
   final TextEditingController _lineController = TextEditingController();
   final TextEditingController _seenByController = TextEditingController();
+
+  // MT-296: the wellbeing-distress secret preset. Single source of truth — the
+  // _secretChips list below references this, and the Identity page surfaces the
+  // crisis-resources panel inline whenever the saved secret equals it.
+  static const String _distressSecret = "That I'm not okay";
+
+  // MT-296: the antihero "double life" mode invites a wellbeing disclosure, so
+  // the Adolescent flow opens with the same calm parent heads-up Life Quests
+  // use — shown once per device (persisted ack), never nagged afterward.
+  static const String _sensitivityAckKey = 'antihero_sensitivity_ack_v1';
+  bool _sensitivityResolved = false; // false until we've read the stored ack
+  bool _showSensitivityGate = false; // true while the interstitial is mounted
 
   static const _colors = <_ColorOption>[
     _ColorOption(id: 'red', label: 'Red', color: Color(0xFFE53935)),
@@ -116,6 +131,40 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           widget.band == AgeBand.adolescent)
       ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
       : _baseEmblems;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only the Adolescent "double life" flow collects a secret, so only it
+    // needs the sensitivity gate; every other band skips straight in.
+    if (widget.band != AgeBand.adolescent) {
+      _sensitivityResolved = true;
+    } else {
+      _resolveSensitivityGate();
+    }
+  }
+
+  Future<void> _resolveSensitivityGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final acked = prefs.getBool(_sensitivityAckKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _showSensitivityGate = !acked;
+      _sensitivityResolved = true;
+    });
+  }
+
+  Future<void> _ackSensitivityGate() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_sensitivityAckKey, true);
+    if (!mounted) return;
+    setState(() => _showSensitivityGate = false);
+  }
+
+  /// True when the teen's hidden secret is the wellbeing-distress preset, which
+  /// surfaces the calm crisis-resources panel inline on the Identity page.
+  bool get _secretIsDistress =>
+      (widget.wizardData.heroSecret ?? '').trim() == _distressSecret;
 
   @override
   void dispose() {
@@ -228,6 +277,46 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // MT-296: gate the Adolescent antihero flow behind the parent heads-up
+    // until acknowledged. While the stored ack is still loading, show a neutral
+    // band-gradient placeholder (one frame) rather than flashing the costume UI.
+    if (widget.band == AgeBand.adolescent && _sensitivityResolved) {
+      if (_showSensitivityGate) {
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: themeForBand(widget.band).backgroundGradient,
+            ),
+            child: ParentSensitivityInterstitial(
+              questTitle: 'Live a double life',
+              topics: const [
+                'identity & secrets',
+                'feeling not okay',
+                'being seen',
+              ],
+              parentNote:
+                  'This mode builds a story around a hidden secret — one option '
+                  'is "that I\'m not okay." Stories are handled with care and '
+                  'always move toward being seen, never toward isolation, and '
+                  'real support is one tap away if any of it is true.',
+              onStart: _ackSensitivityGate,
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+        );
+      }
+    } else if (widget.band == AgeBand.adolescent && !_sensitivityResolved) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: themeForBand(widget.band).backgroundGradient,
+          ),
+        ),
+      );
+    }
+
     // Explorer + Adventurer share the older, less babyish copy.
     final isExplorer =
         widget.band == AgeBand.explorer ||
@@ -656,7 +745,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
 
   // Preset chips per prompt. Tone is grounded prestige-YA, not cutesy.
   static const _secretChips = <String>[
-    "That I'm not okay",
+    _distressSecret,
     'What I can really do',
     "Who I'm protecting",
     "A mistake I haven't owned",
@@ -731,6 +820,13 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
             hint: 'Or write your own…',
             onSelected: (value) => widget.wizardData.heroSeenBy = value,
           ),
+          // MT-296: real-world safety net at the moment of disclosure — when the
+          // hidden secret is the wellbeing-distress preset, surface the calm
+          // crisis-resources panel inline (988 / Crisis Text Line / Trevor).
+          if (_secretIsDistress) ...[
+            const SizedBox(height: 28),
+            _buildDistressSupport(),
+          ],
           const SizedBox(height: 32),
           SizedBox(
             height: 54,
@@ -756,6 +852,29 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// MT-296: shown inline on the Identity page when the teen's hidden secret is
+  /// "I'm not okay". Reuses the same [CrisisResourcesPanel] Life Quests use
+  /// (988 / Crisis Text Line / Trevor); the warm palette keeps it "we care",
+  /// not "alarm", and it's optional — it never blocks finishing the story.
+  Widget _buildDistressSupport() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "If that one's true for you too, you don't have to carry it alone — "
+          'these are real people you can reach right now.',
+          style: _noirAwareText(
+            true,
+            color: Colors.white.withAlpha(230),
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 14),
+        const CrisisResourcesPanel(),
+      ],
     );
   }
 
