@@ -30,12 +30,12 @@ class ScenarioCard {
   final String? matureDescription;
   final String? matureConflictHook;
   final String? matureWorldBible;
-  // Age-appropriate alternative for creator band (ages 12-14) — more personal/identity-focused
+  // Age-appropriate alternative for creator band (ages 13-14) — more personal/identity-focused
   // than the adult mature framing, less whimsical than the young framing.
   // When null, falls back to matureTitle.
   final String? creatorTitle;
   // Thematic / psychological hook shown on scenario cards for Creator band.
-  // A single evocative question that draws 12-14 year-olds in emotionally.
+  // A single evocative question that draws 13-14 year-olds in emotionally.
   // When null, no thematic question is shown.
   final String? creatorThematicQuestion;
   // Age-appropriate alternative for adult band (ages 18+) — existential/philosophical framing.
@@ -146,7 +146,7 @@ class ScenarioCard {
       case AgeBand.adventurer:
         return title;
       case AgeBand.creator:
-        // Creator band (12-14) gets identity-focused framing; falls back to matureTitle.
+        // Creator band (13-14) gets identity-focused framing; falls back to matureTitle.
         return creatorTitle ?? matureTitle ?? title;
       case AgeBand.adolescent:
         return matureTitle ?? title;
@@ -361,7 +361,7 @@ class ScenarioData {
           'The engines are failing and a rival faction is closing in. Fight or flight—you decide.',
       matureWorldBible:
           'A militarised sky-citadel — part aircraft carrier, part floating city — navigating a perpetual superstorm belt that encircles the planet. The storm belt is both barrier and resource: its lightning powers the citadel\'s engines, but its winds can shred unshielded hulls. The crew operates under a strict chain of command with storm-runner scouts, tactical navigators, and combat weather-shapers who weaponise atmospheric conditions. Rival sky-nations compete for storm-corridor control. The citadel\'s greatest secret: its core contains a captured storm-entity, a sentient weather phenomenon that powers everything but yearns for freedom.',
-      // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
+      // Adventure scenario — matureTitle works for 13-14; no distinct framing needed.
       creatorTitle: null,
       creatorThematicQuestion: "What storm are you running from?",
       adultTitle: 'The Storm You\'ve Been Feeding',
@@ -570,7 +570,7 @@ class ScenarioData {
           'Any place, any atmosphere, any vibe. Set the scene and we\'ll do the rest.',
       matureWorldBible:
           'Draw deeply on the user\'s creative vision. Build the world with sophisticated detail, internal logic, and atmospheric depth appropriate to whatever they describe. If they give a genre (sci-fi, fantasy, realistic), lean into its conventions. Add complexity, moral ambiguity, and stakes appropriate to their age. Keep all content appropriate for the user\'s age band.',
-      // The title is intentionally shared — "Imagine It" resonates equally well at 12-14.
+      // The title is intentionally shared — "Imagine It" resonates equally well at 13-14.
       creatorTitle: null,
     ),
     // --- ADVENTURER+ EXCLUSIVE ---
@@ -622,7 +622,7 @@ class ScenarioData {
           'Your supplies are gone. Someone is injured. And the weather is turning. What do you do first?',
       matureWorldBible:
           'A grounded, psychologically real survival story. Physical challenges are secondary to mental ones: managing fear, making decisions under pressure, accepting when a plan has failed. The environment is genuinely dangerous — weather, injury, dehydration all have real consequences in the narrative. Moral dilemmas arise: ration the last of the food alone or share? Take a dangerous shortcut or wait for rescue? The story explores the hierarchy of needs — safety, water, food, warmth — and the psychology of survival: the importance of small goals, staying rational, not surrendering to despair. Resolution comes through persistence and ingenuity, not luck.',
-      // Survival scenario — matureTitle works for 12-14; no distinct framing needed.
+      // Survival scenario — matureTitle works for 13-14; no distinct framing needed.
       creatorTitle: null,
       creatorThematicQuestion: "What do you do when there's no one left to help you?",
       adultTitle: 'Only What You Carry',

@@ -124,13 +124,26 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     _EmblemOption(id: 'comet', label: 'Comet', emoji: '☄️'),
   ];
 
-  List<_EmblemOption> get _emblems =>
-      (widget.band == AgeBand.explorer ||
-          widget.band == AgeBand.adventurer ||
-          widget.band == AgeBand.creator ||
-          widget.band == AgeBand.adolescent)
-      ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
-      : _baseEmblems;
+  List<_EmblemOption> get _emblems {
+    final base =
+        (widget.band == AgeBand.explorer ||
+            widget.band == AgeBand.adventurer ||
+            widget.band == AgeBand.creator ||
+            widget.band == AgeBand.adolescent)
+        ? <_EmblemOption>[..._baseEmblems, ..._explorerExtraEmblems]
+        : _baseEmblems;
+    // MT-298: the mature noir bands (Creator + Adolescent) drop the too-young
+    // heart/paw/rainbow marks — a grounded "double life" cover shouldn't pair
+    // with a kawaii emblem. (Previously only Adolescent, and only on the random
+    // "Surprise me" roll — not the tappable grid.) Centralised here so the grid
+    // and the random roll can't drift apart.
+    if (widget.band == AgeBand.creator || widget.band == AgeBand.adolescent) {
+      return base
+          .where((e) => e.id != 'heart' && e.id != 'paw' && e.id != 'rainbow')
+          .toList();
+    }
+    return base;
+  }
 
   @override
   void initState() {
@@ -222,14 +235,8 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     // emblems — keep surprise inside that same allowed set so it can't pick a
     // mark the grid hides. heroSecret/heroTell/heroLine get seeded below from
     // the same chip lists the Identity page offers.
-    final emblemPool = isAdolescent
-        ? _emblems
-              .where(
-                (e) => !(e.id == 'heart' || e.id == 'paw' || e.id == 'rainbow'),
-              )
-              .toList()
-        : _emblems;
-    final emblem = emblemPool[rng.nextInt(emblemPool.length)];
+    // MT-298: _emblems already excludes the too-young marks for mature bands.
+    final emblem = _emblems[rng.nextInt(_emblems.length)];
     HapticFeedback.mediumImpact();
     setState(() {
       widget.wizardData.heroCostumeColor = color.id;
@@ -672,15 +679,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: 1,
-            children: _emblems
-                .where(
-                  (e) =>
-                      !(widget.band == AgeBand.adolescent &&
-                          (e.id == 'heart' ||
-                              e.id == 'paw' ||
-                              e.id == 'rainbow')),
-                )
-                .map((e) {
+            children: _emblems.map((e) {
               final selected = widget.wizardData.heroEmblem == e.id;
               final flash = _justSelectedSnapshot == 'emblem:${e.id}';
               return GestureDetector(
@@ -710,7 +709,16 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(e.emoji, style: const TextStyle(fontSize: 56)),
+                      Text(
+                        e.emoji,
+                        style: TextStyle(
+                          fontSize:
+                              (widget.band == AgeBand.creator ||
+                                  widget.band == AgeBand.adolescent)
+                              ? 44
+                              : 56,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         e.label,

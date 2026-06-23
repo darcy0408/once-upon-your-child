@@ -212,7 +212,7 @@ const allLifeQuests = <LifeQuestScenario>[
   questFamilyStress,
   questFeelingDifferent,
   questLosingFriendship,
-  // Creator only (ages 12-14)
+  // Creator only (ages 13-14)
   questGroupChat,
   questMyWorkMyWay,
   questMirrorMirror,
@@ -1901,7 +1901,7 @@ const questFamilyStress = LifeQuestScenario(
     ),
   },
   // MT-158 / content-safety audit F-08 + F-16 — parental-conflict storyline
-  // reachable by Creator (12-14) and Adolescent bands. Parent interstitial
+  // reachable by Creator (13-14) and Adolescent bands. Parent interstitial
   // gives the grown-up a quiet heads-up.
   sensitivityTopics: ['parental conflict', 'tension at home'],
   parentNote:

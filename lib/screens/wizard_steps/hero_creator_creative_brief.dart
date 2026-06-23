@@ -315,7 +315,7 @@ class CreativeBriefWidget extends StatelessWidget {
           controller: nameController,
           style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 18),
           decoration: InputDecoration(
-            labelText: 'PROTAGONIST NAME',
+            labelText: 'PROTAGONIST NAME *',
             labelStyle: GoogleFonts.sourceSans3(color: accent, fontSize: 10),
             hintText: 'Enter name...',
             hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
@@ -737,7 +737,7 @@ class CreativeBriefWidget extends StatelessWidget {
               style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
                 hintText:
-                    'Type anything — e.g. ride a magic carpet, win the lottery, pull off a daring heist...',
+                    'Type anything — e.g. uncover a hidden truth, win back what was lost, outwit a rival...',
                 hintStyle: TextStyle(
                     color: Colors.white.withAlpha(120),
                     fontStyle: FontStyle.italic),

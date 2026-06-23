@@ -41,7 +41,7 @@ const Map<String, String> companionBehaviorPatterns = {
   'adventurer_kodiak':
       "Kodiak's galaxy-patterned fur shimmers when he's working out a route. He can read stardust like a map and smell storms three hours before they arrive. He runs ahead, checks back, and positions himself on the hero's left side without being asked. When the path is clear his tail arcs like a comet.",
 
-  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  // ── CREATOR (13–14) ───────────────────────────────────────────────────────
   'creator_cipher':
       "Cipher breathes orbiting gears and compass roses instead of fire. He is useful when something needs to actually work — he finds the flaw in a plan before it's a problem and explains it exactly once. He gets quieter the closer he gets to a solution. When the puzzle breaks open his eyes flash gold.",
 
@@ -115,7 +115,7 @@ const Map<String, String> companionPowers = {
   'adventurer_kodiak':
       "Storm-Sense: Kodiak reads stardust and scent to know what the weather and the land will do hours ahead, so the pack can move before trouble arrives.",
 
-  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  // ── CREATOR (13–14) ───────────────────────────────────────────────────────
   'creator_cipher':
       "Flaw-Finder: The gears Cipher breathes settle over any plan, machine, or structure and spin faster where it's about to fail, showing the one weak point.",
 
@@ -180,7 +180,7 @@ const Map<String, String> companionPowerConstraints = {
   'adventurer_kodiak':
       "He can feel that something is coming and roughly when, never exactly what; he reads nature, not people's choices.",
 
-  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  // ── CREATOR (13–14) ───────────────────────────────────────────────────────
   'creator_cipher':
       "He can find the flaw but not fix it — and only points to one at a time, the most important one.",
 
@@ -245,7 +245,7 @@ const Map<String, String> companionSensoryTells = {
   'adventurer_kodiak':
       "His galaxy fur shimmers and ripples, and the air carries the smell of rain before any cloud shows.",
 
-  // ── CREATOR (12–14) ───────────────────────────────────────────────────────
+  // ── CREATOR (13–14) ───────────────────────────────────────────────────────
   'creator_cipher':
       "The room goes quiet, gears and compass roses orbit slower, then his eyes flash gold when the weak point locks in.",
 
@@ -308,7 +308,7 @@ const Map<String, String> companionDescriptions = {
       "A sleek black cat wrapped in cosmic purple energy who moves through shadows like smoke. When she trusts you enough to speak first, the information is always worth waiting for.",
   'adventurer_kodiak':
       "A galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked.",
-  // ── CREATOR (12-14) ──
+  // ── CREATOR (13-14) ──
   'creator_cipher':
       "A blue-green dragon who breathes orbiting gears and compass roses. He finds the flaw in a plan before it's a problem. When the puzzle breaks open, his eyes flash gold.",
   'creator_vesper':
