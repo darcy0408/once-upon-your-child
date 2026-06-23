@@ -21,8 +21,6 @@ import '../saga_record_screen.dart';
 import 'superhero_costume_screen.dart';
 
 class SuperheroWelcomeBackScreen extends StatelessWidget {
-  static const _gold = Color(0xFFFFD700);
-
   final WizardData wizardData;
   final HeroProfileLocal profile;
 
@@ -43,6 +41,13 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     this.band = AgeBand.sprout,
     this.saga,
   });
+
+  // Noir reskin (MT-297): the mature bands (Creator purple, Adolescent teal)
+  // use the band accent + Source Sans 3; younger bands keep gold + Fredoka.
+  bool get _noir => band == AgeBand.adolescent || band == AgeBand.creator;
+
+  Color get _gold =>
+      _noir ? themeForBand(band).accent : const Color(0xFFFFD700);
 
   /// Humanizes the backend `nemesis_status` vocabulary into a teen-appropriate
   /// recap phrase. Falls back to the raw value (cleaned) for any unknown code.
@@ -218,9 +223,10 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     );
   }
 
-  /// Band-aware card font: the Adolescent (15-17) recap should not read like a
-  /// kids' app, so it uses SourceSans3; Creator (and any other band) keeps the
-  /// rounded, friendly Fredoka. Mirrors the wizard's `_noirAwareText` intent.
+  /// Band-aware card font: the mature bands (Creator 13-14, Adolescent 15-17)
+  /// should not read like a kids' app, so they use SourceSans3; younger bands
+  /// keep the rounded, friendly Fredoka. Mirrors the wizard's `_noirAwareText`
+  /// intent (MT-297 extended the noir path from Adolescent-only to Creator too).
   TextStyle _cardFont({
     required Color color,
     required double fontSize,
@@ -229,7 +235,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
     double? letterSpacing,
     double? height,
   }) {
-    if (band == AgeBand.adolescent) {
+    if (_noir) {
       return GoogleFonts.sourceSans3(
         color: color,
         fontSize: fontSize,
@@ -380,12 +386,27 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
         band == AgeBand.creator ||
         band == AgeBand.adolescent;
     final gradient = themeForBand(band).backgroundGradient;
-    final greetingLine = isExplorer ? 'Welcome back,' : 'Welcome back,';
-    final invitation = isExplorer
-        ? 'Ready for your next mission?'
-        : 'Ready for another adventure?';
-    final startCta = isExplorer ? 'Start the mission!' : 'Yes! Start adventure';
-    final editCta = isExplorer ? 'Redesign my hero' : 'Edit my hero';
+    // The mature/noir bands (Creator + Adolescent) get grown-up, comic-issue
+    // framing so the recap doesn't read like a little-kid app; Explorer/
+    // Adventurer keep the "mission" copy; younger bands keep "adventure".
+    final greetingLine = _noir
+        ? 'Back in it,'
+        : 'Welcome back,';
+    final invitation = _noir
+        ? 'Ready to open the next issue?'
+        : isExplorer
+            ? 'Ready for your next mission?'
+            : 'Ready for another adventure?';
+    final startCta = _noir
+        ? 'Open the next issue'
+        : isExplorer
+            ? 'Start the mission!'
+            : 'Yes! Start adventure';
+    final editCta = _noir
+        ? 'Rework your cover'
+        : isExplorer
+            ? 'Redesign my hero'
+            : 'Edit my hero';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -466,7 +487,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     Text(
                       greetingLine,
-                      style: GoogleFonts.fredoka(
+                      style: _cardFont(
                         color: Colors.white.withAlpha(220),
                         fontSize: 20,
                       ),
@@ -474,10 +495,11 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     Text(
                       '$heroName!',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
+                      style: _cardFont(
                         color: _gold,
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
+                      ).copyWith(
                         shadows: const [
                           Shadow(
                             color: Colors.black54,
@@ -491,7 +513,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                     Text(
                       invitation,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
+                      style: _cardFont(
                         color: Colors.white.withAlpha(220),
                         fontSize: 18,
                       ),
@@ -511,7 +533,8 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                         onPressed: () => _startAdventure(context),
                         child: Text(
                           startCta,
-                          style: GoogleFonts.fredoka(
+                          style: _cardFont(
+                            color: Colors.black,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -524,7 +547,7 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: _gold,
-                          side: const BorderSide(color: _gold, width: 2),
+                          side: BorderSide(color: _gold, width: 2),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
@@ -533,7 +556,8 @@ class SuperheroWelcomeBackScreen extends StatelessWidget {
                         onPressed: () => _editHero(context),
                         child: Text(
                           editCta,
-                          style: GoogleFonts.fredoka(
+                          style: _cardFont(
+                            color: _gold,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),

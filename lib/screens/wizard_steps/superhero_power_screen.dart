@@ -478,6 +478,11 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         formulaName: formulaName,
         register: _nameRegister,
         gradient: themeForBand(widget.band).backgroundGradient,
+        // Noir reskin (MT-297): mature bands (Creator + Adolescent) get the
+        // Source Sans 3 + band-accent treatment; younger bands stay gold+Fredoka.
+        noir: widget.band == AgeBand.adolescent ||
+            widget.band == AgeBand.creator,
+        accent: themeForBand(widget.band).accent,
       ),
     );
   }
@@ -811,10 +816,18 @@ class _NameCatchphraseSheet extends StatefulWidget {
   final HeroNameRegister register;
   final Gradient gradient;
 
+  /// Noir reskin (MT-297): true for the mature bands (Creator + Adolescent) so
+  /// the sheet uses Source Sans 3 + the band [accent] instead of Fredoka+gold.
+  /// Younger bands pass false and keep the original gold-on-gradient styling.
+  final bool noir;
+  final Color accent;
+
   const _NameCatchphraseSheet({
     required this.formulaName,
     required this.register,
     required this.gradient,
+    required this.noir,
+    required this.accent,
   });
 
   @override
@@ -822,7 +835,8 @@ class _NameCatchphraseSheet extends StatefulWidget {
 }
 
 class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
-  static const _gold = Color(0xFFFFD700);
+  // Noir reskin (MT-297): mature bands use the band accent; younger bands gold.
+  Color get _gold => widget.noir ? widget.accent : const Color(0xFFFFD700);
 
   late List<String> _nameOptions; // generated funny names (excludes formula)
   String? _selectedName; // null until the kid taps a chip / types one
@@ -912,7 +926,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
         child: Text(
           label,
           style: _noirAwareText(
-            widget.register == HeroNameRegister.adolescent,
+            widget.noir,
             color: Colors.white,
             fontSize: 15,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
@@ -954,7 +968,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ? 'Choose your alias'
                   : 'Pick your hero name',
               style: _noirAwareText(
-                widget.register == HeroNameRegister.adolescent,
+                widget.noir,
                 color: _gold,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -996,7 +1010,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   label: Text(
                     'Reroll names',
                     style: _noirAwareText(
-                      widget.register == HeroNameRegister.adolescent,
+                      widget.noir,
                       color: _gold,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1010,14 +1024,14 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               child: TextField(
                 controller: _customNameCtl,
                 style: _noirAwareText(
-                  widget.register == HeroNameRegister.adolescent,
+                  widget.noir,
                   color: Colors.white,
                 ),
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own name…',
                   hintStyle: _noirAwareText(
-                    widget.register == HeroNameRegister.adolescent,
+                    widget.noir,
                     color: Colors.white.withAlpha(140),
                   ),
                   // Explicit dark-translucent fill so white text/hint stay
@@ -1031,7 +1045,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: _gold, width: 2),
+                    borderSide: BorderSide(color: _gold, width: 2),
                   ),
                 ),
                 onChanged: (_) => setState(() {}),
@@ -1043,7 +1057,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ? 'A line that\'s yours (optional)'
                   : 'Add a catchphrase (optional)',
               style: _noirAwareText(
-                widget.register == HeroNameRegister.adolescent,
+                widget.noir,
                 color: _gold,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1055,7 +1069,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ? 'Something they\'d actually say. Or leave it blank.'
                   : 'Your hero can shout this at the big moment.',
               style: _noirAwareText(
-                widget.register == HeroNameRegister.adolescent,
+                widget.noir,
                 color: Colors.white.withAlpha(200),
                 fontSize: 13,
               ),
@@ -1088,14 +1102,14 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
               child: TextField(
                 controller: _customCatchphraseCtl,
                 style: _noirAwareText(
-                  widget.register == HeroNameRegister.adolescent,
+                  widget.noir,
                   color: Colors.white,
                 ),
                 cursorColor: _gold,
                 decoration: InputDecoration(
                   hintText: 'Or type my own catchphrase…',
                   hintStyle: _noirAwareText(
-                    widget.register == HeroNameRegister.adolescent,
+                    widget.noir,
                     color: Colors.white.withAlpha(140),
                   ),
                   // Explicit dark-translucent fill so white text/hint stay
@@ -1109,7 +1123,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: _gold, width: 2),
+                    borderSide: BorderSide(color: _gold, width: 2),
                   ),
                 ),
                 onChanged: (_) => setState(() {
@@ -1137,7 +1151,7 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
                       ? 'Lock in alias'
                       : 'That\'s my hero!',
                   style: _noirAwareText(
-                    widget.register == HeroNameRegister.adolescent,
+                    widget.noir,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),

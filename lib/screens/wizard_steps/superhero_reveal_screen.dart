@@ -37,7 +37,13 @@ class SuperheroRevealScreen extends StatefulWidget {
 
 class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
     with SingleTickerProviderStateMixin {
-  static const _gold = Color(0xFFFFD700);
+  // Noir reskin (MT-297): the mature bands (Creator purple, Adolescent teal)
+  // use the band accent + Source Sans 3; younger bands keep gold + Fredoka.
+  bool get _noir =>
+      widget.band == AgeBand.adolescent || widget.band == AgeBand.creator;
+
+  Color get _gold =>
+      _noir ? themeForBand(widget.band).accent : const Color(0xFFFFD700);
 
   late final AnimationController _pulse;
   bool _loading = true;
@@ -167,7 +173,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         const SizedBox(height: 28),
         Text(
           'Suiting up…',
-          style: GoogleFonts.fredoka(
+          style: _revealText(
             color: _gold,
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -177,13 +183,13 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         Text(
           'Turning ${widget.heroName} into a superhero!',
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: _revealText(
             color: Colors.white.withAlpha(210),
             fontSize: 16,
           ),
         ),
         const SizedBox(height: 24),
-        const SizedBox(
+        SizedBox(
           width: 28,
           height: 28,
           child: CircularProgressIndicator(
@@ -201,10 +207,11 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Skip — start my story →',
-              style: GoogleFonts.fredoka(
+              style: _revealText(
                 color: Colors.white.withAlpha(210),
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
+              ).copyWith(
                 decoration: TextDecoration.underline,
                 decorationColor: Colors.white54,
               ),
@@ -253,7 +260,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
                     ),
                     child: Text(
                       'ISSUE #1',
-                      style: GoogleFonts.fredoka(
+                      style: _revealText(
                         color: _gold,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -285,7 +292,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.fredoka(
+                      style: _revealText(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -317,7 +324,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         Text(
           '${widget.heroName} is ready!',
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: _revealText(
             color: _gold,
             fontSize: 26,
             fontWeight: FontWeight.bold,
@@ -327,7 +334,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         Text(
           'Your superhero is suited up and ready for the mission.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
+          style: _revealText(
             color: Colors.white.withAlpha(210),
             fontSize: 16,
           ),
@@ -353,12 +360,37 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         onPressed: () => Navigator.of(context).pop(),
         child: Text(
           label,
-          style: GoogleFonts.fredoka(
+          style: _revealText(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
     );
+  }
+
+  /// Band-aware text style for the reveal. Mature bands (Creator/Adolescent)
+  /// get the crisper Source Sans 3; younger bands keep the rounded Fredoka.
+  TextStyle _revealText({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    List<Shadow>? shadows,
+  }) {
+    final base = _noir
+        ? GoogleFonts.sourceSans3(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            color: color,
+            letterSpacing: letterSpacing,
+          )
+        : GoogleFonts.fredoka(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            color: color,
+            letterSpacing: letterSpacing,
+          );
+    return shadows == null ? base : base.copyWith(shadows: shadows);
   }
 }
