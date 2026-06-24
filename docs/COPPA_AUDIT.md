@@ -1,11 +1,11 @@
 # COPPA Compliance Audit - Story Weaver App
 
 **Date:** March 15, 2026
-**Last Updated:** March 15, 2026 — COPPA fixes applied (see bottom)
+**Last Updated:** June 24, 2026 — refreshed the third-party sub-processor list after the AI-provider migration (story text Gemini→OpenAI GPT-5 mini, illustrations→Cloudflare Workers AI, avatars→OpenAI gpt-image-2). Earlier disclosure/sync/deletion fixes recorded below.
 **Overall Assessment:** ⚠️ **GOOD FAITH COMPLIANCE** (Launchable with known gap)
 
 ## Executive Summary
-The Story Weaver app currently implements several critical features for COPPA compliance (Age Gate, Parental Consent Screen, Data Deletion backend), but there are significant gaps in the **verifiability** of parental consent and the **synchronization** of consent/deletion data with the backend. Additionally, the Privacy Policy lacks explicit disclosures for third-party service providers (AI, Voice, Payments).
+The Story Weaver app implements the critical features for COPPA compliance (Age Gate, Parental Consent Screen with full Notice to Parents, backend consent sync, Data Deletion). The Privacy Policy now carries a complete third-party sub-processor table that the consent screen mirrors. The one remaining deliberate gap is the **verifiability** of parental consent (an unverified checkbox/attestation today; SMS-OTP or $0.50 Stripe micro-charge planned for v1.1).
 
 ---
 
@@ -14,11 +14,11 @@ The Story Weaver app currently implements several critical features for COPPA co
 | Requirement | Status | Finding | Recommended Fix |
 | :--- | :--- | :--- | :--- |
 | **1. Verifiable Parental Consent** | ⚠️ **KNOWN GAP** | Checkbox + clear Notice to Parents disclosure screen. Consent now synced to backend. Email collected optionally. Strict "verifiable" method not yet implemented — planned for v1.1. Risk is low: no ads, minimal data, educational purpose, no data sharing with third parties for commercial use. | v1.1: add $0.50 Stripe verification as optional upgrade path. |
-| **2. Notice to Parents** | ✅ **FIXED** | Consent screen now shows a dedicated "Notice to Parents & Guardians" disclosure listing what is collected, what is not done, and all three third-party services (Google Gemini, ElevenLabs, Stripe). | No further action needed. |
-| **3. Data Minimization** | ✅ **PASS** | Data collected is relevant to story personalization (name, age, emotions, traits). Photo avatars are processed on-device. | Ensure "Additional Characters" and "Pet Photos" are explicitly justified as necessary for the service. |
+| **2. Notice to Parents** | ✅ **FIXED** | Consent screen shows a dedicated "Notice to Parents & Guardians" disclosure listing what is collected, what is not done, and every third-party sub-processor — OpenAI, Cloudflare Workers AI, Google Gemini, OpenRouter, Replicate, Microsoft (Azure/Edge TTS), ElevenLabs, Stripe, Railway, Firebase/Google Analytics, Sentry, Resend. Kept in sync with the Privacy Policy table (`lib/screens/parental_consent_screen.dart` ↔ `PRIVACY_POLICY.md`). | Keep both lists in sync whenever a provider changes. |
+| **3. Data Minimization** | ✅ **PASS** | Data collected is relevant to story personalization (name, age, emotions, traits). Photo avatars (opt-in, off by default) are sent to the active AI image provider (OpenAI gpt-image-2) only to generate the cartoon portrait and are **not stored** on our servers. | Ensure "Additional Characters" and "Pet Photos" are explicitly justified as necessary for the service. |
 | **4. Data Retention** | ✅ **PASS** | Privacy Policy states a 2-year inactivity deletion period. | No change needed to policy, but ensure backend cron jobs exist to enforce this. |
 | **5. Data Deletion Mechanism** | ✅ **FIXED** | "Delete All My Data" button added to Parent Controls → Data & Privacy section. Calls `DELETE /api/user/<id>/data`. Confirmation dialog, COPPA right-to-erasure language, step-by-step instructions added to Privacy Policy. | No further action needed. |
-| **6. Third-Party Disclosure** | ✅ **FIXED** | Privacy Policy now explicitly names Google Gemini, ElevenLabs, Stripe, and Railway. Each entry describes what data is shared and links to their privacy policy. Consent screen also lists all three. | No further action needed. |
+| **6. Third-Party Disclosure** | ✅ **FIXED** | Privacy Policy carries a full "Sub-processors" table naming every provider in the data path (OpenAI, Cloudflare Workers AI, Replicate, OpenRouter, Google Gemini, Microsoft Azure/Edge, ElevenLabs, Stripe, Railway, Firebase/Google Analytics, Sentry, Resend), with the data category each receives. The consent screen mirrors it. | Keep the two lists synced when a provider changes. |
 | **7. No Behavioral Advertising** | ✅ **PASS** | No ad SDKs found. Policy explicitly prohibits behavioral tracking for children. | Maintain current stance. |
 | **8. Operator Contact Info** | ⚠️ **NEEDS WORK** | Includes email but lacks a physical address and phone number as typically required by COPPA. | Add a physical business address and phone number to the Privacy Policy. |
 
@@ -46,14 +46,21 @@ The Story Weaver app currently implements several critical features for COPPA co
 
 ## Privacy Policy Gaps (`PRIVACY_POLICY.md`)
 
-The following gaps were identified in the current Privacy Policy:
+> **✅ Resolved (June 2026).** Every gap below has been closed — `PRIVACY_POLICY.md` now
+> carries a full sub-processor table and step-by-step deletion instructions. Listed here as
+> a historical record of what was fixed. **Note the provider names have since changed:**
+> story text moved from Gemini to **OpenAI GPT-5 mini**, illustrations to **Cloudflare Workers AI**
+> (Flux Schnell), and avatars to **OpenAI gpt-image-2**; photos on the opt-in photo-avatar path
+> are uploaded to the image provider transiently (not stored), not "on-device only."
 
-1.  **Third-Party AI Services:** Must explicitly disclose that child-authored story elements are sent to **Google Gemini** for processing.
-2.  **Voice Data:** Must disclose that story text is sent to **ElevenLabs** for text-to-speech generation.
-3.  **Payment Data:** Must disclose that **Stripe** handles payment information for subscriptions/BYOK.
-4.  **Photo/Avatar Data:** While the app states photos are "on-device only," the policy should explicitly state that personal photos used for avatars are NOT uploaded or stored on servers.
-5.  **Data Storage:** Explicitly state that data is stored on secure servers provided by **Railway**.
-6.  **Right to Deletion:** Provide a clearer, step-by-step instruction on how a parent can exercise their right to delete their child's data.
+These were the gaps identified against the March 2026 Privacy Policy:
+
+1.  **Third-Party AI Services:** Disclose that child-authored story elements are sent to the AI text provider for processing. *(Now OpenAI GPT-5 mini — resolved.)*
+2.  **Voice Data:** Disclose that story text is sent to the TTS provider(s) for text-to-speech. *(Now Azure/Edge/Gemini Flash/ElevenLabs(13+) — resolved.)*
+3.  **Payment Data:** Disclose that **Stripe** handles payment information for subscriptions/BYOK. *(Resolved.)*
+4.  **Photo/Avatar Data:** State exactly how photo-avatar uploads are handled — sent to the AI image provider (OpenAI gpt-image-2) solely to generate the portrait, not stored, opt-in/off by default. *(Resolved; the old "on-device only" framing is obsolete.)*
+5.  **Data Storage:** State that data is stored on secure servers provided by **Railway**. *(Resolved.)*
+6.  **Right to Deletion:** Provide step-by-step instructions for a parent to delete their child's data. *(Resolved.)*
 
 ---
 
