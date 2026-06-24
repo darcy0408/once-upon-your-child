@@ -1,0 +1,108 @@
+name: Restore Drill
+
+# Proves the Cloudflare R2 Postgres backups actually RESTORE — closes the
+# "backup restore never tested" gap (FMEA P2 / RECOVERY.md §4). A backup you
+# have never test-restored is a hope, not a backup.
+#
+# Downloads the latest dump from R2, restores it into a throwaway Postgres
+# service container, verifies table + row counts, and prints the measured RTO.
+# Touches NOTHING in production: read-only against R2, restore into a disposable
+# container that is destroyed when the job ends.
+#
+# Mirrors scripts/restore-drill.ps1 (the local equivalent) and reuses the same
+# repo secrets as postgres-backup.yml: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY, R2_BUCKET.
+on:
+  schedule:
+    - cron: '0 10 1 * *'   # 10:00 UTC on the 1st of each month
+  workflow_dispatch: {}     # run on demand from the Actions tab
+
+permissions:
+  contents: read
+  issues: write             # to open an alert issue if the drill fails
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          POSTGRES_PASSWORD: drill
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGURL: postgresql://postgres:drill@localhost:5432/postgres
+    steps:
+      - name: Install postgresql-client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Download latest dump from R2
+        id: fetch
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          latest=$(aws s3api list-objects-v2 --bucket "${{ secrets.R2_BUCKET }}" \
+            --prefix postgres/ --endpoint-url "$R2_ENDPOINT" \
+            --query 'sort_by(Contents,&LastModified)[-1].Key' --output text)
+          if [ -z "$latest" ] || [ "$latest" = "None" ]; then
+            echo "::error::No dumps found under postgres/ in bucket ${{ secrets.R2_BUCKET }} — nothing to restore."
+            exit 1
+          fi
+          echo "Latest dump: $latest"
+          aws s3 cp "s3://${{ secrets.R2_BUCKET }}/$latest" dump.sql.gz --endpoint-url "$R2_ENDPOINT"
+          gunzip dump.sql.gz
+          echo "dump=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Restore into throwaway Postgres
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -f dump.sql
+          end=$(date +%s)
+          echo "RTO_SECONDS=$((end - start))" >> "$GITHUB_ENV"
+
+      - name: Verify restored data
+        run: |
+          set -euo pipefail
+          tables=$(psql "$PGURL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
+          echo "Public tables restored: $tables"
+          if [ "$tables" -lt 1 ]; then
+            echo "::error::Restore produced zero public tables — the backup is not usable."
+            exit 1
+          fi
+          echo "Top tables by row estimate:"
+          psql "$PGURL" -c "SELECT relname AS table, n_live_tup AS approx_rows FROM pg_stat_user_tables ORDER BY n_live_tup DESC NULLS LAST LIMIT 15;"
+          # The "user" table is the canonical "did real data come back" check.
+          if psql "$PGURL" -tAc 'SELECT to_regclass('"'"'public."user"'"'"');' | grep -q user; then
+            users=$(psql "$PGURL" -tAc 'SELECT count(*) FROM "user";')
+            echo "user table rows: $users"
+          else
+            echo "::warning::No public.\"user\" table in dump (ok if the schema differs, but worth a look)."
+          fi
+          echo "=================================================================="
+          echo " RESTORE DRILL PASSED. Measured RTO: ~${RTO_SECONDS}s  (dump: ${{ steps.fetch.outputs.dump }})"
+          echo "=================================================================="
+
+      - name: Open an issue if the drill failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "🔴 Restore drill FAILED ($(date -u +%Y-%m-%d))" \
+            --body "The Postgres restore drill failed in run ${{ github.run_id }}. The R2 backups may not be restorable — investigate before relying on them for recovery.
+
+          Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            || echo "::warning::Could not open alert issue (continuing)."

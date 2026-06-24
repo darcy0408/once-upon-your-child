@@ -22,6 +22,10 @@ on:
     - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
   workflow_dispatch: {}    # manual run — also available on demand
 
+permissions:
+  contents: read
+  issues: write            # to open an alert issue if a backup fails
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -115,3 +119,15 @@ jobs:
               fi
             done
           echo "Prune complete."
+
+      - name: Open an issue if the backup failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "🔴 Postgres backup FAILED ($(date -u +%Y-%m-%d))" \
+            --body "The daily Postgres backup to R2 failed in run ${{ github.run_id }}. Production may be running without a fresh off-site backup — investigate.
+
+          Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            || echo "::warning::Could not open alert issue (continuing)."
