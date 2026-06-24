@@ -138,6 +138,10 @@ def _resolve_story_provider() -> str:
     Looks at the Flask app config first (set in app.py from STORY_GEN_PROVIDER
     + the Config class default), falling back to the env var directly so this
     helper still works outside an app context (Celery worker bootstrap, scripts).
+
+    Every fallback defaults to 'openai', NOT 'gemini': Gemini's API terms forbid
+    serving under-18 apps, so an unset/unrecognized value must never silently
+    route children's story text to Gemini (MT-137).
     """
     try:
         from flask import current_app  # local import; Celery may not have app context
@@ -146,14 +150,14 @@ def _resolve_story_provider() -> str:
     except Exception:
         provider = None
     if not provider:
-        provider = os.environ.get("STORY_GEN_PROVIDER") or "gemini"
+        provider = os.environ.get("STORY_GEN_PROVIDER") or "openai"
     provider = str(provider).strip().lower()
     if provider not in ("gemini", "openrouter", "claude", "openai", "tiered", "auto"):
         logger.warning(
-            "STORY_GEN_PROVIDER=%r is not a recognized value; defaulting to 'gemini'.",
+            "STORY_GEN_PROVIDER=%r is not a recognized value; defaulting to 'openai'.",
             provider,
         )
-        provider = "gemini"
+        provider = "openai"
     return provider
 
 

@@ -362,19 +362,22 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
-                                      '• OpenAI — AI story-text generation. Receives a pseudonymized hero token, story details, themes, and any "big feelings" text shared.',
+                                      '• OpenAI — AI story-text generation and character-avatar generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image/avatar prompts; on the photo-avatar path, the child\'s photo.',
                                       style: textWhite70),
                                   const Text(
                                       '• Cloudflare Workers AI — AI story-page illustrations (primary). Receives image prompts.',
                                       style: textWhite70),
                                   const Text(
-                                      '• Google Gemini — AI avatar generation, and a fallback for story illustrations. Receives image prompts (and on the photo-avatar path, the child\'s photo).',
+                                      '• Google Gemini — fallback for story illustrations, and a voice-narration option (Gemini Flash TTS). Receives image prompts or generated story text.',
                                       style: textWhite70),
                                   const Text(
                                       "• OpenRouter, Replicate — additional AI image/avatar generation (fallback). Receive image prompts, and on the photo-avatar path the child's photo.",
                                       style: textWhite70),
                                   const Text(
                                       '• Microsoft (Azure AI Speech / Edge) and Google (Gemini Flash TTS) — voice narration. Receive generated story text to convert it to spoken audio.',
+                                      style: textWhite70),
+                                  const Text(
+                                      '• ElevenLabs — premium/character voice narration (ages 13+ only; never for children under 13). Receives generated story text.',
                                       style: textWhite70),
                                   const Text(
                                       '• Stripe — payment processing. Receives parent payment info; never child data.',

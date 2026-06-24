@@ -369,21 +369,12 @@ class TestProviderFlagSequencing:
         assert any(s.startswith("gemini(fail") for s in seq)
         assert "openrouter(success)" in seq
 
-    def test_unset_flag_defaults_to_gemini_order(
-        self, monkeypatch, mock_gemini, mock_openrouter_story
-    ):
-        """Unset env var must behave exactly like STORY_GEN_PROVIDER=gemini."""
+    def test_unset_flag_defaults_to_openai(self, monkeypatch):
+        """Unset env var must resolve to OpenAI, never Gemini. Gemini's API
+        terms forbid serving under-18 apps, so a missing flag must not silently
+        route children's story text to Gemini (MT-137)."""
         monkeypatch.delenv("STORY_GEN_PROVIDER", raising=False)
-        mock_gemini.models.generate_content.return_value = _ok_gemini_response()
-
-        _text, provider, _seq = story_tasks._generate_story_text_with_metadata(
-            prompt="Tell a story",
-            theme="adventure",
-            character_name="Aria",
-        )
-
-        assert provider == "gemini"
-        mock_openrouter_story.post.assert_not_called()
+        assert story_tasks._resolve_story_provider() == "openai"
 
     # ----- STORY_GEN_PROVIDER=auto -----
     def test_auto_flag_tries_openrouter_first(
@@ -435,20 +426,11 @@ class TestProviderFlagSequencing:
         assert any(s.startswith("openrouter(fail") for s in seq)
         assert "gemini(success)" in seq
 
-    def test_unknown_flag_value_warns_and_defaults_to_gemini(
-        self, monkeypatch, mock_gemini, mock_openrouter_story
-    ):
-        """A typo'd flag value must not break the app — fall back to legacy."""
+    def test_unknown_flag_value_warns_and_defaults_to_openai(self, monkeypatch):
+        """A typo'd flag value must not break the app, and must fail safe to
+        OpenAI rather than Gemini (MT-137)."""
         monkeypatch.setenv("STORY_GEN_PROVIDER", "claude-direct")
-        mock_gemini.models.generate_content.return_value = _ok_gemini_response()
-
-        _text, provider, _seq = story_tasks._generate_story_text_with_metadata(
-            prompt="Tell a story",
-            theme="adventure",
-            character_name="Aria",
-        )
-
-        assert provider == "gemini"
+        assert story_tasks._resolve_story_provider() == "openai"
 
 
 # ---------------------------------------------------------------------------

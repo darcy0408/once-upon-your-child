@@ -139,10 +139,12 @@ class Config:
     #   'openai'     — MT-248 launch-gate: OpenAI (direct, GPT-5 mini) -> static (skip Gemini).
     #   'tiered'     — MT-248 split: free -> OpenAI, paid -> Claude, cross-fallback -> static.
     #   'auto'       — rollback-safe:   OpenRouter -> Gemini -> static fallback.
-    # Defaults to 'gemini' so production behavior is unchanged until the flag is
-    # flipped after OpenRouter ToS verification (see audit/MT-171-OPENROUTER-MIGRATION-BRIEF.md).
+    # Defaults to 'openai' (the live production provider). Gemini's API terms
+    # forbid serving under-18 apps, so a missing/cleared env var must NOT silently
+    # route children's story text to Gemini. Set STORY_GEN_PROVIDER explicitly to
+    # override (see audit/MT-171-OPENROUTER-MIGRATION-BRIEF.md, MT-248, MT-137).
     STORY_GEN_PROVIDER = (
-        (os.environ.get("STORY_GEN_PROVIDER") or "gemini").strip().lower()
+        (os.environ.get("STORY_GEN_PROVIDER") or "openai").strip().lower()
     )
 
     # Stripe
