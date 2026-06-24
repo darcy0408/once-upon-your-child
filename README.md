@@ -16,7 +16,7 @@ Once Upon YOUR Child creates magical, personalized stories that help children ag
 
 The app combines:
 - **Emotional intelligence** — Mood Magic picker and optional 3-level feelings wheel help children identify and express emotions
-- **AI-powered storytelling** — Google Gemini 2.5 Flash generates age-calibrated narratives with rich therapeutic themes
+- **AI-powered storytelling** — OpenAI GPT-5 mini generates age-calibrated narratives with rich therapeutic themes (provider is configurable; Gemini was retired from the served kids' app for terms-of-service reasons)
 - **Deep personalization** — Custom characters with avatars, archetypes, companions, goals, and personality sliders that persist across sessions
 - **Age-specific visuals** — Dedicated character and UI asset sets for all 6 age bands (Sprout through Adult)
 - **Visual engagement** — AI-generated illustrations and printable coloring pages
@@ -28,7 +28,7 @@ The app combines:
 First-time users declare their age. Users under 13 are routed through a **Parental Consent** screen with a full Notice to Parents disclosure before accessing the app.
 
 ### 2. Wizard Entry
-Users land on the **4-step Wizard Story Screen** with a moon phase progress indicator. Saved characters load automatically from the backend.
+Users land on the **Wizard Story Screen** with a moon phase progress indicator. Saved characters load automatically from the backend. Younger bands use the page-based 4-step flow described below; the mature bands (Creator / Adolescent / Adult) use a streamlined **2-step** flow (Hero Creator → Magic Review) built on the CreativeBrief accordion.
 
 ### 3. Step 1: Hero Creator (`lib/screens/wizard_steps/hero_creator_step.dart`)
 - **Basic info**: Name, archetype (Brave Explorer, Clever Thinker, Kind Helper, Spark of Mischief, etc.)
@@ -77,7 +77,7 @@ Summary card → tap **"Create My Story"** to start generation.
    | Sprout (2–5) | 200–650 words | 7–13 nodes |
    | Explorer (6–8) | 450–1200 words | 9–18 nodes |
    | Adventurer (9–11) | 900–2400 words | 12–24 nodes |
-   | Creator (12–14) | 1300–3400 words | 14–26 nodes |
+   | Creator (13–14) | 1300–3400 words | 14–26 nodes |
    | Adolescent (15–17) | 1600–4500 words | 16–32 nodes |
    | Adult (18+) | 2000–6000 words | 18–38 nodes |
 
@@ -91,7 +91,7 @@ Summary card → tap **"Create My Story"** to start generation.
 
 6. **Conflict Hook** — Optional scenario card conflict is wired through the full generation pipeline including interactive stories
 
-7. **Gemini 2.5 Flash** call via `google-generativeai` Python SDK → parsed into title, pages, wisdom gem
+7. **OpenAI GPT-5 mini** call (story-text provider; `STORY_GEN_PROVIDER` selects the engine) → parsed into title, pages, wisdom gem
 
 ### 8. Story Result Screen (`lib/story_result_screen.dart`)
 
@@ -106,7 +106,7 @@ Summary card → tap **"Create My Story"** to start generation.
 - Secondary: Re-read · Remix · Save · Share · Color
 
 ### 9. Illustration Generation
-Sent to `POST /generate-illustration` → Gemini `gemini-2.5-flash` → base64 returned, displayed inline.
+Sent to `POST /generate-illustration` → **Cloudflare Workers AI (Flux Schnell, `@cf/black-forest-labs/flux-1-schnell`)** as the default $0 provider, with Replicate Flux Schnell as fallback → base64 returned, displayed inline.
 
 ### 10. Coloring Page Generation
 Scene extraction → bold line-art → printable PDF → saved to Coloring Book library.
@@ -214,7 +214,7 @@ backend/
 - SQLAlchemy ORM (SQLite dev / PostgreSQL prod on Railway)
 - Flask-JWT-Extended for auth
 - Flask-Limiter + Redis for distributed rate limiting
-- google-generativeai Python SDK (Gemini 2.5 Flash in production)
+- OpenAI Python SDK (GPT-5 mini — production story-text provider); Cloudflare Workers AI (Flux Schnell) for illustrations; OpenAI gpt-image-2 for avatars
 - Sentry for crash reporting (with PII scrubbing before_send hook)
 - Railway for deployment
 
@@ -244,7 +244,7 @@ Each of the 6 age bands has a dedicated set of character and UI assets:
 - Sprout (2-5): Warm, bubbly, illustration-heavy — soft Pixar 3D
 - Explorer (6-8): Magical purple, sparkles — playful Pixar 3D
 - Adventurer (9-11): Cosmic, book-like typography — high-energy Cosmic Chronicle
-- Creator (12-14): Clean editorial, dark mode default — confident Pixar 3D
+- Creator (13-14): Clean editorial, dark mode default — confident Pixar 3D
 - Adolescent (15-17): Cinematic dark, teal accent — high-fidelity 3D
 - Adult (18+): Refined fine-art cinematic
 
@@ -254,10 +254,10 @@ All character sets include diverse representation across Caucasian, Asian, Black
 Per-segment word counts are calculated by dividing total story word count by estimated path depth (4–14 segments depending on age), preventing novel-length individual segments. `conflictHook` and `sensoryPalette` from scenario cards are fully wired through the route → service → prompt builder pipeline.
 
 ### 6. Custom AI Avatars
-For BYOK/Premium users, Gemini generates a custom portrait from character appearance data. Reference photo support: upload a photo and the AI generates a story-style portrait that looks like you. For free users, a "Create a custom avatar that looks like me!" ✨ button in the avatar gallery surfaces this as the key upgrade hook.
+For BYOK/Premium users, OpenAI gpt-image-2 generates a custom portrait from character appearance data. Reference photo support: upload a photo and the AI generates a story-style portrait that looks like you. For free users, a "Create a custom avatar that looks like me!" ✨ button in the avatar gallery surfaces this as the key upgrade hook.
 
 ### 7. Pet Magical Companions
-Upload a photo of your pet → Gemini transforms it into a magical story companion. Robust fallback chain: Gemini image generation → text-based portrait generation → original photo fallback. Responses with original photo return HTTP 206 (partial content) so the UI can show an appropriate message.
+Upload a photo of your pet → the image model transforms it into a magical story companion. Robust fallback chain: primary image generation → text-based portrait generation → original photo fallback. Responses with original photo return HTTP 206 (partial content) so the UI can show an appropriate message.
 
 ### 8. Parent Controls & COPPA Compliance
 - **Parental consent screen** with full Notice to Parents disclosure (lists Google Gemini, OpenRouter, ElevenLabs, Cloudflare Workers AI, Replicate, Stripe, Firebase, Railway)
@@ -367,14 +367,14 @@ cd backend && railway up
 # Gunicorn: gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app
 ```
 
-**Frontend → Railway (`grand-light` service):**
-Built and served via `Dockerfile.frontend` (nginx) — live at `https://onceuponyourchild.app`.
+**Frontend → Cloudflare Pages (`once-upon-your-child` project):**
+Auto-deployed on every push to `main` by the `deploy-production` job in `.github/workflows/cicd.yml` (`wrangler pages deploy build/web`) — live at `https://onceuponyourchild.app`. The `web/_headers` (CSP) and `web/_redirects` (SPA fallback) files are bundled by `flutter build web`, so routing and security headers carry over automatically.
 ```bash
 flutter build web --release --dart-define=FLAVOR=production
 ```
-The same `build/web/` bundle can alternatively be deployed to Netlify (`netlify.toml`).
+Merging to `main` *is* the deploy — no manual step. (Railway `grand-light` and Netlify are retired for the frontend.)
 
-CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backend-lint.yml`
+CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cloudflare Pages deploy), `backend-tests.yml`, `backend-lint.yml`. Backend redeploys natively on Railway on push to `main`.
 
 ## Usage Limits & Costs
 
@@ -396,7 +396,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backe
 ## Roadmap
 
 **Completed ✅:**
-- Core story generation (Gemini 2.5 Flash in production)
+- Core story generation (OpenAI GPT-5 mini in production)
 - 6-band age calibration with therapeutic tone directives
 - Mood Magic + 3-level feelings wheel
 - Wizard UI with moon phase progress
@@ -422,7 +422,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline), `backend-tests.yml`, `backe
 - Rate limiting (Flask-Limiter + Redis, per-route limits)
 - Authorization ownership checks (IDOR prevention)
 - Sentry crash reporting with PII scrubbing
-- CI/CD pipeline (GitHub Actions → Railway + Netlify)
+- CI/CD pipeline (GitHub Actions → Cloudflare Pages frontend + Railway backend)
 - Production backend live and verified
 
 **In Progress 🔄:**
@@ -459,7 +459,8 @@ MIT License — see LICENSE file for details.
 
 ## Acknowledgments
 
-- **Google Gemini** for powering story and image generation
+- **OpenAI** for story-text and avatar generation
+- **Cloudflare Workers AI** (Flux Schnell) for story illustrations
 - **ElevenLabs** for text-to-speech narration
 - **Flutter** team for the amazing cross-platform framework
 - **Plutchik** and the **Geneva Emotion Wheel** for feelings wheel design
