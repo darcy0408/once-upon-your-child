@@ -97,6 +97,22 @@ class WizardData {
   // absent = unchanged story behavior, exactly like heroCatchphrase.
   String? heroSecret;       // what the hero hides from people close to them.
                             // Backend key: hero_secret.
+
+  /// MT-296: the wellbeing-distress secret preset offered on the Adolescent
+  /// antihero "double life" Identity page. Single source of truth — the costume
+  /// screen surfaces the crisis-resources panel inline whenever the saved
+  /// [heroSecret] equals this, and the story-result screen surfaces it again at
+  /// the end of the story (parity with how Life Quests surface support at the
+  /// story's close). Keep this in sync with the preset chip the costume screen
+  /// offers.
+  static const String distressSecret = "That I'm not okay";
+
+  /// MT-296: true when this story is the Adolescent antihero "double life" run
+  /// AND the teen chose the wellbeing-distress secret — the only path that
+  /// should surface the crisis-resources panel at the story's end. Mirrors the
+  /// costume screen's inline gate. Trimmed to tolerate stored whitespace.
+  bool get isAntiheroDistressPath =>
+      (heroSecret ?? '').trim() == distressSecret;
   String? heroTell;         // how they give themselves away. Backend key: hero_tell.
   String? heroLine;         // the line they won't cross. Backend key: hero_line.
   String? heroSeenBy;       // who gets to see the real them — the authenticity

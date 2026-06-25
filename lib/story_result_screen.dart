@@ -41,6 +41,7 @@ import 'services/therapeutic_analytics.dart';
 import 'subscription_models.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
+import 'widgets/crisis_resources_panel.dart';
 import 'widgets/error_boundary.dart';
 import 'widgets/user_friendly_error_dialog.dart';
 import 'widgets/golden_ticket_animation.dart';
@@ -3147,6 +3148,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               // focus; tapping it opens the age-gated disclosure of what the
               // story practiced. Empty (nothing rendered) otherwise.
               ..._buildStoryNotesEntry(band: band),
+              // MT-296: crisis-resources panel at story end for the Adolescent
+              // antihero distress path only — parity with Life Quests, which
+              // surface the same panel at story close. Empty for every other
+              // story, so ordinary endings are unaffected.
+              ..._buildAntiheroDistressSupport(band: band),
               SizedBox(height: isSprout ? 16 : 28),
               Divider(
                 indent: 40,
@@ -3424,6 +3430,37 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         band: disclosureBand,
         heroName: widget.characterName,
       ),
+    ];
+  }
+
+  /// MT-296: real-world safety net at the story's close for the Adolescent
+  /// antihero "double life" distress path — parity with how Life Quests surface
+  /// the same [CrisisResourcesPanel] at story end (see life_quest_screen.dart).
+  ///
+  /// Returns an empty list for every other story, so ordinary endings are
+  /// entirely unaffected. Gated narrowly: only when the themed band is
+  /// Adolescent AND the teen chose the wellbeing-distress secret on the Identity
+  /// page (`WizardData.isAntiheroDistressPath`). The warm palette keeps it "we
+  /// care", not "alarm", matching the inline treatment on the Identity page.
+  List<Widget> _buildAntiheroDistressSupport({required AgeBandThemeData band}) {
+    if (band.band != AgeBand.adolescent) return const [];
+    if (!(widget.wizardData?.isAntiheroDistressPath ?? false)) return const [];
+
+    final onSurface = _highContrastMode ? Colors.white : band.textOnLight;
+    return [
+      const SizedBox(height: 28),
+      Text(
+        'A quiet note, just in case',
+        key: const ValueKey('story-end-distress-support'),
+        textAlign: TextAlign.center,
+        style: GoogleFonts.quicksand(
+          fontSize: 14 * _textScale,
+          fontWeight: FontWeight.w600,
+          color: onSurface.withValues(alpha: 0.8),
+        ),
+      ),
+      const SizedBox(height: 14),
+      const CrisisResourcesPanel(),
     ];
   }
 

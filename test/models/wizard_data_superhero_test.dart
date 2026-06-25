@@ -271,4 +271,31 @@ void main() {
       expect(WizardData().toJson()['hero_seen_by'], isNull);
     });
   });
+
+  group('WizardData.isAntiheroDistressPath (MT-296 crisis-panel gate)', () {
+    test('true when heroSecret equals the distress preset', () {
+      final d = WizardData()..heroSecret = WizardData.distressSecret;
+      expect(d.isAntiheroDistressPath, isTrue);
+    });
+
+    test('tolerates surrounding whitespace on the stored secret', () {
+      final d = WizardData()..heroSecret = '  ${WizardData.distressSecret}  ';
+      expect(d.isAntiheroDistressPath, isTrue);
+    });
+
+    test('false for a different secret', () {
+      final d = WizardData()..heroSecret = 'What I can really do';
+      expect(d.isAntiheroDistressPath, isFalse);
+    });
+
+    test('false when no secret was chosen (default story)', () {
+      expect(WizardData().isAntiheroDistressPath, isFalse);
+    });
+
+    test('distress flag survives a toJson/fromJson round-trip', () {
+      final original = WizardData()..heroSecret = WizardData.distressSecret;
+      final restored = WizardData.fromJson(original.toJson());
+      expect(restored.isAntiheroDistressPath, isTrue);
+    });
+  });
 }

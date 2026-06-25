@@ -61,10 +61,11 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
   final TextEditingController _lineController = TextEditingController();
   final TextEditingController _seenByController = TextEditingController();
 
-  // MT-296: the wellbeing-distress secret preset. Single source of truth — the
-  // _secretChips list below references this, and the Identity page surfaces the
-  // crisis-resources panel inline whenever the saved secret equals it.
-  static const String _distressSecret = "That I'm not okay";
+  // MT-296: the wellbeing-distress secret preset. Single source of truth lives
+  // on [WizardData.distressSecret] (shared with the story-result screen, which
+  // re-surfaces the crisis panel at story end). Aliased here so the existing
+  // references below read unchanged.
+  static const String _distressSecret = WizardData.distressSecret;
 
   // MT-296: the antihero "double life" mode invites a wellbeing disclosure, so
   // the Adolescent flow opens with the same calm parent heads-up Life Quests
