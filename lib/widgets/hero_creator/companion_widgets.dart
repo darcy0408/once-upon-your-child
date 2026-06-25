@@ -682,6 +682,13 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final size =
         widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
+    // Mature bands (Creator/Adolescent/Adult) use a refined "medallion" frame:
+    // a themed ring, a lift shadow so the orb reads against the dark noir
+    // backdrop, and an edge vignette so full-bleed art settles into the circle
+    // instead of being hard-sliced at a thin border. Kids' bands keep the
+    // original flat-circle treatment.
+    final isMature = band.band.isMature;
+    final accent = band.accent;
 
     Widget imageWidget;
     if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
@@ -755,8 +762,8 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                   border: Border.all(
                     color: widget.isSelected
                         ? const Color(0xFFFFD700)
-                        : Colors.white24,
-                    width: widget.isSelected ? 3 : 1.5,
+                        : (isMature ? accent.withAlpha(125) : Colors.white24),
+                    width: widget.isSelected ? 3 : (isMature ? 2 : 1.5),
                   ),
                   boxShadow: widget.isSelected
                       ? [
@@ -766,11 +773,52 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                             spreadRadius: 2,
                           )
                         ]
-                      : [],
+                      : (isMature
+                          ? [
+                              // Lift the orb off the dark backdrop…
+                              BoxShadow(
+                                color: Colors.black.withAlpha(130),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
+                              ),
+                              // …with a faint themed halo so it reads as framed.
+                              BoxShadow(
+                                color: accent.withAlpha(40),
+                                blurRadius: 18,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : const []),
                 ),
                 child: Stack(
                   children: [
-                    ClipOval(clipBehavior: Clip.antiAlias, child: imageWidget),
+                    ClipOval(
+                      clipBehavior: Clip.antiAlias,
+                      child: isMature
+                          ? Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                imageWidget,
+                                // Edge vignette: keeps the busy starfield art
+                                // from bleeding flat into the ring, so the
+                                // companion sits in a deliberate frame.
+                                const DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      radius: 0.95,
+                                      stops: [0.6, 1.0],
+                                      colors: [
+                                        Colors.transparent,
+                                        Color(0x66000000),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : imageWidget,
+                    ),
                     if (widget.isSelected)
                       Positioned(
                         top: 4,
