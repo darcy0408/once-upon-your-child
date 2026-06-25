@@ -108,6 +108,81 @@ _SCENE_CONCEPT = {
         "assembling from light into fully realized terrain, a sense of a blank "
         "canvas becoming a cosmos. Authorship, possibility, limitless invention."
     ),
+    # ── MT-303: adolescent-band scenarios that previously rendered as a flat
+    # gradient + emoji because no bespoke art existed on disk. Concepts pitched
+    # at each scenario's mature/adolescent framing (matureTitle). Environment-
+    # only mood pieces — the realistic "Real-Life Heroes" ones are rendered as
+    # charged empty spaces (no people), matching how big_feelings_quest became
+    # a lighthouse rather than a literal feeling.
+    #
+    # The Temporal Threshold (doorway_seasons) — "what are you afraid to face?"
+    "doorway_seasons": (
+        "An ancient circular nexus chamber housing four towering temporal "
+        "gateways, each a shimmering wormhole-portal opening onto a different "
+        "eternal season — frost-locked winter, golden endless summer, amber "
+        "autumn, vivid spring — glimpsed through the arches. A vast orrery of "
+        "slow-turning celestial rings overhead. Mysterious, paradoxical, charged "
+        "with the weight of choices and timelines."
+    ),
+    # The Bioluminescent Depths (neon_jungle) — serene, awe-inspiring
+    "neon_jungle": (
+        "A serene, awe-inspiring bioluminescent rainforest at night where the "
+        "flora itself glows — softly luminous teal and cyan trees, glowing "
+        "mushrooms and fungi, delicate light-spores drifting through the air, a "
+        "calm luminous stream winding through the undergrowth. Tranquil, "
+        "wondrous, peaceful and inviting. Only glowing plants, fungi and water. "
+        "Absolutely no creatures, no animals, no eyes, no glowing eyes, no "
+        "silhouettes, no lurking presence, nothing menacing or threatening, no "
+        "faces — an empty, calm, beautiful landscape."
+    ),
+    # The Stormrunner Citadel (storm_chaser_sky) — "what storm are you running from?"
+    "storm_chaser_sky": (
+        "A vast militarised sky-citadel — part airborne fortress, part floating "
+        "warship — racing on the leading edge of a colossal supercell superstorm, "
+        "lightning forking across towering thunderheads and powering its engines, "
+        "rain-lashed and wind-shredded. High-stakes, kinetic, dramatic scale, "
+        "outrunning something worse than the lightning."
+    ),
+    # Breaking the Ice (brave_friend) — "how do you find your way in?"
+    "brave_friend": (
+        "A quiet, empty community commons room at dusk — long wooden tables, a "
+        "warm golden glow pooling invitingly around the far tables across the "
+        "room while the near foreground rests in cooler blue shadow, a polished "
+        "floor stretching between them. The emotional distance between cold "
+        "foreground and warm far light. Calm, hopeful, atmospheric, no people."
+    ),
+    # Standing Your Ground (standing_tall) — "walk away or face them down?"
+    "standing_tall": (
+        "An empty school corridor at the charged moment before a confrontation — "
+        "a long row of lockers receding into hard directional light, a single "
+        "solid grounded shaft of brightness on the floor where someone would "
+        "stand firm, deep tense shadows pressing in from the sides. Composure "
+        "under pressure, holding the line. Absolutely no people."
+    ),
+    # Unknown Territory (change_is_coming) — "starting over"
+    "change_is_coming": (
+        "An unfamiliar new city skyline at dusk seen from the window of a bare, "
+        "half-unpacked room — moving boxes in soft foreground silhouette, an "
+        "open window framing distant unknown streetlights coming on across a "
+        "place the viewer doesn't know yet. The bittersweet vastness of starting "
+        "over somewhere new. Absolutely no people."
+    ),
+    # The Unsolved Case (midnight_mystery) — "the truth is buried, and dangerous"
+    "midnight_mystery": (
+        "A noir detective's study at midnight — a pool of warm desk-lamp light "
+        "falling across scattered case files, a pinned evidence board with red "
+        "thread connecting photographs (faces turned away or blank), rain "
+        "streaking a dark window beyond. Tense, shadowed, every detail hiding "
+        "something. Absolutely no people, no readable text."
+    ),
+    # Into the Wild (survival_island) — "no map, no signal, no rescue coming"
+    "survival_island": (
+        "A harsh, beautiful, genuinely remote wilderness at the edge of a turning "
+        "storm — a wind-scoured ridge above dense forest and cold water, a tiny "
+        "improvised shelter and the faint ember of a struggling fire dwarfed by "
+        "the vast indifferent landscape, weather closing in. Survival, isolation, "
+        "grit against the elements. Absolutely no people."
+    ),
 }
 
 BANDS = list(_BAND_STYLE.keys())

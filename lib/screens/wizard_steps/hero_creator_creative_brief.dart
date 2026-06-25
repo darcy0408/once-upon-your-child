@@ -655,12 +655,30 @@ class CreativeBriefWidget extends StatelessWidget {
     // to an accent-gradient tile (+ emoji + thematic question) so the grid is
     // uniform and no world is dropped (MT-269). Keep in sync with the files
     // under assets/images/scenarios/<band>/.
-    const artBackedIds = {
+    //
+    // All three mature bands ship art for these four. The Adolescent band
+    // additionally has bespoke cinematic art for the rest of its settings
+    // (MT-303), so those render real art for teens while Creator/Adult keep the
+    // accent-gradient fallback until their own art is authored.
+    const sharedArtBackedIds = {
       'vanishing_colors',
       'crystal_cavern',
       'volcano_dragons',
       'big_feelings_quest',
     };
+    const adolescentArtBackedIds = {
+      'doorway_seasons',
+      'neon_jungle',
+      'storm_chaser_sky',
+      'brave_friend',
+      'standing_tall',
+      'change_is_coming',
+      'midnight_mystery',
+      'survival_island',
+    };
+    final artBackedIds = band.band == AgeBand.adolescent
+        ? {...sharedArtBackedIds, ...adolescentArtBackedIds}
+        : sharedArtBackedIds;
 
     final sceneTiles = <Widget>[
       ...scenarios.map((s) {
