@@ -676,26 +676,159 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
     }
   }
 
+  /// Mature-band (Creator/Adolescent/Adult) companion tile: a rounded-rectangle
+  /// CARD showing the full creature art on a dark themed panel. Replaces the old
+  /// ClipOval medallion that cropped the animals' bodies. Selected state =
+  /// accent border + glow + a check badge; resting state = subtle accent border
+  /// + lift shadow so the card reads against the noir backdrop.
+  Widget _buildMatureCard({
+    required double size,
+    required double cardHeight,
+    required double cardRadius,
+    required Color accent,
+    required Widget imageWidget,
+  }) {
+    final radius = BorderRadius.circular(cardRadius);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: size,
+      height: cardHeight,
+      decoration: BoxDecoration(
+        // Dark panel that matches the art's near-black background, so a
+        // contained image settles into the card with no visible letterbox.
+        color: const Color(0xFF14141F),
+        borderRadius: radius,
+        border: Border.all(
+          color: widget.isSelected
+              ? const Color(0xFFFFD700)
+              : accent.withAlpha(110),
+          width: widget.isSelected ? 3 : 1.5,
+        ),
+        boxShadow: widget.isSelected
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha(120),
+                  blurRadius: 18,
+                  spreadRadius: 2,
+                ),
+              ]
+            : [
+                // Lift the card off the dark backdrop…
+                BoxShadow(
+                  color: Colors.black.withAlpha(130),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+                // …with a faint themed halo so it reads as framed.
+                BoxShadow(
+                  color: accent.withAlpha(36),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: radius,
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              width: size,
+              height: cardHeight,
+              child: imageWidget,
+            ),
+          ),
+          if (widget.isSelected)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFFD700),
+                ),
+                child: const Icon(Icons.check, color: Colors.black, size: 14),
+              ),
+            ),
+          // Burst overlay — fires the first time the card becomes selected.
+          // IgnorePointer so it never intercepts taps.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: StarBurstCelebration(
+                controller: _burstCtrl,
+                starCount: 8,
+                radiusFactor: 0.65,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final size =
         widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
-    // Mature bands (Creator/Adolescent/Adult) use a refined "medallion" frame:
-    // a themed ring, a lift shadow so the orb reads against the dark noir
-    // backdrop, and an edge vignette so full-bleed art settles into the circle
-    // instead of being hard-sliced at a thin border. Kids' bands keep the
-    // original flat-circle treatment.
+    // Mature bands (Creator/Adolescent/Adult) now use a rounded-rectangle CARD
+    // instead of a circle. The full-body creature art (a portrait-orientation
+    // dragon/wolf/panther/robin on a dark starfield) was being clipped by the
+    // old ClipOval medallion — legs and tails got sliced off and the animals
+    // read at the wrong scale. A portrait card sized to the art shows the WHOLE
+    // creature. Kids' bands (Sprout/Explorer/Adventurer) keep the original
+    // flat-circle treatment unchanged.
     final isMature = band.band.isMature;
     final accent = band.accent;
 
+    // Card geometry for mature bands. The card is portrait (4:5) so the
+    // full-body, head-to-paw art has room top-to-bottom. `size` is the tile
+    // width handed down by the grid.
+    const double cardAspect = 1.25; // height / width
+    final double cardHeight = (size * cardAspect).roundToDouble();
+    // Radius scales gently with the band's card radius but stays in the
+    // 16-20px "rounded rectangle" range the design calls for.
+    final double cardRadius =
+        (band.cardRadiusBase + 8).clamp(16.0, 20.0).toDouble();
+
+    // Image widget. For mature cards the image fills the whole card; for kids'
+    // circles it stays a fixed square as before.
     Widget imageWidget;
     if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
       final bytes = base64Decode(
           widget.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
-      imageWidget =
-          Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
+      if (isMature) {
+        // User-supplied photos are usually square portraits — cover the card so
+        // there are no empty bars around a person's face.
+        imageWidget = Image.memory(bytes,
+            width: size, height: cardHeight, fit: BoxFit.cover);
+      } else {
+        imageWidget =
+            Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
+      }
+    } else if (isMature) {
+      // BoxFit.contain on a dark panel GUARANTEES the whole creature shows —
+      // no leg/tail cropping regardless of the art's aspect (adolescent art is
+      // 2:3, creator/adult mostly 1:1). The art's own background is near-black,
+      // so the contain "letterbox" blends invisibly into the card panel.
+      imageWidget = SafeAssetImage(
+        _pressed ? _pressedImage : _normalImage,
+        width: size,
+        height: cardHeight,
+        fit: BoxFit.contain,
+        alignment: widget.imageAlignment,
+        frameBuilder: (ctx, child, frame, _) =>
+            frame == null ? SizedBox(width: size, height: cardHeight) : child,
+        placeholder: Container(
+          width: size,
+          height: cardHeight,
+          color: const Color(0xFF14141F),
+          child: const Icon(Icons.pets, color: Colors.white54, size: 40),
+        ),
+      );
     } else {
       final fit = widget.backgroundColor != null ? BoxFit.contain : BoxFit.cover;
       imageWidget = SafeAssetImage(
@@ -752,7 +885,15 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                   offset: Offset(0, _floatAnim.value),
                   child: child,
                 ),
-                child: AnimatedContainer(
+                child: isMature
+                    ? _buildMatureCard(
+                        size: size,
+                        cardHeight: cardHeight,
+                        cardRadius: cardRadius,
+                        accent: accent,
+                        imageWidget: imageWidget,
+                      )
+                    : AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: size,
                 height: size,
@@ -762,8 +903,8 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                   border: Border.all(
                     color: widget.isSelected
                         ? const Color(0xFFFFD700)
-                        : (isMature ? accent.withAlpha(125) : Colors.white24),
-                    width: widget.isSelected ? 3 : (isMature ? 2 : 1.5),
+                        : Colors.white24,
+                    width: widget.isSelected ? 3 : 1.5,
                   ),
                   boxShadow: widget.isSelected
                       ? [
@@ -773,51 +914,13 @@ class _CompanionImageButtonState extends State<_CompanionImageButton>
                             spreadRadius: 2,
                           )
                         ]
-                      : (isMature
-                          ? [
-                              // Lift the orb off the dark backdrop…
-                              BoxShadow(
-                                color: Colors.black.withAlpha(130),
-                                blurRadius: 14,
-                                offset: const Offset(0, 5),
-                              ),
-                              // …with a faint themed halo so it reads as framed.
-                              BoxShadow(
-                                color: accent.withAlpha(40),
-                                blurRadius: 18,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : const []),
+                      : const [],
                 ),
                 child: Stack(
                   children: [
                     ClipOval(
                       clipBehavior: Clip.antiAlias,
-                      child: isMature
-                          ? Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                imageWidget,
-                                // Edge vignette: keeps the busy starfield art
-                                // from bleeding flat into the ring, so the
-                                // companion sits in a deliberate frame.
-                                const DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      radius: 0.95,
-                                      stops: [0.6, 1.0],
-                                      colors: [
-                                        Colors.transparent,
-                                        Color(0x66000000),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : imageWidget,
+                      child: imageWidget,
                     ),
                     if (widget.isSelected)
                       Positioned(
