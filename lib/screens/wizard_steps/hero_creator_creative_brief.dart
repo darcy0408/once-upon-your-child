@@ -236,15 +236,20 @@ class CreativeBriefWidget extends StatelessWidget {
     final String boyAsset;
     final String girlAsset;
     switch (ageBand) {
+      // All mature bands use the dedicated, instantly-distinct `gender_*`
+      // silhouette art (the same set the step-by-step wizard uses) rather than
+      // near-identical archetype scene art. The Adolescent band previously
+      // pointed at master_creator_boy/girl.webp — busy room scenes that are the
+      // same figure/pose/background at thumbnail size, so a user literally
+      // could not tell Boy from Girl. The gender_* art is a clean blue-boy /
+      // purple-girl silhouette that reads at a glance.
       case AgeBand.adolescent:
-        boyAsset =
-            'assets/images/archetypes/adolescent/master_creator_boy.webp';
-        girlAsset =
-            'assets/images/archetypes/adolescent/master_creator_girl.webp';
+        boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.webp';
         break;
       case AgeBand.adult:
-        boyAsset = 'assets/images/ui/adult/man_character_white.webp';
-        girlAsset = 'assets/images/ui/adult/woman_character_white.webp';
+        boyAsset = 'assets/images/ui/gender/gender_adult_boy.webp';
+        girlAsset = 'assets/images/ui/gender/gender_adult_girl.webp';
         break;
       case AgeBand.creator:
         // Bug fix: both genders previously pointed at one generic image
@@ -281,20 +286,20 @@ class CreativeBriefWidget extends StatelessWidget {
               gender: 'Boy',
               assetPath: boyAsset,
               isSelected: gender == 'Boy',
-              width: 96,
-              height: 120,
+              width: 130,
+              height: 170,
               onTap: () {
                 wizardData.characterGender = 'Boy';
                 onChanged();
               },
             ),
-            const SizedBox(width: 32),
+            const SizedBox(width: 28),
             GenderImageButton(
               gender: 'Girl',
               assetPath: girlAsset,
               isSelected: gender == 'Girl',
-              width: 96,
-              height: 120,
+              width: 130,
+              height: 170,
               onTap: () {
                 wizardData.characterGender = 'Girl';
                 onChanged();
