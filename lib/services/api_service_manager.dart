@@ -735,6 +735,7 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroMode,
     String? heroCatchphrase,
     String? heroSecret,
     String? heroTell,
@@ -844,6 +845,7 @@ class ApiServiceManager {
           heroCapeStyle: heroCapeStyle,
           heroEmblem: heroEmblem,
           heroPower: heroPower,
+          heroMode: heroMode,
           heroCatchphrase: heroCatchphrase,
           heroSecret: heroSecret,
           heroTell: heroTell,
@@ -1129,6 +1131,7 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroMode,
     String? heroCatchphrase,
     String? heroSecret,
     String? heroTell,
@@ -1189,6 +1192,7 @@ class ApiServiceManager {
           heroCapeStyle: heroCapeStyle,
           heroEmblem: heroEmblem,
           heroPower: heroPower,
+          heroMode: heroMode,
           heroCatchphrase: heroCatchphrase,
           heroSecret: heroSecret,
           heroTell: heroTell,
@@ -1276,6 +1280,7 @@ class ApiServiceManager {
     String? heroCapeStyle,
     String? heroEmblem,
     String? heroPower,
+    String? heroMode,
     String? heroCatchphrase,
     String? heroSecret,
     String? heroTell,
@@ -1347,6 +1352,13 @@ class ApiServiceManager {
       if (heroCapeStyle != null) body['hero_cape_style'] = heroCapeStyle;
       if (heroEmblem != null) body['hero_emblem'] = heroEmblem;
       if (heroPower != null) body['hero_power'] = heroPower;
+      // Chunk 2 (MT-303): the up-front vibe — 'classic' (fun-heroic) vs
+      // 'antihero' (noir double-life). The backend prompt branches tone on it; a
+      // null/absent value is treated as antihero downstream, so today's behavior
+      // is unchanged for stories that don't send it.
+      if (heroMode != null && heroMode.trim().isNotEmpty) {
+        body['hero_mode'] = heroMode.trim();
+      }
       if (heroCatchphrase != null && heroCatchphrase.trim().isNotEmpty) {
         body['hero_catchphrase'] = heroCatchphrase.trim();
       }

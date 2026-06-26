@@ -66,6 +66,7 @@ class PromptService:
         hero_cape_style: str | None = None,
         hero_emblem: str | None = None,
         hero_power: str | None = None,
+        hero_mode: str | None = None,
         hero_catchphrase: str | None = None,
         hero_secret: str | None = None,
         hero_tell: str | None = None,
@@ -148,6 +149,7 @@ class PromptService:
                     hero_costume_color=hero_costume_color,
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
+                    hero_mode=hero_mode,
                     hero_catchphrase=hero_catchphrase,
                     hero_secret=hero_secret,
                     hero_tell=hero_tell,
@@ -1592,7 +1594,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is 
             if lines:
                 continuity_block = (
                     f"\n\nCONTINUITY — THIS IS CHAPTER {issue_number} OF "
-                    f"{character}'s DOUBLE LIFE. The world remembers; honor it and "
+                    f"{character}'s SAGA. The world remembers; honor it and "
                     f"never contradict it:\n"
                     + "\n".join(lines)
                     + '\nFold a quiet "where we left off" undercurrent into the COLD '
@@ -1894,8 +1896,9 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         hero_costume_color: str | None,
         hero_emblem: str | None,
         hero_power: str | None,
-        villain_id: str | None,
-        problem_id: str | None,
+        hero_mode: str | None = None,
+        villain_id: str | None = None,
+        problem_id: str | None = None,
         hero_catchphrase: str | None = None,
         hero_secret: str | None = None,
         hero_tell: str | None = None,
@@ -1912,6 +1915,14 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         left off" undercurrent for a returning hero; absent on chapter 1.
         """
         villains_t, problems_t, powers_t, _ = _sh_get_band_tables("adolescent")
+
+        # Chunk 2 (MT-303): the up-front vibe the teen picked. 'classic' -> a
+        # bright, aspirational hero chapter; anything else (including None) -> the
+        # existing noir antihero saga, so legacy callers are unchanged. Both
+        # share the same power/villain/problem resolution, JSON contract, and
+        # saga_state keys below.
+        mode = (hero_mode or "").strip().lower()
+        is_classic = mode == "classic"
 
         # --- Resolve power -> framed as the hero's "Edge" (capability + cost) ---
         power_id = (hero_power or "").strip().lower() or "super_smile"
@@ -2076,7 +2087,7 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
             if lines:
                 continuity_block = (
                     f"\n\nCONTINUITY — THIS IS CHAPTER {issue_number} OF "
-                    f"{character}'s DOUBLE LIFE. The world remembers; honor it and "
+                    f"{character}'s SAGA. The world remembers; honor it and "
                     f"never contradict it:\n"
                     + "\n".join(lines)
                     + '\nFold a quiet "where we left off" undercurrent into the COLD '
@@ -2109,6 +2120,86 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
             if secret
             else ""
         )
+
+        # --- CLASSIC HERO branch (vibe = "Be a Hero") ----------------------
+        # Same age band, register, and JSON/saga_state contract as the antihero
+        # saga, but the tone is bright and aspirational rather than noir: a teen
+        # who came into a real power and chooses to use it well. The double-life
+        # concealment engine (secret/tell/seen-by/care mandate) is intentionally
+        # dropped — that's the antihero path's spine, not this one.
+        if is_classic:
+            classic_catchphrase_line = (
+                f"\n- Signature rallying line (land it ONCE, at the hero moment — "
+                f'earned, never cheesy): "{catchphrase}"'
+                if catchphrase
+                else ""
+            )
+            return f"""HERO SAGA — "THE CALLING" CHAPTER (Ages 15-17 — Adolescent band)
+
+You are writing one self-contained chapter of an ongoing superhero saga for a sharp {age}-year-old reader. Register: cinematic, aspirational, grounded — prestige YA superhero (think the best of modern hero fiction, NOT comic-book camp and NOT writing for children). The protagonist is a teenager who has come into a real power and chooses to use it for good. Write UP — this reader is allergic to anything written for kids.
+
+THE HERO:
+- {character} — an ordinary teenager carrying an extraordinary ability.
+- The power: "{alias}" — {power_verb}. It is genuinely thrilling and capable, but it is still GROWING: {character} is learning its edges, and it rewards judgment, not just raw force. It must hit a real LIMIT that matters in this chapter.
+- The look: understated but theirs — {color} gear and a small {emblem} they keep on them; cool and grounded, never a costume parade.{classic_catchphrase_line}
+- The through-line is RESPONSIBILITY and HEART: the power is only as good as the choices behind it. {character} leads with courage, cleverness, and empathy.
+- {personal_line_sentence}{continuity_block}
+
+THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
+- Name: {villain['name']} (use it in the prose).
+- What they are doing — and the BELIEF underneath it: {villain['action']}
+- {villain['name']} is NOT a cartoon villain. They have a real argument the reader could almost agree with — maybe one {character} half-agrees with. The harm flows from that belief, not from a gadget or a scheme.
+- How this resolves (follow it exactly): {villain['softens']}
+- No confession monologue, no instant reform, no redemption-by-apology.
+
+THE CASE: {problem['name']} — {problem['summary']} (the job is to {problem['verb']} it).
+
+WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
+1. COLD OPEN — the hero in motion; show the power in a way that thrills and tells us who {character} is.
+2. THE CALL — the case lands, and it's personal; the stakes get real.
+3. FIRST TRY, REAL LIMIT — {character} leans on the power and it is NOT enough; it hits a limit and costs something. The easy win isn't available.
+4. THE SETBACK — a fair challenge: someone {character} respects pushes back, or a choice goes wrong. Real doubt lands; caring has a price.
+5. THE INSIGHT — {character} works out what is really driving {villain['name']}; the answer needs heart and wits, not more power.
+6. THE RISE — {character} commits, combining the power ({power_verb}) WITH judgment, courage, and empathy to {problem['verb']} the case, exactly as "How this resolves" describes. Make it land like a stand-up-and-cheer hero moment — won by nerve and conviction, NEVER violence.
+7. AFTERMATH — short. What it cost, what {character} learned, the bond it strengthened, and one bright thread pulling toward the next chapter. End on a line that lifts, not a moral.{callback_mandate}
+
+HARD RULES — non-negotiable:
+- LENGTH: 1400-2200 words.
+- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
+- The power must hit a LIMIT or COST in this chapter; judgment and heart win, not raw force.
+- A genuine challenge and a real choice; the harm must stem from {villain['name']}'s BELIEF.
+- Resolution is ALWAYS non-violent: wits, courage, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- Aspirational, NOT camp and NOT grim: {character} is brave, kind, and genuinely worth looking up to. Hope is the keynote.
+- TONE — avoid: a barrage of quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, and repeated moral summaries. Let the hero earn the win.{custom_request_block}
+
+OUTPUT FORMAT — strictly valid JSON:
+{{
+  "title": "Chapter title (evocative, never childish)",
+  "themes": ["3-6 short lowercase tags a parent recognises (e.g. 'courage', 'responsibility', 'identity'); avoid generic tags like 'adventure', 'magic'"],
+  "characters_featured": ["named characters who actually appear"],
+  "emotional_arc": "<start> → <end> (e.g. 'uncertain → assured', 'reluctant → committed')",
+  "pages": [
+    {{"text": "Beat 1 — COLD OPEN (no labels, no scene numbers)."}},
+    {{"text": "Beat 2 — THE CALL."}},
+    {{"text": "Beat 3 — FIRST TRY, REAL LIMIT."}},
+    {{"text": "Beat 4 — THE SETBACK."}},
+    {{"text": "Beat 5 — THE INSIGHT."}},
+    {{"text": "Beat 6 — THE RISE."}},
+    {{"text": "Beat 7 — AFTERMATH."}}
+  ],
+  "saga_state": {{
+    "nemesis": "{villain['name']}",
+    "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
+    "what_changed": "one sentence on what shifted in {character}'s world",
+    "what_it_cost": "one sentence on what using the power COST {character} this chapter — concrete (a strained bond, a near-miss, a sacrifice), never abstract",
+    "next_hook": "one sentence teasing the unresolved thread for the next chapter",
+    "allies": ["names of 1-3 people who, by the end of this chapter, know or share {character}'s secret, or are recurring allies/rivals/mentors — names only, no descriptions"],
+    "defining_choice": "one sentence naming the key CHOICE {character} made this chapter — the decision that now defines them — concrete and specific"
+  }}
+}}
+
+Begin now. Write one tight, thrilling, aspirational chapter of 1400-2200 words; the stakes are real, the power has a limit, and the win comes from courage and judgment, not force.
+"""
 
         return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
 

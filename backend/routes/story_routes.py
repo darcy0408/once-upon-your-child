@@ -602,6 +602,7 @@ def _build_antihero_task_kwargs(payload: dict, user, resolved_age: int) -> dict:
         "hero_costume_color": payload.get("hero_costume_color"),
         "hero_emblem": payload.get("hero_emblem"),
         "hero_power": payload.get("hero_power"),
+        "hero_mode": payload.get("hero_mode"),
         "hero_catchphrase": payload.get("hero_catchphrase"),
         "hero_secret": payload.get("hero_secret"),
         "hero_tell": payload.get("hero_tell"),
@@ -832,6 +833,7 @@ def create_story_blueprint(
             "hero_cape_style": payload.get("hero_cape_style"),
             "hero_emblem": payload.get("hero_emblem"),
             "hero_power": payload.get("hero_power"),
+            "hero_mode": payload.get("hero_mode"),
             "hero_catchphrase": payload.get("hero_catchphrase"),
             # Adolescent (15-17) antihero "identity" fields — only meaningful
             # for the T10 double-life prompt; other bands ignore them.

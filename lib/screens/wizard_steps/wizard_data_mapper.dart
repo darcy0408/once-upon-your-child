@@ -378,6 +378,11 @@ class WizardDataMapper {
         'heroCapeStyle': data.heroCapeStyle,
         'heroEmblem': data.heroEmblem,
         'heroPower': data.heroPower,
+        // Chunk 2 (MT-303): the vibe chosen up front — 'classic' (fun-heroic)
+        // vs 'antihero' (noir double-life). The backend prompt branches tone on
+        // it; absent/null keeps the existing antihero treatment.
+        if (data.heroMode != null && data.heroMode!.trim().isNotEmpty)
+          'heroMode': data.heroMode!.trim(),
         // B3 catchphrase — optional; only emitted when the kid picked one.
         if (data.heroCatchphrase != null &&
             data.heroCatchphrase!.trim().isNotEmpty)
