@@ -152,6 +152,38 @@ void main() {
     });
   });
 
+  group('WizardData heroMode (MT-303 teen vibe)', () {
+    test('defaults to null', () {
+      expect(WizardData().heroMode, isNull);
+    });
+
+    test('toJson emits local-only camelCase heroMode', () {
+      final d = WizardData()..heroMode = 'classic';
+      expect(d.toJson()['heroMode'], 'classic');
+    });
+
+    test('toJson round-trips both modes through fromJson', () {
+      for (final mode in ['classic', 'antihero']) {
+        final restored =
+            WizardData.fromJson((WizardData()..heroMode = mode).toJson());
+        expect(restored.heroMode, mode);
+      }
+    });
+
+    test('null heroMode survives round-trip', () {
+      final restored = WizardData.fromJson(WizardData().toJson());
+      expect(restored.heroMode, isNull);
+    });
+
+    test('clone() preserves heroMode', () {
+      final original = WizardData()..heroMode = 'antihero';
+      final copy = original.clone();
+      expect(copy.heroMode, 'antihero');
+      copy.heroMode = 'classic';
+      expect(original.heroMode, 'antihero'); // independent
+    });
+  });
+
   group('WizardData heroCatchphrase (B3)', () {
     test('toJson emits snake_case hero_catchphrase', () {
       final d = WizardData()

@@ -287,9 +287,40 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     ),
   ];
 
+  // MT-303: classic teen ("Be a Hero") display copy for the SAME adolescent
+  // power IDs — aspirational, no "cost"/"edge" framing. IDs are unchanged so the
+  // backend power maps stay in sync; only the user-facing name/description
+  // differs by mode. Covers all 10 adolescent IDs (the shared 8 + strategist +
+  // gadgeteer) so the extra Edges read as classic powers too. Emoji intentionally
+  // omitted → falls back to the sprout base emoji (clean, non-noir).
+  static const Map<String, _BandCopy> _adolescentClassicNameOverrides = {
+    'flying': _BandCopy('Flight', 'Take to the sky — go anywhere.'),
+    'super_speed': _BandCopy('Super-Speed', 'Outrun anything.'),
+    'super_strength': _BandCopy('Super-Strength', 'Move the immovable.'),
+    'super_hearing': _BandCopy('Super-Senses', 'See and hear what others miss.'),
+    'super_smile': _BandCopy('Charm', 'Win the room without trying.'),
+    'super_hugs': _BandCopy('Force Field', 'Shield the people you care about.'),
+    'super_whisper': _BandCopy('Calm', 'Steady any storm.'),
+    'super_sharing': _BandCopy('Equalizer', 'Even the odds for everyone.'),
+    'strategist': _BandCopy('Mastermind', 'Always five steps ahead.'),
+    'gadgeteer': _BandCopy('Gadgeteer', 'The right tech for any situation.'),
+  };
+
+  /// MT-303: the teen "Be a Hero" (classic) vibe — drives classic power copy.
+  /// Null or 'antihero' keeps the existing "Edge" copy exactly.
+  bool get _isClassicTeen =>
+      widget.band == AgeBand.adolescent &&
+      widget.wizardData.heroMode == 'classic';
+
   /// Returns the band-appropriate power list, with band renames applied.
   List<_PowerOption> get powers {
-    final overrides = widget.band == AgeBand.explorer
+    // The teen "Be a Hero" (classic) vibe reuses the same adolescent IDs but
+    // swaps in aspirational copy for the whole roster — including the two extra
+    // IDs — so it's handled with a single override map rather than the
+    // base-overrides + verbatim-extras path the antihero/other bands use.
+    final overrides = _isClassicTeen
+        ? _adolescentClassicNameOverrides
+        : widget.band == AgeBand.explorer
         ? _explorerNameOverrides
         : widget.band == AgeBand.adventurer
         ? _adventurerNameOverrides
@@ -298,7 +329,7 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         : widget.band == AgeBand.adolescent
         ? _adolescentNameOverrides
         : null;
-    final base = _sproutPowers.map((p) {
+    _PowerOption applyOverride(_PowerOption p) {
       if (overrides == null) return p;
       final override = overrides[p.id];
       if (override == null) return p;
@@ -308,7 +339,9 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         name: override.name,
         description: override.description,
       );
-    }).toList();
+    }
+
+    final base = _sproutPowers.map(applyOverride).toList();
     if (widget.band == AgeBand.explorer) {
       base.addAll(_explorerExtraPowers);
     } else if (widget.band == AgeBand.adventurer) {
@@ -316,7 +349,10 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
     } else if (widget.band == AgeBand.creator) {
       base.addAll(_creatorExtraPowers);
     } else if (widget.band == AgeBand.adolescent) {
-      base.addAll(_adolescentExtraPowers);
+      // Classic teen runs the extra IDs through the same classic override map
+      // (so 'strategist'/'gadgeteer' read as Mastermind/Gadgeteer, not the
+      // antihero Edges); antihero keeps the verbatim Edge copy.
+      base.addAll(_adolescentExtraPowers.map(applyOverride));
     }
     return base;
   }
@@ -515,18 +551,21 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
         widget.band == AgeBand.creator ||
         widget.band == AgeBand.adolescent;
     final gradient = themeForBand(widget.band).backgroundGradient;
-    final isAdolescent = widget.band == AgeBand.adolescent;
-    final appBarTitle = isAdolescent
+    // Classic teen ("Be a Hero") uses the aspirational "power" copy, not the
+    // antihero "edge" copy. Antihero (heroMode null/'antihero') keeps the edge
+    // wording exactly.
+    final isAntiheroTeen = widget.band == AgeBand.adolescent && !_isClassicTeen;
+    final appBarTitle = isAntiheroTeen
         ? 'Choose your edge'
         : isOlder
         ? 'Choose your power'
         : 'Pick your power!';
-    final heading = isAdolescent
+    final heading = isAntiheroTeen
         ? "What's your edge?"
         : isOlder
         ? 'What is your hero power?'
         : 'What is your superpower?';
-    final ctaIdle = isAdolescent
+    final ctaIdle = isAntiheroTeen
         ? 'Lock in this edge'
         : isOlder
         ? 'Choose this power'

@@ -70,7 +70,13 @@ class CreativeBriefWidget extends StatelessWidget {
   /// Launches the superhero / antihero flow (costume -> Edge -> saga). Null
   /// for bands without a backend tier; when set, a "double life" entry CTA is
   /// shown. Supplied for Creator (T9) and Adolescent (T10).
-  final Future<void> Function()? onLaunchSuperhero;
+  ///
+  /// [forcedMode] pins [WizardData.heroMode] and skips the vibe chooser:
+  ///   • null (the 'superhero' scenario tile) → Adolescent sees the vibe
+  ///     chooser first; other bands launch the flow directly (unchanged).
+  ///   • 'antihero' (the "Live a double life" CTA) → straight into the existing
+  ///     antihero saga, no chooser.
+  final Future<void> Function({String? forcedMode})? onLaunchSuperhero;
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -698,6 +704,15 @@ class CreativeBriefWidget extends StatelessWidget {
           showThematicQuestion: true,
           accentColor: accent,
           onTap: () {
+            // MT-303: the "Superhero Story" tile used to dead-end here (it only
+            // toggled selectedScenario, with no builder). For bands with a
+            // backend superhero tier (onLaunchSuperhero != null — Creator T9 /
+            // Adolescent T10), launch the real flow instead: Adolescent gets the
+            // vibe chooser (classic vs antihero), other bands go straight in.
+            if (s.id == 'superhero' && onLaunchSuperhero != null) {
+              onLaunchSuperhero!();
+              return;
+            }
             wizardData.selectedScenario =
                 wizardData.selectedScenario == s.id ? null : s.id;
             onChanged();
@@ -985,7 +1000,9 @@ class CreativeBriefWidget extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => launch(),
+              // The "double life" CTA is unambiguously the antihero saga — pin
+              // the mode and skip the vibe chooser.
+              onPressed: () => launch(forcedMode: 'antihero'),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: accent, width: 2),
                 padding: const EdgeInsets.symmetric(vertical: 16),

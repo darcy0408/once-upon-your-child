@@ -42,6 +42,7 @@ import '../../services/parental_consent_service.dart';
 import 'hero_creator_scene_page.dart';
 import 'hero_creator_story_type_page.dart';
 import 'superhero_entry_screen.dart';
+import 'superhero_vibe_chooser_screen.dart';
 import 'hero_creator_creative_brief.dart';
 import '../life_quest_screen.dart';
 import '../../services/offline_story_service.dart';
@@ -497,10 +498,31 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// "Imagine It". On success the superhero flow has already set
   /// `selectedScenario = 'superhero'` + `customElements`, so we just sync the
   /// wish field and advance the wizard.
-  Future<void> _launchSuperheroFromStoryType() async {
+  ///
+  /// MT-303: [forcedMode] threads the teen "vibe":
+  ///   • null (the 'superhero' scenario tile / story-type orb) → for the
+  ///     Adolescent band, show the vibe chooser first (classic vs antihero);
+  ///     every other band launches the existing flow directly, unchanged.
+  ///   • 'antihero' (the "Live a double life" CTA) → pin heroMode and skip the
+  ///     chooser, straight into the existing antihero saga.
+  Future<void> _launchSuperheroFromStoryType({String? forcedMode}) async {
+    final band = ageBandFromAge(widget.wizardData.characterAge);
+    if (forcedMode != null) {
+      widget.wizardData.heroMode = forcedMode;
+    }
+    // The vibe chooser is Adolescent-only: it's the only band with a real
+    // antihero "double life" path to offer against the classic hero path.
+    // Creator's flow has no Identity/distress step, so a "real cost" card would
+    // be a false promise — Creator launches the existing flow directly.
+    final useChooser = forcedMode == null && band == AgeBand.adolescent;
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => SuperheroEntryScreen(wizardData: widget.wizardData),
+        builder: (_) => useChooser
+            ? SuperheroVibeChooserScreen(
+                wizardData: widget.wizardData,
+                band: band,
+              )
+            : SuperheroEntryScreen(wizardData: widget.wizardData),
       ),
     );
     if (!mounted || result != true) return;

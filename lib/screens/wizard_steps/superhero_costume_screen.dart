@@ -146,12 +146,22 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     return base;
   }
 
+  /// MT-303: the teen "Be a Hero" (classic) vibe. When true, the Adolescent
+  /// flow is the aspirational, non-noir path — it drops the "double life"
+  /// Identity page, the wellbeing-distress mechanic, and the parent sensitivity
+  /// gate, and the power screen shows classic power copy. Null or 'antihero'
+  /// (the only pre-existing teen flow) keeps today's behavior exactly.
+  bool get _isClassicTeen =>
+      widget.band == AgeBand.adolescent &&
+      widget.wizardData.heroMode == 'classic';
+
   @override
   void initState() {
     super.initState();
-    // Only the Adolescent "double life" flow collects a secret, so only it
-    // needs the sensitivity gate; every other band skips straight in.
-    if (widget.band != AgeBand.adolescent) {
+    // Only the Adolescent "double life" (antihero) flow collects a secret, so
+    // only it needs the sensitivity gate; every other band — and the classic
+    // teen vibe — skips straight in.
+    if (widget.band != AgeBand.adolescent || _isClassicTeen) {
       _sensitivityResolved = true;
     } else {
       _resolveSensitivityGate();
@@ -190,12 +200,19 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     super.dispose();
   }
 
-  // Band-aware page order. Adolescent's noir "double life" flow drops the cape
-  // page and adds an Identity page: [Color, Mark(emblem), Identity]. Every other
-  // band keeps the original [Color, Cape, Emblem] exactly as before.
-  List<Widget> get _pages => widget.band == AgeBand.adolescent
-      ? [_buildColorPage(), _buildEmblemPage(), _buildIdentityPage()]
-      : [_buildColorPage(), _buildCapePage(), _buildEmblemPage()];
+  // Band-aware page order. Adolescent's noir "double life" (antihero) flow
+  // drops the cape page and adds an Identity page: [Color, Mark(emblem),
+  // Identity]. The classic teen vibe ("Be a Hero") drops the Identity page too
+  // → [Color, Mark(emblem)]. Every other band keeps the original
+  // [Color, Cape, Emblem] exactly as before.
+  List<Widget> get _pages {
+    if (widget.band == AgeBand.adolescent) {
+      return _isClassicTeen
+          ? [_buildColorPage(), _buildEmblemPage()]
+          : [_buildColorPage(), _buildEmblemPage(), _buildIdentityPage()];
+    }
+    return [_buildColorPage(), _buildCapePage(), _buildEmblemPage()];
+  }
 
   void _advance() {
     if (_currentPage < _pages.length - 1) {
@@ -241,8 +258,14 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     HapticFeedback.mediumImpact();
     setState(() {
       widget.wizardData.heroCostumeColor = color.id;
-      if (!isAdolescent) {
-        widget.wizardData.heroCapeStyle = _capes[rng.nextInt(_capes.length)].id;
+      if (!isAdolescent || _isClassicTeen) {
+        // Younger bands have a cape; the classic teen vibe has no Identity page,
+        // so neither seeds the double-life prompts. Younger bands still need a
+        // random cape; classic teen has no cape page so leaves it untouched.
+        if (!isAdolescent) {
+          widget.wizardData.heroCapeStyle =
+              _capes[rng.nextInt(_capes.length)].id;
+        }
       } else {
         // Adolescent's signature step is Identity — seed it too so a random
         // cover isn't left blank on the band's defining page. Controllers stay
@@ -334,7 +357,7 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
     // Pull the canonical band gradient instead of hardcoding a new palette.
     final gradient = themeForBand(widget.band).backgroundGradient;
     final appBarTitle = widget.band == AgeBand.adolescent
-        ? 'Build your cover'
+        ? (_isClassicTeen ? 'Design your hero' : 'Build your cover')
         : isExplorer
         ? 'Design Your Hero!'
         : 'Make Your Hero!';
@@ -469,7 +492,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                 ? 'Choose your hero color'
                 : 'Pick your hero color!',
             widget.band == AgeBand.adolescent
-                ? 'What you wear when you need to blend in'
+                ? (_isClassicTeen
+                    ? 'The colors you wear when it counts'
+                    : 'What you wear when you need to blend in')
                 : isExplorer
                 ? 'Tap the color that matches your hero'
                 : 'Tap a color to choose',
@@ -667,7 +692,9 @@ class _SuperheroCostumeScreenState extends State<SuperheroCostumeScreen> {
                 ? 'Choose your emblem'
                 : 'Pick your symbol!',
             widget.band == AgeBand.adolescent
-                ? 'One small thing you keep on you'
+                ? (_isClassicTeen
+                    ? 'Your signature — the symbol they\'ll remember'
+                    : 'One small thing you keep on you')
                 : isExplorer
                 ? 'Your hero\'s signature mark'
                 : 'Tap your hero emblem',

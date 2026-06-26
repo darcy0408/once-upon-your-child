@@ -98,6 +98,16 @@ class WizardData {
   String? heroSecret;       // what the hero hides from people close to them.
                             // Backend key: hero_secret.
 
+  /// Teen "superhero vibe" — which flavour of the 15-17 superhero flow the user
+  /// chose on the vibe-chooser screen. 'classic' = aspirational "Be a Hero"
+  /// (skips the double-life Identity page + distress mechanic, classic power
+  /// copy); 'antihero' = the existing "double life" saga. Null = treated as
+  /// antihero everywhere (back-compat: the only pre-existing teen flow was the
+  /// antihero one, so a null heroMode must NOT change today's behavior).
+  /// Frontend-only for now (Chunk 1) — story tone tuning off heroMode is a
+  /// backend follow-up; this field is intentionally not in toJson yet.
+  String? heroMode;
+
   /// MT-296: the wellbeing-distress secret preset offered on the Adolescent
   /// antihero "double life" Identity page. Single source of truth — the costume
   /// screen surfaces the crisis-resources panel inline whenever the saved
@@ -184,6 +194,7 @@ class WizardData {
     c.heroPower = heroPower;
     c.heroCatchphrase = heroCatchphrase;
     c.heroSecret = heroSecret;
+    c.heroMode = heroMode;
     c.heroTell = heroTell;
     c.heroLine = heroLine;
     c.heroSeenBy = heroSeenBy;
@@ -273,6 +284,9 @@ class WizardData {
       'hero_power': heroPower,
       'hero_catchphrase': heroCatchphrase,
       'hero_secret': heroSecret,
+      // Local-only (camelCase) — drives the teen flow on the client; not part of
+      // the backend payload (that's built separately in wizard_data_mapper).
+      'heroMode': heroMode,
       'hero_tell': heroTell,
       'hero_line': heroLine,
       'hero_seen_by': heroSeenBy,
@@ -361,6 +375,7 @@ class WizardData {
     d.heroCatchphrase =
         (json['hero_catchphrase'] ?? json['heroCatchphrase']) as String?;
     d.heroSecret = (json['hero_secret'] ?? json['heroSecret']) as String?;
+    d.heroMode = json['heroMode'] as String?;
     d.heroTell = (json['hero_tell'] ?? json['heroTell']) as String?;
     d.heroLine = (json['hero_line'] ?? json['heroLine']) as String?;
     d.heroSeenBy = (json['hero_seen_by'] ?? json['heroSeenBy']) as String?;

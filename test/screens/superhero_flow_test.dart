@@ -16,7 +16,9 @@ import 'package:story_weaver_app/screens/wizard_steps/superhero_entry_screen.dar
 import 'package:story_weaver_app/screens/wizard_steps/superhero_welcome_back_screen.dart';
 import 'package:story_weaver_app/screens/wizard_steps/superhero_costume_screen.dart';
 import 'package:story_weaver_app/screens/wizard_steps/superhero_power_screen.dart';
+import 'package:story_weaver_app/screens/wizard_steps/superhero_vibe_chooser_screen.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
+import 'package:story_weaver_app/widgets/parent_sensitivity_interstitial.dart';
 
 WizardData _makeWizardData() {
   return WizardData()
@@ -261,6 +263,158 @@ void main() {
     // Explorer-renamed labels also absent.
     expect(find.text('Lightning Speed'), findsNothing);
     expect(find.text('Sky Glide'), findsNothing);
+  });
+
+  // ── MT-303: teen vibe chooser + heroMode gating ──────────────────────────
+
+  testWidgets('vibe chooser shows both cards and sets heroMode=classic',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Rae'
+      ..characterAge = 16; // Adolescent band
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroVibeChooserScreen(
+          wizardData: wd,
+          band: AgeBand.adolescent,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Be a Hero'), findsOneWidget);
+    expect(find.text('Live a Double Life'), findsOneWidget);
+    expect(wd.heroMode, isNull); // not chosen yet
+
+    // Tapping "Be a Hero" sets classic mode (then pushes the flow).
+    await tester.tap(find.text('Be a Hero'));
+    await tester.pump();
+    expect(wd.heroMode, 'classic');
+  });
+
+  testWidgets(
+      'classic teen costume screen skips the sensitivity gate and Identity page',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // Un-acked prefs: the antihero flow WOULD show the gate. Classic must not.
+    SharedPreferences.setMockInitialValues({});
+
+    final wd = WizardData()
+      ..characterName = 'Rae'
+      ..characterAge = 16
+      ..heroMode = 'classic';
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroCostumeScreen(
+          wizardData: wd,
+          band: AgeBand.adolescent,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // No parent sensitivity gate, straight to the colors page.
+    expect(find.byType(ParentSensitivityInterstitial), findsNothing);
+    expect(find.text('Choose your colors'), findsOneWidget);
+    // The double-life Identity page is gone — its header never appears even
+    // after advancing past color → emblem (the final page is emblem).
+    expect(find.text('Your double life'), findsNothing);
+  });
+
+  testWidgets(
+      'antihero teen costume screen (heroMode null) still shows the sensitivity gate',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    SharedPreferences.setMockInitialValues({}); // un-acked → gate shows
+
+    final wd = WizardData()
+      ..characterName = 'Rae'
+      ..characterAge = 16; // heroMode null = antihero behavior, unchanged
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroCostumeScreen(
+          wizardData: wd,
+          band: AgeBand.adolescent,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Regression guard: the antihero path is unchanged — the gate appears.
+    expect(find.byType(ParentSensitivityInterstitial), findsOneWidget);
+  });
+
+  testWidgets('classic teen power screen shows classic copy, not Edge copy',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Rae'
+      ..characterAge = 16
+      ..heroMode = 'classic';
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroPowerScreen(
+          wizardData: wd,
+          band: AgeBand.adolescent,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Classic names (incl. the extra IDs strategist/gadgeteer).
+    expect(find.text('Flight'), findsOneWidget);
+    expect(find.text('Mastermind'), findsOneWidget);
+    expect(find.text('Gadgeteer'), findsOneWidget);
+    // Antihero "Edge" copy must be absent.
+    expect(find.text('Ghost'), findsNothing);
+    expect(find.text('The Tell'), findsNothing);
+    expect(find.text('Bend the Odds'), findsNothing);
+  });
+
+  testWidgets(
+      'antihero teen power screen (heroMode null) still shows Edge copy',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 3200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = WizardData()
+      ..characterName = 'Rae'
+      ..characterAge = 16; // heroMode null = antihero, unchanged
+
+    await tester.pumpWidget(ProviderScope(
+      child: MaterialApp(
+        home: SuperheroPowerScreen(
+          wizardData: wd,
+          band: AgeBand.adolescent,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Regression guard: Edge copy intact.
+    expect(find.text('Ghost'), findsOneWidget);
+    expect(find.text('The Tell'), findsOneWidget);
+    // Classic copy absent.
+    expect(find.text('Flight'), findsNothing);
+    expect(find.text('Mastermind'), findsNothing);
   });
 
   testWidgets('tapping Start adventure pops with true and sets scenario',
