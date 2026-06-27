@@ -1,6 +1,6 @@
 # Git Maintenance Plan
-**Version:** 2.0
-**Last Updated:** December 26, 2025
+**Version:** 2.1
+**Last Updated:** June 26, 2026
 **Purpose:** Comprehensive git repository maintenance and cleanup
 
 ---
@@ -446,6 +446,19 @@ echo "Review BRANCH_STATUS_ANALYSIS.md for deletion candidates"
 - Architecture review
 - Delete old emergency branches
 - Clean up worktrees
+
+---
+
+## 📒 Maintenance Log
+
+### 2026-06-26 — Branch cleanup sweep (Claude Code)
+- **Branches deleted: 24 fossils → repo is `main`-only.**
+  - 21 remote: 18 `session/*` (ado-ux, antihero ×6, azure-pin, claude, claude-direct, close0447, compliance, openai-provider, prompt-heart, tts-coppa, u13gate), `chore/dependabot-backend-batch`, `chore/unify-parent-focus-keys`, and 3 leftover `worktree-agent-*` push-refs (PRs #309/#310/#311).
+  - 3 local: `fix/mt-293-dependabot-cryptography`, `worktree-story-notes-mt254`, `docs/close-mt254-v2`.
+- **Verification before deletion:** every branch's feature confirmed shipped to `origin/main` (MT-248/254/293/295/296/303, antihero saga, story-gen providers, u13 ElevenLabs gate, parent-focus-key drift guard) via `git log origin/main --grep`. All were squash-merge fossils (original commits show "ahead" by hash; content on main).
+- **Recovery breadcrumb:** branch→SHA map saved to scratchpad (`deleted-branches-recovery-<sha>.txt`); recover any with `git push origin <SHA>:refs/heads/<branch-name>`.
+- **Dependencies (Phase 3): no-op by design** — zero open dependabot PRs; last security fix (cryptography 48.0.1, MT-293) already on main. Bulk `pip-compile` deliberately avoided — it adds the 3.13-only `audioop-lts` shim and reds CI on the 3.11 install lane (hand-pin single packages instead).
+- **Note:** an incidental `pubspec.lock` drift (transitive `pub get` bumps, `pubspec.yaml` unchanged) was reverted rather than committed — unvetted lockfile drift should not land on `main` without a deliberate `flutter pub upgrade` + build-verify + PR.
 
 ---
 
