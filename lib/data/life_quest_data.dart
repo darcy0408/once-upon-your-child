@@ -32,6 +32,16 @@ enum SproutFriend {
   mouse,   // scared / shy (Shy Mouse)
 }
 
+/// How emotionally heavy a quest's subject matter is. Drives the parent-facing
+/// label on the quest card and is paired with [LifeQuestScenario.minAge] for
+/// gating. MT-158 / content-safety audit F-08 + F-16.
+///   * [none]  — everyday feelings; no parent advisory.
+///   * [mild]  — mildly charged (e.g. exclusion, teasing); no hard gate.
+///   * [heavy] — trauma-adjacent (parental conflict, a peer crisis, a breakup,
+///     screenshot shaming); always pairs with [sensitivityTopics] so the
+///     parent interstitial fires before the story opens.
+enum QuestSensitivity { none, mild, heavy }
+
 /// A complete pre-built Life Quest scenario with branching paths.
 class LifeQuestScenario {
   final String id;
@@ -67,6 +77,20 @@ class LifeQuestScenario {
   /// [sensitivityTopics] is empty.
   final String? parentNote;
 
+  /// MT-158 / content-safety audit F-08 — graded heaviness of the subject
+  /// matter, surfaced as a small parent-facing label on the quest card. A
+  /// [QuestSensitivity.heavy] quest must also carry [sensitivityTopics] (and
+  /// therefore a [parentNote]). Defaults to [QuestSensitivity.none].
+  final QuestSensitivity sensitivity;
+
+  /// MT-158 / content-safety audit F-16 — minimum child age this quest is
+  /// shown to, independent of [recommendedBands]. Acts as a hard gate in the
+  /// selector: a child younger than [minAge] never sees the card. Null = no
+  /// extra age gate beyond [recommendedBands]. Used to re-band
+  /// `questFamilyStress` (parental conflict) to 15+ without reshaping its
+  /// band list.
+  final int? minAge;
+
   const LifeQuestScenario({
     required this.id,
     required this.title,
@@ -80,6 +104,8 @@ class LifeQuestScenario {
     this.grownupTip,
     this.sensitivityTopics = const [],
     this.parentNote,
+    this.sensitivity = QuestSensitivity.none,
+    this.minAge,
   });
 }
 
@@ -1909,6 +1935,10 @@ const questFamilyStress = LifeQuestScenario(
       'door. It\'s written carefully — no violence, no slurs — but it may '
       'land close to home for kids in a tense household. You might want to '
       'be nearby afterwards.',
+  sensitivity: QuestSensitivity.heavy,
+  // F-16 — re-band parental-conflict quest to 15+ so it is not reachable by
+  // the Creator band (13-14), while keeping it for the Adolescent band.
+  minAge: 15,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -4572,6 +4602,8 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
       'okay. The story models reaching out and telling a trusted adult, '
       'and includes real crisis-line resources. You may want to be nearby '
       'or check in afterwards.',
+  sensitivity: QuestSensitivity.heavy,
+  minAge: 15,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5062,6 +5094,8 @@ const questFightAtHome = LifeQuestScenario(
       'This quest opens after a fight between a teen and a parent. The '
       'story explores the quiet hours after — apologising, holding firm, '
       'or sitting with it — and ends with the door, not slammed, but open.',
+  sensitivity: QuestSensitivity.heavy,
+  minAge: 15,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5224,6 +5258,8 @@ const questAfterTheBreakup = LifeQuestScenario(
       'text. It handles the moment gently and lands on self-respect, but '
       'it may surface feelings if your teen is going through something '
       'similar.',
+  sensitivity: QuestSensitivity.heavy,
+  minAge: 15,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5398,6 +5434,8 @@ const questScreenshotSpreading = LifeQuestScenario(
       'This quest is about a teen who realises something they said in a '
       'private chat is being screenshotted and shared. It explores '
       'composure, friendship, and choosing a response — not revenge.',
+  sensitivity: QuestSensitivity.heavy,
+  minAge: 15,
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -7898,6 +7936,10 @@ const questTheOffer = LifeQuestScenario(
   emotions: ['worried', 'embarrassed', 'frustrated'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   sensitivityTopics: ['peer pressure', 'drugs or vaping'],
+  // Owner-approved LIVE for the Adventurer band (MT-199) with the
+  // crisis-resources panel; no minAge gate, but flagged heavy so the card
+  // carries the parent label and the interstitial fires.
+  sensitivity: QuestSensitivity.heavy,
   startSegmentId: 'off_start',
   grownupTip:
       'Ask: "If someone ever offered you something you weren\'t sure about, '
@@ -8048,6 +8090,7 @@ const questRideHome = LifeQuestScenario(
   emotions: ['worried', 'sad'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   sensitivityTopics: ['an unsafe adult', 'alcohol'],
+  sensitivity: QuestSensitivity.heavy,
   startSegmentId: 'ride_start',
   grownupTip:
       'This story teaches a child that an adult\'s unsafe choices are never '
@@ -8156,6 +8199,7 @@ const questSecretWeight = LifeQuestScenario(
   emotions: ['worried', 'sad', 'embarrassed'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   sensitivityTopics: ['an unsafe secret', 'an adult crossing a line'],
+  sensitivity: QuestSensitivity.heavy,
   startSegmentId: 'sec_start',
   grownupTip:
       'This story draws the line between a happy surprise and a secret that '

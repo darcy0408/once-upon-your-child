@@ -150,8 +150,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
 
   List<LifeQuestScenario> get _matchingQuests {
     final band = ageBandFromAge(widget.childAge);
-    var quests =
-        allLifeQuests.where((q) => q.recommendedBands.contains(band)).toList();
+    var quests = allLifeQuests
+        .where((q) => q.recommendedBands.contains(band))
+        // MT-158 / F-16 — per-quest minimum-age gate on top of band membership.
+        // A quest with a minAge above the child's age never appears in the
+        // selector (e.g. the parental-conflict quest is 15+, so a 13-14
+        // Creator never sees it).
+        .where((q) => q.minAge == null || widget.childAge >= q.minAge!)
+        .toList();
     if (widget.selectedEmotion != null) {
       quests = quests
           .where((q) => q.emotions.contains(widget.selectedEmotion))
@@ -738,6 +744,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                         style: _chromeStyle(band,
                             color: Colors.white70, fontSize: 13),
                       ),
+                      // MT-158 / F-08 — parent-facing heaviness label on the
+                      // card so a grown-up scanning the list can spot a
+                      // trauma-adjacent quest before a child taps in.
+                      if (quest.sensitivity == QuestSensitivity.heavy)
+                        _buildSensitivityLabel(band),
                     ],
                   ),
                 ),
@@ -749,6 +760,38 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// MT-158 / F-08 — small parent-facing chip shown on heavy quest cards.
+  /// Calm wording (not alarmist): signals the topic is weightier and that a
+  /// parent interstitial will precede the story.
+  Widget _buildSensitivityLabel(AgeBandThemeData band) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.amber.withAlpha(38),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withAlpha(90)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.shield_outlined,
+                size: 13, color: Colors.amberAccent),
+            const SizedBox(width: 4),
+            Text(
+              'Heavier topic · grown-up check first',
+              style: _chromeStyle(band,
+                  color: Colors.amberAccent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );
