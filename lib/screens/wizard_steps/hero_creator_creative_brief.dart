@@ -5,7 +5,9 @@ import '../../models.dart';
 import '../../theme/age_band_theme.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
+import '../../utils/distress_detector.dart';
 import '../../widgets/archetype_card.dart';
+import '../../widgets/crisis_resources_panel.dart';
 import '../../widgets/hero_creator/genre_chip.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/scene_widgets.dart';
@@ -1113,7 +1115,22 @@ class CreativeBriefWidget extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: onContinue,
+                onPressed: () async {
+                  // Safety net: scan the free-text the child wrote into the
+                  // brief (name, what-they-want, own-premise) for clear
+                  // distress before generating. Non-blocking — offering crisis
+                  // resources never prevents the story (see distress_detector).
+                  final brief = [
+                    wizardData.characterName,
+                    wizardData.characterDesire ?? '',
+                    wizardData.customElements,
+                  ].join(' ');
+                  if (containsDistressSignal(brief)) {
+                    await showCrisisResourcesSheet(context);
+                  }
+                  if (!context.mounted) return;
+                  onContinue();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accent,
                   foregroundColor: Colors.black,

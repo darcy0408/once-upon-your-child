@@ -183,6 +183,34 @@ class CrisisResourcesPanel extends StatelessWidget {
   }
 }
 
+/// Surfaces [CrisisResourcesPanel] in a calm, non-blocking modal sheet.
+///
+/// Used by free-text submit paths (see utils/distress_detector.dart) so a
+/// child who types something distressing always has real resources one tap
+/// away. Non-blocking by design: it never scolds and never prevents the child
+/// from continuing — they can dismiss it and their story still goes through.
+/// The warm dark backdrop keeps the panel in the "we care about you" register
+/// rather than a red "danger" one.
+Future<void> showCrisisResourcesSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: const Color(0xFF2A2118), // warm dark, matches the panel
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => const SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [CrisisResourcesPanel()],
+        ),
+      ),
+    ),
+  );
+}
+
 class _ResourceRow extends StatelessWidget {
   const _ResourceRow({
     required this.resource,

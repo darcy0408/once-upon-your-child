@@ -8,6 +8,8 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../models.dart';
 import '../../services/app_tts_service.dart';
 import '../../theme/age_band_theme.dart';
+import '../../utils/distress_detector.dart';
+import '../../widgets/crisis_resources_panel.dart';
 import 'superhero_entry_screen.dart';
 
 /// Full-screen "Imagine It / Make One Up" entry point.
@@ -107,7 +109,7 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     final value = widget.wizardData.customElements.trim();
     if (value.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,6 +119,13 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
     }
     widget.wizardData.selectedScenario = 'safe_space';
     HapticFeedback.lightImpact();
+    // Safety net: if the child typed clear distress into their story idea,
+    // calmly offer real crisis resources before continuing. Non-blocking —
+    // dismissing the sheet still creates the story (see distress_detector).
+    if (containsDistressSignal(value)) {
+      await showCrisisResourcesSheet(context);
+      if (!mounted) return;
+    }
     Navigator.of(context).pop(true);
   }
 
