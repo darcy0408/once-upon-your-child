@@ -431,6 +431,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       style: textWhite70),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
+                                      "• Optional — your own Google Gemini key: if you choose to connect your own API key, your child's story details are sent to Google (Gemini) under your own Google account and Google's terms, which restrict use for children. This is your choice and your responsibility; leaving it unset keeps story generation on the providers above.",
+                                      style: textWhite70),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
                                       'Each provider receives only the minimum data needed and is governed by its own privacy policy. The full list also appears in our Privacy Policy.',
                                       style: textWhite70),
                                   const SizedBox(height: AppSpacing.sm),

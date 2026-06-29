@@ -42,6 +42,14 @@ class AvatarGenerationService:
             "true",
             "yes",
         )
+        # Direct Gemini is OFF by default for the same reason as the shared
+        # image generator in app.py and STORY_GEN_PROVIDER='openai': Gemini's
+        # API ToS forbid child-directed apps (MT-137), so a missing OpenAI key
+        # must NOT silently route a child's avatar to a direct Gemini call.
+        # Reachable only via an explicit local/dev opt-in.
+        allow_direct_gemini = os.getenv(
+            "ALLOW_DIRECT_GEMINI_IMAGE", ""
+        ).strip().lower() in ("1", "true", "yes")
 
         # Primary avatar generator. MT-295: OpenAI (gpt-image-2) is the PRIMARY
         # provider — its API permits child-directed apps with COPPA safeguards,
@@ -66,18 +74,23 @@ class AvatarGenerationService:
                     logger.error(f"Failed to initialize OpenAIImageGenerator: {e}")
                     self.image_generator = None
 
-        # Legacy Gemini fallback — only when there is NO OpenAI key AND Gemini
-        # is not explicitly disabled. Gemini's ToS forbid child-directed apps,
-        # so production should never reach this branch (it stays for local/dev
-        # setups without an OpenAI key). Set DISABLE_GEMINI_IMAGE=1 to forbid it.
-        if self.image_generator is None and not disable_gemini:
+        # Direct Gemini fallback — OFF by default. Only when there is NO OpenAI
+        # key, Gemini is explicitly opted in (ALLOW_DIRECT_GEMINI_IMAGE=1), and
+        # not force-disabled. Gemini's ToS forbid child-directed apps, so
+        # production must never reach this branch; it stays for local/dev only.
+        if (
+            self.image_generator is None
+            and allow_direct_gemini
+            and not disable_gemini
+        ):
             try:
                 from backend.gemini_image_generator import GeminiImageGenerator
 
                 self.image_generator = GeminiImageGenerator()
                 logger.warning(
-                    "AvatarGenerationService fell back to GeminiImageGenerator "
-                    "(no OPENAI_API_KEY) — Gemini's ToS prohibit child-directed apps"
+                    "AvatarGenerationService fell back to GeminiImageGenerator via "
+                    "ALLOW_DIRECT_GEMINI_IMAGE=1 — Gemini's ToS prohibit "
+                    "child-directed apps; local/dev only, never production"
                 )
             except ImportError:
                 try:
@@ -93,8 +106,18 @@ class AvatarGenerationService:
             except Exception as e:
                 logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
                 self.image_generator = None
-        elif self.image_generator is None and disable_gemini:
-            logger.info("Gemini image generation disabled via DISABLE_GEMINI_IMAGE=1")
+        elif self.image_generator is None:
+            if disable_gemini:
+                logger.info(
+                    "Gemini image generation disabled via DISABLE_GEMINI_IMAGE=1"
+                )
+            else:
+                logger.warning(
+                    "AvatarGenerationService has no image generator: no OPENAI_API_KEY "
+                    "and direct Gemini fallback is off by default (Gemini ToS forbid "
+                    "child apps). Set OPENAI_API_KEY, or ALLOW_DIRECT_GEMINI_IMAGE=1 "
+                    "for local dev only."
+                )
 
         # Fallback for photo→avatar: prefer Replicate (PhotoMaker-Style) over OpenRouter
         # because OpenRouter's Gemini model has the same child-photo safety restrictions

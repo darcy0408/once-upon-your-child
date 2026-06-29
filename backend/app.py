@@ -535,10 +535,26 @@ def create_app(config_name):
             f"Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}"
         )
 
-    # Initialize image generator (prefer OpenRouter if available, fallback to Gemini)
+    # Initialize the shared (non-BYOK) image generator used as the per-page
+    # illustration fallback when Flux is down (see story_routes.py ~2322).
+    # Prefer OpenRouter. A *direct* GeminiImageGenerator must NOT be silently
+    # constructed here: Gemini's API ToS forbid child-directed apps (MT-137),
+    # so a cleared OPENROUTER_API_KEY must not route a non-BYOK child's prompt
+    # straight to Google's Gemini API. This mirrors the story-text rule
+    # (config STORY_GEN_PROVIDER defaults to 'openai', never silently 'gemini').
+    # Direct Gemini remains available ONLY via explicit BYOK (the user's own key
+    # + consent, handled in story_routes.py) or an explicit local-dev opt-in.
     global image_generator
     try:
         openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
+        disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        allow_direct_gemini = os.getenv(
+            "ALLOW_DIRECT_GEMINI_IMAGE", ""
+        ).strip().lower() in ("1", "true", "yes")
         if openrouter_key:
             try:
                 from backend.openrouter_image_generator import OpenRouterImageGenerator
@@ -547,19 +563,36 @@ def create_app(config_name):
 
             image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
             logger.info("Image generator initialized with OpenRouter")
-        elif api_key and not testing_mode:
+        elif (
+            api_key
+            and not testing_mode
+            and allow_direct_gemini
+            and not disable_gemini_image
+        ):
             try:
                 from backend.gemini_image_generator import GeminiImageGenerator
             except ImportError:
                 from gemini_image_generator import GeminiImageGenerator
 
             image_generator = GeminiImageGenerator()
-            logger.info("Image generator initialized with Gemini (fallback)")
+            logger.warning(
+                "Image generator initialized with DIRECT Gemini via "
+                "ALLOW_DIRECT_GEMINI_IMAGE=1 — Gemini's ToS forbid child-directed "
+                "apps; intended for local/dev only, never production."
+            )
         else:
             image_generator = None
-            logger.warning(
-                "No image generator initialized (no OPENROUTER_API_KEY or GEMINI_API_KEY)"
-            )
+            if api_key and not testing_mode and not allow_direct_gemini:
+                logger.warning(
+                    "No shared image generator: OPENROUTER_API_KEY unset. Refusing "
+                    "to silently fall back to direct Gemini (ToS forbids child apps). "
+                    "Flux stays primary for illustrations; set OPENROUTER_API_KEY for "
+                    "the fallback, or ALLOW_DIRECT_GEMINI_IMAGE=1 for local dev only."
+                )
+            else:
+                logger.warning(
+                    "No image generator initialized (no OPENROUTER_API_KEY)"
+                )
     except Exception as e:
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None

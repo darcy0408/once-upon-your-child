@@ -558,6 +558,12 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
   bool _valid = false;
   bool _showKey = true;
   int _attempts = 0;
+  // COPPA/GDPR consent gate: connecting a personal Gemini key sends the
+  // child's story data to Google under the PARENT's own account + terms.
+  // Google's API terms restrict child-directed use, so the parent must
+  // explicitly accept responsibility before we save the key (the contractual
+  // choice then sits visibly with them, not us). Required to enable "Finish".
+  bool _ackTerms = false;
 
   @override
   void dispose() {
@@ -701,6 +707,37 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                 ),
               ),
           ],
+          const SizedBox(height: AppSpacing.sm),
+          // Consent gate — the parent must accept that their own key sends
+          // their child's data to Google before we will save it.
+          InkWell(
+            onTap: () => setState(() => _ackTerms = !_ackTerms),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: _ackTerms,
+                  onChanged: (v) => setState(() => _ackTerms = v ?? false),
+                ),
+                const Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text(
+                      "I understand that with my own key, my child's story "
+                      'details are sent to Google (Gemini) under my own Google '
+                      "account and Google's terms — which restrict use for "
+                      'children — and I accept responsibility for that use.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xB3FFFFFF),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -715,7 +752,7 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
               Expanded(
                 child: AppButton.primary(
                   label: _validating ? 'Validating...' : 'Finish',
-                  onPressed: _validating
+                  onPressed: (_validating || !_ackTerms)
                       ? null
                       : () async {
                           await _validate();
