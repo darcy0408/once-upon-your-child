@@ -141,12 +141,22 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       return Dialog(
         backgroundColor: Colors.transparent,
         child: AvatarTweakPanel(
+          // Use the live, refreshed premium flag — not the stale mount-time
+          // widget.isPremium — so a key entered earlier in this session
+          // (e.g. via the banner upsell) is already reflected here.
+          isPremium: _isPremium,
           assetPath: _selectedAvatarPath!,
-          isPremium: widget.isPremium,
           onConfirm: (imageData) {
             _confirmAvatar(imageData);
           },
-          onBack: () => setState(() => _selectedAvatarPath = null),
+          onBack: () {
+            setState(() => _selectedAvatarPath = null);
+            // MT-069(a): the tweak panel has its own "Set Up Free Premium"
+            // BYOK CTA. If the user set up a key inside the panel, re-check
+            // premium on return so the gallery's custom-avatar banner reflects
+            // the now-unlocked state instead of re-showing the setup upsell.
+            _refreshPremiumStatus();
+          },
         ),
       );
     }
