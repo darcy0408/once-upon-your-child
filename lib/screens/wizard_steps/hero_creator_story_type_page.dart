@@ -490,6 +490,44 @@ class HeroStoryTypePage extends StatelessWidget {
             ),
           ),
           SizedBox(height: band.space(16)),
+          // MT-280: signpost the free-tier illustration loss UP FRONT, before
+          // the parent picks a story style, instead of silently swapping the
+          // "with pictures!" copy for "a magical adventure story". `illustrations
+          // Enabled` is the existing premium/BYOK tier check passed from the
+          // wizard — no tier logic is hardcoded here.
+          if (!illustrationsEnabled) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: band.space(8)),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.auto_stories_rounded,
+                        color: Colors.white70, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Free stories are words-only. Unlock magical pictures '
+                        'for every page with Premium ✨',
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withAlpha(200),
+                          fontSize: band.body(13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: band.space(16)),
+          ],
           if (band.band == AgeBand.sprout)
             Column(
               children: [

@@ -1591,6 +1591,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         ? _showCustomAvatarUpgradeDialog
                         : _openCustomAvatarScreen,
                   ),
+                  // MT-280: signpost the 1-free-custom-avatar limit UP FRONT
+                  // (per build) so a non-premium parent isn't ambushed by the
+                  // paywall on their 2nd child. Premium accounts already have
+                  // unlimited custom heroes, so the caption is hidden for them.
+                  if (!_isPremium) ...[
+                    const SizedBox(height: 8),
+                    _buildFreeAvatarSignpost(),
+                  ],
                   const SizedBox(height: 18),
                   Row(
                     children: const [
@@ -1633,6 +1641,46 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ],
       );
     });
+  }
+
+  /// MT-280: the upfront caption beneath the photo-avatar card that explains
+  /// the 1-free-custom-avatar limit before a non-premium parent invests effort.
+  /// The quota is per ACCOUNT (not per child), so this shows on every build to
+  /// pre-empt the "surprise on the 2nd child" reported in MT-280. Reuses the
+  /// existing `_isPremium` / `_customAvatarLocked` tier checks rather than
+  /// hardcoding any new tier logic. Once the free avatar is spent, the copy
+  /// flips to explain the Premium badge now on the card.
+  Widget _buildFreeAvatarSignpost() {
+    final message = _customAvatarLocked
+        ? "You've used your 1 free custom hero. More custom heroes are "
+            'Premium — or pick a magical hero from the gallery below, always '
+            'free.'
+        : 'Your free plan includes 1 custom photo hero per account. Extra '
+            'custom heroes (like a second one for another child) are Premium — '
+            'but the magical hero gallery is always free.';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Colors.white70, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 12, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Page 3: Pick your archetype
