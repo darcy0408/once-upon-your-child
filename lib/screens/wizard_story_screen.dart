@@ -550,32 +550,30 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           tooltip: _currentStep == 0 ? 'Close' : 'Back',
                         ),
                         const Spacer(),
-                        // Life Quests button — labeled for young bands, icon-only for mature.
-                        // Sprout band sees "Big Feelings" + cloud icon (matches bottom nav).
-                        if (!band.band.isMature)
-                          _LabeledNavButton(
-                            icon: band.band == AgeBand.sprout
-                                ? Icons.cloud
-                                : Icons.explore_rounded,
-                            label: band.band == AgeBand.sprout
-                                ? 'Big Feelings'
-                                : 'Life Quests',
-                            onPressed: () async {
-                              final place = band.band == AgeBand.sprout
-                                  ? 'Big Feelings'
-                                  : 'Life Quests';
-                              if (await _confirmLeaveWizard(place)) {
-                                await _openLifeQuests();
-                              }
-                            },
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.explore_rounded,
-                                color: Colors.white),
-                            onPressed: _openLifeQuests,
-                            tooltip: 'Life Quests',
-                          ),
+                        // Life Quests button — labeled for Explorer/Adventurer,
+                        // icon-only for mature. Sprout intentionally has NO
+                        // top-bar Big Feelings entry: the scene-picker "Big
+                        // Feelings" tile is the single in-wizard entry (MT-288).
+                        // A duplicate top-bar cloud button bounced Sprout kids
+                        // out of the wizard mid-build.
+                        if (band.band != AgeBand.sprout)
+                          if (!band.band.isMature)
+                            _LabeledNavButton(
+                              icon: Icons.explore_rounded,
+                              label: 'Life Quests',
+                              onPressed: () async {
+                                if (await _confirmLeaveWizard('Life Quests')) {
+                                  await _openLifeQuests();
+                                }
+                              },
+                            )
+                          else
+                            IconButton(
+                              icon: const Icon(Icons.explore_rounded,
+                                  color: Colors.white),
+                              onPressed: _openLifeQuests,
+                              tooltip: 'Life Quests',
+                            ),
                         // Character Library button — labeled for young bands, icon-only for mature
                         if (!band.band.isMature)
                           _LabeledNavButton(
