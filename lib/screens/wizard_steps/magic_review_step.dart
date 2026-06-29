@@ -1573,6 +1573,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final scenarioLabel = scenarioCard?.titleForBand(band.band) ??
         (data.selectedScenario != null ? 'Your Story' : 'Your own adventure');
     final scenarioDesc = scenarioCard?.descriptionForAge(data.characterAge);
+    // Adult band: surface the scenario's introspective question as a quiet
+    // editorial banner above the summary (MT-275). Only the Adult band carries
+    // adultThematicQuestion, so this stays null for Adolescent.
+    final adultQuestion = band.band == AgeBand.adult
+        ? scenarioCard?.adultThematicQuestion
+        : null;
     final companionLine =
         data.companionNames.isEmpty ? 'Solo' : data.companionNames.join(', ');
 
@@ -1619,6 +1625,32 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             ],
           ),
           const SizedBox(height: 24),
+
+          // Adult-only introspective banner (MT-275)
+          if (adultQuestion != null && adultQuestion.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: band.accent.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(band.cardRadiusBase),
+                border: Border(
+                  left: BorderSide(color: band.accent, width: 3),
+                ),
+              ),
+              child: Text(
+                adultQuestion,
+                style: GoogleFonts.sourceSans3(
+                  color: band.textOnDark.withValues(alpha: 0.85),
+                  fontSize: 16,
+                  height: 1.3,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+          ],
 
           // Dark summary card
           Container(

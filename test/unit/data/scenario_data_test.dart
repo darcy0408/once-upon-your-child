@@ -38,6 +38,37 @@ void main() {
       expect(testScenario.conflictHookForAge(15), 'Mature Hook');
     });
 
+    test('returns adult content for age 18+ when defined', () {
+      const adultScenario = ScenarioCard(
+        id: 'adult_test',
+        emoji: '🌑',
+        title: 'Standard Title',
+        illustration: 'illustration.png',
+        description: 'Standard Description',
+        conflictHook: 'Standard Hook',
+        sensoryPalette: 'Standard Palette',
+        matureTitle: 'Mature Title',
+        matureDescription: 'Mature Description',
+        adultTitle: 'Adult Title',
+        adultDescription: 'Adult Description',
+        adultIllustration: 'assets/images/scenarios/adult/x.webp',
+      );
+
+      // Adult band (18+) prefers the adult-specific text + art.
+      expect(adultScenario.titleForAge(18), 'Adult Title');
+      expect(adultScenario.descriptionForAge(18), 'Adult Description');
+      expect(adultScenario.illustrationForAge(18),
+          'assets/images/scenarios/adult/x.webp');
+      // 13-17 still get the mature framing (no adult leak downward).
+      expect(adultScenario.descriptionForAge(15), 'Mature Description');
+    });
+
+    test('adult age falls back to mature/standard when adult fields unset', () {
+      // testScenario has matureDescription but no adultDescription/Illustration.
+      expect(testScenario.descriptionForAge(18), 'Mature Description');
+      expect(testScenario.illustrationForAge(18), 'illustration.png');
+    });
+
     test('falls back to standard if specific age content is missing', () {
       const fallbackScenario = ScenarioCard(
         id: 'fallback',

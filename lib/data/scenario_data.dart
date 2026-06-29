@@ -41,6 +41,10 @@ class ScenarioCard {
   // Age-appropriate alternative for adult band (ages 18+) — existential/philosophical framing.
   // When null, falls back to matureTitle.
   final String? adultTitle;
+  // Adult-band (ages 18+) picker/review description — introspective framing that
+  // matches [adultTitle]. When null, descriptionForAge falls back to
+  // matureDescription then description.
+  final String? adultDescription;
   // Adult-band world bible — richer, psychologically grounded setting lore for 18+.
   // When null, worldBibleForAge falls back to matureWorldBible then worldBible.
   final String? adultWorldBible;
@@ -48,6 +52,11 @@ class ScenarioCard {
   // Mirrors creatorThematicQuestion but pitched at adult emotional complexity.
   // When null, no thematic question overlay is shown.
   final String? adultThematicQuestion;
+  // Adult-band (ages 18+) scene tile image — the commissioned scenarios/adult/*
+  // art. Pass the full asset path (e.g. 'assets/images/scenarios/adult/x.webp').
+  // Used by illustrationForAge for 18+ before the shared adventurer scene art;
+  // falls back to the standard illustration when null.
+  final String? adultIllustration;
   final bool featured; // Pinned at the top of scenario selection
   // Sprout-band (ages 2-5) specific tile image, displayed instead of the
   // general illustration when the child is in the sprout band.
@@ -85,8 +94,10 @@ class ScenarioCard {
     this.creatorTitle,
     this.creatorThematicQuestion,
     this.adultTitle,
+    this.adultDescription,
     this.adultWorldBible,
     this.adultThematicQuestion,
+    this.adultIllustration,
     this.sproutIllustration,
     this.youngBandSceneId,
     this.olderBandSceneId,
@@ -117,6 +128,8 @@ class ScenarioCard {
     if (age >= 9 && age <= 12 && adventurerDescription != null) {
       return adventurerDescription!;
     }
+    // Adult band (18+) gets its own introspective framing when available.
+    if (age >= 18 && adultDescription != null) return adultDescription!;
     if (age >= 13 && matureDescription != null) return matureDescription!;
     return description;
   }
@@ -163,6 +176,9 @@ class ScenarioCard {
     if (age <= 8 && youngBandSceneId != null) {
       return AgeBandAssetResolver.scenePath(AgeBand.explorer, youngBandSceneId!);
     }
+    // Adult band (18+): commissioned scenarios/adult/* art when available,
+    // ahead of the shared adventurer+ scene art.
+    if (age >= 18 && adultIllustration != null) return adultIllustration!;
     if (age >= 9 && olderBandSceneId != null) {
       return AgeBandAssetResolver.scenePath(AgeBand.adventurer, olderBandSceneId!);
     }
@@ -206,6 +222,8 @@ class ScenarioData {
       creatorTitle: "The Door You're Afraid to Open",
       creatorThematicQuestion: "What are you afraid to face?",
       adultTitle: "Doors We Can't Reopen",
+      adultDescription:
+          'A hall of sealed doors, each a season you left before you understood it. The work isn\'t reopening them.',
       adultWorldBible:
           'The Nexus exists between what was and what might have been — a liminal hall of doors that no longer open. Each is sealed: a summer that ended too soon, a winter you never got to finish, a season you left before you understood what it was teaching you. The Chronokeeper no longer maintains these doors — it mourns them, cataloguing what each closed door cost the traveller who walked through it. The seasons themselves are not weather here; they are states of a relationship, a career, a version of yourself you outgrew before you were ready. Some doors are warm to the touch. Some have grown cold. Physics: you can press your ear to any door and hear an echo of what was — but opening them is not the work. The work is learning why you are still standing in the hall.',
       adultThematicQuestion: "Which door do you keep coming back to?",
@@ -248,6 +266,9 @@ class ScenarioData {
       creatorTitle: 'What Wakes the Fire Inside',
       creatorThematicQuestion: "What wakes the fire inside?",
       adultTitle: 'The Weight of Old Fire',
+      adultDescription:
+          'The last dragons sleep from exhaustion, not peace. Some debts are older than memory.',
+      adultIllustration: 'assets/images/scenarios/adult/volcano_dragons.webp',
       adultWorldBible:
           'The last dragon colony carries wounds older than living memory — debts of fire, broken oaths, extinctions caused by pride. The elders sleep not from peace but from exhaustion: there is nothing left to prove and no one left to prove it to. The volcanic caldera is a graveyard of decisions that felt necessary at the time. Young dragons are born already knowing the names of ancestors who failed honourably. The Trial of Three still stands, but the elders know: the real trial is what you do with fire after you have used it wrong. The volcano does not threaten — it waits, patient as grief, for someone to stop trying to control it and start listening to what it is saying.',
       adultThematicQuestion: "What are you still carrying that was never yours to carry?",
@@ -288,6 +309,8 @@ class ScenarioData {
       creatorTitle: 'The Part of You That Glows',
       creatorThematicQuestion: "What part of you is waiting to be seen?",
       adultTitle: 'The Light That Waits',
+      adultDescription:
+          'In a forest that runs on light, something in you has been waiting in the dark to be seen.',
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.webp',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
@@ -327,6 +350,9 @@ class ScenarioData {
       creatorTitle: 'The Echo Inside',
       creatorThematicQuestion: "What have you been telling yourself?",
       adultTitle: 'What Echoes Back',
+      adultDescription:
+          'The caverns return whatever you bring them. Listen to what your own voice has been saying.',
+      adultIllustration: 'assets/images/scenarios/adult/crystal_cavern.webp',
       sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.webp',
       youngBandSceneId: 'ocean_depths',
       olderBandSceneId: 'deep_archive',
@@ -365,6 +391,8 @@ class ScenarioData {
       creatorTitle: null,
       creatorThematicQuestion: "What storm are you running from?",
       adultTitle: 'The Storm You\'ve Been Feeding',
+      adultDescription:
+          'The citadel runs on a captured storm. The longer you hold it, the more it becomes yours.',
       sproutIllustration: 'assets/images/ui/sprout/tiles/castle.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'orbital_station',
@@ -404,6 +432,9 @@ class ScenarioData {
       creatorTitle: 'When Everything Fades',
       creatorThematicQuestion: "What would you save if everything faded?",
       adultTitle: 'When Meaning Dissolves',
+      adultDescription:
+          'Reality flattens as the colour drains away. What is worth holding onto when everything fades?',
+      adultIllustration: 'assets/images/scenarios/adult/vanishing_colors.webp',
       sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'ruined_citadel',
@@ -439,6 +470,8 @@ class ScenarioData {
       creatorTitle: 'Showing Up',
       creatorThematicQuestion: "What does it cost you to show up?",
       adultTitle: 'The Cost of Showing Up',
+      adultDescription:
+          'Everyone already has their people. Showing up as yourself is the risk no one warns you about.',
     ),
     ScenarioCard(
       id: 'standing_tall',
@@ -470,6 +503,8 @@ class ScenarioData {
       creatorTitle: 'Who You Are Under Pressure',
       creatorThematicQuestion: "Who are you when no one's watching?",
       adultTitle: 'Holding the Line',
+      adultDescription:
+          'Holding your ground without losing yourself — or becoming what you are standing against.',
     ),
     ScenarioCard(
       id: 'big_feelings_quest',
@@ -505,6 +540,9 @@ class ScenarioData {
       creatorTitle: 'The Feeling That Won\'t Let Go',
       creatorThematicQuestion: "What feeling runs your life right now?",
       adultTitle: 'Sitting With It',
+      adultDescription:
+          'The inner landscape was never a storm to conquer. The work is sitting on the bank without needing it to change.',
+      adultIllustration: 'assets/images/scenarios/adult/big_feelings_quest.webp',
       adultWorldBible:
           'The inner landscape is not a storm to be conquered — it never was. The terrain is built from every feeling that was swallowed, every rage that had nowhere to go, every grief that got called overreacting. The Feeling Keepers here are not therapists or guides; they are the feelings themselves, grown large from years of being ignored. Anxiety has built an elaborate city. Grief has become a body of water with no clear shore. The work is not to drain the lake or demolish the city — it is to sit on the bank without needing it to be different. Each evidence-based coping technique has a physical form here, a place you can return to. But the portal home opens only when you stop trying to find it.',
       adultThematicQuestion: "What are you trying not to feel right now?",
@@ -540,6 +578,8 @@ class ScenarioData {
       creatorTitle: 'Leaving the Person You Were',
       creatorThematicQuestion: "What part of yourself are you leaving behind?",
       adultTitle: 'Starting Over',
+      adultDescription:
+          'Everything familiar is gone and no one here knows your name. Home is something you rebuild.',
     ),
     ScenarioCard(
       id: 'safe_space',
@@ -572,6 +612,7 @@ class ScenarioData {
           'Draw deeply on the user\'s creative vision. Build the world with sophisticated detail, internal logic, and atmospheric depth appropriate to whatever they describe. If they give a genre (sci-fi, fantasy, realistic), lean into its conventions. Add complexity, moral ambiguity, and stakes appropriate to their age. Keep all content appropriate for the user\'s age band.',
       // The title is intentionally shared — "Imagine It" resonates equally well at 13-14.
       creatorTitle: null,
+      adultIllustration: 'assets/images/scenarios/adult/imagine_it.webp',
     ),
     // --- ADVENTURER+ EXCLUSIVE ---
     ScenarioCard(
@@ -599,6 +640,8 @@ class ScenarioData {
       creatorTitle: "The Truth You Don't Want to Find",
       creatorThematicQuestion: "What truth are you afraid to follow?",
       adultTitle: 'Every Answer Costs Something',
+      adultDescription:
+          'Every witness is hiding something, and the truth, once found, cannot be returned.',
     ),
     ScenarioCard(
       id: 'survival_island',
@@ -626,6 +669,8 @@ class ScenarioData {
       creatorTitle: null,
       creatorThematicQuestion: "What do you do when there's no one left to help you?",
       adultTitle: 'Only What You Carry',
+      adultDescription:
+          'No map, no signal, no rescue — only what you carry and what you are willing to do to make it through.',
     ),
     // --- SUPERHERO MODE (ages 3-5 / Sprout band) ---
     // Registered so [WizardDataMapper] doesn't choke when wizardData.selectedScenario
