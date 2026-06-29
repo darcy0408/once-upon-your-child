@@ -126,4 +126,73 @@ void main() {
       expect(a, b);
     });
   });
+
+  group('Explorer catchphrase pool (MT-284)', () {
+    test('pool is non-empty and a distinct set', () {
+      expect(HeroFunnyNameGenerator.explorerCatchphrases, isNotEmpty);
+      expect(
+        HeroFunnyNameGenerator.explorerCatchphrases.toSet().length,
+        HeroFunnyNameGenerator.explorerCatchphrases.length,
+        reason: 'no duplicate catchphrases',
+      );
+    });
+
+    test('pool stays decodable for 6-8 readers — no therapeutic-adult leaks', () {
+      for (final phrase in HeroFunnyNameGenerator.explorerCatchphrases) {
+        // No em-dashes / abstract "feelings-coping" vocabulary that read as a
+        // grown-up script rather than a 6-year-old hero shout.
+        expect(phrase.contains('—'), isFalse, reason: 'no em-dashes: $phrase');
+        final lower = phrase.toLowerCase();
+        for (final word in <String>[
+          'perfection',
+          'progress',
+          'feelings',
+          'anxiety',
+          'worry',
+        ]) {
+          expect(
+            lower.contains(word),
+            isFalse,
+            reason: 'therapeutic-adult word "$word" leaked: $phrase',
+          );
+        }
+      }
+    });
+
+    test('pickExplorerCatchphrases returns the requested count of DISTINCT '
+        'phrases from the pool', () {
+      final phrases = HeroFunnyNameGenerator.pickExplorerCatchphrases(
+        count: 4,
+        random: Random(42),
+      );
+      expect(phrases.length, 4);
+      expect(phrases.toSet().length, 4, reason: 'phrases must be distinct');
+      for (final p in phrases) {
+        expect(HeroFunnyNameGenerator.explorerCatchphrases, contains(p));
+      }
+    });
+
+    test('pickExplorerCatchphrases is deterministic for a fixed seed', () {
+      final a = HeroFunnyNameGenerator.pickExplorerCatchphrases(
+        count: 4,
+        random: Random(7),
+      );
+      final b = HeroFunnyNameGenerator.pickExplorerCatchphrases(
+        count: 4,
+        random: Random(7),
+      );
+      expect(a, b);
+    });
+
+    test('count larger than pool returns the whole pool', () {
+      final phrases = HeroFunnyNameGenerator.pickExplorerCatchphrases(
+        count: 99,
+        random: Random(1),
+      );
+      expect(
+        phrases.toSet(),
+        HeroFunnyNameGenerator.explorerCatchphrases.toSet(),
+      );
+    });
+  });
 }

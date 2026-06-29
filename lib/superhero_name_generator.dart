@@ -380,6 +380,44 @@ class HeroFunnyNameGenerator {
     'The Long Hush',
   ];
 
+  // Explorer 6-8 catchphrase pool (MT-284). Early readers (ages 6-8) decode
+  // short, common, phonetically simple words — so these lines stay punchy and
+  // sound-it-out friendly. They intentionally DROP the therapeutic-adult
+  // phrasing that leaks from [SuperheroNameGenerator]'s archetype catchPhrases
+  // ("We don't chase perfection—we celebrate progress!", "Feelings are big,
+  // but we are bigger.") which read as grown-up coping scripts, not something a
+  // 6-year-old hero would shout. Stable pool: no big words, no em-dashes, no
+  // abstract feelings vocabulary — just brave, cheerful hero energy.
+  static const List<String> explorerCatchphrases = [
+    'To the rescue!',
+    'Here I come!',
+    'I can help!',
+    'Time to be brave!',
+    'Up, up, and go!',
+    'I never give up!',
+    'Hero power, on!',
+    "Let's go, team!",
+    "I've got this!",
+    'Watch me shine!',
+    'Ready for action!',
+    'Kind and brave!',
+  ];
+
+  /// Returns [count] DISTINCT Explorer (6-8) catchphrases, drawn from the
+  /// stable, decodable [explorerCatchphrases] pool (MT-284). Mirrors
+  /// [pickNames]: pass a seeded [random] for reproducible output, and if the
+  /// pool is smaller than [count] the whole (shuffled) pool is returned.
+  static List<String> pickExplorerCatchphrases({
+    int count = 4,
+    Random? random,
+  }) {
+    final rng = random ?? _defaultRandom;
+    final pool = List<String>.from(explorerCatchphrases);
+    pool.shuffle(rng);
+    final n = count < pool.length ? count : pool.length;
+    return pool.sublist(0, n);
+  }
+
   static List<String> _poolFor(HeroNameRegister register) {
     switch (register) {
       case HeroNameRegister.explorer:

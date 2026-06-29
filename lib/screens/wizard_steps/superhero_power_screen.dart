@@ -889,9 +889,14 @@ class _NameCatchphraseSheetState extends State<_NameCatchphraseSheet> {
   void initState() {
     super.initState();
     _rerollNames();
-    _catchphraseOptions = SuperheroNameGenerator.generateIdeas(
-      count: 4,
-    ).map((i) => i.catchPhrase).toSet().toList();
+    // Explorer (6-8) draws from a stable, decodable catchphrase pool (MT-284)
+    // so early readers never see the therapeutic-adult phrasing that leaks from
+    // the archetype catchPhrases. Other bands keep the existing generator.
+    _catchphraseOptions = widget.register == HeroNameRegister.explorer
+        ? HeroFunnyNameGenerator.pickExplorerCatchphrases(count: 4)
+        : SuperheroNameGenerator.generateIdeas(
+            count: 4,
+          ).map((i) => i.catchPhrase).toSet().toList();
     // Default selection: the formula name (always present as an option).
     _selectedName = widget.formulaName;
   }
