@@ -456,9 +456,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _openFeelingsQuest();
     } else {
       setState(() => widget.wizardData.selectedScenario = id);
-      // Auto-advance for Sprout (age ≤ 5): young children expect forward
-      // motion after a tap — a checkmark alone is too subtle to notice.
-      if (widget.wizardData.characterAge <= 5) _heroNextPage();
+      // MT-279: auto-advance for Sprout (≤5) AND Explorer (6-8). Younger
+      // children expect forward motion after a tap — a checkmark alone is too
+      // subtle to notice, and making Explorer hunt for "Next" on a single-select
+      // page is extra taps with no payoff. Adventurer+ (≥9) keep the explicit
+      // arrow so they can browse settings before committing.
+      if (widget.wizardData.characterAge <= 8) _heroNextPage();
     }
     final label = _sceneLabel(id);
     if (label != null) unawaited(_speakForSprout(label));
@@ -528,6 +531,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (!mounted || result != true) return;
     _wishController.text = widget.wizardData.customElements;
     setState(() {});
+    _advanceFromStoryType();
+  }
+
+  /// MT-279: Express "Tell Me a Story!" lane for the Explorer band (6-8).
+  /// Surfaced on the Adventure Team page, it skips the remaining optional pages
+  /// (scene + story-type) and jumps straight to Magic Review with smart
+  /// defaults — a surprise preset world plus the default illustrated-story mode
+  /// (already the WizardData default). Younger Explorers who just want a story
+  /// *now* reach it in one tap instead of hunting through three more "Next"es.
+  void _expressTellMeAStory() {
+    // Pick a surprise world if the child hasn't already chosen one, so the
+    // generated story has a concrete setting rather than the blank "Magical
+    // Adventure" fallback. These three presets are the always-available scene
+    // tiles (no modal, no premium gate) shared across the young bands.
+    final current = widget.wizardData.selectedScenario;
+    if (current == null || current.isEmpty) {
+      const surprisePresets = <String>[
+        'vanishing_colors',
+        'crystal_cavern',
+        'volcano_dragons',
+      ];
+      widget.wizardData.selectedScenario =
+          surprisePresets[Random().nextInt(surprisePresets.length)];
+    }
+    FirebaseAnalyticsService.logEvent('explorer_express_story', {
+      'scenario': widget.wizardData.selectedScenario,
+    });
+    // Story-type defaults (illustrated 'tales' mode) already live on WizardData,
+    // so no mode mutation is needed here — just advance to Magic Review. Reuses
+    // the story-type latch so a double-tap can't push two steps.
     _advanceFromStoryType();
   }
 
@@ -919,12 +952,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         .speak('$name. $specialAbility.', rateScale: 0.85));
   }
 
-  /// Sprout-only: auto-advance from the companions page (4) to the scene page
-  /// after a companion is selected. Mirrors the auto-advance pattern already
-  /// used for scene tap and gender tap — young children expect forward motion
-  /// after a tap. The delay lets the TTS readback play and gives a beat for
-  /// second thoughts (re-armed on every tap so a quick swap doesn't fire
-  /// twice).
+  /// Sprout (≤5) + Explorer (6-8): auto-advance from the companions page (4) to
+  /// the scene page after a companion is selected (MT-279). Mirrors the
+  /// auto-advance pattern already used for scene tap and gender tap — young
+  /// children expect forward motion after a tap. The delay lets any TTS
+  /// readback play and gives a beat for second thoughts; it is re-armed on
+  /// every tap, so an Explorer adding multiple buddies advances only after
+  /// their last pick, not the first.
   void _scheduleSproutCompanionAdvance() {
     _sproutCompanionAdvanceTimer?.cancel();
     _sproutCompanionAdvanceTimer = Timer(
@@ -1903,6 +1937,74 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  /// MT-279: the Explorer-only express-lane CTA. A bright, unmistakable
+  /// shortcut that says "you've got a hero — I'll handle the rest". Styled to
+  /// echo the welcome screen's "Create a new hero" tile so it reads as a
+  /// first-class action, while the subtitle makes the surprise-world behaviour
+  /// explicit so a tap never feels like a mistake.
+  Widget _buildExpressStoryButton() {
+    return GestureDetector(
+      onTap: _expressTellMeAStory,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF7C4DFF), Color(0xFFFF7043)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withAlpha(60),
+              blurRadius: 14,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Text('⚡', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tell Me a Story!',
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      shadows: const [
+                        Shadow(color: Colors.black54, blurRadius: 4),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "Skip ahead — we'll pick a world for you!",
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded,
+                color: Color(0xFFFFD700), size: 28),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAdventureTeamPage() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -1935,6 +2037,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   style: _bandTitleStyle(band, baseFontSize: 22),
                 ),
                 const SizedBox(height: 16),
+                // MT-279: Explorer-only express lane — once the hero is built,
+                // offer a one-tap shortcut straight to the story so 6-8s aren't
+                // forced through team + scene + story-type to reach a story.
+                if (band.band == AgeBand.explorer) ...[
+                  _buildExpressStoryButton(),
+                  const SizedBox(height: 20),
+                ],
                 _buildCompanionShowcase(),
                 const SizedBox(height: 20),
                 _buildCompanionGrid(),
@@ -2038,7 +2147,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         CompanionImageGrid(
           wizardData: widget.wizardData,
           onChanged: () => setState(() {}),
-          onCompanionTapped: widget.wizardData.characterAge <= 5
+          // MT-279: auto-advance after a companion pick for Sprout (≤5) AND
+          // Explorer (6-8). The advance timer is re-armed on every tap (see
+          // _scheduleSproutCompanionAdvance), so an Explorer picking up to 3
+          // buddies still advances only ~1.4s after their LAST pick — not after
+          // the first. _speakForSprout self-gates to ≤5, so Explorer gets the
+          // forward motion without the TTS name read-back.
+          onCompanionTapped: widget.wizardData.characterAge <= 8
               ? (name) {
                   _speakForSprout(name);
                   _scheduleSproutCompanionAdvance();
