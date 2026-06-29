@@ -158,6 +158,30 @@ def _resolve_story_provider() -> str:
             provider,
         )
         provider = "openai"
+
+    # MT-307 soft guard: 'openai' (GPT-5 mini) is the only story-text provider
+    # disclosed to parents (COPPA) and vetted as permissible for an under-18 app.
+    # The dispatcher still ACCEPTS the others — local dev uses 'openrouter', and
+    # 'claude'/'tiered' are wired for a possible future paid tier — so this does
+    # NOT enforce/refuse (which would break those configs). But a non-'openai'
+    # value *in production* means children's story inputs are flowing to a
+    # processor that is not named in the privacy policy: surface that loudly so
+    # the misconfiguration can't sit silently. See MT-307 / MT-295.
+    if provider != "openai":
+        try:
+            from backend.utils.app_helpers import is_production  # lazy: avoid cycle
+
+            in_production = is_production()
+        except Exception:
+            in_production = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
+        if in_production:
+            logger.warning(
+                "STORY_GEN_PROVIDER=%r in PRODUCTION: children's story text is being "
+                "routed to a processor that is NOT disclosed in the privacy policy "
+                "(only 'openai' is disclosed/vetted for under-18 use). Confirm this "
+                "is intended and that disclosure has been updated (MT-307).",
+                provider,
+            )
     return provider
 
 

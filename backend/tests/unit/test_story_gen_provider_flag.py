@@ -432,6 +432,29 @@ class TestProviderFlagSequencing:
         monkeypatch.setenv("STORY_GEN_PROVIDER", "claude-direct")
         assert story_tasks._resolve_story_provider() == "openai"
 
+    def test_nondefault_provider_in_production_warns(self, monkeypatch):
+        """MT-307 soft guard: a recognized but non-'openai' provider in
+        PRODUCTION must still resolve (no enforcement) yet emit a loud warning —
+        children's story text would otherwise reach an undisclosed processor."""
+        monkeypatch.setenv("STORY_GEN_PROVIDER", "openrouter")
+        monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+        warn = MagicMock()
+        monkeypatch.setattr(story_tasks.logger, "warning", warn)
+
+        assert story_tasks._resolve_story_provider() == "openrouter"
+        assert any("MT-307" in str(c.args) for c in warn.call_args_list)
+
+    def test_nondefault_provider_outside_production_is_quiet(self, monkeypatch):
+        """The soft guard must NOT fire in local dev — 'openrouter' is the
+        expected local provider and should resolve without an MT-307 warning."""
+        monkeypatch.setenv("STORY_GEN_PROVIDER", "openrouter")
+        monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+        warn = MagicMock()
+        monkeypatch.setattr(story_tasks.logger, "warning", warn)
+
+        assert story_tasks._resolve_story_provider() == "openrouter"
+        assert not any("MT-307" in str(c.args) for c in warn.call_args_list)
+
 
 # ---------------------------------------------------------------------------
 # OpenRouterStoryGenerator — model wired up in __init__
