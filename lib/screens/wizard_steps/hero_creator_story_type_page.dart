@@ -75,6 +75,30 @@ class HeroStoryTypePage extends StatelessWidget {
     );
   }
 
+  /// Body / label / subtitle text style for this page. The Adventurer band
+  /// reads with its Bitter slab-serif "book feel" (MT-277) so the body copy
+  /// stops contradicting the gold Bitter title; every other band keeps the
+  /// rounded Fredoka the younger kids expect.
+  TextStyle _bandBodyStyle(
+    AgeBandThemeData band, {
+    required Color color,
+    required double fontSize,
+    FontWeight? fontWeight,
+  }) {
+    if (band.band == AgeBand.adventurer) {
+      return GoogleFonts.bitter(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+      );
+    }
+    return GoogleFonts.fredoka(
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+    );
+  }
+
   Widget _buildSproutModeCard({
     required String emoji,
     required String label,
@@ -313,7 +337,8 @@ class HeroStoryTypePage extends StatelessWidget {
         children: [
           Text(
             "Anything special you want?",
-            style: GoogleFonts.fredoka(
+            style: _bandBodyStyle(
+              band,
               color: Colors.white,
               fontSize: band.body(16),
               fontWeight: FontWeight.w600,
@@ -383,7 +408,8 @@ class HeroStoryTypePage extends StatelessWidget {
                 child: Text(
                   "We don't keep your voice — only the words, and we check "
                   "those to keep things safe.",
-                  style: GoogleFonts.fredoka(
+                  style: _bandBodyStyle(
+                    band,
                     color: Colors.white.withAlpha(140),
                     fontSize: band.body(11),
                   ),
@@ -438,6 +464,10 @@ class HeroStoryTypePage extends StatelessWidget {
                 ? 'Story type'
                 : 'What kind of story?';
 
+    // Genre / personality chips read with Bitter for Adventurer (MT-277) and
+    // keep Fredoka elsewhere; null lets GenreChip fall back to its default.
+    final chipFontFamily = band.band == AgeBand.adventurer ? 'Bitter' : null;
+
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: band.space(24)),
       child: Column(
@@ -453,7 +483,8 @@ class HeroStoryTypePage extends StatelessWidget {
             band.band == AgeBand.sprout
                 ? 'Pick the one you like! 👇'
                 : 'Pick your story style',
-            style: GoogleFonts.fredoka(
+            style: _bandBodyStyle(
+              band,
               color: Colors.white.withAlpha(200),
               fontSize: band.band == AgeBand.sprout ? 17 : band.body(16),
             ),
@@ -638,7 +669,8 @@ class HeroStoryTypePage extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               "Add a genre twist (optional)",
-              style: GoogleFonts.fredoka(
+              style: _bandBodyStyle(
+                band,
                 color: Colors.white.withAlpha(200),
                 fontSize: 16,
               ),
@@ -652,6 +684,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '🔍 Mystery',
                     value: 'mystery',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'mystery',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -663,6 +696,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '😂 Comedy',
                     value: 'comedy',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'comedy',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -674,6 +708,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '🚀 Sci-Fi',
                     value: 'sci-fi',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'sci-fi',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -685,6 +720,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '⚔️ Action',
                     value: 'action',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'action',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -696,6 +732,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '👻 Spooky',
                     value: 'spooky',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'spooky',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -715,6 +752,7 @@ class HeroStoryTypePage extends StatelessWidget {
                 GenreChip(
                     label: '💛 Friendship',
                     value: 'friendship',
+                    fontFamily: chipFontFamily,
                     selected: wizardData.selectedGenre == 'friendship',
                     onTap: () {
                       wizardData.selectedGenre =
@@ -736,7 +774,8 @@ class HeroStoryTypePage extends StatelessWidget {
               band.band == AgeBand.creator) ...[
             Text(
               "Add a personality twist (optional)",
-              style: GoogleFonts.fredoka(
+              style: _bandBodyStyle(
+                band,
                 color: Colors.white.withAlpha(200),
                 fontSize: 16,
               ),
@@ -758,6 +797,7 @@ class HeroStoryTypePage extends StatelessWidget {
                   GenreChip(
                     label: n[0],
                     value: n[1],
+                    fontFamily: chipFontFamily,
                     selected:
                         (wizardData.personalitySliders[n[1]] ?? 50) >= 80,
                     onTap: () {

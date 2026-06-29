@@ -7,12 +7,18 @@ class GenreChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// UI font family for the chip label. Pass `'Bitter'` so the Adventurer band
+  /// reads with its slab-serif "book feel" (MT-277); when null the chip keeps
+  /// the rounded Fredoka used by the younger bands.
+  final String? fontFamily;
+
   const GenreChip({
     super.key,
     required this.label,
     required this.value,
     required this.selected,
     required this.onTap,
+    this.fontFamily,
   });
 
   @override
@@ -47,7 +53,7 @@ class GenreChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.fredoka(
+          style: (fontFamily == 'Bitter' ? GoogleFonts.bitter : GoogleFonts.fredoka)(
             color: Colors.white,
             fontSize: 15,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
