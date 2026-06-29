@@ -900,8 +900,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
               .read(ageBandNotifierProvider.notifier)
               .setAge(_selectedAge!);
         }
-        // M-9: reconcile analytics with the consent result. Under-13 ⇒ stays
-        // off regardless (applyConsentDecision enforces the age >= 13 gate).
+        // M-9 / CAADCA: reconcile analytics with the consent result. Any minor
+        // (under 18) ⇒ stays off by default regardless of consent
+        // (applyConsentDecision enforces the adult-age default gate).
         await PrivacyService.applyConsentDecision(
           consentGranted: true,
           declaredAge: _selectedAge!,

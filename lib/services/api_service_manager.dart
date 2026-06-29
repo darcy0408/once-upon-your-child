@@ -33,6 +33,10 @@ class ApiServiceManager {
   static const String _tokenKey = 'story_weaver_auth_token';
   static const String _refreshTokenKey = 'story_weaver_refresh_token';
   static const String _userIdKey = 'story_weaver_user_id';
+  // GDPR Art. 8: coarse country (ISO alpha-2) from the backend's CF-IPCountry
+  // read, used only to resolve the digital-consent age. Persisted so the
+  // consent gate can read it synchronously without an extra round trip.
+  static const String _countryKey = 'story_weaver_country';
 
   static bool get _isLocalBackend {
     return _localBackendUrl.contains('127.0.0.1') ||
@@ -205,6 +209,13 @@ class ApiServiceManager {
           await SecureStorageService.saveRefreshToken(_refreshToken!);
         }
         await prefs.setString(_userIdKey, _userId!);
+        // GDPR Art. 8: persist the coarse country the backend resolved from
+        // CF-IPCountry so the consent gate can pick the right digital-consent
+        // age. Absent in local/dev (no Cloudflare edge) — left unset then.
+        final country = data['country'];
+        if (country is String && country.isNotEmpty) {
+          await prefs.setString(_countryKey, country);
+        }
         LoggerService.debug(
             'Got anonymous auth token for user ${LoggerService.redact(_userId)}');
       } else {
@@ -274,6 +285,14 @@ class ApiServiceManager {
   Future<String?> getUserId() async {
     await _ensureAuthenticated();
     return _userId;
+  }
+
+  /// The coarse country (ISO alpha-2) the backend resolved from CF-IPCountry on
+  /// the last anonymous-auth call, or null if unknown (e.g. local/dev with no
+  /// Cloudflare edge). Used only to resolve the GDPR Art. 8 digital-consent age.
+  Future<String?> getCountry() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_countryKey);
   }
 
   Future<Map<String, dynamic>> post(

@@ -408,6 +408,12 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         except Exception:
             db.session.rollback()
         audit_log("anonymous_session", user_id=user.id)
+        # GDPR Art. 8: the client resolves the digital-consent age from the
+        # caller's country (Cloudflare sets CF-IPCountry at the edge; absent in
+        # local/dev). Pass it through verbatim — the client's consentAgeForCountry
+        # treats unknown/non-EEA values as the COPPA floor (13). Coarse country
+        # only; not stored.
+        country = (request.headers.get("CF-IPCountry") or "").strip().upper() or None
         return (
             jsonify(
                 {
@@ -415,6 +421,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                     "refresh_token": refresh_token,
                     "user_id": user.id,
                     "is_anonymous": True,
+                    "country": country,
                 }
             ),
             200,

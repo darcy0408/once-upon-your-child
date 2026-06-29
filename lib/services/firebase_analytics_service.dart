@@ -25,8 +25,8 @@ class FirebaseAnalyticsService {
   /// SECURITY (M-9, COPPA §312.5(a)): GA-for-Firebase is not COPPA-certified
   /// for children's data, and collection must not begin before verified
   /// parental consent. Collection is enabled later — and only — via
-  /// [PrivacyService.setAnalyticsConsent], which is wired to the consent
-  /// result AND a declared age >= 13.
+  /// [PrivacyService.applyConsentDecision], which is wired to the consent
+  /// result AND the adult-age default gate (18+; see [PrivacyDefaults]).
   static Future<void> initialize() async {
     if (_initialized) return;
     await Firebase.initializeApp(
@@ -48,9 +48,9 @@ class FirebaseAnalyticsService {
   }
 
   /// Enables or disables analytics collection at runtime. Called by
-  /// [PrivacyService.setAnalyticsConsent] once a consent decision is known.
-  /// [consented] must already encode the COPPA gate (verified consent AND
-  /// declared age >= 13) — this method does not re-check it.
+  /// [PrivacyService.applyConsentDecision] once a consent decision is known.
+  /// [consented] must already encode the privacy gate (verified consent AND
+  /// adult-age default per [PrivacyDefaults]) — this method does not re-check it.
   static Future<void> setCollectionEnabled(bool consented) async {
     _collectionEnabled = consented;
     if (kIsWeb) {

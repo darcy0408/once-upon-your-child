@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../services/api_service_manager.dart';
 import '../services/app_tts_service.dart';
+import '../services/consent_age.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart' show ParentalGateDialog;
@@ -78,12 +80,23 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _verifying = false;
   String? _verifyError;
 
-  bool get _isUnder13 => widget.declaredAge < 13;
+  /// The digital-consent age for this session, resolved from the caller's
+  /// country (GDPR Art. 8). Defaults to the COPPA floor (13) and is updated by
+  /// [_loadConsentAge] once the backend-provided country is known. A child
+  /// below this age needs verifiable parental consent; at/above it, 13+
+  /// self-attestation applies (the COPPA under-13 rule is the floor and always
+  /// holds in the US, where this resolves to 13).
+  int _consentAge = kDefaultConsentAge;
 
-  /// Whether the COPPA email round-trip applies. True for under-13 unless the
-  /// pre-launch [_kSkipEmailConsent] flag is set (see its doc comment).
+  /// True when the declared age is below the resolved digital-consent age, so
+  /// verifiable parental consent (the email round-trip) is required. In the US
+  /// this is exactly "under 13"; in some EEA states it is under 14/15/16.
+  bool get _belowConsentAge => widget.declaredAge < _consentAge;
+
+  /// Whether the verifiable email round-trip applies. True below the consent
+  /// age unless the pre-launch [_kSkipEmailConsent] flag is set (see its doc).
   bool get _requiresEmailVerification =>
-      _isUnder13 && !_kSkipEmailConsent;
+      _belowConsentAge && !_kSkipEmailConsent;
 
   /// For under-13, a properly-formatted parent email is REQUIRED — it is the
   /// destination of the COPPA verifiable-consent round trip. For 13+ the email
@@ -101,6 +114,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // GDPR Art. 8: resolve the digital-consent age from the caller's country.
+    // Defaults to 13 until this returns, so the gate fails safe (US-equivalent)
+    // if the country is slow/unavailable, then tightens for higher-age states.
+    _loadConsentAge();
     // CMP-6: the consent action is parent-directed. No child-directed TTS and
     // no gamified framing on the consent step itself — the only spoken/animated
     // cue here would be aimed at a child, which §312.5 says it must not be.
@@ -116,6 +133,24 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _debugBypassConsent();
       });
+    }
+  }
+
+  /// Resolves the digital-consent age from the backend-provided country.
+  /// `getUserId()` ensures the anonymous-auth call has run (which is what
+  /// persists the CF-IPCountry value); `getCountry()` then reads it. Best
+  /// effort — any failure leaves [_consentAge] at the safe 13 default.
+  Future<void> _loadConsentAge() async {
+    try {
+      final api = ApiServiceManager();
+      await api.getUserId();
+      final country = await api.getCountry();
+      final resolved = consentAgeForCountry(country);
+      if (mounted && resolved != _consentAge) {
+        setState(() => _consentAge = resolved);
+      }
+    } catch (_) {
+      // Keep the COPPA-floor default on any error.
     }
   }
 
