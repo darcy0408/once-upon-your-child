@@ -387,6 +387,14 @@ class WizardDataMapper {
         if (data.heroCatchphrase != null &&
             data.heroCatchphrase!.trim().isNotEmpty)
           'heroCatchphrase': data.heroCatchphrase!.trim(),
+        // MT-305: the Creator-band child's typed hero codename lives in
+        // heroSuperpower (captured by _HeroNameChoice). Thread it as a
+        // dedicated heroAlias so the backend names the hero after the chosen
+        // codename (e.g. "Ghostwire") instead of the power. The existing
+        // strengths insertion above is left untouched. Mirrors heroCatchphrase.
+        if (data.heroSuperpower != null &&
+            data.heroSuperpower!.trim().isNotEmpty)
+          'heroAlias': data.heroSuperpower!.trim(),
         // Adolescent identity — optional free text from teens; sanitized
         // (prompt-injection / HTML / length) since these are open inputs.
         if (data.heroSecret != null && data.heroSecret!.trim().isNotEmpty)

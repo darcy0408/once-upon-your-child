@@ -68,6 +68,7 @@ class PromptService:
         hero_power: str | None = None,
         hero_mode: str | None = None,
         hero_catchphrase: str | None = None,
+        hero_alias: str | None = None,
         hero_secret: str | None = None,
         hero_tell: str | None = None,
         hero_line: str | None = None,
@@ -136,6 +137,7 @@ class PromptService:
                     hero_emblem=hero_emblem,
                     hero_power=hero_power,
                     hero_catchphrase=hero_catchphrase,
+                    hero_alias=hero_alias,
                     villain_id=superhero_villain_id,
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
@@ -1174,6 +1176,7 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
         villain_id: str | None,
         problem_id: str | None,
         hero_catchphrase: str | None = None,
+        hero_alias: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
     ) -> str:
@@ -1231,8 +1234,9 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
             cape_phrase = f"a {color} cape"
 
         # The codename IS the hero alias; {character} is the civilian identity
-        # (the dual-life theme is core to this band).
-        alias = power_name
+        # (the dual-life theme is core to this band). MT-305: honor the child's
+        # typed codename when present; fall back to the power name otherwise.
+        alias = (hero_alias or "").strip() or power_name
 
         catchphrase = (hero_catchphrase or "").strip()
         catchphrase_identity_line = (

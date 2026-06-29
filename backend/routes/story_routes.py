@@ -835,6 +835,10 @@ def create_story_blueprint(
             "hero_power": payload.get("hero_power"),
             "hero_mode": payload.get("hero_mode"),
             "hero_catchphrase": payload.get("hero_catchphrase"),
+            # MT-305: the Creator-band child's typed hero codename. Threaded
+            # through to build_story_prompt so the Creator prompt names the hero
+            # after the chosen codename instead of the power.
+            "hero_alias": payload.get("hero_alias"),
             # Adolescent (15-17) antihero "identity" fields — only meaningful
             # for the T10 double-life prompt; other bands ignore them.
             "hero_secret": payload.get("hero_secret"),

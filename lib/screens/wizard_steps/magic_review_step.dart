@@ -583,6 +583,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             heroPower: requestData['heroPower']?.toString(),
             heroMode: requestData['heroMode']?.toString(),
             heroCatchphrase: requestData['heroCatchphrase']?.toString(),
+            heroAlias: requestData['heroAlias']?.toString(),
             heroSecret: requestData['heroSecret']?.toString(),
             heroTell: requestData['heroTell']?.toString(),
             heroLine: requestData['heroLine']?.toString(),

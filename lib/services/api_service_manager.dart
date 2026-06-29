@@ -737,6 +737,7 @@ class ApiServiceManager {
     String? heroPower,
     String? heroMode,
     String? heroCatchphrase,
+    String? heroAlias,
     String? heroSecret,
     String? heroTell,
     String? heroLine,
@@ -847,6 +848,7 @@ class ApiServiceManager {
           heroPower: heroPower,
           heroMode: heroMode,
           heroCatchphrase: heroCatchphrase,
+          heroAlias: heroAlias,
           heroSecret: heroSecret,
           heroTell: heroTell,
           heroLine: heroLine,
@@ -1133,6 +1135,7 @@ class ApiServiceManager {
     String? heroPower,
     String? heroMode,
     String? heroCatchphrase,
+    String? heroAlias,
     String? heroSecret,
     String? heroTell,
     String? heroLine,
@@ -1194,6 +1197,7 @@ class ApiServiceManager {
           heroPower: heroPower,
           heroMode: heroMode,
           heroCatchphrase: heroCatchphrase,
+          heroAlias: heroAlias,
           heroSecret: heroSecret,
           heroTell: heroTell,
           heroLine: heroLine,
@@ -1282,6 +1286,7 @@ class ApiServiceManager {
     String? heroPower,
     String? heroMode,
     String? heroCatchphrase,
+    String? heroAlias,
     String? heroSecret,
     String? heroTell,
     String? heroLine,
@@ -1361,6 +1366,12 @@ class ApiServiceManager {
       }
       if (heroCatchphrase != null && heroCatchphrase.trim().isNotEmpty) {
         body['hero_catchphrase'] = heroCatchphrase.trim();
+      }
+      // MT-305: the Creator child's chosen hero codename, sent as a dedicated
+      // field so the backend prompt uses it as the hero alias instead of
+      // hardcoding the power name. Mirrors hero_catchphrase on the wire.
+      if (heroAlias != null && heroAlias.trim().isNotEmpty) {
+        body['hero_alias'] = heroAlias.trim();
       }
       if (heroSecret != null && heroSecret.trim().isNotEmpty) {
         body['hero_secret'] = heroSecret.trim();

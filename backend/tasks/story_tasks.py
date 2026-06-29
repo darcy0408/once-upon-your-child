@@ -1448,6 +1448,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     hero_power=hero_power,
                     hero_mode=kwargs.get("hero_mode"),
                     hero_catchphrase=kwargs.get("hero_catchphrase"),
+                    hero_alias=kwargs.get("hero_alias"),
                     hero_secret=kwargs.get("hero_secret"),
                     hero_tell=kwargs.get("hero_tell"),
                     hero_line=kwargs.get("hero_line"),
