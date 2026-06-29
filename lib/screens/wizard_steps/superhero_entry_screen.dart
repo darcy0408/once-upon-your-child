@@ -62,10 +62,10 @@ class SuperheroEntryScreen extends ConsumerWidget {
           // Younger bands (Sprout) have no saga and skip the watch. A saga read
           // failure / first Issue simply yields a null saga → no recap, never a
           // blocked welcome-back.
-          final saga = (band == AgeBand.explorer ||
-                  band == AgeBand.adventurer ||
-                  band == AgeBand.creator ||
-                  band == AgeBand.adolescent)
+          // MT-286: same `usesHeroSaga` predicate the magic-review WRITE path
+          // gates on, so the READ (recap card) and WRITE (recordIssue) sides
+          // can't drift to different band sets.
+          final saga = band.usesHeroSaga
               ? ref.watch(heroSagaProvider(characterId)).valueOrNull
               : null;
           return SuperheroWelcomeBackScreen(

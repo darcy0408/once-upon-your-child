@@ -125,6 +125,37 @@ void main() {
   // 2. themeForAge() — produces non-null AgeBandThemeData for all bands
   // ---------------------------------------------------------------------------
 
+  // MT-286: the returnable Hero Saga write path (`recordIssue` in
+  // magic_review_step) and the welcome-back recap card both gate on the SAME
+  // `AgeBand.usesHeroSaga` predicate. Lock the band set so the Explorer write
+  // path can never silently regress to a Creator-only subset.
+  group('1d. AgeBand.usesHeroSaga — saga band set', () {
+    const sagaBands = {
+      AgeBand.explorer,
+      AgeBand.adventurer,
+      AgeBand.creator,
+      AgeBand.adolescent,
+    };
+    for (final band in AgeBand.values) {
+      final shouldUse = sagaBands.contains(band);
+      test('${band.name} usesHeroSaga == $shouldUse', () {
+        expect(band.usesHeroSaga, shouldUse);
+      });
+    }
+
+    test('Explorer (6-8) participates in the saga write/read path (MT-286)', () {
+      // Explorer resolves from a representative in-band age AND is a saga band,
+      // so a returning 6-8 hero gets recordIssue + the "Issue #N" recap card.
+      expect(ageBandFromAge(7), AgeBand.explorer);
+      expect(AgeBand.explorer.usesHeroSaga, isTrue);
+    });
+
+    test('Sprout and Adult are NOT saga bands', () {
+      expect(AgeBand.sprout.usesHeroSaga, isFalse);
+      expect(AgeBand.adult.usesHeroSaga, isFalse);
+    });
+  });
+
   group('2. themeForAge() — all bands return valid theme data', () {
     for (final (age, band) in kBandAges) {
       test('themeForAge($age) returns ${band.name} theme', () {

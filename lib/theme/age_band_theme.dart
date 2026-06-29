@@ -585,6 +585,20 @@ extension AgeBandGroups on AgeBand {
   /// large touch targets, bright colors, and simplified language.
   bool get isYoung =>
       this == AgeBand.sprout || this == AgeBand.explorer;
+
+  /// True for the four bands that participate in the returnable Hero Saga
+  /// (MT-235 Phase 2): Explorer (6-8), Adventurer (9-12), Creator (13-14),
+  /// and Adolescent (15-17). Sprout (3-5) and Adult (18+) have no saga.
+  ///
+  /// Single source of truth for the saga band set so the magic-review WRITE
+  /// path (`recordIssue`) and the welcome-back READ path (the "Previously…" /
+  /// "Issue #N" recap card) gate on the SAME predicate and can never drift to
+  /// a Creator-only subset — the exact regression MT-286 guards against.
+  bool get usesHeroSaga =>
+      this == AgeBand.explorer ||
+      this == AgeBand.adventurer ||
+      this == AgeBand.creator ||
+      this == AgeBand.adolescent;
 }
 
 extension AgeBandSizing on AgeBandThemeData {

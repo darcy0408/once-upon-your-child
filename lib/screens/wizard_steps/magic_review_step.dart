@@ -511,7 +511,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         // missing block as a clean origin.
         Map<String, dynamic>? priorSaga;
         final sagaAgeBand = ageBandFromAge(widget.wizardData.characterAge);
-        final isCreatorBand = sagaAgeBand == AgeBand.creator;
         final isAdolescentBand = sagaAgeBand == AgeBand.adolescent;
         final isAdventurerBand = sagaAgeBand == AgeBand.adventurer;
         final isExplorerBand = sagaAgeBand == AgeBand.explorer;
@@ -521,10 +520,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         // continuity/consequence-callback wired (Explorer/Adventurer omit
         // what_it_cost by design); this gate is what feeds them the persisted
         // saga data.
-        final isSagaBand = isCreatorBand ||
-            isAdolescentBand ||
-            isAdventurerBand ||
-            isExplorerBand;
+        // MT-286: gate the saga WRITE path on the shared `usesHeroSaga`
+        // predicate (single source of truth, mirrored by the welcome-back READ
+        // path) so Explorer can never silently regress to a Creator-only write.
+        final isSagaBand = sagaAgeBand.usesHeroSaga;
         if (widget.wizardData.selectedScenario == 'superhero') {
           try {
             final heroCharacterId =
