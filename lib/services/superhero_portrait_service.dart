@@ -15,15 +15,25 @@ class SuperheroPortraitService {
   /// POSTs [avatarBytes] + the costume/power choice ids to the backend and
   /// returns the generated portrait as a `data:image/...;base64,...` URI, or
   /// null on any error (network, auth, paywall, generation failure).
+  ///
+  /// Pass [client] to retain ownership of the underlying connection so the
+  /// caller can cancel an in-flight request by closing it (MT-285: the reveal
+  /// screen closes the client on Skip so a slow transform stops running instead
+  /// of churning for up to ~2 minutes). When [client] is supplied the caller is
+  /// responsible for closing it; otherwise a transient client is created and
+  /// closed here.
   static Future<String?> transform({
     required Uint8List avatarBytes,
     String? costumeColor,
     String? capeStyle,
     String? emblem,
     String? power,
+    http.Client? client,
   }) async {
     final url =
         Uri.parse('${Environment.backendUrl}/avatar/transform-superhero');
+    final ownsClient = client == null;
+    final httpClient = client ?? http.Client();
 
     Future<http.Response> send() async {
       final request = http.MultipartRequest('POST', url);
@@ -39,7 +49,8 @@ class SuperheroPortraitService {
       if (capeStyle != null) request.fields['cape_style'] = capeStyle;
       if (emblem != null) request.fields['emblem'] = emblem;
       if (power != null) request.fields['power'] = power;
-      final streamed = await request.send().timeout(const Duration(minutes: 2));
+      final streamed =
+          await httpClient.send(request).timeout(const Duration(minutes: 2));
       return http.Response.fromStream(streamed);
     }
 
@@ -61,8 +72,12 @@ class SuperheroPortraitService {
       if (uri == null || uri.isEmpty) return null;
       return uri;
     } catch (e) {
+      // A caller closing [client] mid-flight surfaces here as a
+      // ClientException — treated like any other failure (return null).
       debugPrint('Superhero portrait error: $e');
       return null;
+    } finally {
+      if (ownsClient) httpClient.close();
     }
   }
 }

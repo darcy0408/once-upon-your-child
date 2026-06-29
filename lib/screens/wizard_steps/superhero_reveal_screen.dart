@@ -11,6 +11,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 import '../../models.dart';
 import '../../services/superhero_portrait_service.dart';
@@ -58,6 +59,14 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
   bool _showSkip = false;
   Timer? _skipTimer;
 
+  // MT-285: the screen owns the HTTP client for the portrait transform so that
+  // tapping Skip (or leaving the screen) can close it and abort the in-flight
+  // request — otherwise a slow transform keeps churning for up to ~2 minutes
+  // after the child has already moved on. [_cancelled] also guards the late
+  // success callback so it never writes state after the user has skipped.
+  http.Client? _httpClient;
+  bool _cancelled = false;
+
   @override
   void initState() {
     super.initState();
@@ -78,8 +87,19 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
   @override
   void dispose() {
     _skipTimer?.cancel();
+    _cancelled = true;
+    _httpClient?.close();
     _pulse.dispose();
     super.dispose();
+  }
+
+  // Skip / continue out of the reveal. Cancels the in-flight portrait transform
+  // (MT-285) before popping so it stops consuming a request the child no longer
+  // wants.
+  void _skip() {
+    _cancelled = true;
+    _httpClient?.close();
+    Navigator.of(context).pop();
   }
 
   Future<void> _generate() async {
@@ -103,15 +123,20 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
       return;
     }
 
+    // Own the client so Skip/dispose can close it and cancel the request.
+    final client = _httpClient = http.Client();
     final result = await SuperheroPortraitService.transform(
       avatarBytes: avatarBytes,
       costumeColor: wd.heroCostumeColor,
       capeStyle: wd.heroCapeStyle,
       emblem: wd.heroEmblem,
       power: wd.heroPower,
+      client: client,
     );
+    client.close();
 
-    if (!mounted) return;
+    // Bail on a late return after the child skipped (or the screen went away).
+    if (_cancelled || !mounted) return;
     if (result == null || !result.contains(',')) {
       setState(() => _loading = false);
       return;
@@ -204,7 +229,7 @@ class _SuperheroRevealScreenState extends State<SuperheroRevealScreen>
         if (_showSkip) ...[
           const SizedBox(height: 28),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _skip,
             child: Text(
               'Skip — start my story →',
               style: _revealText(
