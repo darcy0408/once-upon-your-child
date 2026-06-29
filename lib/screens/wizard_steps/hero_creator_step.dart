@@ -1577,102 +1577,121 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       final title = isCreator
           ? 'How do you want to design your character?'
           : 'How do you want to build your hero?';
-      return Column(
-        children: [
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MagicEarButton(spokenText: title, size: 32),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: _bandTitleStyle(band, baseFontSize: 20),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // AI photo avatar is gated on parental consent only. Every
-                // account gets ONE free custom avatar — the "magic moment" of
-                // turning a real photo into a cartoon hero. The backend
-                // enforces the 1-free limit and returns UPGRADE_REQUIRED after
-                // that. Surfaced as the featured option so kids see it first.
-                //
-                // MT-151: when a non-premium account has already used its one
-                // free custom avatar, the card carries a "Premium" badge and
-                // its tap opens the upgrade dialog directly — skipping the
-                // selfie capture so no photo is wasted on a 403.
-                if (_allowPhotoAvatar) ...[
-                  HeroAvatarChoiceCard(
-                    featured: true,
-                    icon: Icons.camera_alt_rounded,
-                    title: 'Turn YOU into a cartoon hero!',
-                    subtitle:
-                        'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
-                    badgeText: _customAvatarLocked ? '✨ Premium ✨' : null,
-                    onTap: _customAvatarLocked
-                        ? _showCustomAvatarUpgradeDialog
-                        : _openCustomAvatarScreen,
-                  ),
-                  // MT-280: signpost the 1-free-custom-avatar limit UP FRONT
-                  // (per build) so a non-premium parent isn't ambushed by the
-                  // paywall on their 2nd child. Premium accounts already have
-                  // unlimited custom heroes, so the caption is hidden for them.
-                  if (!_isPremium) ...[
-                    const SizedBox(height: 8),
-                    _buildFreeAvatarSignpost(),
-                  ],
-                  const SizedBox(height: 18),
-                  Row(
-                    children: const [
-                      Expanded(child: Divider(color: Colors.white24)),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('or',
-                            style:
-                                TextStyle(color: Colors.white60, fontSize: 12)),
+      // MT-280 follow-up: the free-avatar signpost added ~70px beneath the
+      // photo card, overflowing the fixed PageView viewport on short screens
+      // (RenderFlex overflow of 64px in the 600px test surface). Wrap the
+      // Spacer-centered column so it stays vertically centred when there's
+      // room, but scrolls instead of overflowing when the content is taller
+      // than the viewport. IntrinsicHeight lets the Spacers keep working.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          MagicEarButton(spokenText: title, size: 32),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              title,
+                              textAlign: TextAlign.center,
+                              style: _bandTitleStyle(band, baseFontSize: 20),
+                            ),
+                          ),
+                        ],
                       ),
-                      Expanded(child: Divider(color: Colors.white24)),
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // AI photo avatar is gated on parental consent only. Every
+                          // account gets ONE free custom avatar — the "magic moment" of
+                          // turning a real photo into a cartoon hero. The backend
+                          // enforces the 1-free limit and returns UPGRADE_REQUIRED after
+                          // that. Surfaced as the featured option so kids see it first.
+                          //
+                          // MT-151: when a non-premium account has already used its one
+                          // free custom avatar, the card carries a "Premium" badge and
+                          // its tap opens the upgrade dialog directly — skipping the
+                          // selfie capture so no photo is wasted on a 403.
+                          if (_allowPhotoAvatar) ...[
+                            HeroAvatarChoiceCard(
+                              featured: true,
+                              icon: Icons.camera_alt_rounded,
+                              title: 'Turn YOU into a cartoon hero!',
+                              subtitle:
+                                  'Snap a selfie — watch the magic turn it\ninto your very own custom cartoon.',
+                              badgeText:
+                                  _customAvatarLocked ? '✨ Premium ✨' : null,
+                              onTap: _customAvatarLocked
+                                  ? _showCustomAvatarUpgradeDialog
+                                  : _openCustomAvatarScreen,
+                            ),
+                            // MT-280: signpost the 1-free-custom-avatar limit UP FRONT
+                            // (per build) so a non-premium parent isn't ambushed by the
+                            // paywall on their 2nd child. Premium accounts already have
+                            // unlimited custom heroes, so the caption is hidden for them.
+                            if (!_isPremium) ...[
+                              const SizedBox(height: 8),
+                              _buildFreeAvatarSignpost(),
+                            ],
+                            const SizedBox(height: 18),
+                            Row(
+                              children: const [
+                                Expanded(child: Divider(color: Colors.white24)),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('or',
+                                      style: TextStyle(
+                                          color: Colors.white60, fontSize: 12)),
+                                ),
+                                Expanded(child: Divider(color: Colors.white24)),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+                          HeroAvatarChoiceCard(
+                            icon: Icons.auto_awesome,
+                            title: 'Pick a magical hero',
+                            subtitle: 'Choose from our gallery',
+                            onTap: _openAvatarGallery,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_hasAvatar) ...[
+                      Text(
+                        'Great! Tap Next to pick your hero style.',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
                     ],
-                  ),
-                  const SizedBox(height: 14),
-                ],
-                HeroAvatarChoiceCard(
-                  icon: Icons.auto_awesome,
-                  title: 'Pick a magical hero',
-                  subtitle: 'Choose from our gallery',
-                  onTap: _openAvatarGallery,
+                    _buildNextArrowButton(
+                      enabled: _hasAvatar,
+                      onTap: _heroNextPage,
+                      hint: 'Next: Pick Hero Style',
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          const Spacer(),
-          if (_hasAvatar) ...[
-            Text(
-              'Great! Tap Next to pick your hero style.',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-          ],
-          _buildNextArrowButton(
-            enabled: _hasAvatar,
-            onTap: _heroNextPage,
-            hint: 'Next: Pick Hero Style',
-          ),
-          const SizedBox(height: 24),
-        ],
+          );
+        },
       );
     });
   }
@@ -3145,8 +3164,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // error they couldn't read. A friendly, gender-neutral "Surprise me!" name
   // gives a tap-only path that guarantees the child is never stuck.
   static const List<String> _surpriseHeroNames = [
-    'Pip', 'Juno', 'Milo', 'Luna', 'Finn', 'Nova', 'Remy', 'Sunny',
-    'Bo', 'Kit', 'Ivy', 'Max', 'Zara', 'Leo', 'Mika', 'Pax',
+    'Pip',
+    'Juno',
+    'Milo',
+    'Luna',
+    'Finn',
+    'Nova',
+    'Remy',
+    'Sunny',
+    'Bo',
+    'Kit',
+    'Ivy',
+    'Max',
+    'Zara',
+    'Leo',
+    'Mika',
+    'Pax',
   ];
 
   void _pickSurpriseName() {
