@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-29 | 07:11 | 22b5 | main | Backlog blitz: 6-band audit + 13 PRs merged | [link](docs/sessions/2026-06-29-0711-22b5.md) |
 | 2026-06-27 | 11:37 | 7527 | main | Git maintenance: 24 fossil branches cleared, repo main-only | [link](docs/sessions/2026-06-27-1137-7527.md) |
 | 2026-06-26 | 16:57 | 2e87 | main | Teen Be-a-Hero tone branch shipped + worktree cleanup | [link](docs/sessions/2026-06-26-1657-2e87.md) |
 | 2026-06-24 | 20:11 | 275a | main | MT-296..302 audit backlog cleared (5 PRs) + 266c packet | [link](docs/sessions/2026-06-24-2011-275a.md) |
