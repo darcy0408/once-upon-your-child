@@ -537,6 +537,11 @@ class _SuperheroPowerScreenState extends ConsumerState<SuperheroPowerScreen> {
             ? _creatorNemeses
             : _adventurerNemeses,
         gradient: themeForBand(widget.band).backgroundGradient,
+        // Noir reskin (MT-274): mature bands (Creator + Adolescent) get the
+        // Source Sans 3 + band-accent treatment; younger bands stay gold+Fredoka.
+        noir: widget.band == AgeBand.adolescent ||
+            widget.band == AgeBand.creator,
+        accent: themeForBand(widget.band).accent,
       ),
     );
   }
@@ -1357,10 +1362,17 @@ class _NemesisPickerSheet extends StatefulWidget {
   final String? initial;
   final List<_Nemesis> nemeses;
   final Gradient gradient;
+
+  /// Noir reskin (MT-274): true for the mature bands (Creator + Adolescent) so
+  /// the sheet uses Source Sans 3 + the band [accent] instead of Fredoka+gold.
+  final bool noir;
+  final Color accent;
   const _NemesisPickerSheet({
     required this.initial,
     required this.nemeses,
     required this.gradient,
+    required this.noir,
+    required this.accent,
   });
 
   @override
@@ -1368,7 +1380,8 @@ class _NemesisPickerSheet extends StatefulWidget {
 }
 
 class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
-  static const _gold = Color(0xFFFFD700);
+  // Noir reskin (MT-274): mature bands use the band accent; younger bands gold.
+  Color get _gold => widget.noir ? widget.accent : const Color(0xFFFFD700);
   String? _selected;
 
   @override
@@ -1395,7 +1408,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
             children: [
               Text(
                 'Choose your nemesis',
-                style: GoogleFonts.fredoka(
+                style: _noirAwareText(
+                  widget.noir,
                   color: _gold,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -1405,7 +1419,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
               Text(
                 'Every great hero needs a worthy rival. (Optional!)',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.fredoka(
+                style: _noirAwareText(
+                  widget.noir,
                   color: Colors.white.withAlpha(200),
                   fontSize: 14,
                 ),
@@ -1448,7 +1463,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                   onPressed: () => Navigator.of(context).pop(_selected),
                   child: Text(
                     _selected == null ? 'Surprise me!' : 'Lock it in!',
-                    style: GoogleFonts.fredoka(
+                    style: _noirAwareText(
+                      widget.noir,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1502,7 +1518,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.fredoka(
+                        style: _noirAwareText(
+                          widget.noir,
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -1511,7 +1528,8 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                       const SizedBox(height: 2),
                       Text(
                         blurb,
-                        style: GoogleFonts.fredoka(
+                        style: _noirAwareText(
+                          widget.noir,
                           color: Colors.white.withAlpha(200),
                           fontSize: 12,
                         ),
@@ -1520,7 +1538,7 @@ class _NemesisPickerSheetState extends State<_NemesisPickerSheet> {
                   ),
                 ),
                 if (selected)
-                  const Icon(Icons.check_circle, color: _gold, size: 22),
+                  Icon(Icons.check_circle, color: _gold, size: 22),
               ],
             ),
           ),
