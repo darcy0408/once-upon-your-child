@@ -232,3 +232,43 @@ def sanitize_story_request(body: dict) -> dict:
     if not isinstance(body, dict):
         return body
     return {k: _sanitize_value(k, v) for k, v in body.items()}
+
+
+# --- Output-side external-link scrub (audit P1#2) -------------------------
+# Deterministic net applied to the final child-visible story text (title +
+# pages). The LLM moderator flags URLs contextually, but it fails open for some
+# bands on a classifier outage and the keyword filter never matched URLs at
+# all. A model coaxed into emitting a link (reproduced in 6/6 bands during the
+# safety probe) must never deliver a tappable web address / email to a child.
+#
+# Conservative by design: only scheme/`www.` URLs, `mailto:`/`tel:` schemes,
+# emails, and bare domains ending in a known TLD are removed. Bare digit runs
+# (phone numbers) are intentionally NOT scrubbed here — too many false matches
+# in ordinary prose ("3 little pigs", "the year 2026"); the moderator clause
+# covers phone numbers and stranger handles semantically instead.
+_EXTERNAL_LINK_RE = re.compile(r"""(?ix)
+    (?:https?://|www\.)\S+                                  # scheme or www. URL
+    | (?:mailto|tel):\S+                                    # mailto:/tel:
+    | [a-z0-9][a-z0-9._%+\-]*@[a-z0-9.\-]+\.[a-z]{2,}       # email
+    | \b(?:[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?\.)+             # bare domain ...
+      (?:com|net|org|io|app|co|gg|xyz|info|biz|link|site|online|shop|store)
+      \b(?:/\S*)?                                           # ... + optional path
+    """)
+
+
+def scrub_external_links(text):
+    """Remove web addresses / emails from child-visible story text.
+
+    Returns *text* with any matched link removed and the surrounding
+    whitespace/punctuation tidied. A no-op on ordinary prose (links essentially
+    never appear in a real story), so it only fires on adversarial output.
+    """
+    if not text or not isinstance(text, str):
+        return text
+    cleaned = _EXTERNAL_LINK_RE.sub("", text)
+    if cleaned == text:
+        return text
+    # Tidy artifacts left by removal: doubled spaces and space-before-punct.
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\s+([.,!?;:])", r"\1", cleaned)
+    return cleaned.strip()

@@ -149,6 +149,11 @@ def _mock_llm(monkeypatch, part1_text=_PART1_JSON, part2_text=None):
         return part1_text, "claude", ["claude(success)"]
 
     monkeypatch.setattr(story_tasks, "_generate_story_text_with_metadata", _fake)
+    # The canned _PART1/2_JSON is known-safe; these tests vet routing, not
+    # moderation. The crux moderator now fails CLOSED on a classifier outage
+    # (audit P1#8), which without a live/mocked Gemini key would flag the
+    # canned prose as "unverified" — so stub it to safe here.
+    monkeypatch.setattr(story_tasks, "_moderate_antihero_text", lambda *a, **k: True)
 
 
 def _month_count(app, user_id):
@@ -323,6 +328,9 @@ def test_run_antihero_part2_threads_choice_into_defining_choice(app, monkeypatch
         return part2_text, "claude", ["claude(success)"]
 
     monkeypatch.setattr(story_tasks, "_generate_story_text_with_metadata", _fake)
+    # Crux moderator fails closed on classifier outage (P1#8); canned text is
+    # known-safe, so stub the moderation pass for this routing-focused test.
+    monkeypatch.setattr(story_tasks, "_moderate_antihero_text", lambda *a, **k: True)
 
     with app.app_context():
         result = story_tasks.run_antihero_part2(

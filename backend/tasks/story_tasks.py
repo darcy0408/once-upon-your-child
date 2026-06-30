@@ -1043,10 +1043,11 @@ def _moderate_antihero_text(text: str, age, *, label: str) -> bool:
     """Run the same two-layer moderation generate_story_task uses on one blob.
 
     Returns True when the text is SAFE, False when flagged. Mirrors the task's
-    keyword-filter + LLM-classifier sequence (fail-closed for the adolescent
-    band's classifier the same way the task fails closed for <=12, except here
-    the band is 15-17 so we fail OPEN like the task does for older readers —
-    matching existing behaviour). The caller decides what to do with a flag.
+    keyword-filter + LLM-classifier sequence and fails CLOSED on a classifier
+    outage: the 15-17 reader is a minor, so unverified crux prose must route to
+    the caller's error path rather than be served (audit P1#8/P2#25 — matches
+    generate_story_task now failing closed for all ages <= 17). The caller
+    decides what to do with a flag.
     """
     if not text or not text.strip():
         return True
@@ -1062,10 +1063,10 @@ def _moderate_antihero_text(text: str, age, *, label: str) -> bool:
         _age = int(age) if age is not None else 16
     except (TypeError, ValueError):
         _age = 16
-    # 15-17 band: classifier fails OPEN on outage (same as the task for >12),
-    # but OpenRouter-authored prose would fail closed there; the crux flow
-    # doesn't expose the provider, so keep it simple and fail open on outage.
-    llm_safe, reason = moderate_story_content(text, _age, fail_closed=False)
+    # 15-17 is still a minor band: fail CLOSED on a classifier outage so a crux
+    # segment that could not be vetted is treated as unsafe (the caller raises
+    # rather than serving it). Keyword filter already ran fail-closed-on-hit.
+    llm_safe, reason = moderate_story_content(text, _age, fail_closed=True)
     if not llm_safe:
         logger.warning(
             "antihero moderation: LLM classifier flagged %s (%s).", label, reason
@@ -2038,17 +2039,19 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             llm_flagged = False
             llm_flag_reason = ""
             if not keyword_flagged:
-                # F-04/F-06: fail closed for pre-teens (age <= 12) so a
-                # classifier outage routes a young child's story into the
+                # F-04/F-06: fail closed for every minor (age <= 17) so a
+                # classifier outage routes a child's OR teen's story into the
                 # safe-fallback regeneration below instead of serving it
-                # unverified. F-05: also fail closed when the weaker
-                # OpenRouter fallback model produced the story — it has no
-                # provider-side safety filtering of its own.
+                # unverified. (Audit P1#8: the prior `<= 12` bound left the
+                # 13-17 bands fail-OPEN on the prod 'openai' path — proven to
+                # serve unmoderated text during a real Gemini classifier 503.)
+                # F-05: also fail closed when the weaker OpenRouter fallback
+                # model produced the story — it has no provider-side filtering.
                 try:
                     _mod_age = int(age) if age is not None else 5
                 except (TypeError, ValueError):
                     _mod_age = 5
-                _fail_closed = _mod_age <= 12 or provider_name == "openrouter"
+                _fail_closed = _mod_age <= 17 or provider_name == "openrouter"
                 # Moderate title + body together (F-13).
                 _moderation_text = f"{title}\n\n{story_body}" if title else story_body
                 llm_safe, llm_flag_reason = moderate_story_content(
@@ -2197,6 +2200,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 pages = pages if pages else [story_body]
                 adventure_steps = ["The Story"]
                 total_words = sum(len(p.split()) for p in pages)
+
+            # Audit P1#2: deterministic external-link scrub on the final
+            # child-visible text (title + every page). Belt to the moderator's
+            # suspenders — guarantees no web address / email reaches the reader
+            # even if the model emitted one and the classifier was unavailable.
+            from backend.utils.sanitizer import scrub_external_links
+
+            title = scrub_external_links(title)
+            story_body = scrub_external_links(story_body)
+            pages = [scrub_external_links(p) for p in pages]
 
             # Illustrations are now generated separately via /generate-illustrations endpoint
             # Initialize as empty list - frontend will request illustrations async if needed
