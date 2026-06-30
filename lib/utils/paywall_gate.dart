@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import '../theme/age_band_theme.dart';
 
-/// Wraps paywall dialogs to protect children from seeing pricing.
-/// For kids under 13 (Sprout/Explorer/Adventurer bands), shows a
-/// child-friendly message with a math gate before revealing the actual paywall.
-/// For Creator band (13+) and adults, shows the paywall directly.
+/// Wraps paywall dialogs to protect minors from reaching a purchase flow.
+///
+/// Every minor band — Sprout / Explorer / Adventurer / Creator / Adolescent —
+/// must clear a parent gate (a multiplication challenge) before the real
+/// paywall is shown. Only an explicit Adult band opens the paywall directly.
+/// A null band (a screen lacking the [AgeBandThemeData] theme extension) is
+/// treated as a minor and gated too — we must never assume an unknown context
+/// is an adult. Minors cannot consent to a purchase contract, so the 13–17
+/// bands are gated as well (P1#4: closes the prior Creator/null no-gate path).
 Future<T?> showPaywallGated<T>({
   required BuildContext context,
   required Future<T?> Function() showActualPaywall,
 }) async {
   final band = Theme.of(context).extension<AgeBandThemeData>();
 
-  // Creator band (13+) or no band data: show directly
-  if (band == null || band.band == AgeBand.creator) {
+  // Only an explicit adult context may open the paywall without a gate.
+  if (band != null && band.band == AgeBand.adult) {
     return showActualPaywall();
   }
 
-  // Child bands: show "Ask a grown-up" dialog with math gate
+  // Minor (or indeterminate) band: require the parent gate first.
   final passed = await showDialog<bool>(
     context: context,
     builder: (ctx) => _AskGrownUpDialog(band: band),
@@ -29,7 +34,7 @@ Future<T?> showPaywallGated<T>({
 }
 
 class _AskGrownUpDialog extends StatefulWidget {
-  final AgeBandThemeData band;
+  final AgeBandThemeData? band;
   const _AskGrownUpDialog({required this.band});
   @override
   State<_AskGrownUpDialog> createState() => _AskGrownUpDialogState();
@@ -45,8 +50,11 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
   void initState() {
     super.initState();
     final rng = DateTime.now().millisecondsSinceEpoch;
-    _a = 12 + (rng % 15); // 12-26
-    _b = 7 + ((rng ~/ 100) % 12); // 7-18
+    // Multiplication (not addition) so the gate is not trivially solved by the
+    // 6–12-year-olds it protects. Operands stay single-digit so a parent
+    // answers instantly. Mirrors ParentalGateDialog (byok_setup_wizard.dart).
+    _a = 3 + (rng % 7); // 3-9
+    _b = 4 + ((rng ~/ 100) % 6); // 4-9
   }
 
   @override
@@ -57,7 +65,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
 
   void _verify() {
     final answer = int.tryParse(_controller.text.trim());
-    if (answer == _a + _b) {
+    if (answer == _a * _b) {
       Navigator.of(context).pop(true);
     } else {
       setState(() => _error = 'Try again!');
@@ -66,16 +74,16 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isSprout = widget.band.band == AgeBand.sprout;
+    final isSprout = widget.band?.band == AgeBand.sprout;
     return AlertDialog(
       backgroundColor: const Color(0xFF2C1B47),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(widget.band.cardRadiusBase),
+        borderRadius: BorderRadius.circular(widget.band?.cardRadiusBase ?? 16),
       ),
       title: Text(
         isSprout ? 'Get a Grown-Up!' : 'Ask a Parent',
         style: TextStyle(
-          fontFamily: widget.band.uiFontFamily,
+          fontFamily: widget.band?.uiFontFamily,
           color: const Color(0xFFFFD700),
           fontSize: 22,
           fontWeight: FontWeight.bold,
@@ -89,7 +97,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
                 ? 'This part is for grown-ups. Can you find one to help?'
                 : 'A parent or guardian needs to unlock this section.',
             style: TextStyle(
-              fontFamily: widget.band.uiFontFamily,
+              fontFamily: widget.band?.uiFontFamily,
               color: Colors.white70,
               fontSize: 15,
             ),
@@ -98,14 +106,14 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
           Text(
             'Parent: solve to continue',
             style: TextStyle(
-              fontFamily: widget.band.uiFontFamily,
+              fontFamily: widget.band?.uiFontFamily,
               color: Colors.white38,
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '$_a + $_b = ?',
+            '$_a × $_b = ?',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -141,7 +149,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
           child: Text(
             isSprout ? 'Go Back' : 'Cancel',
             style: TextStyle(
-              fontFamily: widget.band.uiFontFamily,
+              fontFamily: widget.band?.uiFontFamily,
               color: Colors.white54,
             ),
           ),
@@ -152,13 +160,13 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
             backgroundColor: const Color(0xFF6A1B9A),
             shape: RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.circular(widget.band.buttonRadiusBase),
+                  BorderRadius.circular(widget.band?.buttonRadiusBase ?? 12),
             ),
           ),
           child: Text(
             'Unlock',
             style: TextStyle(
-              fontFamily: widget.band.uiFontFamily,
+              fontFamily: widget.band?.uiFontFamily,
               color: Colors.white,
             ),
           ),

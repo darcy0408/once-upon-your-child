@@ -53,6 +53,7 @@ import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
 import 'widgets/open_book_frame.dart';
 import 'utils/motion_utils.dart';
+import 'utils/paywall_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/story_notes_screen.dart';
@@ -2209,13 +2210,22 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
+                  // P0: this upsell is shown to younger bands — never open the
+                  // Stripe-backed SubscriptionScreen without a parent gate.
                   Navigator.pop(ctx);
-                  Navigator.of(ctx).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SubscriptionScreen(),
-                      fullscreenDialog: true,
-                    ),
+                  if (!context.mounted) return;
+                  await showPaywallGated<void>(
+                    context: context,
+                    showActualPaywall: () async {
+                      if (!context.mounted) return;
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionScreen(),
+                          fullscreenDialog: true,
+                        ),
+                      );
+                    },
                   );
                 },
                 icon: const Icon(Icons.star_rounded, size: 20),

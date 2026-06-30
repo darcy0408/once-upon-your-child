@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'services/subscription_service.dart';
 import 'premium_upgrade_screen.dart';
+import 'utils/paywall_gate.dart';
 
 /// Paywall dialog shown when user hits tier limits
 class PaywallDialog {
@@ -104,11 +105,14 @@ class PaywallDialog {
     );
 
     if (result == true && context.mounted) {
-      final upgraded = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const PremiumUpgradeScreen(
-            customMessage: 'Create unlimited stories for your kids!',
+      final upgraded = await showPaywallGated<bool>(
+        context: context,
+        showActualPaywall: () => Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PremiumUpgradeScreen(
+              customMessage: 'Create unlimited stories for your kids!',
+            ),
           ),
         ),
       );
@@ -205,12 +209,15 @@ class PaywallDialog {
     );
 
     if (result == true && context.mounted) {
-      final upgraded = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PremiumUpgradeScreen(
-            requiredFeature: featureName,
-            customMessage: description,
+      final upgraded = await showPaywallGated<bool>(
+        context: context,
+        showActualPaywall: () => Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PremiumUpgradeScreen(
+              requiredFeature: featureName,
+              customMessage: description,
+            ),
           ),
         ),
       );
@@ -419,11 +426,14 @@ class PaywallDialog {
     );
 
     if (result == true && context.mounted) {
-      final upgraded = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PremiumUpgradeScreen(
-            customMessage: 'Unlock all $contentType options!',
+      final upgraded = await showPaywallGated<bool>(
+        context: context,
+        showActualPaywall: () => Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PremiumUpgradeScreen(
+              customMessage: 'Unlock all $contentType options!',
+            ),
           ),
         ),
       );

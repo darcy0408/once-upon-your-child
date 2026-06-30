@@ -1,0 +1,87 @@
+# Safety & Compliance Audit — Remediation Tracker
+
+Source: pre-launch Safety & Compliance Audit (Pass 1–2), 2026-06-28/29. Severities
+calibrated against **prod Railway env flags**, not code alone (some code-level
+findings are neutralized by prod config — noted inline).
+
+Status legend: ☐ todo · ◐ in progress · ☑ done (PR #) · ↪ delegated to another
+session · ⊘ accept / won't-fix
+
+> **App is pre-launch (no live users).** Nothing here is a live incident; items
+> are gated on *launch*, not on production traffic.
+
+## Status as of 2026-06-29
+This audit was worked by several parallel sessions. Ownership split:
+
+| Area | Owner | State |
+|---|---|---|
+| Purchase gating (P0 cluster) | this audit | ☑ **#321** |
+| Generation-output egress + teen fail-closed (PR 2+3 combined) | this audit | ☑ **#332** |
+| Authz/generator hardening (PR 6-lite) | this audit | ☑ **#335** |
+| COPPA consent/collection + posture (PR 4+5) | `session/legal-fixes` | ↪ **#320** |
+| Analytics off-by-default (under-18, CAADCA) | `session/privacy-defaults` | ↪ in flight |
+| Crisis-resources panel (PR 7 allowlist) | `session/crisis-input-scan` | ↪ in flight |
+| BYOK image-gen hardening + PP disclosure | `fix/gemini-byok-consent-guard` | ↪ **#319** |
+
+## Sequenced PRs
+
+### PR 1 — Purchase gating (the P0 cluster) — ☑ #321
+- ☑ **P0** Gate the illustration-upsell → `SubscriptionScreen` push behind `showPaywallGated` — `story_result_screen.dart`.
+- ☑ **P1#3** Paywall gate: addition → multiplication — `utils/paywall_gate.dart`.
+- ☑ **P1#4** Gate **all** minor bands + null/indeterminate; only explicit Adult bypasses — `utils/paywall_gate.dart`.
+- ☑ **P2#21** Gate the three dead `PaywallDialog` methods' ungated pushes — `paywall_dialog.dart`.
+- ☑ Tests: `test/paywall_gate_test.dart` (8).
+- **Out of scope (documented):** `settings_screen.dart` "Real Stripe Checkout (test card 4242…)" is dev-tools-only (`Environment.isDevelopment`), not a production child path.
+
+### PR 2 + 3 — Generation-output egress + fail-closed for minors — ☑ #332 (combined)
+- ☑ **P1#2** Deterministic `scrub_external_links()` on final title + pages + body — `utils/sanitizer.py`, wired in `tasks/story_tasks.py`. URL clause added to moderator UNSAFE list — `content_moderator.py`. *(Scrub-only; share-out left ungated to preserve the parent share flow.)*
+- ☑ **P1#8** Fail closed for every minor (`age <= 17`), not just `<= 12` — `story_tasks.py`.
+- ☑ **P2#25** Antihero crux (15–17) fails closed — `story_tasks.py`.
+- ☑ Tests: `test_external_link_scrub.py` (15) + antihero mocks updated.
+
+### PR 6-lite — Authz & generator hardening — ☑ #335
+- ☑ **P2#13** Symmetric owner guard on `/task-status` (SUCCESS no longer leaks on null owner) — `story_routes.py`.
+- ☑ **P2#15** Regex-validate `avatar_id` → 400 — `avatar_gallery_routes.py`.
+- ☑ **P2#16** IAP `user_id` ownership check before reassignment — `iap_routes.py`.
+- ☑ **P2#23** OpenRouter generator child-safety system prompt — `openrouter_story_generator.py`.
+- ☑ Tests: `test_authz_hardening.py` (3).
+- ☐ **P2#14** refresh-blocklist fail-closed on Redis outage — **deferred**: `auth.py` is owned by `session/legal-fixes` (#320); fold in after that merges.
+
+### PR 4 — COPPA collection + PII logging + Sentry — ↪ #320 (`session/legal-fixes`)
+Covers `@require_parental_consent` on character creation, PII/prompt log redaction, Sentry breadcrumb scrub, `allow_photo_avatar` enforcement. *Do not duplicate — coordinate with that branch.*
+
+### PR 5 — COPPA posture & config — ↪ #320 + ops
+- ↪ `debug_bypass` removal / verified-consent default — `session/legal-fixes`.
+- **Ops (owner, Railway):**
+  - ☑ `GEMINI_API_KEY` rotated 2026-06-29 (old key revoked at Google, new key in Railway).
+  - ☐ Set `COPPA_REQUIRE_CURRENT_POLICY_VERSION=true` — **pre-flight first:** `CURRENT_POLICY_VERSION = 2`; enabling re-prompts every under-13 whose consent record is `NULL`/`< 2`. Count by version in prod Postgres before flipping; backfill or accept a re-prompt wave.
+
+### PR 7 — Data-at-rest & external surfaces
+- ↪ **P2#22** Crisis-resource host allowlist — `session/crisis-input-scan` already edits `crisis_resources_panel.dart`.
+- ☐ **P2#17** Isar `encryptionKey` for offline child PII + PP disclosure — **deferred**: carries local-cache data-loss/migration risk; PP half collides with #319. Needs a dedicated, careful pass.
+
+## Launch-gate follow-ups (not fires; close before going live)
+- ☐ **Decouple the LLM moderator from Gemini.** `content_moderator.py` runs `gemini-2.5-flash-lite`, so layer-2 moderation depends on `GEMINI_API_KEY`. Two reasons to move it to the OpenAI model already used for story text (`OPENAI_API_KEY`): (1) **MT-137 ToS** — Gemini forbids child-directed apps, so sending kids' story text there *for moderation* trips the same ToS that drove the text/image migration; (2) **resilience** — a single Gemini key being unavailable silently turns every minor's story into the generic safe-fallback (now fail-closed for all ≤17 after #332). **Build stacked on #332** (same file). After it lands, `GEMINI_API_KEY` can be dropped entirely.
+
+## Verification tasks (Pass-1 "could not verify")
+- ☐ Trace live onboarding endpoint order (is `/create-character` reachable pre-consent?).
+- ☐ Inspect a real prod Sentry event's breadcrumb payload for PII.
+- ☐ Check prod `LOG_LEVEL`.
+- ☐ Device-test URL→share on the prod `openai` path with classifier down.
+
+## External review (route out)
+- COPPA verifiable-consent mechanics + env-gated enforcement posture — **legal**.
+- Data retention/deletion completeness (COPPA/GDPR-K) — **legal**.
+- Crisis/self-harm flow incl. US-only hardcoding — **clinical**.
+
+## Accept / won't-fix (decisions, not gaps)
+- ⊘ Gemini `DANGEROUS_CONTENT = BLOCK_MEDIUM` — by design, legacy modes only.
+- ⊘ Crisis links + content-report `mailto:` ungated — intentional (child-in-distress reaches help).
+- ⊘ JWT refresh fail-open on Redis — deliberate availability tradeoff (`token_version` is the real revocation control).
+
+## Probe evidence (reusable)
+Adversarial generation probe scripts (session scratchpad, re-runnable): build the
+real prod prompt per band → prod-path generator → real two-layer moderation.
+Key results: prompt-injection defense held across 6 bands on the weakest model;
+URL emission reproduced in 6/6 bands (only the LLM classifier caught it);
+teen (13–17) fail-open on the prod `openai` path proven during a real Gemini 503.
