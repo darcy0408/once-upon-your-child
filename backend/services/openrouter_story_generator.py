@@ -45,6 +45,19 @@ _SAFETY_FALLBACK = (
     "I wasn't able to create that story right now. " "Let's try a different adventure!"
 )
 
+# Child-safety system prompt — parity with the OpenAI/Anthropic generators
+# (audit P2#23). The OpenRouter request previously sent only a user message, so
+# the weaker free-tier model (Llama) had no system-level safety framing. The
+# upstream prompt already carries safety rules; this reinforces them. Override
+# via OPENROUTER_SYSTEM_PROMPT.
+_DEFAULT_SYSTEM_PROMPT = (
+    "You are a warm, imaginative storyteller writing for children. Every story "
+    "must be age-appropriate, kind, and emotionally safe: no graphic violence, "
+    "no sexual content, no profanity, no frightening or unsafe-to-imitate "
+    "scenarios, and no real-world personal data. Follow the user's structure "
+    "and formatting instructions exactly."
+)
+
 
 def _resolve_text_model(user_tier: str | None) -> str:
     """Pick the OpenRouter text model for a subscription tier.
@@ -151,6 +164,9 @@ class OpenRouterStoryGenerator:
             raise ValueError("OPENROUTER_API_KEY not set")
         self.base_url = "https://openrouter.ai/api/v1"
         self._user_tier = user_tier
+        self._system_prompt = os.getenv(
+            "OPENROUTER_SYSTEM_PROMPT", _DEFAULT_SYSTEM_PROMPT
+        )
         try:
             self._model_name = _resolve_text_model(user_tier)
         except Exception as exc:
@@ -196,9 +212,13 @@ class OpenRouterStoryGenerator:
                         "model": chosen_model,
                         "messages": [
                             {
+                                "role": "system",
+                                "content": self._system_prompt,
+                            },
+                            {
                                 "role": "user",
                                 "content": prompt,
-                            }
+                            },
                         ],
                     },
                     timeout=90,

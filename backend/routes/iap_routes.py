@@ -487,6 +487,19 @@ def _upsert_iap_purchase(
                 store_transaction_id,
             )
             return record
+        # Ownership guard (audit P2#16): a store_transaction_id belongs to the
+        # account that first registered it. Refuse to reassign it to a different
+        # user — otherwise a second verified caller presenting the same receipt
+        # would steal the subscription row.
+        if record.user_id and str(record.user_id) != str(user_id):
+            logger.warning(
+                "IAP upsert: txn %s already owned by user %s; refusing to "
+                "reassign to user %s",
+                store_transaction_id,
+                record.user_id,
+                user_id,
+            )
+            return record
         record.user_id = user_id
         record.product_id = product_id
         record.tier = tier

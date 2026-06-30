@@ -1479,7 +1479,13 @@ def create_story_blueprint(
             )
             return jsonify({"error": "Access denied"}), 403
 
-        if task_owner_id is None and task.state in {"PENDING", "PROCESSING"}:
+        if task_owner_id is None:
+            # Symmetric guard (audit P2#13): refuse to disclose ANY state —
+            # including SUCCESS results and FAILURE info — when ownership cannot
+            # be verified. A real story task always resolves an owner (cache or
+            # result.user_id), so None means missing metadata, not a legit read.
+            # The prior guard only covered PENDING/PROCESSING, leaving a SUCCESS
+            # task with no owner metadata readable by any authenticated user.
             logger.warning(
                 "Task %s has no owner metadata; refusing to disclose state to user %s",
                 task_id,

@@ -4,6 +4,7 @@ Avatar Gallery Routes - Serve pre-made character avatars
 
 import logging
 import os
+import re
 
 from flask import Blueprint, jsonify
 
@@ -114,6 +115,15 @@ def select_avatar(avatar_id):
         }
     """
     try:
+        # Avatar ids are numeric ("1", "1.1", "15"). Reject anything else so a
+        # crafted value (e.g. "../../secret") cannot escape AVATARS_DIR via the
+        # os.path.join below (audit P2#15: path-traversal on the URL param).
+        if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", avatar_id or ""):
+            return (
+                jsonify({"status": "error", "message": "Invalid avatar id"}),
+                400,
+            )
+
         # Construct filename
         filename = f"{avatar_id}.png"
         filepath = os.path.join(AVATARS_DIR, filename)
