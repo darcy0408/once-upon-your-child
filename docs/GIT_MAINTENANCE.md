@@ -1,6 +1,6 @@
 # Git Maintenance Plan
-**Version:** 2.1
-**Last Updated:** June 26, 2026
+**Version:** 2.2
+**Last Updated:** June 29, 2026
 **Purpose:** Comprehensive git repository maintenance and cleanup
 
 ---
@@ -450,6 +450,18 @@ echo "Review BRANCH_STATUS_ANALYSIS.md for deletion candidates"
 ---
 
 ## 📒 Maintenance Log
+
+### 2026-06-29 — Fossil cleanup during active multi-session work (Claude Code)
+- **Context:** run mid-flight with **5 open PRs** (#320 legal-fixes, #321/#332/#335 safety audit, #336 audit-fixes) and 6 live worktrees — NOT the clean `main`-only state of the 2026-06-26 run. Cleanup was scoped to **protect all in-flight work**; "main-only" was explicitly NOT the goal.
+- **Main checkout restored:** it was sitting on the merged `fix/gemini-byok-consent-guard` (#319); switched back to `main` (ff to `origin/main`), branch deleted local + remote.
+- **25 fossil branches deleted, all verified first:**
+  - 12 `worktree-agent-*` — `ahead=0` vs `origin/main` (fully contained in main).
+  - 13 `mt-*` / `fix-mt280-*` — each `ahead=1` squash commit but with a **MERGED PR** (#316/#317/#318/#322/#323/#324/#325/#326/#327/#328/#329/#330/#331).
+  - Recovery breadcrumb (branch→SHA map) saved to session scratchpad; recover any with `git push origin <SHA>:refs/heads/<name>`.
+- **Protected (untouched):** `main` + the 5 open-PR branches (`session/audit-fixes`, `legal-fixes`, `safety-authz`, `safety-egress`, `safety-p0`) and every worktree.
+- **Worktree removal DEFERRED:** `sw-audit-fixes` removal (flagged by the prior session) is **blocked — #336 is still OPEN** (changes requested). After #336 merges: `git -C C:\dev\story-weaver-app worktree remove C:\dev\sw-audit-fixes`.
+- **Transient churn discarded:** generated `*_plugin_registrant.*` pub-get drift in 3 worktrees; confirmed no real work stranded.
+- **Dependencies (Phase 3): no-op** — zero open dependabot PRs.
 
 ### 2026-06-26 — Branch cleanup sweep (Claude Code)
 - **Branches deleted: 24 fossils → repo is `main`-only.**
