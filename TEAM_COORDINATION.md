@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-29 | 18:01 | 8d69 | fix/gemini-byok-consent-guard | Shipped MT-306/307 leftovers; merged #319+#337 (MT-306 ID-collision fix) | [link](docs/sessions/2026-06-29-1801-8d69.md) |
 | 2026-06-29 | 17:15 | 31a0 | fix/gemini-byok-consent-guard | CAADCA/GDPR privacy defaults + crisis-input distress scan | [link](docs/sessions/2026-06-29-1715-31a0.md) |
 | 2026-06-29 | 07:11 | 22b5 | main | Backlog blitz: 6-band audit + 13 PRs merged | [link](docs/sessions/2026-06-29-0711-22b5.md) |
 | 2026-06-28 | 11:26 | 6567 | fix/gemini-byok-consent-guard | No silent direct-Gemini for kids; gate+disclose BYOK | [link](docs/sessions/2026-06-28-1126-6567.md) |
