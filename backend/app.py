@@ -547,7 +547,9 @@ def create_app(config_name):
     global image_generator
     try:
         openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
-        disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in (
+        disable_gemini_image = os.getenv(
+            "DISABLE_GEMINI_IMAGE", ""
+        ).strip().lower() in (
             "1",
             "true",
             "yes",
@@ -590,9 +592,7 @@ def create_app(config_name):
                     "the fallback, or ALLOW_DIRECT_GEMINI_IMAGE=1 for local dev only."
                 )
             else:
-                logger.warning(
-                    "No image generator initialized (no OPENROUTER_API_KEY)"
-                )
+                logger.warning("No image generator initialized (no OPENROUTER_API_KEY)")
     except Exception as e:
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None

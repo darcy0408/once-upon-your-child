@@ -78,11 +78,7 @@ class AvatarGenerationService:
         # key, Gemini is explicitly opted in (ALLOW_DIRECT_GEMINI_IMAGE=1), and
         # not force-disabled. Gemini's ToS forbid child-directed apps, so
         # production must never reach this branch; it stays for local/dev only.
-        if (
-            self.image_generator is None
-            and allow_direct_gemini
-            and not disable_gemini
-        ):
+        if self.image_generator is None and allow_direct_gemini and not disable_gemini:
             try:
                 from backend.gemini_image_generator import GeminiImageGenerator
 
