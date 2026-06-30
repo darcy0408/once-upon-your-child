@@ -115,6 +115,44 @@ class InputSanitizer {
     return null;
   }
 
+  /// Self-directed self-harm / suicide phrasing. Mirrors the authoritative
+  /// server-side detector in backend/utils/crisis_detection.py. Targets
+  /// first-person phrasing ("kill myself", "want to die") so ordinary
+  /// third-person story violence ("the villain attacks") does not match.
+  static final List<RegExp> _crisisPatterns = [
+    RegExp(r'\bsuicid(e|al)\b', caseSensitive: false),
+    RegExp(r'\bself[\s-]?harm(ing)?\b', caseSensitive: false),
+    RegExp(r'\bkill(ing)?\s+my\s?self\b', caseSensitive: false),
+    RegExp(r'\bhurt(ing)?\s+my\s?self\b', caseSensitive: false),
+    RegExp(r'\bharm(ing)?\s+my\s?self\b', caseSensitive: false),
+    RegExp(r'\bcut(ting)?\s+my\s?self\b', caseSensitive: false),
+    RegExp(r'\bend(ing)?\s+my\s+life\b', caseSensitive: false),
+    RegExp(r'\btake\s+my\s+own\s+life\b', caseSensitive: false),
+    RegExp(r'\b(want|wanna)\s+to\s+die\b', caseSensitive: false),
+    RegExp(r"\b(do\s*n'?t|do\s+not)\s+want\s+to\s+(live|be\s+alive|be\s+here)\b",
+        caseSensitive: false),
+    RegExp(r'\bbetter\s+off\s+dead\b', caseSensitive: false),
+    RegExp(r'\bwish\s+i\s+(was|were)\s+(dead|not\s+alive)\b',
+        caseSensitive: false),
+    RegExp(r'\bno\s+reason\s+to\s+live\b', caseSensitive: false),
+    RegExp(r'\bend\s+it\s+all\b', caseSensitive: false),
+    RegExp(r'\bwant\s+to\s+disappear\s+forever\b', caseSensitive: false),
+  ];
+
+  /// Detects a self-harm / suicide disclosure in child free-text.
+  ///
+  /// This is a fast first-line check; the server re-checks authoritatively. On
+  /// a true result the caller MUST surface crisis resources
+  /// (CrisisResourcesPanel) with warmth — NOT the [checkInappropriateContent]
+  /// "keep stories magical" rejection, and NOT a generated story.
+  static bool detectCrisis(String input) {
+    if (input.isEmpty) return false;
+    for (final pattern in _crisisPatterns) {
+      if (pattern.hasMatch(input)) return true;
+    }
+    return false;
+  }
+
   /// Sanitize a character name.
   static String sanitizeName(String name) {
     return sanitizeText(name, maxLength: maxCharacterName);

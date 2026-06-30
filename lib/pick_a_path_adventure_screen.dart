@@ -17,6 +17,8 @@ import 'widgets/error_message.dart';
 import 'widgets/magical_loading_view.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/voice_mic_button.dart';
+import 'widgets/crisis_resources_panel.dart';
+import 'utils/input_sanitizer.dart';
 
 /// Pick-A-Path Adventures: Interactive stories with inventory, state tracking, and age-calibrated content
 class PickAPathAdventureScreen extends StatefulWidget {
@@ -400,6 +402,18 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       return;
     }
 
+    // Audit #5: self-harm disclosure guard. Fast client-side check before the
+    // network call — if the child types a self-harm disclosure, surface crisis
+    // resources with warmth instead of generating a story from it. The backend
+    // re-checks authoritatively (a bypassed client still hits the server guard).
+    if (InputSanitizer.detectCrisis(text)) {
+      HapticFeedback.selectionClick();
+      _customChoiceController.clear();
+      setState(() => _showCustomInput = false);
+      _showCrisisResources();
+      return;
+    }
+
     HapticFeedback.selectionClick();
     // Stop any in-progress narration the instant a choice/skip is tapped, so the
     // previous page's audio doesn't keep reading over the next page while the
@@ -458,11 +472,56 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           _triggerChapterSummarization(text);
         }
       }
+    } on CrisisDisclosureException {
+      // Backend caught a self-harm disclosure the client check missed.
+      if (!mounted) return;
+      setState(() {
+        _isContinuing = false;
+        _errorMessage = null;
+        _retryAction = null;
+      });
+      _showCrisisResources();
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, () => _handleCustomChoice());
     } catch (e) {
       _handleError('Unable to continue story: $e', () => _handleCustomChoice());
     }
+  }
+
+  /// Surface crisis support resources (988 / Crisis Text Line / Trevor Project)
+  /// with warmth when a self-harm disclosure is detected in free-text (audit
+  /// #5). Reuses the same CrisisResourcesPanel as Life Quests and story end.
+  void _showCrisisResources() {
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 16 + MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CrisisResourcesPanel(),
+                const SizedBox(height: 12),
+                AppButton.secondary(
+                  label: 'Close',
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleContinue() async {

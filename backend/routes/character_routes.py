@@ -3,7 +3,7 @@ import re
 from flask import Blueprint, jsonify, request
 
 from ..database import db
-from ..middleware.auth import require_auth
+from ..middleware.auth import require_auth, require_parental_consent
 from ..models.character import Character
 from ..models.parent_hidden_context import ParentHiddenContext
 from ..services import character_service
@@ -147,6 +147,7 @@ def create_character_blueprint(limiter, logger):
     @limiter.limit("20 per hour")
     @character_bp.route("/create-character", methods=["POST"])
     @require_auth
+    @require_parental_consent
     def create_character_endpoint():
         logger.info("POST /create-character called")
         data = request.get_json(silent=True) or {}
@@ -160,6 +161,7 @@ def create_character_blueprint(limiter, logger):
     @limiter.limit("30 per hour")
     @character_bp.route("/characters/<string:char_id>", methods=["PATCH", "PUT"])
     @require_auth
+    @require_parental_consent
     def update_character_endpoint(char_id: str):
         logger.info(f"PATCH/PUT /characters/{char_id} called")
 
@@ -240,6 +242,7 @@ def create_character_blueprint(limiter, logger):
         "/child-profiles/<string:profile_id>/parent-hidden-context", methods=["PUT"]
     )
     @require_auth
+    @require_parental_consent
     def save_parent_hidden_context_endpoint(profile_id: str):
         logger.info(f"PUT /child-profiles/{profile_id}/parent-hidden-context called")
         payload = request.get_json(silent=True) or {}

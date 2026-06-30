@@ -1820,6 +1820,25 @@ def create_story_blueprint(
                 400,
             )
 
+        # Audit #5 — self-harm disclosure guard. Before the child's free-text
+        # reaches the model, check for a self-harm / suicide disclosure. If found
+        # we do NOT generate a story segment from it; we return crisis resources
+        # so the client surfaces its CrisisResourcesPanel with warmth. This is
+        # the authoritative server-side check (the client has a fast first-line
+        # check too). Detect on the RAW text, before injection-stripping.
+        if choice_id == "custom" and raw_custom_text:
+            from ..utils.crisis_detection import crisis_response, detect_crisis
+
+            if detect_crisis(raw_custom_text):
+                # Never log the disclosure text itself.
+                logger.warning(
+                    "Crisis: self-harm disclosure detected in custom_text for "
+                    "story %s (user %s); returning crisis resources, not a story.",
+                    story_id,
+                    getattr(request.current_user, "id", "?"),
+                )
+                return jsonify(crisis_response()), 200
+
         # The "Something Else" free-text choice flows straight into the
         # continuation prompt. Strip injection/HTML/delimiter tokens, hard-cap
         # length, and wrap as [USER_INPUT] so the model treats it as a story

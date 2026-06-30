@@ -131,9 +131,17 @@ def _post_synthesize(
 
 @pytest.fixture
 def under13_user(app):
-    """A free-tier user flagged ``is_under_13`` during COPPA onboarding."""
+    """A free-tier, fully-consented user flagged ``is_under_13``.
+
+    A verified ConsentRecord is created alongside the user: /tts/synthesize now
+    sits behind @require_parental_consent, so without one the request would be
+    blocked at the consent gate (403) before reaching the ElevenLabs-skip logic
+    these tests actually assert. verified=True so it passes regardless of the
+    COPPA_REQUIRE_VERIFIED_CONSENT flag.
+    """
     from backend.database import db
     from backend.models import User
+    from backend.models.consent_record import ConsentRecord
 
     with app.app_context():
         user = User(
@@ -146,8 +154,17 @@ def under13_user(app):
             is_under_13=True,
         )
         db.session.add(user)
+        consent = ConsentRecord(
+            user_id="under13_user_001",
+            child_age=8,
+            parent_email="parent@example.com",
+            consent_method="email_verified",
+            verified=True,
+        )
+        db.session.add(consent)
         db.session.commit()
         yield user
+        db.session.delete(consent)
         db.session.delete(user)
         db.session.commit()
 

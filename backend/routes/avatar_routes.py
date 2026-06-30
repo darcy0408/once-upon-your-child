@@ -768,6 +768,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route("/generate-avatar", methods=["POST"])
     @require_auth
+    @require_parental_consent
     def generate_avatar():
         """
         Generate a magical avatar for a child character.
@@ -1012,6 +1013,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route("/regenerate-avatar", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit(_tier_limit(free=3, premium=30))
     def regenerate_avatar():
         """
@@ -1190,6 +1192,7 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route("/tweak-gallery-avatar", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit(_tier_limit(free=1, premium=5))
     def tweak_gallery_avatar():
         """

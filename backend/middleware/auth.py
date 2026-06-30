@@ -168,8 +168,40 @@ def require_parental_consent(f):
             return jsonify({"error": "Authentication required"}), 401
 
         user = request.current_user
+
+        # Audit #1/#2 — unresolved-age hole: is_under_13 defaults False and is
+        # only ever set when the client honestly declares an age, so an
+        # anonymous/never-onboarded account reaches generation as a de-facto
+        # "13+" user with no consent. When ENFORCE_RESOLVED_AGE is enabled the
+        # server refuses to serve a user whose age it has never established
+        # (declared_age is None) — closing the bypass instead of failing open.
+        #
+        # Defaults OFF: today the client does not sync an age server-side for
+        # 13+/adult users, so enabling this without the companion client change
+        # would block legitimate adults. Flip it on at launch once every
+        # onboarding path POSTs declared_age. See the launch checklist in
+        # docs/LEGAL_LIABILITY_AUDIT_2026-06-28.md.
+        enforce_resolved_age = os.getenv(
+            "ENFORCE_RESOLVED_AGE", "false"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        if enforce_resolved_age and getattr(user, "declared_age", None) is None:
+            logger.warning(
+                "COPPA: user %s reached a gated endpoint with no resolved age; "
+                "blocked under ENFORCE_RESOLVED_AGE",
+                user.id,
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Age verification required",
+                        "code": "AGE_REQUIRED",
+                    }
+                ),
+                403,
+            )
+
         if not getattr(user, "is_under_13", False):
-            # User is 13 or older — no consent check needed.
+            # User is 13 or older (with a resolved age) — no consent check needed.
             return f(*args, **kwargs)
 
         # Under-13: require a valid, non-withdrawn consent record.

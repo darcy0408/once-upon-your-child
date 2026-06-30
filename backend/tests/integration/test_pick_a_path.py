@@ -325,6 +325,49 @@ class TestContinueInteractiveStoryAPI:
             story_id=story_in_db.id, choice_id="choice-1", custom_text=None
         )
 
+    def test_custom_text_self_harm_returns_crisis_not_story(
+        self, client, auth_headers, story_in_db, mock_interactive_service
+    ):
+        """Audit #5: a self-harm disclosure in free-text returns crisis
+        resources and must NOT be turned into a story segment."""
+        response = client.post(
+            "/continue-interactive-story",
+            headers=auth_headers,
+            json={
+                "story_id": story_in_db.id,
+                "choice_id": "custom",
+                "custom_text": "I want to kill myself",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["crisis"] is True
+        assert data["resources"]
+        assert "segment" not in data
+        # Crucially, the disclosure was never sent to the model.
+        mock_interactive_service.continue_story.assert_not_called()
+
+    def test_custom_text_ordinary_choice_still_generates(
+        self, client, auth_headers, story_in_db, mock_interactive_service
+    ):
+        """An ordinary free-text choice is unaffected by the crisis guard."""
+        response = client.post(
+            "/continue-interactive-story",
+            headers=auth_headers,
+            json={
+                "story_id": story_in_db.id,
+                "choice_id": "custom",
+                "custom_text": "I climb the tallest tree to look for the castle",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data.get("crisis") is not True
+        assert "segment" in data
+        mock_interactive_service.continue_story.assert_called_once()
+
     def test_continue_story_completion(
         self, client, auth_headers, story_in_db, mock_interactive_service
     ):

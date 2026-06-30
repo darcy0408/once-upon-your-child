@@ -183,6 +183,12 @@ class InteractiveStoryService {
 
     final Map<String, dynamic> data =
         jsonDecode(response.body) as Map<String, dynamic>;
+    // Audit #5: the backend returns {crisis: true, message, resources} (no
+    // segment) when it detects a self-harm disclosure in custom_text. Surface
+    // it as a typed signal so the screen shows crisis resources, not a story.
+    if (data['crisis'] == true) {
+      throw CrisisDisclosureException(data['message'] as String?);
+    }
     return ContinueStoryResponse.fromJson(data);
   }
 
@@ -332,4 +338,18 @@ class InteractiveStoryException implements Exception {
 
   @override
   String toString() => 'InteractiveStoryException: $message';
+}
+
+/// Raised when the backend detects a self-harm / suicide disclosure in the
+/// child's free-text and returns crisis resources instead of a story segment
+/// (audit finding #5). The caller catches this to surface CrisisResourcesPanel
+/// with warmth rather than advancing the story or showing a generic error.
+class CrisisDisclosureException implements Exception {
+  const CrisisDisclosureException([this.message]);
+
+  /// Optional gentle message from the server.
+  final String? message;
+
+  @override
+  String toString() => 'CrisisDisclosureException';
 }

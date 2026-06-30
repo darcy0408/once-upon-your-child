@@ -222,6 +222,16 @@ def _azure_synthesize(text, voice_id, speed):
 def create_tts_blueprint(limiter, require_auth):
     tts_bp = Blueprint("tts", __name__)
 
+    # COPPA: narration text can carry a child's name and is sent to an external
+    # TTS vendor, so /tts/synthesize must sit behind the parental-consent gate
+    # like the other child-data vendor calls. require_auth is injected; import
+    # the consent decorator here with the same backend/bare fallback the rest of
+    # the package uses.
+    try:
+        from backend.middleware.auth import require_parental_consent
+    except ImportError:
+        from middleware.auth import require_parental_consent
+
     @tts_bp.route("/tts/voices", methods=["GET"])
     def voices():
         """Return the curated ElevenLabs voice list for the Flutter voice picker."""
@@ -230,6 +240,7 @@ def create_tts_blueprint(limiter, require_auth):
 
     @tts_bp.route("/tts/synthesize", methods=["POST"])
     @require_auth
+    @require_parental_consent
     @limiter.limit(
         "500 per hour",
         key_func=lambda: (
