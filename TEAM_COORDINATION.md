@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-01 | 11:24 | a2eb | main | Merged 6 stranded PRs (#339-344) + prod-verify sweep (CF-IPCountry gap) + #358 interactive fail-closed | [link](docs/sessions/2026-07-01-1124-a2eb.md) |
 | 2026-07-01 | 10:03 | d119 | main | Overnight 5-agent sweep: 6 PRs built+merged (#339-#344) — moderator→OpenAI, crisis surfaces, erasure, analytics, antihero substance rule | [link](docs/sessions/2026-07-01-1003-d119.md) |
 | 2026-06-30 | 21:42 | f1f9 | main | Merged all 5 stranded safety-audit worktrees (#320/#321/#332/#335/#336) + fixed main lint & 2 hidden regressions | [link](docs/sessions/2026-06-30-2142-f1f9.md) |
 | 2026-06-29 | 18:05 | 1c86 | session/audit-fixes | Scenario/quality audit + fixes; P0 Pick-a-Path Gemini ToS | [link](docs/sessions/2026-06-29-1805-1c86.md) |
