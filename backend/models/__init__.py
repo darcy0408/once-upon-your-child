@@ -1,5 +1,6 @@
 # Import all models to ensure they are registered with SQLAlchemy
 from .achievement import AchievementStats, UserAchievement
+from .analytics_event import AnalyticsEvent
 from .audit_log import AuditLog
 from .character import Character
 from .consent_record import ConsentRecord, ConsentVerificationCode
@@ -19,6 +20,7 @@ from .user import User
 __all__ = [
     "AchievementStats",
     "UserAchievement",
+    "AnalyticsEvent",
     "AuditLog",
     "Character",
     "ConsentRecord",

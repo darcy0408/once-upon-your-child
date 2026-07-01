@@ -360,6 +360,22 @@ def create_avatar_blueprint(limiter):
             if not _user_is_premium(current_user):
                 used = current_user.custom_avatars_generated or 0
                 if used >= FREE_CUSTOM_AVATARS:
+                    # Funnel instrumentation (MT-249): the child hit the
+                    # 1-free-avatar gate — the primary paywall trigger. Recorded
+                    # best-effort; record_event never raises into this handler.
+                    try:
+                        from backend.services.event_tracking_service import (
+                            record_event,
+                        )
+                    except ImportError:
+                        from services.event_tracking_service import record_event
+
+                    record_event(
+                        "avatar_limit_hit",
+                        user_id=getattr(current_user, "id", None),
+                        tier=(get_user_tier() or "free").lower(),
+                        metadata={"used": used, "limit": FREE_CUSTOM_AVATARS},
+                    )
                     return (
                         jsonify(
                             {

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'subscription_models.dart';
 import 'settings_screen.dart' deferred as settings_screen;
+import 'services/analytics_service.dart';
 import 'widgets/subscribe_button.dart';
 
 class PremiumUpgradeScreen extends StatefulWidget {
@@ -22,6 +23,14 @@ class PremiumUpgradeScreen extends StatefulWidget {
 class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
   SubscriptionTier? _selectedTier;
   bool _isYearly = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Funnel instrumentation (MT-249): the paywall/upsell is now on screen.
+    // Fire-and-forget — never blocks or breaks the screen.
+    AnalyticsService.paywallViewed(requiredFeature: widget.requiredFeature);
+  }
 
   @override
   Widget build(BuildContext context) {

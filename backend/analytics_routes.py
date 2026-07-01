@@ -6,18 +6,36 @@ from flask import Blueprint, jsonify, request
 try:
     from .cost_tracking import get_cost_report
     from .database import db
-    from .middleware.auth import require_admin, require_auth
+    from .middleware.auth import optional_auth, require_admin, require_auth
     from .models.character import Character
     from .models.story import Story
     from .models.user import User
+    from .services.event_tracking_service import record_event
+    from .utils.app_helpers import get_user_tier
 except ImportError:
     # Fallback for when backend is the root (e.g. python backend/app.py)
     from cost_tracking import get_cost_report
     from database import db
-    from middleware.auth import require_admin, require_auth
+    from middleware.auth import optional_auth, require_admin, require_auth
     from models.character import Character
     from models.story import Story
     from models.user import User
+    from services.event_tracking_service import record_event
+    from utils.app_helpers import get_user_tier
+
+
+# Client-emittable funnel events. The endpoint is a public (optional-auth)
+# telemetry sink, so it accepts ONLY this small allowlist — an arbitrary
+# client-supplied string must never create a new event stream or be written
+# verbatim. Server-internal events (e.g. 'avatar_limit_hit') are recorded
+# directly via record_event and are intentionally NOT in this list.
+_CLIENT_EVENT_ALLOWLIST = frozenset(
+    {
+        "paywall_viewed",
+        "upgrade_clicked",
+        "checkout_started",
+    }
+)
 
 
 def get_stories_created_count(days=1):
@@ -369,5 +387,53 @@ def create_analytics_blueprint(limiter=None):
 
         except Exception as e:
             return jsonify({"error": f"Failed to generate cost report: {str(e)}"}), 500
+
+    @analytics_bp.route("/analytics/event", methods=["POST"])
+    @optional_auth
+    @limiter.limit("60 per minute")
+    def record_client_event():
+        """Public funnel-telemetry sink (MT-249).
+
+        Accepts a fire-and-forget event from the client. Auth is optional —
+        anonymous / pre-login events (e.g. a paywall shown before signup) are
+        allowed. ``event_name`` is validated against a small allowlist so an
+        arbitrary client string can never create a new event stream. The
+        subscription tier and user id are resolved server-side from the (optional)
+        verified token, never trusted from the request body.
+        """
+        data = request.get_json(silent=True) or {}
+        event_name = data.get("event_name")
+
+        if not event_name or event_name not in _CLIENT_EVENT_ALLOWLIST:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error_code": "INVALID_EVENT",
+                        "message": "Unknown or missing event_name",
+                    }
+                ),
+                400,
+            )
+
+        # Only a small, sanitised subset of client-supplied metadata is kept —
+        # short string/number/bool values, no nested structures, no PII.
+        raw_meta = data.get("metadata")
+        metadata = {}
+        if isinstance(raw_meta, dict):
+            for key, value in list(raw_meta.items())[:20]:
+                if isinstance(value, bool) or isinstance(value, (int, float)):
+                    metadata[str(key)[:50]] = value
+                elif isinstance(value, str):
+                    metadata[str(key)[:50]] = value[:200]
+
+        current_user = getattr(request, "current_user", None)
+        user_id = getattr(current_user, "id", None) if current_user else None
+        tier = (get_user_tier() or "free").lower()
+
+        # Best-effort — record_event never raises. Always ack with 202 so the
+        # client's fire-and-forget call is cheap and never surfaces an error.
+        record_event(event_name, user_id=user_id, tier=tier, metadata=metadata)
+        return jsonify({"status": "accepted"}), 202
 
     return analytics_bp
