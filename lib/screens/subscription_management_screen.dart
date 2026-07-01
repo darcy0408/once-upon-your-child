@@ -12,6 +12,7 @@ import '../services/subscription_sync_service.dart';
 import '../services/user_identity_service.dart';
 import '../services/stripe_service.dart';
 import '../services/api_service_manager.dart';
+import '../services/payment/payment_channel.dart';
 
 typedef SubscriptionLoader = Future<SubscriptionStatus?> Function(String userId);
 typedef SubscriptionSyncer = Future<void> Function(String userId);
@@ -25,6 +26,7 @@ class SubscriptionManagementScreen extends StatefulWidget {
     this.subscriptionSyncer,
     this.userIdResolver,
     this.stripeService,
+    this.paymentChannel,
   });
 
   final http.Client? httpClient;
@@ -32,6 +34,12 @@ class SubscriptionManagementScreen extends StatefulWidget {
   final SubscriptionSyncer? subscriptionSyncer;
   final UserIdResolver? userIdResolver;
   final StripeService? stripeService;
+
+  /// Optional injected channel for testing. Production builds let the screen
+  /// create the platform-appropriate channel via [createPaymentChannel]:
+  ///   - Web build   -> Stripe (external billing portal + backend refresh).
+  ///   - iOS/Android -> StoreKit / Play Billing (store-managed subscription).
+  final PaymentChannel? paymentChannel;
 
   @override
   State<SubscriptionManagementScreen> createState() =>
@@ -47,6 +55,8 @@ class _SubscriptionManagementScreenState
   late final SubscriptionSyncer _subscriptionSyncer;
   late final UserIdResolver _userIdResolver;
   late final StripeService _stripeService;
+  late final PaymentChannel _channel;
+  bool _ownsChannel = false;
 
   SubscriptionStatus? _subscriptionStatus;
   UsageStats? _usageStats;
@@ -68,13 +78,26 @@ class _SubscriptionManagementScreenState
     _userIdResolver =
         widget.userIdResolver ?? UserIdentityService.getOrCreateUserId;
     _stripeService = widget.stripeService ?? StripeService();
+    if (widget.paymentChannel != null) {
+      _channel = widget.paymentChannel!;
+    } else {
+      _channel = createPaymentChannel();
+      _ownsChannel = true;
+    }
     _loadData();
   }
+
+  /// True on the store builds (Apple/Google). Drives whether subscription
+  /// management steers to Stripe (web) or to the store's own settings (mobile).
+  bool get _isStoreChannel => _channel.isStoreChannel;
 
   @override
   void dispose() {
     if (_ownsHttpClient) {
       _httpClient.close();
+    }
+    if (_ownsChannel) {
+      _channel.dispose();
     }
     super.dispose();
   }
@@ -183,12 +206,31 @@ class _SubscriptionManagementScreenState
   Future<void> _restorePurchases() async {
     try {
       final userId = await _ensureUserId();
-      await _subscriptionSyncer(userId);
-      await _loadData();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Subscription refreshed')),
-      );
+      if (_isStoreChannel) {
+        // Store builds (Apple/Google): re-apply entitlement through StoreKit /
+        // Play Billing. Apple REQUIRES a working "Restore Purchases" action.
+        final result = await _channel.restorePurchases(userId: userId);
+        await _loadData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.isError
+                  ? (result.message ?? 'Unable to restore purchases right now.')
+                  : 'Purchases restored',
+            ),
+          ),
+        );
+      } else {
+        // Web (Stripe): entitlement is account-bound; refresh it from the
+        // backend rather than touching a device-local store.
+        await _subscriptionSyncer(userId);
+        await _loadData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Subscription refreshed')),
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -443,6 +485,36 @@ class _SubscriptionManagementScreenState
     );
   }
 
+  /// Store-build replacement for the Stripe "Manage Billing" / "Cancel"
+  /// buttons. Apple Guideline 3.1.1 and Google Play Payments policy forbid
+  /// steering the user to an external billing surface, so on mobile we instruct
+  /// them to manage the subscription in the store's own settings instead.
+  Widget _buildStoreManagementInfo() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blueGrey.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 18, color: Colors.blueGrey[700]),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'To change or cancel your subscription, open your device Settings '
+              '> Subscriptions on the App Store, or the Play Store > Payments & '
+              'subscriptions.',
+              style: TextStyle(color: Colors.blueGrey[800]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -537,10 +609,21 @@ class _SubscriptionManagementScreenState
                       runSpacing: 12,
                       children: [
                         _buildUpgradeButton(),
-                        _buildManageBillingButton(),
-                        _buildCancelButton(),
+                        // Stripe billing-portal + Stripe cancel are WEB-ONLY.
+                        // On store builds these paths are not rendered, so the
+                        // Stripe steering is unreachable (App Store 3.1.1 /
+                        // Play Payments). Mobile management uses the store's own
+                        // settings — see _buildStoreManagementInfo below.
+                        if (!_isStoreChannel) ...[
+                          _buildManageBillingButton(),
+                          _buildCancelButton(),
+                        ],
                       ],
                     ),
+                    if (_isStoreChannel) ...[
+                      const SizedBox(height: 12),
+                      _buildStoreManagementInfo(),
+                    ],
                   ],
                 ),
               ),
