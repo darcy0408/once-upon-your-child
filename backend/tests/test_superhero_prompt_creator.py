@@ -29,6 +29,57 @@ def test_creator_prompt_includes_hero_name_and_alias():
     assert "Mastermind" in prompt
 
 
+def test_creator_prompt_uses_custom_alias_over_power_name():
+    """MT-305 regression: a child's typed codename becomes the hero alias,
+    NOT the power display name. The bug was that ``alias`` was hardcoded to
+    ``power_name`` and ``hero_alias`` was ignored entirely."""
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",  # power display name is "Mastermind"
+        hero_alias="Nightweaver",
+        villain_id="the_optimizer",
+        problem_id="outwit_the_mastermind",
+    )
+    assert 'Hero alias: "Nightweaver"' in prompt
+    # The power display name must NOT stand in for the codename the child chose.
+    assert "Mastermind" not in prompt
+
+
+def test_creator_prompt_falls_back_to_power_name_when_alias_blank():
+    """MT-305: with no typed codename (None/empty/whitespace), the power
+    display name is used as the alias — the documented fallback."""
+    for blank in (None, "", "   "):
+        prompt = PromptService._build_superhero_prompt_creator(
+            character="Maya",
+            age=13,
+            hero_costume_color="charcoal",
+            hero_cape_style="none",
+            hero_emblem="star",
+            hero_power="strategist",
+            hero_alias=blank,
+            villain_id="the_optimizer",
+            problem_id="outwit_the_mastermind",
+        )
+        assert 'Hero alias: "Mastermind"' in prompt
+
+
+def test_creator_alias_routes_through_build_story_prompt():
+    """MT-305: hero_alias reaches the Creator builder via the public dispatcher."""
+    prompt = PromptService.build_story_prompt(
+        character="Maya",
+        theme="superhero",
+        age=13,
+        hero_power="strategist",
+        hero_alias="Nightweaver",
+    )
+    assert "Creator band" in prompt
+    assert 'Hero alias: "Nightweaver"' in prompt
+
+
 def test_creator_prompt_includes_villain_name_and_problem_verb():
     prompt = PromptService._build_superhero_prompt_creator(
         character="Leo",

@@ -1685,7 +1685,7 @@ THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.probl
 - READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
 - The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
 - A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {b.villain['name']}'s BELIEF.
-- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
 - "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
 - Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
 - TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{b.custom_request_block}"""
@@ -2172,7 +2172,7 @@ HARD RULES — non-negotiable:
 - READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
 - The power must hit a LIMIT or COST in this chapter; judgment and heart win, not raw force.
 - A genuine challenge and a real choice; the harm must stem from {villain['name']}'s BELIEF.
-- Resolution is ALWAYS non-violent: wits, courage, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- Resolution is ALWAYS non-violent: wits, courage, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
 - Aspirational, NOT camp and NOT grim: {character} is brave, kind, and genuinely worth looking up to. Hope is the keynote.
 - TONE — avoid: a barrage of quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, and repeated moral summaries. Let the hero earn the win.{custom_request_block}
 
@@ -2239,7 +2239,7 @@ HARD RULES — non-negotiable:
 - READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
 - The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
 - A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {villain['name']}'s BELIEF.
-- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, substances, or self-harm. Stopping someone is fine; harming or humiliating them is not.
+- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
 - "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
 - Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
 - TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{custom_request_block}

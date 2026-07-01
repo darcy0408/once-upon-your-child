@@ -220,6 +220,15 @@ def test_part2_keeps_hard_safety_rules():
     assert "grade 9-11" in lowered
 
 
+def test_crux_bans_substances_as_set_dressing_both_phases():
+    """MT-266: the tightened 'NO substances' rule (explicitly banning
+    background / set-dressing) must be present on BOTH crux phases, since they
+    share the single-source `_antihero_hard_rules` block."""
+    for prompt in (_part1(), _part2()):
+        assert "substances (alcohol, drugs, tobacco, vaping)" in prompt
+        assert "not even as background or set-dressing" in prompt
+
+
 def test_part2_handles_empty_part1_pages_and_missing_choice():
     # Defensive: a blank choice / empty pages must still build a string.
     prompt = PromptService._build_antihero_prompt_part2(

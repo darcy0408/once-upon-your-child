@@ -91,6 +91,14 @@ def test_adolescent_prompt_forbids_violence_and_allows_boundaries():
     assert "accountability" in lowered
 
 
+def test_adolescent_prompt_bans_substances_as_set_dressing():
+    """MT-266: the 'NO substances' rule must explicitly forbid background /
+    set-dressing (an unlit cigarette pack, a spilled beer leaked ~1-in-7)."""
+    prompt = _build()
+    assert "substances (alcohol, drugs, tobacco, vaping)" in prompt
+    assert "not even as background or set-dressing" in prompt
+
+
 def test_adolescent_prompt_morally_grey_is_not_cruelty():
     """The guardrail that keeps 'antihero' age-appropriate, not edgelord."""
     prompt = _build()
