@@ -43,6 +43,8 @@ import '../../utils/motion_utils.dart';
 import '../../services/onboarding_service.dart';
 import '../bedtime_wizard_screen.dart';
 import '../../widgets/safe_asset_image.dart';
+import '../../utils/distress_detector.dart';
+import '../../widgets/crisis_resources_panel.dart';
 
 /// Step 4: Magic Review & Launch
 /// Updated with audio prompts and consistent magical typography.
@@ -287,6 +289,17 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           content: Text('Please complete all steps first!'),
           backgroundColor: AppColors.warning));
       return;
+    }
+    // Safety net: this is the single choke point every story-generation submit
+    // funnels through, so it's where the child's committed custom premise
+    // (customElements — set via the mic, Imagine It, or the band-adaptive input)
+    // is scanned for clear distress before generating. Non-blocking — offering
+    // crisis resources never prevents the story (see distress_detector). The
+    // crisis sheet is a modal bottom sheet, so it blocks the Create-Story button
+    // beneath it and can't open a double-launch window.
+    if (containsDistressSignal(widget.wizardData.customElements)) {
+      await showCrisisResourcesSheet(context);
+      if (!mounted) return;
     }
     // Synchronously claim the launch BEFORE any await so a rapid 2nd tap is
     // rejected by the guard above. Plain assignment (no setState) — this flag

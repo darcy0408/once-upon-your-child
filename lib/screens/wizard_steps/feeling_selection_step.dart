@@ -14,6 +14,8 @@ import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/magic_ear_button.dart';
 import '../../widgets/imagine_it_input.dart';
+import '../../utils/distress_detector.dart';
+import '../../widgets/crisis_resources_panel.dart';
 import '../../widgets/age_band_badge.dart';
 import '../../widgets/parallax_tilt_card.dart';
 import '../../services/onboarding_service.dart';
@@ -201,6 +203,14 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
       final completed = widget.wizardData.selectedFeeling != null ||
           widget.wizardData.selectedEmotionChips.isNotEmpty;
       if (!completed) return;
+    }
+    // Safety net: the "Make One Up" free-text + mic panel (BandAdaptiveImagineIt,
+    // shown for the safe_space scenario) writes the child's idea into
+    // customElements. Scan it for clear distress before advancing. Non-blocking —
+    // dismissing the sheet still continues the wizard (see distress_detector).
+    if (containsDistressSignal(widget.wizardData.customElements)) {
+      await showCrisisResourcesSheet(context);
+      if (!mounted) return;
     }
     widget.wizardData.interactiveMode = true;
     widget.onNext();
