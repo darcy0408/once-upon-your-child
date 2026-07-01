@@ -1,29 +1,32 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-06-08
+**Last Updated:** 2026-06-30
 
-> Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name.
+> Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name. The business now operates through an **LLC** (formed 2026-06-21).
 
-## Current Status: Post-Launch / Monetization, Reliability & Hardening
+## Current Status: Pre-Launch Compliance & Safety Hardening
 
-The five launch-track development phases are complete. The app is deployed on Railway (backend + `grand-light` frontend; Netlify mirror is orphaned and slated for decommission). Phase 6 is in flight — Stripe monetization wiring, reliability hardening (FMEA fixes, prompt-template versioning, streaming backend), Play Store size optimization (WebP), a WCAG 2.2 AA accessibility audit, recurring security audits, and a story-quality eval/judge harness.
+The core product is feature-complete across all 6 age bands; the work through June 2026 has been a **launch-gate compliance and safety sweep**, not new features. The app is deployed (backend on Railway; frontend on **Cloudflare Pages** at onceuponyourchild.app — the old Netlify/Railway `grand-light` frontends are both orphaned). **No live users yet** — every safety/compliance item is gated on *launch*, not on production traffic.
 
-Backlog: **85 open / 158 done** manual tasks (`docs/MANUAL_TASKS.md`; +3 wontfix) — most open items are browser/device verification, not code.
+The single largest change this month: **all AI provider paths moved off Google Gemini** for child-directed content, because Gemini's API ToS (and Vertex's) prohibit apps directed at under-18s ("MT-137"). Story **text** now runs on **OpenAI GPT-5 mini** for all tiers; **avatars** on OpenAI gpt-image; **narration** on **Azure AI Speech**; **illustrations** stay on Cloudflare Flux (clean). Gemini is down to residual image-fallback paths being retired.
 
-Recent (June 2026, ~10 sessions): age-band scene-picker art for the aged-up bands (#243), Creator-band polish (#249), Hero Saga Phase 1 — a serialized Creator (13–14) superhero playable end-to-end (#252) with Phase 2 saga-continuity groundwork (backend `saga_state` + client hero persistence), the companion overhaul (kill My Pet/Human, unify Add-a-Person, grown-up photos, premium signal — #246), the boundary-skills SEL feature Phase 1 (#253), and a git-maintenance / branch-hygiene pass (27 fossil branches deleted, main branch-protection).
+Backlog: ~**80 open / 180+ done** manual tasks (`docs/MANUAL_TASKS.md`) — the large majority of open items are **browser/device verification or owner ops** (Railway config flips, dashboard checks, clinical/legal sign-off), not unstarted code.
+
+**June 2026 arc (~25 sessions):** OpenAI story-text migration + `EMOTIONAL HEART` prompt upgrade (#266/#272); Azure AI Speech narration go-live + ElevenLabs `/tts/transcribe` deletion (#277/#278); the Adolescent (15–17) antihero "double-life" saga end-to-end (#263–#267) + the Crux Choice backend (#273) + saga-continuity loop extended to Adventurer/Explorer (#274); Hero Saga Phase 2 (#257); the "Story Notes" age-gated transparency layer over the hidden parent-context (#279); the ux6b + mature-bands UX audits (MT-262…302, ~20 PRs); the **Boy/Girl-only** gender decision (#291); and the **pre-launch Safety/Legal/COPPA audit batch** — legal-liability + Phase 1 COPPA consent gating (#320), purchase-gating P0 cluster (#321), generation-output egress + teen fail-closed (#332), authz/generator hardening (#335), story-quality/reliability + the P0 Pick-a-Path→Gemini ToS fix (#336), plus BYOK Gemini-image guard + privacy-defaults (#319/#333/#334).
 
 ## Architecture
 
 | Layer | Stack |
 |-------|-------|
-| Frontend | Flutter (Dart) — web, Android (AAB ~82MB), iOS, desktop |
-| Backend | Python / Flask on Railway + Celery worker (Redis broker) |
-| AI | Google Gemini (server + BYOK server-side); OpenRouter / Flux Schnell fallback |
-| Images | Gemini + Flux image generation; served via Cloudflare |
-| Storage | Postgres on Railway (since 2026-05-14; shared by Flask + Celery); Isar offline cache (`SharedPreferences` stub on web) |
-| Backups | External `pg_dump` → Cloudflare R2 (Railway native backups are Pro-only) |
-| TTS | ElevenLabs → Gemini Flash TTS → Edge TTS → on-device flutter_tts (tiered fallback) |
-| Monitoring | Sentry crash reporting |
+| Frontend | Flutter (Dart) — web (Cloudflare Pages, onceuponyourchild.app), Android (AAB ~82MB), iOS, desktop |
+| Backend | Python / Flask on Railway + Celery worker (Redis broker); story-gen runs sync in the web process |
+| Story text | **OpenAI GPT-5 mini** (all tiers, `STORY_GEN_PROVIDER=openai`); `claude`/`tiered` providers built but dormant. Gemini forbidden for kids (MT-137) |
+| Content moderation | 2-layer: deterministic keyword filter + LLM pass (**being decoupled Gemini→OpenAI**, tonight's PR) |
+| Images | Avatars → **OpenAI gpt-image**; story illustrations → **Cloudflare Flux** → Replicate → (Gemini last-resort, being retired) |
+| Storage | Postgres on Railway (since 2026-05-14); Isar offline cache (`SharedPreferences` stub on web) |
+| Backups | External `pg_dump` → Cloudflare R2 (verified restorable, RTO ~2s) + `restore-drill.yml` |
+| TTS | **Azure AI Speech** (primary, real-time/no-retention) → Edge → on-device flutter_tts; ElevenLabs 13+ only; child-voice STT deleted |
+| Monitoring | Sentry crash reporting (Developer plan; `beforeSend` PII scrub) |
 | Payments | Stripe (Free / Adventurer / Family / BYOK tiers) |
 
 ## Completed Features
@@ -158,14 +161,17 @@ Sprout-first redesign (avatar simplification, scene auto-advance, full-width sto
 ### Phase 6 (mid–late May 2026) — Monetization, Reliability & Hardening
 Stripe monetization wiring (checkout + webhooks, Family tier, free-tier illustration cap upsell), Postgres provisioning + prod migration, themes feature, prompt-template versioning (MT-187 F-01), streaming story backend (PERF-01) + cancel foundation (PERF-04), story-quality eval/judge harness (MT-186), reliability hardening (FMEA fixes), R2 backup workflow, WebP asset conversion + Play Store size optimization (~82MB AAB) + keystore runbook, custom-domain launch + CSP/CORS P0 fixes, WCAG 2.2 AA accessibility audit + remediation (A11Y tooltip sweep), recurring Six Hats security/content/legal audits + remediation, cost-reduction sweep (Edge TTS free fallback, Gemini Flash TTS overflow tier), Superhero Mode → Explorer band, MT-099 "Open Book" reader refactor, MT-158 parent sensitivity interstitial, "Once Upon YOUR Child" brand sweep.
 
-## Known Issues
+### Phase 7 (June 2026) — Provider Migration, Superhero Saga & Pre-Launch Compliance
+The launch-gate month. **Provider migration off Gemini** (MT-137 ToS): story text → OpenAI GPT-5 mini for all tiers (#266/#272, `EMOTIONAL HEART` prompt), avatars → OpenAI gpt-image (#301), narration → Azure AI Speech (#277/#278), child-voice STT deleted. **Superhero saga:** Adolescent (15–17) antihero double-life band end-to-end (#263–#267), Crux Choice two-phase backend (#273), saga-continuity loop down to Adventurer/Explorer (#274), Hero Saga Phase 2 continuity (#257). **Transparency:** "Story Notes" age-gated disclosure over the hidden parent-context (#279/#286). **UX audits:** the ux6b age-band launch audit + mature-bands audit (MT-262…302, ~20 PRs); Boy/Girl-only gender decision (#291). **Pre-launch Safety/Legal/COPPA audit batch:** legal-liability + Phase 1 COPPA consent gating (#320), purchase-gating P0 cluster (#321), generation-output link-scrub + teen fail-closed (#332), authz/generator hardening (#335), story-quality/reliability + P0 Pick-a-Path→OpenAI ToS fix (#336), BYOK Gemini-image guard + privacy defaults (#319/#333/#334). Business incorporated as an **LLC** (2026-06-21).
 
-1. **Manual-tasks backlog: 85 open items** (`docs/MANUAL_TASKS.md`) — overwhelmingly browser/device verification of shipped fixes rather than unstarted code. Notable open code-ish items: MT-129 (illustration↔avatar fidelity — text-fix shipped, awaiting paid-tier verify), MT-120 (per-power visual override paid-tier verify), MT-105 (Flutter integration-tests agent in worktree), MT-199 (Sprout pop-up reader, backlog), MT-200 (MT-099 global warm-bg polish).
-2. **Reliability hardening not fully closed** — Phase 2+3 FMEA fixes done; prod migration done; some Railway verify + alerting still pending (see memory `reliability_hardening_2026_05`).
-3. **Railway native backups are Pro-only** — mitigated by external `pg_dump` → R2 workflow; verify the cron is healthy.
-4. **Dependabot deferred majors** — stripe → v15 (note: v15 has breaking changes — `stripe.error.*` removed, `StripeObject` lost `.get()`), elevenlabs floor, cryptography, protobuf. Each blocked on a manual smoke-test of the payment / TTS / crypto paths.
-5. **Netlify frontend is orphaned** — `reliable-sherbet-2352c4` still auto-deploys a stale build; real prod is Railway `grand-light`. Decommission pending.
-6. **Local `backend_errors.log`** carries only test-suite noise (dev JWT, `agegate-*` users, Redis-down breaker firing by design) — not production errors.
+## Known Issues / Launch Gates
+
+1. **Gemini fully off child paths, but owner ops flips remain** — story text (OpenAI), avatars (OpenAI), narration (Azure) are migrated. Residual: set `DISABLE_GEMINI_IMAGE=1` on Railway + enable Zero Data Retention (MT-295); confirm `ALLOW_DIRECT_GEMINI_IMAGE` stays unset (MT-309); the LLM-moderator decouple is in a pending PR (tonight).
+2. **COPPA launch-gate config flips (owner, Railway)** — `ENFORCE_RESOLVED_AGE`, `COPPA_REQUIRE_VERIFIED_CONSENT`, `COPPA_REQUIRE_CURRENT_POLICY_VERSION` all default OFF so testers aren't broken; flip in-order before public launch (MT-310). Full checklist in `docs/LEGAL_LIABILITY_AUDIT_2026-06-28.md`. `ENCRYPTION_KEY` still unset in prod → server-side BYOK key-save 500s until set (MT-238).
+3. **Clinical/legal external sign-off outstanding** — Adolescent antihero band is gated OFF pending clinical review (MT-266c; packet ready at `docs/CLINICAL_REVIEW_ADOLESCENT_ANTIHERO.md`); COPPA verifiable-consent mechanics + crisis-flow US-hardcoding route to counsel/clinician (`docs/SAFETY_AUDIT_REMEDIATION.md`).
+4. **Azure AI Speech trial lapses ~2026-07-14** — convert free→Pay-As-You-Go before then or narration degrades to on-device voice (MT-259; calendar reminder set 2026-07-09).
+5. **Backlog is verification-heavy** — most open MTs are device/browser verification of already-shipped fixes or owner ops, not unstarted code. Art recommissions (MT-268/270/271/272/281/282/287) need Imagen + owner taste.
+6. **Local `backend_errors.log`** carries only dev/test noise (unset keys, dev JWT, Redis-down breaker by design) — not production errors.
 
 ## Planned (v1.1+)
 
