@@ -20,6 +20,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/elevenlabs_voice.dart';
+import 'models/antihero_crux_result.dart';
 import 'services/api_service_manager.dart';
 import 'services/tts_api_service.dart';
 import 'story_reader_screen.dart';
@@ -129,6 +130,22 @@ class StoryResultScreen extends ConsumerStatefulWidget {
   /// path (where [characterAge] already carries the right age).
   final int? practicedAge;
 
+  /// MT-258 crux flow: the part-1 continuation token. Non-null puts the reader
+  /// in "awaiting choice" mode — `pages` holds only Beats 1-4 until resolved.
+  final String? cruxContinuationToken;
+
+  /// The two crux options shown on the choice cards.
+  final List<CruxChoice>? cruxChoices;
+
+  /// The one-line framing of the moral crux, shown above the choice cards.
+  final String? cruxText;
+
+  /// Fired exactly once, after the resolution lands, with the resolved story's
+  /// `superheroMeta` (carries `saga_state`). The caller uses it to record the
+  /// saga issue (deferred until now so a saga is never recorded for an
+  /// unresolved crux).
+  final void Function(Map<String, dynamic>? superheroMeta)? onCruxResolved;
+
   const StoryResultScreen({
     super.key,
     required this.title,
@@ -166,6 +183,10 @@ class StoryResultScreen extends ConsumerStatefulWidget {
     this.sagaNextHook,
     this.practicedFocus,
     this.practicedAge,
+    this.cruxContinuationToken,
+    this.cruxChoices,
+    this.cruxText,
+    this.onCruxResolved,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -203,6 +224,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   int _currentPageIndex = 0;
   double _textScale = 1.0;
   bool _highContrastMode = false;
+
+  // MT-258 crux flow state.
+  String? _cruxToken;
+  late List<CruxChoice> _cruxChoices;
+  String? _cruxText;
+  bool _cruxResolving = false;
+  bool _cruxResolved = false;
+
+  bool get _cruxPending => _cruxToken != null && !_cruxResolved;
 
   // Magic Typewriter state
   final Set<int> _revealedPages = {};
@@ -655,6 +685,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         (i) => 'Page ${i + 1}',
       );
     }
+
+    // MT-258 crux flow: when a continuation token is supplied, `_storyPages`
+    // currently holds only Beats 1-4 and the reader pauses on the choice gate
+    // until a crux option is resolved. Inert (null token) on every other path.
+    _cruxToken = widget.cruxContinuationToken;
+    _cruxChoices = widget.cruxChoices ?? const [];
+    _cruxText = widget.cruxText;
 
     _pageController = PageController();
     _pageFlipKey = GlobalKey<PageFlipBuilderState>();
@@ -3114,6 +3151,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     BookBindingSide bindingSide = BookBindingSide.left,
     bool showPageEdges = true,
   }) {
+    // MT-258: when the reader is paused on an unresolved crux, this natural
+    // end-of-story gate becomes the moral-choice page instead of "The End".
+    if (_cruxPending) {
+      return _buildCruxChoicePage(
+        bindingSide: bindingSide,
+        showPageEdges: showPageEdges,
+      );
+    }
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
@@ -3287,6 +3332,142 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         ),
       ),
     );
+  }
+
+  /// MT-258 crux gate: rendered in place of the end page while the reader is
+  /// paused on the moral crux (Beats 1-4 read, Beats 5-7 not yet fetched). A
+  /// noir choice screen — the framing line above two two-sided option cards.
+  Widget _buildCruxChoicePage({
+    BookBindingSide bindingSide = BookBindingSide.left,
+    bool showPageEdges = true,
+  }) {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    // Noir accent (teal for the Adolescent band).
+    final accent = band.accent;
+    final cruxLine = (_cruxText ?? '').trim();
+    return StoryBookPage(
+      backgroundColor:
+          _highContrastMode ? Colors.black : const Color(0xFF12131A),
+      showDecorations: false,
+      bindingSide: bindingSide,
+      showPageEdges: showPageEdges,
+      darkPage: true,
+      framed: !_highContrastMode,
+      child: Center(
+        child: SingleChildScrollView(
+          key: const ValueKey('story-crux-choice-scroll'),
+          padding: EdgeInsets.symmetric(horizontal: band.space(20)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'THE CHOICE',
+                style: GoogleFonts.quicksand(
+                  fontSize: 13 * _textScale,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 3,
+                  color: accent.withValues(alpha: 0.9),
+                ),
+              ),
+              SizedBox(height: band.space(16)),
+              if (cruxLine.isNotEmpty)
+                Text(
+                  cruxLine,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(
+                    fontSize: 22 * _textScale,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                    color: _highContrastMode ? Colors.white : Colors.white,
+                  ),
+                ),
+              SizedBox(height: band.space(28)),
+              for (final choice in _cruxChoices) ...[
+                _CruxChoiceCard(
+                  text: choice.text,
+                  accent: accent,
+                  textScale: _textScale,
+                  enabled: !_cruxResolving,
+                  onTap: () => _onCruxChoiceSelected(choice.id),
+                ),
+                SizedBox(height: band.space(16)),
+              ],
+              if (_cruxResolving) ...[
+                SizedBox(height: band.space(8)),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                ),
+                SizedBox(height: band.space(12)),
+                Text(
+                  'Writing how it plays out…',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(
+                    fontSize: 14 * _textScale,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Jumps the reader to [target] (used to advance to the first resolution
+  /// beat once the crux is resolved). The page-flip reader renders whatever
+  /// `_currentPageIndex` points at, so a `setState` is the whole jump.
+  void _goToStoryPage(int target) {
+    if (!mounted) return;
+    setState(() {
+      _currentPageIndex = target.clamp(0, _totalPages - 1);
+    });
+  }
+
+  /// MT-258: fetch Beats 5-7 conditioned on the chosen crux option, splice the
+  /// full 7-beat story into `_storyPages`, then advance to the first resolution
+  /// beat. Guarded so it can run at most once.
+  Future<void> _onCruxChoiceSelected(String choiceId) async {
+    if (_cruxResolving || _cruxResolved || _cruxToken == null) return;
+    setState(() => _cruxResolving = true);
+    try {
+      final result = await ApiServiceManager.generateAntiheroResolution(
+        continuationToken: _cruxToken!,
+        choiceId: choiceId,
+      );
+      if (!mounted) return;
+      final fullPages = result.pages.isNotEmpty ? result.pages : _storyPages;
+      setState(() {
+        // Backend returns the full 7-beat story; replace so Beats 5-7 append.
+        _storyPages = List<String>.from(fullPages);
+        _cruxResolved = true;
+        _cruxResolving = false;
+      });
+      // Defer the saga record to the caller now that the crux is resolved.
+      widget.onCruxResolved?.call(result.superheroMeta);
+      // Advance the reader to the first resolution beat (index 4 of the story
+      // pages; account for a cover illustration if present).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final target =
+            (4 + (_hasCoverIllustration ? 1 : 0)).clamp(0, _totalPages - 1);
+        _goToStoryPage(target);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cruxResolving = false);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('That choice didn\'t land — try again.'),
+      ));
+    }
   }
 
   Widget _buildRepeatButton({
@@ -4926,6 +5107,90 @@ class _ActionChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MT-258 crux choice card
+// ---------------------------------------------------------------------------
+
+/// A single tappable noir option card for the Adolescent crux gate. Dark card,
+/// band-accent border/glow; dims and stops responding while a resolution is in
+/// flight ([enabled] false).
+class _CruxChoiceCard extends StatelessWidget {
+  final String text;
+  final Color accent;
+  final double textScale;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _CruxChoiceCard({
+    required this.text,
+    required this.accent,
+    required this.textScale,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor =
+        enabled ? accent.withValues(alpha: 0.7) : accent.withValues(alpha: 0.3);
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: text,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: Material(
+          color: const Color(0xFF1D1F2B),
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(16),
+            splashColor: accent.withValues(alpha: 0.15),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: enabled
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.18),
+                          blurRadius: 14,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : const [],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      text,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 17 * textScale,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: accent.withValues(alpha: 0.9),
+                    size: 26,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

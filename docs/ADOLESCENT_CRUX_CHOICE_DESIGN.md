@@ -68,7 +68,7 @@ plain Material (safe).
 
 ## Status
 - [x] Phase 1 — backend prompt layer (`_antihero_brief` + part1/part2 builders; 68 tests, single-shot byte-identical)
-- [ ] Phase 2 — routes + run helpers
-- [ ] Phase 3 — client API + state
-- [ ] Phase 4 — client UI
-- [ ] Phase 5 — flag + e2e
+- [x] Phase 2 — routes + run helpers (`/generate-antihero-crux` + `/generate-antihero-resolution`, `run_antihero_part1/2`, Redis continuation token, moderation on both, quota-once; shipped in #273)
+- [x] Phase 3 — client API + models (`AntiheroCruxResult`/`CruxChoice`, `ApiServiceManager.generateAntiheroCrux`/`generateAntiheroResolution`, `FeatureFlags.cruxChoiceEnabled` default OFF; 7 unit tests)
+- [x] Phase 4 — client UI (`StoryResultScreen` crux mode: end-of-story page becomes the two noir `_CruxChoiceCard`s; on tap → resolution → splice Beats 5-7 → `onCruxResolved`)
+- [x] Phase 5 — flag wiring + deferred saga (crux branch in `magic_review_step._doLaunchStoryCreation`; `recordIssue` deferred to `onCruxResolved`). **e2e against prod is flag-gated (owner device-verify before flipping `cruxChoiceEnabled` on).**

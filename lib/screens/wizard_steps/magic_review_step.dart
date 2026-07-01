@@ -15,6 +15,7 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/config/feature_flags.dart';
 import 'package:story_weaver_app/models/api_error.dart';
 import 'package:story_weaver_app/models/story_generation_result.dart'
     show StoryGenerationCancelled;
@@ -574,6 +575,28 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           }
         }
 
+        // MT-258 — the Adolescent (15-17) interactive Crux Choice flow. When
+        // the flag is on and this is an adolescent antihero superhero story,
+        // split generation into the two-call crux path: part 1 (setup + the
+        // two-sided choice) here, part 2 (resolution) from inside the reader
+        // after the teen picks. Gated OFF by default → the single-shot
+        // generateStory path below is byte-for-byte unchanged for everyone else.
+        final heroModeVal = requestData['heroMode']?.toString();
+        final isAntiheroMode = heroModeVal == null ||
+            heroModeVal.isEmpty ||
+            heroModeVal != 'classic';
+        if (FeatureFlags.cruxChoiceEnabled &&
+            isAdolescentBand &&
+            widget.wizardData.selectedScenario == 'superhero' &&
+            isAntiheroMode) {
+          await _launchAntiheroCrux(
+            requestData: requestData,
+            subscription: subscription,
+            priorSaga: priorSaga,
+          );
+          return; // crux path owns its own navigation + deferred saga record
+        }
+
         final result = await ApiServiceManager.generateStory(
             characterName: requestData['character'] ?? 'Hero',
             age: requestData['age'] ?? 5,
@@ -933,6 +956,118 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       if (mounted && _isGenerating) {
         setState(() => _isGenerating = false);
       }
+    }
+  }
+
+  /// MT-258 — part 1 of the Adolescent crux flow: fetch the setup beats + the
+  /// two-sided choice, then hand off to [StoryResultScreen] in crux mode. The
+  /// resolution (part 2) runs from inside the reader when the teen picks; the
+  /// saga is recorded via [onCruxResolved] only after that lands (deferred).
+  Future<void> _launchAntiheroCrux({
+    required Map<String, dynamic> requestData,
+    required UserSubscription subscription,
+    Map<String, dynamic>? priorSaga,
+  }) async {
+    final cruxResult = await ApiServiceManager.generateAntiheroCrux(
+      characterName:
+          requestData['character']?.toString() ?? widget.wizardData.characterName,
+      age: (requestData['age'] as int?) ?? widget.wizardData.characterAge,
+      characterId: requestData['character_id']?.toString(),
+      subscriptionTier: subscription.tier.name,
+      heroPower: requestData['heroPower']?.toString(),
+      heroCostumeColor: requestData['heroCostumeColor']?.toString(),
+      heroEmblem: requestData['heroEmblem']?.toString(),
+      heroCatchphrase: requestData['heroCatchphrase']?.toString(),
+      heroSecret: requestData['heroSecret']?.toString(),
+      heroTell: requestData['heroTell']?.toString(),
+      heroLine: requestData['heroLine']?.toString(),
+      heroSeenBy: requestData['heroSeenBy']?.toString(),
+      customElements: requestData['customElements']?.toString() ?? '',
+      priorSaga: priorSaga,
+    );
+    if (!mounted) return;
+
+    final heroCharacterId =
+        SuperheroEntryScreen.resolveCharacterId(widget.wizardData);
+    final cruxTitle =
+        cruxResult.title ?? "${widget.wizardData.characterName}'s Saga";
+
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => StoryResultScreen(
+              title: cruxTitle,
+              storyText: cruxResult.pages.join('\n\n'),
+              characterName: widget.wizardData.characterName,
+              theme: 'Superhero',
+              characterAge: (requestData['age'] as int?) ??
+                  widget.wizardData.characterAge,
+              characterId: widget.wizardData.characterId,
+              isInteractive: false,
+              achievementsService: AchievementService(),
+              storyCreatedAt: DateTime.now(),
+              trackStoryCreation: true,
+              subscription: subscription,
+              pages: cruxResult.pages,
+              wizardData: widget.wizardData,
+              cruxContinuationToken: cruxResult.continuationToken,
+              cruxChoices: cruxResult.choices,
+              cruxText: cruxResult.crux,
+              onCruxResolved: (superheroMeta) =>
+                  _recordAntiheroSaga(heroCharacterId, superheroMeta, cruxTitle),
+            )));
+    if (mounted) {
+      setState(() {
+        _isGenerating = false;
+        _activeTaskId = null;
+      });
+    }
+  }
+
+  /// Deferred saga bookkeeping for the crux flow — fired by
+  /// [StoryResultScreen.onCruxResolved] only after the teen resolves the
+  /// choice, so a saga Issue is never recorded for an abandoned crux. Mirrors
+  /// the inline superhero saga block on the single-shot path. Best-effort.
+  void _recordAntiheroSaga(
+    String heroCharacterId,
+    Map<String, dynamic>? superheroMeta,
+    String? title,
+  ) async {
+    if (superheroMeta == null) return;
+    final controller = ref.read(heroProfileControllerProvider.notifier);
+    final villainId = superheroMeta['villain_id']?.toString();
+    final problemId = superheroMeta['problem_id']?.toString();
+    try {
+      if (villainId != null && villainId.isNotEmpty) {
+        await controller.pushRecentVillain(heroCharacterId, villainId);
+      }
+      if (problemId != null && problemId.isNotEmpty) {
+        await controller.pushRecentProblem(heroCharacterId, problemId);
+      }
+    } catch (_) {
+      // Recent-list persistence failure is non-fatal.
+    }
+
+    final rawSaga = superheroMeta['saga_state'];
+    if (rawSaga is! Map) return;
+    final sagaState = Map<String, dynamic>.from(rawSaga);
+    // Adolescent moral throughline: the line they won't cross, else the thing
+    // they hide (mirrors the single-shot path's band-aware hero_code source).
+    String? sourceCode;
+    final line = widget.wizardData.heroLine?.trim();
+    final secret = widget.wizardData.heroSecret?.trim();
+    if (line != null && line.isNotEmpty) {
+      sourceCode = line;
+    } else if (secret != null && secret.isNotEmpty) {
+      sourceCode = secret;
+    }
+    try {
+      await ref.read(heroSagaControllerProvider.notifier).recordIssue(
+            heroCharacterId,
+            sagaState,
+            heroCode: sourceCode,
+            title: title,
+          );
+    } catch (_) {
+      // Saga persistence failure is non-fatal — the story still shows.
     }
   }
 

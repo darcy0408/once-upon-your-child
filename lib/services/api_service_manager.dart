@@ -14,6 +14,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
 import '../character_traits_data.dart';
+import '../models/antihero_crux_result.dart';
 import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
 import 'logger_service.dart';
@@ -915,6 +916,160 @@ class ApiServiceManager {
         bedtimeDurationMinutes: bedtimeDurationMinutes,
       ),
     );
+  }
+
+  /// MT-258 — Part 1 of the Adolescent (15-17) interactive Crux Choice flow.
+  ///
+  /// POSTs `/generate-antihero-crux`, which generates Beats 1-4 + the two-sided
+  /// choice and caches its continuation context on the backend. Returns the
+  /// setup beats + the pending choice; the reader screen renders them, then
+  /// calls [generateAntiheroResolution] with the chosen [CruxChoice.id].
+  ///
+  /// This path is single-shot (no scaffold fallback / no 202 poll): the crux
+  /// endpoint always answers synchronously. On a non-200 it throws [ApiError]
+  /// (parental-consent / quota, mirroring the /generate-story error shape) or
+  /// [HttpException], so callers can reuse their existing catch handling.
+  static Future<AntiheroCruxResult> generateAntiheroCrux({
+    required String characterName,
+    required int age,
+    String? characterId,
+    String subscriptionTier = 'free',
+    String? heroPower,
+    String? heroCostumeColor,
+    String? heroEmblem,
+    String? heroCatchphrase,
+    String? heroSecret,
+    String? heroTell,
+    String? heroLine,
+    String? heroSeenBy,
+    String customElements = '',
+    Map<String, dynamic>? priorSaga,
+    http.Client? client,
+    Duration requestTimeout = const Duration(seconds: 150),
+  }) async {
+    final userId = await UserIdentityService.getOrCreateUserId();
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl/generate-antihero-crux');
+
+    final body = <String, dynamic>{
+      'character': characterName.isNotEmpty ? characterName : 'Hero',
+      'theme': 'superhero',
+      'hero_mode': 'antihero',
+      'age': age,
+      'character_age': age,
+      'user_id': userId,
+      'subscription_tier':
+          subscriptionTier.isEmpty ? 'free' : subscriptionTier.toLowerCase(),
+      if (characterId != null && characterId.isNotEmpty)
+        'character_id': characterId,
+      if (heroPower != null && heroPower.trim().isNotEmpty)
+        'hero_power': heroPower.trim(),
+      if (heroCostumeColor != null && heroCostumeColor.trim().isNotEmpty)
+        'hero_costume_color': heroCostumeColor.trim(),
+      if (heroEmblem != null && heroEmblem.trim().isNotEmpty)
+        'hero_emblem': heroEmblem.trim(),
+      if (heroCatchphrase != null && heroCatchphrase.trim().isNotEmpty)
+        'hero_catchphrase': heroCatchphrase.trim(),
+      if (heroSecret != null && heroSecret.trim().isNotEmpty)
+        'hero_secret': heroSecret.trim(),
+      if (heroTell != null && heroTell.trim().isNotEmpty)
+        'hero_tell': heroTell.trim(),
+      if (heroLine != null && heroLine.trim().isNotEmpty)
+        'hero_line': heroLine.trim(),
+      if (heroSeenBy != null && heroSeenBy.trim().isNotEmpty)
+        'hero_seen_by': heroSeenBy.trim(),
+      if (customElements.trim().isNotEmpty)
+        'customElements': customElements.trim(),
+      if (priorSaga != null && priorSaga.isNotEmpty) 'prior_saga': priorSaga,
+    };
+
+    final headers = await authHeaders();
+    final response = await httpClient
+        .post(uri, headers: headers, body: jsonEncode(body))
+        .timeout(requestTimeout);
+
+    final payload = _decodeAntiheroResponse(response, uri);
+    final result = AntiheroCruxResult.fromBackend(payload);
+    if (!result.isValid) {
+      throw HttpException(
+        'Antihero crux response missing token/pages/choices',
+        uri: uri,
+      );
+    }
+    return result;
+  }
+
+  /// MT-258 — Part 2 of the Crux Choice flow.
+  ///
+  /// POSTs `/generate-antihero-resolution` with the opaque [continuationToken]
+  /// from part 1 and the reader's [choiceId]. The backend writes Beats 5-7
+  /// conditioned on that choice, assembles the full 7-beat story (with
+  /// `superhero_meta.saga_state`), persists it, and returns the same envelope
+  /// shape as `/generate-story` — so it parses through
+  /// [StoryGenerationResult.fromBackend] unchanged. A 410 (expired token) or
+  /// 400 (bad choice) surfaces as [ApiError]/[HttpException].
+  static Future<StoryGenerationResult> generateAntiheroResolution({
+    required String continuationToken,
+    required String choiceId,
+    http.Client? client,
+    Duration requestTimeout = const Duration(seconds: 150),
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl/generate-antihero-resolution');
+    final body = <String, dynamic>{
+      'continuation_token': continuationToken,
+      'choice_id': choiceId,
+    };
+
+    final headers = await authHeaders();
+    final response = await httpClient
+        .post(uri, headers: headers, body: jsonEncode(body))
+        .timeout(requestTimeout);
+
+    final payload = _decodeAntiheroResponse(response, uri);
+    final story = payload['story'] ?? payload['story_text'];
+    if ((story is String && story.isNotEmpty) ||
+        (story is Map && story.isNotEmpty)) {
+      return StoryGenerationResult.fromBackend(payload);
+    }
+    throw HttpException(
+      'Antihero resolution returned 200 without story content',
+      uri: uri,
+    );
+  }
+
+  /// Decode a crux/resolution response, raising [ApiError] for a structured
+  /// backend error (so parental-consent / quota flow through the existing
+  /// handlers) and [HttpException] otherwise. Mirrors [_decodeJsonResponse]
+  /// but is static (the crux entry points are static like [generateStory]).
+  static Map<String, dynamic> _decodeAntiheroResponse(
+    http.Response response,
+    Uri uri,
+  ) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (response.body.isNotEmpty) {
+        try {
+          final errorJson = jsonDecode(response.body);
+          if (errorJson is Map<String, dynamic> &&
+              (errorJson.containsKey('error_code') ||
+                  errorJson.containsKey('error') ||
+                  errorJson.containsKey('message'))) {
+            throw ApiError.fromJson(errorJson);
+          }
+        } catch (e) {
+          if (e is ApiError) rethrow;
+          // Fall through to a generic HTTP error if the body isn't JSON.
+        }
+      }
+      throw HttpException(
+        'Request to ${uri.path} failed with status ${response.statusCode}',
+        uri: uri,
+      );
+    }
+    if (response.body.isEmpty) return const {};
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    return const {};
   }
 
   Map<String, dynamic> _decodeJsonResponse(
