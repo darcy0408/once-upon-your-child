@@ -16,6 +16,7 @@ import '../providers/highlight_color_provider.dart';
 import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
+import '../services/local_data_eraser.dart';
 import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../services/screen_time_service.dart';
@@ -858,9 +859,23 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     setState(() => _deletingData = true);
     try {
       final userId = await _api.getUserId();
-      if (userId != null) {
-        await _api.delete('/api/user/$userId/data');
+      if (userId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No account found to delete.')),
+        );
+        return;
       }
+      // Throws on any non-2xx response, so a normal return means the backend
+      // confirmed the deletion (HTTP 200). Only then do we erase locally.
+      await _api.delete('/api/user/$userId/data');
+
+      // MT-236 / PRIV-03 / PRIV-02: the backend erasure is done — now clear the
+      // client half (child PII + caches in SharedPreferences/Isar) that used to
+      // be left behind. Reached only after a confirmed successful backend
+      // delete; a failed delete throws above and skips this.
+      await const LocalDataEraser().eraseAll();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('All data deleted successfully.')),

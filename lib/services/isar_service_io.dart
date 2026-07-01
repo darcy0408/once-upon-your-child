@@ -115,6 +115,22 @@ class IsarService {
     });
   }
 
+  /// Erases every locally-cached collection (stories, characters, chronicles,
+  /// chapter memories, hero profiles and cached avatars). Used by the COPPA/
+  /// GDPR "Delete All My Data" flow (PRIV-03/PRIV-02) after a confirmed backend
+  /// deletion. The web stub mirrors this by removing the backing prefs keys.
+  static Future<void> clearAllCaches() async {
+    final isar = await getInstance();
+    await isar.writeTxn(() async {
+      await isar.storyLocals.clear();
+      await isar.characterLocals.clear();
+      await isar.chronicleLocals.clear();
+      await isar.chapterMemoryLocals.clear();
+      await isar.heroProfileLocals.clear();
+      await isar.avatarCacheEntrys.clear();
+    });
+  }
+
   static Future<void> close() async {
     await _isar?.close();
     _isar = null;

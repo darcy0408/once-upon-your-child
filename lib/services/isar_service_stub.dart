@@ -192,6 +192,18 @@ class IsarService {
     });
   }
 
+  /// Web mirror of the native [clearAllCaches]: the SharedPreferences-backed
+  /// stub stores each Isar collection under its own key, so erasing local data
+  /// (COPPA/GDPR "Delete All My Data", PRIV-03/PRIV-02) removes those keys.
+  static Future<void> clearAllCaches() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isar_stories'); // OfflineStoryService web storage key
+    await prefs.remove(CharacterLocalsStub._storageKey);
+    await prefs.remove(ChronicleLocalsStub._key);
+    await prefs.remove(ChapterMemoryLocalsStub._key);
+    await prefs.remove(AvatarCacheEntrysStub._key);
+  }
+
   static Future<void> close() async {
     _isar = null;
   }
