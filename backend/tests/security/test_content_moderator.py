@@ -5,7 +5,12 @@ Tests for the two-layer output safety system:
   Layer 1 — age-band-aware keyword filter (app_helpers.make_filter_story_content)
   Layer 2 — LLM-based contextual safety classifier (content_moderator.moderate_story_content)
 
-These tests use mocked Gemini clients so no real API calls are made.
+These tests use mocked OpenAI clients so no real API calls are made.
+
+MT-137: Layer 2 moderation runs on the same OpenAI client/model family as
+story text (via OPENAI_API_KEY), not Gemini — sending a minor's story to Gemini
+for moderation would trip the same child-directed-app ToS that moved story text
+off Gemini. The mock below mirrors an OpenAI Chat Completions response shape.
 """
 
 from unittest.mock import MagicMock
@@ -17,12 +22,35 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
-def _mock_gemini_response(text: str):
-    """Build a mock genai response object returning the given text."""
+def _mock_openai_response(text: str, finish_reason: str = "stop", refusal=None):
+    """Build a mock OpenAI Chat Completions response returning the given text.
+
+    Shapes ``response.choices[0].message.content`` the way the moderator's
+    ``_extract_classification_text`` reads it.
+    """
+    message = MagicMock()
+    message.content = text
+    message.refusal = refusal
+    choice = MagicMock()
+    choice.message = message
+    choice.finish_reason = finish_reason
     response = MagicMock()
-    response.text = text
-    response.candidates = []
+    response.choices = [choice]
     return response
+
+
+def _mock_openai_client(*responses, side_effect=None):
+    """Build a mock OpenAI client whose chat.completions.create returns the
+    given response(s) (or raises via ``side_effect``)."""
+    client = MagicMock()
+    create = client.chat.completions.create
+    if side_effect is not None:
+        create.side_effect = side_effect
+    elif len(responses) == 1:
+        create.return_value = responses[0]
+    else:
+        create.side_effect = list(responses)
+    return client
 
 
 # ---------------------------------------------------------------------------
@@ -136,10 +164,7 @@ class TestContentModerator:
         """LLM returns safe=true → story is passed through."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '{"safe": true}'
-        )
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
 
         is_safe, reason = moderate_story_content(
             "A lovely story about rabbits.", age=6, client=mock_client
@@ -152,9 +177,8 @@ class TestContentModerator:
         """LLM returns safe=false → story is flagged with reason."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '{"safe": false, "reason": "graphic violence"}'
+        mock_client = _mock_openai_client(
+            _mock_openai_response('{"safe": false, "reason": "graphic violence"}')
         )
 
         is_safe, reason = moderate_story_content(
@@ -168,10 +192,7 @@ class TestContentModerator:
         """When the classifier raises an exception, the function fails open (safe=True)."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.side_effect = RuntimeError(
-            "API unavailable"
-        )
+        mock_client = _mock_openai_client(side_effect=RuntimeError("API unavailable"))
 
         is_safe, reason = moderate_story_content(
             "Any story text.", age=8, client=mock_client
@@ -184,10 +205,7 @@ class TestContentModerator:
         """When classifier returns non-JSON, the function fails open."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            "not json at all"
-        )
+        mock_client = _mock_openai_client(_mock_openai_response("not json at all"))
 
         is_safe, reason = moderate_story_content(
             "Any story text.", age=8, client=mock_client
@@ -199,10 +217,28 @@ class TestContentModerator:
         """When classifier returns empty text, the function fails open."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response("")
+        mock_client = _mock_openai_client(_mock_openai_response(""))
 
         is_safe, reason = moderate_story_content(
+            "Any story text.", age=8, client=mock_client
+        )
+
+        assert is_safe is True
+
+    def test_content_filtered_response_fails_open(self):
+        """A finish_reason=content_filter block is treated as unverified.
+
+        On the default fail-open path that means the story passes (the keyword
+        layer already ran); the fail-closed tests cover the minor-protection
+        inversion.
+        """
+        from backend.utils.content_moderator import moderate_story_content
+
+        mock_client = _mock_openai_client(
+            _mock_openai_response("", finish_reason="content_filter")
+        )
+
+        is_safe, _ = moderate_story_content(
             "Any story text.", age=8, client=mock_client
         )
 
@@ -212,20 +248,21 @@ class TestContentModerator:
         """Empty story text returns safe without calling the client."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
 
         is_safe, reason = moderate_story_content("", age=5, client=mock_client)
 
         assert is_safe is True
-        mock_client.models.generate_content.assert_not_called()
+        mock_client.chat.completions.create.assert_not_called()
 
     def test_markdown_wrapped_json_parsed(self):
         """Classifier response wrapped in markdown code fences is handled."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '```json\n{"safe": false, "reason": "PII detected"}\n```'
+        mock_client = _mock_openai_client(
+            _mock_openai_response(
+                '```json\n{"safe": false, "reason": "PII detected"}\n```'
+            )
         )
 
         is_safe, reason = moderate_story_content(
@@ -249,16 +286,14 @@ class TestContentModerator:
         """The classifier prompt includes the correct age-band description."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '{"safe": true}'
-        )
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
 
         moderate_story_content("A story.", age=age, client=mock_client)
 
-        call_args = mock_client.models.generate_content.call_args
-        # call_args.kwargs is the kwargs dict; fall back to string representation
-        prompt_sent = call_args.kwargs.get("contents", "") or str(call_args)
+        call_args = mock_client.chat.completions.create.call_args
+        # The rubric prompt is the user message; fall back to str for safety.
+        messages = call_args.kwargs.get("messages", [])
+        prompt_sent = " ".join(m.get("content", "") for m in messages) or str(call_args)
         assert (
             expected_label in prompt_sent
         ), f"Expected age label '{expected_label}' not found in classifier prompt for age {age}"
@@ -298,9 +333,10 @@ class TestTwoLayerModeration:
         assert not keyword_flagged, "Keyword layer over-blocked subtle PII story"
 
         # LLM layer should catch the PII
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '{"safe": false, "reason": "Contains real school name and address"}'
+        mock_client = _mock_openai_client(
+            _mock_openai_response(
+                '{"safe": false, "reason": "Contains real school name and address"}'
+            )
         )
         is_safe, _ = moderate_story_content(subtle_story, age=8, client=mock_client)
         assert not is_safe, "LLM layer missed PII in story"
@@ -341,29 +377,25 @@ class TestChunkedModeration:
         from backend.utils.content_moderator import moderate_story_content
 
         long_story = "word " * 6000  # forces >1 chunk
-        mock_client = MagicMock()
         # First chunk classified safe, second chunk classified unsafe.
-        mock_client.models.generate_content.side_effect = [
-            _mock_gemini_response('{"safe": true}'),
-            _mock_gemini_response(
+        mock_client = _mock_openai_client(
+            _mock_openai_response('{"safe": true}'),
+            _mock_openai_response(
                 '{"safe": false, "reason": "graphic violence in finale"}'
             ),
-        ]
+        )
 
         is_safe, reason = moderate_story_content(long_story, age=14, client=mock_client)
 
         assert is_safe is False
         assert "violence" in reason
-        assert mock_client.models.generate_content.call_count >= 2
+        assert mock_client.chat.completions.create.call_count >= 2
 
     def test_long_safe_story_passes_all_chunks(self):
         from backend.utils.content_moderator import moderate_story_content
 
         long_story = "word " * 6000
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response(
-            '{"safe": true}'
-        )
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
 
         is_safe, reason = moderate_story_content(long_story, age=14, client=mock_client)
 
@@ -382,8 +414,7 @@ class TestFailClosed:
     def test_fail_closed_on_exception(self):
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.side_effect = RuntimeError("API down")
+        mock_client = _mock_openai_client(side_effect=RuntimeError("API down"))
 
         is_safe, reason = moderate_story_content(
             "Any story.", age=4, client=mock_client, fail_closed=True
@@ -395,8 +426,7 @@ class TestFailClosed:
     def test_fail_closed_on_empty_response(self):
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = _mock_gemini_response("")
+        mock_client = _mock_openai_client(_mock_openai_response(""))
 
         is_safe, _ = moderate_story_content(
             "Any story.", age=4, client=mock_client, fail_closed=True
@@ -404,12 +434,26 @@ class TestFailClosed:
 
         assert is_safe is False
 
+    def test_fail_closed_on_content_filter(self):
+        """A moderation-model content_filter block fails CLOSED for a minor."""
+        from backend.utils.content_moderator import moderate_story_content
+
+        mock_client = _mock_openai_client(
+            _mock_openai_response("", finish_reason="content_filter")
+        )
+
+        is_safe, reason = moderate_story_content(
+            "Any story.", age=4, client=mock_client, fail_closed=True
+        )
+
+        assert is_safe is False
+        assert reason == "moderation unavailable"
+
     def test_fail_open_remains_default(self):
         """Without fail_closed, a classifier error still fails open."""
         from backend.utils.content_moderator import moderate_story_content
 
-        mock_client = MagicMock()
-        mock_client.models.generate_content.side_effect = RuntimeError("API down")
+        mock_client = _mock_openai_client(side_effect=RuntimeError("API down"))
 
         is_safe, _ = moderate_story_content("Any story.", age=8, client=mock_client)
 
@@ -457,3 +501,89 @@ class TestSafeFallbackSegment:
         a["choices"].append({"id": "x", "text": "mutated"})
         b = build_safe_fallback_segment(segment_number=2)
         assert len(b["choices"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# MT-137: LLM moderator is decoupled from Gemini -> OpenAI
+# ---------------------------------------------------------------------------
+
+
+class TestOpenAIProviderDecoupling:
+    """The classifier must use the OpenAI client/model (OPENAI_API_KEY), and
+    must NOT depend on GEMINI_API_KEY (launch-gate ToS + resilience)."""
+
+    def _reset_client(self):
+        """Clear the lazily-cached module client so os.getenv is re-read."""
+        import backend.utils.content_moderator as cm
+
+        cm._client = None
+        return cm
+
+    def test_get_client_uses_openai_key_not_gemini(self, monkeypatch):
+        """_get_client builds from OPENAI_API_KEY via the OpenAI SDK builder."""
+        cm = self._reset_client()
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-openai")
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+        captured = {}
+
+        def fake_builder(api_key):
+            captured["api_key"] = api_key
+            return MagicMock(name="openai_client")
+
+        monkeypatch.setattr(cm, "_make_moderation_client", fake_builder)
+
+        client = cm._get_client()
+        assert client is not None
+        assert captured["api_key"] == "sk-test-openai"
+        cm._client = None  # don't leak the cached mock into other tests
+
+    def test_missing_openai_key_fails_closed_for_minor(self, monkeypatch):
+        """No OPENAI_API_KEY + fail_closed → treated as UNSAFE (no Gemini needed)."""
+        cm = self._reset_client()
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("GEMINI_API_KEY", "should-be-ignored")
+
+        is_safe, reason = cm.moderate_story_content(
+            "Any story.", age=4, fail_closed=True
+        )
+        assert is_safe is False
+        assert reason == "moderation unavailable"
+        cm._client = None
+
+    def test_missing_openai_key_fails_open_by_default(self, monkeypatch):
+        """No OPENAI_API_KEY + default posture → passes (keyword layer ran)."""
+        cm = self._reset_client()
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        is_safe, _ = cm.moderate_story_content("Any story.", age=30)
+        assert is_safe is True
+        cm._client = None
+
+    def test_request_uses_chat_completions_and_resolved_model(self, monkeypatch):
+        """The call goes through chat.completions.create with the OpenAI-shaped
+        kwargs (model + max_completion_tokens), not Gemini's generate_content."""
+        cm = self._reset_client()
+        monkeypatch.setenv("OPENAI_MODERATION_MODEL", "gpt-5-mini")
+
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
+        cm.moderate_story_content("A safe story.", age=7, client=mock_client)
+
+        create = mock_client.chat.completions.create
+        create.assert_called_once()
+        kwargs = create.call_args.kwargs
+        assert kwargs["model"] == "gpt-5-mini"
+        assert "max_completion_tokens" in kwargs
+        assert kwargs["messages"][-1]["role"] == "user"
+
+    def test_reasoning_effort_omitted_when_disabled(self, monkeypatch):
+        """OPENAI_MODERATION_REASONING_EFFORT=none omits the param (non-reasoning
+        override models reject it)."""
+        cm = self._reset_client()
+        monkeypatch.setenv("OPENAI_MODERATION_REASONING_EFFORT", "none")
+
+        mock_client = _mock_openai_client(_mock_openai_response('{"safe": true}'))
+        cm.moderate_story_content("A safe story.", age=7, client=mock_client)
+
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "reasoning_effort" not in kwargs

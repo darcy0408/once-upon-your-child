@@ -4,11 +4,25 @@ This is the second layer of output moderation, used after the fast keyword
 filter in app_helpers.py. It catches contextual and subtle safety violations
 that keyword matching cannot reliably detect.
 
+Provider (MT-137 launch-gate): this classifier runs on the SAME OpenAI client
+and model family already used for children's story TEXT
+(``services/openai_story_generator.py``), via ``OPENAI_API_KEY``. It was
+previously on ``gemini-2.5-flash-lite``, but sending a minor's story text to
+Gemini *for moderation* trips the very Gemini Additional Terms (no child-
+directed apps) that drove story text off Gemini in the first place. Routing
+moderation through OpenAI also removes a resilience trap: the moderator no
+longer depends on ``GEMINI_API_KEY``, so a missing/rotated Gemini key can no
+longer silently degrade moderation and push every minor's story into the safe
+fallback. The safety posture (fail-open by default, fail-closed for minors via
+``fail_closed=True``) is UNCHANGED — only the provider moved.
+
 Design principles:
-- Fail open: if the classifier errors, the story passes (keyword filter
-  already ran as the first layer).
+- Fail open by default: if the classifier errors, the story passes (the keyword
+  filter already ran as the first layer). Callers protecting minors pass
+  ``fail_closed=True`` to invert this to fail-CLOSED.
 - Age-band-aware: the classifier prompt is tailored to the child's age.
-- Fast and cheap: uses gemini-2.5-flash-lite, not the full story model.
+- Fast and cheap: uses a small OpenAI model (gpt-5-mini by default), classified
+  at low reasoning effort. Overridable via OPENAI_MODERATION_MODEL.
 - Classifies only; never modifies story text.
 """
 
@@ -18,7 +32,38 @@ import os
 
 logger = logging.getLogger(__name__)
 
-_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
+# Moderation runs on the same OpenAI model family as story text (gpt-5-mini).
+# Overridable via OPENAI_MODERATION_MODEL so a deployment can point moderation
+# at a different OpenAI model without touching story-text generation. Model IDs
+# are bare OpenAI slugs (e.g. "gpt-5-mini", "gpt-4.1-mini").
+_DEFAULT_MODERATION_MODEL = "gpt-5-mini"
+
+# Output-token budget for one classification call. The visible output is a
+# one-line JSON verdict, but gpt-5 is a reasoning family: the budget must also
+# cover hidden reasoning tokens or the response comes back empty (finish_reason
+# =length), which the moderator treats as "unverified" and — for a minor on the
+# fail-closed path — would needlessly route a good story into the safe fallback.
+# A generous default avoids that; overridable via OPENAI_MODERATION_MAX_TOKENS.
+_DEFAULT_MODERATION_MAX_TOKENS = 2048
+
+# Reasoning effort for the classification call. "low" keeps latency/cost down
+# while leaving enough budget to emit the JSON verdict (mirrors the story
+# generator's taste-test config). Set OPENAI_MODERATION_REASONING_EFFORT to
+# none/off/"" to omit the param entirely — required when overriding to a
+# non-reasoning model (e.g. gpt-4.1-mini) that rejects ``reasoning_effort``.
+_DEFAULT_MODERATION_REASONING_EFFORT = "low"
+
+# Sentinels that mean "send no reasoning_effort param" (mirrors
+# openai_story_generator._NO_REASONING_SENTINELS).
+_NO_REASONING_SENTINELS = frozenset({"", "none", "off", "default"})
+
+# Short system framing; the detailed rubric is built per-chunk as the user
+# message. Reinforces JSON-only output at the system level.
+_MODERATION_SYSTEM_PROMPT = (
+    "You are a strict child-content safety classifier. You never write or "
+    "modify stories — you only judge the text you are given and reply with the "
+    "exact JSON object requested, and nothing else."
+)
 
 # Upper age bound of the Sprout band (ages 3-5). The interactive story path
 # fails CLOSED for this band: if the LLM classifier errors, the segment is
@@ -78,16 +123,94 @@ def build_safe_fallback_segment(
 _client = None
 
 
+def _make_moderation_client(api_key: str):
+    """Lazily import the OpenAI SDK and build a client. Patched in tests.
+
+    Mirrors ``openai_story_generator._make_openai_client`` so the moderator uses
+    the exact same SDK/client construction as story-text generation. Kept as a
+    module function (not an inline import) so unit tests can stub the SDK without
+    the ``openai`` package being installed.
+    """
+    import openai  # lazy: see module docstring
+
+    return openai.OpenAI(api_key=api_key)
+
+
 def _get_client():
     global _client
     if _client is None:
-        from google import genai
-
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("GEMINI_API_KEY not set")
-        _client = genai.Client(api_key=api_key)
+            raise ValueError("OPENAI_API_KEY not set")
+        _client = _make_moderation_client(api_key)
     return _client
+
+
+def _resolve_moderation_model() -> str:
+    """OpenAI model slug for the classifier, overridable via env."""
+    return os.getenv("OPENAI_MODERATION_MODEL") or _DEFAULT_MODERATION_MODEL
+
+
+def _resolve_moderation_max_tokens() -> int:
+    """Output-token budget for one call, overridable via env."""
+    raw = os.getenv("OPENAI_MODERATION_MAX_TOKENS")
+    if not raw:
+        return _DEFAULT_MODERATION_MAX_TOKENS
+    try:
+        value = int(raw)
+        return value if value > 0 else _DEFAULT_MODERATION_MAX_TOKENS
+    except (TypeError, ValueError):
+        logger.warning(
+            "OPENAI_MODERATION_MAX_TOKENS=%r is not a valid int; using %s.",
+            raw,
+            _DEFAULT_MODERATION_MAX_TOKENS,
+        )
+        return _DEFAULT_MODERATION_MAX_TOKENS
+
+
+def _resolve_moderation_reasoning_effort() -> str | None:
+    """Reasoning effort for the call, or None to omit the param entirely.
+
+    Returns None when OPENAI_MODERATION_REASONING_EFFORT is a no-reasoning
+    sentinel so a non-reasoning override model doesn't 400 on the unsupported
+    ``reasoning_effort`` argument.
+    """
+    raw = os.getenv("OPENAI_MODERATION_REASONING_EFFORT")
+    if raw is None:
+        return _DEFAULT_MODERATION_REASONING_EFFORT
+    effort = raw.strip().lower()
+    if effort in _NO_REASONING_SENTINELS:
+        return None
+    return effort
+
+
+def _extract_classification_text(choice) -> str:
+    """Pull the classifier's raw text out of an OpenAI Chat Completions choice.
+
+    Returns "" when the response was refused / content-filtered / empty so the
+    caller treats it as unverified (fail-open or fail-closed per the flag) —
+    matching the prior Gemini behaviour of an empty response.
+    """
+    if choice is None:
+        return ""
+    if getattr(choice, "finish_reason", None) == "content_filter":
+        # The moderation model itself blocked the text. Treat as unverified
+        # (not an auto-pass): under fail_closed this correctly blocks; on the
+        # legacy fail-open path it preserves the prior "empty -> pass" posture.
+        logger.warning(
+            "content_moderator: classifier response content-filtered; "
+            "treating as unverified."
+        )
+        return ""
+    message = getattr(choice, "message", None)
+    if getattr(message, "refusal", None):
+        logger.warning(
+            "content_moderator: classifier returned a structured refusal; "
+            "treating as unverified."
+        )
+        return ""
+    content = getattr(message, "content", None) or ""
+    return content.strip()
 
 
 def _age_band_label(age: int) -> str:
@@ -194,8 +317,8 @@ def moderate_story_content(
     Args:
         story_text: The full generated story text.
         age: The child's age (used to set age-appropriate safety thresholds).
-        client: Optional google.genai.Client instance. If None, uses the
-            module-level client initialised from GEMINI_API_KEY.
+        client: Optional OpenAI client instance (openai.OpenAI). If None, uses
+            the module-level client initialised from OPENAI_API_KEY.
         fail_closed: When True, a classifier error returns (False, <reason>)
             instead of (True, "") — i.e. the content is treated as UNSAFE
             when the classifier could not vet it. The interactive Sprout-band
@@ -278,17 +401,21 @@ def _classify_chunk(
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=prompt,
-        )
-        raw = ""
-        if response and hasattr(response, "text") and response.text:
-            raw = response.text.strip()
-        elif response and hasattr(response, "candidates") and response.candidates:
-            candidate = response.candidates[0]
-            if hasattr(candidate, "content") and candidate.content.parts:
-                raw = candidate.content.parts[0].text.strip()
+        kwargs = {
+            "model": _resolve_moderation_model(),
+            "max_completion_tokens": _resolve_moderation_max_tokens(),
+            "messages": [
+                {"role": "system", "content": _MODERATION_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        reasoning_effort = _resolve_moderation_reasoning_effort()
+        if reasoning_effort is not None:
+            kwargs["reasoning_effort"] = reasoning_effort
+
+        response = client.chat.completions.create(**kwargs)
+        choice = (getattr(response, "choices", None) or [None])[0]
+        raw = _extract_classification_text(choice)
 
         if not raw:
             logger.warning(
