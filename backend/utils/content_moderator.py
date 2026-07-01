@@ -71,6 +71,13 @@ _MODERATION_SYSTEM_PROMPT = (
 # bands keep the deliberate fail-open behaviour (the keyword filter ran first).
 SPROUT_MAX_AGE = 5
 
+# Upper age bound of "still a minor". The interactive story path fails CLOSED
+# for every minor band (matching the main /generate-story path in
+# story_tasks.py, where ``_mod_age <= 17`` fails closed): a classifier outage
+# routes the segment to SAFE_FALLBACK_SEGMENT rather than serving unvetted text
+# to a child. Only true adults (18+) keep the fail-open behaviour.
+MINOR_MAX_AGE = 17
+
 # Generic, always-safe interactive segment served when moderation fails closed
 # for the Sprout band, or when a generated segment is flagged. Deliberately
 # gentle, choice-bearing, and free of any custom/free-text input so it cannot
@@ -106,16 +113,47 @@ def is_sprout_band(age) -> bool:
         return True
 
 
+def is_minor_band(age) -> bool:
+    """True if *age* is a minor (<=17) and so should fail CLOSED on moderation.
+
+    Mirrors the main story path (``story_tasks.py`` ``_mod_age <= 17``): any
+    child, not just Sprout, gets a safe fallback rather than unvetted text when
+    the LLM classifier is unavailable. An unknown/unparseable age is treated as
+    a minor (most protected).
+    """
+    try:
+        return int(age) <= MINOR_MAX_AGE
+    except (TypeError, ValueError):
+        # Unknown age — treat as the most protected (fail closed).
+        return True
+
+
 def build_safe_fallback_segment(
-    segment_number: int = 1, is_opening: bool = True
+    segment_number: int = 1, is_opening: bool = True, is_ending: bool = False
 ) -> dict:
     """Return a fresh copy of SAFE_FALLBACK_SEGMENT shaped for the caller.
 
     A copy is returned each call so callers can mutate it freely (e.g. when
     persisting a StorySegment record) without corrupting the module template.
+
+    When *is_ending* is True the fallback is shaped as a story ENDING: gentle
+    safe content but with NO choices and flagged terminal. This matters when
+    substituting for a flagged/unverifiable FINAL segment — without it, the
+    choice-bearing default fallback would resurrect a completed story into one
+    that appears to keep going.
     """
     segment = json.loads(json.dumps(SAFE_FALLBACK_SEGMENT))
     segment["segment_number"] = segment_number
+    if is_ending:
+        segment["title"] = "A Gentle Ending"
+        segment["content"] = (
+            "The little hero takes a slow, deep breath. The sun is warm and the "
+            "garden is calm and safe. It has been a good adventure — and now it "
+            "is time to rest. The end."
+        )
+        segment["output_type"] = "ENDING"
+        segment["choices"] = []
+        segment["is_ending"] = True
     return segment
 
 

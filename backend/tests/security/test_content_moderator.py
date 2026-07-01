@@ -460,6 +460,41 @@ class TestFailClosed:
         assert is_safe is True
 
 
+class TestIsMinorBand:
+    """is_minor_band(age) drives the interactive path's fail-closed decision:
+    every minor (<=17), plus unknown/unparseable ages, must fail CLOSED —
+    matching the main story path (story_tasks.py, ``_mod_age <= 17``). Only a
+    true adult (18+) keeps the deliberate fail-open behaviour."""
+
+    def test_minor_ages_fail_closed(self):
+        from backend.utils.content_moderator import is_minor_band
+
+        for age in (3, 5, 6, 10, 14, 17):
+            assert is_minor_band(age) is True, f"age {age} should fail closed"
+
+    def test_adult_ages_fail_open(self):
+        from backend.utils.content_moderator import is_minor_band
+
+        for age in (18, 25, 40):
+            assert is_minor_band(age) is False, f"age {age} should fail open"
+
+    def test_unknown_age_fails_closed(self):
+        from backend.utils.content_moderator import is_minor_band
+
+        assert is_minor_band(None) is True
+        assert is_minor_band("not-a-number") is True
+
+    def test_closes_the_6_to_17_gap(self):
+        """Regression guard: ages 6-17 previously failed OPEN on the interactive
+        route because only ``is_sprout_band`` (<=5) failed closed. ``is_minor_band``
+        closes that gap while ``is_sprout_band`` still (correctly) excludes them."""
+        from backend.utils.content_moderator import is_minor_band, is_sprout_band
+
+        for age in (6, 9, 12, 15, 17):
+            assert is_sprout_band(age) is False  # the old, narrower guard
+            assert is_minor_band(age) is True  # the fix
+
+
 # ---------------------------------------------------------------------------
 # F-18: safe-fallback segment shape
 # ---------------------------------------------------------------------------
@@ -478,6 +513,18 @@ class TestSafeFallbackSegment:
         for choice in seg["choices"]:
             assert choice.get("id")
             assert choice.get("text")
+
+    def test_fallback_ending_segment_has_no_choices(self):
+        """is_ending=True yields a TERMINAL fallback (no choices, is_ending set)
+        so failing closed on a flagged FINAL segment cannot resurrect a
+        completed pick-a-path story into a choose-again one."""
+        from backend.utils.content_moderator import build_safe_fallback_segment
+
+        seg = build_safe_fallback_segment(segment_number=4, is_ending=True)
+        assert seg["choices"] == []
+        assert seg["is_ending"] is True
+        # The default (mid-story) fallback still carries choices.
+        assert build_safe_fallback_segment(segment_number=4)["choices"]
 
     def test_fallback_segment_has_required_fields(self):
         from backend.utils.content_moderator import build_safe_fallback_segment

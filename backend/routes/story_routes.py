@@ -1684,13 +1684,16 @@ def create_story_blueprint(
             # Two-layer output moderation — keyword filter, then LLM classifier
             # if the keyword layer didn't already flag.
             # M-4: the LLM contextual classifier is wired into the interactive
-            # path and FAILS CLOSED for the Sprout band (ages 3-5) — when the
-            # classifier errors for a Sprout child the segment is treated as
-            # unsafe and replaced with a safe fallback rather than served
-            # unmoderated. Older bands keep the deliberate fail-open behaviour.
+            # path and FAILS CLOSED for every minor band (ages <=17) — when the
+            # classifier errors for a child the segment is treated as unsafe and
+            # replaced with a safe fallback rather than served unmoderated. This
+            # matches the main /generate-story path (story_tasks.py, _mod_age
+            # <= 17); only true adults (18+) keep the fail-open behaviour. It
+            # matters most here because free-text custom choices can steer the
+            # continuation (Finding H-3).
             from backend.utils.content_moderator import (
                 build_safe_fallback_segment,
-                is_sprout_band,
+                is_minor_band,
                 moderate_story_content,
             )
 
@@ -1730,7 +1733,7 @@ def create_story_blueprint(
             else:
                 try:
                     llm_safe, llm_reason = moderate_story_content(
-                        moderation_input, age, fail_closed=is_sprout_band(age)
+                        moderation_input, age, fail_closed=is_minor_band(age)
                     )
                     if not llm_safe:
                         flagged = True
@@ -1740,18 +1743,23 @@ def create_story_blueprint(
                 except Exception as moderation_err:
                     # Defensive: moderate_story_content already handles its own
                     # errors, but if something unexpected escapes, fail closed
-                    # for Sprout so the youngest children never see unvetted text.
+                    # for any minor so no child sees unvetted text.
                     logger.warning(
                         f"Interactive story opening LLM moderation error ({moderation_err!r})"
                     )
-                    if is_sprout_band(age):
+                    if is_minor_band(age):
                         flagged = True
 
-            # When the opening segment is unsafe (or unverifiable for Sprout),
+            # When the opening segment is unsafe (or unverifiable for a minor),
             # serve a safe fallback segment instead of the generated content.
             # F-02: also replace choices so unsafe button labels are never shown.
+            # If the opening already completes the story, keep the fallback an
+            # ending (no choices) so we never resurrect a finished story.
             if flagged:
-                fallback = build_safe_fallback_segment(segment_number=1)
+                fallback = build_safe_fallback_segment(
+                    segment_number=1,
+                    is_ending=bool(result.get("is_completed")),
+                )
                 result["segment"]["content"] = fallback["content"]
                 result["segment"]["title"] = fallback["title"]
                 result["segment"]["image_description"] = fallback["image_description"]
@@ -1880,14 +1888,15 @@ def create_story_blueprint(
             # Two-layer output moderation — same as the main story path.
             # Layer 1: fast age-band keyword filter.
             # Layer 2: LLM contextual classifier (only if Layer 1 didn't flag).
-            # M-4: the classifier FAILS CLOSED for the Sprout band (ages 3-5) —
-            # a classifier error means the segment is replaced with a safe
+            # M-4: the classifier FAILS CLOSED for every minor band (ages <=17)
+            # — a classifier error means the segment is replaced with a safe
             # fallback rather than served unmoderated. This is important now
             # that free-text custom choices can steer the continuation
-            # (Finding H-3). Older bands keep the deliberate fail-open path.
+            # (Finding H-3). Matches story_tasks.py (_mod_age <= 17); only true
+            # adults (18+) keep the fail-open path.
             from backend.utils.content_moderator import (
                 build_safe_fallback_segment,
-                is_sprout_band,
+                is_minor_band,
                 moderate_story_content,
             )
 
@@ -1930,7 +1939,7 @@ def create_story_blueprint(
                     llm_safe, llm_reason = moderate_story_content(
                         moderation_input,
                         story_age,
-                        fail_closed=is_sprout_band(story_age),
+                        fail_closed=is_minor_band(story_age),
                     )
                     if not llm_safe:
                         flagged = True
@@ -1938,20 +1947,24 @@ def create_story_blueprint(
                             f"Interactive continuation flagged by LLM moderator: {llm_reason!r}"
                         )
                 except Exception as moderation_err:
-                    # Defensive: fail closed for Sprout if anything unexpected escapes.
+                    # Defensive: fail closed for any minor if anything unexpected escapes.
                     logger.warning(
                         f"Interactive continuation LLM moderation error ({moderation_err!r})"
                     )
-                    if is_sprout_band(story_age):
+                    if is_minor_band(story_age):
                         flagged = True
 
-            # When the continuation is unsafe (or unverifiable for Sprout),
+            # When the continuation is unsafe (or unverifiable for a minor),
             # serve a safe fallback segment instead of the generated content.
             # F-02: also replace choices so unsafe button labels are never shown.
+            # A completed continuation (the story's final segment) stays an
+            # ending (no choices) so failing closed can't turn a finished story
+            # back into a choose-again one.
             if flagged:
                 fallback = build_safe_fallback_segment(
                     segment_number=result["segment"].get("segment_number", 1),
                     is_opening=False,
+                    is_ending=bool(result.get("is_completed")),
                 )
                 result["segment"]["content"] = fallback["content"]
                 result["segment"]["title"] = fallback["title"]
