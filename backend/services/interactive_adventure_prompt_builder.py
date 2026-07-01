@@ -440,6 +440,21 @@ SAFETY RULES:
         age_impossible = impossible_elements.get(
             age_band, "Something magical and physics-defying."
         )
+        # Audit follow-up: don't FORCE fantasy onto realistic mature themes (a
+        # teen "risky secret" kept becoming a magical humming thread). Make
+        # imaginative elements OPTIONAL at 13+; younger bands keep the prompt.
+        if age >= 13:
+            impossible_line = (
+                "- **IMAGINATIVE ELEMENTS**: OPTIONAL — include magical/impossible "
+                "elements ONLY if the theme genuinely invites them; a fully grounded, "
+                "realistic adventure is equally valid. (If used, inspiration only — do "
+                f"NOT copy: {age_impossible})"
+            )
+        else:
+            impossible_line = (
+                "- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact "
+                f"phrases): {age_impossible}"
+            )
 
         # Age-appropriate default sensory palettes
         default_sensories = {
@@ -496,7 +511,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
 {tool_line}
-- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
+{impossible_line}
 - **COMPANIONS**: {companion_context} (Must affect the story).
 {mood_rules}
 
@@ -511,16 +526,16 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
-- **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
+- **Safety**: No violence/harm. Keep the tone warm and age-appropriate. NEVER use craft/therapy terminology in the prose (no "coping action/skill", "arc", "story beat", "regulate", "lesson") — characters live the moment, they do not narrate the technique.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 {cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}
 {cls.CO_AUTHOR_INSTRUCTION.replace("{name}", child_name) if age >= 15 else ""}
 
 **Opening Segment 1/{path_depth}**:
-1. Begin with sensory details - natural storybook opening.
-2. Introduce gentle challenge or mystery.
-3. Establish magical surprise/motif.
+1. Open with a FRESH entry point — do NOT begin with the hero arriving at or climbing into the setting, and do NOT open with a "smells like / tastes like ..." line. Start in motion, mid-action, in dialogue, or somewhere unexpected; vary it every time.
+2. Introduce a gentle challenge or mystery.
+3. {("Optionally weave in an intriguing element — magical OR grounded, whatever the theme genuinely invites; a realistic adventure is fine." if age >= 13 else "Establish a magical surprise or motif.")}
 4. End with {choice_count} distinct, exciting choices.
 
 **JSON Output**:
@@ -716,7 +731,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 {arc_escalation}
 {empathy_moment}
-- **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
+- **Safety**: No violence/harm. Keep the tone warm and age-appropriate. NEVER use craft/therapy terminology in the prose (no "coping action/skill", "arc", "story beat", "regulate", "lesson") — characters live the moment, they do not narrate the technique.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 {cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}

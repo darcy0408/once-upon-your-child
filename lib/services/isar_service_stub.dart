@@ -10,6 +10,50 @@ import '../models/local/chronicle_local.dart';
 import '../models/local/chapter_memory_local.dart';
 import '../data/isar/avatar_cache_entry.dart';
 
+// ---------------------------------------------------------------------------
+// Shared write-safety helpers for every SharedPreferences-backed stub below.
+//
+// BUG: each put/delete did getString -> decode -> mutate -> setString with no
+// serialization, so concurrent operations on the same key could each read the
+// same snapshot and the later setString would silently drop the earlier write.
+// setString can also throw QuotaExceededError once localStorage (~5 MB) fills.
+// [_synchronized] serializes the full read-modify-write cycle per key, and
+// [_quotaSafeSetString] evicts the oldest entry (lowest id) and retries on a
+// quota failure instead of throwing.
+// ---------------------------------------------------------------------------
+final Map<String, Future<void>> _writeLocks = {};
+
+Future<T> _synchronized<T>(String key, Future<T> Function() action) {
+  final prev = _writeLocks[key] ?? Future<void>.value();
+  final result = prev.then((_) => action());
+  _writeLocks[key] = result.then((_) {}, onError: (_) {});
+  return result;
+}
+
+Future<void> _quotaSafeSetString(
+    SharedPreferences prefs, String key, List<dynamic> list) async {
+  while (true) {
+    try {
+      await prefs.setString(key, json.encode(list));
+      return;
+    } catch (_) {
+      // localStorage full — drop the oldest entry (lowest id) and retry. If
+      // nothing remains to evict, give up quietly rather than throw.
+      if (list.isEmpty) return;
+      int oldestIdx = 0;
+      int? oldestId;
+      for (int i = 0; i < list.length; i++) {
+        final id = ((list[i] as Map<String, dynamic>)['id'] as int?) ?? 0;
+        if (oldestId == null || id < oldestId) {
+          oldestId = id;
+          oldestIdx = i;
+        }
+      }
+      list.removeAt(oldestIdx);
+    }
+  }
+}
+
 // Create a stub Isar type that matches the API surface we need
 class Isar {
   CharacterLocalsStub get characterLocals => CharacterLocalsStub();
@@ -30,7 +74,7 @@ class CharacterLocalsStub {
 
   CharacterWhereStub where() => CharacterWhereStub();
 
-  Future<int> put(CharacterLocal character) async {
+  Future<int> put(CharacterLocal character) => _synchronized(_storageKey, () async {
     final prefs = await SharedPreferences.getInstance();
     final String? charactersJson = prefs.getString(_storageKey);
     List<dynamic> characters = charactersJson != null ? json.decode(charactersJson) : [];
@@ -42,7 +86,7 @@ class CharacterLocalsStub {
 
     // Find and update or add
     int index = characters.indexWhere((c) => c['id'] == character.id || (character.characterId.isNotEmpty && c['characterId'] == character.characterId));
-    
+
     final charData = {
       'id': character.id,
       'characterId': character.characterId,
@@ -60,11 +104,11 @@ class CharacterLocalsStub {
       characters.add(charData);
     }
 
-    await prefs.setString(_storageKey, json.encode(characters));
+    await _quotaSafeSetString(prefs, _storageKey, characters);
     return character.id;
-  }
+  });
 
-  Future<bool> delete(int id) async {
+  Future<bool> delete(int id) => _synchronized(_storageKey, () async {
     final prefs = await SharedPreferences.getInstance();
     final String? charactersJson = prefs.getString(_storageKey);
     if (charactersJson == null) return false;
@@ -74,11 +118,11 @@ class CharacterLocalsStub {
     characters.removeWhere((c) => c['id'] == id);
 
     if (characters.length != initialLength) {
-      await prefs.setString(_storageKey, json.encode(characters));
+      await _quotaSafeSetString(prefs, _storageKey, characters);
       return true;
     }
     return false;
-  }
+  });
 }
 
 class CharacterWhereStub {
@@ -162,7 +206,7 @@ class ChronicleLocalsStub {
 
   ChronicleFilterStub filter() => ChronicleFilterStub();
 
-  Future<int> put(ChronicleLocal chronicle) async {
+  Future<int> put(ChronicleLocal chronicle) => _synchronized(_key, () async {
     final prefs = await SharedPreferences.getInstance();
     final List<dynamic> list =
         json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
@@ -177,9 +221,9 @@ class ChronicleLocalsStub {
     } else {
       list.add(data);
     }
-    await prefs.setString(_key, json.encode(list));
+    await _quotaSafeSetString(prefs, _key, list);
     return chronicle.id;
-  }
+  });
 
   static Map<String, dynamic> _toMap(ChronicleLocal c) => {
         'id': c.id,
@@ -284,7 +328,7 @@ class ChapterMemoryLocalsStub {
 
   ChapterMemoryFilterStub filter() => ChapterMemoryFilterStub();
 
-  Future<int> put(ChapterMemoryLocal m) async {
+  Future<int> put(ChapterMemoryLocal m) => _synchronized(_key, () async {
     final prefs = await SharedPreferences.getInstance();
     final List<dynamic> list =
         json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
@@ -299,9 +343,9 @@ class ChapterMemoryLocalsStub {
     } else {
       list.add(data);
     }
-    await prefs.setString(_key, json.encode(list));
+    await _quotaSafeSetString(prefs, _key, list);
     return m.id;
-  }
+  });
 
   static Map<String, dynamic> _toMap(ChapterMemoryLocal m) => {
         'id': m.id,
@@ -371,7 +415,7 @@ class AvatarCacheEntrysStub {
   AvatarCacheWhereStub where() => AvatarCacheWhereStub();
   AvatarCacheFilterStub filter() => AvatarCacheFilterStub();
 
-  Future<int> put(AvatarCacheEntry entry) async {
+  Future<int> put(AvatarCacheEntry entry) => _synchronized(_key, () async {
     final prefs = await SharedPreferences.getInstance();
     final list = _decode(prefs.getString(_key));
     if (entry.id == 0 || entry.id == -9223372036854775808) {
@@ -384,30 +428,30 @@ class AvatarCacheEntrysStub {
     } else {
       list.add(data);
     }
-    await prefs.setString(_key, json.encode(list));
+    await _quotaSafeSetString(prefs, _key, list);
     return entry.id;
-  }
+  });
 
   Future<int> count() async {
     final prefs = await SharedPreferences.getInstance();
     return _decode(prefs.getString(_key)).length;
   }
 
-  Future<int> clear() async {
+  Future<int> clear() => _synchronized(_key, () async {
     final prefs = await SharedPreferences.getInstance();
     final n = _decode(prefs.getString(_key)).length;
     await prefs.remove(_key);
     return n;
-  }
+  });
 
-  Future<int> deleteAll(List<int> ids) async {
+  Future<int> deleteAll(List<int> ids) => _synchronized(_key, () async {
     final prefs = await SharedPreferences.getInstance();
     final list = _decode(prefs.getString(_key));
     final before = list.length;
     list.removeWhere((e) => ids.contains(e['id'] as int?));
-    await prefs.setString(_key, json.encode(list));
+    await _quotaSafeSetString(prefs, _key, list);
     return before - list.length;
-  }
+  });
 
   static List<dynamic> _decode(String? raw) =>
       raw != null ? json.decode(raw) as List<dynamic> : [];

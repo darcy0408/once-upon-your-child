@@ -95,7 +95,14 @@ class TestPromptContractsAcrossAgesAndCategories:
         assert "Jordan" in prompt
         assert "ride a dragon" in prompt
         assert "make friends" in prompt
-        assert f"{low}-{high}" in prompt
+        if age <= 5:
+            # Sprout: picture-book length consistent with the 300-word ceiling,
+            # not the (contradictory) regular-band range that used to print
+            # right next to "HARD LIMIT: do not exceed 300 words total".
+            assert "do not exceed 300 words" in prompt
+            assert f"{low}-{high}" not in prompt
+        else:
+            assert f"{low}-{high}" in prompt
         assert "Every character/pet listed above MUST be in the story" in prompt
         assert "include it as a concrete scene or outcome" in prompt
 

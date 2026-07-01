@@ -16,18 +16,29 @@ from backend.services.interactive_adventure_service import InteractiveAdventureS
 
 @pytest.fixture
 def mock_genai_client():
-    with patch("google.genai.Client") as mock:
-        client = MagicMock()
-        mock.return_value = client
-        yield client
+    """Provider-agnostic stub for the interactive segment generator.
+
+    The service no longer calls Gemini (MT-137 — a child's data must not go to
+    Gemini); it generates segments via the ToS-safe provider chain
+    (``_generate_text``). To keep the existing tests unchanged, this fixture
+    patches ``_generate_text`` to return whatever text the test assigns via the
+    familiar ``mock_genai_client.models.generate_content.return_value.text``
+    shape.
+    """
+    holder = MagicMock()
+    with patch.object(
+        InteractiveAdventureService,
+        "_generate_text",
+        side_effect=lambda prompt: holder.models.generate_content.return_value.text,
+    ):
+        yield holder
 
 
 @pytest.fixture
 def interactive_service(mock_genai_client):
-    with patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}):
-        service = InteractiveAdventureService()
-        service.image_generator = MagicMock()
-        return service
+    service = InteractiveAdventureService()
+    service.image_generator = MagicMock()
+    return service
 
 
 def test_create_story_success(

@@ -22,6 +22,26 @@ class IsarService {
     _isar = isar;
   }
 
+  /// Test seam for the sync dedup lookup. The underlying
+  /// `isar.characterLocals.filter().characterIdEqualTo().findFirst()` uses
+  /// generated Isar extension methods that mocktail cannot stub, so tests
+  /// override this to control (or bypass) the lookup. Returns the existing
+  /// local row id for [characterId], or null if there is no prior row.
+  @visibleForTesting
+  static Future<int?> Function(Isar isar, String characterId)
+      findExistingCharacterId = _defaultFindExistingCharacterId;
+
+  static Future<int?> _defaultFindExistingCharacterId(
+    Isar isar,
+    String characterId,
+  ) async {
+    final existing = await isar.characterLocals
+        .filter()
+        .characterIdEqualTo(characterId)
+        .findFirst();
+    return existing?.id;
+  }
+
   static Future<Isar> getInstance() async {
     if (_isar != null) return _isar!;
 
@@ -78,6 +98,18 @@ class IsarService {
     await isar.writeTxn(() async {
       for (final charJson in charactersJson) {
         final localChar = CharacterLocal.fromJson(charJson);
+        // Isar.put keys on the auto-increment `id`, which fromJson leaves unset.
+        // characterId is a NON-unique index, so without copying the existing
+        // row's id forward every sync would insert a duplicate. Look up the
+        // existing row by characterId and reuse its id so put() updates in
+        // place. Mirrors the story path in OfflineStoryService.saveStory.
+        if (localChar.characterId.isNotEmpty) {
+          final existingId =
+              await findExistingCharacterId(isar, localChar.characterId);
+          if (existingId != null) {
+            localChar.id = existingId;
+          }
+        }
         await isar.characterLocals.put(localChar);
       }
     });

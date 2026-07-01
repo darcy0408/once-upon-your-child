@@ -80,14 +80,26 @@ class TestAdvancedStoryEngine:
     # AGE-APPROPRIATE WORD COUNTS
     # ========================================================================
 
-    def test_word_count_young_child(self, engine):
-        """Test 5-year-old gets age-appropriate word count (650-900)"""
+    def test_word_count_sprout_is_picture_book(self, engine):
+        """Sprout (age <= 5) must get a picture-book length consistent with the
+        300-word ceiling — NOT the contradictory regular-band 650-900 range that
+        used to sit right next to "HARD LIMIT: do not exceed 300 words total"."""
         prompt = engine.generate_enhanced_prompt(
             character="Luna", theme="Adventure", age=5
         )
 
-        # Should specify 650-900 word range for 5-7 age band, medium length
-        assert "650-900 words" in prompt or "650" in prompt and "900" in prompt
+        # The stated Word Count must agree with the Sprout ceiling, not fight it.
+        assert "650-900 words" not in prompt
+        assert "do not exceed 300 words" in prompt
+
+    def test_word_count_early_reader(self, engine):
+        """Age 6-7 (5-7 band, above the Sprout picture-book clamp) gets the
+        650-900 medium word range."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Luna", theme="Adventure", age=6
+        )
+
+        assert "650-900 words" in prompt or ("650" in prompt and "900" in prompt)
 
     def test_word_count_teen(self, engine):
         """Test 15-year-old gets age-appropriate word count (3000-4200)"""

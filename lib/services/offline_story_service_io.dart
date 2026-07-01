@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 
+import '../models.dart';
 import '../models/local/story_local_io.dart';
 
 class OfflineStoryService {
@@ -110,6 +111,41 @@ class OfflineStoryService {
         .isCompletedEqualTo(true)
         .sortByCreatedAtDesc()
         .findAll();
+  }
+
+  /// Build a StoryLocal from raw interactive-progress fields and upsert it.
+  ///
+  /// Lets shared UI code persist progress without referencing the io-only
+  /// interactive columns (segment number, inventory, state, tone, length) that
+  /// the web StoryLocal stub does not define. The web stub mirrors this method
+  /// with a partial implementation.
+  Future<void> saveInteractiveProgressFields({
+    required String storyId,
+    required String title,
+    required String theme,
+    required String tone,
+    required String length,
+    required int currentSegmentNumber,
+    required bool isCompleted,
+    required DateTime createdAt,
+    List<InventoryItemData>? inventory,
+    StoryStateData? state,
+    List<Character>? characters,
+  }) async {
+    final story = StoryLocal.fromInteractiveStory(
+      storyId: storyId,
+      title: title,
+      theme: theme,
+      tone: tone,
+      length: length,
+      currentSegmentNumber: currentSegmentNumber,
+      isCompleted: isCompleted,
+      createdAt: createdAt,
+      inventory: inventory,
+      state: state,
+      characters: characters,
+    );
+    await saveInteractiveProgress(story);
   }
 
   /// Save or update interactive story progress

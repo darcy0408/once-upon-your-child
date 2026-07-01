@@ -87,23 +87,29 @@ class TestCinematicFeatures(unittest.TestCase):
         character_name = "Leo"
         theme = "The Quick Adventure"
 
+        # Default age is 5 (Sprout), whose word count is page-based and capped
+        # at the ≤300-word picture-book ceiling (short=8, medium=10, long=12
+        # pages × 12-25 words/page). The length tier must still move the count,
+        # and the stated range must AGREE with the 300 ceiling rather than
+        # contradict it as the old regular-band ranges did.
+
         # Test 'quick' length
         prompt_quick = self.engine.generate_enhanced_prompt(
             character=character_name, theme=theme, story_length="quick"
         )
-        self.assertIn("Approximately 450-650 words", prompt_quick)
+        self.assertIn("Approximately 96-200 words", prompt_quick)
 
         # Test 'epic' length
         prompt_epic = self.engine.generate_enhanced_prompt(
             character=character_name, theme=theme, story_length="epic"
         )
-        self.assertIn("Approximately 900-1200 words", prompt_epic)
+        self.assertIn("Approximately 144-300 words", prompt_epic)
 
         # Test 'standard' (default) length
         prompt_standard = self.engine.generate_enhanced_prompt(
             character=character_name, theme=theme, story_length="standard"
         )
-        self.assertIn("Approximately 650-900 words", prompt_standard)
+        self.assertIn("Approximately 120-250 words", prompt_standard)
 
 
 if __name__ == "__main__":

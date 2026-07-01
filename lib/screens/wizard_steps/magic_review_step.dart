@@ -65,6 +65,14 @@ class MagicReviewStep extends ConsumerStatefulWidget {
 
 class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   bool _isGenerating = false;
+  // Double-submit guard: set synchronously at the very top of
+  // _launchStoryCreation, BEFORE the first await. _isGenerating only flips true
+  // after several awaits (getCountdownCount → getRecentFeeling →
+  // isUsingOwnApiKey), so a 2nd tap during that window used to slip past the
+  // guard and start a 2nd Celery task + 2nd screen. This bridges the gap until
+  // _isGenerating takes over. Reset on every abort/error/finally path so a
+  // failed attempt never permanently locks the Create-Story button.
+  bool _launchInProgress = false;
   String? _generationError;
   late String _loadingStatus;
 
@@ -273,13 +281,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
   /// Shows a 3-2-1 countdown (first 3 launches) then delegates to [_doLaunchStoryCreation].
   void _launchStoryCreation() async {
-    if (_showCountdown || _isGenerating) return;
+    if (_showCountdown || _isGenerating || _launchInProgress) return;
     if (!widget.wizardData.isComplete) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please complete all steps first!'),
           backgroundColor: AppColors.warning));
       return;
     }
+    // Synchronously claim the launch BEFORE any await so a rapid 2nd tap is
+    // rejected by the guard above. Plain assignment (no setState) — this flag
+    // only gates re-entry; the loader UI stays driven by _isGenerating so the
+    // 3-2-1 countdown screen is not pre-empted by the loading view.
+    _launchInProgress = true;
     // Clear the wizard draft — the user has committed to launching a story.
     unawaited(clearWizardDraft());
     // Stop any in-flight TTS (e.g. the Sprout recap narration) before the
@@ -352,6 +365,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
     setState(() {
       _isGenerating = true;
+      // Hand the double-submit guard over to _isGenerating now that it's set —
+      // re-entry stays blocked continuously across the await window.
+      _launchInProgress = false;
       // PERF-01: reset the honest-progress signal at the start of each run.
       _partialChars = 0;
       // PERF-04: clear any stale task id from a previous run.
@@ -858,7 +874,13 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   sagaNextHook: sagaNextHook,
                   practicedFocus: result.practiced)));
           if (mounted) {
-            setState(() => _isGenerating = false);
+            setState(() {
+              _isGenerating = false;
+              // PERF-04: the task completed and we've navigated to the story —
+              // drop the id so a later dispose() doesn't fire a stray
+              // cancelTask for an already-finished task.
+              _activeTaskId = null;
+            });
           }
         }
       }

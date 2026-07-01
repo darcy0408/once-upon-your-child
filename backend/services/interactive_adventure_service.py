@@ -11,10 +11,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from google import genai
-from google.api_core import exceptions as google_exceptions
-from google.genai import types
-
 from backend.database import db
 from backend.models import (
     Character,
@@ -36,35 +32,23 @@ logger = logging.getLogger(__name__)
 class InteractiveAdventureService:
     """Service for creating and managing interactive adventure stories"""
 
-    def __init__(self, gemini_api_key: Optional[str] = None):
-        """Initialize with Gemini API key"""
-        import os
+    def __init__(
+        self, gemini_api_key: Optional[str] = None, user_tier: Optional[str] = None
+    ):
+        """Initialize the interactive adventure service.
 
-        self.api_key = gemini_api_key or os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY not set")
-        self._request_timeout_seconds = int(
-            os.getenv("GEMINI_REQUEST_TIMEOUT_SECONDS", "45")
-        )
-
-        self._client = genai.Client(api_key=self.api_key)
-
-        # Use Gemini model with JSON mode support
-        self._model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-        logger.info(
-            f"Initializing Interactive Adventure Service with model: {self._model_name}"
-        )
-        # JSON mode config — cap tokens to avoid over-generation (fastest safe limit
-        # that still covers the largest age band's per-segment word count + JSON overhead)
-        self._json_config = types.GenerateContentConfig(
-            response_mime_type="application/json",
-            max_output_tokens=1200,
-            temperature=0.4,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        )
-
-        # Initialize image generator (using Replicate for actual image generation)
-        # GeminiImageGenerator doesn't work (Gemini can't generate images)
+        MT-137 / ToS COMPLIANCE: a child's story data must NOT be sent to Google
+        Gemini — Gemini's API terms forbid child-directed apps, which is the
+        whole reason the main story path was moved off Gemini. Interactive
+        segments are now generated through the SAME ToS-safe provider chain
+        (STORY_GEN_PROVIDER, default 'openai'); 'gemini'/'auto' are coerced to
+        'openai' so a child's segment is never routed to Gemini. The legacy
+        ``gemini_api_key`` parameter is kept for call-site compatibility but is
+        no longer used for text generation. Illustrations still use Replicate
+        (not Gemini).
+        """
+        self._user_tier = user_tier
+        # Image generator (Replicate — Gemini can't generate images anyway).
         self.image_generator = ReplicateImageGenerator()
 
     def create_story(
@@ -539,10 +523,62 @@ class InteractiveAdventureService:
             ]
         return segment_data
 
+    def _generate_text(self, prompt: str) -> str:
+        """Generate raw model text via the ToS-safe provider chain.
+
+        MT-137: NEVER routes a child's story data to Gemini. Mirrors the main
+        story path's provider selection (STORY_GEN_PROVIDER, default 'openai');
+        'gemini'/'auto'/unset are coerced to 'openai'. The interactive prompt
+        already instructs raw-JSON output, so the chat response is parsed by
+        _parse_segment_response exactly as before.
+        """
+        import os
+
+        provider = (os.getenv("STORY_GEN_PROVIDER") or "openai").strip().lower()
+        if provider in ("gemini", "auto", ""):
+            provider = "openai"
+
+        if provider == "claude":
+            from backend.services.anthropic_story_generator import (
+                ClaudeDirectStoryGenerator,
+            )
+
+            gen = ClaudeDirectStoryGenerator(user_tier=self._user_tier)
+        elif provider == "openrouter":
+            from backend.services.openrouter_story_generator import (
+                OpenRouterStoryGenerator,
+            )
+
+            gen = OpenRouterStoryGenerator(user_tier=self._user_tier)
+        elif provider == "tiered":
+            # free -> OpenAI, paid -> Claude (mirror the main cost/quality split).
+            is_free = (self._user_tier or "").strip().lower() == "free"
+            if is_free:
+                from backend.services.openai_story_generator import (
+                    OpenAIStoryGenerator,
+                )
+
+                gen = OpenAIStoryGenerator(user_tier=self._user_tier)
+            else:
+                from backend.services.anthropic_story_generator import (
+                    ClaudeDirectStoryGenerator,
+                )
+
+                gen = ClaudeDirectStoryGenerator(user_tier=self._user_tier)
+        else:  # 'openai' and any unrecognized value -> OpenAI (ToS-safe default)
+            from backend.services.openai_story_generator import OpenAIStoryGenerator
+
+            gen = OpenAIStoryGenerator(user_tier=self._user_tier)
+
+        return gen.generate_story(prompt)
+
     def _generate_segment_with_retry(
         self, prompt: str, max_retries: int = 3
     ) -> Dict[str, Any]:
-        """Generate segment with retry logic and JSON parsing"""
+        """Generate a segment with retry + JSON parsing via the ToS-safe
+        provider chain (never Gemini — MT-137). The underlying generators run
+        their own 429/backoff internally and return a sentinel string on
+        failure, which fails JSON parsing here and triggers a retry."""
         import time
 
         base_delay = 2
@@ -550,28 +586,13 @@ class InteractiveAdventureService:
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating segment (attempt {attempt + 1}/{max_retries})")
-                # Call Gemini directly — no ThreadPoolExecutor overhead
-                response = self._client.models.generate_content(
-                    model=self._model_name,
-                    contents=prompt,
-                    config=self._json_config,
-                )
-
-                if response and hasattr(response, "text") and response.text:
-                    segment_data = self._parse_segment_response(response.text)
+                text = self._generate_text(prompt)
+                if text and text.strip():
+                    segment_data = self._parse_segment_response(text)
                     logger.info("Segment generated successfully")
                     return segment_data
-                elif (
-                    response and hasattr(response, "candidates") and response.candidates
-                ):
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, "content") and candidate.content.parts:
-                        text = candidate.content.parts[0].text
-                        segment_data = self._parse_segment_response(text)
-                        logger.info("Segment generated from candidates")
-                        return segment_data
 
-                logger.warning("No valid response from Gemini")
+                logger.warning("No valid response from story provider")
                 if attempt < max_retries - 1:
                     continue
 
@@ -581,24 +602,9 @@ class InteractiveAdventureService:
                     time.sleep(base_delay * (2**attempt))
                     continue
 
-            except google_exceptions.ResourceExhausted as e:
-                logger.warning(
-                    f"Rate limit exceeded (attempt {attempt + 1}). Retrying..."
-                )
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    logger.warning(f"Retrying in {delay}s...")
-                    time.sleep(delay)
-                    continue
-                else:
-                    logger.error("Max retries exceeded for rate limit.")
-                    raise e
-
             except Exception as e:
                 logger.error(f"Segment generation failed: {e}", exc_info=True)
                 if attempt < max_retries - 1:
-                    import time
-
                     time.sleep(base_delay * (2**attempt))
                     continue
                 raise

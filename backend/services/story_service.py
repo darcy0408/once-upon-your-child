@@ -780,6 +780,22 @@ class AdvancedStoryEngine:
         age_impossible = impossible_elements.get(
             band, "Something magical and physics-defying."
         )
+        # Mature bands (13+) should not be FORCED into fantasy when the theme is
+        # realistic (e.g. "a friend's risky secret" kept turning into glowing-pool
+        # allegory). Make imaginative elements OPTIONAL there so a grounded story
+        # is equally valid; younger bands keep the inspiration prompt.
+        if age >= 13:
+            impossible_line = (
+                "- **IMAGINATIVE ELEMENTS**: OPTIONAL at this age — include magical or "
+                "impossible elements ONLY if the theme genuinely invites them; a fully "
+                "grounded, realistic story is equally valid. (If you do, for inspiration "
+                f"only — do NOT copy: {age_impossible})"
+            )
+        else:
+            impossible_line = (
+                "- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact "
+                f"phrases): {age_impossible}"
+            )
 
         # Age-appropriate Terminology adjustments
         tool_label = "HERO TOOL"
@@ -839,15 +855,25 @@ class AdvancedStoryEngine:
         # attention span. Target traditional picture-book pacing: 8-12 pages.
         sprout_page_rule = ""
         if age <= 5:
+            # The length tier must actually change Sprout length — via page count
+            # (short=8, medium=10, long=12), all inside the 8-12 picture-book band
+            # the validator enforces. Also override word_range so the stated Word
+            # Count AGREES with the ≤300 ceiling instead of contradicting it: the
+            # regular-band range printed e.g. "Approximately 450-650 words total."
+            # right next to "HARD LIMIT: do not exceed 300 words total." (~10-25
+            # words/page × pages).
+            _sprout_pages = {"short": 8, "medium": 10, "long": 12}.get(length_key, 10)
+            word_range = (_sprout_pages * 12, _sprout_pages * 25)
             sprout_page_rule = (
-                "\n- **PAGE COUNT (Sprout band)**: Return between 8 and 12 pages (HARD MIN 8, HARD MAX 12). "
+                f"\n- **PAGE COUNT (Sprout band)**: Aim for about {_sprout_pages} pages "
+                "(HARD MIN 8, HARD MAX 12). "
                 "Each page must be 10-25 words. If one page would exceed 25 words, split it — but "
                 "do not exceed 12 pages total. Traditional picture-book pacing: short pages, complete arc, "
                 "no padding. A 3-4 year old cannot sit through 15+ page-turns."
             )
 
         if age >= 14:
-            coping_instruction = "a clever plot twist, a moment of wonder, a scene where the hero's perspective shifts through experience — shown, never told"
+            coping_instruction = "a turning point that recontextualizes the situation — a realization, reversal, or shift in the hero's perspective (magical OR grounded, whatever the theme calls for) — shown, never told"
 
         # Explicit writing calibration so models do not flatten all ages to simple prose.
         if age <= 7:
@@ -914,7 +940,7 @@ class AdvancedStoryEngine:
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
 1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — they are not optional.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
-3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion must express hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
+3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward.
 5. KID-COMPREHENSIBLE VOCABULARY (HARD CHECK — re-read every page before finalizing): Every concept must be understandable to a 3-year-old on first listen. Before writing each page, scan it for ANY noun or concept a toddler wouldn't use in everyday speech (examples: "dragon breath", "cousin", "archery", "archeologist", "cape", "echo", "compass", "ancient", "lantern", "festival"). For EACH such term you find, you MUST do one of two things in the SAME sentence or the very next one: (a) replace it with a simpler everyday word, OR (b) explain it inline using only words a toddler already knows. Example: "Dragon breath — that's the warm, smoky air a dragon blows out, like when you puff air on a cold morning." A bare mention with no inline explanation is a FAIL — rewrite the page. This rule overrides poetic flow.
 """
@@ -923,9 +949,9 @@ class AdvancedStoryEngine:
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
 1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — keep them sprinkled, not constant.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
-3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or fear ("I don't know, {character}...", "That looks scary...") before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
+3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or worry in their own fresh words (do NOT reuse a stock phrase) before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward.
-5. WOW-WORD POLICY (Spark band): It is OK — and good — to use grade 1-2 "wow words" (e.g. "shimmered", "tumbled", "lantern", "festival"). Each new wow word must earn a context clue in the same paragraph: a vivid action, a comparison, or the reaction it causes ("the lantern shimmered like a tiny captured star"). Do NOT stop and define every fantasy noun inline as if explaining to a toddler — that flattens the story. The check is: a 6-7 year old should be able to guess the word from its surroundings on first listen.
+5. WOW-WORD POLICY (Spark band): It is OK — and good — to use grade 1-2 "wow words" (e.g. "shimmered", "tumbled", "lantern", "festival"). Each new wow word must earn a context clue in the same paragraph: a vivid action, a comparison, or the reaction it causes — but invent fresh imagery every time; do NOT fall back on stock phrases. Do NOT stop and define every fantasy noun inline as if explaining to a toddler — that flattens the story. The check is: a 6-7 year old should be able to guess the word from its surroundings on first listen.
 """
         elif age <= 12:
             # Ages 8-12. Older bands previously lost ALL craft scaffolding: the
@@ -987,17 +1013,18 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 {('- **SPECIAL ABILITY**: ' + special_ability + ' (MUST be used at the climax as the decisive turning point).') if special_ability else '- **SPECIAL ABILITY**: None — hero relies on wit, kindness, and courage.'}
 - **CHARACTER VOICE**: {character} approaches problems using their strengths ({strengths or 'bravery and kindness'}). Let this shape how they think, speak, and act throughout — not just at the climax. A problem-solver notices clues; a healer checks on others first; an adventurer rushes in then reflects.
 {tool_section}
-- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
-- **COMPANIONS**: 
+{impossible_line}
+- **COMPANIONS**:
 {comp_str}
 (MANDATORY: Every character/pet listed above MUST be in the story. Checklist of names to include: {mandatory_names_str})
-- **CUSTOM REQUESTS**: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magical adventure if none provided). Incorporate the spirit, key ideas, and themes from this request — weave them naturally into scenes, characters, or settings in a way that is age-appropriate and safe for the child.
+- **CUSTOM REQUESTS**: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a fitting adventure if none provided). Incorporate the spirit, key ideas, and themes from this request — weave them naturally into scenes, characters, or settings in a way that is age-appropriate and safe for the child.
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 {feelings_instruction}
 {virtue_instruction}
 **WRITING GUIDELINES**:
 - **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
+- **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or climbing into the setting, and do NOT open with a "smelled like ..." line. Vary the entry point every time — begin in motion, mid-problem, in dialogue, or somewhere unexpected. Two stories about the same hero must not start the same way.
 - **Tone**: {config['notes']}
 {young_delight_rules}- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}
 - **Complexity Calibration**: {complexity_instruction}
@@ -1425,11 +1452,33 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         story_body = "\n\n".join(prose_pages)
         return fallback_title, None, story_body, prose_pages, {}, dict(_EMPTY_METADATA)
 
-    # If we parsed successfully but got no pages, verify content length
+    # If we parsed successfully but got no pages (empty "pages" array, or pages
+    # carrying only image_prompt fields), NEVER dump the raw JSON blob to the
+    # child — the old behavior (`pages = [candidate_text]`) leaked the title and
+    # image_prompt strings onto the rendered page. Salvage any "text" fields; if
+    # none and the payload is JSON-shaped, surface a short clean fallback so the
+    # caller's length-validation/retry engages instead of rendering JSON.
     if not pages:
-        # This shouldn't happen with proper JSON unless 'pages' key was empty list
-        # Use candidate text as fallback
-        pages = [candidate_text]
+        salvaged: list[str] = []
+        for m in re.findall(
+            r'"text"\s*:\s*"((?:[^"\\]|\\.)*)"', candidate_text, flags=re.DOTALL
+        ):
+            try:
+                decoded = json.loads(f'"{m}"')
+            except json.JSONDecodeError:
+                decoded = m
+            if decoded.strip():
+                salvaged.append(decoded.strip())
+        if salvaged:
+            pages = salvaged
+        elif candidate_text.lstrip().startswith("{"):
+            logger.warning(
+                "Parsed JSON yielded no usable pages; returning a safe fallback "
+                "instead of dumping the raw JSON blob to the reader."
+            )
+            pages = ["Let's try a different adventure!"]
+        else:
+            pages = _split_prose_into_pages(candidate_text)
 
     pages = _strip_meta_leakage(pages)
     pages = _strip_lesson_endings(pages)

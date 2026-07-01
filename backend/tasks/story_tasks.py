@@ -1801,6 +1801,17 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         )
                         validation_error = ltr_format_error
 
+                # Rhyme Time previously had NO rhyme-quality gate — only LTR did
+                # — so non-rhyming output shipped silently (e.g. a 15-17 "Rhyme
+                # Time" story came back as 36 pages of free verse). Apply the same
+                # rhyme check here so a "rhyme" that doesn't rhyme is retried.
+                if rhyme_time_mode:
+                    is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
+                    if not is_rhyme_quality_ok:
+                        validation_error = (
+                            "Rhyme Time story did not meet rhyme quality checks"
+                        )
+
                 # Length Validation with dynamic thresholds
                 # LTR mode is measured in pages (not words), so skip word-count check.
                 is_long_enough = True
@@ -1854,15 +1865,22 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         if not is_long_enough:
                             prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
                         if not is_rhyme_quality_ok:
+                            _rhyme_mode_label = (
+                                "LEARNING TO READ"
+                                if learning_to_read_mode
+                                else "RHYME TIME"
+                            )
                             prompt += (
-                                "\n\nRETRY INSTRUCTION: This is LEARNING TO READ mode and MUST rhyme. "
+                                f"\n\nRETRY INSTRUCTION: This is {_rhyme_mode_label} mode and MUST rhyme. "
                                 "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
-                                "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top."
+                                "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top. "
+                                "Do NOT use forced or made-up rhymes (e.g. 'gear-a', 'of lea') and never break "
+                                "grammar to force a rhyme — every line must be natural, correct English."
                             )
                         if not is_ltr_format_ok:
                             prompt += (
                                 f"\n\nRETRY INSTRUCTION: Your previous response had {ltr_pages_count} pages "
-                                f"with {len(ltr_over_word_pages)} pages exceeding 30 words. "
+                                f"with {len(ltr_over_word_pages)} pages exceeding 25 words. "
                                 f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page 25 words or fewer. "
                                 f"Split any long page into two shorter pages. Do not compress the story into a few dense pages."
                             )

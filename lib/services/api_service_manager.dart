@@ -1495,7 +1495,22 @@ class ApiServiceManager {
 
         await Future.delayed(pollInterval);
 
-        final statusResponse = await httpClient.get(statusUri);
+        // Bound each individual status poll: every other http call in this
+        // file passes .timeout(...), but this one did not — a silent server
+        // could stall the await forever, so the outer
+        // `while (stopwatch.elapsed < requestTimeout)` guard never re-checked.
+        // Treat a single-poll timeout as a retryable hiccup and keep looping;
+        // the outer elapsed-time guard still fires the real
+        // TimeoutException('Story generation polling timed out') below.
+        final http.Response statusResponse;
+        try {
+          statusResponse = await httpClient.get(statusUri).timeout(
+                pollInterval * 2,
+              );
+        } on TimeoutException {
+          debugPrint('Status poll for task $taskId timed out — retrying.');
+          continue;
+        }
 
         if (statusResponse.statusCode != 200) {
           // Continue polling on server error, but throw if it's a client error
@@ -1541,10 +1556,27 @@ class ApiServiceManager {
             throw const StoryGenerationCancelled();
           }
           if (result is Map<String, dynamic>) {
-            return StoryGenerationResult.fromBackend(result);
+            final parsed = StoryGenerationResult.fromBackend(result);
+            // Mirror the sync path's guard (~line 1413): a completed task whose
+            // story body is empty/whitespace must not render as a blank story.
+            // Throw so the scaffold-fallback/error path engages instead.
+            if (parsed.storyText.trim().isEmpty) {
+              throw HttpException(
+                'Backend returned 200 without story content',
+                uri: statusUri,
+              );
+            }
+            return parsed;
+          }
+          final storyText = result as String;
+          if (storyText.trim().isEmpty) {
+            throw HttpException(
+              'Backend returned 200 without story content',
+              uri: statusUri,
+            );
           }
           return StoryGenerationResult(
-            storyText: result as String,
+            storyText: storyText,
           );
         } else if (status == 'cancelled') {
           // Defensive: if a future backend surfaces cancellation directly on the

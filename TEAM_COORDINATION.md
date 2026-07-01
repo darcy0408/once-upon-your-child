@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-06-29 | 18:05 | 1c86 | session/audit-fixes | Scenario/quality audit + fixes; P0 Pick-a-Path Gemini ToS | [link](docs/sessions/2026-06-29-1805-1c86.md) |
 | 2026-06-29 | 18:01 | 8d69 | fix/gemini-byok-consent-guard | Shipped MT-306/307 leftovers; merged #319+#337 (MT-306 ID-collision fix) | [link](docs/sessions/2026-06-29-1801-8d69.md) |
 | 2026-06-29 | 17:15 | 31a0 | fix/gemini-byok-consent-guard | CAADCA/GDPR privacy defaults + crisis-input distress scan | [link](docs/sessions/2026-06-29-1715-31a0.md) |
 | 2026-06-29 | 17:11 | 32b8 | session/legal-fixes | Legal-liability audit + Phase 1 COPPA + Phase 2.1 self-harm detection | [link](docs/sessions/2026-06-29-1711-32b8.md) |

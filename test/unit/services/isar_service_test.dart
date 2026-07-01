@@ -8,9 +8,14 @@ import '../../helpers/mocks.dart';
 void main() {
   late MockIsar mockIsar;
   late MockIsarCollection<CharacterLocal> mockCharacterCollection;
+  late Future<int?> Function(Isar, String) defaultFindExistingCharacterId;
 
   setUpAll(() {
     registerFallbackValue(CharacterLocal());
+    // The real dedup lookup runs an Isar `.filter().characterIdEqualTo()`
+    // query built from generated extension methods that mocktail cannot stub,
+    // so capture the default and swap in a controllable seam per test.
+    defaultFindExistingCharacterId = IsarService.findExistingCharacterId;
   });
 
   setUp(() {
@@ -22,11 +27,15 @@ void main() {
     when(() => mockCharacterCollection.put(any())).thenAnswer((_) async => 1);
     when(() => mockIsar.close()).thenAnswer((_) async => true);
 
+    // Default: no prior row for any characterId (fresh insert path).
+    IsarService.findExistingCharacterId = (_, __) async => null;
+
     IsarService.setTestInstance(mockIsar);
   });
 
   tearDown(() {
     IsarService.setTestInstance(null);
+    IsarService.findExistingCharacterId = defaultFindExistingCharacterId;
   });
 
   group('IsarService', () {
@@ -143,6 +152,25 @@ void main() {
       expect(stored.length, 2);
       expect(stored[0].characterId, 'api-1');
       expect(stored[1].characterId, 'api-2');
+    });
+
+    test('syncCharactersFromApi reuses existing row id to update in place',
+        () async {
+      // A prior local row exists for this characterId → its auto-increment id
+      // must be copied onto the incoming row so put() updates instead of
+      // inserting a duplicate (the non-unique-index dedup fix).
+      IsarService.findExistingCharacterId =
+          (_, id) async => id == 'api-1' ? 42 : null;
+
+      await IsarService.syncCharactersFromApi([
+        <String, dynamic>{'id': 'api-1', 'name': 'Milo', 'age': 9},
+      ]);
+
+      final stored = verify(() => mockCharacterCollection.put(captureAny()))
+          .captured
+          .single as CharacterLocal;
+      expect(stored.characterId, 'api-1');
+      expect(stored.id, 42);
     });
 
     test('syncCharactersFromApi propagates failure after partial writes',

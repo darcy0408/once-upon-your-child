@@ -9,6 +9,8 @@ import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'services/chronicle_service.dart';
+import 'services/isar_service.dart';
+import 'services/offline_story_service.dart';
 import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
@@ -91,7 +93,17 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   // Accumulated text for the current chapter (used for Chronicle summarization)
   final StringBuffer _chapterTextBuffer = StringBuffer();
 
+  // Stable creation timestamp for the persisted in-progress record, so repeated
+  // saves of the same adventure don't churn its createdAt / sort order.
+  final DateTime _startedAt = DateTime.now();
+
   bool get _isChronicleMode => widget.chronicleId != null;
+
+  // Guards against double chapter summarization. Both the completion paths and
+  // the session-break button call _triggerChapterSummarization; without this
+  // flag a completed story closed via the break button would summarize twice
+  // (double chapterCount increment + duplicate API call).
+  bool _summarized = false;
 
   // "Something Else" free-text choice state
   bool _showCustomInput = false;
@@ -256,6 +268,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       );
 
       _scrollToBottom();
+      unawaited(_persistProgress());
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, _startNewStory);
     } on TimeoutException {
@@ -297,6 +310,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       }
 
       _scrollToBottom();
+      unawaited(_persistProgress());
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, _resumeStory);
     } catch (e) {
@@ -373,6 +387,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
+      unawaited(_persistProgress());
 
       if (_isCompleted) {
         unawaited(
@@ -457,6 +472,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
+      unawaited(_persistProgress());
 
       if (_isCompleted) {
         unawaited(
@@ -569,6 +585,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
+      unawaited(_persistProgress());
 
       if (_isCompleted) {
         unawaited(
@@ -593,6 +610,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
   void _triggerChapterSummarization(String choiceMadeText) {
     if (!_isChronicleMode || widget.chronicleId == null) return;
+    // Idempotency guard: only summarize once per chapter. Prevents the double
+    // increment/duplicate API call when a completed chapter is also closed via
+    // the session-break button.
+    if (_summarized) return;
+    _summarized = true;
 
     // Extract last 2 sentences from chapter text as the "ending"
     final fullText = _chapterTextBuffer.toString();
@@ -633,6 +655,49 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         );
       }
     });
+  }
+
+  /// Persists the current in-progress adventure to local storage after every
+  /// segment so closing the app / going offline mid-branch no longer orphans
+  /// the story. The record is keyed by [_storyId]; saving with isCompleted=true
+  /// removes it from the in-progress list (getInProgressStories filters on
+  /// isCompleted=false), which is how progress is "cleared" on completion.
+  ///
+  /// Best-effort: storage failures never block the reader.
+  ///
+  /// TODO(audit): no resume-picker UI yet — getInProgressStories() is now
+  /// populated but nothing surfaces these saved adventures for the user to
+  /// resume from. Wire a picker (e.g. on the home screen) in a follow-up.
+  /// TODO(audit): outbound sync / connectivity listener (push locally-saved
+  /// progress back to the backend when the network returns) is intentionally
+  /// deferred — not built here.
+  Future<void> _persistProgress() async {
+    final storyId = _storyId;
+    final segment = _currentSegment;
+    if (storyId == null || storyId.isEmpty || segment == null) return;
+
+    try {
+      final isar = await IsarService.getInstance();
+      final service = OfflineStoryService(isar);
+      // The service builds the platform-appropriate StoryLocal internally so
+      // shared screen code stays free of the io-only interactive fields that
+      // the web stub model does not define.
+      await service.saveInteractiveProgressFields(
+        storyId: storyId,
+        title: _storyTitle ?? '${widget.character.name}\'s Adventure',
+        theme: widget.theme,
+        tone: widget.tone,
+        length: widget.length,
+        currentSegmentNumber: segment.segmentNumber,
+        isCompleted: _isCompleted,
+        createdAt: _startedAt,
+        inventory: _inventory,
+        state: _state,
+        characters: [widget.character],
+      );
+    } catch (_) {
+      // Persistence is best-effort; never surface storage errors to the reader.
+    }
   }
 
   Future<void> _saveStory() async {
@@ -805,6 +870,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           else if (_currentSegment!.requiresChoice)
             _buildChoicesSection()
           else if (_currentSegment!.isContinuation)
+            _buildContinueSection()
+          // Fallback: a non-completed segment whose output_type is neither
+          // CHOICE nor CONTINUE used to render with no way forward, stranding
+          // the reader. Always offer a path: show choices if any exist,
+          // otherwise a continue button.
+          else if (_currentSegment!.choices.isNotEmpty)
+            _buildChoicesSection()
+          else
             _buildContinueSection(),
 
           const SizedBox(height: 32),
