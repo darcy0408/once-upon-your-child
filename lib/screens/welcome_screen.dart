@@ -1011,10 +1011,31 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // record; the age band is set here, after the consent record is written.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kUserNameKey, name);
-    await const ParentalConsentService().recordConsent(
-      age: _selectedAge!,
-      method: 'self_attested',
-    );
+    // COPPA age-sync: recordConsent now performs a durable server write of the
+    // declared age (needed for ENFORCE_RESOLVED_AGE). If it can't reach the
+    // server, do NOT silently proceed — surface the failure and let the user
+    // retry (re-tapping the age band re-runs this flow).
+    try {
+      await const ParentalConsentService().recordConsent(
+        age: _selectedAge!,
+        method: 'self_attested',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _step = 1; // back to the age picker so the user can retry
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Couldn\'t save right now. Please check your connection and '
+              'tap your age again.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     if (mounted) {
       await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
     }

@@ -112,6 +112,7 @@ class ParentalConsentService {
     String method = 'self_attested',
     bool allowPhotoAvatar = false,
     bool verified = false,
+    bool syncToServer = true,
   }) async {
     // Guard against a false compliance record: 'email_verified' may only be
     // stored when an actual round trip completed.
@@ -131,23 +132,71 @@ class ParentalConsentService {
       await prefs.setString(_keyParentEmail, parentEmail);
     }
 
-    // Sync consent record to backend (best-effort — local record is source of truth).
-    try {
-      final api = ApiServiceManager();
-      final userId = await api.getUserId();
-      if (userId != null) {
-        await api.post('/api/user/$userId/consent', {
-          'child_age': age,
-          'consent_method': method,
-          'verified': verified,
-          'allow_photo_avatar': allowPhotoAvatar,
-          if (parentEmail != null && parentEmail.isNotEmpty)
-            'parent_email': parentEmail,
-        });
-      }
-    } catch (_) {
-      // Backend sync failure does not block local consent — will retry on next launch.
+    // Sync the consent record — including the child's declared age — to the
+    // backend. This is COPPA-critical and must NOT be best-effort: the server
+    // is the enforcement boundary (ENFORCE_RESOLVED_AGE denies generation /
+    // data collection until it has a resolved age), so a consent/age record
+    // that exists only on-device is not sufficient. The write is retried and
+    // then surfaced to the caller (which reverts onboarding and lets the parent
+    // retry) rather than silently dropped.
+    //
+    // [syncToServer] is false only for the pre-record written by
+    // [requestEmailVerification], which immediately performs its own durable
+    // server write (`/consent/request-verification`, which also persists the
+    // declared age) — syncing here as well would be a redundant duplicate POST.
+    if (syncToServer) {
+      await _syncConsentToBackend(
+        age: age,
+        method: method,
+        verified: verified,
+        allowPhotoAvatar: allowPhotoAvatar,
+        parentEmail: parentEmail,
+      );
     }
+  }
+
+  /// POSTs the consent record (and the child's declared age) to the backend,
+  /// retrying a bounded number of times on transient failure. Throws if the
+  /// record could not be persisted server-side so the caller can surface the
+  /// failure — a consent/age record that exists only on-device does not
+  /// satisfy COPPA server-side enforcement (`ENFORCE_RESOLVED_AGE`).
+  Future<void> _syncConsentToBackend({
+    required int age,
+    required String method,
+    required bool verified,
+    required bool allowPhotoAvatar,
+    String? parentEmail,
+  }) async {
+    final api = ApiServiceManager();
+    final userId = await api.getUserId();
+    if (userId == null) {
+      throw StateError(
+        'No user id — cannot persist consent/declared age server-side.',
+      );
+    }
+    final body = <String, dynamic>{
+      'child_age': age,
+      'consent_method': method,
+      'verified': verified,
+      'allow_photo_avatar': allowPhotoAvatar,
+      if (parentEmail != null && parentEmail.isNotEmpty)
+        'parent_email': parentEmail,
+    };
+
+    const maxAttempts = 3;
+    Object? lastError;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await api.post('/api/user/$userId/consent', body);
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxAttempts) {
+          await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+        }
+      }
+    }
+    throw Exception('Failed to persist consent to server: $lastError');
   }
 
   /// Begins the COPPA email round-trip for an under-13 user.
@@ -172,13 +221,18 @@ class ParentalConsentService {
       throw ArgumentError('A valid parent email is required for verification.');
     }
 
-    // Record locally as PENDING — truthful method, NOT verified.
+    // Record locally as PENDING — truthful method, NOT verified. Skip the
+    // generic /consent server sync here: the request-verification POST below is
+    // the durable server write for the under-13 path (it persists the declared
+    // age and the pending consent record), so syncing here too would create a
+    // duplicate pending record.
     await recordConsent(
       age: age,
       parentEmail: email,
       method: 'email_pending',
       allowPhotoAvatar: allowPhotoAvatar,
       verified: false,
+      syncToServer: false,
     );
 
     final api = ApiServiceManager();
