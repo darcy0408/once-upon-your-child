@@ -2294,9 +2294,9 @@ sqlalchemy==2.0.51 \
     # via
     #   -r requirements.in
     #   flask-sqlalchemy
-stripe==15.1.0 \
-    --hash=sha256:24bd3b6bd0969a4841bd4d7681556a9e35e46c414a07c8590a225fbd5a878450 \
-    --hash=sha256:bdfb556be08662a41833e6403607ebf12e0062cae4f9b93e2b89b6ba926d7c82
+stripe==15.3.0 \
+    --hash=sha256:99c427d306d9348123e73da3f4f2cae0a5732cac9b703155dba0418e32d3cf1c \
+    --hash=sha256:ff05524255f51bf7df0e5bc4a99dbd0f737afd05587b7657c82e0d99c7fc45a4
     # via -r requirements.in
 tabulate==0.10.0 \
     --hash=sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d \
