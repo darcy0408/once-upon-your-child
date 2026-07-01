@@ -10,18 +10,24 @@ session · ⊘ accept / won't-fix
 > **App is pre-launch (no live users).** Nothing here is a live incident; items
 > are gated on *launch*, not on production traffic.
 
-## Status as of 2026-06-29
-This audit was worked by several parallel sessions. Ownership split:
+## Status as of 2026-07-01
+This audit was worked by several parallel sessions. Ownership split — **all
+tracked PRs are now merged to main:**
 
 | Area | Owner | State |
 |---|---|---|
 | Purchase gating (P0 cluster) | this audit | ☑ **#321** |
 | Generation-output egress + teen fail-closed (PR 2+3 combined) | this audit | ☑ **#332** |
 | Authz/generator hardening (PR 6-lite) | this audit | ☑ **#335** |
-| COPPA consent/collection + posture (PR 4+5) | `session/legal-fixes` | ↪ **#320** |
-| Analytics off-by-default (under-18, CAADCA) | `session/privacy-defaults` | ↪ in flight |
-| Crisis-resources panel (PR 7 allowlist) | `session/crisis-input-scan` | ↪ in flight |
-| BYOK image-gen hardening + PP disclosure | `fix/gemini-byok-consent-guard` | ↪ **#319** |
+| COPPA consent/collection + posture (PR 4+5) | `session/legal-fixes` | ☑ **#320** |
+| Analytics off-by-default (under-18, CAADCA) | `session/privacy-defaults` | ☑ **#333** |
+| Crisis-resources panel (PR 7 allowlist) | `session/crisis-input-scan` | ☑ **#334** |
+| BYOK image-gen hardening + PP disclosure | `fix/gemini-byok-consent-guard` | ☑ **#319** |
+| LLM moderator decouple Gemini→OpenAI (launch-gate) | overnight sweep | ☑ **#341** |
+
+**Remaining code work: only P2#17 (Isar at-rest encryption) — see below.**
+P2#14 was reclassified won't-fix (see PR 6-lite). Everything else is owner-ops
+config flips or external legal/clinical sign-off.
 
 ## Sequenced PRs
 
@@ -45,7 +51,7 @@ This audit was worked by several parallel sessions. Ownership split:
 - ☑ **P2#16** IAP `user_id` ownership check before reassignment — `iap_routes.py`.
 - ☑ **P2#23** OpenRouter generator child-safety system prompt — `openrouter_story_generator.py`.
 - ☑ Tests: `test_authz_hardening.py` (3).
-- ☐ **P2#14** refresh-blocklist fail-closed on Redis outage — **deferred**: `auth.py` is owned by `session/legal-fixes` (#320); fold in after that merges.
+- ⊘ **P2#14** refresh-blocklist fail-closed on Redis outage — **won't-fix (reclassified 2026-07-01).** Verified in code: the Redis blocklist (`app.py` `_check_token_revoked`) only tracks *spent refresh tokens* and fails **open** on a Redis outage *by design* — making it fail-closed would lock every user out during any Redis blip. The authoritative revocation control is the DB `token_version` claim (`middleware/auth.py`), which **fails closed** on mismatch and invalidates all tokens on logout/data-deletion. Same decision already recorded under "Accept / won't-fix" below (JWT refresh fail-open). No code change.
 
 ### PR 4 — COPPA collection + PII logging + Sentry — ↪ #320 (`session/legal-fixes`)
 Covers `@require_parental_consent` on character creation, PII/prompt log redaction, Sentry breadcrumb scrub, `allow_photo_avatar` enforcement. *Do not duplicate — coordinate with that branch.*
