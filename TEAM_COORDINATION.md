@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-02 | 16:51 | d108 | main | Dependabot sweep (9 PRs) + competitive/SEL/COPPA deep-research; AI-training consent settled; MT-318 | [link](docs/sessions/2026-07-02-1651-d108.md) |
 | 2026-07-02 | 10:14 | 904f | main | Advisory: Google Play dev-account verification guidance (identity gate, org-vs-personal, proof-of-address) | [link](docs/sessions/2026-07-02-1014-904f.md) |
 | 2026-07-01 | 18:40 | 1909 | main | Launch triage: 18 PRs merged, MT-311 COPPA age-sync + IAP item 1 shipped, app-store critical path mapped | [link](docs/sessions/2026-07-01-1840-1909.md) |
 | 2026-07-01 | 12:54 | ebd5 | session/crux-client | Crux Choice client (MT-258) shipped behind OFF flag; PR #359 | [link](docs/sessions/2026-07-01-1254-ebd5.md) |
