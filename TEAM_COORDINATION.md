@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-01 | 18:40 | 1909 | main | Launch triage: 18 PRs merged, MT-311 COPPA age-sync + IAP item 1 shipped, app-store critical path mapped | [link](docs/sessions/2026-07-01-1840-1909.md) |
 | 2026-07-01 | 12:54 | ebd5 | session/crux-client | Crux Choice client (MT-258) shipped behind OFF flag; PR #359 | [link](docs/sessions/2026-07-01-1254-ebd5.md) |
 | 2026-07-01 | 11:24 | a2eb | main | Merged 6 stranded PRs (#339-344) + prod-verify sweep (CF-IPCountry gap) + #358 interactive fail-closed | [link](docs/sessions/2026-07-01-1124-a2eb.md) |
 | 2026-07-01 | 10:03 | d119 | main | Overnight 5-agent sweep: 6 PRs built+merged (#339-#344) — moderator→OpenAI, crisis surfaces, erasure, analytics, antihero substance rule | [link](docs/sessions/2026-07-01-1003-d119.md) |
