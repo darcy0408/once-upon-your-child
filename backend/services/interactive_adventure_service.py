@@ -801,9 +801,10 @@ class InteractiveAdventureService:
             if not segment.image_description:
                 return
 
-            character_name = (
-                character_dict.get("name", "the hero") if character_dict else "the hero"
-            )
+            # MT-311#16: pseudonymize before the image vendor call.  The text
+            # path already pseudonymizes at :147; mirror that here so the
+            # child's real name never reaches the image generator either.
+            safe_name = "the hero"
 
             # Build character appearance from dict
             character_appearance = None
@@ -816,7 +817,7 @@ class InteractiveAdventureService:
 
             images = self.image_generator.generate_story_illustration(
                 scene_description=segment.image_description,
-                character_name=character_name,
+                character_name=safe_name,
                 style="whimsical children's book illustration",
                 num_images=1,
                 age=age,

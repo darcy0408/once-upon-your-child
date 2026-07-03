@@ -747,3 +747,41 @@ class TestBuildAppearanceDetails:
         assert "red" in joined
         assert "skin tone: fair" in joined
         assert "wearing: blue raincoat" in joined
+
+
+class TestDecodeCustomAvatarReference:
+    def test_data_uri_preserves_mime(self):
+        import base64
+
+        from backend.gemini_image_generator import GeminiImageGenerator
+
+        gen = GeminiImageGenerator(api_key="fake")
+        png_bytes = b"\x89PNG\r\n\x1a\nrest"
+        data_uri = (
+            f"data:image/png;base64,{base64.b64encode(png_bytes).decode('ascii')}"
+        )
+
+        decoded, mime = gen._decode_custom_avatar_reference(data_uri)
+        assert decoded == png_bytes
+        assert mime == "image/png"
+
+    def test_raw_base64_sniffs_mime(self):
+        import base64
+
+        from backend.gemini_image_generator import GeminiImageGenerator
+
+        gen = GeminiImageGenerator(api_key="fake")
+        jpeg_bytes = b"\xff\xd8\xff\xe0rest"
+        raw_b64 = base64.b64encode(jpeg_bytes).decode("ascii")
+
+        decoded, mime = gen._decode_custom_avatar_reference(raw_b64)
+        assert decoded == jpeg_bytes
+        assert mime == "image/jpeg"
+
+    def test_invalid_base64_returns_none(self):
+        from backend.gemini_image_generator import GeminiImageGenerator
+
+        gen = GeminiImageGenerator(api_key="fake")
+        decoded, mime = gen._decode_custom_avatar_reference("not valid b64!!!")
+        assert decoded is None
+        assert mime is None

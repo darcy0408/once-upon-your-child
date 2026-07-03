@@ -42,7 +42,10 @@ def test_prompt_service():
         },
     )
 
-    assert "Luna" in prompt
+    # MT-311#16: the child's real name is pseudonymized before it reaches the
+    # image vendor — the prompt uses the generic "the character" label instead.
+    assert "Luna" not in prompt
+    assert "the character" in prompt
     assert "8-year-old" in prompt
     assert "pixar" in prompt.lower()  # Case insensitive check
     assert "Long Curly" in prompt

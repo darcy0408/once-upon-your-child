@@ -434,6 +434,35 @@ class GeminiImageGenerator:
             details.append(f"clothing: {top_type}")
         return details
 
+    def _decode_custom_avatar_reference(
+        self, raw_value: str | None
+    ) -> tuple[bytes | None, str | None]:
+        """Decode custom-avatar reference payload to bytes + MIME type.
+
+        Accepts either a plain base64 blob or a data URI.
+        """
+        if not raw_value:
+            return None, None
+
+        payload = raw_value
+        mime_type = None
+
+        # data:image/png;base64,<...>
+        if raw_value.startswith("data:") and "," in raw_value:
+            header, payload = raw_value.split(",", 1)
+            # header form: data:<mime>;base64
+            if ";" in header:
+                mime_type = header[5:].split(";", 1)[0].strip().lower() or None
+
+        try:
+            image_bytes = base64.b64decode(payload)
+        except Exception as e:
+            logger.warning(f"Failed to decode custom avatar image: {e}")
+            return None, None
+
+        # Trust an explicit data URI mime first; otherwise sniff from bytes.
+        return image_bytes, mime_type or _detect_mime_type(image_bytes)
+
     def generate_story_illustration(
         self,
         scene_description: str,
@@ -477,6 +506,7 @@ class GeminiImageGenerator:
         # Build character appearance description
         character_description = f"Main character: {character_name}"
         reference_image_bytes = None
+        reference_image_mime_type = None
 
         if character_appearance:
             appearance_details = []
@@ -484,15 +514,13 @@ class GeminiImageGenerator:
             # Check for custom avatar image
             custom_avatar_b64 = character_appearance.get("custom_avatar_base64")
             if custom_avatar_b64:
-                try:
-                    if "," in custom_avatar_b64:
-                        custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
-                    reference_image_bytes = base64.b64decode(custom_avatar_b64)
+                reference_image_bytes, reference_image_mime_type = (
+                    self._decode_custom_avatar_reference(custom_avatar_b64)
+                )
+                if reference_image_bytes:
                     appearance_details.append(
                         "This character MUST look exactly like the provided reference photo"
                     )
-                except Exception as e:
-                    logger.warning(f"Failed to decode custom avatar image: {e}")
 
             # MT-129: physical characteristics. Reads BOTH the rich snake_case
             # keys the Flutter app sends (hair_color/eye_color/skin_tone/etc.)
@@ -594,7 +622,8 @@ Style: {style}, optimized for {age_descriptor}
             if reference_image_bytes:
                 contents.append(
                     types.Part.from_bytes(
-                        data=reference_image_bytes, mime_type="image/png"
+                        data=reference_image_bytes,
+                        mime_type=reference_image_mime_type or "image/png",
                     )
                 )
 
@@ -725,6 +754,7 @@ Style: {style}, optimized for {age_descriptor}
         # Build character appearance description
         character_description = f"Main character: {character_name}"
         reference_image_bytes = None
+        reference_image_mime_type = None
 
         if character_appearance:
             appearance_details = []
@@ -732,15 +762,13 @@ Style: {style}, optimized for {age_descriptor}
             # Check for custom avatar image
             custom_avatar_b64 = character_appearance.get("custom_avatar_base64")
             if custom_avatar_b64:
-                try:
-                    if "," in custom_avatar_b64:
-                        custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
-                    reference_image_bytes = base64.b64decode(custom_avatar_b64)
+                reference_image_bytes, reference_image_mime_type = (
+                    self._decode_custom_avatar_reference(custom_avatar_b64)
+                )
+                if reference_image_bytes:
                     appearance_details.append(
                         "This character MUST look exactly like the provided reference photo"
                     )
-                except Exception as e:
-                    logger.warning(f"Failed to decode custom avatar image: {e}")
 
             # MT-129: physical characteristics — reads both the rich
             # snake_case keys and the legacy flat keys (see
@@ -822,7 +850,8 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             if reference_image_bytes:
                 contents.append(
                     types.Part.from_bytes(
-                        data=reference_image_bytes, mime_type="image/png"
+                        data=reference_image_bytes,
+                        mime_type=reference_image_mime_type or "image/png",
                     )
                 )
 

@@ -169,8 +169,14 @@ STRICTLY FORBIDDEN:
             emotion_data, features
         )
 
+        # MT-311#16: strip the child's real name from the prompt sent to image
+        # vendors.  Avatar quality is driven by visual features (hair, skin,
+        # outfit), not by the name text.  The name is PII the vendor doesn't
+        # need — image generators produce pixels, not text containing the name.
+        prompt_name = "the character"
+
         # Assemble complete prompt
-        prompt = f"""Create a magical portrait of {character_name}, a {age}-year-old child character.
+        prompt = f"""Create a magical portrait of {prompt_name}, a {age}-year-old child character.
 
 STYLE: {style_anchor}
 
@@ -197,7 +203,7 @@ MAGICAL ELEMENTS:
 
 {AvatarPromptService.FORBIDDEN_ELEMENTS}
 
-OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel special, represented, and delighted.
+OUTPUT: A beautiful, magical {style} portrait that makes {prompt_name} feel special, represented, and delighted.
 """
 
         return prompt.strip()

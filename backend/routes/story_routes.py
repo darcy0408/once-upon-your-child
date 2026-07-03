@@ -2133,6 +2133,11 @@ def create_story_blueprint(
             character_name = sanitize_text(
                 data.get("character_name", "the hero"), max_length=100
             )
+            # MT-311#16: strip the child's real name before it reaches image
+            # vendors.  Image generators produce pixels, not text, so the name
+            # is cosmetic.  Keep the original for the cache key (so a re-read
+            # by the same child still gets a hit).
+            safe_name = "the hero"
             style = sanitize_text(
                 data.get("style", "children's book illustration"), max_length=200
             )
@@ -2279,7 +2284,7 @@ def create_story_blueprint(
                 # BYOK is not server-cost-metered (user pays Google).
                 illustrations = generator.generate_story_illustration(
                     scene_description=scene_description,
-                    character_name=character_name,
+                    character_name=safe_name,
                     style=style,
                     num_images=num_images,
                     age=age,
@@ -2342,7 +2347,7 @@ def create_story_blueprint(
                 # each provider has its own kill-switch env var.
                 illustrations = _generate_flux_illustration(
                     scene_description=scene_description,
-                    character_name=character_name,
+                    character_name=safe_name,
                     style=style,
                     num_images=num_images,
                     age=age,
@@ -2364,7 +2369,7 @@ def create_story_blueprint(
                 if not illustrations and image_generator is not None:
                     illustrations = image_generator.generate_story_illustration(
                         scene_description=scene_description,
-                        character_name=character_name,
+                        character_name=safe_name,
                         style=style,
                         num_images=num_images,
                         age=age,
@@ -2625,9 +2630,10 @@ def create_story_blueprint(
                     400,
                 )
 
-            character_name = sanitize_text(
-                data.get("character_name", "the hero"), max_length=100
-            )
+            # MT-311#16: pseudonymize before vendor call (see /generate-illustrations).
+            # Coloring pages have no cache key tied to character_name, so the
+            # real name is never needed here at all.
+            safe_name = "the hero"
 
             # Enforce single image generation for coloring pages
             num_images_per_scene = 1
@@ -2731,7 +2737,7 @@ def create_story_blueprint(
 
                 pages = generator.generate_coloring_page(
                     scene_description=current_desc,
-                    character_name=character_name,
+                    character_name=safe_name,
                     num_images=num_images_per_scene,
                     age=age,
                     therapeutic_focus=therapeutic_focus,
