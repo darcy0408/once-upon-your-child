@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-03 | 13:58 | 88cb | fix/image-name-pseudonymize | Google Play org-account setup (paused at $25 fee) + honest 6-hats money assessment; no code | [link](docs/sessions/2026-07-03-1358-88cb.md) |
 | 2026-07-02 | 20:58 | de9f | main | Diagnosed Max token crunch + token-discipline in /start-session | [link](docs/sessions/2026-07-02-2058-de9f.md) |
 | 2026-07-02 | 16:51 | d108 | main | Dependabot sweep (9 PRs) + competitive/SEL/COPPA deep-research; AI-training consent settled; MT-318 | [link](docs/sessions/2026-07-02-1651-d108.md) |
 | 2026-07-02 | 10:14 | 904f | main | Advisory: Google Play dev-account verification guidance (identity gate, org-vs-personal, proof-of-address) | [link](docs/sessions/2026-07-02-1014-904f.md) |
