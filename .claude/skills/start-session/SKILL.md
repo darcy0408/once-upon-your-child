@@ -51,6 +51,24 @@ Darcy runs ~10 concurrent sessions in one checkout (`C:\dev\story-weaver-app`), 
 
 Creates a sibling worktree `C:\dev\sw-<label>` on `session/<label>` cut from `origin/main`. Edit there (absolute paths), run git from the main root via `git -C C:\dev\sw-<label> ...` (never `cd` in for git), integrate via PR. Full protocol: `docs/WORKTREE_WORKFLOW.md`. Skip only for a pure read-only briefing; treat as mandatory if the git state shows another session's in-flight work.
 
+### 5. Token discipline — apply throughout this session
+
+Darcy is on a Max plan and his quota is dominated by three things (verified via `/usage`, 2026-07-02): **>150k-context sessions (57%)**, **8h+ marathon sessions (50%)**, and **Opus subagents/workflows (28% from `workflow-subagent`; ~96% of all tokens run on Opus, ~2.5% on Sonnet)**. The `/usage` "What's contributing" panel is the source of truth — re-check it if the picture seems to have changed. Bake these habits in:
+
+**Subagent model selection.** Whenever spawning a subagent — the `Agent` tool *or* a `Workflow` stage:
+- Pick the **most specific `subagent_type`** for the task (`Explore` for read-only search, `Plan` for design work, `general-purpose` only when nothing fits) — not the generic default.
+- **Default the model to Sonnet** for mechanical/bounded work: code search, file reads, verification passes, transforms, doc/test edits, mechanical refactors. In the `Agent` tool pass `model: "sonnet"`; in a `Workflow` stage pass `{model: 'sonnet', effort: 'low'}`.
+- **Reserve Opus** for genuinely hard reasoning: architecture, tricky debugging, safety/compliance analysis, final synthesis/judge stages.
+- Before spawning, if the work looks routine, **say so and recommend Sonnet** (or offer to handle it inline) instead of silently launching an Opus subagent. Let Darcy override.
+- **Never launch Fable on your own — but suggest it when warranted.** Do not spawn Fable subagents or switch to it unprompted; it stays Darcy-initiated. However, when a task is genuinely Fable-worthy — Opus is visibly thrashing (repeated failed attempts, stuck debugging), or the work is unusually hard/long-horizon and worth the top tier — **flag it**: name it as a Fable candidate and let Darcy decide. Never suggest Fable for routine or mechanical work. The first time it's used in a given week, remind Darcy to verify via `/usage` that Fable draws from its own weekly bucket (currently untouched) and not the all-model bucket before leaning on it.
+
+**Whole-session model.** At the end of the briefing, look at the Suggested Focus. If the planned work is routine (git wrangling, doc updates, session close-out, small edits), **recommend Darcy run this session on Sonnet** (`/model` → Sonnet) — routine work doesn't need Opus and Sonnet draws from a separate weekly bucket. Only keep Opus when the work is genuinely hard.
+
+**Reminders (best-effort — surface once, don't nag):**
+- After finishing a distinct chunk of work, remind Darcy he can **`/close-session`** rather than leave this session running — marathon sessions are 50% of his burn (his longest was ~7 days).
+- When switching to an unrelated task, suggest **`/clear`**; when the current task's context has grown large, suggest **`/compact`** — >150k-context sessions are 57% of his burn.
+- Keep each reminder to one line. Don't interrupt mid-task; surface at natural boundaries.
+
 ### Guidelines
 
 - Be concise. The whole briefing should fit in one screenful.
