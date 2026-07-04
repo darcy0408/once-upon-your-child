@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-04 | 09:49 | 03bb | main | Marketing plan + landing-page copy (first marketing session) | [link](docs/sessions/2026-07-04-0949-03bb.md) |
 | 2026-07-03 | 19:14 | 0278 | fix/image-name-pseudonymize | MT-311#16 shipped (name pseudonymization) + PR #364 merged + CI fixes | [link](docs/sessions/2026-07-03-1914-0278.md) |
 | 2026-07-03 | 13:58 | 88cb | fix/image-name-pseudonymize | Google Play org-account setup (paused at $25 fee) + honest 6-hats money assessment; no code | [link](docs/sessions/2026-07-03-1358-88cb.md) |
 | 2026-07-02 | 20:58 | de9f | main | Diagnosed Max token crunch + token-discipline in /start-session | [link](docs/sessions/2026-07-02-2058-de9f.md) |
