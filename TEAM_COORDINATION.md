@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-04 | 11:57 | 405f | main | COPPA amended-Rule gap analysis + distribution strategy + prompt ceiling pass (PRs #372/#373) | [link](docs/sessions/2026-07-04-1157-405f.md) |
 | 2026-07-04 | 09:49 | 03bb | main | Marketing plan + landing-page copy (first marketing session) | [link](docs/sessions/2026-07-04-0949-03bb.md) |
 | 2026-07-03 | 19:14 | 0278 | fix/image-name-pseudonymize | MT-311#16 shipped (name pseudonymization) + PR #364 merged + CI fixes | [link](docs/sessions/2026-07-03-1914-0278.md) |
 | 2026-07-03 | 15:48 | 63cd | session/compliance-docs | MT-318 OpenAI DPA/ZDR checklist + SEL framework alignment | [link](docs/sessions/2026-07-03-1548-63cd.md) |
