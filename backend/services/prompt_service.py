@@ -143,6 +143,27 @@ class PromptService:
                     custom_elements=custom_elements,
                     prior_saga=prior_saga,
                 )
+            elif _age_int >= 18:
+                # No dedicated Adult superhero template exists. Route 18+ to the
+                # Creator "Hero Saga" builder — the most mature non-antihero
+                # template — instead of falling through to the Sprout
+                # picture-book prompt (which is what any age outside 6-17
+                # previously got). Superhero Mode is UI-gated to under-18, so
+                # this path is only reachable by direct API callers.
+                return PromptService._build_superhero_prompt_creator(
+                    character=character,
+                    age=age,
+                    hero_costume_color=hero_costume_color,
+                    hero_cape_style=hero_cape_style,
+                    hero_emblem=hero_emblem,
+                    hero_power=hero_power,
+                    hero_catchphrase=hero_catchphrase,
+                    hero_alias=hero_alias,
+                    villain_id=superhero_villain_id,
+                    problem_id=superhero_problem_id,
+                    custom_elements=custom_elements,
+                    prior_saga=prior_saga,
+                )
             elif _age_int >= 15 and _age_int <= 17:
                 # Adolescent band — antihero "double life" saga (ages 15-17).
                 return PromptService._build_superhero_prompt_adolescent(

@@ -952,6 +952,26 @@ class AdvancedStoryEngine:
                 "Show how early decisions ripple forward to a resolution that feels genuinely earned through the character's actions, not announced."
             )
 
+        # Ceiling pass (2026-07-04): prompt-side prevention of the most common
+        # LLM tells in generated kids' fiction — stock phrasing, narrated
+        # summaries, moralizing endings (previously only caught post-hoc by
+        # _strip_lesson_endings), and formula titles. The banned-phrase list
+        # deliberately EXCLUDES body-signal/breathing phrases ("took a deep
+        # breath", "heart pounded") because the feelings/coping-tool guidance
+        # legitimately asks for those. Scene-over-summary is gated to 6+
+        # because Sprout's 10-25-word pages legitimately compress beats.
+        scene_rule = ""
+        if age >= 6:
+            scene_rule = (
+                "\n- **SCENE OVER SUMMARY**: Dramatize the beats that matter — "
+                "discoveries, confrontations, reunions, the moment a feeling "
+                "shifts — in real time with action and dialogue on the page. "
+                "Never compress one of those into a narrated summary sentence."
+            )
+        craft_rules = f"""- **LANGUAGE (MANDATORY)**: Earn wonder with specific nouns and strong verbs — never label it. In the story text, "magical", "amazing", "wonderful", and "special" are banned as descriptions; show why the thing is remarkable instead. Also banned anywhere in the story (rewrite the sentence if one appears): "little did ... know", "couldn't help but", "with newfound", "a mix of ... and ...", "the adventure had just begun", "grinned/smiled from ear to ear".{scene_rule}
+- **ENDING (MANDATORY)**: The final page lands on a concrete image, action, or line of dialogue that SHOWS what changed for {character}. Never state the lesson — endings built on "learned that", "From that day on", or "would never forget" are banned.
+- **TITLE**: Do not default to the "[Hero] and the [Adjective] [Noun]" formula. Prefer a title drawn from a specific image, object, or spoken line inside this story."""
+
         # Derive invisible virtue instruction from therapeutic_prompt
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
         feelings_instruction = _build_feelings_instruction(feelings_prompt, age, theme)
@@ -967,7 +987,7 @@ class AdvancedStoryEngine:
         if age <= 5:
             young_delight_rules = f"""
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
-1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — they are not optional.
+1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — they are not optional.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
 3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward.
@@ -976,7 +996,7 @@ class AdvancedStoryEngine:
         elif age <= 7:
             young_delight_rules = f"""
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
-1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). ElevenLabs reads these with natural vocal stress — keep them sprinkled, not constant.
+1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — keep them sprinkled, not constant.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
 3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or worry in their own fresh words (do NOT reuse a stock phrase) before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward.
@@ -1054,6 +1074,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
 - **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or climbing into the setting, and do NOT open with a "smelled like ..." line. Vary the entry point every time — begin in motion, mid-problem, in dialogue, or somewhere unexpected. Two stories about the same hero must not start the same way.
+{craft_rules}
 - **Tone**: {config['notes']}
 {young_delight_rules}- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}
 - **Complexity Calibration**: {complexity_instruction}
