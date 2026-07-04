@@ -11,6 +11,10 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
+try:
+    from backend.utils.lazy_import import load_first_available
+except ImportError:
+    from utils.lazy_import import load_first_available
 from .avatar_prompt_service import AvatarPromptService
 
 logger = logging.getLogger(__name__)
@@ -58,14 +62,15 @@ class AvatarGenerationService:
         if self.image_generator is None:
             openai_key = os.getenv("OPENAI_API_KEY")
             if openai_key:
+                OpenAIImageGenerator = load_first_available(
+                    [
+                        ("backend.openai_image_generator", "OpenAIImageGenerator"),
+                        ("openai_image_generator", "OpenAIImageGenerator"),
+                    ]
+                )
                 try:
-                    try:
-                        from backend.openai_image_generator import (
-                            OpenAIImageGenerator,
-                        )
-                    except ImportError:
-                        from openai_image_generator import OpenAIImageGenerator
-
+                    if OpenAIImageGenerator is None:
+                        raise ImportError("OpenAIImageGenerator could not be imported")
                     self.image_generator = OpenAIImageGenerator(api_key=openai_key)
                     logger.info(
                         "AvatarGenerationService initialized with OpenAIImageGenerator (gpt-image-2)"
@@ -79,26 +84,21 @@ class AvatarGenerationService:
         # not force-disabled. Gemini's ToS forbid child-directed apps, so
         # production must never reach this branch; it stays for local/dev only.
         if self.image_generator is None and allow_direct_gemini and not disable_gemini:
+            GeminiImageGenerator = load_first_available(
+                [
+                    ("backend.gemini_image_generator", "GeminiImageGenerator"),
+                    ("gemini_image_generator", "GeminiImageGenerator"),
+                ]
+            )
             try:
-                from backend.gemini_image_generator import GeminiImageGenerator
-
+                if GeminiImageGenerator is None:
+                    raise ImportError("GeminiImageGenerator could not be imported")
                 self.image_generator = GeminiImageGenerator()
                 logger.warning(
                     "AvatarGenerationService fell back to GeminiImageGenerator via "
                     "ALLOW_DIRECT_GEMINI_IMAGE=1 — Gemini's ToS prohibit "
                     "child-directed apps; local/dev only, never production"
                 )
-            except ImportError:
-                try:
-                    from gemini_image_generator import GeminiImageGenerator
-
-                    self.image_generator = GeminiImageGenerator()
-                    logger.warning(
-                        "AvatarGenerationService fell back to GeminiImageGenerator (direct import)"
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
-                    self.image_generator = None
             except Exception as e:
                 logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
                 self.image_generator = None
@@ -120,55 +120,49 @@ class AvatarGenerationService:
         if self.fallback_generator is None:
             replicate_token = os.getenv("REPLICATE_API_TOKEN")
             if replicate_token:
+                ReplicateImageGenerator = load_first_available(
+                    [
+                        (
+                            "backend.replicate_image_generator",
+                            "ReplicateImageGenerator",
+                        ),
+                        ("replicate_image_generator", "ReplicateImageGenerator"),
+                    ]
+                )
                 try:
-                    from backend.replicate_image_generator import (
-                        ReplicateImageGenerator,
-                    )
-
+                    if ReplicateImageGenerator is None:
+                        raise ImportError(
+                            "ReplicateImageGenerator could not be imported"
+                        )
                     self.fallback_generator = ReplicateImageGenerator(
                         api_key=replicate_token
                     )
                     logger.info(
                         "AvatarGenerationService initialized with Replicate PhotoMaker fallback"
                     )
-                except ImportError:
-                    try:
-                        from replicate_image_generator import ReplicateImageGenerator
-
-                        self.fallback_generator = ReplicateImageGenerator(
-                            api_key=replicate_token
-                        )
-                        logger.info(
-                            "AvatarGenerationService initialized with Replicate fallback (direct import)"
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to initialize Replicate fallback: {e}")
-                        self.fallback_generator = None
                 except Exception as e:
                     logger.warning(f"Failed to initialize Replicate fallback: {e}")
                     self.fallback_generator = None
             else:
                 # Fall back to OpenRouter if no Replicate token
+                OpenRouterImageGenerator = load_first_available(
+                    [
+                        (
+                            "backend.openrouter_image_generator",
+                            "OpenRouterImageGenerator",
+                        ),
+                        ("openrouter_image_generator", "OpenRouterImageGenerator"),
+                    ]
+                )
                 try:
-                    from backend.openrouter_image_generator import (
-                        OpenRouterImageGenerator,
-                    )
-
+                    if OpenRouterImageGenerator is None:
+                        raise ImportError(
+                            "OpenRouterImageGenerator could not be imported"
+                        )
                     self.fallback_generator = OpenRouterImageGenerator()
                     logger.info(
                         "AvatarGenerationService initialized with OpenRouter fallback"
                     )
-                except ImportError:
-                    try:
-                        from openrouter_image_generator import OpenRouterImageGenerator
-
-                        self.fallback_generator = OpenRouterImageGenerator()
-                        logger.info(
-                            "AvatarGenerationService initialized with OpenRouter fallback (direct import)"
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
-                        self.fallback_generator = None
                 except Exception as e:
                     logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
                     self.fallback_generator = None
@@ -409,13 +403,21 @@ Maintain the character's facial features while converting them into the target a
                         logger.info(
                             "Replicate fallback failed; retrying custom avatar with OpenRouter"
                         )
-                        try:
-                            from backend.openrouter_image_generator import (
-                                OpenRouterImageGenerator,
-                            )
-                        except ImportError:
-                            from openrouter_image_generator import (
-                                OpenRouterImageGenerator,
+                        OpenRouterImageGenerator = load_first_available(
+                            [
+                                (
+                                    "backend.openrouter_image_generator",
+                                    "OpenRouterImageGenerator",
+                                ),
+                                (
+                                    "openrouter_image_generator",
+                                    "OpenRouterImageGenerator",
+                                ),
+                            ]
+                        )
+                        if OpenRouterImageGenerator is None:
+                            raise ImportError(
+                                "OpenRouterImageGenerator could not be imported"
                             )
 
                         openrouter = OpenRouterImageGenerator()

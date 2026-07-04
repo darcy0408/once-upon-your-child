@@ -74,7 +74,7 @@ Tests prompt construction for all age/mode combinations WITHOUT calling the API.
 
 ```bash
 cd C:\dev\story-weaver-app\backend
-python tests/story_personalization_suite.py --prompt-only
+python tests/manual/story_personalization_suite.py --prompt-only
 ```
 
 **Expected:** 100% logic alignment across all age groups

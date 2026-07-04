@@ -194,11 +194,11 @@ class OpenAIImageGenerator:
         if not image_bytes:
             raise ValueError("image_bytes is required for a superhero transform")
         try:
-            from backend.gemini_image_generator import (
+            from backend.services.image_prompt_helpers import (
                 build_superhero_transform_prompt,
             )
         except ImportError:
-            from gemini_image_generator import build_superhero_transform_prompt
+            from services.image_prompt_helpers import build_superhero_transform_prompt
 
         prompt = build_superhero_transform_prompt(
             costume_color=costume_color,

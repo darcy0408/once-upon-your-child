@@ -659,7 +659,7 @@ class TestPowerVisualOverride:
     """MT-107: Explorer-band Superhero powers must inject visual signatures."""
 
     def test_feeling_sense_injects_empathy_glow(self):
-        from backend.gemini_image_generator import _power_visual_block
+        from backend.services.image_prompt_helpers import _power_visual_block
 
         block = _power_visual_block("feeling_sense")
         assert "soft pastel halo" in block.lower()
@@ -667,14 +667,14 @@ class TestPowerVisualOverride:
         assert "every frame" in block.lower()
 
     def test_invisibility_injects_translucent_wisp(self):
-        from backend.gemini_image_generator import _power_visual_block
+        from backend.services.image_prompt_helpers import _power_visual_block
 
         block = _power_visual_block("invisibility")
         assert "translucent" in block.lower()
         assert "wisp-edged" in block.lower()
 
     def test_no_power_id_returns_empty(self):
-        from backend.gemini_image_generator import _power_visual_block
+        from backend.services.image_prompt_helpers import _power_visual_block
 
         assert _power_visual_block(None) == ""
         assert _power_visual_block("") == ""
@@ -706,7 +706,7 @@ class TestBuildAppearanceDetails:
     matches the created avatar instead of a generic child."""
 
     def test_empty_appearance_yields_no_details(self):
-        from backend.gemini_image_generator import build_appearance_details
+        from backend.services.image_prompt_helpers import build_appearance_details
 
         # No appearance → empty list. (The fabrication bug lived on the Flutter
         # side; this guards the backend never invents one from a bare dict.)
@@ -714,7 +714,7 @@ class TestBuildAppearanceDetails:
         assert build_appearance_details({}) == []
 
     def test_only_supplied_fields_are_emitted(self):
-        from backend.gemini_image_generator import build_appearance_details
+        from backend.services.image_prompt_helpers import build_appearance_details
 
         details = build_appearance_details({"skin_tone": "deep", "gender": "boy"})
         joined = " | ".join(details)
@@ -725,20 +725,20 @@ class TestBuildAppearanceDetails:
         assert "eye color" not in joined
 
     def test_photo_hair_style_phrase_is_passed_through(self):
-        from backend.gemini_image_generator import build_appearance_details
+        from backend.services.image_prompt_helpers import build_appearance_details
 
         # The custom-photo pipeline returns hair as one combined phrase.
         details = build_appearance_details({"hair_style": "wavy black shoulder-length"})
         assert any("wavy black shoulder-length" in d for d in details)
 
     def test_distinguishing_feature_is_emitted(self):
-        from backend.gemini_image_generator import build_appearance_details
+        from backend.services.image_prompt_helpers import build_appearance_details
 
         details = build_appearance_details({"distinguishing": "round glasses"})
         assert any("notable feature: round glasses" in d for d in details)
 
     def test_legacy_flat_keys_still_read(self):
-        from backend.gemini_image_generator import build_appearance_details
+        from backend.services.image_prompt_helpers import build_appearance_details
 
         details = build_appearance_details(
             {"hair": "red", "skin": "fair", "outfit": "blue raincoat"}

@@ -46,6 +46,7 @@ try:
         make_log_error,
         make_log_response,
     )
+    from backend.utils.lazy_import import load_first_available
     from backend.utils.request_logger import init_request_logging
 except ImportError:
     # Fallback if backend package not found (e.g. running from inside backend dir without path fix)
@@ -67,6 +68,7 @@ except ImportError:
         make_log_response,
         make_handle_error,
     )
+    from utils.lazy_import import load_first_available
     from utils.request_logger import init_request_logging
 
 import sentry_sdk
@@ -558,10 +560,17 @@ def create_app(config_name):
             "ALLOW_DIRECT_GEMINI_IMAGE", ""
         ).strip().lower() in ("1", "true", "yes")
         if openrouter_key:
-            try:
-                from backend.openrouter_image_generator import OpenRouterImageGenerator
-            except ImportError:
-                from openrouter_image_generator import OpenRouterImageGenerator
+            OpenRouterImageGenerator = load_first_available(
+                [
+                    (
+                        "backend.openrouter_image_generator",
+                        "OpenRouterImageGenerator",
+                    ),
+                    ("openrouter_image_generator", "OpenRouterImageGenerator"),
+                ]
+            )
+            if OpenRouterImageGenerator is None:
+                raise ImportError("OpenRouterImageGenerator could not be imported")
 
             image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
             logger.info("Image generator initialized with OpenRouter")
@@ -571,10 +580,14 @@ def create_app(config_name):
             and allow_direct_gemini
             and not disable_gemini_image
         ):
-            try:
-                from backend.gemini_image_generator import GeminiImageGenerator
-            except ImportError:
-                from gemini_image_generator import GeminiImageGenerator
+            GeminiImageGenerator = load_first_available(
+                [
+                    ("backend.gemini_image_generator", "GeminiImageGenerator"),
+                    ("gemini_image_generator", "GeminiImageGenerator"),
+                ]
+            )
+            if GeminiImageGenerator is None:
+                raise ImportError("GeminiImageGenerator could not be imported")
 
             image_generator = GeminiImageGenerator()
             logger.warning(

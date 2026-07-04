@@ -30,6 +30,7 @@ from ..tasks.story_tasks import (
 )
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..utils.audit import audit_log
+from ..utils.lazy_import import load_first_available
 from ..utils.validators import (
     sanitize_text,
     validate_age,
@@ -557,16 +558,24 @@ def _generate_flux_illustration(**kwargs) -> list:
     """
     images: list = []
     if not _flux_disabled("CLOUDFLARE_FLUX_DISABLED"):
-        try:
-            from ..cloudflare_image_generator import CloudflareImageGenerator
-        except ImportError:
-            from cloudflare_image_generator import CloudflareImageGenerator
+        CloudflareImageGenerator = load_first_available(
+            [
+                ("backend.cloudflare_image_generator", "CloudflareImageGenerator"),
+                ("cloudflare_image_generator", "CloudflareImageGenerator"),
+            ]
+        )
+        if CloudflareImageGenerator is None:
+            raise ImportError("CloudflareImageGenerator could not be imported")
         images = CloudflareImageGenerator().generate_story_illustration_flux(**kwargs)
     if not images and not _flux_disabled("FLUX_SCHNELL_DISABLED"):
-        try:
-            from ..replicate_image_generator import ReplicateImageGenerator
-        except ImportError:
-            from replicate_image_generator import ReplicateImageGenerator
+        ReplicateImageGenerator = load_first_available(
+            [
+                ("backend.replicate_image_generator", "ReplicateImageGenerator"),
+                ("replicate_image_generator", "ReplicateImageGenerator"),
+            ]
+        )
+        if ReplicateImageGenerator is None:
+            raise ImportError("ReplicateImageGenerator could not be imported")
         images = ReplicateImageGenerator().generate_story_illustration_flux_schnell(
             **kwargs
         )
@@ -2232,15 +2241,33 @@ def create_story_blueprint(
             # layer degrades open: any DB fault behaves as a miss.
             cache_key = None
             if generator is None and num_images == 1:
-                try:
-                    from ..services.illustration_cache_service import (
-                        compute_cache_key,
-                        get_cached_illustration,
-                    )
-                except ImportError:
-                    from services.illustration_cache_service import (
-                        compute_cache_key,
-                        get_cached_illustration,
+                compute_cache_key = load_first_available(
+                    [
+                        (
+                            "backend.services.illustration_cache_service",
+                            "compute_cache_key",
+                        ),
+                        (
+                            "services.illustration_cache_service",
+                            "compute_cache_key",
+                        ),
+                    ]
+                )
+                get_cached_illustration = load_first_available(
+                    [
+                        (
+                            "backend.services.illustration_cache_service",
+                            "get_cached_illustration",
+                        ),
+                        (
+                            "services.illustration_cache_service",
+                            "get_cached_illustration",
+                        ),
+                    ]
+                )
+                if compute_cache_key is None or get_cached_illustration is None:
+                    raise ImportError(
+                        "illustration_cache_service could not be imported"
                     )
                 cache_key = compute_cache_key(
                     scene_description=scene_description,
@@ -2300,10 +2327,16 @@ def create_story_blueprint(
                 # above already short-circuited and never reaches here, so a
                 # re-read never consumes quota.
                 if current_user_id:
-                    try:
-                        from ..utils.ai_quota import check_illustration_quota
-                    except ImportError:
-                        from utils.ai_quota import check_illustration_quota
+                    check_illustration_quota = load_first_available(
+                        [
+                            ("backend.utils.ai_quota", "check_illustration_quota"),
+                            ("utils.ai_quota", "check_illustration_quota"),
+                        ]
+                    )
+                    if check_illustration_quota is None:
+                        raise ImportError(
+                            "check_illustration_quota could not be imported"
+                        )
                     user_tier = (
                         getattr(current_user, "subscription_tier", "free") or "free"
                     )
@@ -2524,14 +2557,20 @@ def create_story_blueprint(
                 first = transformed_illustrations[0]
                 img_data = first.get("image_data")
                 if img_data:
-                    try:
-                        from ..services.illustration_cache_service import (
-                            store_illustration,
-                        )
-                    except ImportError:
-                        from services.illustration_cache_service import (
-                            store_illustration,
-                        )
+                    store_illustration = load_first_available(
+                        [
+                            (
+                                "backend.services.illustration_cache_service",
+                                "store_illustration",
+                            ),
+                            (
+                                "services.illustration_cache_service",
+                                "store_illustration",
+                            ),
+                        ]
+                    )
+                    if store_illustration is None:
+                        raise ImportError("store_illustration could not be imported")
                     store_illustration(
                         cache_key,
                         img_data,
@@ -2552,10 +2591,16 @@ def create_story_blueprint(
                 and not served_from_cache
                 and current_user_id
             ):
-                try:
-                    from ..utils.ai_quota import increment_illustration_quota
-                except ImportError:
-                    from utils.ai_quota import increment_illustration_quota
+                increment_illustration_quota = load_first_available(
+                    [
+                        ("backend.utils.ai_quota", "increment_illustration_quota"),
+                        ("utils.ai_quota", "increment_illustration_quota"),
+                    ]
+                )
+                if increment_illustration_quota is None:
+                    raise ImportError(
+                        "increment_illustration_quota could not be imported"
+                    )
                 user_tier_for_increment = (
                     getattr(current_user, "subscription_tier", "free") or "free"
                 ).lower()

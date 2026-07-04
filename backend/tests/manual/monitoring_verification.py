@@ -4,7 +4,7 @@ from functools import wraps
 from unittest.mock import MagicMock, patch
 
 # Ensure backend module is importable
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from backend.app import create_app
 

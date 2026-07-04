@@ -5,7 +5,7 @@ core of Superhero Mode's "turn your character into a superhero" feature
 (see docs/superhero-mode-improvement-design-2026-05-31.md, Chunk A).
 """
 
-from backend.gemini_image_generator import build_superhero_transform_prompt
+from backend.services.image_prompt_helpers import build_superhero_transform_prompt
 
 
 def test_full_selection_includes_all_descriptors():

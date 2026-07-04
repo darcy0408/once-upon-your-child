@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # Add parent directory to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from backend.app import create_app
 from backend.database import db
