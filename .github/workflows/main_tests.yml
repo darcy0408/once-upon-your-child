@@ -68,6 +68,10 @@ jobs:
       # blocked this earlier were fixed at the source (AppCard + the parent-
       # controls toggle now wrap their tiles in a transparent Material).
       # Excludes test/goldens: Windows-baked pixel baselines won't match Linux.
+      # Includes test/services, test/providers, test/utils — previously
+      # unrun, which meant distress_detector_test.dart (crisis-detection
+      # safety logic) had zero CI coverage.
       run: >
         flutter test --no-pub -r compact
         test/widgets test/screens test/models test/a11y test/integration
+        test/services test/providers test/utils

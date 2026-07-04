@@ -460,13 +460,27 @@ def create_tts_blueprint(limiter, require_auth):
         # commercially licensed for a kids' app (MT-248) and are bypassed the
         # moment Azure goes live; kept as the pre-Azure fallback so dev/preview
         # narration still works before the Azure key is set.
-        if not audio_bytes and not azure_enabled:
+        #
+        # Defense in depth: if Azure (the licensed provider) is unavailable —
+        # e.g. an unset/expired key — under-13 users must NOT silently fall
+        # through to Gemini, which is contractually barred for child-directed
+        # use. Refuse both legacy providers for them; the request 503s below
+        # and the client falls back to its on-device voice, same as when
+        # Azure itself fails.
+        if not audio_bytes and not azure_enabled and is_under_13:
+            audit_log(
+                "tts_legacy_chain_blocked_under13",
+                user_id=user_id,
+                data={"reason": "azure_unavailable"},
+            )
+
+        if not audio_bytes and not azure_enabled and not is_under_13:
             gemini_result = _gemini_synthesize(text, voice_id, speed)
             if gemini_result is not None and gemini_result[0]:
                 audio_bytes, word_timestamps = gemini_result
                 provider = "gemini"
 
-        if not audio_bytes and not azure_enabled:
+        if not audio_bytes and not azure_enabled and not is_under_13:
             edge_result = _edge_synthesize(text, voice_id, speed)
             if edge_result is not None and edge_result[0]:
                 audio_bytes, word_timestamps = edge_result

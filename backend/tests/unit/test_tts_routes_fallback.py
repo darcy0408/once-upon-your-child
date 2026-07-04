@@ -445,54 +445,61 @@ class TestTtsDisabledKillSwitch:
 class TestUnder13ElevenLabsGate:
     """A user flagged ``is_under_13`` must NEVER reach ElevenLabs, even when they
     opt in via ``premium_voice`` or request dialogue (``character_voice_id``).
-    They are served by the Gemini -> Edge chain instead."""
 
-    def test_under13_premium_voice_skips_elevenlabs_serves_gemini(
+    With Azure (the licensed provider, MT-248) unconfigured — as in this test
+    env — the legacy Gemini -> Edge chain is ALSO barred for them: Gemini bars
+    under-18 use contractually, and edge-tts isn't licensed for commercial
+    use. Rather than silently falling through to either, the request 503s so
+    the client falls back to its on-device voice, exactly as if Azure itself
+    had failed."""
+
+    def test_under13_premium_voice_gets_503_not_gemini(
         self, client, under13_user_headers, tts: TTSMocks
     ) -> None:
         # Explicit premium opt-in, but the user is under 13 — ElevenLabs is
-        # refused and Gemini serves the narration.
+        # refused, and Gemini must not silently serve the narration either.
         status, body = _post_synthesize(
             client, under13_user_headers, premium_voice=True
         )
 
-        assert status == 200
-        assert body["provider"] == "gemini"
-        assert base64.b64decode(body["audio_base64"]) == b"gemini-audio"
-        # ElevenLabs must not have been invoked by ANY path (timestamps, chunked,
-        # or dialogue).
+        assert status == 503
+        assert body["error"] == "TTS service unavailable"
+        # No provider — licensed or legacy — was invoked for this user.
         tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
         tts.elevenlabs.generate_speech_chunked.assert_not_called()
         tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
-        tts.gemini.generate_speech_with_timestamps.assert_called_once()
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()
 
-    def test_under13_dialogue_request_skips_elevenlabs_serves_gemini(
+    def test_under13_dialogue_request_gets_503_not_gemini(
         self, client, under13_user_headers, tts: TTSMocks
     ) -> None:
         # character_voice_id normally forces ElevenLabs (only multi-voice
-        # provider). Under 13 it must still be refused — no dialogue synthesis.
+        # provider). Under 13 it must still be refused — no dialogue
+        # synthesis, and no silent fall-through to Gemini either.
         status, body = _post_synthesize(
             client, under13_user_headers, character_voice_id="some-character-voice"
         )
 
-        assert status == 200
-        assert body["provider"] == "gemini"
+        assert status == 503
+        assert body["error"] == "TTS service unavailable"
         tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
         tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
-        tts.gemini.generate_speech_with_timestamps.assert_called_once()
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()
 
-    def test_under13_falls_through_to_edge_when_gemini_unavailable(
+    def test_under13_does_not_fall_through_to_edge_either(
         self, client, under13_user_headers, tts: TTSMocks, mocker
     ) -> None:
-        # The gate must not strand under-13 users: with Gemini down they still
-        # get the free Edge voice, never ElevenLabs.
+        # The gate must not strand under-13 users onto Edge TTS (unlicensed
+        # for commercial use, MT-248) just because Gemini happens to be
+        # unavailable too — both legacy providers are barred for them
+        # regardless of which one would otherwise have served the request.
         mocker.patch("backend.routes.tts_routes._get_gemini_service", return_value=None)
 
         status, body = _post_synthesize(
             client, under13_user_headers, premium_voice=True
         )
 
-        assert status == 200
-        assert body["provider"] == "edge"
+        assert status == 503
+        assert body["error"] == "TTS service unavailable"
         tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
-        tts.edge.generate_speech_with_timestamps.assert_called_once()
+        tts.edge.generate_speech_with_timestamps.assert_not_called()
