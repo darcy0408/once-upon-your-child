@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-03** — superseded by [`LAUNCH_READINESS.md`](../LAUNCH_READINESS.md). Describes an earlier stack/plan (pre-Cloudflare, pre-OpenAI/Azure migration) and is kept for historical reference only — do not use it to judge current launch status.
+
 # 🚀 Story Weaver App - MASTER LAUNCH PLAN (UPDATED)
 
 **Mission:** Get Story Weaver to market with exciting, engaging stories kids love

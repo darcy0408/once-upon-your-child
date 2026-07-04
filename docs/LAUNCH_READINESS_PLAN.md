@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-03** — superseded by [`LAUNCH_READINESS.md`](../LAUNCH_READINESS.md). Describes an earlier stack/plan (pre-Cloudflare, pre-OpenAI/Azure migration) and is kept for historical reference only — do not use it to judge current launch status.
+
 # Story Weaver App - Launch Readiness Plan
 **Created:** February 12, 2026
 **Target Launch:** March 5-12, 2026 (3-4 weeks)
