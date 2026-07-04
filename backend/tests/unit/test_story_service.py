@@ -28,13 +28,13 @@ class TestAgeBandClassification:
     """Test age band calculation logic"""
 
     def test_age_band_toddler(self):
-        """Test ages 3-4 are classified correctly"""
+        """Test ages 3-5 are classified correctly (Sprout is app-wide age<=5)"""
         assert _get_age_band(3) == "3-4"
         assert _get_age_band(4) == "3-4"
+        assert _get_age_band(5) == "3-4"
 
     def test_age_band_early_elementary(self):
-        """Test ages 5-7 are classified correctly"""
-        assert _get_age_band(5) == "5-7"
+        """Test ages 6-7 are classified correctly"""
         assert _get_age_band(6) == "5-7"
         assert _get_age_band(7) == "5-7"
 

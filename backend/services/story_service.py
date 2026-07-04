@@ -449,8 +449,33 @@ def transform_parent_context_to_story_guidance(
     }
 
 
+def _format_pet_label(
+    name: str | None, species: str | None = None, color: str | None = None
+) -> str | None:
+    """Render a companion pet for prompt text, e.g. "Rex the brown dog".
+
+    `color` is free text the child typed in the wizard; it was previously
+    collected but never rendered into the prompt. Lowercased/stripped and
+    skipped when blank so a missing color degrades gracefully to the
+    existing "{name} the {species}" (or bare name) form.
+    """
+    if not name:
+        return None
+    species_clean = (species or "").strip()
+    if not species_clean:
+        return name
+    color_clean = (color or "").strip().lower()
+    descriptor = f"{color_clean} {species_clean}" if color_clean else species_clean
+    return f"{name} the {descriptor}"
+
+
 def _get_age_band(age: int) -> str:
-    if age <= 4:
+    # Sprout is defined app-wide as age <= 5 (age_band_theme.dart,
+    # content_moderator.py SPROUT_MAX_AGE=5, the sprout word-range override
+    # below). 5-year-olds must land in the "3-4" band's stricter protections
+    # (forbidden-word list, 8-word sentence ceiling, animism guard) — the
+    # band key stays "3-4" for compatibility with AGE_CONSTRAINTS lookups.
+    if age <= 5:
         return "3-4"
     if age <= 7:
         return "5-7"
@@ -683,7 +708,11 @@ class AdvancedStoryEngine:
         if companion_pets:
             pets = []
             for p in companion_pets:
-                pets.append(f"{p['name']} the {p.get('species', 'pet')}")
+                pets.append(
+                    _format_pet_label(
+                        p["name"], p.get("species", "pet"), p.get("color")
+                    )
+                )
                 all_companion_names.append(p["name"])
             companion_sections.append(f"PETS: {', '.join(pets)}")
         if companion_characters:
@@ -1580,24 +1609,18 @@ def _build_learning_to_read_prompt(
         pets = character_details.get("pets") or []
         for p in pets:
             name = p.get("name")
-            species = p.get("species")
-            if name and species:
-                companion_sections.append(f"{name} the {species}")
-                all_companion_names.append(name)
-            elif name:
-                companion_sections.append(name)
+            label = _format_pet_label(name, p.get("species"), p.get("color"))
+            if label:
+                companion_sections.append(label)
                 all_companion_names.append(name)
 
     if companion_pets:
         for p in companion_pets:
             if isinstance(p, dict):
                 name = p.get("name")
-                species = p.get("species")
-                if name and species:
-                    companion_sections.append(f"{name} the {species}")
-                    all_companion_names.append(name)
-                elif name:
-                    companion_sections.append(name)
+                label = _format_pet_label(name, p.get("species"), p.get("color"))
+                if label:
+                    companion_sections.append(label)
                     all_companion_names.append(name)
             elif p:
                 companion_sections.append(str(p))
@@ -1893,12 +1916,9 @@ def _build_rhyme_time_prompt(
         for p in companion_pets:
             if isinstance(p, dict):
                 name = p.get("name")
-                species = p.get("species")
-                if name and species:
-                    companion_sections.append(f"{name} the {species}")
-                    all_companion_names.append(name)
-                elif name:
-                    companion_sections.append(name)
+                label = _format_pet_label(name, p.get("species"), p.get("color"))
+                if label:
+                    companion_sections.append(label)
                     all_companion_names.append(name)
             elif p:
                 companion_sections.append(str(p))
@@ -2116,11 +2136,7 @@ def _build_bedtime_prompt(
             if isinstance(p, dict):
                 _add_companion(
                     p.get("name"),
-                    (
-                        f"{p.get('name')} the {p.get('species', 'pet')}"
-                        if p.get("species")
-                        else p.get("name")
-                    ),
+                    _format_pet_label(p.get("name"), p.get("species"), p.get("color")),
                 )
             elif p:
                 _add_companion(str(p))

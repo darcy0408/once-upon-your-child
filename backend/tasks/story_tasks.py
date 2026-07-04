@@ -1826,7 +1826,15 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     is_standard_mode = story_length == "standard"
 
                     if age <= 5:
-                        min_words_threshold = 250 if is_standard_mode else 100
+                        # Sprout (age<=5) word count is capped by the live prompt's
+                        # page-based override (story_service.py ~824-873), which sets
+                        # word_range to (_sprout_pages*12, _sprout_pages*25) — e.g.
+                        # (120, 250) for standard/medium — with a HARD LIMIT of 300
+                        # words. A 250-word floor for standard mode left almost no
+                        # room to pass, causing silent retries. Use the same 100-word
+                        # floor across quick/standard/epic since they all share the
+                        # sprout page-based cap.
+                        min_words_threshold = 100
                     elif age <= 7:
                         min_words_threshold = 500 if is_standard_mode else 300
                     elif age == 8:

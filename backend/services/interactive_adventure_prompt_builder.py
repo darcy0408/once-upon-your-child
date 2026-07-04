@@ -285,7 +285,10 @@ SAFETY RULES:
     @classmethod
     def get_age_band(cls, age: int) -> str:
         """Determine age band from specific age based on new categories"""
-        if age <= 4:
+        # Sprout is defined app-wide as age <= 5 (age_band_theme.dart,
+        # content_moderator.py SPROUT_MAX_AGE=5) — keep 5-year-olds in the
+        # stricter "3-4" band rather than promoting them to "5-7".
+        if age <= 5:
             return "3-4"
         elif age <= 7:
             return "5-7"
@@ -1446,8 +1449,13 @@ OPEN STORY THREADS (must eventually resolve):
         companion_descriptions = []
         for comp in companions[:4]:
             if "species" in comp:
+                # Color is free text the child typed in the wizard; render it
+                # when present (e.g. "Rex the brown dog") instead of dropping it.
+                color = (comp.get("color") or "").strip().lower()
+                species = comp.get("species", "pet")
+                descriptor = f"{color} {species}" if color else species
                 companion_descriptions.append(
-                    f"{comp.get('name', 'companion')} the {comp.get('species', 'pet')} [ANIMAL]"
+                    f"{comp.get('name', 'companion')} the {descriptor} [ANIMAL]"
                 )
             else:
                 # Append whatever characterization the wizard forwarded so the

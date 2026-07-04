@@ -165,7 +165,8 @@ class TestBandMapping:
         boundaries = [
             (3, "3-4"),
             (4, "3-4"),
-            (5, "5-7"),
+            (5, "3-4"),
+            (6, "5-7"),
             (7, "5-7"),
             (8, "8-10"),
             (10, "8-10"),
@@ -612,12 +613,14 @@ class TestSproutInvariants:
     """Sprout (ages 3–5) specific requirements from the UX audit."""
 
     def test_sprout_backend_band_key_is_3_4(self):
-        # Backend: ages 3–4 → '3-4'. Age 5 maps to '5-7' in the backend
-        # (Flutter maps 5 → sprout, but backend has a finer-grained split).
-        for age in (3, 4):
+        # Backend: ages 3-5 → '3-4' (the stricter band). This matches the
+        # app-wide Sprout definition of age <= 5 (Flutter's age_band_theme.dart,
+        # content_moderator.py SPROUT_MAX_AGE=5, and the sprout word-range
+        # override in story_service.py) — previously age 5 fell through to the
+        # looser '5-7' band, an off-by-one that skipped Sprout's forbidden-word
+        # list, sentence-length ceiling, and animism guard for 5-year-olds.
+        for age in (3, 4, 5):
             assert _get_age_band(age) == "3-4", f"Age {age} must map to '3-4'"
-        # Age 5 lands in the next backend band (5-7) — this is expected
-        assert _get_age_band(5) == "5-7", "Age 5 maps to '5-7' in the backend"
 
     def test_sprout_short_story_max_300_words(self):
         lo, hi = AGE_CONSTRAINTS["3-4"]["regular"]["short"]

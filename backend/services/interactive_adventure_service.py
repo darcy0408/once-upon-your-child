@@ -767,6 +767,7 @@ class InteractiveAdventureService:
                         "name": pet.get("name"),
                         "species": pet.get("species"),
                         "personality": pet.get("personality"),
+                        "color": pet.get("color"),
                     }
                 )
 
