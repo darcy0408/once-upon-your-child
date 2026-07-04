@@ -135,16 +135,14 @@ class HeroScenePage extends StatelessWidget {
       SceneButtonData(
         id: 'crystal_cavern',
         label: scenarioById('crystal_cavern')?.titleForAge(age) ?? 'Crystal Cavern',
+        // MT-311: this tile used to swap in an ocean tile image for Sprout
+        // only, so a pre-reader (who picks by picture, not label) would tap
+        // "ocean" and land in a crystal-cavern story instead. Sprout now
+        // shares the same crystal art as Explorer/default bands.
         normalAsset: sceneAsset(
-            'crystal_cavern',
-            band.band == AgeBand.sprout
-                ? 'assets/images/ui/sprout/tiles/ocean.webp'
-                : 'assets/images/scenarios/crystal_cave_btn.webp'),
-        pressedAsset: sceneAsset(
-            'crystal_cavern',
-            band.band == AgeBand.sprout
-                ? 'assets/images/ui/sprout/tiles/ocean.webp'
-                : 'assets/images/scenarios/crystal_cave_btn_pressed.webp'),
+            'crystal_cavern', 'assets/images/scenarios/crystal_cave_btn.webp'),
+        pressedAsset: sceneAsset('crystal_cavern',
+            'assets/images/scenarios/crystal_cave_btn_pressed.webp'),
         thematicQuestion: thematicQuestionFor('crystal_cavern'),
         description: descriptionFor('crystal_cavern'),
       ),

@@ -181,7 +181,16 @@ class WizardDataMapper {
 
         // Resolve band-specific behavior pattern, falling back to the generic one.
         final bandName = ageBandFromAge(age <= 0 ? 8 : age).name;
-        final bandKey = '${bandName}_$companionId';
+        // Sprout companion ids are slash-prefixed (e.g. 'sprout/pebble') to
+        // disambiguate their asset paths from other bands' bare ids ('ember').
+        // The authored lookup tables key off the bare id ('sprout_pebble'),
+        // so strip everything up to and including the last '/' before
+        // building the lookup key — otherwise 'sprout_sprout/pebble' never
+        // matches and Sprout companions silently lose their personality data.
+        final normalizedCompanionId = companionId?.contains('/') == true
+            ? companionId!.substring(companionId.lastIndexOf('/') + 1)
+            : companionId;
+        final bandKey = '${bandName}_$normalizedCompanionId';
         final bandBehavior = companionBehaviorPatterns[bandKey] ??
             companionData?.behaviorPattern ??
             '';

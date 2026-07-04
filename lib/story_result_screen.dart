@@ -751,6 +751,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
   /// Narrate a story page — tries ElevenLabs first, falls back to on-device TTS.
   Future<void> _speakPage(String text) async {
+    // MT-311: stop whatever was still narrating (auto or manual replay)
+    // before starting the new page/utterance, so speech never overlaps.
+    await _tts?.stop();
+    await _audioPlayer?.stop();
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedVoiceId = prefs.getString(ElevenLabsVoice.prefsKey);
@@ -2639,6 +2643,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
   void _handlePageFlip(bool isForward) {
     if (mounted) {
+      // MT-311: cut off any narration still playing for the page being left
+      // — otherwise the previous page's auto-narrated (or manually
+      // triggered) audio keeps talking over the new page. No-ops when
+      // nothing is playing / on bands where _tts and _audioPlayer are null.
+      unawaited(_tts?.stop());
+      unawaited(_audioPlayer?.stop());
       setState(() {
         if (isForward) {
           _currentPageIndex = (_currentPageIndex + 1).clamp(0, _totalPages - 1);
@@ -2936,6 +2946,19 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                     setState(() {
                       _revealedPages.add(index);
                     });
+                    // MT-311: a pre-reader can't read the ~40s of typewriter
+                    // text that was just revealed, so auto-narrate it the
+                    // instant it finishes — mirrors story_reader_screen's
+                    // (the Reread screen) existing auto-play for young
+                    // bands. Older bands are untouched: unexpected audio is
+                    // embarrassing for them (see _onFirstFrame above). The
+                    // typewriter widget for this index is removed from the
+                    // tree once revealed, so this fires at most once per
+                    // page view; _handlePageFlip stops any in-flight
+                    // narration when the reader turns the page.
+                    if (band.band.isYoung && _ttsAutoEnabled) {
+                      _speakPage(pageText);
+                    }
                   },
                   style: GoogleFonts.merriweather(
                     fontSize: band.body(20) * _textScale,

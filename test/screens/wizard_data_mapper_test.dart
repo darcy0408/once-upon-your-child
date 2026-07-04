@@ -119,4 +119,67 @@ void main() {
       expect(detailsFor('Boy')['pronouns'], equals('he/him'));
     });
   });
+
+  group(
+      'WizardDataMapper.mapToStoryRequest — Sprout companion id normalization (MT-311)',
+      () {
+    test(
+      "slash-prefixed sprout companion id ('sprout/pebble') resolves its authored band behaviorPattern",
+      () {
+        final wd = _baseHero(age: 4)
+          ..selectedCompanions = ['sprout/pebble']
+          ..companionNames = ['Pebble'];
+
+        final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+        final companions =
+            payload['companion_characters'] as List<dynamic>;
+        final pebble = companions.firstWhere((c) => c['name'] == 'Pebble')
+            as Map<String, dynamic>;
+
+        // Before the fix, bandKey was 'sprout_sprout/pebble', which never
+        // matched the authored 'sprout_pebble' entry, so Pebble reached the
+        // story prompt with only a bare name — no personality/power data.
+        expect(
+          pebble['behaviorPattern'],
+          contains('sparkly confetti sneezes'),
+        );
+        expect(pebble['signaturePower'], contains('Sparkle Sneeze'));
+      },
+    );
+
+    test(
+      "slash-prefixed sprout Robin resolves 'sprout_robin' behaviorPattern before the generic magicCompanions fallback",
+      () {
+        final wd = _baseHero(age: 4)
+          ..selectedCompanions = ['sprout/robin']
+          ..companionNames = ['Robin'];
+
+        final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+        final companions =
+            payload['companion_characters'] as List<dynamic>;
+        // Robin always resolves a magicCompanions match (by design — its
+        // name falls through to the generic "Rockin' Robin" entry for every
+        // band, not just Sprout), so this asserts on behaviorPattern, the
+        // field this bug actually corrupts.
+        final robin = companions.single as Map<String, dynamic>;
+
+        // Sprout Robin's authored line ("lands on your head like it's her
+        // personal throne") is distinct from every other band's Robin text.
+        // Before the fix, bandKey was 'sprout_sprout/robin' — a miss — so
+        // `companionBehaviorPatterns[bandKey] ?? companionData?.behaviorPattern`
+        // silently fell through to the generic magicCompanions Guardian
+        // Flight text instead of Sprout's authored line.
+        expect(
+          robin['behaviorPattern'],
+          contains('personal throne'),
+        );
+        expect(
+          robin['behaviorPattern'],
+          isNot(contains('threshold for danger')),
+        );
+      },
+    );
+  });
 }
