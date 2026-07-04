@@ -224,6 +224,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The button renders below the fold on the default 800x600 test
+    // viewport; scroll it into view before tapping or the tap silently
+    // misses (hits the root view instead) and restoreCalls stays 0.
+    await tester.ensureVisible(find.text('Restore Purchases'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Restore Purchases'));
     await tester.pumpAndSettle();
 
