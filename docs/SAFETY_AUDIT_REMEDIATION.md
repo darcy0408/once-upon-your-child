@@ -25,9 +25,10 @@ tracked PRs are now merged to main:**
 | BYOK image-gen hardening + PP disclosure | `fix/gemini-byok-consent-guard` | ☑ **#319** |
 | LLM moderator decouple Gemini→OpenAI (launch-gate) | overnight sweep | ☑ **#341** |
 
-**Remaining code work: only P2#17 (Isar at-rest encryption) — see below.**
-P2#14 was reclassified won't-fix (see PR 6-lite). Everything else is owner-ops
-config flips or external legal/clinical sign-off.
+**Remaining code work: none.** P2#17 (Isar at-rest encryption) was resolved
+⊘ not-implementable-in-Isar-3.1.0 on 2026-07-03 (OS file-based encryption covers
+it; see PR 7 below). P2#14 was reclassified won't-fix (see PR 6-lite). Everything
+else is owner-ops config flips or external legal/clinical sign-off.
 
 ## Sequenced PRs
 
@@ -64,14 +65,14 @@ Covers `@require_parental_consent` on character creation, PII/prompt log redacti
 
 ### PR 7 — Data-at-rest & external surfaces
 - ↪ **P2#22** Crisis-resource host allowlist — `session/crisis-input-scan` already edits `crisis_resources_panel.dart`.
-- ☐ **P2#17** Isar `encryptionKey` for offline child PII + PP disclosure — **deferred**: carries local-cache data-loss/migration risk; PP half collides with #319. Needs a dedicated, careful pass.
+- ⊘ **P2#17** Isar `encryptionKey` for offline child PII — **not implementable as written (resolved 2026-07-03).** Isar **3.1.0 (our pinned version) has no `encryptionKey` / at-rest-encryption API** — the feature does not exist in this release line, so the remediation as specified cannot be built. Mitigation that *does* cover the risk today: OS-level file-based encryption (Android FBE on all supported devices; iOS Data Protection), which encrypts the Isar file at rest whenever the device is locked. Web builds use the `SharedPreferences` stub (browser storage, no Isar file). **Post-launch follow-up:** re-evaluate when moving off Isar 3.x (Isar 4 / drift+sqlcipher / encrypted alternative) — track as a v1.1 item, not a launch gate. PP-disclosure half was superseded by #319's privacy-policy work.
 
 ## Launch-gate follow-ups (not fires; close before going live)
 - ☑ **Decouple the LLM moderator from Gemini** — **PR #341 (merged 2026-07-01).** The layer-2 LLM moderator in `backend/utils/content_moderator.py` now runs on the same OpenAI client/model as story text (`OPENAI_API_KEY`, `gpt-5-mini`; mirrors `openai_story_generator`), with new optional `OPENAI_MODERATION_*` env overrides. Public interface + safety posture (fail-open default, fail-**closed** for minors) preserved, so callers are unchanged. `GEMINI_API_KEY` no longer needed by the moderation path — drop it after prod-verify (still an image last-resort; see [[MT-295]] / MT-313). Original note below:
 - ☐ **(original) Decouple the LLM moderator from Gemini.** `content_moderator.py` runs `gemini-2.5-flash-lite`, so layer-2 moderation depends on `GEMINI_API_KEY`. Two reasons to move it to the OpenAI model already used for story text (`OPENAI_API_KEY`): (1) **MT-137 ToS** — Gemini forbids child-directed apps, so sending kids' story text there *for moderation* trips the same ToS that drove the text/image migration; (2) **resilience** — a single Gemini key being unavailable silently turns every minor's story into the generic safe-fallback (now fail-closed for all ≤17 after #332). **Build stacked on #332** (same file). After it lands, `GEMINI_API_KEY` can be dropped entirely.
 
 ## Verification tasks (Pass-1 "could not verify")
-- ☐ Trace live onboarding endpoint order (is `/create-character` reachable pre-consent?).
+- ☑ Trace live onboarding endpoint order (is `/create-character` reachable pre-consent?) — **verified 2026-07-03: YES, reachable.** `POST /auth/anonymous` mints `declared_age=NULL` / `is_under_13=False`, and `@require_parental_consent` early-returns for "not under 13", so every gated endpoint is callable with zero consent record while `ENFORCE_RESOLVED_AGE` stays off. Client-side flow is well-behaved; the server gate is the missing half. Full trace + remediation sequencing: `docs/COPPA_AMENDED_RULE_GAP_ANALYSIS.md` (Part 2 + G-2). Prerequisite for flipping the flag (MT-311 durable age-sync) is merged.
 - ☐ Inspect a real prod Sentry event's breadcrumb payload for PII.
 - ☐ Check prod `LOG_LEVEL`.
 - ☐ Device-test URL→share on the prod `openai` path with classifier down.
@@ -85,6 +86,7 @@ Covers `@require_parental_consent` on character creation, PII/prompt log redacti
 - ⊘ Gemini `DANGEROUS_CONTENT = BLOCK_MEDIUM` — by design, legacy modes only.
 - ⊘ Crisis links + content-report `mailto:` ungated — intentional (child-in-distress reaches help).
 - ⊘ JWT refresh fail-open on Redis — deliberate availability tradeoff (`token_version` is the real revocation control).
+- ⊘ Isar at-rest encryption (P2#17) — no such API in Isar 3.1.0; OS file-based encryption (Android FBE / iOS Data Protection) covers the at-rest risk; revisit at the Isar-4/storage migration (v1.1).
 
 ## Probe evidence (reusable)
 Adversarial generation probe scripts (session scratchpad, re-runnable): build the
