@@ -254,7 +254,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'Your child (age ${widget.declaredAge}) would like to use Story Weaver. '
+                              'Your child (age ${widget.declaredAge}) would like to use Once Upon YOUR Child. '
                               'As required by COPPA, we need your verifiable consent before your child can use this app.',
                               style: GoogleFonts.fredoka(
                                   color: Colors.white, fontSize: 16),
@@ -315,7 +315,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   const Text(
-                                    'Story Weaver is for fun and imagination. It is not therapy, counseling, or medical advice, and is not a substitute for professional care. If your child is struggling with their feelings or safety, please reach out to a professional.',
+                                    'Once Upon YOUR Child is for fun and imagination. It is not therapy, counseling, or medical advice, and is not a substitute for professional care. If your child is struggling with their feelings or safety, please reach out to a professional.',
                                     style: textWhite70,
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
@@ -591,7 +591,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
 
   Future<void> _shareToGrownUp() async {
     final message =
-        "Hi! I want to try Story Weaver, an app that makes me the hero of my own stories. "
+        "Hi! I want to try Once Upon YOUR Child, an app that makes me the hero of my own stories. "
         "It needs a grown-up to say yes before I can play. "
         "Could you look at this together with me? It takes about a minute. "
         "Thanks!";

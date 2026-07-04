@@ -148,7 +148,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
     if (!teaserSeen) {
       setState(() => _step = -1);
-      unawaited(_speak("Welcome to Story Weaver! Where you are the hero.",
+      unawaited(_speak("Welcome to Once Upon YOUR Child! Where you are the hero.",
           rateScale: 0.8));
       return;
     }
@@ -984,7 +984,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             style: GoogleFonts.fredoka(color: _goldColor, fontSize: 22),
           ),
           content: const Text(
-            'Story Weaver uses AI to write your stories. Since you\'re under '
+            'Once Upon YOUR Child uses AI to write your stories. Since you\'re under '
             '18, your parent or guardian should know you\'re using it. If they '
             'don\'t yet, let them know.',
             style: TextStyle(color: Colors.white70, height: 1.5),

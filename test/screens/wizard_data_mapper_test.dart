@@ -118,11 +118,5 @@ void main() {
     test("'Boy' → he/him", () {
       expect(detailsFor('Boy')['pronouns'], equals('he/him'));
     });
-
-    test("'Nonbinary' (the He/She/They neutral option) → they/them", () {
-      final details = detailsFor('Nonbinary');
-      expect(details['gender'], equals('Nonbinary'));
-      expect(details['pronouns'], equals('they/them'));
-    });
   });
 }

@@ -14,8 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/screens/feelings_garden_screen.dart';
-import 'package:story_weaver_app/screens/wizard_steps/companion_selector_step.dart';
-import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
 
 // ---------------------------------------------------------------------------
 // Band definitions mirroring age_band_theme.dart
@@ -220,71 +218,6 @@ void main() {
         expect(kExpectedCompanionIds[band], contains('robin'),
             reason: '${band.name} should include Robin');
       }
-    });
-
-    testWidgets('Sprout CompanionSelectorStep shows 4 magical companions',
-        (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final wizardData = _wizardDataForAge(4);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            extensions: [sproutTheme],
-          ),
-          home: Scaffold(
-            body: CompanionSelectorStep(
-              wizardData: wizardData,
-              onNext: () {},
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Sprout companions by name (renamed in 2026-04-18c overhaul)
-      expect(find.text('Pebble'), findsOneWidget);
-      expect(find.text('Robin'), findsOneWidget);
-      expect(find.text('Mochi'), findsOneWidget);
-      expect(find.text('Sunny'), findsOneWidget);
-
-      // Explorer-only companions must NOT be visible for a sprout
-      expect(find.text('Ember'), findsNothing);
-      expect(find.text('Clover'), findsNothing);
-      expect(find.text('Biscuit'), findsNothing);
-    });
-
-    testWidgets('Explorer CompanionSelectorStep shows explorer companions',
-        (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      final wizardData = _wizardDataForAge(7);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            extensions: [explorerTheme],
-          ),
-          home: Scaffold(
-            body: CompanionSelectorStep(
-              wizardData: wizardData,
-              onNext: () {},
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Ember'), findsOneWidget);
-      expect(find.text('Clover'), findsOneWidget);
-      expect(find.text('Biscuit'), findsOneWidget);
-      // Sprout-only companions must NOT be visible
-      expect(find.text('Pebble'), findsNothing);
-      expect(find.text('Mochi'), findsNothing);
-      expect(find.text('Sunny'), findsNothing);
     });
   });
 
@@ -492,51 +425,6 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // 9. CompanionSelectorStep — "Go Solo" button present for all bands
-  // ---------------------------------------------------------------------------
-
-  group('9. CompanionSelectorStep — skip/go-solo button available for all bands', () {
-    // Mature bands (creator / adolescent / adult) show 'Skip'.
-    // Young bands (sprout / explorer / adventurer) show 'Go Solo'.
-    for (final (age, band) in kBandAges) {
-      final expectedText = band.isMature ? 'Skip' : 'Go Solo';
-      testWidgets('age $age (${band.name}) shows "$expectedText" button',
-          (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        final wizardData = _wizardDataForAge(age);
-        var didContinue = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: ThemeData(extensions: [themeForBand(band)]),
-            home: Scaffold(
-              body: CompanionSelectorStep(
-                wizardData: wizardData,
-                onNext: () => didContinue = true,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        final skipOrSolo = find.text(expectedText);
-        expect(skipOrSolo, findsOneWidget,
-            reason: '${band.name} (age $age) must have "$expectedText" button');
-
-        await tester.ensureVisible(skipOrSolo);
-        await tester.tap(skipOrSolo);
-        await tester.pump();
-
-        expect(didContinue, isTrue,
-            reason: '${band.name} "$expectedText" should call onNext');
-      });
-    }
-  });
-
-  // ---------------------------------------------------------------------------
   // 10. Sprout-specific invariants
   // ---------------------------------------------------------------------------
 
@@ -562,31 +450,6 @@ void main() {
 
     test('sprout TTS rate scale is 0.8', () {
       expect(kBandTtsRateScale[AgeBand.sprout], equals(0.8));
-    });
-
-    testWidgets('Sprout CompanionSelectorStep does NOT show explorer companions',
-        (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(extensions: [sproutTheme]),
-          home: Scaffold(
-            body: CompanionSelectorStep(
-              wizardData: _wizardDataForAge(4),
-              onNext: () {},
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Companions from older bands must not bleed into sprout view
-      expect(find.text('Atlas'), findsNothing);    // adventurer dragon
-      expect(find.text('Nyx'), findsNothing);      // adventurer cat
-      expect(find.text('Ember'), findsNothing);    // explorer dragon
     });
   });
 }

@@ -351,7 +351,7 @@ class TierPricing {
     yearlySavings: 39.89,
     badge: 'Most Popular',
     features: [
-      'Story Weaver for the whole family',
+      'Once Upon YOUR Child for the whole family',
       '6 characters — every kid, plus mom, dad, even grandma',
       '20 stories per month, 80–100 illustrated pages',
       '"Whose turn is it?" rotating hero between siblings',

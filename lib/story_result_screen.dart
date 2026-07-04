@@ -2134,7 +2134,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Story Weaver Premium unlocks 100/mo.',
+                            'Once Upon YOUR Child Premium unlocks 100/mo.',
                             style: TextStyle(
                               fontSize: 12,
                               color: lavender.withValues(alpha: 0.85),

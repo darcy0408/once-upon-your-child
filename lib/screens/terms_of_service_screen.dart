@@ -22,7 +22,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               title: 'Acceptance of Terms',
               content: '''
-By using Story Weaver, you agree to these terms. If you are under 13, a parent or guardian must provide consent on your behalf.
+By using Once Upon YOUR Child, you agree to these terms. If you are under 13, a parent or guardian must provide consent on your behalf.
 ''',
             ),
             _buildSection(
@@ -63,7 +63,7 @@ By using Story Weaver, you agree to these terms. If you are under 13, a parent o
             _buildSection(
               title: 'Prohibited Uses',
               content: '''
-Do not use Story Weaver to:
+Do not use Once Upon YOUR Child to:
 - Generate inappropriate or harmful content
 - Violate laws or rights of others
 - Harass, abuse, or defame anyone
@@ -73,7 +73,7 @@ Do not use Story Weaver to:
             _buildSection(
               title: 'Disclaimer',
               content: '''
-Story Weaver is provided "as is." It is a storytelling and entertainment app, not a therapeutic, clinical, or medical product. AI-generated stories are not a substitute for professional mental health care. Seek licensed support when needed.
+Once Upon YOUR Child is provided "as is." It is a storytelling and entertainment app, not a therapeutic, clinical, or medical product. AI-generated stories are not a substitute for professional mental health care. Seek licensed support when needed.
 ''',
             ),
             _buildSection(

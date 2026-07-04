@@ -60,7 +60,7 @@ class SubscriptionScreen extends StatelessWidget {
                     const Text('\$9.99/month'),
                     const SizedBox(height: 8),
                     const Text(
-                      'Story Weaver for the whole family. Every kid, plus mom, dad, even grandma can be in the story together.',
+                      'Once Upon YOUR Child for the whole family. Every kid, plus mom, dad, even grandma can be in the story together.',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
