@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-05 | 07:34 | d9a5 | main (PR #384) | Robotic voice on consent-CTA Pick-Hero screen fixed; boy/girl images ruled non-bug | [link](docs/sessions/2026-07-05-0734-d9a5.md) |
 | 2026-07-04 | 21:30 | 0f66 | main | Warm welcome-greeting fix: prewarm greeting strings (PR #383) | [link](docs/sessions/2026-07-04-2130-0f66.md) |
 | 2026-07-04 | 19:50 | 8beb | main | PR merge-queue clear + Sprout modes rescue + Chunk-2 COPPA ops/code | [link](docs/sessions/2026-07-04-1950-8beb.md) |
 | 2026-07-04 | 18:09 | ac54 | main | MT-320 clinician outreach built end-to-end; Sunkel email staged | [link](docs/sessions/2026-07-04-1809-ac54.md) |
