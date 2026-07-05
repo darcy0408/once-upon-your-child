@@ -271,8 +271,19 @@ class _ChildProfileManagerScreenState
       ),
     );
     if (confirmed == true) {
-      await _service.deleteProfile(profile.id);
+      final fullyDeleted = await _service.deleteProfile(profile.id);
       await _loadProfiles();
+      if (!fullyDeleted && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Profile removed from this device, but we couldn't reach our "
+              "servers to delete the stored data. Please try again when "
+              "you're back online.",
+            ),
+          ),
+        );
+      }
     }
   }
 

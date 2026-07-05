@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service_manager.dart';
+import 'logger_service.dart';
 
 class ChildProfile {
   final String id;
@@ -84,7 +85,17 @@ class ChildProfileService {
         _profilesKey, profiles.map((p) => jsonEncode(p.toJson())).toList());
   }
 
-  Future<void> deleteProfile(String profileId) async {
+  /// Removes the local profile and requests server-side erasure of all data
+  /// for this user (COPPA right to erasure).
+  ///
+  /// Returns `true` when the local profile was removed AND the backend either
+  /// erased the account or there was no server-side account to erase. Returns
+  /// `false` when the local profile was removed but the backend erasure call
+  /// failed (offline / 5xx) — the child's stories, consent and hidden context
+  /// may still exist on the server. Callers MUST surface a `false` result so
+  /// the parent knows the deletion was only partial and can retry, rather than
+  /// silently believing the data is fully gone.
+  Future<bool> deleteProfile(String profileId) async {
     final prefs = await SharedPreferences.getInstance();
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.id == profileId);
@@ -97,11 +108,22 @@ class ChildProfileService {
     try {
       final api = ApiServiceManager();
       final userId = await api.getUserId();
-      if (userId != null) {
-        await api.delete('/api/user/$userId/data');
+      if (userId == null) {
+        // No server-side account was ever created — nothing to erase remotely.
+        return true;
       }
-    } catch (_) {
-      // Backend deletion failure is non-fatal; local profile is already removed.
+      await api.delete('/api/user/$userId/data');
+      return true;
+    } catch (e) {
+      // Do NOT swallow silently: a failed server erasure means the child's
+      // data may persist on the backend even though the local profile is gone.
+      // Log it and report failure so the caller can prompt a retry.
+      LoggerService.warning(
+        'ChildProfileService.deleteProfile: server-side erasure failed for '
+        'profile $profileId; local profile removed but backend data may remain',
+        e,
+      );
+      return false;
     }
   }
 }

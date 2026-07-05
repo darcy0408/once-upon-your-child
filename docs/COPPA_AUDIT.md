@@ -1,5 +1,14 @@
 # COPPA Compliance Audit - Story Weaver App
 
+> ⚠️ **SUPERSEDED (2026-07-04).** This document predates the app's move to the
+> **amended** COPPA Rule (2025) and claims some gaps that have since been fixed —
+> it errs in the *safe* direction but should not be cited as current. For the
+> authoritative posture see:
+> - **`docs/COPPA_AMENDED_RULE_GAP_ANALYSIS.md`** — amended-Rule requirements + live gap register (G-1…G-12)
+> - **`docs/LEGAL_LIABILITY_AUDIT_2026-06-28.md`** — current legal-liability posture + launch-gate flip order
+>
+> Kept for historical record only.
+
 **Date:** March 15, 2026
 **Last Updated:** June 24, 2026 — refreshed the third-party sub-processor list after the AI-provider migration (story text Gemini→OpenAI GPT-5 mini, illustrations→Cloudflare Workers AI, avatars→OpenAI gpt-image-2). Earlier disclosure/sync/deletion fixes recorded below.
 **Overall Assessment:** ⚠️ **GOOD FAITH COMPLIANCE** (Launchable with known gap)

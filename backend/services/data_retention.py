@@ -15,6 +15,13 @@ Configuration
 -------------
 ``DATA_RETENTION_INACTIVE_DAYS`` — integer, default 730 (2 years). Accounts
 with no activity for at least this many days are purged by the scheduled job.
+``ILLUSTRATION_CACHE_RETENTION_DAYS`` — integer, default 365. Cached
+illustrations not served for at least this many days are evicted (bounds the
+shared illustration cache so no image — including any custom-avatar likeness —
+is retained indefinitely; amended-COPPA R-6).
+``UNCONSENTED_CONTACT_MAX_DAYS`` — integer, default 30. A parental-consent
+round-trip that captured a parent email but was never verified within this
+window has that contact info deleted (amended-COPPA R-2).
 """
 
 import logging
@@ -28,6 +35,17 @@ logger = logging.getLogger(__name__)
 
 # Default retention window: 2 years of inactivity, matching PRIVACY_POLICY.md.
 DEFAULT_RETENTION_INACTIVE_DAYS = 730
+
+# Default illustration-cache eviction window (days). The illustration cache is a
+# shared, content-addressed cost optimisation with no user_id; a stale-eviction
+# TTL keeps it from retaining any image indefinitely without breaking the
+# cross-user hit rate that makes the cache worthwhile.
+DEFAULT_ILLUSTRATION_CACHE_RETENTION_DAYS = 365
+
+# Default window (days) after which an unverified consent round-trip's captured
+# parent email is deleted. Comfortably beyond the 15-minute code expiry and any
+# realistic retry, so an in-progress flow is never disturbed.
+DEFAULT_UNCONSENTED_CONTACT_MAX_DAYS = 30
 
 # Accounts that must never be auto-purged regardless of inactivity. The shared
 # 'anonymous' user backs anonymous story generation; deleting it would break
@@ -314,3 +332,144 @@ def purge_inactive_accounts(inactive_days: int | None = None) -> dict:
     }
     logger.info("Data-retention purge complete: %s", summary)
     return summary
+
+
+def _resolve_positive_int_env(var_name: str, default: int) -> int:
+    """Resolve a positive-int env var, falling back to ``default`` on any
+    unset/empty/non-numeric/non-positive value (same policy as
+    ``get_retention_inactive_days``)."""
+    import os
+
+    raw = os.getenv(var_name)
+    if raw is None or not str(raw).strip():
+        return default
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        logger.warning(
+            "%s=%r is not an integer; falling back to %d", var_name, raw, default
+        )
+        return default
+    if value <= 0:
+        logger.warning(
+            "%s=%d is not positive; falling back to %d", var_name, value, default
+        )
+        return default
+    return value
+
+
+def purge_stale_illustration_cache(stale_days: int | None = None) -> dict:
+    """Evict cached illustrations not served within the retention window.
+
+    The ``illustration_cache`` table is a shared, content-addressed cost
+    optimisation: rows have no ``user_id`` and the ``cache_key`` is a one-way
+    sha256 of the inputs (no recoverable child name in the row). What the row
+    *does* hold is the generated ``image_data``, which for a custom-avatar story
+    can embed the child's likeness — so under the amended COPPA Rule's
+    retention-limit requirement (R-6) it must not be retained indefinitely.
+
+    This evicts every row whose ``last_accessed_at`` is older than the window,
+    so a story re-read within the window stays free (cache hit) while abandoned
+    images age out and are re-generated on demand if ever needed again.
+
+    Window: ``ILLUSTRATION_CACHE_RETENTION_DAYS`` (default 365). Degrades
+    safely — any DB error is logged and reported, never raised.
+    """
+    if stale_days is None:
+        stale_days = _resolve_positive_int_env(
+            "ILLUSTRATION_CACHE_RETENTION_DAYS",
+            DEFAULT_ILLUSTRATION_CACHE_RETENTION_DAYS,
+        )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    cutoff = now - timedelta(days=stale_days)
+
+    try:
+        from backend.models.illustration_cache import IllustrationCache
+
+        deleted = (
+            db.session.query(IllustrationCache)
+            .filter(IllustrationCache.last_accessed_at < cutoff)
+            .delete(synchronize_session=False)
+        )
+        db.session.commit()
+        summary = {
+            "window_days": stale_days,
+            "cutoff": cutoff.isoformat(),
+            "evicted": deleted,
+        }
+        logger.info("Illustration-cache eviction complete: %s", summary)
+        return summary
+    except Exception:
+        db.session.rollback()
+        logger.exception("Illustration-cache eviction failed; rolled back")
+        return {
+            "window_days": stale_days,
+            "cutoff": cutoff.isoformat(),
+            "evicted": 0,
+            "error": True,
+        }
+
+
+def purge_unconsented_parent_contact(max_pending_days: int | None = None) -> dict:
+    """Delete parent contact info from consent flows that never completed.
+
+    Amended COPPA Rule R-2: if a parent does not consent within a reasonable
+    time, the operator must delete the parent's contact information. A consent
+    round-trip that captured a parent email on an unverified (``verified=False``,
+    not withdrawn) ``ConsentRecord`` but was never completed within
+    ``max_pending_days`` has its ``parent_email`` nulled and its transient
+    verification codes deleted. The (now email-less) record is left in place so
+    the fail-safe COPPA gate still sees "no verified consent" for that user.
+
+    Verified records, withdrawn records, records with no captured email, and
+    still-recent pending records are all left untouched.
+
+    Window: ``UNCONSENTED_CONTACT_MAX_DAYS`` (default 30). Degrades safely.
+    """
+    if max_pending_days is None:
+        max_pending_days = _resolve_positive_int_env(
+            "UNCONSENTED_CONTACT_MAX_DAYS", DEFAULT_UNCONSENTED_CONTACT_MAX_DAYS
+        )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    cutoff = now - timedelta(days=max_pending_days)
+
+    try:
+        from backend.models.consent_record import (
+            ConsentRecord,
+            ConsentVerificationCode,
+        )
+
+        stale = ConsentRecord.query.filter(
+            ConsentRecord.verified.is_(False),
+            ConsentRecord.withdrawn.is_(False),
+            ConsentRecord.parent_email.isnot(None),
+            ConsentRecord.consent_given_at < cutoff,
+        ).all()
+        scrubbed = 0
+        for record in stale:
+            # Drop the transient verification codes for this pending record,
+            # then remove the captured contact info.
+            ConsentVerificationCode.query.filter_by(consent_record_id=record.id).delete(
+                synchronize_session=False
+            )
+            record.parent_email = None
+            scrubbed += 1
+        db.session.commit()
+        summary = {
+            "window_days": max_pending_days,
+            "cutoff": cutoff.isoformat(),
+            "scrubbed": scrubbed,
+        }
+        logger.info("Unconsented parent-contact purge complete: %s", summary)
+        return summary
+    except Exception:
+        db.session.rollback()
+        logger.exception("Unconsented parent-contact purge failed; rolled back")
+        return {
+            "window_days": max_pending_days,
+            "cutoff": cutoff.isoformat(),
+            "scrubbed": 0,
+            "error": True,
+        }

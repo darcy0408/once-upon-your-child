@@ -77,7 +77,11 @@ def purge_inactive_accounts_task():
     run repeatedly: already-anonymised and recently-active accounts are skipped.
     Returns the purge summary dict (also visible in the Celery result backend).
     """
-    from backend.services.data_retention import purge_inactive_accounts
+    from backend.services.data_retention import (
+        purge_inactive_accounts,
+        purge_stale_illustration_cache,
+        purge_unconsented_parent_contact,
+    )
 
     app = get_flask_app()
     with app.app_context():
@@ -89,5 +93,12 @@ def purge_inactive_accounts_task():
             summary.get("scanned", 0),
             summary.get("errors", 0),
         )
+        # Bound two other stores the amended COPPA Rule cares about: the shared
+        # illustration cache (R-6 retention limit) and abandoned consent
+        # round-trips that captured a parent email (R-2 contact-info deletion).
+        # Each degrades safely and is folded into the run summary so the
+        # heartbeat/monitoring sees them.
+        summary["illustration_cache"] = purge_stale_illustration_cache()
+        summary["unconsented_parent_contact"] = purge_unconsented_parent_contact()
         _write_retention_heartbeat(summary)
         return summary

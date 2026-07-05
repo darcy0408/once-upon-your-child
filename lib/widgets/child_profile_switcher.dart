@@ -55,9 +55,22 @@ class ChildProfileSwitcher extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onProfileSelected(profile),
                 onLongPress: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   final confirmed = await _confirmDelete(context, profile);
                   if (confirmed == true) {
-                    await ChildProfileService().deleteProfile(profile.id);
+                    final fullyDeleted =
+                        await ChildProfileService().deleteProfile(profile.id);
+                    if (!fullyDeleted) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Profile removed from this device, but the stored "
+                            "data couldn't be deleted from our servers. Please "
+                            "try again when you're online.",
+                          ),
+                        ),
+                      );
+                    }
                     // Notify parent by selecting a different profile if needed
                     if (profile.id == activeProfileId &&
                         profiles.length > 1) {

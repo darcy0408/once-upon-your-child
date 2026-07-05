@@ -99,3 +99,98 @@ def test_purge_survives_stripe_failure(app, mocker):
 
         assert user.password_hash == "DELETED"
         assert user.stripe_customer_id is None
+
+
+# --- Amended-COPPA fast-follows: G-5 (cache TTL) + G-7 (unconsented contact) ---
+
+
+def test_purge_stale_illustration_cache_evicts_old_keeps_recent(app):
+    """G-5 (R-6): cached illustrations aged past the window are evicted; a
+    recently-served one is kept (a re-read within the window stays free)."""
+    from backend.models.illustration_cache import IllustrationCache
+    from backend.services.data_retention import purge_stale_illustration_cache
+
+    with app.app_context():
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        old = IllustrationCache(
+            cache_key="k_old",
+            image_data="b64old",
+            last_accessed_at=now - timedelta(days=400),
+        )
+        recent = IllustrationCache(
+            cache_key="k_recent",
+            image_data="b64recent",
+            last_accessed_at=now - timedelta(days=10),
+        )
+        db.session.add_all([old, recent])
+        db.session.commit()
+
+        summary = purge_stale_illustration_cache(stale_days=365)
+
+        assert summary["evicted"] == 1
+        assert not summary.get("error")
+        keys = {r.cache_key for r in IllustrationCache.query.all()}
+        assert keys == {"k_recent"}
+
+
+def test_purge_unconsented_parent_contact_scrubs_only_stale_pending(app):
+    """G-7 (R-2): a stale unverified consent round-trip has its parent email
+    deleted and its codes removed; verified and recent-pending rows are left
+    untouched."""
+    from backend.services.data_retention import purge_unconsented_parent_contact
+
+    with app.app_context():
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        stale_pending = ConsentRecord(
+            user_id="u_stale",
+            child_age=8,
+            consent_method="email_pending",
+            parent_email="parent@example.com",
+            verified=False,
+            consent_given_at=now - timedelta(days=45),
+        )
+        db.session.add(stale_pending)
+        db.session.flush()
+        code = ConsentVerificationCode(
+            user_id="u_stale",
+            consent_record_id=stale_pending.id,
+            code_hash=hashlib.sha256(b"999999").hexdigest(),
+            expires_at=now - timedelta(days=44),
+        )
+        recent_pending = ConsentRecord(
+            user_id="u_recent",
+            child_age=7,
+            consent_method="email_pending",
+            parent_email="fresh@example.com",
+            verified=False,
+            consent_given_at=now - timedelta(days=1),
+        )
+        verified = ConsentRecord(
+            user_id="u_ok",
+            child_age=9,
+            consent_method="email_verified",
+            parent_email="kept@example.com",
+            verified=True,
+            consent_given_at=now - timedelta(days=200),
+        )
+        db.session.add_all([code, recent_pending, verified])
+        db.session.commit()
+
+        summary = purge_unconsented_parent_contact(max_pending_days=30)
+
+        assert summary["scrubbed"] == 1
+        assert not summary.get("error")
+        assert (
+            ConsentRecord.query.filter_by(user_id="u_stale").one().parent_email is None
+        )
+        assert ConsentVerificationCode.query.filter_by(user_id="u_stale").count() == 0
+        # Untouched:
+        assert (
+            ConsentRecord.query.filter_by(user_id="u_recent").one().parent_email
+            == "fresh@example.com"
+        )
+        assert (
+            ConsentRecord.query.filter_by(user_id="u_ok").one().parent_email
+            == "kept@example.com"
+        )
