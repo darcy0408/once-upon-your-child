@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-04 | 18:09 | ac54 | main | MT-320 clinician outreach built end-to-end; Sunkel email staged | [link](docs/sessions/2026-07-04-1809-ac54.md) |
 | 2026-07-04 | 12:01 | 0ddf | main | Six-hats review + subtraction sprint + CI red fix | [link](docs/sessions/2026-07-04-1201-0ddf.md) |
 | 2026-07-04 | 11:57 | 405f | main | COPPA amended-Rule gap analysis + distribution strategy + prompt ceiling pass (PRs #372/#373) | [link](docs/sessions/2026-07-04-1157-405f.md) |
 | 2026-07-04 | 09:49 | 03bb | main | Marketing plan + landing-page copy (first marketing session) | [link](docs/sessions/2026-07-04-0949-03bb.md) |
