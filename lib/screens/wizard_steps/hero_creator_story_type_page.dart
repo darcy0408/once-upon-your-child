@@ -574,6 +574,43 @@ class HeroStoryTypePage extends StatelessWidget {
                     _autoAdvanceForSprout();
                   },
                 ),
+                // Superhero Mode — same launch callback the Explorer/Adventurer
+                // branch uses (onLaunchSuperhero handles the costume/power
+                // flow directly; band-derivation inside it already supports
+                // Sprout). Only shown when the parent wires the callback.
+                if (onLaunchSuperhero != null) ...[
+                  const SizedBox(height: 14),
+                  _buildSproutModeCard(
+                    emoji: '🦸',
+                    label: 'Superhero!',
+                    description: 'Be a hero and save the day!',
+                    mode: 'superhero',
+                    isSelected: wizardData.selectedScenario == 'superhero',
+                    accentColor: const Color(0xFFFFB300),
+                    onTap: () {
+                      onLaunchSuperhero!();
+                    },
+                  ),
+                ],
+                // Pick-a-Path — wired the same way as Explorer/Adventurer's
+                // Pick a Path orb: setStoryMode('pickpath') flips
+                // wizardData.interactiveMode, which wizard_data_mapper.dart /
+                // magic_review_step.dart already route to
+                // PickAPathAdventureScreen with no age-band gate.
+                const SizedBox(height: 14),
+                _buildSproutModeCard(
+                  emoji: '🔀',
+                  label: 'Choose Your Adventure!',
+                  description: 'You decide what happens next!',
+                  mode: 'pickpath',
+                  isSelected: selectedMode == 'pickpath',
+                  accentColor: const Color(0xFF9E6CFF),
+                  onTap: () {
+                    setStoryMode('pickpath');
+                    onChanged();
+                    _autoAdvanceForSprout();
+                  },
+                ),
               ],
             )
           else
