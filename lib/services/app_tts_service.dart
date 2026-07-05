@@ -85,6 +85,16 @@ const List<String> kWarmUpPhrases = [
   "Ready to go? Tap GO!",
   "Tap me!",
   "What's your name?",
+
+  // ── Welcome-screen greetings ────────────────────────────────────────────────
+  // Spoken in welcome_screen.dart initState on the resume/teaser paths. Cached
+  // here so the FIRST audible line after the user's opening tap is the warm
+  // voice, not the robotic on-device fallback (web blocks all audio until that
+  // first gesture, so the greeting must already be in cache when it fires).
+  "Welcome back! What's your name?",
+  "Welcome back! What should we call you?",
+  "Welcome to Once Upon YOUR Child! Where you are the hero.",
+  "What should we call you?",
   "Happy",
   "Sad",
   "Mad",
