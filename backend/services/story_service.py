@@ -31,7 +31,7 @@ AGE_CONSTRAINTS = {
             "FORBIDDEN WORDS — replace with the simpler equivalent in parentheses: "
             "wobbly(jiggly), mossy(soft), stardust(sparkles), swirling(spinning), ancient(old), "
             "magnificent(big), momentarily(soon), enormous(very big), trembled(shook), "
-            "wondrous(wonderful), vanished(gone), instantly(right away), mysterious(strange), "
+            "vanished(gone), instantly(right away), mysterious(strange), "
             "brilliant(bright), extraordinary(special). "
             "SENTENCE CHECK: Count words before writing each sentence. If it would exceed 8 words, split it in two. "
             'Emotion: Name one feeling simply ("[name] felt scared / happy / safe") — no internal monologue, always by character name. '
@@ -369,6 +369,92 @@ def _build_feelings_instruction(
 - Open by naming the feeling and the body clue immediately.
 - Let the coping action change what happens next inside the plot.
 - End with safety, reconnection, or relief rather than a lecture.
+"""
+
+
+def _get_band_persona(age: int) -> str:
+    """Band-tuned persona line — the register anchor for the whole prompt.
+
+    Replaces the former one-size-fits-all "Master Storyteller & World-Builder"
+    line, which pitched an immersive world-builder register at every age from
+    3 to adult (and told the model the reader "*is* the hero", contradicting
+    the third-person witness POV rule).
+    """
+    if age <= 5:
+        return (
+            "**PERSONA**: You are a beloved picture-book author. Your stories are "
+            "read aloud at bedtime by a grown-up, and the child begs to hear them "
+            "again. Every word is chosen to be SPOKEN — rhythm, warmth, and joy "
+            "on every page."
+        )
+    if age <= 8:
+        return (
+            "**PERSONA**: You write early chapter-book adventures that make a new "
+            "reader feel like a big kid. Warm, funny, and full of wonder — the "
+            "kind of story a 7-year-old retells at dinner, doing all the voices."
+        )
+    if age <= 12:
+        return (
+            "**PERSONA**: You write the kind of middle-grade adventure a kid "
+            "reads under the covers with a flashlight and finishes anyway — then "
+            "rereads. Momentum on every page, real stakes sized to a kid's "
+            "world, humor that never winks over their head at the adults."
+        )
+    if age <= 14:
+        return (
+            "**PERSONA**: You are a YA author who respects the reader. You never "
+            "talk down, never moralize, and never flinch from the fact that "
+            "13-year-olds already know the world is complicated."
+        )
+    if age <= 17:
+        return (
+            "**PERSONA**: You write voice-driven literary YA. Honest about how "
+            "hard things feel from the inside, precise in the small details that "
+            "make a scene true — a story a 16-year-old wouldn't be embarrassed "
+            "to love."
+        )
+    return (
+        "**PERSONA**: You are a literary short-fiction writer. Your prose feels "
+        "authored — deliberate rhythm, exact images, emotional intelligence — "
+        "never generated."
+    )
+
+
+def _build_emotional_spine(age: int, theme: str, character: str) -> str:
+    """Positive emotional-arc guidance for the live standard path.
+
+    Ports the EMOTIONAL HEART upgrade (#272) — which only ever ran via
+    PromptService.build_story_prompt, a path prod uses solely for superhero
+    mode — into the standard builder, calibrated per band. The negative rules
+    elsewhere (CLEAN ENDING, banned phrases) prevent LLM tells; this block is
+    the positive spine that makes a story land.
+    """
+    if age <= 5:
+        return f"""
+**EMOTIONAL SPINE** (what makes the story land):
+1. Put the story's feeling on the page early — {character} feels it in their body, named simply.
+2. Let the feeling get big in the middle. Don't fix it right away — {character}'s first tries don't work, and that's okay to feel.
+3. Things get better because of something {character} DOES. End on a warm, safe picture that shows the feeling has changed.
+"""
+    if age <= 12:
+        return f"""
+**EMOTIONAL SPINE** (what makes the story land — follow closely):
+1. THEME AS SPINE: "{theme}" is the emotional through-line, not a label. Plant the feeling early, let it be genuinely hard in the middle — {character} can get it wrong first — and resolve it only through {character}'s own choices.
+2. THE MIDDLE MUST COST SOMETHING: Before the turn, let the difficulty be real on the page — a failed try, a hard trade, a feeling that won't be shooed away. Do not rush past it.
+3. EARNED CLOSING IMAGE: The final page shows the change through one concrete image, action, or line of dialogue. If the last page would still be true with the theme swapped out, it hasn't landed — tie it to what happened in THIS story.
+"""
+    if age <= 14:
+        return f"""
+**EMOTIONAL SPINE** (what makes the story land — follow closely):
+1. THEME AS SPINE: "{theme}" is the emotional through-line, not a label. Ambivalence is welcome — {character} can be right and still feel bad about it.
+2. THE MIDDLE MUST COST SOMETHING: A real trade, a setback with consequences, a feeling that resists tidy naming. Do not rush past the hard part — it is the story.
+3. EARNED TURN: The shift comes from {character} — a choice, a realization, a risk — shown in action, never announced. The closing image belongs to THIS story; if it would survive the theme being swapped out, it hasn't landed.
+"""
+    return f"""
+**EMOTIONAL SPINE** (what makes the story land — follow closely):
+1. THEME AS UNDERTOW: Let "{theme}" run under the plot rather than sit on top of it. Trust the reader to feel it without being told.
+2. HONEST DIFFICULTY: Setbacks with real cost, mixed motives, feelings that resist naming. The middle earns the ending.
+3. CLOSING IMAGE OVER RESOLUTION: The final beat can hold tension — integration, not a bow. But it must be THIS story's image: concrete, specific, and impossible to transplant to another story.
 """
 
 
@@ -969,7 +1055,7 @@ class AdvancedStoryEngine:
                 "Never compress one of those into a narrated summary sentence."
             )
         craft_rules = f"""- **LANGUAGE (MANDATORY)**: Earn wonder with specific nouns and strong verbs — never label it. In the story text, "magical", "amazing", "wonderful", and "special" are banned as descriptions; show why the thing is remarkable instead. Also banned anywhere in the story (rewrite the sentence if one appears): "little did ... know", "couldn't help but", "with newfound", "a mix of ... and ...", "the adventure had just begun", "grinned/smiled from ear to ear".{scene_rule}
-- **ENDING (MANDATORY)**: The final page lands on a concrete image, action, or line of dialogue that SHOWS what changed for {character}. Never state the lesson — endings built on "learned that", "From that day on", or "would never forget" are banned.
+- **ENDING (MANDATORY)**: Land the final page exactly as the EMOTIONAL SPINE above directs — concrete, specific to THIS story. Never state the lesson — endings built on "learned that", "From that day on", or "would never forget" are banned.
 - **TITLE**: Do not default to the "[Hero] and the [Adjective] [Noun]" formula. Prefer a title drawn from a specific image, object, or spoken line inside this story."""
 
         # Derive invisible virtue instruction from therapeutic_prompt
@@ -987,9 +1073,10 @@ class AdvancedStoryEngine:
         if age <= 5:
             young_delight_rules = f"""
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
-1. SOUND WORDS: Include at least two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — they are not optional.
+BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule below at once. The story beat always comes first; spread these across the book.
+1. SOUND WORDS: Include ALL-CAPS onomatopoeia words (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING) on MOST pages — aim for 6-10 across the story, with two on the big action pages. The narrator voice reads these with natural vocal stress.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
-3. COMPANION VOICE AND ARC: The companion must speak at least once per page in their own distinct voice (use dialogue, not narration). Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
+3. COMPANION VOICE AND ARC: The companion speaks in their own distinct voice (use dialogue, not narration) at least FOUR times across the story, spread out — not on every page. Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward.
 5. KID-COMPREHENSIBLE VOCABULARY (HARD CHECK — re-read every page before finalizing): Every concept must be understandable to a 3-year-old on first listen. Before writing each page, scan it for ANY noun or concept a toddler wouldn't use in everyday speech (examples: "dragon breath", "cousin", "archery", "archeologist", "cape", "echo", "compass", "ancient", "lantern", "festival"). For EACH such term you find, you MUST do one of two things in the SAME sentence or the very next one: (a) replace it with a simpler everyday word, OR (b) explain it inline using only words a toddler already knows. Example: "Dragon breath — that's the warm, smoky air a dragon blows out, like when you puff air on a cold morning." A bare mention with no inline explanation is a FAIL — rewrite the page. This rule overrides poetic flow.
 """
@@ -1048,10 +1135,38 @@ class AdvancedStoryEngine:
 4. DISTINCT VOICE: Each companion speaks in a register distinct enough to identify with the names stripped out.
 """
 
-        return f"""
-**PERSONA**: Master Storyteller & World-Builder. You write adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
+        persona = _get_band_persona(age)
+        emotional_spine = _build_emotional_spine(age, theme, character)
 
-You are a MASTER STORYTELLER creating a {story_length} adventure for {character}{gender_text} (age {age}).
+        # POV is band-conditional. The former unconditional "MANDATORY
+        # third-person" line contradicted the 13+/adult band notes ("close
+        # first-person" / "First-person encouraged" / "Any"), and under
+        # contradiction models default to the MANDATORY rule — silently
+        # deleting the literary-voice upgrade those notes intend. The
+        # name-once-per-paragraph echo is likewise kept only for ≤12; at
+        # teen/adult register it is itself an LLM tell.
+        if age <= 12:
+            pov_rule = (
+                f'- **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — '
+                f'at least once per paragraph. Never address the reader as "you" or "your". '
+                f"The reader witnesses {character}'s story, not their own."
+            )
+        elif age <= 14:
+            pov_rule = (
+                "- **POV**: Third-person limited or close first-person — choose one in the "
+                'opening paragraph and hold it for the whole story. Never address the reader as "you".'
+            )
+        else:
+            pov_rule = (
+                "- **POV**: A deliberate craft choice — close third-person or first-person are "
+                "both welcome (the Tone notes below have the final say). Hold whichever you "
+                'choose consistently. Never address the reader as "you".'
+            )
+
+        return f"""
+{persona}
+
+You are creating a {story_length} story for {character}{gender_text} (age {age}).
 
 **STORY SPECS**:
 - **THEME**: {theme}
@@ -1070,9 +1185,9 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 {feelings_instruction}
-{virtue_instruction}
+{virtue_instruction}{emotional_spine}
 **WRITING GUIDELINES**:
-- **POV (MANDATORY)**: Third-person throughout. Use "{character}" by name — at least once per paragraph. Never address the reader as "you" or "your". The reader witnesses {character}'s story, not their own.
+{pov_rule}
 - **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or climbing into the setting, and do NOT open with a "smelled like ..." line. Vary the entry point every time — begin in motion, mid-problem, in dialogue, or somewhere unexpected. Two stories about the same hero must not start the same way.
 {craft_rules}
 - **Tone**: {config['notes']}
