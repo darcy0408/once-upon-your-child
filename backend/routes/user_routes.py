@@ -14,6 +14,7 @@ from backend.models.consent_record import (
     ConsentVerificationCode,
 )
 from backend.models.story import Story
+from backend.utils.app_helpers import is_production
 from backend.utils.audit import audit_log
 from backend.utils.email_service import (
     is_email_configured,
@@ -192,6 +193,47 @@ def create_user_routes_blueprint(limiter=None):
                 return jsonify({"error": "Valid age (1-120) is required"}), 400
 
             user = request.current_user
+
+            # COPPA: an account with actual knowledge of under-13 status —
+            # either its current record or any historical consent record —
+            # cannot self-declare its way to 13+ and drop the consent gate.
+            # (`is_under_13` isn't authoritative here: it starts False for any
+            # account that never called this endpoint, so a never-declared
+            # under-13 user can still set 13+ on first call; the historical
+            # ConsentRecord check catches the case that actually matters —
+            # an account already known to be under 13.)
+            known_under_13 = bool(user.is_under_13) or (
+                user.declared_age is not None and user.declared_age < 13
+            )
+            if not known_under_13:
+                known_under_13 = (
+                    db.session.query(ConsentRecord.id)
+                    .filter(
+                        ConsentRecord.user_id == user_id,
+                        ConsentRecord.child_age < 13,
+                    )
+                    .first()
+                    is not None
+                )
+            if age >= 13 and known_under_13:
+                audit_log(
+                    "age_redeclaration_blocked",
+                    user_id=user_id,
+                    data={"attempted_age": age},
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": (
+                                "This account is on record as under 13 and "
+                                "cannot self-declare an age of 13 or older. "
+                                "New parental consent is required."
+                            )
+                        }
+                    ),
+                    403,
+                )
+
             user.declared_age = age
             user.is_under_13 = age < 13
             db.session.commit()
@@ -235,19 +277,21 @@ def create_user_routes_blueprint(limiter=None):
                     400,
                 )
 
+            if consent_method == "debug_bypass" and is_production():
+                return jsonify({"error": "consent_method not allowed"}), 400
+
             parent_email = (data.get("parent_email") or "").strip()[:120] or None
             # CMP-8: default False — an omitted field must not record the
             # child as opted in to photo-based (biometric) avatars.
             allow_photo_avatar = data.get("allow_photo_avatar", False)
 
-            # COPPA: 'verified' may only be truthy when the method is a real
-            # verified method. The email round trip is verified server-side by
-            # the /consent/verify endpoint, never by a client-asserted flag, so
-            # an 'email_verified'/'email_pending' record created via this
-            # endpoint is forced verified=False here.
-            verified = bool(data.get("verified", False))
-            if consent_method in ("email_pending", "email_verified"):
-                verified = False
+            # COPPA: 'verified' is never client-settable through this endpoint,
+            # regardless of consent_method. The only path that may set it true
+            # is the server-side email round trip completed by
+            # POST /consent/verify (which promotes an existing record). A
+            # client-asserted 'verified: true' here (e.g. on 'parent' or
+            # 'self_attested') would forge verified parental consent outright.
+            verified = False
 
             # Also update the user's age fields
             user = request.current_user

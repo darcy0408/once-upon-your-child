@@ -106,6 +106,54 @@ def test_set_age_invalid_returns_400(client, app):
         assert resp.status_code == 400, bad
 
 
+def test_set_age_upward_redeclaration_blocked_once_known_under_13(client, app):
+    # MT-327 finding #5: an account already flagged under-13 must not be
+    # able to self-declare its way to 13+ and drop the consent gate.
+    uid = _create_user(app)
+    first = client.patch(
+        f"/api/user/{uid}/age", json={"age": 9}, headers=_auth_headers(uid)
+    )
+    assert first.status_code == 200
+    assert first.get_json()["is_under_13"] is True
+
+    second = client.patch(
+        f"/api/user/{uid}/age", json={"age": 15}, headers=_auth_headers(uid)
+    )
+    assert second.status_code == 403
+    with app.app_context():
+        user = db.session.get(User, uid)
+        assert user.is_under_13 is True
+        assert user.declared_age == 9
+
+
+def test_set_age_upward_redeclaration_blocked_via_consent_record(client, app):
+    # Same bypass, but the under-13 signal comes only from a historical
+    # ConsentRecord (e.g. recorded via POST /consent) rather than a prior
+    # call to this endpoint.
+    uid = _create_user(app)
+    with app.app_context():
+        db.session.add(
+            ConsentRecord(user_id=uid, child_age=10, consent_method="parent")
+        )
+        db.session.commit()
+
+    resp = client.patch(
+        f"/api/user/{uid}/age", json={"age": 16}, headers=_auth_headers(uid)
+    )
+    assert resp.status_code == 403
+
+
+def test_set_age_first_declaration_13_plus_allowed(client, app):
+    # An account with no under-13 history may still declare 13+ on its
+    # first call — only a KNOWN under-13 account is blocked from raising.
+    uid = _create_user(app)
+    resp = client.patch(
+        f"/api/user/{uid}/age", json={"age": 16}, headers=_auth_headers(uid)
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["is_under_13"] is False
+
+
 # ---------------------------------------------------------------------------
 # POST /consent
 # ---------------------------------------------------------------------------
@@ -172,6 +220,37 @@ def test_record_consent_email_method_forces_unverified(client, app):
     )
     assert resp.status_code == 201
     assert resp.get_json()["consent"]["verified"] is False
+
+
+def test_record_consent_non_email_method_forges_verified_rejected(client, app):
+    # MT-327 finding #4: 'parent'/'self_attested' are not server-verified
+    # methods either — a client-asserted verified=true here previously forged
+    # verified parental consent outright. Must be forced False the same as
+    # the email methods.
+    uid = _create_user(app)
+    for method in ("parent", "self_attested", "debug_bypass"):
+        resp = client.post(
+            f"/api/user/{uid}/consent",
+            json={
+                "child_age": 8,
+                "consent_method": method,
+                "verified": True,
+            },
+            headers=_auth_headers(uid),
+        )
+        assert resp.status_code == 201, method
+        assert resp.get_json()["consent"]["verified"] is False, method
+
+
+def test_record_consent_debug_bypass_blocked_in_production(client, app, monkeypatch):
+    monkeypatch.setattr("backend.routes.user_routes.is_production", lambda: True)
+    uid = _create_user(app)
+    resp = client.post(
+        f"/api/user/{uid}/consent",
+        json={"child_age": 8, "consent_method": "debug_bypass"},
+        headers=_auth_headers(uid),
+    )
+    assert resp.status_code == 400
 
 
 # ---------------------------------------------------------------------------
