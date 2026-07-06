@@ -201,6 +201,36 @@ def test_crux_returns_awaiting_choice_with_token_pages_and_choices(
     assert f"antihero-crux:{body['continuation_token']}" in fake_cache
 
 
+def test_crux_crisis_in_hero_secret_blocks_generation_and_quota(
+    client, auth_headers, monkeypatch, fake_cache, adolescent_character, app, test_user
+):
+    """MT-327: a self-harm disclosure in hero_secret must return crisis
+    resources instead of running part1 or charging the daily quota."""
+    _mock_llm(monkeypatch)
+    before = _month_count(app, test_user.id)
+
+    resp = client.post(
+        "/generate-antihero-crux",
+        json={
+            "character_id": adolescent_character.id,
+            "age": 16,
+            "hero_power": "strategist",
+            "hero_secret": "I don't want to be alive anymore",
+        },
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    body = resp.get_json()
+    assert body.get("crisis") is True
+    assert "resources" in body
+    assert "continuation_token" not in body
+
+    # Quota must NOT be charged and no continuation context cached.
+    assert _month_count(app, test_user.id) == before
+    assert not fake_cache
+
+
 def test_crux_requires_character(client, auth_headers, monkeypatch, fake_cache):
     _mock_llm(monkeypatch)
     resp = client.post(

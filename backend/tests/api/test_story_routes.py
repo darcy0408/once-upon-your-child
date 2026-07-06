@@ -234,6 +234,53 @@ class TestGenerateStory:
 
         assert response.status_code == 200
 
+    def test_generate_story_crisis_in_custom_elements_blocks_generation(
+        self, client, auth_headers, mock_story_generation
+    ):
+        """MT-327: a self-harm disclosure in customElements must short-circuit
+        to crisis resources instead of reaching the story generator."""
+        payload = {
+            "character": "Luna",
+            "age": 12,
+            "customElements": "I want to kill myself, nobody would notice",
+        }
+
+        response = client.post(
+            "/generate-story",
+            json=payload,
+            content_type="application/json",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data.get("crisis") is True
+        assert "resources" in data
+        mock_story_generation.apply.assert_not_called()
+
+    def test_generate_story_crisis_in_hero_secret_blocks_generation(
+        self, client, auth_headers, mock_story_generation
+    ):
+        """Same guard for the antihero identity free-text fields carried by
+        /generate-story (hero_secret/tell/line)."""
+        payload = {
+            "character": "Maya",
+            "age": 16,
+            "hero_secret": "sometimes I think about ending my life",
+        }
+
+        response = client.post(
+            "/generate-story",
+            json=payload,
+            content_type="application/json",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data.get("crisis") is True
+        mock_story_generation.apply.assert_not_called()
+
     def test_generate_story_with_feelings(self, client, auth_headers):
         """Test story generation with current feeling"""
         payload = {

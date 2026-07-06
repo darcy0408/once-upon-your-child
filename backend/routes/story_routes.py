@@ -356,6 +356,30 @@ def _augment_therapeutic_prompt(
     return " | ".join(parts)
 
 
+def _crisis_guard(logger, endpoint: str, user_id, *texts) -> dict | None:
+    """Server-side self-harm/suicide disclosure guard for free-text child input.
+
+    MT-327: /continue-interactive-story already runs this check on the
+    "Something Else" custom_text box; every other endpoint that accepts child-
+    typed free text (custom_elements, hero_secret/tell/line, therapeutic_prompt)
+    sent it straight to the model unguarded. Checks each of *texts* RAW, before
+    any injection-stripping sanitization removes the signal. Returns
+    crisis_response() if any trips (never log the disclosure text itself);
+    otherwise None, meaning generation may proceed.
+    """
+    from ..utils.crisis_detection import crisis_response, detect_crisis
+
+    if any(detect_crisis(t) for t in texts if t):
+        logger.warning(
+            "Crisis: self-harm disclosure detected in free-text input to %s "
+            "(user %s); returning crisis resources, not a story.",
+            endpoint,
+            user_id,
+        )
+        return crisis_response()
+    return None
+
+
 def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
     """Run story generation in a bounded worker thread under an explicit task id.
 
@@ -675,6 +699,21 @@ def create_story_blueprint(
         from ..utils.sanitizer import sanitize_story_request
 
         payload = request.get_json(silent=True) or {}
+
+        crisis = _crisis_guard(
+            logger,
+            "/generate-story",
+            getattr(request.current_user, "id", "?"),
+            payload.get("customElements"),
+            payload.get("custom_elements"),
+            payload.get("hero_secret"),
+            payload.get("hero_tell"),
+            payload.get("hero_line"),
+            payload.get("therapeutic_prompt"),
+        )
+        if crisis:
+            return jsonify(crisis), 200
+
         payload = sanitize_story_request(payload)
 
         # Validate mode combinations before processing
@@ -1048,6 +1087,20 @@ def create_story_blueprint(
         from ..utils.sanitizer import sanitize_story_request
 
         payload = request.get_json(silent=True) or {}
+
+        crisis = _crisis_guard(
+            logger,
+            "/generate-antihero-crux",
+            getattr(request.current_user, "id", "?"),
+            payload.get("customElements"),
+            payload.get("custom_elements"),
+            payload.get("hero_secret"),
+            payload.get("hero_tell"),
+            payload.get("hero_line"),
+        )
+        if crisis:
+            return jsonify(crisis), 200
+
         payload = sanitize_story_request(payload)
 
         user_id = request.current_user.id
