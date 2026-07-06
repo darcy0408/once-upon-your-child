@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-06 | 10:00 | d519 | main | Prompt ceiling pass #2 merged (#386) + launch critical-path brief | [link](docs/sessions/2026-07-06-1000-d519.md) |
 | 2026-07-06 | 09:48 | e964 | main | MT-327 fully closed: 3 PRs merged + Cluster B consent hardening (PR #387) | [link](docs/sessions/2026-07-06-0948-e964.md) |
 | 2026-07-05 | 23:28 | cd8f | main | MT-327 remediation: no-Gemini-for-minors sweep (PR #385) | [link](docs/sessions/2026-07-05-2328-cd8f.md) |
 | 2026-07-05 | 22:43 | 2f64 | main | ultracode launch-readiness audit (5 blockers) | [link](docs/sessions/2026-07-05-2243-2f64.md) |
