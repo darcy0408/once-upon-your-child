@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-05 | 22:43 | 2f64 | main | ultracode launch-readiness audit (5 blockers) | [link](docs/sessions/2026-07-05-2243-2f64.md) |
 | 2026-07-05 | 12:43 | 4113 | main | Six Hats UX audit — all 5 age bands live on prod + fix plan | [link](docs/sessions/2026-07-05-1243-4113.md) |
 | 2026-07-05 | 07:34 | d9a5 | main (PR #384) | Robotic voice on consent-CTA Pick-Hero screen fixed; boy/girl images ruled non-bug | [link](docs/sessions/2026-07-05-0734-d9a5.md) |
 | 2026-07-04 | 21:30 | 0f66 | main | Warm welcome-greeting fix: prewarm greeting strings (PR #383) | [link](docs/sessions/2026-07-04-2130-0f66.md) |
