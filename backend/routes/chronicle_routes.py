@@ -17,7 +17,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def create_chronicle_blueprint(api_key: str, limiter) -> Blueprint:
+def create_chronicle_blueprint(limiter) -> Blueprint:
     """Factory function matching the pattern of other blueprints in this app."""
 
     chronicle_bp = Blueprint("chronicle", __name__)
@@ -58,7 +58,7 @@ def create_chronicle_blueprint(api_key: str, limiter) -> Blueprint:
             return jsonify({"error": "chapter_text too long (max 50000 chars)"}), 400
 
         try:
-            service = ChroniclePromptService(gemini_api_key=api_key)
+            service = ChroniclePromptService()
             result = service.summarize_chapter(
                 chapter_number=int(chapter_number),
                 chapter_text=chapter_text,
@@ -112,7 +112,7 @@ def create_chronicle_blueprint(api_key: str, limiter) -> Blueprint:
             )
 
         try:
-            service = ChroniclePromptService(gemini_api_key=api_key)
+            service = ChroniclePromptService()
             result = service.compress_arc(
                 arc_number=int(arc_number),
                 chapter_start=int(chapter_start),

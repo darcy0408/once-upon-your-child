@@ -309,6 +309,20 @@ def create_tts_blueprint(limiter, require_auth):
         # in the Azure-unavailable fallback (they get Gemini Flash TTS -> Edge).
         # is_under_13 is set during COPPA onboarding.
         is_under_13 = bool(getattr(request.current_user, "is_under_13", False))
+        # MT-327: Gemini Flash TTS (the legacy pre-Azure fallback below) is
+        # barred for ALL minors, not just under-13s. is_under_13 alone misses
+        # 13-17 accounts (attested via the 13-17 gate, which POSTs a resolved
+        # declared_age without setting is_under_13). An unknown declared_age
+        # is NOT treated as a minor here — mirrors this codebase's existing
+        # fail-open-on-unknown-age posture (ENFORCE_RESOLVED_AGE defaults off
+        # for the same reason: most accounts predate server-side age-sync).
+        _declared_age = getattr(request.current_user, "declared_age", None)
+        try:
+            is_under_18 = is_under_13 or (
+                _declared_age is not None and int(_declared_age) < 18
+            )
+        except (TypeError, ValueError):
+            is_under_18 = is_under_13
         if user_id:
             allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
             if not allowed:
@@ -456,25 +470,24 @@ def create_tts_blueprint(limiter, require_auth):
                 audio_bytes = None
 
         # Legacy chain — used ONLY when Azure is not configured. Gemini Flash TTS
-        # (default paid) then free Edge TTS. Both are under-18-barred / not
-        # commercially licensed for a kids' app (MT-248) and are bypassed the
-        # moment Azure goes live; kept as the pre-Azure fallback so dev/preview
-        # narration still works before the Azure key is set.
+        # (default paid) then free Edge TTS. Gemini is under-18-barred (its API
+        # ToS forbid child-directed apps, MT-137/MT-248) and both are bypassed
+        # the moment Azure goes live; kept as the pre-Azure fallback so
+        # dev/preview narration still works before the Azure key is set.
         #
         # Defense in depth: if Azure (the licensed provider) is unavailable —
-        # e.g. an unset/expired key — under-13 users must NOT silently fall
-        # through to Gemini, which is contractually barred for child-directed
-        # use. Refuse both legacy providers for them; the request 503s below
-        # and the client falls back to its on-device voice, same as when
-        # Azure itself fails.
-        if not audio_bytes and not azure_enabled and is_under_13:
+        # e.g. an unset/expired key — minors (under 18, not just under 13) must
+        # NOT silently fall through to Gemini, which is contractually barred
+        # for child-directed use. Refuse Gemini for them; Edge TTS keeps its
+        # original (unchanged) under-13 gate below.
+        if not audio_bytes and not azure_enabled and is_under_18:
             audit_log(
-                "tts_legacy_chain_blocked_under13",
+                "tts_legacy_chain_gemini_blocked_minor",
                 user_id=user_id,
                 data={"reason": "azure_unavailable"},
             )
 
-        if not audio_bytes and not azure_enabled and not is_under_13:
+        if not audio_bytes and not azure_enabled and not is_under_18:
             gemini_result = _gemini_synthesize(text, voice_id, speed)
             if gemini_result is not None and gemini_result[0]:
                 audio_bytes, word_timestamps = gemini_result

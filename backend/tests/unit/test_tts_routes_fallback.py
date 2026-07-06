@@ -187,6 +187,54 @@ def under13_user_headers(under13_user):
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
+@pytest.fixture
+def teen_user(app):
+    """A 15-year-old, ``is_under_13=False`` with a resolved ``declared_age``.
+
+    Mirrors a real 13-17 account: the self-attest gate POSTs declared_age
+    without setting is_under_13. MT-327: this population previously slipped
+    past the Gemini gate (which checked only is_under_13) and reached Gemini
+    Flash TTS — barred for all minors under Gemini's API ToS.
+    """
+    from backend.database import db
+    from backend.models import User
+
+    with app.app_context():
+        user = User(
+            id="teen_user_001",
+            username="teenuser",
+            email="teen@example.com",
+            password_hash="hashed_password",
+            subscription_tier="free",
+            role="user",
+            is_under_13=False,
+            declared_age=15,
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+        db.session.delete(user)
+        db.session.commit()
+
+
+@pytest.fixture
+def teen_user_headers(teen_user):
+    """Auth headers for the 13-17 teen user."""
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    payload = {
+        "user_id": teen_user.id,
+        "sub": teen_user.id,
+        "email": teen_user.email,
+        "subscription_tier": "free",
+        "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+    }
+    token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+
 # ---------------------------------------------------------------------------
 # Default provider — Gemini (ElevenLabs is opt-in after F-01)
 # ---------------------------------------------------------------------------
@@ -503,3 +551,36 @@ class TestUnder13ElevenLabsGate:
         assert body["error"] == "TTS service unavailable"
         tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
         tts.edge.generate_speech_with_timestamps.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# 13-17 Gemini gate (MT-327) — Gemini bars ALL minors, not just under-13s
+# ---------------------------------------------------------------------------
+
+
+class TestTeenGeminiGate:
+    """A 13-17 user (``is_under_13=False``, ``declared_age`` resolved to a
+    teen value) must never reach Gemini Flash TTS in the legacy fallback
+    chain — Gemini's API ToS bar under-18 use, not just under-13. Edge TTS
+    remains available to this population (its gate is unchanged)."""
+
+    def test_teen_default_request_skips_gemini_serves_edge(
+        self, client, teen_user_headers, tts: TTSMocks
+    ) -> None:
+        status, body = _post_synthesize(client, teen_user_headers)
+
+        assert status == 200
+        assert body["provider"] == "edge"
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()
+        tts.edge.generate_speech_with_timestamps.assert_called_once()
+
+    def test_teen_gets_503_when_edge_also_unavailable(
+        self, client, teen_user_headers, tts: TTSMocks, mocker
+    ) -> None:
+        mocker.patch("backend.routes.tts_routes._get_edge_service", return_value=None)
+
+        status, body = _post_synthesize(client, teen_user_headers)
+
+        assert status == 503
+        assert body["error"] == "TTS service unavailable"
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()

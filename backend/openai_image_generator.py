@@ -175,6 +175,40 @@ class OpenAIImageGenerator:
         )
         return self._edit(photo_bytes, prompt)
 
+    def tweak_gallery_avatar(
+        self,
+        image_bytes: bytes,
+        hair_length: Optional[str] = None,
+        eye_color: Optional[str] = None,
+    ) -> List[Dict]:
+        """Edit a curated gallery avatar by changing specific features.
+
+        Mirrors ``GeminiImageGenerator.tweak_gallery_avatar`` so
+        ``AvatarGenerationService`` (and the ``/avatar/tweak-gallery-avatar``
+        route) can use this interchangeably regardless of provider.
+        """
+        changes = []
+        if hair_length:
+            changes.append(f"hair style to {hair_length}")
+        if eye_color:
+            changes.append(f"eye color to {eye_color}")
+
+        if not changes:
+            logger.warning("tweak_gallery_avatar called with no changes requested")
+            return []
+
+        changes_text = " and ".join(changes)
+        prompt = (
+            "This is a Pixar-style storybook character illustration. "
+            "Keep EVERYTHING exactly the same — face shape, skin tone, facial features, "
+            "clothing, background, art style, pose, and all other details. "
+            f"ONLY change: {changes_text}. "
+            "Do not alter anything else whatsoever. "
+            "Output the full character with only those specific changes applied."
+        )
+        logger.info("OpenAI gallery avatar tweak: %s (edit/gpt-image-2)", changes_text)
+        return self._edit(image_bytes, prompt)
+
     def transform_to_superhero(
         self,
         image_bytes: bytes,

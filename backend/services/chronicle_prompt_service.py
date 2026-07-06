@@ -1,6 +1,13 @@
 """
 Chronicle Prompt Service
-Builds Gemini prompts for chapter summarization and arc compression.
+Builds and executes prompts for chapter summarization and arc compression.
+
+Provider (MT-137 / MT-327 launch-gate): this service previously called Gemini
+directly on the server key with no age/consent gate, sending a child's full
+story chapter (up to 50k chars) to a vendor whose API ToS forbid under-18
+apps. It now runs on the same OpenAI client/model family already used for
+children's story TEXT (``services/openai_story_generator.py``) and output
+moderation (``utils/content_moderator.py``), via ``OPENAI_API_KEY``.
 """
 
 import json
@@ -8,10 +15,24 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from google import genai
-from google.genai import types
-
 logger = logging.getLogger(__name__)
+
+# Overridable via env so a deployment can point Chronicle calls at a different
+# OpenAI model without touching story-text generation or moderation.
+_DEFAULT_CHRONICLE_MODEL = "gpt-5-mini"
+_DEFAULT_CHRONICLE_MAX_TOKENS = 2048
+_DEFAULT_CHRONICLE_REASONING_EFFORT = "low"
+
+# Sentinels that mean "send no reasoning_effort param" (mirrors
+# openai_story_generator._NO_REASONING_SENTINELS / content_moderator).
+_NO_REASONING_SENTINELS = frozenset({"", "none", "off", "default"})
+
+
+def _make_openai_client(api_key: str):
+    """Lazily import the SDK and build a client. Patched in tests."""
+    import openai  # lazy: see module docstring
+
+    return openai.OpenAI(api_key=api_key)
 
 
 class ChroniclePromptService:
@@ -27,17 +48,62 @@ class ChroniclePromptService:
         "arc summary paragraph in strict JSON."
     )
 
-    def __init__(self, gemini_api_key: Optional[str] = None):
-        self.api_key = gemini_api_key or os.getenv("GEMINI_API_KEY")
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("GEMINI_API_KEY not set")
-        self._client = genai.Client(api_key=self.api_key)
-        self._model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-        self._json_config = types.GenerateContentConfig(
-            response_mime_type="application/json",
-            max_output_tokens=1000,
-            temperature=0.3,
+            raise ValueError("OPENAI_API_KEY not set")
+        self._client = _make_openai_client(self.api_key)
+        self._model_name = (
+            os.getenv("OPENAI_CHRONICLE_MODEL") or _DEFAULT_CHRONICLE_MODEL
         )
+        self._max_tokens = self._resolve_max_tokens()
+        self._reasoning_effort = self._resolve_reasoning_effort()
+
+    @staticmethod
+    def _resolve_max_tokens() -> int:
+        raw = os.getenv("OPENAI_CHRONICLE_MAX_TOKENS")
+        if not raw:
+            return _DEFAULT_CHRONICLE_MAX_TOKENS
+        try:
+            value = int(raw)
+            return value if value > 0 else _DEFAULT_CHRONICLE_MAX_TOKENS
+        except (TypeError, ValueError):
+            return _DEFAULT_CHRONICLE_MAX_TOKENS
+
+    @staticmethod
+    def _resolve_reasoning_effort() -> Optional[str]:
+        raw = os.getenv("OPENAI_CHRONICLE_REASONING_EFFORT")
+        if raw is None:
+            return _DEFAULT_CHRONICLE_REASONING_EFFORT
+        effort = raw.strip().lower()
+        if effort in _NO_REASONING_SENTINELS:
+            return None
+        return effort
+
+    def _generate_json(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
+        kwargs = {
+            "model": self._model_name,
+            "max_completion_tokens": self._max_tokens,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        }
+        if self._reasoning_effort is not None:
+            kwargs["reasoning_effort"] = self._reasoning_effort
+
+        response = self._client.chat.completions.create(**kwargs)
+        choice = (getattr(response, "choices", None) or [None])[0]
+        message = getattr(choice, "message", None)
+        text = (getattr(message, "content", None) or "").strip()
+
+        if text.startswith("```"):
+            lines = text.splitlines()
+            text = "\n".join(
+                line for line in lines if not line.startswith("```")
+            ).strip()
+
+        return json.loads(text)
 
     def summarize_chapter(
         self,
@@ -50,7 +116,7 @@ class ChroniclePromptService:
         age: int = 7,
     ) -> Dict[str, Any]:
         """
-        Call Gemini to summarize one completed chapter.
+        Summarize one completed chapter into a compact memory packet.
 
         Returns a dict matching this schema:
         {
@@ -97,9 +163,7 @@ class ChroniclePromptService:
         else:
             vocab_note = ""
 
-        prompt = f"""{self.SUMMARIZE_SYSTEM}
-
-CHAPTER {chapter_number} TEXT FOR CHARACTER "{character_name}":
+        prompt = f"""CHAPTER {chapter_number} TEXT FOR CHARACTER "{character_name}":
 {chapter_text}
 
 CONTEXT:
@@ -128,13 +192,7 @@ Return ONLY valid JSON matching this exact schema:
   }}
 }}"""
 
-        response = self._client.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-            config=self._json_config,
-        )
-        text = response.text if hasattr(response, "text") else ""
-        return json.loads(text)
+        return self._generate_json(self.SUMMARIZE_SYSTEM, prompt)
 
     def compress_arc(
         self,
@@ -149,7 +207,7 @@ Return ONLY valid JSON matching this exact schema:
 
         Returns:
         {
-          "arc_summary": "Arc N (Ch X-Y): One paragraph summary..."
+          "arc_summary": "Arc N (Ch X-Y): ..."
         }
         """
         summaries_text = ""
@@ -158,9 +216,7 @@ Return ONLY valid JSON matching this exact schema:
             bullets = "\n".join(f"  - {b}" for b in (mem.get("summary_bullets") or []))
             summaries_text += f"\nChapter {ch_num}:\n{bullets}\n"
 
-        prompt = f"""{self.COMPRESS_SYSTEM}
-
-CHARACTER: {character_name}
+        prompt = f"""CHARACTER: {character_name}
 ARC {arc_number} covers Chapters {chapter_start}–{chapter_end}.
 
 CHAPTER SUMMARIES:
@@ -171,10 +227,4 @@ Return ONLY valid JSON:
   "arc_summary": "Arc {arc_number} (Ch {chapter_start}-{chapter_end}): One paragraph (3-5 sentences) covering key events, choices made, and character growth."
 }}"""
 
-        response = self._client.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-            config=self._json_config,
-        )
-        text = response.text if hasattr(response, "text") else ""
-        return json.loads(text)
+        return self._generate_json(self.COMPRESS_SYSTEM, prompt)

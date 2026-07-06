@@ -1287,12 +1287,27 @@ def create_avatar_blueprint(limiter):
                 f"Gallery avatar tweak: hair_length={hair_length}, eye_color={eye_color}"
             )
 
-            try:
-                from backend.gemini_image_generator import GeminiImageGenerator
-            except ImportError:
-                from gemini_image_generator import GeminiImageGenerator
-
-            generator = GeminiImageGenerator()
+            # MT-327: this previously built a direct GeminiImageGenerator() on
+            # the server key, bypassing the prod DISABLE_GEMINI_IMAGE=1 kill
+            # switch (Gemini's ToS forbid child-directed apps). Route through
+            # the shared AvatarGenerationService like every other avatar
+            # endpoint so the same provider gating applies here.
+            service = get_avatar_service()
+            generator = service.image_generator
+            if generator is None or not hasattr(generator, "tweak_gallery_avatar"):
+                logger.warning(
+                    "Gallery avatar tweak: no eligible image generator configured"
+                )
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error_code": "GENERATION_FAILED",
+                            "message": get_error_message("generation_failed"),
+                        }
+                    ),
+                    500,
+                )
             try:
                 images = _run_with_timeout(
                     generator.tweak_gallery_avatar,

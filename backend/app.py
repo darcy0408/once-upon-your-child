@@ -468,10 +468,11 @@ def create_app(config_name):
         logger.warning(
             "STORY_GEN_PROVIDER=%r is not a recognized value "
             "(expected 'gemini' | 'openrouter' | 'claude' | 'openai' | "
-            "'tiered' | 'auto'); defaulting to 'gemini'.",
+            "'tiered' | 'auto'); defaulting to 'openai' (MT-137: Gemini is "
+            "barred from child-directed content).",
             _provider_raw,
         )
-        _provider = "gemini"
+        _provider = "openai"
     app.config["STORY_GEN_PROVIDER"] = _provider
     logger.info("STORY_GEN_PROVIDER set to '%s' (MT-171)", _provider)
 
@@ -902,7 +903,7 @@ def create_app(config_name):
     utility_bp = create_utility_blueprint(
         logger=logger, log_error=log_error, limiter=limiter
     )
-    chronicle_bp = create_chronicle_blueprint(api_key=api_key, limiter=limiter)
+    chronicle_bp = create_chronicle_blueprint(limiter=limiter)
 
     app.register_blueprint(story_bp)
     app.register_blueprint(character_bp)
