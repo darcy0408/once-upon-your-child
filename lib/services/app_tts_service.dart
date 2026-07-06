@@ -105,6 +105,11 @@ const List<String> kWarmUpPhrases = [
   "Under the Sea!",
 
   // Hero Creator & Companion step narration
+  // Page-1 greetings are name-agnostic (see hero_creator_step _speakPagePrompt)
+  // so they cache here and play warm on the first tap of the consent-CTA path,
+  // which lands straight on Pick Hero seconds after a cold launch.
+  "Hi there! Get ready for a brand-new adventure. Let's create your hero!",
+  "Hey there! Your next adventure is about to begin. Let's build your hero.",
   "Choose your hero's path!",
   "Who will join you on your quest?",
 

@@ -3942,17 +3942,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       // greeting framed for the band; archetype + companion pages keep their
       // existing guidance.
       final isAdventurer = age >= 9;
+      // Page-1 greeting is intentionally name-agnostic so it can be pre-warmed
+      // (kWarmUpPhrases) and is guaranteed to play in the warm neural voice on
+      // the first tap after a cold launch. A name-interpolated string is unique
+      // per child, can never be cached, and loses the synth race on the
+      // consent-CTA path — which lands straight on this page seconds after
+      // launch — dropping to the robotic on-device fallback. The child's name
+      // is already shown on-screen ("HI <NAME>!"), so warmth is preserved
+      // visually. Same fix as the welcome-screen greeting in PR #383.
       final page1Prompt = isAdventurer
-          ? (hasKnownName
-              ? "Hey $knownName! Your next adventure is about to begin. "
-                  "Let's build your hero."
-              : "Hey there! Your next adventure is about to begin. "
-                  "Let's build your hero.")
-          : (hasKnownName
-              ? "Hi $knownName! Get ready for a brand-new adventure. "
-                  "Let's create your hero!"
-              : "Hi there! Get ready for a brand-new adventure. "
-                  "Let's create your hero!");
+          ? "Hey there! Your next adventure is about to begin. "
+              "Let's build your hero."
+          : "Hi there! Get ready for a brand-new adventure. "
+              "Let's create your hero!";
       final prompt = switch (page) {
         1 => page1Prompt,
         3 => "Choose your hero's path!",
