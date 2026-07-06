@@ -8,6 +8,11 @@ detail in `audit-reports/NN-*.md`, `docs/MANUAL_TASKS.md`, and
 plan for opening the kids' bands to a small invited group; this file is the
 broader launch-readiness map (including the fuller public/monetized launch).
 
+> **2026-07-06:** For the decision-sequenced path (what to do, in what order, tagged
+> owner/Sonnet/external), see **`docs/LAUNCH_CRITICAL_PATH_2026-07-06.md`** — it also
+> adjudicates the staleness in this file (the "3 open PRs" below are all MERGED; 4 of
+> the 07-05 audit's 5 blockers are closed in code as of 07-06).
+
 - **Reconciled:** 2026-07-03 (previous pass was 2026-06-07 and had rotted —
   it predated the LLC, the restore drill, and the OpenAI/Azure provider
   migration; all three are corrected below). The app is still
