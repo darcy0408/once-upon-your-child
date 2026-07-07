@@ -104,6 +104,101 @@ def test_create_checkout_session_missing_json_body_returns_400(client, app):
     assert response.get_json()["error"] == "Invalid subscription tier"
 
 
+def test_create_checkout_session_defaults_to_14_day_trial(
+    client, app, mocker, monkeypatch
+):
+    """Paywall copy promises '14 days free' (single-tier pricing, PR #395).
+
+    get_trial_days() defaults STRIPE_TRIAL_DAYS to "14" when the env var is
+    unset, so this must be true out of the box with no Railway config.
+    """
+    with app.app_context():
+        _create_user("u-trial-default")
+
+    monkeypatch.delenv("STRIPE_TRIAL_DAYS", raising=False)
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123"},
+    )
+    create_mock = mocker.patch(
+        "backend.routes.stripe_routes.stripe.checkout.Session.create",
+        return_value=SimpleNamespace(
+            id="cs_test_trial", url="https://checkout.stripe.com/pay/cs_test_trial"
+        ),
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium"},
+        headers=_auth_headers("u-trial-default"),
+    )
+
+    assert response.status_code == 200
+    kwargs = create_mock.call_args.kwargs
+    assert kwargs["subscription_data"]["trial_period_days"] == 14
+
+
+def test_create_checkout_session_trial_disabled_via_env_zero(
+    client, app, mocker, monkeypatch
+):
+    """STRIPE_TRIAL_DAYS=0 (or any non-positive value) disables the trial."""
+    with app.app_context():
+        _create_user("u-trial-off")
+
+    monkeypatch.setenv("STRIPE_TRIAL_DAYS", "0")
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123"},
+    )
+    create_mock = mocker.patch(
+        "backend.routes.stripe_routes.stripe.checkout.Session.create",
+        return_value=SimpleNamespace(
+            id="cs_test_no_trial",
+            url="https://checkout.stripe.com/pay/cs_test_no_trial",
+        ),
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium"},
+        headers=_auth_headers("u-trial-off"),
+    )
+
+    assert response.status_code == 200
+    kwargs = create_mock.call_args.kwargs
+    assert "trial_period_days" not in kwargs["subscription_data"]
+
+
+def test_create_checkout_session_trial_days_env_override(
+    client, app, mocker, monkeypatch
+):
+    """STRIPE_TRIAL_DAYS tunes the trial length without a code deploy."""
+    with app.app_context():
+        _create_user("u-trial-30")
+
+    monkeypatch.setenv("STRIPE_TRIAL_DAYS", "30")
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123"},
+    )
+    create_mock = mocker.patch(
+        "backend.routes.stripe_routes.stripe.checkout.Session.create",
+        return_value=SimpleNamespace(
+            id="cs_test_30", url="https://checkout.stripe.com/pay/cs_test_30"
+        ),
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium"},
+        headers=_auth_headers("u-trial-30"),
+    )
+
+    assert response.status_code == 200
+    kwargs = create_mock.call_args.kwargs
+    assert kwargs["subscription_data"]["trial_period_days"] == 30
+
+
 def test_create_checkout_session_stripe_failure_returns_500(client, app, mocker):
     with app.app_context():
         _create_user("u-5")

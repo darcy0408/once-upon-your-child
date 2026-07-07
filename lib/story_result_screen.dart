@@ -2127,9 +2127,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Parent-directed, no urgency/guilt copy — this
+                          // banner is seen by explorer/adventurer readers
+                          // (ages 6-12), so it speaks past the child to the
+                          // grown-up who'd actually complete a purchase.
                           Text(
-                            'You\'ve used your $limit free illustrations '
-                            'this month.',
+                            'All out of free illustrations for this month '
+                            '($limit used).',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -2137,11 +2141,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Once Upon YOUR Child Premium unlocks 100/mo.',
+                          const Text(
+                            'A grown-up can unlock illustrations on every '
+                            'page with Premium.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: lavender.withValues(alpha: 0.85),
+                              color: Color(0xFF6B5CA5),
                             ),
                           ),
                         ],
@@ -2158,7 +2163,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                         shape: const StadiumBorder(),
                       ),
                       child: const Text(
-                        'Upgrade',
+                        'Ask a grown-up',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -2215,9 +2220,24 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Unlock AI illustrations and premium narration for every scene.',
+              'Unlock illustrations on every page, plus premium narration.',
               style:
                   TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            // Single-tier pricing (2026-07-07 decision) — sourced from
+            // TierPricing.premiumTier so this can't drift from the real
+            // checkout price.
+            Text(
+              '\$${TierPricing.premiumTier.monthlyPrice.toStringAsFixed(2)}'
+              '/mo or \$${TierPricing.premiumTier.yearlyPrice.toStringAsFixed(2)}'
+              '/yr',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF7E57C2),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -2235,10 +2255,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   for (final f in [
-                    '🖼️  AI illustrations for every story scene',
-                    '🎙️  Premium ElevenLabs narration',
+                    '🖼️  Illustrations on every page',
+                    '🎙️  Premium voice narration',
                     '🎭  Interactive choose-your-own-adventure',
-                    '📖  20 stories per month',
+                    '📖  Up to 10 stories every day',
                   ])
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),

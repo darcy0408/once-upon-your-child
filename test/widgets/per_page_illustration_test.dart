@@ -46,16 +46,15 @@ void main() {
           onTapUpgrade: () => tapCount += 1,
         );
 
-        // Upsell card surface elements present.
-        expect(find.text('Out of free illustrations'), findsOneWidget);
-        expect(
-          find.text('Tap to upgrade and see this scene come alive.'),
-          findsOneWidget,
-        );
-        expect(find.text('🎨'), findsOneWidget);
+        // Upsell card surface elements present: the blurred decorative scene
+        // plus a sharp, unblurred CTA chip on top of it.
+        expect(find.text('See this scene come alive ✨'), findsOneWidget);
+        expect(find.text('Tap to unlock illustrations'), findsOneWidget);
+        expect(find.byType(BackdropFilter), findsOneWidget);
+        expect(find.byType(CustomPaint), findsWidgets);
 
         // Tap → callback fires.
-        await tester.tap(find.text('Out of free illustrations'));
+        await tester.tap(find.text('See this scene come alive ✨'));
         await tester.pump();
         expect(tapCount, 1);
       },
@@ -73,8 +72,8 @@ void main() {
 
         await pumpWidget(tester, notifier: notifier);
 
-        expect(find.text('Out of free illustrations'), findsNothing);
-        expect(find.text('🎨'), findsNothing);
+        expect(find.text('See this scene come alive ✨'), findsNothing);
+        expect(find.byType(BackdropFilter), findsNothing);
       },
     );
 
@@ -94,8 +93,8 @@ void main() {
           onTapUpgrade: () {},
         );
 
-        // Skeleton path renders an auto_awesome icon, not the upsell text.
-        expect(find.text('Out of free illustrations'), findsNothing);
+        // Skeleton path renders an auto_awesome icon, not the upsell card.
+        expect(find.text('See this scene come alive ✨'), findsNothing);
         expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
 
         notifier.value = const PageIllustrationState(
@@ -104,7 +103,7 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.auto_awesome), findsNothing);
-        expect(find.text('Out of free illustrations'), findsOneWidget);
+        expect(find.text('See this scene come alive ✨'), findsOneWidget);
       },
     );
 
@@ -128,7 +127,7 @@ void main() {
           onTapUpgrade: () => fail('failed status must not be tappable'),
         );
 
-        expect(find.text('Out of free illustrations'), findsNothing);
+        expect(find.text('See this scene come alive ✨'), findsNothing);
       },
     );
   });

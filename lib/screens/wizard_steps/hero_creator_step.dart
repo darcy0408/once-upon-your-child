@@ -48,6 +48,7 @@ import '../life_quest_screen.dart';
 import '../../services/offline_story_service.dart';
 import '../../models/local/story_local.dart';
 import '../../story_result_screen.dart';
+import '../../subscription_models.dart';
 
 // ---------------------------------------------------------------------------
 class _PetAvatarGenerationResult {
@@ -3018,8 +3019,57 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  /// Bundled cartoon-hero art used as the "after" side of the custom-avatar
+  /// upgrade teaser below. Mirrors the asset map in [_buildGenderPicker] —
+  /// deliberately reuses art already shipped with the app rather than a real
+  /// (or fake) child photo.
+  String _teaserHeroAssetPath(AgeBand band, String gender) {
+    final g = gender == 'Girl' ? 'girl' : 'boy';
+    switch (band) {
+      case AgeBand.sprout:
+        return 'assets/images/ui/gender/gender_sprout_$g.webp';
+      case AgeBand.explorer:
+        return 'assets/images/ui/gender/gender_explorer_$g.webp';
+      case AgeBand.adventurer:
+        return 'assets/images/ui/gender/gender_adventurer_$g.jpg';
+      case AgeBand.creator:
+        return 'assets/images/ui/gender/gender_creator_$g.jpg';
+      case AgeBand.adolescent:
+        return 'assets/images/ui/gender/gender_adolescent_$g.webp';
+      case AgeBand.adult:
+        return 'assets/images/ui/gender/gender_adult_$g.webp';
+    }
+  }
+
+  /// One "before" or "after" panel in the avatar upgrade teaser.
+  Widget _buildAvatarTeaserPanel({required String label, required Widget child}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(aspectRatio: 1, child: child),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: GoogleFonts.quicksand(color: Colors.white60, fontSize: 11),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  /// Visual before/after teaser: a generic "your photo" placeholder becomes
+  /// one of the app's own bundled cartoon-hero portraits. Parent-directed,
+  /// single-tier pricing copy; the actual purchase path is reached only
+  /// through [_openCustomAvatarUpgrade]'s COPPA-safe paywall gate.
   Future<void> _showCustomAvatarUpgradeDialog() async {
     if (!mounted) return;
+    final band = Theme.of(context).extension<AgeBandThemeData>()?.band ??
+        AgeBand.explorer;
+    final gender = widget.wizardData.characterGender.isNotEmpty
+        ? widget.wizardData.characterGender
+        : 'Boy';
+    final afterAsset = _teaserHeroAssetPath(band, gender);
+
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -3030,15 +3080,90 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           style: GoogleFonts.nunito(
               color: Colors.white, fontWeight: FontWeight.w800),
         ),
-        content: Text(
-          "You've already created your free magic avatar! "
-          'Upgrade to premium to turn more photos into cartoon heroes.',
-          style: GoogleFonts.quicksand(color: Colors.white70),
+        content: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: _buildAvatarTeaserPanel(
+                      label: 'Your photo',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.face_rounded,
+                            color: Colors.white38, size: 44),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(Icons.arrow_forward_rounded,
+                        color: Colors.amber.shade200, size: 22),
+                  ),
+                  Expanded(
+                    child: _buildAvatarTeaserPanel(
+                      label: 'Your cartoon hero',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: SafeAssetImage(
+                          afterAsset,
+                          fit: BoxFit.cover,
+                          placeholder: Container(
+                            color: Colors.white10,
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.auto_awesome,
+                                color: Colors.white38, size: 36),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "You've already created your free magic avatar! Premium "
+                'turns every photo into a cartoon hero — one for each kid, '
+                'plus mom, dad, even grandma.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.quicksand(color: Colors.white70),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '\$${TierPricing.premiumTier.monthlyPrice.toStringAsFixed(2)}'
+                '/mo or '
+                '\$${TierPricing.premiumTier.yearlyPrice.toStringAsFixed(2)}'
+                '/yr',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  color: Colors.amber.shade200,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('Maybe later',
+                style: GoogleFonts.quicksand(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _openAvatarGallery();
+            },
+            child: Text('Pick a premade hero',
                 style: GoogleFonts.quicksand(color: Colors.white60)),
           ),
           ElevatedButton(
@@ -3050,14 +3175,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              _openAvatarGallery();
+              _openCustomAvatarUpgrade();
             },
             child: Text(
-              'Pick a premade hero',
+              'See Premium',
               style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Routes to the upgrade screen through the COPPA-safe gate (kids get the
+  /// "ask a grown-up" math challenge before any pricing is shown). Mirrors
+  /// [_openCompanionPhotoUpgrade].
+  Future<void> _openCustomAvatarUpgrade() async {
+    if (!mounted) return;
+    await showPaywallGated<void>(
+      context: context,
+      showActualPaywall: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => const PremiumUpgradeScreen()),
       ),
     );
   }
