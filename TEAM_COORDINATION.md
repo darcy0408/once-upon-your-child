@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-07 | 11:16 | a493 | main | Per-age-band illustration styles + companion visuals (PR #389) | [link](docs/sessions/2026-07-07-1116-a493.md) |
 | 2026-07-07 | 11:07 | 342a | main | Explorer SEL prompt-spine design (Fable) — MT-331 review gate | [link](docs/sessions/2026-07-07-1107-342a.md) |
 | 2026-07-07 | 08:28 | e937 | main | Clinician packet completed + Privacy Policy v3 drafted | [link](docs/sessions/2026-07-07-0828-e937.md) |
 | 2026-07-07 | 08:14 | 511e | main | Triaged + cleaned C:/dev scratch folders (none were app work) | [link](docs/sessions/2026-07-07-0814-511e.md) |

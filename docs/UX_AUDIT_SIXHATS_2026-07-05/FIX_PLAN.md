@@ -26,12 +26,14 @@ One root cause, three symptoms observed:
 
 ## Chunk C — Illustration identity & fidelity (P0, M, the "wow" fix)
 
+**Status (a493, 2026-07-07):** C1 partial + C3 done via PR #389 (merged `dd9f0645`) — see `backend/services/image_prompt_helpers.py` (`ILLUSTRATION_STYLE_BY_BAND`, `build_companion_visuals`, `TEXTLESS_ART_RULE`). Companion color/description now threaded (Pebble/Ember-never-render root cause), 5-band style map, textless rule, hero age always stated. C1's persistent per-character appearance anchor (seed-lock / stored string) and C2/C4 are still open.
+
 | # | Fix | Notes |
 |---|-----|-------|
-| C1 | **Anchor illustration prompts on wizard picks** — skin tone/hair/outfit (from chosen avatar), companion species+color, scene | Sprout run: dark-skinned curly-hair boy in blue hoodie → art showed two light-skinned kids; Pebble (purple dragon) → green turtle; hero mutated every page. Explorer: 3 different heroes in 3 pages. Flux is $0 — richer prompts cost nothing. Store a canonical "appearance anchor" string per character at creation; inject into every page prompt. |
-| C2 | **Verify scene/scenario reaches the story prompt** | Sprout: picked "Under the Sea!", got a crystal-cave story. Same dropped-field family as the old `_mapArchetypeToDetails` bug. (Explorer/Adventurer honored the pick — check the Sprout path specifically.) |
-| C3 | Add the **textless-art rule** to story-illustration prompts | Creator cover rendered gibberish signage ("HORTIDIN'S SAIP BAKERY"). Same rule already used for scene-tile generation. |
-| C4 | Dedupe onomatopoeia compositing | Sprout p3 rendered "ZING BOING" twice, one clipped. |
+| C1 | **Anchor illustration prompts on wizard picks** — skin tone/hair/outfit (from chosen avatar), companion species+color, scene | ~~Sprout run: dark-skinned curly-hair boy in blue hoodie → art showed two light-skinned kids; Pebble (purple dragon) → green turtle;~~ companion color/species now threaded (PR #389). Hero still mutates page-to-page — no stored per-character "appearance anchor" or seed-lock yet. Explorer: 3 different heroes in 3 pages — unresolved. |
+| C2 | **Verify scene/scenario reaches the story prompt** | Sprout: picked "Under the Sea!", got a crystal-cave story. Same dropped-field family as the old `_mapArchetypeToDetails` bug. (Explorer/Adventurer honored the pick — check the Sprout path specifically.) Not touched by PR #389 (story-prompt bug, not illustration-prompt). |
+| C3 | ~~Add the **textless-art rule** to story-illustration prompts~~ **DONE (PR #389)** | Creator cover rendered gibberish signage ("HORTIDIN'S SAIP BAKERY"). `TEXTLESS_ART_RULE` now placed early in every Flux prompt; live-verified blank billboards in a rain-soaked-rooftop test render. |
+| C4 | Dedupe onomatopoeia compositing | Sprout p3 rendered "ZING BOING" twice, one clipped. Not touched by PR #389 (text-rendering/compositing bug, not illustration prompt). |
 
 ## Chunk D — TTS warmth (P1, S, one PR + merge #384)
 
