@@ -2580,6 +2580,8 @@ Create the rhyming learning-to-read story about $characterName now:
     required String theme,
     required int age,
     String? companion,
+    // Backend tone hint (e.g. 'cozy-adventure' for bedtime voice mode).
+    String? tone,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -2596,6 +2598,7 @@ Create the rhyming learning-to-read story about $characterName now:
         theme: theme,
         age: age,
         companion: companion,
+        tone: tone,
       );
     }
   }
@@ -2663,6 +2666,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     required String theme,
     required int age,
     String? companion,
+    String? tone,
   }) async {
     final headers = await authHeaders();
     final response = await http.post(
@@ -2673,6 +2677,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
         'theme': theme,
         'age': age,
         'companion': companion,
+        if (tone != null) 'tone': tone,
       }),
     );
 

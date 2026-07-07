@@ -2211,6 +2211,41 @@ _BEDTIME_WORD_RANGES = {
 }
 
 
+def build_bedtime_overlay(
+    age,
+    mood: str = "calming",
+    duration_minutes: int | None = None,
+) -> str:
+    """
+    Calming bedtime rules appended to ANOTHER mode's prompt (today: the
+    superhero saga prompt, so a returning hero can continue their saga as a
+    wind-down Issue at bedtime). Unlike _build_bedtime_prompt this does not
+    build a standalone prompt — it only overrides pacing/tone/length while
+    explicitly preserving the base prompt's output-format contract (e.g.
+    saga_state emission).
+    """
+    band = _get_age_band(age)
+    if duration_minutes and duration_minutes > 0:
+        word_range = _duration_minutes_to_word_range(duration_minutes)
+    else:
+        word_range = _BEDTIME_WORD_RANGES.get(
+            band,
+            _BEDTIME_WORD_RANGES["5-7"],
+        )["medium"]
+
+    return f"""
+
+=== BEDTIME OVERLAY — these rules OVERRIDE any pacing/tone/length instructions above. Every OUTPUT FORMAT / metadata requirement above (including saga_state) still applies unchanged. ===
+This chapter is being read aloud at bedtime. It must wind the listener DOWN, not up:
+1. QUIET CHAPTER: no chases, battles, explosions, or loud action. The conflict is gentle and is resolved through calm cleverness, patience, or kindness.
+2. SOOTHING PACING: every paragraph should feel like a slow exhale. Stimulation decreases steadily from start to finish.
+3. SLEEP TRANSITION ENDING: the hero ends up somewhere safe and warm as the day closes — sky darkening, stars appearing, eyelids growing pleasantly heavy.
+4. COZY CLOSING: the final lines should read like a goodnight hug ({mood} mood).
+5. TARGET LENGTH: {word_range[0]}-{word_range[1]} words.
+6. AUDIO-FIRST PROSE: plain flowing paragraphs — no markdown, headings, or bullet lists in the story text.
+"""
+
+
 def _build_bedtime_prompt(
     character_name,
     age,

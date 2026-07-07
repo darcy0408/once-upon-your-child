@@ -1,18 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../models/story_generation_result.dart' show StoryGenerationCancelled;
 import '../models.dart';
+import '../models/hero_saga.dart';
+import '../models/local/hero_profile_local.dart';
+import '../providers/hero_profile_provider.dart';
+import '../providers/hero_saga_provider.dart';
 import '../theme/age_band_theme.dart';
+import 'wizard_steps/superhero_entry_screen.dart' show SuperheroEntryScreen;
 import 'wizard_steps/wizard_data_mapper.dart';
-import 'parent_controls_screen.dart';
 
 /// Voice-driven bedtime story wizard.
 /// Minimal screen — just a pulsing star and voice interaction.
-class BedtimeWizardScreen extends StatefulWidget {
+class BedtimeWizardScreen extends ConsumerStatefulWidget {
   final String childName;
   final int childAge;
   final bool isInteractive;
@@ -27,13 +32,14 @@ class BedtimeWizardScreen extends StatefulWidget {
   });
 
   @override
-  State<BedtimeWizardScreen> createState() => _BedtimeWizardScreenState();
+  ConsumerState<BedtimeWizardScreen> createState() =>
+      _BedtimeWizardScreenState();
 }
 
 enum BedtimeStep {
-  byokSetup,  // No API key — show parent setup card
   greeting,   // "Hi [name]! Let's make a bedtime story!"
   age,        // "How old are you?" (only asked if age unknown)
+  sagaOffer,  // Returning hero with continuity — "continue your saga?"
   heroName,   // "What's your hero's name?"
   companion,  // "Who's coming with you?"
   listeners,  // "Are any brothers, sisters, or friends listening too?"
@@ -46,7 +52,7 @@ enum BedtimeStep {
   done,       // "The end. Goodnight!"
 }
 
-class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
+class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     with TickerProviderStateMixin {
   final SpeechToText _speech = SpeechToText();
   bool _speechAvailable = false;
@@ -63,8 +69,25 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   String? _feelingChoice;
   int _storyDurationMinutes = 15;
 
+  // Saga continuity (MT-235): a returning hero's saved profile + saga, keyed
+  // by the same stable name-derived id the superhero flow uses. Loaded on
+  // init; when continuity exists the wizard offers "continue your saga" and
+  // the story runs as the next Issue (superhero theme + prior_saga) with a
+  // calming bedtime overlay applied server-side.
+  String _characterId = '';
+  HeroSaga? _saga;
+  HeroProfileLocal? _heroProfile;
+  bool _continueSaga = false;
+
   // UI state
   String _statusText = '';
+
+  // Tap-to-choose fallback: choice chips shown alongside each question so the
+  // flow still works when the mic is unavailable (web/desktop/denied
+  // permission) or a child prefers tapping. A tap resolves the same await
+  // that speech does.
+  List<String> _choiceOptions = [];
+  Completer<String>? _tapCompleter;
 
   // PERF-04: backend task id of the in-flight generation. dispose() cancels the
   // worker if the user leaves before the story is ready. Nulled once the story
@@ -86,6 +109,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       _ageBand == AgeBand.adult;
   bool get _isYoung =>
       _ageBand == AgeBand.sprout || _ageBand == AgeBand.explorer;
+  bool get _isSprout => _ageBand == AgeBand.sprout;
 
   @override
   void initState() {
@@ -122,16 +146,29 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   Future<void> _initAndStart() async {
     _speechAvailable = await _speech.initialize();
     _resolvedAge = widget.childAge > 0 ? widget.childAge : 0;
-    final hasKey = await ApiServiceManager.isUsingOwnApiKey();
-    if (!hasKey && mounted) {
-      setState(() => _step = BedtimeStep.byokSetup);
-      await _speak(_isMature
-          ? "Voice stories need a free Gemini API key. You can set one up in Settings — it only takes a minute."
-          : "Bedtime stories need a free Gemini API key. A parent can set one up in Settings — it only takes a minute!");
-      return; // Stay on the byokSetup screen; parent taps Settings or Exit
+    // Load any saved hero + saga for this child so bedtime can continue the
+    // story where the superhero flow left off. Continuity is a bonus — a
+    // failed load must never block bedtime.
+    _wizardData.characterName = widget.childName;
+    _characterId = SuperheroEntryScreen.resolveCharacterId(_wizardData);
+    try {
+      _saga = await ref.read(heroSagaProvider(_characterId).future);
+      _heroProfile = await ref.read(heroProfileProvider(_characterId).future);
+    } catch (_) {
+      _saga = null;
+      _heroProfile = null;
     }
     await _runStep();
   }
+
+  /// Whether this child can be offered a saga continuation tonight: they have
+  /// recorded at least one Issue and are in a band that runs the Hero Saga.
+  bool get _canOfferSaga =>
+      (_saga?.hasContinuity ?? false) && _ageBand.usesHeroSaga;
+
+  /// The step after age is known: returning heroes get the saga offer.
+  BedtimeStep get _stepAfterAge =>
+      _canOfferSaga ? BedtimeStep.sagaOffer : BedtimeStep.heroName;
 
   @override
   void dispose() {
@@ -151,16 +188,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _runStep() async {
     switch (_step) {
-      case BedtimeStep.byokSetup:
-        break; // handled in build() — parent must tap Settings or Exit
-
       case BedtimeStep.greeting:
         final greeting = _isMature
             ? 'Hey ${widget.childName}. Let\'s build your story. Just talk to me.'
             : 'Hi ${widget.childName}! Let\'s make a magical bedtime story together. Just talk to me!';
+        // Only ask age when we don't already know it — re-asking a known
+        // child their age every night is pointless friction.
         await _speakAndAdvance(
           greeting,
-          BedtimeStep.age, // Always ask age so stories are always age-appropriate
+          _resolvedAge > 0 ? _stepAfterAge : BedtimeStep.age,
         );
         break;
 
@@ -170,42 +206,105 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         );
         final parsed = _parseAge(ageAnswer);
         _resolvedAge = parsed > 0 ? parsed : (widget.childAge > 0 ? widget.childAge : 8);
-        _advance(BedtimeStep.heroName);
+        _advance(_stepAfterAge);
+        break;
+
+      case BedtimeStep.sagaOffer:
+        final saga = _saga!;
+        final savedHeroName = _heroProfile?.heroName?.trim();
+        final heroLabel = (savedHeroName != null && savedHeroName.isNotEmpty)
+            ? savedHeroName
+            : widget.childName;
+        // Spoken "Previously in your saga…" — same continuity fields the
+        // welcome-back screen renders, condensed for the ear.
+        final recap = StringBuffer();
+        if (saga.whatChanged != null && saga.whatChanged!.isNotEmpty) {
+          recap.write('Last time, ${saga.whatChanged}. ');
+        }
+        if (saga.nextHook != null && saga.nextHook!.isNotEmpty) {
+          recap.write('And remember: ${saga.nextHook} ');
+        }
+        await _speak('$heroLabel is back! $recap');
+        final answer = await _askQuestion(
+          'Shall we find out what happens next in issue ${saga.issueNumber + 1} '
+          'of your saga? Or say "new story" for something brand new.',
+          options: const ['Continue the saga', 'New story'],
+        );
+        final lower = answer.toLowerCase();
+        final wantsNew = lower.contains('new') ||
+            lower.contains('different') ||
+            lower.contains('fresh') ||
+            lower.contains('no');
+        final wantsContinue = lower.contains('continue') ||
+            lower.contains('saga') ||
+            lower.contains('next') ||
+            _isAffirmative(answer);
+        if (!wantsNew && wantsContinue) {
+          // Silence counts as yes — continuing the saga is the cozy default
+          // for a returning hero at bedtime.
+          _continueSaga = true;
+          _heroName = heroLabel;
+          _feelingChoice = 'calming';
+          _advance(BedtimeStep.duration);
+        } else {
+          _advance(BedtimeStep.heroName);
+        }
         break;
 
       case BedtimeStep.heroName:
         final answer = await _askQuestion(
           "What's your hero's name? Or should I use ${widget.childName}?",
+          options: widget.childName.trim().isNotEmpty
+              ? [widget.childName.trim()]
+              : const [],
         );
         _heroName = answer.isNotEmpty ? answer : widget.childName;
         _advance(BedtimeStep.companion);
         break;
 
       case BedtimeStep.companion:
-        final answer = await _askQuestion(_companionPrompt());
+        final answer =
+            await _askQuestion(_companionPrompt(), options: _companionOptions());
         _companionChoice = _fuzzyMatchCompanion(answer);
-        _advance(BedtimeStep.listeners);
+        // Sprout (3-5) gets the shortest possible flow: no listeners, feeling,
+        // duration, or read-back — companion, place, story. Duration stays 0
+        // (= unsent) so the backend's band word caps rule: an explicit
+        // duration OVERRIDES them, and 10 minutes of prose is far too long
+        // for this band.
+        if (_isSprout) {
+          _feelingChoice = 'calming';
+          _storyDurationMinutes = 0;
+          _advance(BedtimeStep.setting);
+        } else {
+          _advance(BedtimeStep.listeners);
+        }
         break;
 
       case BedtimeStep.listeners:
         final listenersAnswer = await _askQuestion(
           "Are any brothers, sisters, or friends listening with you tonight? Say their names, or say 'just me'.",
+          options: const ['Just me'],
         );
         _listenerNames = _parseListenerNames(listenersAnswer);
         _advance(BedtimeStep.setting);
         break;
 
       case BedtimeStep.setting:
-        final answer = await _askQuestion(_settingPrompt());
+        final answer =
+            await _askQuestion(_settingPrompt(), options: _settingOptions());
         _settingChoice = _fuzzyMatchScenario(answer);
-        _advance(BedtimeStep.feeling);
+        _advance(
+            _isSprout ? BedtimeStep.generating : BedtimeStep.feeling);
         break;
 
       case BedtimeStep.feeling:
         final feelingPrompt = _isMature
             ? "What's the vibe? Brave, funny, friendship, or atmospheric?"
             : "What kind of story? A brave adventure, a funny story, a story about friendship, or a calming story?";
-        final answer = await _askQuestion(feelingPrompt);
+        final answer = await _askQuestion(
+          feelingPrompt,
+          options: const ['Brave', 'Funny', 'Friendship', 'Calming'],
+        );
         _feelingChoice = _matchStoryMood(answer);
         _advance(BedtimeStep.duration);
         break;
@@ -215,9 +314,13 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
           _isMature
               ? "How long should the story be? Ten, fifteen, or twenty minutes?"
               : "How long should the bedtime story be? Ten, fifteen, or twenty minutes?",
+          options: const ['10 minutes', '15 minutes', '20 minutes'],
         );
         _storyDurationMinutes = _matchDurationMinutes(answer);
-        _advance(BedtimeStep.confirm);
+        // A saga continuation was already confirmed at the offer step — no
+        // recipe to read back, go straight to generating.
+        _advance(
+            _continueSaga ? BedtimeStep.generating : BedtimeStep.confirm);
         break;
 
       case BedtimeStep.confirm:
@@ -228,6 +331,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
             "$_heroName$listenersText and $_companionChoice in $_settingChoice. A $_feelingChoice story for $_storyDurationMinutes minutes.";
         final answer = await _askQuestion(
           "Here's your story recipe: $summary. Shall I make it? Say yes, or tell me what to change.",
+          options: const ['Yes!', 'Change it'],
         );
         if (_isAffirmative(answer)) {
           _advance(BedtimeStep.generating);
@@ -279,17 +383,59 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     if (mounted) setState(() => _isSpeaking = false);
   }
 
-  Future<String> _askQuestion(String question) async {
+  Future<String> _askQuestion(String question,
+      {List<String> options = const []}) async {
+    if (mounted && options.isNotEmpty) {
+      setState(() => _choiceOptions = options);
+    }
     await _speak(question);
-    if (!_speechAvailable) {
-      await _speak("I can't hear you right now, so I'll pick for you!");
-      return '';
+
+    String answer = '';
+    if (_speechAvailable) {
+      answer = await _listenOrTap();
+      if (answer.isEmpty) {
+        // One gentle retry before improvising — kids often need a beat.
+        await _speak("I didn't catch that. One more time?");
+        answer = await _listenOrTap();
+      }
+    } else if (options.isNotEmpty) {
+      // No mic — the chips are the whole interface for this question.
+      answer = await _waitForTap(const Duration(seconds: 45));
     }
-    final answer = await _listen();
+
     if (answer.isEmpty) {
-      await _speak("I didn't catch that, so I'll surprise you!");
+      await _speak(
+          _isYoung ? "I'll surprise you!" : "I'll pick something good.");
     }
+    if (mounted) setState(() => _choiceOptions = []);
     return answer;
+  }
+
+  /// Races speech recognition against a chip tap; first answer wins.
+  Future<String> _listenOrTap() async {
+    _tapCompleter = Completer<String>();
+    final answer =
+        await Future.any([_listen(), _tapCompleter!.future]);
+    _tapCompleter = null;
+    // If the tap won, _listen is still running — stop it so its onResult
+    // can't overwrite the chosen answer's status text.
+    await _speech.stop();
+    if (mounted) setState(() => _isListening = false);
+    return answer;
+  }
+
+  Future<String> _waitForTap(Duration timeout) async {
+    _tapCompleter = Completer<String>();
+    final answer =
+        await _tapCompleter!.future.timeout(timeout, onTimeout: () => '');
+    _tapCompleter = null;
+    return answer;
+  }
+
+  void _onChipTap(String option) {
+    final c = _tapCompleter;
+    if (c != null && !c.isCompleted) c.complete(option);
+    if (mounted) setState(() => _statusText = '"$option"');
   }
 
   Future<String> _listen() async {
@@ -319,6 +465,52 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     await _speech.stop();
     if (mounted) setState(() => _isListening = false);
     return answer;
+  }
+
+  List<String> _companionOptions() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return const ['Fluffy Dragon', 'Magic Bunny', 'Moon Owl', 'Star Fox'];
+      case AgeBand.adventurer:
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return const [
+          'Thunder Wolf',
+          'Shadow Panther',
+          'Crystal Phoenix',
+          'Robin'
+        ];
+    }
+  }
+
+  List<String> _settingOptions() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return const [
+          'Rainbow World',
+          'Magical Forest',
+          'Cave Full of Crystals'
+        ];
+      case AgeBand.adventurer:
+        return const [
+          'Ruined Citadel',
+          'Tidal Shrine',
+          'Orbital Station',
+          'Deep Archive'
+        ];
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return const [
+          'Deep Archive',
+          'Tidal Shrine',
+          'Orbital Station',
+          'Quiet City Roof'
+        ];
+    }
   }
 
   String _companionPrompt() {
@@ -534,11 +726,6 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     return 15;
   }
 
-  void _selectDuration(int minutes) {
-    if (!mounted) return;
-    setState(() => _storyDurationMinutes = minutes);
-  }
-
   Future<void> _generateAndReadStory() async {
     _wizardData.characterName = _heroName ?? widget.childName;
     _wizardData.characterAge = _effectiveAge;
@@ -552,7 +739,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         .toList();
 
     try {
-      if (widget.isInteractive) {
+      // Saga continuations always run as a single narrated Issue — the
+      // interactive endpoints have no saga support.
+      if (widget.isInteractive && !_continueSaga) {
         await _runInteractiveStoryLoop(requestData);
       } else {
         await _runRegularStory(requestData, additionalChars);
@@ -584,10 +773,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     Map<String, dynamic> requestData,
     List<Map<String, dynamic>> additionalChars,
   ) async {
+    // Saga continuation: run the superhero path (the only one that consumes
+    // prior_saga and emits saga_state) with the saved hero's identity; the
+    // backend layers its calming bedtime overlay on top.
+    final continuing = _continueSaga && _saga != null;
+    final profile = _heroProfile;
     final result = await ApiServiceManager.generateStory(
         characterName: requestData['character'] ?? 'Hero',
         age: requestData['age'] ?? 5,
-        theme: _settingChoice ?? 'Magical Adventure',
+        theme: continuing ? 'superhero' : (_settingChoice ?? 'Magical Adventure'),
         characterId: requestData['character_id']?.toString(),
         companion: requestData['companion'] ?? '',
         characterDetails: requestData['characterDetails'],
@@ -606,6 +800,14 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         bedtimeMood: _feelingChoice ?? 'calming',
         bedtimeDurationMinutes: _storyDurationMinutes,
         subscriptionTier: 'free',
+        heroCostumeColor: continuing ? profile?.costumeColor : null,
+        heroCapeStyle: continuing ? profile?.capeStyle : null,
+        heroEmblem: continuing ? profile?.emblem : null,
+        heroPower: continuing ? profile?.power : null,
+        heroAlias: continuing ? profile?.heroName : null,
+        recentVillains: continuing ? profile?.recentVillains : null,
+        recentProblems: continuing ? profile?.recentProblems : null,
+        priorSaga: continuing ? _saga!.toPriorSaga() : null,
         // PERF-04: capture the task id so dispose() can cancel if abandoned.
         onTaskId: (id) => _activeTaskId = id,
         onProgress: (status) {
@@ -613,6 +815,23 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         });
     // PERF-04: story text is in hand — nothing left to cancel.
     _activeTaskId = null;
+
+    // Fold the completed Issue back into the saga so the next bedtime (or the
+    // visual superhero flow) picks up where tonight left off. Non-fatal — the
+    // story still reads if persistence fails.
+    if (continuing) {
+      final rawSaga = result.superheroMeta?['saga_state'];
+      if (rawSaga is Map) {
+        try {
+          await ref.read(heroSagaControllerProvider.notifier).recordIssue(
+                _characterId,
+                Map<String, dynamic>.from(rawSaga),
+                heroCode: _saga?.heroCode,
+                title: result.title,
+              );
+        } catch (_) {}
+      }
+    }
 
     setState(() => _step = BedtimeStep.reading);
 
@@ -648,6 +867,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       age: requestData['age'] ?? 5,
       theme: theme,
       companion: companion,
+      // Bedtime voice mode: keep the pick-a-path segments soft-edged.
+      tone: 'cozy-adventure',
     );
 
     int turnCount = 0;
@@ -676,12 +897,17 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
       // Ask for choice
       String question = "What do you want to do next?";
-      if (choicesRaw is List && choicesRaw.isNotEmpty) {
+      final choices = choicesRaw is List
+          ? choicesRaw.map((c) => c.toString()).toList()
+          : const <String>[];
+      if (choices.length >= 2) {
         question =
-            "Do you want to ${choicesRaw[0]}, or ${choicesRaw[1]}? Or something else?";
+            "Do you want to ${choices[0]}, or ${choices[1]}? Or something else?";
+      } else if (choices.length == 1) {
+        question = "Do you want to ${choices[0]}? Or something else?";
       }
 
-      final answer = await _askQuestion(question);
+      final answer = await _askQuestion(question, options: choices);
       if (_timerExpired) break;
 
       final choice = answer.isNotEmpty
@@ -706,92 +932,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
-  Widget _buildByokSetupCard(BuildContext context) {
-    final title = _isMature ? 'Set Up Voice Stories' : 'Set Up Bedtime Stories';
-    final blurb = _isMature
-        ? 'Voice stories play without a screen — just listen. '
-            'Uses a free Gemini AI key that you add once and never need to touch again.'
-        : 'Bedtime stories play without a screen — your child just listens. '
-            'This uses a free Gemini AI key that you add once and never need to touch again.';
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0B2E),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(Icons.nights_stay_rounded, color: Colors.amber, size: 56),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      blurb,
-                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text('How to get your free key:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    const _SetupStep(number: '1', text: 'Visit aistudio.google.com (free Google account)'),
-                    const _SetupStep(number: '2', text: 'Click "Get API key" → "Create API key"'),
-                    const _SetupStep(number: '3', text: 'Copy the key'),
-                    const _SetupStep(number: '4', text: 'Open Settings in this app and paste it under "Gemini API Key"'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final nav = Navigator.of(context, rootNavigator: true);
-                  Navigator.of(context).pop();
-                  nav.push(MaterialPageRoute(
-                    builder: (_) => const ParentControlsScreen(),
-                  ));
-                },
-                icon: const Icon(Icons.settings),
-                label: const Text('Go to Settings'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
-                  foregroundColor: const Color(0xFF0D0B2E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Not now', style: TextStyle(color: Colors.white38)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_step == BedtimeStep.byokSetup) return _buildByokSetupCard(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFF0D0B2E), // Deep night sky
       body: SafeArea(
@@ -857,23 +999,22 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (_step == BedtimeStep.duration) ...[
+                // Tap-to-choose chips: shown for every choice question so
+                // the flow works without a mic. Kept dim — the screen should
+                // stay ignorable.
+                if (_choiceOptions.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Wrap(
                     spacing: 12,
+                    runSpacing: 8,
                     alignment: WrapAlignment.center,
-                    children: [10, 15, 20]
+                    children: _choiceOptions
                         .map(
-                          (minutes) => ChoiceChip(
-                            label: Text('$minutes min'),
-                            selected: _storyDurationMinutes == minutes,
-                            onSelected: (_) => _selectDuration(minutes),
-                            selectedColor:
-                                Colors.amber.withValues(alpha: 0.3),
+                          (option) => ActionChip(
+                            label: Text(option),
+                            onPressed: () => _onChipTap(option),
                             labelStyle: TextStyle(
-                              color: _storyDurationMinutes == minutes
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withValues(alpha: 0.85),
                             ),
                             backgroundColor:
                                 Colors.white.withValues(alpha: 0.08),
@@ -902,46 +1043,6 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SetupStep extends StatelessWidget {
-  final String number;
-  final String text;
-  const _SetupStep({required this.number, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            margin: const EdgeInsets.only(right: 10, top: 1),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFD700),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Color(0xFF0D0B2E),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
-          ),
-        ],
       ),
     );
   }

@@ -37,6 +37,7 @@ from backend.services.story_service import (
     _build_rhyme_time_prompt,
     _get_age_band,
     _safe_extract_title_and_gem,
+    build_bedtime_overlay,
     pseudonymize_hero_name,
     restore_hero_name,
 )
@@ -1491,6 +1492,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # #1. Only the Dart HeroSaga client populates this today.
                     prior_saga=kwargs.get("prior_saga") or kwargs.get("saga_state"),
                 )
+                # Bedtime saga continuation: a returning hero's next Issue read
+                # aloud at lights-out. Keep the full superhero prompt (so
+                # prior_saga is honoured and saga_state still comes back) but
+                # override pacing/tone/length with the calming bedtime rules.
+                if bedtime_mode:
+                    prompt += build_bedtime_overlay(
+                        age=age,
+                        mood=kwargs.get("bedtime_mood", "calming"),
+                        duration_minutes=kwargs.get("bedtime_duration_minutes"),
+                    )
                 # (prompt_build_ms is computed after the if/elif chain below)
             # Use specialized prompts based on story mode flags
             elif bedtime_mode:

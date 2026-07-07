@@ -43,6 +43,7 @@ import 'services/grace_period_analytics.dart';
 import 'subscription_models.dart';
 import 'services/subscription_service.dart';
 import 'widgets/app_bottom_navigation.dart';
+import 'widgets/bedtime_launch_sheet.dart';
 import 'services/caregiver_service.dart';
 import 'services/child_profile_service.dart';
 import 'widgets/child_profile_switcher.dart';
@@ -930,6 +931,43 @@ class _StoryScreenState extends State<StoryScreen> {
                             : _homeCtaLabel(Theme.of(context)
                                 .extension<AgeBandThemeData>()
                                 ?.band)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Audio-only / bedtime entry — screen-free story without
+                    // the visual wizard. Works with no character selected:
+                    // BedtimeWizardScreen asks the age by voice when it's 0.
+                    Semantics(
+                      button: true,
+                      label: band.band.isMature
+                          ? 'Voice story, audio only'
+                          : 'Bedtime story, no screen, just listening',
+                      child: OutlinedButton.icon(
+                        icon: Icon(band.band.isMature
+                            ? Icons.mic_none_rounded
+                            : Icons.bedtime_outlined),
+                        onPressed: () => showBedtimeLaunchSheet(
+                          context,
+                          childName: _selectedCharacter?.name ?? '',
+                          childAge: _selectedCharacter?.age ?? 0,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 18),
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.5)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        label: Text(band.band.isMature
+                            ? 'Voice Story — audio only'
+                            : 'Bedtime Story 🌙 — no screen, just listening'),
                       ),
                     ),
                   ],
