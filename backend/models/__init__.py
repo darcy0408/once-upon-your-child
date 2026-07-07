@@ -4,6 +4,7 @@ from .analytics_event import AnalyticsEvent
 from .audit_log import AuditLog
 from .character import Character
 from .consent_record import ConsentRecord, ConsentVerificationCode
+from .gift_code import GiftCode
 from .illustration_cache import IllustrationCache
 from .interactive_story import (
     InteractiveStory,
@@ -25,6 +26,7 @@ __all__ = [
     "Character",
     "ConsentRecord",
     "ConsentVerificationCode",
+    "GiftCode",
     "IllustrationCache",
     "InteractiveStory",
     "InventoryItem",

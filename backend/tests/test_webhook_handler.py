@@ -5,6 +5,7 @@ import pytest
 import stripe
 
 from backend.database import db
+from backend.models.gift_code import GiftCode
 from backend.models.user import User
 
 stripe.api_key = "sk_test_key"
@@ -52,6 +53,26 @@ def _build_event(event_type, obj):
     return stripe.Event.construct_from(
         {
             "id": f"evt_{event_type}",
+            "type": event_type,
+            "data": {"object": obj},
+        },
+        stripe.api_key,
+    )
+
+
+def _build_event_with_id(event_id, event_type, obj):
+    """Like _build_event but with a caller-chosen event id.
+
+    Needed for the gift-checkout idempotency test: _build_event derives the
+    event id purely from event_type, so two calls with that helper would
+    collide with the top-level Stripe event-id dedup before ever reaching the
+    gift-purchase handler. This lets a test send two DISTINCT Stripe events
+    for the SAME checkout session to exercise the inner
+    stripe_session_id idempotency guard instead.
+    """
+    return stripe.Event.construct_from(
+        {
+            "id": event_id,
             "type": event_type,
             "data": {"object": obj},
         },
@@ -234,3 +255,148 @@ def test_unknown_event_returns_200(client, monkeypatch):
     with client.application.app_context():
         unchanged = db.session.get(User, user_id)
         assert unchanged.subscription_status == "active"
+
+
+# ---------------------------------------------------------------------------
+# Gift-subscription purchases (one-time mode=="payment" Checkout Session).
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _no_gift_price_env(monkeypatch):
+    # Keep the price-id fallback branch of _is_gift_checkout() inert unless a
+    # test explicitly opts in — otherwise a real STRIPE_PRICE_ID_GIFT_YEAR
+    # picked up from a local .env could make _is_gift_checkout() reach the
+    # stripe.checkout.Session.list_line_items() network call.
+    monkeypatch.delenv("STRIPE_PRICE_ID_GIFT_YEAR", raising=False)
+
+
+def _gift_session(session_id, **overrides):
+    session = {
+        "id": session_id,
+        "mode": "payment",
+        "metadata": {"gift": "true"},
+        "customer_details": {"email": "grandma@example.com"},
+    }
+    session.update(overrides)
+    return session
+
+
+def test_gift_checkout_completed_creates_code_and_emails_purchaser(client, monkeypatch):
+    sent_calls = []
+
+    def _fake_send(email, formatted_code, tier, duration_days):
+        sent_calls.append((email, formatted_code, tier, duration_days))
+        return True
+
+    monkeypatch.setattr(
+        "backend.routes.webhook_handler.send_gift_code_email", _fake_send
+    )
+
+    event = _build_event_with_id(
+        "evt_gift_1", "checkout.session.completed", _gift_session("cs_test_gift_1")
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        gift = (
+            db.session.query(GiftCode)
+            .filter_by(stripe_session_id="cs_test_gift_1")
+            .first()
+        )
+        assert gift is not None
+        assert gift.status == "created"
+        assert gift.tier == "premium"
+        assert gift.duration_days == 365
+        assert gift.purchaser_email == "grandma@example.com"
+        assert gift.redeemed_by_user_id is None
+
+    assert len(sent_calls) == 1
+    email, formatted_code, tier, duration_days = sent_calls[0]
+    assert email == "grandma@example.com"
+    assert tier == "premium"
+    assert duration_days == 365
+    # Dash-grouped display format (XXXX-XXXX-XXXX), never the raw code alone.
+    assert "-" in formatted_code
+    assert len(formatted_code.replace("-", "")) == 12
+
+
+def test_gift_checkout_completed_idempotent_on_replayed_session(client, monkeypatch):
+    monkeypatch.setattr(
+        "backend.routes.webhook_handler.send_gift_code_email",
+        lambda *a, **k: True,
+    )
+
+    session = _gift_session(
+        "cs_test_gift_dup", customer_details={"email": "grandpa@example.com"}
+    )
+
+    for event_id in ("evt_gift_dup_1", "evt_gift_dup_2"):
+        event = _build_event_with_id(event_id, "checkout.session.completed", session)
+        _mock_construct_event(monkeypatch, event)
+        response = client.post(
+            "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+        )
+        assert response.status_code == 200
+
+    with client.application.app_context():
+        count = (
+            db.session.query(GiftCode)
+            .filter_by(stripe_session_id="cs_test_gift_dup")
+            .count()
+        )
+        assert count == 1
+
+
+def test_gift_checkout_completed_email_failure_keeps_code(client, monkeypatch):
+    monkeypatch.setattr(
+        "backend.routes.webhook_handler.send_gift_code_email",
+        lambda *a, **k: False,
+    )
+
+    event = _build_event_with_id(
+        "evt_gift_fail",
+        "checkout.session.completed",
+        _gift_session(
+            "cs_test_gift_email_fail", customer_details={"email": "auntie@example.com"}
+        ),
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        gift = (
+            db.session.query(GiftCode)
+            .filter_by(stripe_session_id="cs_test_gift_email_fail")
+            .first()
+        )
+        # Persisted despite the "failed" send — a paying purchaser must never
+        # lose their code to a transient email-provider outage.
+        assert gift is not None
+        assert gift.status == "created"
+
+
+def test_non_gift_payment_checkout_does_not_create_gift_code(client, monkeypatch):
+    event = _build_event_with_id(
+        "evt_not_gift",
+        "checkout.session.completed",
+        {"id": "cs_test_not_gift", "mode": "payment", "metadata": {}},
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        assert db.session.query(GiftCode).count() == 0

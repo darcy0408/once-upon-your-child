@@ -120,10 +120,59 @@ class StripeService {
     }
   }
 
+  /// Redeem a gift subscription code for the authenticated user.
+  ///
+  /// On success, returns the backend's resolved subscription payload
+  /// (tier / subscription_status / current_period_end) — the same shape
+  /// [getSubscriptionStatus] returns, so callers can feed it straight into
+  /// [SubscriptionStatus.fromBackendPayload] if needed. Callers should still
+  /// refresh via `SubscriptionSyncService` so every listener picks up the
+  /// change.
+  ///
+  /// On failure throws a [GiftRedeemException] carrying a user-facing
+  /// message (unknown code / already redeemed / rate-limited / network
+  /// error) so the UI can show it directly.
+  Future<Map<String, dynamic>> redeemGiftCode(String code) async {
+    late final http.Response response;
+    try {
+      response = await _httpClient
+          .post(
+            Uri.parse('$_baseUrl/api/gift/redeem'),
+            headers: await _buildAuthHeaders(),
+            body: jsonEncode({'code': code}),
+          )
+          .timeout(_defaultTimeout);
+    } catch (error) {
+      throw GiftRedeemException('Network error redeeming gift code: $error');
+    }
+
+    final data = _decodeBody(response.body);
+
+    if (response.statusCode == 200) {
+      return data;
+    }
+
+    final message = (data['error'] as String?) ??
+        'Could not redeem this code. Please try again.';
+    throw GiftRedeemException(message);
+  }
+
   Map<String, dynamic> _decodeBody(String body) {
     if (body.isEmpty) {
       return {};
     }
     return jsonDecode(body) as Map<String, dynamic>;
   }
+}
+
+/// Thrown by [StripeService.redeemGiftCode] on any failure. [message] is
+/// already user-facing (sourced from the backend's `error` field, or a
+/// generic fallback) — safe to show directly in a SnackBar/dialog.
+class GiftRedeemException implements Exception {
+  GiftRedeemException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:story_weaver_app/models/subscription_status.dart';
+import '../widgets/gift_code_redeem_dialog.dart';
 import '../widgets/subscribe_button.dart';
 import '../widgets/subscription_status_banner.dart';
 
@@ -89,7 +90,19 @@ class SubscriptionScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () => showGiftCodeRedeemDialog(context),
+                child: const Text(
+                  'Have a gift code?',
+                  style: TextStyle(
+                    color: Colors.deepPurple,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

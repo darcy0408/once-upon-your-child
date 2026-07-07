@@ -39,6 +39,10 @@ celery = Celery(
         # SE1: scheduled reliability monitoring (Celery queue depth + the
         # data-retention purge heartbeat). Also resolved by name via beat.
         "backend.tasks.monitoring_tasks",
+        # Gift subscriptions: daily sweep that expires redeemed gift codes
+        # once their time-boxed entitlement lapses (see models/gift_code.py
+        # and tasks/subscription_tasks.py for the design writeup).
+        "backend.tasks.subscription_tasks",
     ],
 )
 
@@ -79,6 +83,13 @@ celery.conf.update(
         "system-reliability-monitor": {
             "task": "backend.tasks.monitoring_tasks.system_monitor_task",
             "schedule": crontab(minute="*/10"),
+        },
+        # Gift subscriptions: expire redeemed gift codes whose time-boxed
+        # entitlement has lapsed. Runs daily, staggered from the retention
+        # purge above. See tasks/subscription_tasks.py.
+        "gift-entitlement-expiry-sweep": {
+            "task": "backend.tasks.subscription_tasks.expire_gift_entitlements_task",
+            "schedule": crontab(hour=4, minute=0),
         },
     },
 )

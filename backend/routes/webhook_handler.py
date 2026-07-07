@@ -11,9 +11,18 @@ from backend.database import db
 # Importing the dedup models at module level registers them with SQLAlchemy
 # before app.py runs db.create_all(), so the tables are auto-created on a
 # fresh database with no manual migration step (M-3).
+from backend.models.gift_code import (
+    DEFAULT_DURATION_DAYS,
+    DEFAULT_TIER,
+    GiftCode,
+    format_code,
+    generate_code,
+    hash_code,
+)
 from backend.models.stripe_event import StripeSubscriptionCursor, StripeWebhookEvent
 from backend.models.user import User
 from backend.routes.stripe_routes import get_price_ids
+from backend.utils.email_service import send_gift_code_email
 
 webhook_routes = Blueprint("webhook_routes", __name__)
 
@@ -354,11 +363,170 @@ def _dispatch_event(event: Any) -> None:
         current_app.logger.info("Unhandled Stripe event type: %s", event_type)
 
 
+# ---------------------------------------------------------------------------
+# Gift-subscription purchases (Stripe Payment Link, one-time `mode=="payment"`
+# Checkout Session — not a subscription). See models/gift_code.py for the
+# full design writeup.
+# ---------------------------------------------------------------------------
+
+
+def _session_line_item_price_id(session: Dict[str, Any]) -> Optional[str]:
+    """Best-effort price ID of the first line item on a Checkout Session.
+
+    Webhook payloads normally do not include `line_items` unless the account
+    requested expansion, so this falls back to an API call
+    (`Session.list_line_items`) when the field isn't already present.
+    """
+    line_items = session.get("line_items")
+    data = line_items.get("data") if isinstance(line_items, dict) else None
+
+    if not data:
+        session_id = session.get("id")
+        if not session_id:
+            return None
+        try:
+            retrieved = stripe.checkout.Session.list_line_items(session_id, limit=1)
+            data = (
+                retrieved.get("data")
+                if isinstance(retrieved, dict)
+                else getattr(retrieved, "data", None)
+            )
+        except stripe.StripeError:
+            current_app.logger.exception(
+                "Failed to list line items for checkout session while checking "
+                "for a gift purchase"
+            )
+            return None
+
+    if not data:
+        return None
+    item = data[0] if isinstance(data[0], dict) else data[0].to_dict()
+    price = item.get("price") or {}
+    return price.get("id") if isinstance(price, dict) else getattr(price, "id", None)
+
+
+def _is_gift_checkout(session: Dict[str, Any]) -> bool:
+    """True if this one-time Checkout Session is a gift-subscription purchase.
+
+    Primary signal is `metadata.gift == "true"`, set on the Stripe Payment
+    Link the owner creates for "a year of stories" (see PR description — this
+    is an owner-ops step, not code). Falls back to matching the line item's
+    price ID against STRIPE_PRICE_ID_GIFT_YEAR so a mis-set metadata flag
+    doesn't silently drop a real gift purchase.
+    """
+    if session.get("mode") != "payment":
+        return False
+
+    metadata = session.get("metadata")
+    if (
+        isinstance(metadata, dict)
+        and str(metadata.get("gift", "")).strip().lower() == "true"
+    ):
+        return True
+
+    gift_price_id = os.getenv("STRIPE_PRICE_ID_GIFT_YEAR")
+    if not gift_price_id:
+        return False
+    return _session_line_item_price_id(session) == gift_price_id
+
+
+def _extract_customer_email(session: Dict[str, Any]) -> Optional[str]:
+    details = session.get("customer_details")
+    if isinstance(details, dict):
+        email = details.get("email")
+        if email:
+            return email
+    return session.get("customer_email")
+
+
+def _handle_gift_checkout_completed(
+    session: Dict[str, Any],
+    event_ts: Optional[datetime] = None,
+    event_id: Optional[str] = None,
+) -> None:
+    """Create + email a GiftCode for a completed one-time gift purchase.
+
+    Idempotent on `stripe_session_id`: a Stripe retry delivering the same
+    `checkout.session.completed` event twice (or racing past the event-id
+    dedup in `handle_webhook`) must not mint a second code for one payment.
+    """
+    stripe_session_id = session.get("id")
+    if not stripe_session_id:
+        current_app.logger.error(
+            "Gift checkout completed but the session had no id — cannot record"
+        )
+        return
+
+    existing = (
+        db.session.query(GiftCode)
+        .filter_by(stripe_session_id=stripe_session_id)
+        .first()
+    )
+    if existing is not None:
+        current_app.logger.info(
+            "Gift checkout %s already has a GiftCode — skipping (idempotent)",
+            event_id,
+        )
+        return
+
+    metadata = session.get("metadata") or {}
+    tier = (metadata.get("gift_tier") or DEFAULT_TIER).strip().lower() or DEFAULT_TIER
+    try:
+        duration_days = int(metadata.get("gift_duration_days") or DEFAULT_DURATION_DAYS)
+    except (TypeError, ValueError):
+        duration_days = DEFAULT_DURATION_DAYS
+    purchaser_email = _extract_customer_email(session)
+
+    plaintext_code = generate_code()
+    gift = GiftCode(
+        code_hash=hash_code(plaintext_code),
+        tier=tier,
+        duration_days=duration_days,
+        purchaser_email=purchaser_email,
+        stripe_session_id=stripe_session_id,
+        status="created",
+    )
+    db.session.add(gift)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        current_app.logger.info(
+            "Gift checkout %s raced to create a GiftCode — skipping duplicate",
+            event_id,
+        )
+        return
+
+    # Persisted BEFORE emailing: a Resend outage must not lose a code the
+    # purchaser already paid for. Failure is logged (never the address/code)
+    # so it can be resent manually.
+    if purchaser_email:
+        sent = send_gift_code_email(
+            purchaser_email, format_code(plaintext_code), tier, duration_days
+        )
+        if not sent:
+            current_app.logger.error(
+                "Gift code email failed to send for checkout session — code "
+                "persisted (id=%s), needs manual resend",
+                gift.id,
+            )
+    else:
+        current_app.logger.error(
+            "Gift checkout completed with no purchaser email on the session — "
+            "code persisted (id=%s) but not emailed",
+            gift.id,
+        )
+
+
 def _handle_checkout_completed(
     session: Dict[str, Any],
     event_ts: Optional[datetime] = None,
     event_id: Optional[str] = None,
 ) -> None:
+    if session.get("mode") == "payment" and _is_gift_checkout(session):
+        _handle_gift_checkout_completed(session, event_ts, event_id)
+        return
+
     user = _find_user(_extract_user_id(session))
     if not user:
         current_app.logger.warning("Checkout completed for unknown user")

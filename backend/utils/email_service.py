@@ -170,3 +170,95 @@ def send_consent_verification_email(parent_email, code, expiry_minutes):
 """
 
     return _send_email(parent_email, subject, html_body, text_body)
+
+
+def _duration_label(duration_days):
+    """Human-friendly copy for a gift duration, e.g. 365 -> '1 year'."""
+    if not duration_days or duration_days <= 0:
+        return "a while"
+    if duration_days >= 365 and duration_days % 365 == 0:
+        years = duration_days // 365
+        return f"{years} year" + ("s" if years != 1 else "")
+    if duration_days >= 30 and duration_days % 30 == 0:
+        months = duration_days // 30
+        return f"{months} month" + ("s" if months != 1 else "")
+    return f"{duration_days} day" + ("s" if duration_days != 1 else "")
+
+
+def send_gift_code_email(purchaser_email, code, tier, duration_days):
+    """Send a purchased gift-subscription redemption code to the purchaser.
+
+    Args:
+        purchaser_email: recipient email address — the Stripe Checkout
+            customer email for the gift purchase.
+        code: the plaintext, dash-formatted redemption code (e.g.
+            'ABCD-1234-WXYZ'). Used only in-memory to build the email body;
+            never logged, never persisted in plaintext (see
+            models/gift_code.py — only a SHA-256 hash is stored).
+        tier: the subscription tier the code grants (e.g. 'premium').
+        duration_days: how many days of access the code grants, for the copy.
+
+    Returns:
+        True if Resend accepted the message, False otherwise. Callers MUST
+        persist the GiftCode row BEFORE calling this and must NOT delete/lose
+        it on a False return — the purchaser already paid, so the code stays
+        valid and redeemable even if the confirmation email didn't go out;
+        the failure is logged for a manual resend.
+    """
+    duration_label = _duration_label(duration_days)
+    tier_label = (tier or "premium").strip().title() or "Premium"
+
+    subject = f"Your gift is ready — {duration_label} of Once Upon YOUR Child"
+
+    text_body = (
+        "Hello,\n\n"
+        f"Thank you for gifting {duration_label} of Once Upon YOUR Child "
+        f"({tier_label}), powered by Story Weaver!\n\n"
+        f"Your gift code is: {code}\n\n"
+        "Share this code with the family you're gifting it to. They can "
+        'redeem it in the app under Subscription -> "Have a gift code?" to '
+        "unlock their access immediately.\n\n"
+        "This code can only be redeemed once, so keep it somewhere safe "
+        "until you're ready to share it.\n\n"
+        "Thank you for supporting a family's storytelling time.\n\n"
+        "This is a one-time transactional message. We do not send marketing "
+        "email to this address.\n"
+    )
+
+    html_body = f"""\
+<!DOCTYPE html>
+<html>
+  <body style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+               color: #222; line-height: 1.5; max-width: 520px; margin: 0 auto;
+               padding: 24px;">
+    <h2 style="margin-bottom: 4px;">Your gift is ready!</h2>
+    <p>Hello,</p>
+    <p>
+      Thank you for gifting <strong>{duration_label}</strong> of
+      <strong>Once Upon YOUR Child</strong> ({tier_label}), powered by Story
+      Weaver!
+    </p>
+    <p style="margin-bottom: 8px;">Your gift code is:</p>
+    <p style="font-size: 26px; font-weight: 700; letter-spacing: 3px;
+              background: #f2f2f7; padding: 14px 20px; border-radius: 10px;
+              text-align: center; margin: 0 0 16px;">{code}</p>
+    <p>
+      Share this code with the family you're gifting it to. They can redeem
+      it in the app under <strong>Subscription &rarr; "Have a gift
+      code?"</strong> to unlock their access immediately.
+    </p>
+    <p>
+      This code can only be redeemed once, so keep it somewhere safe until
+      you're ready to share it.
+    </p>
+    <p>Thank you for supporting a family's storytelling time.</p>
+    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+    <p style="font-size: 12px; color: #888;">
+      This is a one-time transactional message. We do not send marketing email
+      to this address.
+    </p>
+  </body>
+</html>
+"""
+
+    return _send_email(purchaser_email, subject, html_body, text_body)
