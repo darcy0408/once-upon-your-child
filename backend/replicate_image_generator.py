@@ -240,15 +240,29 @@ class ReplicateImageGenerator:
         companions: list | None,
         power_id: str | None = None,
     ) -> str:
-        """Build optimized prompt for SDXL"""
+        """Build the illustration prompt shared by the SDXL and Flux paths."""
 
-        # Age-appropriate style adjustments
-        if age <= 5:
-            style_modifier = "warm rounded 3D storybook animation, soft lighting, clear facial expressions, child-safe emotional scene"
-        elif age <= 11:
-            style_modifier = "vibrant children's book illustration"
-        else:
-            style_modifier = "detailed storybook art"
+        # Per-band style + atmosphere (UX audit 2026-07-05). Previously only
+        # three tiers existed (<=5, <=11, else), so Adventurer 12s rendered
+        # with the Explorer look and Creator/Adolescent teens got generic
+        # "detailed storybook art" — and every age, including 15-17, had a
+        # "safe for children ... friendly atmosphere" suffix hard-coded into
+        # the final prompt. Style is derived from age; the `style` parameter
+        # is legacy and intentionally unused (callers pass a hard-coded
+        # "children's book illustration" that would undo band styling).
+        try:
+            from backend.services.image_prompt_helpers import (
+                TEXTLESS_ART_RULE,
+                illustration_style_for_age,
+            )
+        except ImportError:  # plain-module import path (cwd == backend/)
+            from services.image_prompt_helpers import (
+                TEXTLESS_ART_RULE,
+                illustration_style_for_age,
+            )
+        band_style = illustration_style_for_age(age)
+        style_modifier = band_style["style"]
+        atmosphere = band_style["atmosphere"]
 
         # Build character description.
         # MT-129: previously this only read 'age' + 'gender', so the SDXL /
@@ -258,11 +272,18 @@ class ReplicateImageGenerator:
         # via the shared build_appearance_details() helper (it reads both the
         # rich snake_case keys the Flutter app sends and the legacy flat
         # hair/skin/outfit keys). Signature of _build_prompt is unchanged.
+        # Always state the hero's age in the prompt. Without it Flux defaults
+        # to drawing a young child regardless of band (the band-16
+        # verification render produced a ~8-year-old on the graphic-novel
+        # rooftop): prefer the appearance dict's age, fall back to the story
+        # age parameter.
         char_desc = character_name
+        details = []
+        if character_appearance and character_appearance.get("age"):
+            details.append(f"{character_appearance['age']} years old")
+        elif age:
+            details.append(f"{age} years old")
         if character_appearance:
-            details = []
-            if character_appearance.get("age"):
-                details.append(f"{character_appearance['age']} years old")
             try:
                 from backend.gemini_image_generator import build_appearance_details
 
@@ -271,36 +292,37 @@ class ReplicateImageGenerator:
                 # Fallback: at least keep gender if the helper is unavailable.
                 if character_appearance.get("gender"):
                     details.append(str(character_appearance["gender"]))
-            if details:
-                char_desc = f"{character_name} ({', '.join(details)})"
+        if details:
+            char_desc = f"{character_name} ({', '.join(details)})"
 
-        # Build companions text
-        comp_text = ""
-        if companions and len(companions) > 0:
-            comp_names = []
-            for comp in companions:
-                if isinstance(comp, dict):
-                    name = comp.get("name", "companion")
-                    species = comp.get("species", "")
-                    if species:
-                        comp_names.append(f"{name} the {species}")
-                    else:
-                        comp_names.append(name)
-            if comp_names:
-                comp_text = f" with {', '.join(comp_names)}"
+        # Companions clause with visual anchors (color / description) — the
+        # old name-plus-species text gave Flux nothing to draw, so buddies
+        # simply never appeared (UX audit 2026-07-05, Sprout/Explorer P0s).
+        try:
+            from backend.services.image_prompt_helpers import (
+                build_companion_visuals,
+            )
+        except ImportError:  # plain-module import path (cwd == backend/)
+            from services.image_prompt_helpers import build_companion_visuals
+        comp_text = build_companion_visuals(companions)
 
-        # Construct final prompt
-        prompt = f"{style_modifier}, {scene_description}, featuring {char_desc}{comp_text}, bright and engaging, safe for children, high quality digital art, colorful, friendly atmosphere"
+        # Construct final prompt: band style, textless rule (early — Flux
+        # weights early tokens more and hallucinates garbled signage
+        # lettering otherwise), scene, characters, band atmosphere.
+        prompt = (
+            f"{style_modifier}, {TEXTLESS_ART_RULE}, {scene_description}, "
+            f"featuring {char_desc}{comp_text}, {atmosphere}"
+        )
 
         # Add therapeutic focus if specified
         if therapeutic_focus:
             prompt += f", promoting {therapeutic_focus}"
 
         # MT-107: Per-power visual signature override (Explorer-band Superhero).
-        # PREPENDED so the visual signature survives the 500-char truncation
-        # below — the signature is the whole point of the override; better to
+        # PREPENDED so the visual signature survives the truncation below —
+        # the signature is the whole point of the override; better to
         # truncate boilerplate scene-prose than the empathy-halo / wisp-edge
-        # instruction. Cap raised to 1000 chars when an override is present.
+        # instruction.
         if power_id:
             try:
                 from backend.gemini_image_generator import _power_visual_block
@@ -310,14 +332,13 @@ class ReplicateImageGenerator:
                 block = ""
             if block:
                 prompt = f"{block.strip()}. {prompt}"
-                if len(prompt) > 1000:
-                    prompt = prompt[:997] + "..."
-                # M-5: vet the assembled prompt before it reaches a Flux provider.
-                return _vet_flux_prompt(prompt)
 
-        # Keep prompt under 500 chars for best results
-        if len(prompt) > 500:
-            prompt = prompt[:497] + "..."
+        # Cap length defensively. The old 500-char cap was an SDXL-era
+        # heuristic that ate the character-appearance details Flux needs for
+        # page-to-page consistency; Flux's T5 encoder handles ~512 tokens, so
+        # 1200 chars keeps appearance + companion anchors intact.
+        if len(prompt) > 1200:
+            prompt = prompt[:1197] + "..."
 
         # M-5: vet the assembled prompt before it reaches a Flux provider
         # (Replicate Flux Schnell / Cloudflare Flux both build via this method).
@@ -420,7 +441,7 @@ class ReplicateImageGenerator:
                 },
                 timeout=70,
             )
-            if create.status_code not in (200, 201):
+            if create.status_code not in (200, 201, 202):
                 logger.warning(
                     "Flux Schnell create failed: %d %s",
                     create.status_code,

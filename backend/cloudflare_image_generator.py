@@ -62,9 +62,10 @@ class CloudflareImageGenerator:
             )
             return []
 
-        # Reuse the Replicate prompt builder for prompt parity — it already
-        # carries the age <= 5 warm-style modifier and the power-id visual
-        # override, so both Flux providers render from an identical prompt.
+        # Reuse the Replicate prompt builder for prompt parity — it carries
+        # the per-age-band style/atmosphere tokens, companion visual anchors,
+        # the textless-art rule, and the power-id visual override, so both
+        # Flux providers render from an identical prompt.
         try:
             from .replicate_image_generator import ReplicateImageGenerator
         except ImportError:

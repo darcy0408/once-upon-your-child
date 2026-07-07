@@ -211,6 +211,161 @@ def build_appearance_details(character_appearance: dict | None) -> list:
     return details
 
 
+# --- Per-band illustration styling (UX audit 2026-07-05) --------------------
+#
+# The Flux prompt builder previously had only three age tiers (<=5, <=11,
+# else), so Adventurer 12s, Creator (13-14) and Adolescent (15-17) all
+# collapsed into one generic "detailed storybook art" — and EVERY age got a
+# "safe for children ... friendly atmosphere" suffix, which baked picture-book
+# tone into teen illustrations. This map gives each of the five UX bands its
+# own style token + atmosphere suffix.
+#
+# CAUTION: keep every phrase here clear of the M-5 blocklist in
+# replicate_image_generator._IMAGE_UNSAFE_TERMS (e.g. never write "no scary
+# details" — the vet matches the word "scary" and swaps the ENTIRE prompt for
+# the generic safe fallback).
+#
+# Band boundaries follow the app-wide rule (age_band_theme.dart, SPROUT_MAX_AGE=5):
+# Sprout <=5, Explorer 6-8, Adventurer 9-12, Creator 13-14, Adolescent 15+.
+ILLUSTRATION_STYLE_BY_BAND: dict[str, dict[str, str]] = {
+    "sprout": {
+        # Unchanged from the long-standing age<=5 modifier — locked in by the
+        # 2026-05 image A/B work; do not churn Sprout's look.
+        "style": (
+            "warm rounded 3D storybook animation, soft lighting, clear "
+            "facial expressions, child-safe emotional scene"
+        ),
+        "atmosphere": (
+            "bright and engaging, safe for children, high quality digital "
+            "art, colorful, friendly atmosphere"
+        ),
+    },
+    "explorer": {
+        "style": (
+            "vibrant children's book illustration, dynamic adventure "
+            "energy, clear natural character proportions"
+        ),
+        "atmosphere": (
+            "bright and engaging, safe for children, high quality digital "
+            "art, colorful, friendly atmosphere"
+        ),
+    },
+    "adventurer": {
+        "style": (
+            "detailed middle-grade novel illustration, rich jewel-tone "
+            "palette, realistic character proportions, cinematic "
+            "composition, not babyish, not kawaii"
+        ),
+        "atmosphere": (
+            "adventurous and engaging, age-appropriate for preteens, high "
+            "quality digital art, rich colors"
+        ),
+    },
+    "creator": {
+        "style": (
+            "illustrated young-adult novel art, detailed realistic "
+            "figures, cinematic lighting, polished digital painting"
+        ),
+        "atmosphere": (
+            "cinematic and polished, age-appropriate for teens, high "
+            "quality digital art"
+        ),
+    },
+    "adolescent": {
+        "style": (
+            "graphic novel illustration, confident ink line work, "
+            "dramatic cinematic lighting, sophisticated color palette"
+        ),
+        "atmosphere": (
+            "atmospheric and cinematic, age-appropriate for teens, high "
+            "quality digital art"
+        ),
+    },
+}
+
+# Included in every illustration prompt, EARLY (Flux weights early tokens
+# more heavily). Flux Schnell readily hallucinates garbled signage/lettering
+# ("HORTIDIN'S SAIP BAKERY", cre-09 in the 2026-07-05 audit; billboard
+# gibberish in the band-16 verification render) unless told not to render
+# text — and even then city scenes need the explicit blank-signs clause.
+TEXTLESS_ART_RULE = (
+    "textless artwork with no words or lettering anywhere, any signs and "
+    "billboards are blank"
+)
+
+
+def illustration_band_for_age(age) -> str:
+    """Map an age to one of the five UX band keys for illustration styling.
+
+    Defensive on input: non-int / None / out-of-range ages fall back to the
+    youngest (safest) band, matching how the rest of the backend fails closed
+    on age.
+    """
+    try:
+        age_int = int(age)
+    except (TypeError, ValueError):
+        return "sprout"
+    if age_int <= 5:
+        return "sprout"
+    if age_int <= 8:
+        return "explorer"
+    if age_int <= 12:
+        return "adventurer"
+    if age_int <= 14:
+        return "creator"
+    return "adolescent"
+
+
+def illustration_style_for_age(age) -> dict[str, str]:
+    """Return the band's ``{"style": ..., "atmosphere": ...}`` dict for *age*."""
+    return ILLUSTRATION_STYLE_BY_BAND[illustration_band_for_age(age)]
+
+
+def build_companion_visuals(companions: list | None) -> str:
+    """Build the companion clause for an illustration prompt, WITH visuals.
+
+    The wizard payload already carries visual data the generators were
+    discarding (UX audit 2026-07-05: Pebble the purple dragon and Ember the
+    fox never rendered because prompts said only "Pebble the dragon" /
+    "Ember"): user-created pets have a ``color`` key, and magical companions
+    have a ``description`` whose text includes species + appearance
+    (wizard_data_mapper.dart:167,200). Use them so the image model has an
+    actual visual anchor, and state the companion must appear in the scene.
+
+    Returns "" or a phrase like
+    " accompanied by Pebble (a purple dragon), who is visible in the scene".
+    """
+    if not companions:
+        return ""
+    parts: list[str] = []
+    for comp in companions:
+        if not isinstance(comp, dict):
+            continue
+        name = str(comp.get("name") or "companion").strip() or "companion"
+        species = str(comp.get("species") or comp.get("type") or "").strip()
+        color = _humanize(comp.get("color"))
+        description = str(comp.get("description") or "").strip()
+        if description:
+            # Magical-companion description already reads as species+visuals.
+            # Cap it so several companions can't crowd out the scene text.
+            # Strip the trailing period BEFORE truncating so the ellipsis
+            # marker survives.
+            description = description.rstrip(".")
+            if len(description) > 140:
+                description = description[:137].rstrip() + "..."
+            parts.append(f"{name} ({description})")
+        elif color and species:
+            parts.append(f"{name} (a {color} {species})")
+        elif species:
+            parts.append(f"{name} the {species}")
+        else:
+            parts.append(name)
+    if not parts:
+        return ""
+    plural = "who are" if len(parts) > 1 else "who is"
+    return f" accompanied by {', '.join(parts)}, {plural} visible in the scene"
+
+
 def _detect_mime_type(data: bytes) -> str:
     """Detect image MIME type from magic bytes."""
     if data[:8] == b"\x89PNG\r\n\x1a\n":
