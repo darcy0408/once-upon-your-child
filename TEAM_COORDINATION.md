@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-07 | 17:29 | be06 | main (PR #401) | Wave 2: weekly parent recap built inline + merged #401 | [link](docs/sessions/2026-07-07-1729-be06.md) |
 | 2026-07-07 | 17:28 | fbfc | main | Repo cleanup: merged branches, prune, gitignore audit shots | [link](docs/sessions/2026-07-07-1728-fbfc.md) |
 | 2026-07-07 | 14:41 | 5fe5 | main | Monetization wave 1: funnel + PDF export + gift subs (3 PRs merged) | [link](docs/sessions/2026-07-07-1441-5fe5.md) |
 | 2026-07-07 | 14:39 | 6bb4 | main | Briefing + PR-queue no-op (parallel session already merged #390/#394/#396) | [link](docs/sessions/2026-07-07-1439-6bb4.md) |
