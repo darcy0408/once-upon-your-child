@@ -72,6 +72,7 @@ class InteractiveAdventureService:
         big_feelings_context: Optional[Dict] = None,
         companions_payload: Optional[List[Dict]] = None,
         character_name: Optional[str] = None,
+        include_images: bool = True,
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -89,6 +90,14 @@ class InteractiveAdventureService:
             fears_or_sensitivities: Things to handle carefully
             life_challenge: Optional therapeutic challenge (e.g. "Making Friends")
             personality_sliders: Optional personality traits (0-100)
+            include_images: When False, skip illustration generation entirely for
+                this story (audio-only / no-screen clients never render
+                segment.image_url, so generating it is wasted work and response
+                weight). Default True preserves existing behavior. This is a
+                per-request flag, not persisted on the story record — the caller
+                is responsible for passing it consistently on every
+                continue_story call for the same story (see continue_story's
+                docstring for why we chose not to persist it).
 
         Returns:
             Dict with story_id, segment data, inventory, and state
@@ -265,7 +274,9 @@ class InteractiveAdventureService:
         # Generate illustration for first segment
         # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
         # Set MOCK_TESTING_MODE=false in .env to enable real image generation
-        if segment_data.get("image_description"):
+        # include_images=False (audio-only clients) skips this entirely — no
+        # illustration call, segment.image_url stays None.
+        if include_images and segment_data.get("image_description"):
             self._generate_segment_illustration(
                 segment, character_dict, companions, character_age
             )
@@ -283,7 +294,11 @@ class InteractiveAdventureService:
         }
 
     def continue_story(
-        self, story_id: str, choice_id: str, custom_text: str | None = None
+        self,
+        story_id: str,
+        choice_id: str,
+        custom_text: str | None = None,
+        include_images: bool = True,
     ) -> Dict[str, Any]:
         """
         Continue story based on user's choice selection.
@@ -295,6 +310,22 @@ class InteractiveAdventureService:
                 MUST pass this already sanitized and [USER_INPUT]-wrapped (see
                 continue_interactive_story_endpoint) — it is injected directly
                 into the continuation prompt.
+            include_images: When False, skip illustration generation for the new
+                segment. Default True preserves existing behavior.
+
+                Design note: this is intentionally a per-request flag, not a
+                preference persisted on the InteractiveStory record. The
+                audio-only ("no screen") client is the sole caller of both
+                generate + continue for its own story loop and already knows
+                it's audio-only on every call, so it can just pass
+                include_images=False consistently — no server-side state is
+                needed to remember the choice across segments. Persisting a
+                per-story "images enabled" column would need a schema
+                migration for a preference the only current caller can supply
+                for free on each request; if a second client needs the
+                preference remembered without resending it, add a nullable
+                `images_enabled` column to InteractiveStory then and default
+                the per-request flag from it.
 
         Returns:
             Dict with new segment data, updated inventory, and state
@@ -441,7 +472,9 @@ class InteractiveAdventureService:
         # Generate illustration for new segment
         # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
         # Set MOCK_TESTING_MODE=false in .env to enable real image generation
-        if segment_data.get("image_description"):
+        # include_images=False (audio-only clients) skips this entirely — no
+        # illustration call, new_segment.image_url stays None.
+        if include_images and segment_data.get("image_description"):
             character_dict = self._get_character_dict(story)
             companions = self._get_companions(story)
             self._generate_segment_illustration(

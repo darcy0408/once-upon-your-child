@@ -322,7 +322,10 @@ class TestContinueInteractiveStoryAPI:
         assert data["is_completed"] is False
 
         mock_interactive_service.continue_story.assert_called_once_with(
-            story_id=story_in_db.id, choice_id="choice-1", custom_text=None
+            story_id=story_in_db.id,
+            choice_id="choice-1",
+            custom_text=None,
+            include_images=True,
         )
 
     def test_custom_text_self_harm_returns_crisis_not_story(

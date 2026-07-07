@@ -869,6 +869,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       companion: companion,
       // Bedtime voice mode: keep the pick-a-path segments soft-edged.
       tone: 'cozy-adventure',
+      includeImages: false, // audio-only: never renders image_url
     );
 
     int turnCount = 0;
@@ -924,6 +925,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         choice: choice,
         storySoFar: storySoFar,
         choicesMade: choicesMade,
+        includeImages: false, // audio-only: never renders image_url
       );
 
       turnCount++;

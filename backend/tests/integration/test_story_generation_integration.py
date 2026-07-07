@@ -247,3 +247,106 @@ def test_pick_a_path_start_and_continue(client, app, scenario):
     continue_data = continue_response.get_json()
     assert continue_data.get("story_id")
     assert continue_data.get("segment", {}).get("segment_number") == 2
+
+
+def test_generate_interactive_story_include_images_false_forwards_to_service(
+    client, app, mock_interactive_service
+):
+    """Audio-only clients pass include_images=False; the route must forward
+    it to InteractiveAdventureService.create_story unchanged (no illustration
+    generation happens for that story)."""
+    user_id = "audio-only-generate-user"
+    local_auth_headers = _create_auth_headers_for_user(app, user_id)
+
+    response = client.post(
+        "/generate-interactive-story",
+        json={
+            "theme": "Magic Forest",
+            "tone": "whimsical",
+            "length": "short",
+            "age": 7,
+            "include_images": False,
+        },
+        headers=local_auth_headers,
+    )
+    assert response.status_code == 200
+    _, call_kwargs = mock_interactive_service.create_story.call_args
+    assert call_kwargs.get("include_images") is False
+
+
+def test_generate_interactive_story_default_include_images_true(
+    client, app, mock_interactive_service
+):
+    """Regression: omitting include_images must preserve existing behavior
+    (illustrations still requested by default)."""
+    user_id = "default-images-generate-user"
+    local_auth_headers = _create_auth_headers_for_user(app, user_id)
+
+    response = client.post(
+        "/generate-interactive-story",
+        json={
+            "theme": "Magic Forest",
+            "tone": "whimsical",
+            "length": "short",
+            "age": 7,
+        },
+        headers=local_auth_headers,
+    )
+    assert response.status_code == 200
+    _, call_kwargs = mock_interactive_service.create_story.call_args
+    assert call_kwargs.get("include_images") is True
+
+
+def test_continue_interactive_story_include_images_false_forwards_to_service(
+    client, app, mock_interactive_service
+):
+    """Audio-only clients pass include_images=False on every continue call
+    too (server does not persist the preference — see design note in
+    InteractiveAdventureService.continue_story)."""
+    user_id = "audio-only-continue-user"
+    local_auth_headers = _create_auth_headers_for_user(app, user_id)
+    story_id = "audio-only-continue-story"
+    _create_owned_interactive_story(
+        app=app,
+        story_id=story_id,
+        user_id=user_id,
+        age=7,
+        theme="Magic Forest",
+        length="short",
+    )
+
+    response = client.post(
+        "/continue-interactive-story",
+        json={"story_id": story_id, "choice_id": "choice-1", "include_images": False},
+        headers=local_auth_headers,
+    )
+    assert response.status_code == 200
+    _, call_kwargs = mock_interactive_service.continue_story.call_args
+    assert call_kwargs.get("include_images") is False
+
+
+def test_continue_interactive_story_default_include_images_true(
+    client, app, mock_interactive_service
+):
+    """Regression: omitting include_images on continue must preserve existing
+    behavior (illustrations still requested by default)."""
+    user_id = "default-images-continue-user"
+    local_auth_headers = _create_auth_headers_for_user(app, user_id)
+    story_id = "default-images-continue-story"
+    _create_owned_interactive_story(
+        app=app,
+        story_id=story_id,
+        user_id=user_id,
+        age=7,
+        theme="Magic Forest",
+        length="short",
+    )
+
+    response = client.post(
+        "/continue-interactive-story",
+        json={"story_id": story_id, "choice_id": "choice-1"},
+        headers=local_auth_headers,
+    )
+    assert response.status_code == 200
+    _, call_kwargs = mock_interactive_service.continue_story.call_args
+    assert call_kwargs.get("include_images") is True

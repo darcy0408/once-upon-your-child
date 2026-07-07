@@ -2575,6 +2575,12 @@ Create the rhyming learning-to-read story about $characterName now:
   }
 
   /// Generate interactive story opening
+  ///
+  /// [includeImages]: set false for audio-only ("no screen") callers — the
+  /// backend then skips illustration generation entirely for this story
+  /// (segment.image_url stays null). Default true preserves existing
+  /// behavior. Only affects the backend fallback path; the BYOK/Gemini path
+  /// never generates images to begin with.
   static Future<Map<String, dynamic>> generateInteractiveStory({
     required String characterName,
     required String theme,
@@ -2582,6 +2588,7 @@ Create the rhyming learning-to-read story about $characterName now:
     String? companion,
     // Backend tone hint (e.g. 'cozy-adventure' for bedtime voice mode).
     String? tone,
+    bool includeImages = true,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -2599,6 +2606,7 @@ Create the rhyming learning-to-read story about $characterName now:
         age: age,
         companion: companion,
         tone: tone,
+        includeImages: includeImages,
       );
     }
   }
@@ -2667,6 +2675,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     required int age,
     String? companion,
     String? tone,
+    bool includeImages = true,
   }) async {
     final headers = await authHeaders();
     final response = await http.post(
@@ -2678,6 +2687,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
         'age': age,
         'companion': companion,
         if (tone != null) 'tone': tone,
+        'include_images': includeImages,
       }),
     );
 
@@ -2690,12 +2700,18 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
   }
 
   /// Continue interactive story based on choice
+  ///
+  /// [includeImages]: set false for audio-only ("no screen") callers — the
+  /// backend then skips illustration generation for this segment. Default
+  /// true preserves existing behavior. Only affects the backend fallback
+  /// path; the BYOK/Gemini path never generates images to begin with.
   static Future<Map<String, dynamic>> continueInteractiveStory({
     required String characterName,
     required String theme,
     required String choice,
     required String storySoFar,
     required List<String> choicesMade,
+    bool includeImages = true,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -2714,6 +2730,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
         choice: choice,
         storySoFar: storySoFar,
         choicesMade: choicesMade,
+        includeImages: includeImages,
       );
     }
   }
@@ -2773,6 +2790,7 @@ Do NOT wrap JSON in backticks.
     required String choice,
     required String storySoFar,
     required List<String> choicesMade,
+    bool includeImages = true,
   }) async {
     final headers = await authHeaders();
     final response = await http.post(
@@ -2784,6 +2802,7 @@ Do NOT wrap JSON in backticks.
         'choice': choice,
         'story_so_far': storySoFar,
         'choices_made': choicesMade,
+        'include_images': includeImages,
       }),
     );
 

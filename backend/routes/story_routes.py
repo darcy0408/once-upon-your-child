@@ -1647,6 +1647,9 @@ def create_story_blueprint(
             - interests: list[str] (optional)
             - must_include: list[str] (optional)
             - avoid: list[str] (optional)
+            - include_images: bool (optional, default True) — set False for
+              audio-only ("no screen") clients that never render image_url;
+              skips illustration generation entirely for this story.
         """
         logger.info("POST /generate-interactive-story called")
         from ..utils.sanitizer import sanitize_story_request
@@ -1704,6 +1707,10 @@ def create_story_blueprint(
         big_feelings_context = payload.get("big_feelings_context")
         companions_payload = payload.get("companions") or []
         character_name = payload.get("character_name")
+        # Audio-only ("no screen") clients never display segment.image_url —
+        # let them opt out of illustration generation entirely. Default True
+        # preserves existing behavior for every other client.
+        include_images = bool(payload.get("include_images", True))
         if isinstance(big_feelings_context, dict):
             saved_parent_context = _resolve_parent_hidden_context(
                 user_id,
@@ -1738,6 +1745,7 @@ def create_story_blueprint(
                 big_feelings_context=big_feelings_context,
                 companions_payload=companions_payload or None,
                 character_name=character_name,
+                include_images=include_images,
             )
 
             # Two-layer output moderation — keyword filter, then LLM classifier
@@ -1865,6 +1873,10 @@ def create_story_blueprint(
             - story_id: str (required)
             - choice_id: str (required) — use "custom" to submit free-text input
             - custom_text: str (optional) — required when choice_id is "custom"; max 200 chars
+            - include_images: bool (optional, default True) — set False for
+              audio-only ("no screen") clients that never render image_url;
+              skips illustration generation for this segment. Not persisted
+              server-side — pass it on every continue call for the story.
         """
         logger.info("POST /continue-interactive-story called")
         from ..utils.sanitizer import sanitize_for_prompt, wrap_user_input
@@ -1874,6 +1886,7 @@ def create_story_blueprint(
         story_id = payload.get("story_id")
         choice_id = payload.get("choice_id")
         raw_custom_text = (payload.get("custom_text") or "").strip()[:200]
+        include_images = bool(payload.get("include_images", True))
 
         # Validate required fields
         if not story_id or not choice_id:
@@ -1941,7 +1954,10 @@ def create_story_blueprint(
 
             # Continue story — pass custom_text so the service can use it
             result = service.continue_story(
-                story_id=story_id, choice_id=choice_id, custom_text=custom_text or None
+                story_id=story_id,
+                choice_id=choice_id,
+                custom_text=custom_text or None,
+                include_images=include_images,
             )
 
             # Two-layer output moderation — same as the main story path.
