@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-07 | 14:39 | 6bb4 | main | Briefing + PR-queue no-op (parallel session already merged #390/#394/#396) | [link](docs/sessions/2026-07-07-1439-6bb4.md) |
 | 2026-07-07 | 14:02 | bd5b | main | PR-queue clear: #390/#394 merged + post-hoc reviews + MT renumber | [link](docs/sessions/2026-07-07-1402-bd5b.md) |
 | 2026-07-07 | 13:36 | eeb5 | main | All-band story audit + no-screen verify → 4 PRs merged (#392/#393/#394/#396) | [link](docs/sessions/2026-07-07-1336-eeb5.md) |
 | 2026-07-07 | 12:23 | 7231 | main (PRs #395/#398) | Pricing decided + monetization shipped; #398 stranded-commit PR open | [link](docs/sessions/2026-07-07-1223-7231.md) |
