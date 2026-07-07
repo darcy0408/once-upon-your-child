@@ -929,6 +929,54 @@ class TestStoryMetadataExtraction:
         )
         assert metadata["saga_state"] is None
 
+    def test_metadata_saga_state_preserves_full_creator_adolescent_shape(self):
+        """Bug fix: this used to whitelist only 4 keys (nemesis /
+        nemesis_status / what_changed / next_hook), silently dropping
+        ``what_it_cost``, ``allies``, and ``defining_choice`` even though the
+        Creator/Adolescent prompts' OUTPUT FORMAT (prompt_service.py) asks the
+        model to emit all 7 — a real Creator story came back missing exactly
+        these 3 keys. All 7 must now survive extraction."""
+        from backend.services.story_service import _safe_extract_title_and_gem
+
+        payload = self._build_json(
+            {
+                "saga_state": {
+                    "nemesis": "  The Benefactor  ",
+                    "nemesis_status": "still-at-large",
+                    "what_changed": "The harbor district trusts the hero now.",
+                    "what_it_cost": "  A friendship strained past repair.  ",
+                    "next_hook": "A second mask appears in the crowd.",
+                    "allies": ["  Priya  ", "Marcus", "", "   "],
+                    "defining_choice": "Chose to expose the plan instead of hiding it.",
+                    "ignored_extra": "should be dropped",
+                }
+            }
+        )
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(
+            payload, theme="superhero"
+        )
+        assert metadata["saga_state"] == {
+            "nemesis": "The Benefactor",
+            "nemesis_status": "still-at-large",
+            "what_changed": "The harbor district trusts the hero now.",
+            "what_it_cost": "A friendship strained past repair.",
+            "next_hook": "A second mask appears in the crowd.",
+            "allies": ["Priya", "Marcus"],  # blank/whitespace entries dropped
+            "defining_choice": "Chose to expose the plan instead of hiding it.",
+        }
+
+    def test_metadata_saga_state_allies_wrong_type_is_dropped_not_error(self):
+        from backend.services.story_service import _safe_extract_title_and_gem
+
+        payload = self._build_json(
+            {"saga_state": {"nemesis": "Ledger", "allies": "not-a-list"}}
+        )
+        _, _, _, _, _, metadata = _safe_extract_title_and_gem(
+            payload, theme="superhero"
+        )
+        # allies key omitted entirely (not a list) — nemesis still preserved.
+        assert metadata["saga_state"] == {"nemesis": "Ledger"}
+
     def test_metadata_normalises_themes_to_lowercase_dedup_capped(self):
         from backend.services.story_service import _safe_extract_title_and_gem
 

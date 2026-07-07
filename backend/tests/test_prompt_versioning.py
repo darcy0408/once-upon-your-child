@@ -37,7 +37,12 @@ _HEX16 = re.compile(r"^[0-9a-f]{16}$")
         ("superhero", 9, "T8_SUPERHERO_ADVENTURER"),  # Adventurer lower edge
         ("superhero", 11, "T8_SUPERHERO_ADVENTURER"),
         ("superhero", 12, "T8_SUPERHERO_ADVENTURER"),  # Adventurer upper edge
-        ("superhero", 13, "T6_SUPERHERO_SPROUT"),  # >12 falls back to Sprout
+        ("superhero", 13, "T9_SUPERHERO_CREATOR"),  # Creator lower edge
+        ("superhero", 14, "T9_SUPERHERO_CREATOR"),  # Creator upper edge
+        ("superhero", 15, "T10_ANTIHERO_ADOLESCENT"),  # Adolescent lower edge
+        ("superhero", 17, "T10_ANTIHERO_ADOLESCENT"),  # Adolescent upper edge
+        ("superhero", 18, "T9_SUPERHERO_CREATOR"),  # 18+ has no Adult template;
+        # routes to Creator, mirroring PromptService.build_story_prompt.
     ],
 )
 def test_resolve_template_ids(mode, age, expected_id):
@@ -79,6 +84,7 @@ def test_distinct_templates_have_distinct_hashes():
     # hash, attribution loses precision.
     bedtime = resolve(mode="bedtime", age=8)[1]
     rhyme = resolve(mode="rhyme_time", age=8)[1]
-    superhero = resolve(mode="superhero", age=4)[1]
+    superhero_sprout = resolve(mode="superhero", age=4)[1]
+    superhero_creator = resolve(mode="superhero", age=13)[1]
     standard = resolve(mode="standard", age=8)[1]
-    assert len({bedtime, rhyme, superhero, standard}) == 4
+    assert len({bedtime, rhyme, superhero_sprout, superhero_creator, standard}) == 5

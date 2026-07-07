@@ -41,11 +41,60 @@ from backend.services.story_service import (
     pseudonymize_hero_name,
     restore_hero_name,
 )
+from backend.services.superhero_validation import (
+    backfill_saga_state,
+    should_retry,
+    validate_page_count,
+    validate_word_count,
+)
 
 
 def _is_superhero_theme(theme: str | None) -> bool:
     """True when the request is for the ages-3-5 Superhero Mode chain."""
     return isinstance(theme, str) and theme.strip().lower() == "superhero"
+
+
+def _superhero_band_for_age(age) -> str:
+    """Map a hero's age to the Superhero Mode villain/problem band.
+
+    3-5 -> sprout, 6-8 -> explorer, 9-12 -> adventurer, 13-14 -> creator,
+    15-17 -> adolescent, 18+ -> creator. Anything else (invalid/negative/
+    unparseable age) defaults to sprout so legacy callers keep working.
+
+    MUST mirror ``PromptService.build_story_prompt``'s age-band routing
+    (backend/services/prompt_service.py ~L96-197) EXACTLY, same thresholds.
+    That function computes its OWN band from `age` and re-derives the
+    villain/problem pairing whenever the id it's handed isn't valid for ITS
+    band — so if this derivation drifts from prompt_service's (as it did
+    before this fix: Creator/Adolescent ages fell through to "sprout" here,
+    handing the prompt builder Sprout ids like cranky_crab/cheer_up that
+    don't exist in the Creator/Adolescent tables), the prompt builder
+    silently re-picks a DIFFERENT pairing than the one reported back in
+    `superhero_meta` — the response then lies about which villain/problem/
+    band actually shaped the story, which also breaks saga continuity and
+    analytics that key off these ids.
+    """
+    try:
+        age_int = int(age) if age is not None else 5
+    except (TypeError, ValueError):
+        age_int = 5
+    if age_int >= 6 and age_int <= 8:
+        return "explorer"
+    if age_int >= 9 and age_int <= 12:
+        # Adventurer (9-12) has its own villain/problem tables. Without this
+        # branch the pairing was drawn from the Sprout table, so the
+        # Adventurer prompt builder silently re-rolled the villain (and the
+        # C4 nemesis override never stuck — see _superhero_apply_nemesis).
+        return "adventurer"
+    if age_int >= 13 and age_int <= 14:
+        return "creator"
+    if age_int >= 18:
+        # No dedicated Adult superhero template; prompt_service routes 18+
+        # to the Creator "Hero Saga" builder too.
+        return "creator"
+    if age_int >= 15 and age_int <= 17:
+        return "adolescent"
+    return "sprout"
 
 
 logger = get_task_logger(__name__)
@@ -933,6 +982,123 @@ def _enforce_sprout_word_cap(
     return truncated_body, truncated_pages, info
 
 
+# --- Adventurer/Creator/Adolescent (ages 9-17) Superhero post-generation ----
+# validation + capped regen retry -------------------------------------------
+# Sprout/Explorer have the truncation-based safety belt above; the older
+# bands' beat structure is too dense to truncate safely (chopping a Creator
+# Issue mid-beat would break the "aftermath" resolution), so a full
+# regeneration — capped at exactly ONE attempt — is used instead when the
+# structural checks in backend/services/superhero_validation.py flag
+# something retry-worthy (word count >25% over the band's ceiling, or a
+# page/beat count that doesn't match the band's required count).
+def _validate_and_regen_superhero(
+    *,
+    band: str,
+    theme: str,
+    title: str,
+    story_body: str,
+    pages: list[str],
+    post_story: dict,
+    story_metadata: dict,
+    base_prompt: str,
+    regen_fn,
+) -> tuple[str, str, list[str], dict, dict, list[dict]]:
+    """Validate a generated Superhero story against `band`'s word/page spec
+    and (Creator/Adolescent only) saga_state completeness, retrying generation
+    ONCE if warranted.
+
+    If a regen is attempted, the BETTER of the two attempts is kept (fewer
+    structural issues) — the user's story is never failed outright, even if
+    the regen also violates spec. saga_state completeness is checked/backfilled
+    on whichever attempt is kept; it never triggers a regen on its own (the
+    continuity mechanic still works with neutral defaults — see
+    backfill_saga_state).
+
+    Returns (title, story_body, pages, post_story, story_metadata, issues).
+    """
+
+    def _structural_issues(_pages: list[str]) -> list[dict]:
+        _total_words = sum(_count_words(p) for p in (_pages or []))
+        _issues = []
+        _w = validate_word_count(_total_words, band)
+        if _w:
+            _issues.append(_w)
+        _p = validate_page_count(len(_pages or []), band)
+        if _p:
+            _issues.append(_p)
+        return _issues
+
+    issues = _structural_issues(pages)
+
+    if should_retry(issues):
+        try:
+            regen_text = regen_fn(base_prompt)
+        except Exception:  # noqa: BLE001 — never crash the user-visible path
+            logger.exception(
+                "Superhero (%s) validation regen call failed; keeping original attempt.",
+                band,
+            )
+            regen_text = None
+
+        if regen_text:
+            try:
+                (
+                    r_title,
+                    _,
+                    r_body,
+                    r_pages,
+                    r_post,
+                    r_metadata,
+                ) = _safe_extract_title_and_gem(regen_text, theme)
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "Superhero (%s) validation regen parse failed; keeping original attempt.",
+                    band,
+                )
+                r_body, r_pages = None, None
+
+            if r_body and r_pages:
+                r_issues = _structural_issues(r_pages)
+                if len(r_issues) <= len(issues):
+                    logger.info(
+                        "superhero_validation_regen band=%s original_issues=%d "
+                        "regen_issues=%d -> using regen attempt",
+                        band,
+                        len(issues),
+                        len(r_issues),
+                    )
+                    title, story_body, pages, post_story, story_metadata, issues = (
+                        r_title,
+                        r_body,
+                        r_pages,
+                        r_post or post_story,
+                        r_metadata,
+                        r_issues,
+                    )
+                else:
+                    logger.info(
+                        "superhero_validation_regen band=%s original_issues=%d "
+                        "regen_issues=%d -> keeping original attempt",
+                        band,
+                        len(issues),
+                        len(r_issues),
+                    )
+
+    # Creator/Adolescent saga_state completeness — flag + backfill on
+    # whichever attempt was kept above. Independent of the retry: a genuinely
+    # missing key never triggers a regen, it's simply backfilled.
+    _raw_saga_state = (
+        story_metadata.get("saga_state") if isinstance(story_metadata, dict) else None
+    )
+    saga_state, saga_issue = backfill_saga_state(_raw_saga_state, band)
+    if isinstance(story_metadata, dict):
+        story_metadata["saga_state"] = saga_state
+    if saga_issue:
+        issues.append(saga_issue)
+
+    return title, story_body, pages, post_story, story_metadata, issues
+
+
 # ===========================================================================
 # "The Crux Choice" — two-phase Adolescent antihero run helpers (Phase 2).
 #
@@ -1404,23 +1570,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 hero_power = kwargs.get("hero_power")
                 recent_villains = kwargs.get("recent_villains") or []
                 recent_problems = kwargs.get("recent_problems") or []
-                # Derive band from age: 3-5 -> sprout, 6-8 -> explorer.
-                # Default to sprout for anything outside the band ranges so
-                # legacy callers continue to work unchanged.
-                try:
-                    _sh_age_int = int(age) if age is not None else 5
-                except (TypeError, ValueError):
-                    _sh_age_int = 5
-                if _sh_age_int >= 6 and _sh_age_int <= 8:
-                    sh_band = "explorer"
-                elif _sh_age_int >= 9 and _sh_age_int <= 12:
-                    # Adventurer (9-12) has its own villain/problem tables. Without
-                    # this branch the pairing was drawn from the Sprout table, so
-                    # the Adventurer prompt builder silently re-rolled the villain
-                    # (and the C4 nemesis override never stuck — see below).
-                    sh_band = "adventurer"
-                else:
-                    sh_band = "sprout"
+                # Derive band from age (mirrors PromptService.build_story_prompt's
+                # own age-band routing — see _superhero_band_for_age's docstring
+                # for why drift here silently mislabels superhero_meta).
+                sh_band = _superhero_band_for_age(age)
                 try:
                     sh_villain_id, sh_problem_id = _superhero_pick_pairing(
                         hero_power or "super_smile",
@@ -1431,7 +1584,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 except ValueError:
                     # Unknown power id — pick_pairing raises; fall back to a
                     # universally-safe default rather than 500ing the request.
-                    # super_smile exists in both Sprout and Explorer tables.
+                    # super_smile exists in every band's power table.
                     sh_villain_id, sh_problem_id = _superhero_pick_pairing(
                         "super_smile",
                         band=sh_band,
@@ -1983,6 +2136,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 _sprout_age = int(age) if age is not None else 5
             except (TypeError, ValueError):
                 _sprout_age = 5
+            _superhero_validation_issues: list[dict] = []
             if _sprout_age <= 5:
                 story_body, pages, _sprout_info = _enforce_sprout_word_cap(
                     age=_sprout_age,
@@ -2042,6 +2196,41 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         _explorer_info.get("regen_used"),
                         _explorer_info.get("truncated"),
                         _explorer_info.get("final_words"),
+                    )
+
+            # --- Adventurer/Creator/Adolescent (ages 9-17+) Superhero post-gen
+            # structural validation + capped regen retry ---
+            # No truncation-based safety belt exists for these bands (unlike
+            # Sprout/Explorer above) — see _validate_and_regen_superhero for
+            # why a full regen is used instead. Populates validation_issues
+            # (previously always [] for every Superhero story regardless of
+            # band — see backend/services/superhero_validation.py).
+            elif _sprout_age >= 9 and superhero_meta is not None:
+                (
+                    title,
+                    story_body,
+                    pages,
+                    post_story,
+                    story_metadata,
+                    _superhero_validation_issues,
+                ) = _validate_and_regen_superhero(
+                    band=superhero_meta["band"],
+                    theme=theme,
+                    title=title,
+                    story_body=story_body,
+                    pages=pages,
+                    post_story=post_story,
+                    story_metadata=story_metadata,
+                    base_prompt=prompt,
+                    regen_fn=lambda p: _generate_story_text(
+                        p, theme, character_name, companion, user_tier=user_tier
+                    ),
+                )
+                if _superhero_validation_issues:
+                    logger.info(
+                        "superhero_validation band=%s issues=%s",
+                        superhero_meta["band"],
+                        _superhero_validation_issues,
                     )
 
             # PERF-04: last cancellation gate before the moderation phase.
@@ -2160,7 +2349,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             # NEW: Page-based story structure for duration-based generation
             adventure_steps = []
-            validation_issues = []
+            # Seed with any Adventurer/Creator/Adolescent Superhero structural
+            # issues found above (word count / page count / saga_state
+            # completeness) — the duration-based branch below may still
+            # append its own issues for non-Superhero story types.
+            validation_issues = list(_superhero_validation_issues)
 
             if story_duration and not rhyme_time_mode and not learning_to_read_mode:
                 # Use page-based system for regular duration stories
@@ -2211,7 +2404,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     total_words = sum(len(p.split()) for p in pages)
 
                     if not is_valid:
-                        validation_issues = issues
+                        # Extend (not overwrite) — preserves any Superhero
+                        # structural issues seeded above, though in practice
+                        # story_duration and Superhero Mode are mutually
+                        # exclusive request shapes.
+                        validation_issues.extend(issues)
                         logger.warning(f"Story validation issues: {', '.join(issues)}")
 
                     logger.info(
@@ -2330,13 +2527,17 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # Frontend uses these IDs to track recent_villains/recent_problems
                 # and avoid back-to-back duplicates on the next /generate-story call.
                 #
-                # MT-235 Phase 2 (the returnable saga): the Creator (T9) tier
-                # emits a `saga_state` object {nemesis, nemesis_status,
-                # what_changed, next_hook} the model wrote for THIS Issue. Fold
+                # MT-235 Phase 2 (the returnable saga): the Creator (T9) and
+                # Adolescent (T10) tiers emit a `saga_state` object {nemesis,
+                # nemesis_status, what_changed, what_it_cost, next_hook,
+                # allies, defining_choice} the model wrote for THIS Issue —
+                # `_validate_and_regen_superhero` above backfills any keys the
+                # model omitted (see backend/services/superhero_validation.py)
+                # so this always has the full shape for those two bands. Fold
                 # it onto superhero_meta so the Dart HeroSaga client can persist
                 # it and replay it as `prior_saga` on the next Issue. Absent /
-                # non-Creator stories leave this off. Names are restored so the
-                # child sees their own hero name in the continuity recap.
+                # bands without saga_state leave this off. Names are restored
+                # so the child sees their own hero name in the continuity recap.
                 try:
                     _saga_state = story_metadata.get("saga_state")
                 except NameError:

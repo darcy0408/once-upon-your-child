@@ -1397,18 +1397,39 @@ def _normalize_emotional_arc(value) -> str | None:
 
 
 def _normalize_saga_state(value):
-    """Sanitize the Creator-tier ``saga_state`` block the T9 superhero prompt
-    emits (MT-235 Phase 2 — the returnable saga). Returns a dict with only the
-    four known string keys (nemesis / nemesis_status / what_changed / next_hook),
-    each trimmed, or ``None`` when nothing usable is present. The Dart HeroSaga
-    client folds this forward into ``prior_saga`` on the next Issue."""
+    """Sanitize the ``saga_state`` block the superhero prompts emit (MT-235
+    Phase 2 — the returnable saga). Returns a dict with only the known keys,
+    each trimmed, or ``None`` when nothing usable is present. The Dart
+    HeroSaga client folds this forward into ``prior_saga`` on the next Issue.
+
+    Bug fix: this used to whitelist only 4 keys (nemesis / nemesis_status /
+    what_changed / next_hook), silently dropping ``what_it_cost``, ``allies``,
+    and ``defining_choice`` even when the model emitted them — those 3 keys
+    are part of every band's saga_state OUTPUT FORMAT (prompt_service.py) and
+    the Creator/Adolescent "consequence callback" mandate reads
+    ``what_it_cost`` specifically. Now preserves the full key set every band's
+    prompt promises; ``what_it_cost`` is only present for bands whose prompt
+    asks for it (Creator/Adolescent), so it's simply absent for the rest.
+    """
     if not isinstance(value, dict):
         return None
     out = {}
-    for key in ("nemesis", "nemesis_status", "what_changed", "next_hook"):
+    for key in (
+        "nemesis",
+        "nemesis_status",
+        "what_changed",
+        "what_it_cost",
+        "next_hook",
+        "defining_choice",
+    ):
         raw = value.get(key)
         if isinstance(raw, str) and raw.strip():
             out[key] = raw.strip()
+    allies_raw = value.get("allies")
+    if isinstance(allies_raw, list):
+        allies = [str(a).strip() for a in allies_raw if str(a).strip()]
+        if allies:
+            out["allies"] = allies
     return out or None
 
 

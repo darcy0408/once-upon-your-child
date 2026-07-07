@@ -66,6 +66,7 @@ _REVISION_HASHES: dict[str, str] = {
     "T8_SUPERHERO_ADVENTURER": _hash_source(
         PromptService._build_superhero_prompt_adventurer
     ),
+    "T9_SUPERHERO_CREATOR": _hash_source(PromptService._build_superhero_prompt_creator),
     "T10_ANTIHERO_ADOLESCENT": _hash_source(
         PromptService._build_superhero_prompt_adolescent
     ),
@@ -87,10 +88,18 @@ def resolve(*, mode: str, age: int | None) -> tuple[str, str]:
         age_int = None
 
     if mode == "superhero":
+        # Bug fix: ages 13-14 and 18+ (Creator band) used to fall through to
+        # the final `else` and get persisted as T6_SUPERHERO_SPROUT — the
+        # WRONG template id and revision hash for the actual prompt builder
+        # that ran (_build_superhero_prompt_creator). Mirrors the age-band
+        # routing in PromptService.build_story_prompt (prompt_service.py
+        # ~L96-197) and backend/tasks/story_tasks.py's _superhero_band_for_age.
         if age_int is not None and 6 <= age_int <= 8:
             template_id = "T7_SUPERHERO_EXPLORER"
         elif age_int is not None and 9 <= age_int <= 12:
             template_id = "T8_SUPERHERO_ADVENTURER"
+        elif age_int is not None and (13 <= age_int <= 14 or age_int >= 18):
+            template_id = "T9_SUPERHERO_CREATOR"
         elif age_int is not None and 15 <= age_int <= 17:
             template_id = "T10_ANTIHERO_ADOLESCENT"
         else:
