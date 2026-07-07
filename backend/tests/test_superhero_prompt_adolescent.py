@@ -168,13 +168,16 @@ def test_adolescent_prompt_saga_state_includes_allies_and_defining_choice():
     assert "CHOICE Maya made this chapter" in prompt
 
 
-def test_adolescent_prompt_has_1400_2200_word_budget():
+def test_adolescent_prompt_has_1400_1900_word_budget():
+    # Round-2 fix (2026-07-07 verification run): the model reliably overshot
+    # the old 2200-word hard max by ~40%, so the stated ceiling was lowered
+    # to 1900 to land near the real 2200 spec in practice.
     prompt = _build(
         hero_power="super_hearing",
         villain_id="ledger",
         problem_id="surface_the_truth",
     )
-    assert "1400" in prompt and "2200" in prompt
+    assert "1400" in prompt and "1900" in prompt
 
 
 def test_adolescent_prompt_falls_back_on_missing_or_unknown_power():

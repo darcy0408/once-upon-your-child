@@ -60,3 +60,26 @@ def test_edge_roster_has_eight_base_plus_two_extras():
     assert len(ADOLESCENT_POWERS) == 10
     assert "strategist" in ADOLESCENT_POWERS
     assert "gadgeteer" in ADOLESCENT_POWERS
+
+
+def test_archivist_and_ledger_are_no_longer_near_synonymous():
+    """Editorial audit finding 3 (2026-07-07): the_archivist and ledger both
+    used to run on "righteous public exposure of secrets" — a roster-overlap
+    bug. the_archivist is now reworked onto a distinct axis: quiet leverage /
+    surveillance-for-control that never exposes, vs. ledger's public
+    ruin-by-exposure. Lock in the distinction so the two can't drift back
+    together unnoticed.
+    """
+    archivist = ADOLESCENT_VILLAINS["the_archivist"]
+    ledger = ADOLESCENT_VILLAINS["ledger"]
+
+    # The Archivist now hoards and withholds — never releases what it holds.
+    assert "never" in archivist["action"] and "releas" in archivist["action"]
+    assert "leverage" in archivist["action"]
+
+    # Ledger is unchanged: still runs on public exposure/ruin.
+    assert "ruin" in ledger["action"] or "expose" in ledger["action"].lower()
+
+    # The two entries must no longer share their old overlapping language.
+    assert "total exposure" not in archivist["action"]
+    assert "rank everyone" not in archivist["action"]

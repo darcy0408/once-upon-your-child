@@ -77,6 +77,7 @@ class PromptService:
         superhero_problem_id: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
+        hero_gender: str | None = None,
     ) -> str:
         """Build complete story generation prompt.
 
@@ -90,6 +91,10 @@ class PromptService:
         The villain/problem IDs are normally chosen server-side via
         :func:`backend.data.superhero_matrix.pick_pairing` and passed in via
         ``superhero_villain_id`` / ``superhero_problem_id``.
+
+        ``hero_gender`` (editorial audit, 2026-07-07) is optional and, today,
+        only consumed by the Adventurer (9-12) builder — other bands ignore
+        it. Normally sourced from the request's ``character_details.gender``.
         """
 
         # ----- Superhero Mode short-circuit (band-aware) ----------------
@@ -126,6 +131,7 @@ class PromptService:
                     problem_id=superhero_problem_id,
                     custom_elements=custom_elements,
                     prior_saga=prior_saga,
+                    hero_gender=hero_gender,
                 )
             elif _age_int >= 13 and _age_int <= 14:
                 # Creator band — Hero Saga (ages 13-14).
@@ -298,10 +304,24 @@ class PromptService:
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 3-5):
             ⚠️ MAXIMUM LENGTH: 100-150 words TOTAL. DO NOT EXCEED 150 WORDS.
             - Count your words carefully and STOP at 150 words maximum
-            - Vocabulary: ONLY very simple words (cat, dog, run, happy, sun, play)
+            - Vocabulary: ONLY very simple words a 3-5 year old already says out loud.
+              ALLOWED verbs/adjectives (use these, or words just as simple): run, jump,
+              hop, look, see, hear, smell, touch, hug, laugh, cry, happy, sad, big,
+              little, soft, loud, fast, warm, shiny. BANNED: literary or adult words
+              like spattered, arced, flared, steady, curious, gleamed, shimmered — if a
+              word would surprise a preschool teacher, it does not belong here.
+            - FINAL VOCABULARY CHECK (do this last, after drafting the story): re-read
+              every sentence you wrote and replace any word that is not on the simple
+              list above with a simpler one. Do not submit your answer until this pass
+              is done.
             - Sentences: 3-6 words each (short and simple)
             - Concepts: Concrete, tangible only (things they can see/touch)
             - Use repetition for learning (repeat key phrases)
+            - Sound words: include AT LEAST 2 ALL-CAPS onomatopoeia words (e.g. SPLASH,
+              WHOOSH, POP, CRUNCH, THUD, GIGGLE, ZOOM) and tie each one directly to a
+              specific action happening in the story right where it appears (e.g. "The
+              puddle went SPLASH!" as a foot lands in it) — never a sound word with no
+              matching action next to it.
             """
         elif age <= 8:
             return """
@@ -568,17 +588,19 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 HARD RULES — these are non-negotiable:
 - MAXIMUM 130 words TOTAL. Count and STOP at 130.
 - TARGET 100–130 words. Anything under 90 is too short.
-- Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words.
+- Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words. Each page's "text" must contain ONLY story words for that page — do NOT include any page numbers or labels inside the page text (no "Page 1", no "Page 1 —", no "pg. 1", no beat names).
 - Sentences: 3–7 words each. Short and punchy.
 - Vocabulary: ONLY very simple words a 3–5 year old knows.
-- Use the hero's name ONCE or TWICE in your own narration, then refer to them by pronoun (he/she/they) — the beat templates already include the name, so do NOT pile on extra mentions. Use the identity tag "{identity_tag}" ONCE.
-- Include ONE repeated sensory phrase (a sound, a color, or a texture) for early-reader memorability — repeat it once for rhythm.
+- Use the hero's name ONCE or TWICE in your own narration — the beat templates already include the name, so do NOT pile on extra mentions. Use the identity tag "{identity_tag}" ONCE. PRONOUNS: if {character}'s gender was told to you, use "he" or "she" to match it; if you were NOT told {character}'s gender, do not guess — repeat the name "{character}" again instead of using a pronoun. NEVER refer to {character} as "they" — {character} is one hero, and singular "they" reads as more than one person when read aloud to a 3-5 year old.
+- Include ONE repeated sensory phrase for early-reader memorability, and keep it inside a SINGLE sense — a color paired with looking/seeing (e.g. "so shiny"), OR a sound paired with hearing, OR a texture paired with touch. NEVER mix senses in the same phrase (do NOT write things like "soft pink song" or "the sky smelled soft pink" — a color cannot be heard or smelled). Repeat the exact same phrase once for rhythm.
+- Sound words: separately from the sensory phrase above, include AT LEAST 2 ALL-CAPS onomatopoeia words (e.g. SPLASH, WHOOSH, POP, CRUNCH, THUD, ZOOM) and tie each one directly to a specific action happening on the page it appears on — never a sound word floating with no matching action.
+- Object & character economy: do NOT introduce any new named object or side character after the TROUBLE beat (beat 2) unless it appears again — and matters — before the CHEER beat (beat 6). Everything you introduce must pay off; do not add extra side-kids, props, or background characters just for color.
 - NO violence, NO weapons, NO scary descriptions, NO monsters chasing.
 - The villain is SILLY, never frightening. They soften, say sorry, or join in — they are NEVER defeated by force.
 - Resolution must come through kindness, cleverness, sharing, comforting, or inviting in. NEVER through force or punishment.{custom_request_block}
 
 OUTPUT FORMAT:
-Strictly return valid JSON with this structure:
+Strictly return valid JSON with this structure. Each page's "text" value must contain ONLY the story's own words — never a page number or label (do NOT write "Page 1 —" or similar at the start of any page's text):
 {{
   "title": "Story Title",
   "themes": ["3-6 short lowercase tags a parent would recognise (e.g. 'dragons', 'sibling-bond', 'overcoming-fear'); avoid generic tags like 'adventure', 'magic', 'story'"],
@@ -586,18 +608,18 @@ Strictly return valid JSON with this structure:
   "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
   "pages": [
     {{
-      "text": "Page 1 — 1 to 3 short sentences (5-25 words)."
+      "text": "1 to 3 short sentences (5-25 words) of story text only — no page numbers or labels inside the text."
     }},
     {{
-      "text": "Page 2 — 1 to 3 short sentences."
+      "text": "1 to 3 more short sentences continuing the story — again, no page numbers or labels inside the text."
     }},
     {{
-      "text": "...continue until the cheer-beat, aiming for 8-12 pages total."
+      "text": "...continue until the cheer-beat, aiming for 8-12 pages total. Every page's text must be story words only."
     }}
   ]
 }}
 
-Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
+Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a page's text with a page number or label.
 """
 
     # ------------------------------------------------------------------
@@ -608,6 +630,17 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
     # moment, and a vivid one-line piece of hero dialogue at resolution.
     # Same hard-rules spine: empathy/cleverness-only resolutions, the
     # villain is mischievous-not-evil, no weapons, no fighting.
+    #
+    # Anti-template hardening (editorial audit, 2026-07-07) — a real prod
+    # story was spec-compliant but templated: no wow words at all, a
+    # villain-softening line and closing line copied verbatim from the
+    # seed text, a power that "solved" the plot the same way any power
+    # would, a 35-word triple-clause sentence at the climax, and a refrain
+    # that appeared once and never recurred. Fixed below via: a 3-4
+    # wow-words rule, an explicit "seeds are plot ideas, never sentence
+    # text to copy" constraint, a power-must-be-load-bearing rule on the
+    # POWER MOMENT beat, a 16-word per-sentence cap, and a refrain-recurs
+    # rule (paragraph 2 AND paragraph 4 or 5).
     # ------------------------------------------------------------------
     @staticmethod
     def _build_superhero_prompt_explorer(
@@ -707,6 +740,12 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page.
         canonical_villain_list = ", ".join(canonical_villain_names)
 
         # --- Section markers in plain language (the model fills in the prose) ---
+        # NOTE: these "seed" strings are plot summaries for the model to read
+        # and rewrite, NOT sentence text to copy. Finding 2 (audit 2026-07-07):
+        # prod stories were pasting beat5_seed and the villain's softens/villain
+        # action text verbatim, so two kids fighting the same villain got
+        # identical endings word-for-word. The prompt text below makes the
+        # "plot idea only, never copy the wording" constraint explicit.
         beat1_seed = (
             f"{character} pulled on the {color} suit and felt the fabric settle "
             f"like a second skin. Today {character} is {identity_tag}."
@@ -821,20 +860,23 @@ PROBLEM TO SOLVE:
 
 STORY MUST FOLLOW THESE 5 PARAGRAPHS IN ORDER (output is plain prose — DO NOT label paragraphs):
 
-1. HERO INTRO — The child puts on the costume and becomes "{identity_tag}". Reference at least TWO sensory details (a sight, a sound, OR a texture/touch). Seed idea (rewrite naturally): "{beat1_seed}"
-2. TROUBLE APPEARS — {villain['name']} shows up and starts to {villain['action']}. Include ONE short rhythmic phrase that an early reader will catch and could repeat (a refrain — e.g. a sound effect or a short repeated line). Seed idea: "{beat2_seed}"
-3. FIRST TRY, DOESN'T QUITE WORK — {character} tries to help and the first attempt only half-works, OR {character} realizes they need to UNDERSTAND {villain['name']} before solving anything. This is a beat of cleverness or observation — a moment of noticing, not just kindness. Seed idea: "{beat3_seed}"
-4. POWER MOMENT — One vivid action sentence where {character} uses {power_name} ({power_verb}) to {problem['verb']} the situation. Reference this beat naturally: "{beat4_seed}" (do NOT use the bracketed summary in the prose).
-5. RESOLUTION VIA EMPATHY OR CLEVERNESS — {villain['name']} {villain['softens']}. Everyone — including the villain — leaves a little wiser. The hero speaks ONE line of dialogue (in quotation marks). Seed idea: "{beat5_seed}"
+1. HERO INTRO — The child puts on the costume and becomes "{identity_tag}". Reference at least TWO sensory details (a sight, a sound, OR a texture/touch). Seed idea — a plot idea only, NOT sentence text to copy (rewrite it completely in your own words): "{beat1_seed}"
+2. TROUBLE APPEARS — {villain['name']} shows up and starts to {villain['action']}. Include ONE short rhythmic phrase that an early reader will catch and could repeat (a refrain — e.g. a sound effect or a short repeated line) — this exact refrain must also recur verbatim later, in paragraph 4 or 5. Seed idea — a plot idea only, NOT sentence text to copy: "{beat2_seed}"
+3. FIRST TRY, DOESN'T QUITE WORK — {character} tries to help and the first attempt only half-works, OR {character} realizes they need to UNDERSTAND {villain['name']} before solving anything. This is a beat of cleverness or observation — a moment of noticing, not just kindness. Seed idea — a plot idea only, NOT sentence text to copy: "{beat3_seed}"
+4. POWER MOMENT — One vivid, SHORT, punchy action sentence (16 words or fewer) where {character} uses {power_name} ({power_verb}) to {problem['verb']} the situation. The power must be the DIRECT cause of the discovery or fix, through a mechanism unique to {power_name} — if you could swap in a different power and this sentence would still work unchanged, rewrite it so it only works for {power_name}. If your refrain phrase from paragraph 2 fits here naturally, this is a good place to repeat it. Reference this beat naturally: "{beat4_seed}" (do NOT use the bracketed summary in the prose, and do NOT copy this seed's wording).
+5. RESOLUTION VIA EMPATHY OR CLEVERNESS — {villain['name']} {villain['softens']}. Everyone — including the villain — leaves a little wiser. The hero speaks ONE line of dialogue (in quotation marks). If the refrain has not yet recurred in paragraph 4, it MUST recur verbatim here. Seed idea — a plot idea only, NOT sentence text to copy (write the villain's softening moment and the closing line in fresh wording every time): "{beat5_seed}"
 
 HARD RULES — these are non-negotiable:
 - LENGTH: 250-350 words TOTAL. Count carefully and STOP at 350. Anything under 250 is too short.
 - READING LEVEL: Grade 1-3. A 6-8 year old should be able to read most of the story aloud without help.
 - FLESCH-KINCAID READING EASE target: 60-80. Keep words short and concrete.
-- SENTENCES: 12 words or fewer on average. Mix short, punchy sentences with a few longer ones for rhythm.
+- SENTENCES: 12 words or fewer on average, and NO SINGLE SENTENCE over 16 words — split any longer idea into two sentences instead of stacking clauses. The POWER MOMENT sentence especially must be short and punchy, not a long multi-clause sentence.
+- WOW WORDS: include 3-4 "wow words" — vocabulary slightly above {character}'s everyday reading level (e.g. "enormous", "determined", "shimmered", "grumbled") — spread across the story. Each wow word MUST be followed, in the SAME sentence, by an in-sentence context clue that reveals its meaning without stopping to define it (e.g. "The room was enormous — so big that {character}'s voice echoed twice.") Do not use a glossary, a footnote, or a separate explaining sentence; the clue has to live right next to the word.
+- SEEDS ARE PLOT IDEAS ONLY, NEVER SENTENCE TEXT TO COPY: every "Seed idea" quoted above (including the villain's softening line and the closing line) describes WHAT HAPPENS, not words to reuse. Do not repeat a seed's exact wording, word order, or sentence shape anywhere in your prose — write every beat, especially beat 5's softening/closing line, in fresh language each time, so two children who fought the same villain do not get matching endings.
+- POWER MUST BE LOAD-BEARING: the POWER MOMENT must show {power_name} directly causing the discovery or the fix through a mechanism unique to that power (what does {power_verb} actually let {character} notice, reach, or change that no other power could?). If the sentence would still make sense with a different power swapped in, it is not specific enough — rewrite it.
 - Use the hero's name {character} AT LEAST THREE times.
 - Use the identity tag "{identity_tag}" AT LEAST TWICE.
-- Include ONE repeated rhythmic phrase in paragraph 2 (a refrain, sound, or short repeated line for the early reader to notice).
+- Include ONE repeated rhythmic phrase (a refrain, sound, or short repeated line) that FIRST appears in paragraph 2 and then RECURS VERBATIM once more in paragraph 4 or 5 — a refrain used only once is not a refrain.
 - Include at least TWO sensory details (sight, sound, OR touch) in paragraph 1.
 - The hero MUST speak ONE line of dialogue at the resolution.{catchphrase_rule}
 - The villain is mischievous, lonely, or misunderstood — NEVER evil, NEVER frightening.
@@ -890,6 +932,22 @@ Begin now. Stop at 350 words across all pages combined.
     # Same non-negotiable spine: no weapons, no fighting, no violence; the
     # villain is never simply defeated — they change their mind / their real
     # need is met. Roster is pinned (MT-121) to stop abstract-puzzle drift.
+    #
+    # Pronoun/structure/stakes hardening (editorial audit, 2026-07-07) — two
+    # real prod stories (the app's best-scoring band, 6-7/10) still showed:
+    # no gender/pronoun parameter at all (the same hero was they/them in one
+    # story and he/him in another), the villain's real need re-stated in
+    # full FOUR times (UNDERSTANDING, spoken in the power moment, confessed
+    # at resolution, re-summarized at growth), 7 pages delivered against a
+    # 6-scene contract (resolution+growth split in two), a power-agnostic
+    # "solve" (any power could have asked a kind question), and whimsical
+    # 6-8yo-register stakes despite the Percy-Jackson/Marvel framing. Fixed
+    # below via: an optional ``hero_gender`` parameter (mirrors the Sprout
+    # repeat-the-name fallback when absent), a ONE-BEAT MORAL RULE confining
+    # the explicit need to UNDERSTANDING only, an explicit "exactly 6 pages,
+    # never split a scene" output contract, a POWER MUST BE LOAD-BEARING rule
+    # (mirrors the Explorer builder's phrasing), and a PERSONAL STAKES rule
+    # for felt (not physical) urgency.
     # ------------------------------------------------------------------
     @staticmethod
     def _build_superhero_prompt_adventurer(
@@ -904,6 +962,7 @@ Begin now. Stop at 350 words across all pages combined.
         hero_catchphrase: str | None = None,
         custom_elements: str = "",
         prior_saga: dict | None = None,
+        hero_gender: str | None = None,
     ) -> str:
         """Build the 6-scene Superhero Mode prompt for Adventurer-band readers.
 
@@ -926,6 +985,15 @@ Begin now. Stop at 350 words across all pages combined.
         backend change. Tuned for 9-12: exciting and warm, NOT a "debt" — there
         is deliberately NO mature "cost comes due" / consequence-callback
         mandate (that belongs to the Creator/Adolescent bands only).
+
+        ``hero_gender`` (editorial audit, 2026-07-07) — optional, backward
+        compatible. Normally sourced from the request's
+        ``character_details.gender`` (threaded in by story_tasks.py). Accepts
+        "boy"/"male"/"man" or "girl"/"female"/"woman" (case-insensitive) and
+        resolves to a consistent he/him or she/her pronoun instruction. When
+        ``None`` or unrecognized, mirrors the Sprout builder's fallback: the
+        model is told NOT to guess a pronoun and to repeat the hero's name
+        instead.
         """
         villains_t, problems_t, powers_t, villain_problems_t = _sh_get_band_tables(
             "adventurer"
@@ -978,6 +1046,49 @@ Begin now. Stop at 350 words across all pages combined.
             if catchphrase
             else ""
         )
+
+        # --- Optional hero gender/pronoun (editorial audit finding #1,
+        # 2026-07-07): this builder previously had NO gender/pronoun
+        # parameter at all, so the model free-chose — the same hero name came
+        # back he/him in one generated story and they/them in another.
+        # Normally sourced from character_details.gender (already collected
+        # server-side) and threaded in by story_tasks.py. Mirrors the Sprout
+        # builder's repeat-the-name fallback (see the Sprout HARD RULES
+        # PRONOUNS bullet) when gender is absent/unrecognized, so the model
+        # never has to guess.
+        _gender_raw = (hero_gender or "").strip().lower()
+        if _gender_raw in ("boy", "male", "man", "he", "him", "he/him"):
+            _pronoun_subject, _pronoun_object, _pronoun_possessive = (
+                "he",
+                "him",
+                "his",
+            )
+        elif _gender_raw in ("girl", "female", "woman", "she", "her", "she/her"):
+            _pronoun_subject, _pronoun_object, _pronoun_possessive = (
+                "she",
+                "her",
+                "her",
+            )
+        else:
+            _pronoun_subject = _pronoun_object = _pronoun_possessive = None
+
+        if _pronoun_subject:
+            pronoun_rule = (
+                f"\n- PRONOUNS: {character} uses {_pronoun_subject}/"
+                f"{_pronoun_object}/{_pronoun_possessive} pronouns. Use them "
+                f'CONSISTENTLY for {character} every time (e.g. "'
+                f'{_pronoun_subject} noticed", "{character} grabbed '
+                f'{_pronoun_possessive} bag"). Do NOT switch pronouns partway '
+                f'through, and do NOT use singular "they" for {character} once '
+                f"a gender has been given."
+            )
+        else:
+            pronoun_rule = (
+                f"\n- PRONOUNS: {character}'s gender was not specified. Do NOT "
+                f"guess a pronoun for {character} — repeat the hero's name \""
+                f'{character}" (or the identity tag) instead of using '
+                f"he/she/they, consistently throughout the story."
+            )
 
         # --- Canonical Adventurer villain roster (must be named explicitly) ---
         # MT-121 guard: pin the antagonist to a real named character so the
@@ -1105,7 +1216,7 @@ VILLAIN — the antagonist MUST be one of these named Adventurer villains and NO
 - Name: {villain['name']} (use this exact name in the prose)
 - What they do: {villain['action']}
 - Personality (write them with this exact voice — funny and larger-than-life): {villain['personality']}
-- Their motive matters: {villain['name']} is NOT evil. Under the funny, over-the-top trouble is a real and understandable need: {villain['backstory']}. Reveal this gradually so the reader ends up understanding them, even while disagreeing with what they did.
+- Their motive matters: {villain['name']} is NOT evil. Under the funny, over-the-top trouble is a real and understandable need: {villain['backstory']}. This is a plot idea only, NEVER sentence text to copy — reveal the need gradually and in your own words, so the reader ends up understanding them, even while disagreeing with what they did.
 - Their RIDICULOUS weakness — this is how the hero wins, through cleverness and never force: {villain['weakness']}
 - How they soften: {villain['softens']}
 - TONE: {villain['name']} is genuinely funny and fun to read, but never mean, gross-out cruel, or frightening. Keep the laughs kind.
@@ -1118,22 +1229,27 @@ PROBLEM TO SOLVE:
 STORY MUST FOLLOW THESE 6 SCENES IN ORDER (output is plain prose — DO NOT label scenes):
 
 1. HERO INTRO — {character} becomes "{identity_tag}". Establish real stakes and the hero's drive in 2-3 sensory details. Seed idea (rewrite naturally): "{beat1_seed}"
-2. THE TROUBLE — {villain['name']} arrives and moves to {villain['action']}. Plant a small clue that there's more to {villain['name']} than it first seems. Seed idea: "{beat2_seed}"
+2. THE TROUBLE — {villain['name']} arrives and moves to {villain['action']}. Give the trouble a PERSONAL EDGE for {character} or someone {character} cares about (reputation, a friendship, a promise at risk, a ticking clock) — not just an impersonal inconvenience to the town. Plant a small clue that there's more to {villain['name']} than it first seems. Seed idea: "{beat2_seed}"
 3. FIRST ATTEMPT + COMPLICATION — {character}'s first plan only half-works AND reveals a moral or strategic complication (the easy answer would hurt someone, or {villain['name']} has a reason). This is a thinking beat. Seed idea: "{beat3_seed}"
-4. UNDERSTANDING — {character} uncovers the REAL need or motive driving {villain['name']}. A genuine perspective-taking turn. Seed idea: "{beat4_seed}"
-5. CLEVER POWER MOMENT — {character} combines {power_name} ({power_verb}) WITH a clever plan to {problem['verb']} the situation — addressing the real need, never by force. Reference naturally: "{beat5_seed}" (do NOT use the bracketed summary in the prose).
-6. RESOLUTION + GROWTH — {villain['name']} {villain['softens']}. The win comes through understanding, not defeat. {character} reflects and has clearly grown. Seed idea: "{beat6_seed}"
+4. UNDERSTANDING — {character} uncovers the REAL need or motive driving {villain['name']}. A genuine perspective-taking turn. THIS IS THE ONLY SCENE where the real need is stated fully and explicitly — every later scene must gesture at it economically (a look, an object, a half-sentence) instead of re-explaining it. Seed idea — a plot idea only, NEVER sentence text to copy (rewrite the need completely in your own words; do not reuse this seed's exact wording, word order, or sentence shape): "{beat4_seed}"
+5. CLEVER POWER MOMENT — {character} combines {power_name} ({power_verb}) WITH a clever plan to {problem['verb']} the situation — addressing the real need, never by force. The plan's specific mechanism MUST be unique to {power_name}: something only this power makes possible (for a strategist power, that means a visible decoy, contingency, or misdirection only a planner would set up in advance — not a generic clever action any power could pull off). Do NOT re-explain or restate the villain's need here in dialogue or narration — show it being addressed through action, not words. Reference naturally: "{beat5_seed}" (do NOT use the bracketed summary in the prose).
+6. RESOLUTION + GROWTH — {villain['name']} {villain['softens']}. The win comes through understanding, not defeat. {character} reflects and has clearly grown. Do NOT have the villain re-confess their motive in full, and do NOT have {character} re-summarize the lesson in a complete sentence — let the growth show through one small concrete image, action, or half-sentence instead. Seed idea: "{beat6_seed}"
 
 HARD RULES — these are non-negotiable:
 - LENGTH: 900-1500 words TOTAL (up to 1800 for a big finish). Anything under 800 is too short for this reader.
 - READING LEVEL: Grade 3-4. Use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue.
 - SENTENCES: 12-20 words on average; mix compound and complex sentences with shorter punchy ones for rhythm.
-- Use the hero's name {character} AT LEAST FOUR times and the identity tag "{identity_tag}" AT LEAST THREE times.
+- Use the hero's name {character} AT LEAST FOUR times and the identity tag "{identity_tag}" AT LEAST THREE times.{pronoun_rule}
 - The hero MUST speak at least TWO or THREE lines of dialogue (in quotation marks) across the story, including one that shows they understand {villain['name']}.{catchphrase_rule}
 - The villain {villain['name']} MUST have a believable motive that the story reveals. Show competing feelings in the hero (e.g. determined AND uncertain).
+- ONE-BEAT MORAL RULE: the villain's real need/motive may be stated fully and explicitly ONLY ONCE — in the UNDERSTANDING scene. Every later scene (CLEVER POWER MOMENT, RESOLUTION + GROWTH) must gesture at it economically — a look, a small object, a half-sentence — WITHOUT re-explaining it, restating it in full, or having the villain confess it again. A real story does not state its own moral four times.
+- SEEDS ARE PLOT IDEAS ONLY, NEVER SENTENCE TEXT TO COPY: every "Seed idea" quoted above — especially the villain's stated need in the UNDERSTANDING scene — describes WHAT HAPPENS, not words to reuse. Do not repeat a seed's exact wording, word order, or sentence shape anywhere in your prose, so two kids who fought the same villain do not get a matching, near-verbatim UNDERSTANDING scene.
+- POWER MUST BE LOAD-BEARING: the CLEVER POWER MOMENT's plan must work BECAUSE of {power_name} ({power_verb}) specifically, through a mechanism unique to that power — not a generic clever idea (like "ask a kind question") that any power could have pulled off. If the plan would still work unchanged with a different power swapped in, it is not specific enough — rewrite it.
+- PERSONAL STAKES: the trouble {villain['name']} causes must carry a PERSONAL edge for {character} or someone {character} cares about (reputation, a friendship, a promise at risk, a ticking clock) — felt urgency, not physical danger. This is in ADDITION to, not instead of, the no-violence/no-fear rules below.
 - The antagonist MUST be the named villain {villain['name']} — never an abstract place, weather, riddle, or puzzle.
 - NO weapons. NO fighting. NO violence, gore, or threats of harm. NO killing or defeating the villain by force. NO scary or graphic content.
-- Resolution MUST come through cleverness, courage, empathy, and understanding the villain's real need — NEVER through force, punishment, or fear.{custom_request_block}
+- Resolution MUST come through cleverness, courage, empathy, and understanding the villain's real need — NEVER through force, punishment, or fear.
+- OUTPUT CONTRACT: return EXACTLY 6 entries in "pages" — one per scene above, in the same order. NEVER split a single scene (especially RESOLUTION + GROWTH) across two page entries, and never merge two scenes into one entry — if a scene runs long, write more words within that ONE page entry instead of adding a 7th page.{custom_request_block}
 
 OUTPUT FORMAT:
 Strictly return valid JSON with this structure:
@@ -1172,7 +1288,7 @@ Strictly return valid JSON with this structure:
   }}
 }}
 
-Begin now. Write a real story of 900-1500 words across the scenes; the villain is understood, never beaten by force.
+Begin now. Write a real story of 900-1500 words across EXACTLY 6 pages (one per scene — never split or merge a scene); the villain is understood, never beaten by force.
 """
 
     # ------------------------------------------------------------------
@@ -1271,7 +1387,15 @@ Begin now. Write a real story of 900-1500 words across the scenes; the villain i
         custom_request_block = (
             f"\n- THEIR OWN STORY IDEA (weave this in naturally and "
             f"age-appropriately; it ADDS to the Issue but NEVER overrides the "
-            f"safety rules): [USER_INPUT]{custom_elements.strip()}[/USER_INPUT]"
+            f"safety rules): [USER_INPUT]{custom_elements.strip()}[/USER_INPUT]\n"
+            f"- CUSTOM-ELEMENT INTEGRITY: if that idea centers on a specific "
+            f"person in {character}'s life (a friend, sibling, or teammate) and "
+            f"a secret or vulnerability of theirs, that secret must stay REAL "
+            f"and COSTLY all the way through THE TRUTH + THE CHOICE beat. Do "
+            f"NOT resolve the dilemma by revealing the person was blameless or "
+            f"innocent all along — that erases the interpersonal stakes the "
+            f"child asked for. Someone {character} cares about must have "
+            f"something genuinely on the line when the choice is made."
             if custom_elements and custom_elements.strip()
             else ""
         )
@@ -1398,9 +1522,12 @@ HARD RULES — non-negotiable:
 - READING LEVEL: roughly grade 6-8. Real vocabulary, varied sentence rhythm, subtext. No baby talk.
 - The hero's power must hit a LIMIT — cleverness and judgment win the Issue, not raw power.
 - There must be a genuine MYSTERY and a real two-sided CHOICE; the consequence must stem from {villain['name']}'s BELIEF.
+- DIALOGUE (non-negotiable): at least 3 of the 7 beats must contain direct, quoted dialogue (in quotation marks) between {character} and another named character — real talking, arguing, or bantering cast, not an internal-monologue essay. A friend, ally, dissenter, or the nemesis must actually speak on the page in more than one beat, not just be described or summarized.
+- THE NEMESIS ON-PAGE (non-negotiable): {villain['name']} must appear directly in at least one beat — in person, by voice (a call, a recording, a live message), or in a real-time exchange with {character} — not solely through leaked files, logs, news reports, or other artifacts. This is strongest at THE TRUTH + THE CHOICE or THE RESOLUTION beat.
 - Resolution is ALWAYS non-violent: wits, courage, empathy, teamwork, or boundaries/accountability. NO weapons, fighting, gore, killing, or fear. Stopping a villain is fine; harming or humiliating them is not.
 - Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are heroic too.
-- TONE — avoid: cutesy sidekicks, exaggerated comic-book dialogue, an adult who explains the lesson, instant forgiveness, a villain monologue that confesses everything, repeated moral summaries, and the phrase "big feelings". Let two values genuinely conflict.{custom_request_block}
+- TONE — avoid: cutesy sidekicks, exaggerated comic-book dialogue, an adult who explains the lesson, instant forgiveness, a villain monologue that confesses everything, repeated moral summaries, and the phrase "big feelings". Also avoid essay-voice moralizing — thesis sentences that name the theme outright (e.g. "privacy protects dignity; transparency is justice only when wielded with care") or any "it is X, not Y" moralizing construction, whether spoken in dialogue OR narrated by the prose. The theme must live in the choices and consequences, never be named. Let two values genuinely conflict. Also ban "learned that", "understood that", and "realized that" followed by an abstract noun (privacy, dignity, worth, loyalty, and the like) naming the lesson — especially in THE RESOLUTION and AFTERMATH beats — the same essay-voice construction the older Adolescent band bans.
+- OUTPUT CONTRACT: return EXACTLY 7 entries in "pages" — one per beat above, in the same order. NEVER split a single beat across two page entries, and never merge two beats into one entry — if a beat runs long, write more words within that ONE page entry instead of adding an 8th page.{custom_request_block}
 
 OUTPUT FORMAT — strictly valid JSON:
 {{
@@ -1428,7 +1555,9 @@ OUTPUT FORMAT — strictly valid JSON:
   }}
 }}
 
-Begin now. Write one tight, intelligent Issue of 1100-1800 words; the choice is real and the win comes from judgment, not force.
+SAGA STATE IS ALL-REQUIRED: every key inside "saga_state" above (nemesis, nemesis_status, what_changed, what_it_cost, next_hook, allies, defining_choice) MUST be present in the output. If a key genuinely does not apply this Issue, write "none" for a text field or [] for the "allies" list — never simply omit the key.
+
+Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 7 pages (one per beat — never split or merge a beat); the choice is real and the win comes from judgment, not force.
 """
 
     # ------------------------------------------------------------------
@@ -2008,7 +2137,10 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
             f'"{secret}". The concealment is the wound — let the pressure crack '
-            f"toward being known, never toward deeper hiding."
+            f"toward being known, never toward deeper hiding. SECRET ON-PAGE "
+            f"(non-negotiable): this exact secret — verbatim or in a tight "
+            f"paraphrase, not a substitute — must be spoken aloud or explicitly "
+            f"thought by {character} at least once in the chapter."
             if secret
             else ""
         )
@@ -2135,13 +2267,18 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         # When the secret is about the teen's own wellbeing/struggle, bend the arc
         # toward being seen and supported — never romanticize distress or isolation.
         # Fires whenever a secret is set; the model judges whether it applies.
+        # Editorial audit (2026-07-07): the being-seen beat must engage the
+        # ACTUAL secret, not a substitute the model invented instead (e.g. the
+        # nemesis's scheme standing in for the teen's own disclosed struggle).
         secret_care_mandate = (
             f"\n- If {character}'s secret is about their own wellbeing or struggle, "
             f"the chapter must move them at least one step toward being SEEN by "
             f"someone who responds with care (not pity, not fixing), and the "
             f"AFTERMATH must leave a thread of connection or hope alongside the "
             f"unresolved case. Distress is never aesthetic; isolation is never the "
-            f"resolution."
+            f"resolution. The being-seen beat must engage THIS secret specifically "
+            f'— "{secret}" — not a substitute concern; do not let the case or the '
+            f"villain's scheme stand in for it."
             if secret
             else ""
         )
@@ -2186,16 +2323,19 @@ WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 4. THE SETBACK — a fair challenge: someone {character} respects pushes back, or a choice goes wrong. Real doubt lands; caring has a price.
 5. THE INSIGHT — {character} works out what is really driving {villain['name']}; the answer needs heart and wits, not more power.
 6. THE RISE — {character} commits, combining the power ({power_verb}) WITH judgment, courage, and empathy to {problem['verb']} the case, exactly as "How this resolves" describes. Make it land like a stand-up-and-cheer hero moment — won by nerve and conviction, NEVER violence.
-7. AFTERMATH — short. What it cost, what {character} learned, the bond it strengthened, and one bright thread pulling toward the next chapter. End on a line that lifts, not a moral.{callback_mandate}
+7. AFTERMATH — short. What it cost, the bond it strengthened, and one bright thread pulling toward the next chapter. Close on ONE concrete image, action, or line of dialogue — NEVER a sentence summarizing what {character} learned or how they grew.{callback_mandate}
 
 HARD RULES — non-negotiable:
-- LENGTH: 1400-2200 words.
+- LENGTH: 1400-1900 words — this is a HARD MAXIMUM, not a target. If your draft would run past 1900 words, cut scene-by-scene until it fits: cut re-explanations of the power or of {villain['name']}'s belief FIRST; never cut the villain's on-page scene or the AFTERMATH to make room.
+- PER-PAGE BUDGET (HARD MAXIMUM): each of the EXACTLY 7 pages entries: 180-260 words, HARD MAXIMUM 280 — a page over 280 words must be tightened before you answer. If you are tempted to split a beat into two pages to fit the budget, DON'T — compress the beat instead; the pages array must have EXACTLY 7 entries.
 - READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
 - The power must hit a LIMIT or COST in this chapter; judgment and heart win, not raw force.
 - A genuine challenge and a real choice; the harm must stem from {villain['name']}'s BELIEF.
+- THE VILLAIN ON-PAGE (non-negotiable): {villain['name']} must appear directly in at least one beat — in person, by voice (a call, a recording, a live message), or in a real-time exchange with {character} — not solely through rumor, hearsay, or reported-about exposition (someone merely describing what {villain['name']} did). The hero-villain RELATIONSHIP is the engine of the chapter, and a relationship needs at least one real scene together. This is strongest at THE INSIGHT or THE RISE beat.
 - Resolution is ALWAYS non-violent: wits, courage, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
 - Aspirational, NOT camp and NOT grim: {character} is brave, kind, and genuinely worth looking up to. Hope is the keynote.
-- TONE — avoid: a barrage of quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, and repeated moral summaries. Let the hero earn the win.{custom_request_block}
+- TONE — avoid: a barrage of quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, and repeated moral summaries. Also avoid aphorism dialogue that NAMES the lesson (an affirmation-card line stating the moral outright) and essay-voice narration — any "it is X, not Y" thesis construction announcing the theme, whether spoken in dialogue OR narrated by the prose. A teenager in a real moment speaks in fragments, deflections, and specifics — not affirmation-card lines. Let the hero earn the win, shown, never explained.
+- NO THEME-NAMING IN THE FINAL TWO BEATS (non-negotiable): in THE RISE and AFTERMATH, no sentence may explicitly name the theme or lesson. Ban constructions like "learned that", "understood that", or "realized that" followed by an abstract noun (courage, worth, belonging, and the like) describing what {character} now knows about themselves or the case — this is how the essay-voice ban gets routed around. Show the growth through a concrete image, action, or line of dialogue instead of stating it.{custom_request_block}
 
 OUTPUT FORMAT — strictly valid JSON:
 {{
@@ -2223,7 +2363,7 @@ OUTPUT FORMAT — strictly valid JSON:
   }}
 }}
 
-Begin now. Write one tight, thrilling, aspirational chapter of 1400-2200 words; the stakes are real, the power has a limit, and the win comes from courage and judgment, not force.
+Begin now. Write one tight, thrilling, aspirational chapter of 1400-1900 words (about 200-280 words per beat); the stakes are real, the power has a limit, and the win comes from courage and judgment, not force. Before you output, do one final length check: if the draft runs past 1900 words, cut scene-by-scene until it fits — cut re-explanations first — then answer.
 """
 
         return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
@@ -2253,17 +2393,20 @@ WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 4. THE DISSENT — someone {character} respects (and maybe is hiding from) pushes back, for a genuinely fair reason. Real doubt lands.
 5. THE TRUTH + THE CHOICE — {character} uncovers what is really driving {villain['name']}. Now there are TWO defensible options and no clean answer; the choice should also press on the secret itself — honesty vs. protecting the cover. Make the reader feel the weight.
 6. THE RESOLUTION — {character} commits, combining the edge ({power_verb}) WITH judgment to {problem['verb']} the case, exactly as "How this resolves" describes — won by wits, nerve, empathy, or a hard boundary, NEVER violence.
-7. AFTERMATH — short. What it cost, what it changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. End on a line that lingers, not a moral.{callback_mandate}
+7. AFTERMATH — short. What it cost, what changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. Close on ONE concrete image, action, or line of dialogue — NEVER a sentence summarizing the lesson or how {character} grew.{callback_mandate}
 
 HARD RULES — non-negotiable:
-- LENGTH: 1400-2200 words.
+- LENGTH: 1400-1900 words — this is a HARD MAXIMUM, not a target. If your draft would run past 1900 words, cut scene-by-scene until it fits: cut re-explanations of the edge or of {villain['name']}'s belief FIRST; never cut the secret-on-page beat, the villain's on-page scene, or the AFTERMATH to make room.
+- PER-PAGE BUDGET (HARD MAXIMUM): each of the EXACTLY 7 pages entries: 180-260 words, HARD MAXIMUM 280 — a page over 280 words must be tightened before you answer. If you are tempted to split a beat into two pages to fit the budget, DON'T — compress the beat instead; the pages array must have EXACTLY 7 entries.
 - READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
 - The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
 - A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {villain['name']}'s BELIEF.
+- THE VILLAIN ON-PAGE (non-negotiable): {villain['name']} must appear directly in at least one beat — in person, by voice (a call, a recording, a live message), or in a real-time exchange with {character} — not solely through rumor, hearsay, or reported-about exposition (e.g., someone merely describing what {villain['name']} did from a file, a leak, or a whisper network). The protagonist-villain RELATIONSHIP is the engine of the chapter, and a relationship needs at least one real scene together. This is strongest at THE TRUTH + THE CHOICE or THE RESOLUTION beat.
 - Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
 - "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
 - Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
-- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{custom_request_block}
+- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Also avoid aphorism dialogue that NAMES the lesson (an affirmation-card line like "start letting someone in") and essay-voice narration — any "it is X, not Y" thesis construction stating the theme outright, whether spoken in dialogue OR narrated by the prose. A teenager in crisis speaks in fragments, deflections, and specifics — not affirmation-card lines. Let two real values collide.
+- NO THEME-NAMING IN THE FINAL TWO BEATS (non-negotiable): in THE RESOLUTION and AFTERMATH, no sentence may explicitly name the theme or lesson. Ban constructions like "learned that", "understood that", or "realized that" followed by an abstract noun (worth, belonging, honesty, and the like) describing what {character} now knows about themselves or the case — this is how the essay-voice ban gets routed around. Show the growth through a concrete image, action, or line of dialogue instead of stating it.{custom_request_block}
 
 OUTPUT FORMAT — strictly valid JSON:
 {{
@@ -2291,5 +2434,5 @@ OUTPUT FORMAT — strictly valid JSON:
   }}
 }}
 
-Begin now. Write one tight, morally grey chapter of 1400-2200 words; the choice is real, the secret has weight, and the win comes from judgment, not force.
+Begin now. Write one tight, morally grey chapter of 1400-1900 words (about 200-280 words per beat); the choice is real, the secret has weight, and the win comes from judgment, not force. Before you output, do one final length check: if the draft runs past 1900 words, cut scene-by-scene until it fits — cut re-explanations first — then answer.
 """

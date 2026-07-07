@@ -985,8 +985,14 @@ CREATOR_VILLAIN_PROBLEMS: dict[str, list[str]] = {
 ADOLESCENT_VILLAINS: dict[str, dict] = {
     "the_archivist": {
         "name": "the Archivist",
-        "action": "collect every private secret in the school and rank everyone by them, certain that total exposure is the only honesty",
-        "softens": "shut the archive down once the hero proved a person is more than their worst moment",
+        # Reworked 2026-07-07 (editorial audit finding 3): the_archivist and
+        # ledger both used to run on "righteous public exposure of secrets" —
+        # near-synonymous villains. This entry now runs on the OPPOSITE axis:
+        # institutional data-hoarding and surveillance-for-control. The
+        # Archivist never deletes and never exposes; power comes from quiet
+        # leverage — the threat of what could surface, not the act of it.
+        "action": "quietly catalog every secret, debt, and mistake in the school into a private archive — never deleting anything and never releasing it, holding it in reserve as leverage so people police themselves rather than risk what might surface",
+        "softens": "surrendered control of the archive once the hero proved the power was never in what the secrets said, but in who got to decide when they mattered",
     },
     "echo": {
         "name": "Echo",

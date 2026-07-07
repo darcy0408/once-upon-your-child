@@ -1644,6 +1644,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     # tier weaves a "Previously…" block from it; absent on Issue
                     # #1. Only the Dart HeroSaga client populates this today.
                     prior_saga=kwargs.get("prior_saga") or kwargs.get("saga_state"),
+                    # Editorial audit (2026-07-07), pronoun-instability finding:
+                    # thread the already-collected character_details.gender
+                    # through so the Adventurer (9-12) builder can give the
+                    # model a consistent pronoun instead of free-choosing one.
+                    # Other bands' builders don't accept this kwarg yet, so it
+                    # is a no-op for them — build_story_prompt only forwards it
+                    # to the Adventurer branch.
+                    hero_gender=char_details.get("gender"),
                 )
                 # Bedtime saga continuation: a returning hero's next Issue read
                 # aloud at lights-out. Keep the full superhero prompt (so
