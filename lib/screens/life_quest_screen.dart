@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/coping_techniques.dart';
 import '../data/life_quest_data.dart';
 import '../services/app_tts_service.dart';
+import '../services/parent_recap_service.dart';
 import '../theme/age_band_theme.dart';
 import '../widgets/coping_practice_sheet.dart';
 import '../widgets/crisis_resources_panel.dart';
@@ -254,6 +255,14 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   void _makeChoice(QuestChoice choice) {
     _segmentHistory.add(_currentSegment!.id);
     final next = _activeQuest!.segments[choice.nextSegmentId];
+    if (next != null && next.isEnding) {
+      // Fire-and-forget like _persistSensitivityAck: Weekly Recap
+      // bookkeeping must never block or break the quest flow.
+      ParentRecapService.logQuestCompletion(
+        questId: _activeQuest!.id,
+        title: _activeQuest!.title,
+      );
+    }
     setState(() {
       _currentSegment = next;
     });

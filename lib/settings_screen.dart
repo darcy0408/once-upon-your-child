@@ -24,6 +24,7 @@ import 'widgets/loading_spinner.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/child_profile_manager_screen.dart';
 import 'screens/parent_dashboard_screen.dart';
+import 'screens/weekly_recap_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/terms_of_service_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -428,6 +429,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ParentDashboardScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: ListTile(
+                  leading: const Icon(Icons.calendar_view_week_rounded,
+                      color: AppColors.primary),
+                  title: const Text('Weekly Recap',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(isMature
+                      ? 'Your last 7 days — printable summary'
+                      : 'The last 7 days — printable for a therapist or teacher'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const WeeklyRecapScreen()),
                   ),
                 ),
               ),

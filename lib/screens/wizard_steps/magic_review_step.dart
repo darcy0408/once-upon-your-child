@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:story_weaver_app/services/feelings_ambient_service.dart';
+import 'package:story_weaver_app/services/parent_recap_service.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/achievement_service.dart';
 import 'package:story_weaver_app/services/app_tts_service.dart';
@@ -400,7 +401,20 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       if (activeChildProfileId != null && activeChildProfileId.isNotEmpty) {
         requestData['childProfileId'] = activeChildProfileId;
       }
-      if (currentFeeling != null) {
+      final wizardFeeling = requestData['currentFeeling'];
+      if (wizardFeeling is Map<String, dynamic>) {
+        // The child explicitly picked this feeling in the wizard — journal it
+        // so the parent Weekly Recap and FeelingsAmbientService can see it.
+        // Fire-and-forget: persistence must never block story generation.
+        unawaited(ParentRecapService.logFeelingCheckIn(
+          coreName: wizardFeeling['emotion_name'] as String? ?? '',
+          coreEmoji: wizardFeeling['emotion_emoji'] as String? ?? '',
+          intensity: (wizardFeeling['intensity'] as num?)?.toInt() ?? 3,
+        ));
+      } else if (currentFeeling != null) {
+        // Ambient journal feeling (<24 h) is a fallback only — it must not
+        // overwrite an explicit in-wizard pick, or yesterday's journal entry
+        // would echo over what the child just chose.
         requestData['currentFeeling'] = currentFeeling.toJson();
       }
       if (widget.wizardData.interactiveMode) {
