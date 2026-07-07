@@ -185,6 +185,34 @@ def test_free_tier_real_limits(ratelimit_client, free_user_id):
     assert response.status_code == 429
 
 
+def test_task_status_polling_is_not_rate_limited_like_generation(
+    ratelimit_client, free_user_id
+):
+    """/task-status polling must not consume the free-tier generation quota
+    (async-task-delivery fix, 2026-07-07).
+
+    Before the fix, GET /task-status had no route-level @limiter.limit(...)
+    of its own, so it inherited the app-wide default_limits (200/day, 50/hour,
+    keyed per authenticated user — see backend/app.py Limiter(...)). A client
+    polling every few seconds while a 202 response is in flight burns through
+    that budget in well under an hour and starts getting 429 "Free tier limit
+    reached. Upgrade to Premium" on STATUS CHECKS, unrelated to how many
+    stories the user has actually generated. Firing well more than the
+    default 50/hour at /task-status must all come back non-429; the route's
+    own generous per-IP limit (override_defaults=True, the flask-limiter
+    default) replaces the tight default budget instead of adding to it.
+    """
+    token = _get_token(free_user_id, "free")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    statuses = [
+        ratelimit_client.get("/task-status/some-task-id", headers=headers).status_code
+        for _ in range(60)
+    ]
+
+    assert all(status != 429 for status in statuses), statuses
+
+
 def test_rate_limit_headers(ratelimit_client):
     """
     Test that rate limit headers are present.

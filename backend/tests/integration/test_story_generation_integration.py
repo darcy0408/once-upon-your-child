@@ -53,7 +53,7 @@ def mock_story_task(mocker):
     eager_result.get.return_value = result
 
     task = mocker.MagicMock()
-    task.apply.return_value = eager_result
+    task.apply_async.return_value = eager_result
     task.delay.return_value.id = "task-integration-123"
     mocker.patch("backend.routes.story_routes.generate_story_task", task)
     return task

@@ -127,7 +127,7 @@ class TestStoryDurationAPI:
         }
         eager_result = self.mock_task.return_value
         eager_result.get.return_value = result
-        self.mock_task.apply.return_value = eager_result
+        self.mock_task.apply_async.return_value = eager_result
 
     def test_short_story_age_7(self, client, auth_headers):
         """Short story for age 7 should be 450-650 words."""

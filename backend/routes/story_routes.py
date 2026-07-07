@@ -4,12 +4,11 @@ import logging
 import os
 import re
 import uuid
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FuturesTimeoutError
 
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
 from flask import Blueprint, g, jsonify, request
+from flask_limiter.util import get_remote_address
 from PIL import Image
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -31,6 +30,8 @@ from ..tasks.story_tasks import (
 from ..utils.ai_quota import check_daily_quota, increment_daily_quota
 from ..utils.audit import audit_log
 from ..utils.lazy_import import load_first_available
+from ..utils.task_owner import cache_task_owner as _cache_task_owner
+from ..utils.task_owner import resolve_task_owner as _resolve_task_owner
 from ..utils.validators import (
     sanitize_text,
     validate_age,
@@ -381,30 +382,44 @@ def _crisis_guard(logger, endpoint: str, user_id, *texts) -> dict | None:
 
 
 def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
-    """Run story generation in a bounded worker thread under an explicit task id.
+    """Run story generation as a real Celery task, blocking for up to
+    `sync_story_timeout` for the result.
 
-    The generation runs as an eager Celery task with `task_id` so that, if it
-    overruns `sync_story_timeout`, the still-running thread is NOT abandoned: it
-    keeps running to completion and persists its Story row keyed by `task_id`.
-    The caller returns that id for polling and /task-status recovers the
-    finished story from the DB (R2). This replaces the previous behaviour where
-    a timed-out sync run was orphaned with no handle AND a second async task
-    was dispatched — producing two full generations and duplicate Story rows
-    (A3).
+    Dispatches via `apply_async` under an explicit `task_id` so that, if the
+    wait overruns `sync_story_timeout`, the still-running task is NOT
+    abandoned: it keeps executing on the Celery worker service and persists
+    its Story row keyed by `task_id`. The caller returns that id for polling
+    and /task-status recovers the finished story from the DB (R2) or the
+    task's own Celery result.
+
+    MT-async-task-delivery (2026-07-07): this previously ran the task eagerly
+    (`Task.apply`) inside a `ThreadPoolExecutor` thread of the calling *web*
+    process, with `executor.shutdown(wait=False)` letting the thread keep
+    running past the timeout so it could still finish. That thread's survival
+    depended entirely on the gunicorn worker process that happened to handle
+    the original POST staying alive — a rolling deploy, OOM kill, or
+    healthcheck-triggered restart of that specific worker silently destroyed
+    the in-flight generation with no error and no persisted Story row, so a
+    recovery task_id could poll "processing" forever and never complete. Using
+    `apply_async` instead runs the SAME generation on the dedicated,
+    long-lived Celery worker service (see the `lovely-perfection` service in
+    railway.toml), which already carries `acks_late=True,
+    reject_on_worker_lost=True` (backend/tasks/story_tasks.py,
+    `generate_story_task`) specifically so a worker restart mid-task
+    re-queues it instead of losing it. This mirrors the async-fallback path
+    a few lines below in `generate_story_endpoint`, which already dispatches
+    via `.delay(...)` for the same reason.
+
+    Operational note: this means /generate-story now genuinely needs a
+    reachable Celery broker (Redis) — and, outside of tests or
+    CELERY_TASK_ALWAYS_EAGER=true, a running Celery worker — to complete a
+    story request, in every environment (not only production). Previously the
+    eager `.apply()` call bypassed the broker entirely, which incidentally
+    let local dev work without a worker process running.
     """
-    executor = ThreadPoolExecutor(max_workers=1)
     # Important: use current generate_story_task which might be mocked in tests
-    future = executor.submit(
-        generate_story_task.apply, kwargs=task_kwargs, task_id=task_id
-    )
-    try:
-        eager_result = future.result(timeout=sync_story_timeout)
-        return eager_result.get()
-    finally:
-        # wait=False lets a timed-out generation finish in the background so
-        # its Story row is persisted for /task-status DB recovery. Do NOT pass
-        # cancel_futures — the in-flight generation must be allowed to complete.
-        executor.shutdown(wait=False)
+    async_result = generate_story_task.apply_async(kwargs=task_kwargs, task_id=task_id)
+    return async_result.get(timeout=sync_story_timeout, interval=0.5)
 
 
 def _recover_story_from_db(task_id: str, current_user_id) -> tuple[dict, int] | None:
@@ -501,15 +516,6 @@ def _celery_runs_eagerly() -> bool:
         return False
 
 
-def _cache_task_owner(cache, task_id: str, user_id: str) -> None:
-    if not task_id or not user_id:
-        return
-    try:
-        cache.set(f"task-owner:{task_id}", str(user_id), timeout=60 * 60 * 24)
-    except Exception:
-        logger.warning("Failed to cache task owner for %s", task_id, exc_info=True)
-
-
 def _read_partial_story(task_id: str | None) -> str | None:
     """PERF-01 slice 3: read accumulated streamed story text from Redis.
 
@@ -535,29 +541,6 @@ def _read_partial_story(task_id: str | None) -> str | None:
         return value or None
     except Exception:
         return None
-
-
-def _resolve_task_owner(cache, task_id: str, task) -> str | None:
-    if not task_id:
-        return None
-
-    try:
-        cached_owner = cache.get(f"task-owner:{task_id}")
-    except Exception:
-        cached_owner = None
-
-    if cached_owner:
-        return str(cached_owner)
-
-    info = getattr(task, "info", None)
-    if isinstance(info, dict) and info.get("user_id"):
-        return str(info["user_id"])
-
-    result = getattr(task, "result", None)
-    if isinstance(result, dict) and result.get("user_id"):
-        return str(result["user_id"])
-
-    return None
 
 
 def _flux_disabled(env_var: str) -> bool:
@@ -949,21 +932,23 @@ def create_story_blueprint(
             )
             return jsonify(response_payload), 200
 
-        except (FuturesTimeoutError, CeleryTimeoutError):
-            # A3: the synchronous generation overran the timeout. Its worker
-            # thread is NOT abandoned — it keeps running in the background and
-            # will persist a Story row keyed by `recovery_task_id`. Return that
-            # id for polling; /task-status recovers the finished story from the
-            # DB (R2). We deliberately do NOT dispatch a second task here: the
-            # previous code left the sync thread orphaned AND queued an async
-            # task, producing two full generations and duplicate Story rows.
+        except CeleryTimeoutError:
+            # A3: the synchronous attempt overran the timeout. The generation
+            # is NOT abandoned — it keeps running on the Celery worker service
+            # (dispatched via apply_async in _run_sync_story_task_with_timeout)
+            # and will persist a Story row keyed by `recovery_task_id`. Return
+            # that id for polling; /task-status recovers the finished story
+            # from the DB (R2) or the task's own Celery result. We deliberately
+            # do NOT dispatch a second task here: the original (pre-A3) code
+            # left the sync attempt orphaned AND queued a separate async task,
+            # producing two full generations and duplicate Story rows.
             logger.warning(
                 "Synchronous story generation exceeded %ss; returning poll id %s "
                 "for the in-flight generation.",
                 effective_sync_timeout,
                 recovery_task_id,
             )
-            _cache_task_owner(cache, recovery_task_id, user_id)
+            _cache_task_owner(recovery_task_id, user_id)
             return (
                 jsonify(
                     {
@@ -1018,7 +1003,7 @@ def create_story_blueprint(
             # request could trigger up to three full generations.
             try:
                 task = generate_story_task.delay(**task_kwargs)
-                _cache_task_owner(cache, task.id, user_id)
+                _cache_task_owner(task.id, user_id)
                 return (
                     jsonify(
                         {
@@ -1514,6 +1499,17 @@ def create_story_blueprint(
 
     @story_bp.route("/task-status/<task_id>", methods=["GET"])
     @require_auth
+    # P3: polling for a long-running generation must not compete with the
+    # story-generation quota. Without an explicit limit here this endpoint
+    # inherited the app-wide default_limits (200/day, 50/hour, keyed per
+    # user) — a client polling every few seconds while a 202 response is
+    # in flight burns through that budget in minutes and starts getting 429
+    # "Free tier limit reached" on *status checks*, not generations. A
+    # decorator-level limit replaces (rather than adds to) the default
+    # limits by default (flask-limiter's `override_defaults=True`), so this
+    # swaps the tight daily/hourly budget for a generous per-IP cap that
+    # still blocks abusive polling without gating legitimate use.
+    @limiter.limit("120 per minute", key_func=get_remote_address)
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
 
@@ -1522,14 +1518,15 @@ def create_story_blueprint(
         # payload is also persisted to the Story row keyed by task_id — recover
         # it from the DB so an expired result never loses a generated story.
         # This also covers a sync generation that overran its timeout (A3): the
-        # background thread persists the Story row under recovery_task_id.
+        # Celery worker running that generation persists the Story row under
+        # recovery_task_id.
         if task.state == "PENDING":
             recovered = _recover_story_from_db(task_id, request.current_user.id)
             if recovered is not None:
                 payload, status_code = recovered
                 return jsonify(payload), status_code
 
-        task_owner_id = _resolve_task_owner(cache, task_id, task)
+        task_owner_id = _resolve_task_owner(task_id, task)
 
         # Security: verify resource ownership
         if task_owner_id and str(task_owner_id) != str(request.current_user.id):
@@ -1616,7 +1613,7 @@ def create_story_blueprint(
         from ..utils.task_cancellation import request_cancellation
 
         task = celery.AsyncResult(task_id)
-        task_owner_id = _resolve_task_owner(cache, task_id, task)
+        task_owner_id = _resolve_task_owner(task_id, task)
         if task_owner_id and str(task_owner_id) != str(request.current_user.id):
             logger.warning(
                 "IDOR attempt: user %s tried to cancel task %s owned by %s",

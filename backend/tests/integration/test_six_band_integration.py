@@ -131,7 +131,7 @@ def _mock_story_result(mocker, story_text: str, title: str = "Test Story"):
     }
     eager = mock_task.return_value
     eager.get.return_value = result
-    mock_task.apply.return_value = eager
+    mock_task.apply_async.return_value = eager
     return mock_task
 
 

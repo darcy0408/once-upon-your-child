@@ -78,7 +78,7 @@ class TestGenerateStory:
 
         # Mock the synchronous task execution
         mock_task = MagicMock()
-        mock_task.apply.return_value.get.return_value = mock_result
+        mock_task.apply_async.return_value.get.return_value = mock_result
 
         mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
         return mock_task
@@ -131,7 +131,7 @@ class TestGenerateStory:
         )
 
         assert response.status_code == 200
-        task_call = mock_story_generation.apply.call_args
+        task_call = mock_story_generation.apply_async.call_args
         assert task_call is not None
         assert task_call.kwargs["kwargs"]["age"] == 46
 
@@ -256,7 +256,7 @@ class TestGenerateStory:
         data = response.get_json()
         assert data.get("crisis") is True
         assert "resources" in data
-        mock_story_generation.apply.assert_not_called()
+        mock_story_generation.apply_async.assert_not_called()
 
     def test_generate_story_crisis_in_hero_secret_blocks_generation(
         self, client, auth_headers, mock_story_generation
@@ -279,7 +279,7 @@ class TestGenerateStory:
         assert response.status_code == 200
         data = response.get_json()
         assert data.get("crisis") is True
-        mock_story_generation.apply.assert_not_called()
+        mock_story_generation.apply_async.assert_not_called()
 
     def test_generate_story_with_feelings(self, client, auth_headers):
         """Test story generation with current feeling"""
@@ -472,7 +472,7 @@ class TestStoryGenerationErrorHandling:
         """Test handling of quota exceeded errors"""
         # Mock task to raise quota error
         mock_task = MagicMock()
-        mock_task.apply.side_effect = Exception("429 ResourceExhausted")
+        mock_task.apply_async.side_effect = Exception("429 ResourceExhausted")
 
         mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
 
@@ -494,7 +494,7 @@ class TestStoryGenerationErrorHandling:
         """Test handling of general errors"""
         # Mock task to raise general error
         mock_task = MagicMock()
-        mock_task.apply.side_effect = Exception("Something went wrong")
+        mock_task.apply_async.side_effect = Exception("Something went wrong")
         mock_task.delay.side_effect = Exception("Async also failed")
 
         mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
@@ -557,7 +557,7 @@ class TestStoryResponseFormat:
         }
 
         mock_task = MagicMock()
-        mock_task.apply.return_value.get.return_value = mock_result
+        mock_task.apply_async.return_value.get.return_value = mock_result
         mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
         return mock_task
 
@@ -634,7 +634,7 @@ class TestCompanionCharacters:
         }
 
         mock_task = MagicMock()
-        mock_task.apply.return_value.get.return_value = mock_result
+        mock_task.apply_async.return_value.get.return_value = mock_result
         mocker.patch("backend.routes.story_routes.generate_story_task", mock_task)
         return mock_task
 

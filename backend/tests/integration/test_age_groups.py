@@ -35,7 +35,7 @@ class TestAgeGroupStoryGeneration:
         }
         eager_result = self.mock_task.return_value
         eager_result.get.return_value = result
-        self.mock_task.apply.return_value = eager_result
+        self.mock_task.apply_async.return_value = eager_result
 
     def test_age_4_generates_appropriate_word_count(self, client, auth_headers):
         """Age 4 stories should be 300-500 words (3-5 min read)."""
@@ -260,7 +260,7 @@ class TestVocabularyComplexity:
         }
         eager_result = self.mock_task.return_value
         eager_result.get.return_value = result
-        self.mock_task.apply.return_value = eager_result
+        self.mock_task.apply_async.return_value = eager_result
 
     def test_age_4_uses_simple_vocabulary(self, client, auth_headers):
         """Age 4 should use predominantly simple, familiar words."""
@@ -409,7 +409,7 @@ class TestConsistencyAcrossGenerations:
         }
         eager_result = self.mock_task.return_value
         eager_result.get.return_value = result
-        self.mock_task.apply.return_value = eager_result
+        self.mock_task.apply_async.return_value = eager_result
 
     def test_age_7_consistency_across_three_generations(self, client, auth_headers):
         """Generate 3 stories for age 7 and verify consistent word counts."""

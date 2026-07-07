@@ -30,7 +30,7 @@ def mock_story_task(mocker):
     eager_result.get.return_value = result
 
     task = mocker.MagicMock()
-    task.apply.return_value = eager_result
+    task.apply_async.return_value = eager_result
     task.delay.return_value.id = "task-feature-123"
 
     mocker.patch("backend.routes.story_routes.generate_story_task", task)
@@ -51,8 +51,8 @@ def _post_story_and_get_task_kwargs(
     response = client.post("/generate-story", json=payload, headers=auth_headers)
     _assert_story_response(response)
 
-    assert mock_story_task.apply.called
-    forwarded = mock_story_task.apply.call_args.kwargs.get("kwargs")
+    assert mock_story_task.apply_async.called
+    forwarded = mock_story_task.apply_async.call_args.kwargs.get("kwargs")
     assert isinstance(forwarded, dict)
     return forwarded
 

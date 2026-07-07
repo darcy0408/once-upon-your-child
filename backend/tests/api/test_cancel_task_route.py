@@ -62,7 +62,7 @@ def test_cancel_task_success_sets_flag_returns_202(
     monkeypatch.setattr(
         story_routes,
         "_resolve_task_owner",
-        lambda cache, task_id, task: test_user.id,
+        lambda task_id, task: test_user.id,
     )
     req_cancel = mocker.patch(
         "backend.utils.task_cancellation.request_cancellation", return_value=True
@@ -86,7 +86,7 @@ def test_cancel_task_idor_returns_403(
     monkeypatch.setattr(
         story_routes,
         "_resolve_task_owner",
-        lambda cache, task_id, task: "someone-else-999",
+        lambda task_id, task: "someone-else-999",
     )
     req_cancel = mocker.patch(
         "backend.utils.task_cancellation.request_cancellation", return_value=True
@@ -110,7 +110,7 @@ def test_cancel_task_unknown_id_accepts_silently(
     monkeypatch.setattr(
         story_routes,
         "_resolve_task_owner",
-        lambda cache, task_id, task: None,
+        lambda task_id, task: None,
     )
     req_cancel = mocker.patch(
         "backend.utils.task_cancellation.request_cancellation", return_value=True
@@ -133,7 +133,7 @@ def test_cancel_task_redis_unavailable_returns_503(
     monkeypatch.setattr(
         story_routes,
         "_resolve_task_owner",
-        lambda cache, task_id, task: test_user.id,
+        lambda task_id, task: test_user.id,
     )
     # Redis unreachable -> request_cancellation returns False.
     mocker.patch(

@@ -245,8 +245,11 @@ class TestStoryGenerationRoutingAndValidation:
     def test_generate_story_route_forwards_scene_and_companion_payload(
         self, client, auth_headers, mocker
     ):
-        task_apply = mocker.patch(
-            "backend.routes.story_routes.generate_story_task.apply"
+        # The route dispatches via apply_async (not the eager .apply) so the
+        # SAME generation runs on the real Celery worker service even when the
+        # sync attempt overruns its timeout — see MT-async-task-delivery.
+        task_apply_async = mocker.patch(
+            "backend.routes.story_routes.generate_story_task.apply_async"
         )
         eager_result = MagicMock()
         eager_result.get.return_value = {
@@ -259,7 +262,7 @@ class TestStoryGenerationRoutingAndValidation:
                 "pages": ["Avery met Pip and Nova in the bamboo forest."],
             },
         }
-        task_apply.return_value = eager_result
+        task_apply_async.return_value = eager_result
 
         payload = {
             "character": "Avery",
@@ -277,7 +280,7 @@ class TestStoryGenerationRoutingAndValidation:
         response = client.post("/generate-story", json=payload, headers=auth_headers)
 
         assert response.status_code == 200
-        kwargs = task_apply.call_args.kwargs["kwargs"]
+        kwargs = task_apply_async.call_args.kwargs["kwargs"]
         assert kwargs["theme"] == payload["theme"]
         assert kwargs["age"] == payload["age"]
         assert kwargs["story_length"] == payload["story_length"]
