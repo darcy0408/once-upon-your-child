@@ -290,6 +290,8 @@ scrolled-down.png
 /assets/.png-backup/
 # Verification evidence screenshots — working artifact, never commit
 /docs/verify/
+# UX audit raw screenshots — findings are distilled into the tracked band-*.md files
+/docs/UX_AUDIT_SIXHATS_2026-07-05/screenshots/
 
 # Claude Code session lock (per-session, never commit)
 .claude/scheduled_tasks.lock
