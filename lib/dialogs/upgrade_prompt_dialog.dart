@@ -199,41 +199,35 @@ class UpgradePromptDialog extends StatelessWidget {
             'Feature',
             'Free',
             'Premium',
-            'Family',
             isHeader: true,
           ),
           _tierRow(
             context,
-            'Stories/Day',
+            'Stories',
             '$storiesLimit',
             '10/day',
-            'Unlimited',
           ),
           _tierRow(
             context,
             'Illustrations',
-            '❌',
-            '1 per story',
-            '3 per story',
+            '1 story',
+            'Every page',
           ),
           _tierRow(
             context,
             'Characters',
             '1',
-            '3',
-            'Unlimited 👨‍👩‍👧‍👦',
+            '6 👨‍👩‍👧‍👦',
           ),
           _tierRow(
             context,
             'Interactive Stories',
             '❌',
             '✅',
-            '✅',
           ),
           _tierRow(
             context,
             'Custom Avatars',
-            '❌',
             '❌',
             '✅',
           ),
@@ -242,8 +236,7 @@ class UpgradePromptDialog extends StatelessWidget {
             'Price',
             // Prices source of truth: TierPricing (subscription_models.dart)
             '\$0',
-            '\$9.99/mo',
-            '\$19.99/mo',
+            '\$9.99/mo or \$59.99/yr',
           ),
         ],
       ),
@@ -254,8 +247,7 @@ class UpgradePromptDialog extends StatelessWidget {
     BuildContext context,
     String feature,
     String free,
-    String premium,
-    String family, {
+    String premium, {
     bool isHeader = false,
   }) {
     return Container(
@@ -296,17 +288,6 @@ class UpgradePromptDialog extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
                 color: isHeader ? null : Colors.amber[700],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              family,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
-                color: isHeader ? null : Colors.purple,
               ),
             ),
           ),

@@ -272,44 +272,22 @@ class PaywallDialog {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    // Price source of truth: TierPricing.familyTier (subscription_models.dart)
-                    '🌟 Family Plan — \$19.99/month',
+                    // Price source of truth: TierPricing.premiumTier (subscription_models.dart)
+                    '🌟 Premium — \$9.99/month or \$59.99/year',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 8),
-                  const Text('👧 Unlimited characters — every sibling gets their own hero'),
+                  const Text('👧 6 heroes — every sibling gets their own'),
                   const SizedBox(height: 4),
-                  const Text('🤝 Characters can team up and go on adventures together'),
+                  const Text('🤝 Heroes can team up and go on adventures together'),
                   const SizedBox(height: 4),
                   const Text('🎨 Custom AI avatars that actually look like your kids'),
                   const SizedBox(height: 4),
-                  const Text('📖 Unlimited stories, every day'),
+                  const Text('📖 Up to 10 stories every day, illustrated'),
                   const SizedBox(height: 12),
                   const Text(
-                    'One price. The whole crew.',
+                    'One price. The whole crew. 14 days free.',
                     style: TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.purple.shade50,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.purple.shade100),
-              ),
-              child: const Row(
-                children: [
-                  Text('🚀', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      // Price source of truth: TierPricing.premiumTier (subscription_models.dart)
-                      'Premium — \$9.99/mo · 3 characters · 10 stories/day',
-                      style: TextStyle(fontSize: 13),
-                    ),
                   ),
                 ],
               ),

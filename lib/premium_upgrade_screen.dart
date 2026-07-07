@@ -263,7 +263,7 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                     ),
                     Expanded(
                       child:
-                          _buildBillingToggle('Yearly (Save 33%)', _isYearly),
+                          _buildBillingToggle('Yearly (Save 50%)', _isYearly),
                     ),
                   ],
                 ),

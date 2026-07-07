@@ -78,9 +78,12 @@ class TierLimits {
     switch (tier) {
       case SubscriptionTier.free:
         return const TierLimits(
+          // Sampler tier (pricing decision 2026-07-07): the limit should be
+          // felt within the first week, not the first month. Daily cap of 2
+          // smooths the 5/month allowance so it isn't burned in one sitting.
           maxCharacters: 1,
-          maxStoriesPerDay: 3,
-          maxStoriesPerMonth: 30,
+          maxStoriesPerDay: 2,
+          maxStoriesPerMonth: 5,
           unlimitedStories: false,
           multiCharacterStories: false,
           voiceNarration: true,
@@ -336,32 +339,32 @@ class TierPricing {
     yearlyPrice: 0,
     yearlySavings: 0,
     features: [
-      'Up to 2 characters',
-      '10 stories per month',
-      'Basic themes (Adventure, Magic)',
+      '1 hero character',
+      '5 stories per month',
+      '1 fully illustrated story',
       'Voice narration',
-      'Basic companions',
+      'Basic themes & companions',
     ],
   );
 
   static const premiumTier = TierPricing(
     tier: SubscriptionTier.premium,
     monthlyPrice: 9.99,
-    yearlyPrice: 79.99,
-    yearlySavings: 39.89,
-    badge: 'Most Popular',
+    yearlyPrice: 59.99,
+    yearlySavings: 59.89,
+    badge: 'Best Value',
     features: [
       'Once Upon YOUR Child for the whole family',
-      '6 characters — every kid, plus mom, dad, even grandma',
-      '20 stories per month, 80–100 illustrated pages',
+      '6 heroes — every kid, plus mom, dad, even grandma',
+      'Up to 10 stories every day',
+      'Illustrations on every page',
+      'Custom AI avatars that look like your child',
       '"Whose turn is it?" rotating hero between siblings',
-      'All 8 themes unlocked',
       'Interactive choose-your-own-adventure',
-      'Adventure map progression',
-      'Premium voice narration (10,000 chars/mo)',
+      'Continuing hero sagas',
+      'Premium voice narration',
       'Export & share stories',
-      'Ad-free experience',
-      'All companions unlocked',
+      'All themes & companions unlocked',
     ],
   );
 
@@ -387,9 +390,15 @@ class TierPricing {
     ],
   );
 
+  /// Tiers shown on paywall / upgrade surfaces.
+  ///
+  /// Single-paid-tier launch (pricing decision 2026-07-07): Family is
+  /// deliberately NOT listed. The enum, its TierLimits, and [familyTier]
+  /// stay for back-compat (existing subscriptions, backend tier strings) —
+  /// only the purchase surfaces hide it. Revisit post-launch if demand data
+  /// says a bigger tier is needed.
   static List<TierPricing> allTiers = [
     freeTier,
     premiumTier,
-    familyTier,
   ];
 }
