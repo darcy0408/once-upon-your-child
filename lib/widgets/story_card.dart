@@ -9,6 +9,13 @@ class StoryCard extends ConsumerWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback? onExportPdf;
+
+  /// Whether the current user is entitled to PDF export (TierLimits.
+  /// exportStories). The action stays visible either way — free users see a
+  /// lock affordance that routes to the paywall (deliberate funnel design),
+  /// they just don't get a plain export icon.
+  final bool canExportPdf;
 
   const StoryCard({
     super.key,
@@ -17,6 +24,8 @@ class StoryCard extends ConsumerWidget {
     required this.onToggleFavorite,
     required this.onDelete,
     required this.onShare,
+    this.onExportPdf,
+    this.canExportPdf = true,
   });
 
   @override
@@ -137,6 +146,7 @@ class StoryCard extends ConsumerWidget {
                          onSelected: (value) {
                            if (value == 'share') onShare();
                            if (value == 'delete') onDelete();
+                           if (value == 'export_pdf') onExportPdf?.call();
                          },
                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                            const PopupMenuItem<String>(
@@ -149,6 +159,24 @@ class StoryCard extends ConsumerWidget {
                                ],
                              ),
                            ),
+                           if (onExportPdf != null)
+                             PopupMenuItem<String>(
+                               value: 'export_pdf',
+                               child: Row(
+                                 children: [
+                                   Icon(
+                                     canExportPdf
+                                         ? Icons.picture_as_pdf
+                                         : Icons.lock_outline,
+                                     size: 18,
+                                   ),
+                                   const SizedBox(width: 8),
+                                   Text(canExportPdf
+                                       ? 'Save as PDF'
+                                       : 'Save as PDF (Premium)'),
+                                 ],
+                               ),
+                             ),
                            const PopupMenuItem<String>(
                              value: 'delete',
                              child: Row(

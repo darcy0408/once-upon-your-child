@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
 
 import 'models/local/story_local.dart';
 import 'providers/story_provider.dart';
+import 'providers/subscription_provider.dart';
 import 'services/story_analytics.dart';
+import 'services/story_pdf_service.dart';
 import 'story_result_screen.dart';
+import 'subscription_screen.dart';
+import 'utils/paywall_gate.dart';
 import 'widgets/story_card.dart';
 import 'theme/age_band_theme.dart';
 
@@ -51,6 +56,9 @@ class SavedStoriesScreen extends ConsumerWidget {
     final selectedTheme = ref.watch(_selectedThemeFilterProvider);
     final currentSort = ref.watch(_sortOptionProvider);
     final isCompact = ref.watch(_compactListProvider);
+    // TierLimits.exportStories gate (cosmetic — PDF generation is purely
+    // local): free users still see the "Save as PDF" action, just locked.
+    final canExportPdf = ref.watch(subscriptionProvider).canExportStories;
     // Sprout always uses large cards; Creator can toggle compact list
     final showCompactToggle =
         band.band == AgeBand.creator || band.band == AgeBand.adventurer;
@@ -189,6 +197,9 @@ class SavedStoriesScreen extends ConsumerWidget {
                             onToggleFavorite: () => _toggleFavorite(ref, story),
                             onDelete: () => _deleteStory(context, ref, story),
                             onShare: () => _shareStory(story),
+                            onExportPdf: () =>
+                                _exportPdf(context, ref, story),
+                            canExportPdf: canExportPdf,
                           );
                         },
                         childCount: filteredStories.length,
@@ -218,6 +229,9 @@ class SavedStoriesScreen extends ConsumerWidget {
                             onToggleFavorite: () => _toggleFavorite(ref, story),
                             onDelete: () => _deleteStory(context, ref, story),
                             onShare: () => _shareStory(story),
+                            onExportPdf: () =>
+                                _exportPdf(context, ref, story),
+                            canExportPdf: canExportPdf,
                           );
                         },
                         childCount: filteredStories.length,
@@ -492,6 +506,59 @@ class SavedStoriesScreen extends ConsumerWidget {
       ShareParams(text: shareText, subject: story.title),
     );
   }
+
+  /// Premium keepsake export from the story library. Mirrors
+  /// StoryResultScreen._exportPdf: free users are routed through the same
+  /// parent-gated paywall rather than the action just silently doing
+  /// nothing — the lock is a funnel, not a dead end.
+  Future<void> _exportPdf(
+      BuildContext context, WidgetRef ref, StoryLocal story) async {
+    final canExport = ref.read(subscriptionProvider).canExportStories;
+    if (!canExport) {
+      await showPaywallGated<void>(
+        context: context,
+        showActualPaywall: () async {
+          if (!context.mounted) return;
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SubscriptionScreen(),
+              fullscreenDialog: true,
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    try {
+      final bytes = await const StoryPdfService().buildFromStoryLocal(story);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: '${_pdfFileName(story.title)}.pdf',
+      );
+      StoryAnalytics.trackStoryResultAction(
+        storyId: story.identifier,
+        action: 'share',
+        extra: {'method': 'pdf_export'},
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Could not create the PDF. Please try again.')),
+      );
+    }
+  }
+
+  String _pdfFileName(String title) {
+    final trimmed = title.trim();
+    final base = trimmed.isEmpty ? 'my_story' : trimmed;
+    final cleaned = base
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return cleaned.isEmpty ? 'my_story' : cleaned;
+  }
 }
 
 List<StoryLocal> _applyFilters(
@@ -542,6 +609,8 @@ class _SwipeableStoryCard extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onDelete,
     required this.onShare,
+    required this.onExportPdf,
+    required this.canExportPdf,
   });
 
   final StoryLocal story;
@@ -549,6 +618,8 @@ class _SwipeableStoryCard extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback onExportPdf;
+  final bool canExportPdf;
 
   @override
   Widget build(BuildContext context) {
@@ -579,6 +650,8 @@ class _SwipeableStoryCard extends StatelessWidget {
         onToggleFavorite: onToggleFavorite,
         onDelete: onDelete,
         onShare: onShare,
+        onExportPdf: onExportPdf,
+        canExportPdf: canExportPdf,
       ),
     );
   }
@@ -596,6 +669,8 @@ class _SwipeableStoryTile extends StatelessWidget {
     required this.onToggleFavorite,
     required this.onDelete,
     required this.onShare,
+    required this.onExportPdf,
+    required this.canExportPdf,
   });
 
   final StoryLocal story;
@@ -604,6 +679,8 @@ class _SwipeableStoryTile extends StatelessWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback onExportPdf;
+  final bool canExportPdf;
 
   @override
   Widget build(BuildContext context) {
@@ -731,6 +808,20 @@ class _SwipeableStoryTile extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   onShare();
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  canExportPdf ? Icons.picture_as_pdf : Icons.lock_outline,
+                  color: Colors.white70,
+                ),
+                title: Text(
+                  canExportPdf ? 'Save as PDF' : 'Save as PDF (Premium)',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onExportPdf();
                 },
               ),
               ListTile(

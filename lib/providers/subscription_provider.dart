@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/subscription_service.dart';
+import '../subscription_models.dart';
 
 part 'subscription_provider.g.dart';
 
@@ -42,6 +43,19 @@ class SubscriptionState {
   bool get canCreateStory => storiesRemaining > 0;
   bool get isFreeTier => tier == 'free';
   bool get isPremium => tier == 'premium';
+
+  /// Wires TierLimits.exportStories (subscription_models.dart) to the live
+  /// subscription state: free tier has no PDF export, premium/family do.
+  /// This is a cosmetic client-side gate — PDF generation is purely local —
+  /// so the real enforcement point is simply "don't build the file" here
+  /// rather than a server check.
+  bool get canExportStories {
+    final subscriptionTier = SubscriptionTier.values.firstWhere(
+      (t) => t.name == tier,
+      orElse: () => SubscriptionTier.free,
+    );
+    return TierLimits.forTier(subscriptionTier).exportStories;
+  }
 }
 
 @riverpod

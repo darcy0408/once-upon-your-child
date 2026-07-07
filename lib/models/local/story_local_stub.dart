@@ -21,6 +21,11 @@ class StoryLocal {
   String? coverImageBase64; // base64 of the cover illustration bytes
   String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
 
+  // PDF export (premium keepsake feature): mirrors story_local_io.dart's
+  // pagesJson field. Keep both in sync — this file has no codegen, so it is
+  // just a plain field, but the shape (JSON array of page strings) must match.
+  String? pagesJson;
+
   // Story Notes (MT-254): parent-selected focus(es) this story was guided
   // toward. Persisted so a re-opened guided story still offers the disclosure.
   String? practiced;
@@ -42,8 +47,25 @@ class StoryLocal {
       ..charactersJson = json['charactersJson']?.toString()
       ..coverImageBase64 = json['coverImageBase64']?.toString()
       ..pageIllustrationsJson = json['pageIllustrationsJson']?.toString()
+      ..pagesJson = _encodePagesFromJson(
+          json['pagesJson'] ?? json['pages_json'] ?? json['pages'])
       ..practiced =
           json['practiced']?.toString() ?? json['practiced_focus']?.toString();
+  }
+
+  static String? _encodePagesFromJson(dynamic raw) {
+    if (raw == null) return null;
+    try {
+      if (raw is String) return raw.isEmpty ? null : raw;
+      if (raw is List) {
+        return raw.isEmpty
+            ? null
+            : jsonEncode(raw.map((e) => e.toString()).toList());
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 
   static StoryLocal fromSavedStory(SavedStory saved) {
@@ -59,7 +81,10 @@ class StoryLocal {
           ? jsonEncode(saved.characters.map((c) => c.toJson()).toList())
           : null
       ..coverImageBase64 = saved.coverImageBase64
-      ..pageIllustrationsJson = saved.pageIllustrationsJson;
+      ..pageIllustrationsJson = saved.pageIllustrationsJson
+      ..pagesJson = (saved.pages != null && saved.pages!.isNotEmpty)
+          ? jsonEncode(saved.pages)
+          : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -78,11 +103,28 @@ class StoryLocal {
       'charactersJson': charactersJson,
       'coverImageBase64': coverImageBase64,
       'pageIllustrationsJson': pageIllustrationsJson,
+      'pagesJson': pagesJson,
       'practiced': practiced,
     };
   }
 
   List<Character> get characters => _decodeCharacters();
+
+  /// Decoded page-by-page text, preferring [pagesJson] when present. Returns
+  /// an empty list (never throws) for null/malformed payloads so callers can
+  /// fall back to splitting flat [storyText] instead.
+  List<String> get pages {
+    if (pagesJson == null || pagesJson!.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(pagesJson!);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+    } catch (_) {
+      // Ignore malformed payloads and default to empty list.
+    }
+    return const [];
+  }
 
   String get identifier => storyId.isNotEmpty ? storyId : id.toString();
 

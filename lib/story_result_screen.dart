@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_flip_builder/page_flip_builder.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -26,6 +27,7 @@ import 'services/tts_api_service.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
+import 'services/story_pdf_service.dart';
 import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
 import 'coloring_book_service.dart';
@@ -56,6 +58,7 @@ import 'widgets/open_book_frame.dart';
 import 'utils/motion_utils.dart';
 import 'utils/paywall_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'providers/subscription_provider.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/story_notes_screen.dart';
 import 'screens/wizard_story_screen.dart';
@@ -1729,6 +1732,67 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }
   }
 
+  /// Premium keepsake export (P0#exportStories): builds a storybook PDF —
+  /// cover page + one page per story page — and hands it to the OS share
+  /// sheet via `printing`. Free users are routed through the same parent-
+  /// gated paywall used for the illustrations/narration upsell rather than
+  /// silently failing; this lock-then-paywall path is deliberate funnel
+  /// design, not an oversight.
+  Future<void> _exportPdf() async {
+    final canExport = ref.read(subscriptionProvider).canExportStories;
+    if (!canExport) {
+      await showPaywallGated<void>(
+        context: context,
+        showActualPaywall: () async {
+          if (!context.mounted) return;
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SubscriptionScreen(),
+              fullscreenDialog: true,
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    try {
+      final bytes = await const StoryPdfService().buildStorybookPdf(
+        title: widget.title,
+        storyText: widget.storyText,
+        pages: (widget.pages != null && widget.pages!.isNotEmpty)
+            ? widget.pages
+            : _storyPages,
+        heroName: widget.characterName,
+        coverImageBase64: await _captureCoverImageBase64(),
+        pageIllustrationsJson: await _capturePageIllustrationsJson(),
+        createdAt: widget.storyCreatedAt,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: '${_pdfFileName(widget.title)}.pdf',
+      );
+      _trackResultAction('share', extra: {'method': 'pdf_export'});
+    } catch (e) {
+      debugPrint('❌ PDF export failed: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Could not create the PDF. Please try again.')),
+      );
+    }
+  }
+
+  String _pdfFileName(String title) {
+    final trimmed = title.trim();
+    final base = trimmed.isEmpty ? 'my_story' : trimmed;
+    final cleaned = base
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return cleaned.isEmpty ? 'my_story' : cleaned;
+  }
+
   /// Plain-language explainer for the "Created with AI" badge, plus the
   /// in-app content-report affordance required by store gen-AI policies.
   void _showAiInfo() {
@@ -1853,6 +1917,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   void _showShareOptions() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    // Cosmetic gate (P0 rule for TierLimits.exportStories): free users still
+    // see the "Save as PDF" action — with a lock — so the paywall funnel
+    // stays visible instead of hiding the feature entirely.
+    final canExportPdf = ref.read(subscriptionProvider).canExportStories;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1908,6 +1976,27 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _shareAsImage();
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                canExportPdf
+                    ? Icons.picture_as_pdf_rounded
+                    : Icons.lock_rounded,
+                color: Colors.white,
+              ),
+              title: Text('Save as PDF',
+                  style: TextStyle(
+                      color: Colors.white, fontFamily: band.uiFontFamily)),
+              subtitle: Text(
+                canExportPdf
+                    ? 'Keepsake storybook to print or share'
+                    : 'Premium feature — tap to unlock',
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _exportPdf();
               },
             ),
           ],
@@ -1995,7 +2084,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           isInteractive: widget.isInteractive ?? false,
           isRhyming: widget.isRhyming ?? false,
           isLearningToRead: widget.isLearningToReadMode,
-          pages: widget.pages,
+          // PDF export (StoryPdfService) needs a real page-by-page split to
+          // build a proper storybook rather than falling back to a flat-text
+          // reflow, so persist `_storyPages` (always populated — see initState)
+          // even on the branch where the backend didn't hand back its own
+          // `widget.pages`.
+          pages: (widget.pages != null && widget.pages!.isNotEmpty)
+              ? widget.pages
+              : _storyPages,
           adventureSteps: widget.adventureSteps,
           // Calculate stats
           totalWords: widget.storyText.split(RegExp(r'\s+')).length,

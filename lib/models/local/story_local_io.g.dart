@@ -87,43 +87,48 @@ const StoryLocalSchema = CollectionSchema(
       name: r'pageIllustrationsJson',
       type: IsarType.string,
     ),
-    r'practiced': PropertySchema(
+    r'pagesJson': PropertySchema(
       id: 14,
+      name: r'pagesJson',
+      type: IsarType.string,
+    ),
+    r'practiced': PropertySchema(
+      id: 15,
       name: r'practiced',
       type: IsarType.string,
     ),
     r'stateJson': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'stateJson',
       type: IsarType.string,
     ),
     r'storyId': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'storyId',
       type: IsarType.string,
     ),
     r'storyText': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'storyText',
       type: IsarType.string,
     ),
     r'theme': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'theme',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'title',
       type: IsarType.string,
     ),
     r'tone': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'tone',
       type: IsarType.string,
     ),
     r'wisdomGem': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'wisdomGem',
       type: IsarType.string,
     )
@@ -212,6 +217,12 @@ int _storyLocalEstimateSize(
     }
   }
   {
+    final value = object.pagesJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.practiced;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -262,14 +273,15 @@ void _storyLocalSerialize(
   writer.writeBool(offsets[11], object.isSyncedToServer);
   writer.writeString(offsets[12], object.length);
   writer.writeString(offsets[13], object.pageIllustrationsJson);
-  writer.writeString(offsets[14], object.practiced);
-  writer.writeString(offsets[15], object.stateJson);
-  writer.writeString(offsets[16], object.storyId);
-  writer.writeString(offsets[17], object.storyText);
-  writer.writeString(offsets[18], object.theme);
-  writer.writeString(offsets[19], object.title);
-  writer.writeString(offsets[20], object.tone);
-  writer.writeString(offsets[21], object.wisdomGem);
+  writer.writeString(offsets[14], object.pagesJson);
+  writer.writeString(offsets[15], object.practiced);
+  writer.writeString(offsets[16], object.stateJson);
+  writer.writeString(offsets[17], object.storyId);
+  writer.writeString(offsets[18], object.storyText);
+  writer.writeString(offsets[19], object.theme);
+  writer.writeString(offsets[20], object.title);
+  writer.writeString(offsets[21], object.tone);
+  writer.writeString(offsets[22], object.wisdomGem);
 }
 
 StoryLocal _storyLocalDeserialize(
@@ -294,14 +306,15 @@ StoryLocal _storyLocalDeserialize(
   object.isSyncedToServer = reader.readBool(offsets[11]);
   object.length = reader.readStringOrNull(offsets[12]);
   object.pageIllustrationsJson = reader.readStringOrNull(offsets[13]);
-  object.practiced = reader.readStringOrNull(offsets[14]);
-  object.stateJson = reader.readStringOrNull(offsets[15]);
-  object.storyId = reader.readString(offsets[16]);
-  object.storyText = reader.readString(offsets[17]);
-  object.theme = reader.readString(offsets[18]);
-  object.title = reader.readString(offsets[19]);
-  object.tone = reader.readStringOrNull(offsets[20]);
-  object.wisdomGem = reader.readStringOrNull(offsets[21]);
+  object.pagesJson = reader.readStringOrNull(offsets[14]);
+  object.practiced = reader.readStringOrNull(offsets[15]);
+  object.stateJson = reader.readStringOrNull(offsets[16]);
+  object.storyId = reader.readString(offsets[17]);
+  object.storyText = reader.readString(offsets[18]);
+  object.theme = reader.readString(offsets[19]);
+  object.title = reader.readString(offsets[20]);
+  object.tone = reader.readStringOrNull(offsets[21]);
+  object.wisdomGem = reader.readStringOrNull(offsets[22]);
   return object;
 }
 
@@ -345,7 +358,7 @@ P _storyLocalDeserializeProp<P>(
     case 15:
       return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
@@ -353,8 +366,10 @@ P _storyLocalDeserializeProp<P>(
     case 19:
       return (reader.readString(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1753,6 +1768,158 @@ extension StoryLocalQueryFilter
   }
 
   QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'pagesJson',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'pagesJson',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pagesJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'pagesJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> pagesJsonMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'pagesJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pagesJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      pagesJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'pagesJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
       practicedIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3067,6 +3234,18 @@ extension StoryLocalQuerySortBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByPagesJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pagesJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByPagesJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pagesJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByPracticed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'practiced', Sort.asc);
@@ -3354,6 +3533,18 @@ extension StoryLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByPagesJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pagesJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByPagesJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pagesJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByPracticed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'practiced', Sort.asc);
@@ -3548,6 +3739,13 @@ extension StoryLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByPagesJson(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pagesJson', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByPracticed(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3697,6 +3895,12 @@ extension StoryLocalQueryProperty
       pageIllustrationsJsonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'pageIllustrationsJson');
+    });
+  }
+
+  QueryBuilder<StoryLocal, String?, QQueryOperations> pagesJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pagesJson');
     });
   }
 
