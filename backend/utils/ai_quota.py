@@ -46,9 +46,17 @@ logger = logging.getLogger(__name__)
 
 # Daily generation limits per subscription tier.
 # BYOK users are exempt — they pay for their own API key.
+#
+# 2026-07-05 pricing decision: the MONTHLY cap (`_MONTHLY_STORY_LIMITS` below)
+# is the real, authoritative limit. These daily numbers are deliberately +1
+# above the client-side smoothing caps (2/day free, 10/day premium — see
+# lib/subscription_models.dart) so ordinary client/server timezone drift
+# never 429s a legitimate request; a user who somehow burns through the
+# monthly allowance in a handful of days still gets stopped by the monthly
+# check.
 _DAILY_LIMITS: dict[str, int] = {
-    "free": 10,
-    "premium": 50,
+    "free": 3,
+    "premium": 15,
     "family": 75,
 }
 _BYOK_TIERS = frozenset({"byok"})
@@ -58,6 +66,22 @@ _ENV_OVERRIDES = {
     "free": "AI_QUOTA_FREE",
     "premium": "AI_QUOTA_PREMIUM",
     "family": "AI_QUOTA_FAMILY",
+}
+
+# Monthly generation limits per subscription tier — the REAL, authoritative
+# cap (2026-07-05 pricing decision: free = 5 stories/month, premium =
+# 150/month). 0 = unlimited (family has no monthly cap today). BYOK is
+# exempt via `_BYOK_TIERS`, same as the daily limit.
+_MONTHLY_STORY_LIMITS: dict[str, int] = {
+    "free": 5,
+    "premium": 150,
+    "family": 0,  # 0 = unlimited
+}
+
+_ENV_MONTHLY_OVERRIDES = {
+    "free": "AI_QUOTA_MONTHLY_FREE",
+    "premium": "AI_QUOTA_MONTHLY_PREMIUM",
+    "family": "AI_QUOTA_MONTHLY_FAMILY",
 }
 
 # M-2 — fail-CLOSED cost breaker.
@@ -106,9 +130,34 @@ def _get_limit(tier: str) -> int | None:
     return _DAILY_LIMITS.get(tier, _DAILY_LIMITS["free"])
 
 
+def _get_monthly_limit(tier: str) -> int | None:
+    """Return the monthly story limit for *tier*, or None if unlimited.
+
+    Mirrors `_get_limit`'s override pattern. A resolved value of 0 (the
+    tier default or an env override) means unlimited, same convention as
+    the illustration-quota "0 sentinel".
+    """
+    if tier in _BYOK_TIERS:
+        return None
+    env_key = _ENV_MONTHLY_OVERRIDES.get(tier)
+    if env_key and os.getenv(env_key):
+        try:
+            val = int(os.getenv(env_key))
+            return None if val <= 0 else val
+        except ValueError:
+            pass
+    val = _MONTHLY_STORY_LIMITS.get(tier, _MONTHLY_STORY_LIMITS["free"])
+    return None if val <= 0 else val
+
+
 def _redis_key(user_id: str) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"ai:quota:{user_id}:{today}"
+
+
+def _monthly_redis_key(user_id: str) -> str:
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return f"ai:quota:m:{user_id}:{month}"
 
 
 def _get_redis():
@@ -195,72 +244,132 @@ def _db_story_count(user_id: str) -> int | None:
     return int(getattr(user, "stories_generated_this_month", 0) or 0)
 
 
-def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | None]:
+def _daily_quota_db_fallback(
+    user_id: str,
+    user_tier: str,
+    monthly_limit: int | None,
+    reason: str = "Redis DOWN",
+) -> tuple[bool, int, int | None, str]:
+    """Shared fail-CLOSED path for `check_daily_quota` (M-2).
+
+    Called when Redis is unreachable OR errors mid-call. Enforces the DB-
+    backed `User.stories_generated_this_month` counter against
+    ``min(emergency_cap, monthly_limit)`` — i.e. an outage never grants a
+    *more* generous allowance than the tier's real monthly cap, even though
+    the emergency cap itself (EMERGENCY_MULTIPLIER x daily limit) is usually
+    larger. Family's monthly_limit is None (unlimited), so it degrades to
+    the pure emergency cap in that case.
+    """
+    emergency_cap = _get_emergency_cap(user_tier)
+    db_count = _db_story_count(user_id)
+    if db_count is None or emergency_cap is None:
+        # DB also unreachable, or unlimited tier. We cannot meter spend at
+        # all — alert loudly. Still allow (a hard block here would take the
+        # whole product down), but this is the one path that stays open.
+        logger.error(
+            "ALERT ai_quota: %s and DB counter unavailable for user=%s "
+            "tier=%s — story cost is UNMETERED this request",
+            reason,
+            user_id,
+            user_tier,
+        )
+        return True, 0, _get_limit(user_tier), ""
+
+    effective_cap = emergency_cap
+    if monthly_limit is not None:
+        effective_cap = min(emergency_cap, monthly_limit)
+
+    logger.error(
+        "ALERT ai_quota: %s — cost breaker on DB fallback for user=%s "
+        "tier=%s count=%d effective_cap=%d (emergency=%d monthly=%s)",
+        reason,
+        user_id,
+        user_tier,
+        db_count,
+        effective_cap,
+        emergency_cap,
+        monthly_limit,
+    )
+    if db_count >= effective_cap:
+        logger.warning(
+            "ai_quota: user=%s tier=%s DB count=%d >= effective_cap=%d "
+            "— blocked while Redis down",
+            user_id,
+            user_tier,
+            db_count,
+            effective_cap,
+        )
+        period = (
+            "monthly"
+            if monthly_limit is not None and effective_cap == monthly_limit
+            else "daily"
+        )
+        return False, db_count, effective_cap, period
+    return True, db_count, effective_cap, ""
+
+
+def check_daily_quota(
+    user_id: str, user_tier: str
+) -> tuple[bool, int, int | None, str]:
     """
     Check whether *user_id* is within their story-generation quota.
 
-    Returns (allowed, current_count, limit).
-    - allowed=True  → generation may proceed
-    - allowed=False → quota exceeded; caller should return 429
+    Enforces TWO limits (2026-07-05 pricing decision):
+      * a DAILY limit (`_DAILY_LIMITS`) — generous +1 headroom over the
+        client-side smoothing caps so timezone drift never false-429s a
+        legitimate request; and
+      * a MONTHLY limit (`_MONTHLY_STORY_LIMITS`) — the real, authoritative
+        cap (free = 5/month, premium = 150/month).
+
+    Returns (allowed, current_count, limit, period).
+    - allowed=True  → generation may proceed; period is "".
+    - allowed=False → quota exceeded; caller should return 429. `period` is
+      "daily" or "monthly" so the caller can distinguish which limit
+      tripped for messaging purposes.
     - limit=None    → unlimited (BYOK)
 
     Never raises. This is the COST circuit breaker, so on a Redis outage it
-    does NOT fail open — it falls back to the conservative DB counter enforced
-    against a global emergency cap (M-2).
+    does NOT fail open — it falls back to the conservative DB counter
+    enforced against min(monthly_limit, emergency_cap) (M-2).
     """
     limit = _get_limit(user_tier)
     if limit is None:
-        return True, 0, None
+        return True, 0, None, ""
+
+    monthly_limit = _get_monthly_limit(user_tier)
 
     r = _get_redis()
     if r is None:
         # --- Redis DOWN: fail-CLOSED to the conservative DB counter (M-2) ----
-        emergency_cap = _get_emergency_cap(user_tier)
-        db_count = _db_story_count(user_id)
-        if db_count is None or emergency_cap is None:
-            # DB also unreachable, or unlimited tier. We cannot meter spend at
-            # all — alert loudly. Still allow (a hard block here would take the
-            # whole product down), but this is the one path that stays open.
-            logger.error(
-                "ALERT ai_quota: Redis DOWN and DB counter unavailable for "
-                "user=%s tier=%s — story cost is UNMETERED this request",
-                user_id,
-                user_tier,
-            )
-            return True, 0, limit
-        logger.error(
-            "ALERT ai_quota: Redis DOWN — cost breaker on DB fallback for "
-            "user=%s tier=%s count=%d emergency_cap=%d",
-            user_id,
-            user_tier,
-            db_count,
-            emergency_cap,
-        )
-        if db_count >= emergency_cap:
-            logger.warning(
-                "ai_quota: user=%s tier=%s DB count=%d >= emergency_cap=%d "
-                "— blocked while Redis down",
-                user_id,
-                user_tier,
-                db_count,
-                emergency_cap,
-            )
-            return False, db_count, emergency_cap
-        return True, db_count, emergency_cap
+        return _daily_quota_db_fallback(user_id, user_tier, monthly_limit)
 
     key = _redis_key(user_id)
     try:
         current = int(r.get(key) or 0)
         if current >= limit:
             logger.warning(
-                "ai_quota: user=%s tier=%s count=%d limit=%d — quota exceeded",
+                "ai_quota: user=%s tier=%s count=%d limit=%d — daily quota exceeded",
                 user_id,
                 user_tier,
                 current,
                 limit,
             )
-            return False, current, limit
-        return True, current, limit
+            return False, current, limit, "daily"
+
+        if monthly_limit is not None:
+            monthly_current = int(r.get(_monthly_redis_key(user_id)) or 0)
+            if monthly_current >= monthly_limit:
+                logger.warning(
+                    "ai_quota: user=%s tier=%s monthly count=%d limit=%d "
+                    "— monthly quota exceeded",
+                    user_id,
+                    user_tier,
+                    monthly_current,
+                    monthly_limit,
+                )
+                return False, monthly_current, monthly_limit, "monthly"
+
+        return True, current, limit, ""
     except Exception as exc:
         # Redis reachable for ping but erroring on GET — treat like an outage
         # and fall back to the fail-closed DB path rather than allowing blindly.
@@ -268,26 +377,22 @@ def check_daily_quota(user_id: str, user_tier: str) -> tuple[bool, int, int | No
             "ai_quota: Redis error during check (%s) — falling back to DB cost breaker",
             exc,
         )
-        emergency_cap = _get_emergency_cap(user_tier)
-        db_count = _db_story_count(user_id)
-        if db_count is None or emergency_cap is None:
-            logger.error(
-                "ALERT ai_quota: Redis errored and DB counter unavailable for "
-                "user=%s — story cost is UNMETERED this request",
-                user_id,
-            )
-            return True, 0, limit
-        if db_count >= emergency_cap:
-            return False, db_count, emergency_cap
-        return True, db_count, emergency_cap
+        return _daily_quota_db_fallback(
+            user_id,
+            user_tier,
+            monthly_limit,
+            reason=f"Redis error during check ({exc})",
+        )
 
 
 def increment_daily_quota(user_id: str, user_tier: str) -> None:
     """
     Increment the story-generation counters after a successful generation.
 
-    Bumps BOTH:
-      * the Redis daily counter (primary enforced limit, 2-day TTL), and
+    Bumps:
+      * the Redis daily counter (primary enforced limit, 2-day TTL),
+      * the Redis monthly counter (the real, authoritative limit; 35-day
+        TTL — mirrors the illustration monthly counter), and
       * the monthly DB counter `User.stories_generated_this_month` — kept
         current so it is a usable conservative baseline for the M-2 cost
         breaker and the single source of truth for usage read-outs (M-17).
@@ -318,10 +423,13 @@ def increment_daily_quota(user_id: str, user_tier: str) -> None:
         return
 
     key = _redis_key(user_id)
+    month_key = _monthly_redis_key(user_id)
     try:
         pipe = r.pipeline()
         pipe.incr(key)
         pipe.expire(key, 60 * 60 * 48)  # 2-day TTL
+        pipe.incr(month_key)
+        pipe.expire(month_key, 60 * 60 * 24 * 35)  # 35-day TTL covers month boundary
         pipe.execute()
     except Exception as exc:
         logger.warning("ai_quota: Redis error during increment (%s)", exc)
@@ -336,6 +444,7 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
           'daily_used': int,        # today's count from the enforced Redis counter
           'daily_limit': int|None,  # None = unlimited (BYOK)
           'month_used': int,        # conservative monthly DB counter
+          'monthly_limit': int|None,# the real cap (2026-07-05 pricing); None = unlimited
           'source': 'redis' | 'db', # which counter `daily_used` came from
         }
 
@@ -344,6 +453,7 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
     Both are now kept consistent; this helper exposes the enforced view.
     """
     limit = _get_limit(user_tier)
+    monthly_limit = _get_monthly_limit(user_tier)
     month_used = _db_story_count(user_id) or 0
     if limit is None:
         return {
@@ -351,6 +461,7 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
             "daily_used": 0,
             "daily_limit": None,
             "month_used": month_used,
+            "monthly_limit": None,
             "source": "unlimited",
         }
     r = _get_redis()
@@ -362,6 +473,7 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
                 "daily_used": daily_used,
                 "daily_limit": limit,
                 "month_used": month_used,
+                "monthly_limit": monthly_limit,
                 "source": "redis",
             }
         except Exception:
@@ -372,6 +484,7 @@ def get_story_usage(user_id: str, user_tier: str) -> dict:
         "daily_used": month_used,
         "daily_limit": _get_emergency_cap(user_tier),
         "month_used": month_used,
+        "monthly_limit": monthly_limit,
         "source": "db",
     }
 
@@ -622,18 +735,27 @@ def increment_tts_chars(user_id: str, user_tier: str, chars: int) -> None:
 # cost to meter (byok tier resolves to the 0 sentinel; route skips the check).
 # ---------------------------------------------------------------------------
 
+# 2026-07-05 pricing decision: free tier gets exactly ONE fully-illustrated
+# story (see `User.free_illustrated_story_id` / the gate in story_routes.py
+# generate_illustrations_endpoint). That per-story flag is now the REAL
+# gate for free users; this monthly cap is just a backstop (a single story
+# is at most ~12 pages), so BOTH free values below are set to a flat 15
+# regardless of band. This REPLACES the old Sprout free-tier carve-out
+# (60/month) — Sprout free and ages-6+ free are no longer differentiated.
 _ILLUSTRATION_MONTHLY_LIMITS: dict[str, int] = {
-    "free": 10,  # ~2 illustrated stories at 5 pages each
+    "free": 15,  # backstop only — the free-illustrated-story flag is the real gate
     "premium": 100,  # ~20 illustrated stories at 5 pages each
     "family": 200,  # ~40 illustrated stories at 5 pages each
     "byok": 0,  # BYOK uses user's Google key (Sentinel; route should
     # bypass the quota check entirely for BYOK)
 }
 
-# Sprout (age <=5) caps — generous because a Sprout picture book is ~10
-# images each and per-page art is core to the 3-5 experience.
+# Sprout (age <=5) caps — premium/family stay generous because a Sprout
+# picture book is ~10 images each and per-page art is core to the 3-5
+# experience. Free is flattened to 15 (see comment above `_ILLUSTRATION_
+# MONTHLY_LIMITS`) — the one-free-illustrated-story flag is the real gate.
 _ILLUSTRATION_SPROUT_MONTHLY_LIMITS: dict[str, int] = {
-    "free": 60,  # ~6 Sprout picture books at 10 pages each
+    "free": 15,  # backstop only — the free-illustrated-story flag is the real gate
     "premium": 250,  # ~25 Sprout picture books at 10 pages each
     "family": 500,  # ~50 Sprout picture books at 10 pages each
     "byok": 0,  # BYOK sentinel — route bypasses the check entirely

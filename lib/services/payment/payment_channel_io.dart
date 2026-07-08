@@ -43,8 +43,16 @@ class PaymentChannelIap implements PaymentChannel {
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
   }) {
-    return _iap.purchase(tier: tier, userId: userId);
+    // TODO(STORE-1 / owner): annual store products (`premium_annual`) don't
+    // exist in App Store Connect / the Play Console yet, so billingPeriod is
+    // accepted but ignored here — every IAP purchase is monthly for now.
+    return _iap.purchase(
+      tier: tier,
+      userId: userId,
+      billingPeriod: billingPeriod,
+    );
   }
 
   @override

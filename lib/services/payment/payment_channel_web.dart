@@ -61,6 +61,7 @@ class PaymentChannelWeb implements PaymentChannel {
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
   }) async {
     if (tier == SubscriptionTier.free) {
       return PurchaseResult.error('Free tier is not purchasable.');
@@ -69,6 +70,9 @@ class PaymentChannelWeb implements PaymentChannel {
       final session = await _stripeService.createCheckoutSession(
         tier: tier.name,
         userId: userId,
+        billingPeriod: billingPeriod == BillingPeriod.annual
+            ? 'annual'
+            : 'monthly',
       );
       final checkoutUrl = session['checkout_url'] as String?;
       if (checkoutUrl == null || checkoutUrl.isEmpty) {

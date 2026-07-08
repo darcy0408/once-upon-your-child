@@ -20,9 +20,14 @@ class StripeService {
       ApiServiceManager.authHeaders();
 
   /// Create a Stripe Checkout session and return the response payload.
+  ///
+  /// [billingPeriod] is "monthly" (default) or "annual". Annual is only
+  /// honoured by the backend for the premium tier — see
+  /// `backend/routes/stripe_routes.py`.
   Future<Map<String, dynamic>> createCheckoutSession({
     required String tier,
     String? userId,
+    String billingPeriod = 'monthly',
   }) async {
     try {
       final response = await _httpClient
@@ -32,6 +37,7 @@ class StripeService {
             body: jsonEncode({
               'tier': tier,
               'user_id': userId,
+              'billing_period': billingPeriod,
             }),
           )
           .timeout(_defaultTimeout);

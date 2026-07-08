@@ -49,9 +49,13 @@ abstract interface class PaymentChannel {
   /// [userId] is the authenticated Story Weaver user. The purchase is tied to
   /// this account server-side so the webhook / receipt-verify endpoint can
   /// resolve which user to entitle.
+  ///
+  /// [billingPeriod] selects monthly vs. annual billing (annual is only
+  /// offered for the premium tier). Defaults to [BillingPeriod.monthly].
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
   });
 
   /// Re-apply any entitlement the user already owns on this device/account.

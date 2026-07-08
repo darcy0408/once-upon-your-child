@@ -1,5 +1,7 @@
 import base64
+import hashlib
 import io
+import json
 import logging
 import os
 import re
@@ -41,6 +43,23 @@ from ..utils.validators import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _daily_quota_message(period: str) -> str:
+    """Kid/parent-facing message for a 429 QUOTA_EXCEEDED response.
+
+    2026-07-05 pricing decision added a monthly cap (the real, authoritative
+    limit) alongside the pre-existing daily cap (now a generous headroom
+    check). `check_daily_quota`'s `period` return value tells us which one
+    tripped so the message can point at the right reset window instead of
+    always saying "tomorrow" when the real wait is "next month".
+    """
+    if period == "monthly":
+        return (
+            "You've reached your story limit for this month. Upgrade for "
+            "more, or wait until next month."
+        )
+    return "You've reached your story limit for today. Come back tomorrow!"
 
 
 def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
@@ -607,6 +626,62 @@ def _read_partial_story(task_id: str | None) -> str | None:
         return None
 
 
+def _resolve_story_identity(
+    data: dict,
+    character_name,
+    character_appearance,
+    companions,
+    power_id,
+) -> str:
+    """Best-effort stable identity for "the story" an illustration request
+    belongs to — used by the free-tier one-illustrated-story gate (2026-07-07
+    pricing decision; see `User.free_illustrated_story_id`).
+
+    Prefers an explicit `story_id` (or `id`) from the request body — this is
+    the correct, forward-looking identifier and gives exact per-story
+    tracking. As of this change the Flutter client does NOT yet send it on
+    `/generate-illustrations` (only the local per-page prefetcher tracks a
+    `storyId`, used solely for on-disk file caching); until that one-line
+    client change lands, this falls back to a hash of fields that stay
+    constant across a story's pages but usually differ BETWEEN stories
+    (character name/appearance, companions, power) — `scene_description` is
+    deliberately excluded since it changes on every page. This proxy is not
+    perfect (two different stories reusing the identical hero/companions/
+    power would collide and both be treated as "the same story"), but it is
+    directionally correct and the monthly illustration quota remains a hard
+    backstop regardless. Always returns a 64-char sha256 hex digest so it
+    fits `User.free_illustrated_story_id` (VARCHAR(64)).
+    """
+    raw_story_id = data.get("story_id") or data.get("id")
+    if raw_story_id:
+        basis = f"sid:{raw_story_id}"
+    else:
+        try:
+            appearance_serialized = (
+                json.dumps(character_appearance, sort_keys=True, default=str)
+                if character_appearance
+                else "none"
+            )
+        except Exception:  # noqa: BLE001 — never let serialization break keying
+            appearance_serialized = repr(character_appearance)
+        companion_part = ""
+        if companions:
+            try:
+                companion_part = "|".join(sorted(str(c).lower() for c in companions))
+            except TypeError:
+                companion_part = str(companions).lower()
+        basis = "|".join(
+            [
+                "proxy",
+                f"char={str(character_name or '').strip().lower()}",
+                f"power={str(power_id or '').strip().lower()}",
+                f"companions={companion_part}",
+                f"appearance={appearance_serialized}",
+            ]
+        )
+    return hashlib.sha256(basis.encode("utf-8")).hexdigest()
+
+
 def _flux_disabled(env_var: str) -> bool:
     """True when [env_var] is set to a truthy kill-switch value."""
     return os.getenv(env_var, "").lower() in ("1", "true", "yes")
@@ -775,12 +850,19 @@ def create_story_blueprint(
         user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
 
         # Daily AI generation quota — circuit breaker against unbounded Gemini spend.
-        allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
+        allowed, current_count, daily_limit, quota_period = check_daily_quota(
+            user_id, user_tier
+        )
         if not allowed:
             audit_log(
                 "ai_quota_exceeded",
                 user_id=user_id,
-                data={"tier": user_tier, "count": current_count, "limit": daily_limit},
+                data={
+                    "tier": user_tier,
+                    "count": current_count,
+                    "limit": daily_limit,
+                    "period": quota_period,
+                },
             )
             return (
                 jsonify(
@@ -789,7 +871,7 @@ def create_story_blueprint(
                         "code": "QUOTA_EXCEEDED",
                         "limit": daily_limit,
                         "used": current_count,
-                        "message": "You've reached your story limit for today. Come back tomorrow!",
+                        "message": _daily_quota_message(quota_period),
                     }
                 ),
                 429,
@@ -1162,12 +1244,19 @@ def create_story_blueprint(
         user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
 
         # Daily AI generation quota — circuit breaker (same as /generate-story).
-        allowed, current_count, daily_limit = check_daily_quota(user_id, user_tier)
+        allowed, current_count, daily_limit, quota_period = check_daily_quota(
+            user_id, user_tier
+        )
         if not allowed:
             audit_log(
                 "ai_quota_exceeded",
                 user_id=user_id,
-                data={"tier": user_tier, "count": current_count, "limit": daily_limit},
+                data={
+                    "tier": user_tier,
+                    "count": current_count,
+                    "limit": daily_limit,
+                    "period": quota_period,
+                },
             )
             return (
                 jsonify(
@@ -1176,7 +1265,7 @@ def create_story_blueprint(
                         "code": "QUOTA_EXCEEDED",
                         "limit": daily_limit,
                         "used": current_count,
-                        "message": "You've reached your story limit for today. Come back tomorrow!",
+                        "message": _daily_quota_message(quota_period),
                     }
                 ),
                 429,
@@ -2479,6 +2568,83 @@ def create_story_blueprint(
                     power_id=power_id,
                 )
             else:
+                # 2026-07-07 pricing decision: free tier gets exactly ONE
+                # fully-illustrated story (the "wow" story) — everything
+                # after that is a Premium upsell. Enforced server-side via
+                # `User.free_illustrated_story_id` so a tampered client
+                # cannot bypass it. Runs BEFORE the monthly illustration
+                # quota check below, which still applies as a backstop (e.g.
+                # if a tier downgrade or admin action leaves stale state).
+                # Premium/family/BYOK are unaffected — BYOK never reaches
+                # this branch at all (see the `generator is not None` arm
+                # above); premium/family are excluded by the tier check.
+                if current_user_id:
+                    user_tier_for_gate = (
+                        (getattr(current_user, "subscription_tier", "free") or "free")
+                        .strip()
+                        .lower()
+                    )
+                    if user_tier_for_gate == "free" and not getattr(
+                        current_user, "has_byok", False
+                    ):
+                        story_identity = _resolve_story_identity(
+                            data,
+                            character_name,
+                            character_appearance,
+                            companions,
+                            power_id,
+                        )
+                        claimed = getattr(
+                            current_user, "free_illustrated_story_id", None
+                        )
+                        if claimed is None:
+                            current_user.free_illustrated_story_id = story_identity
+                            try:
+                                db.session.commit()
+                            except Exception as exc:  # noqa: BLE001
+                                db.session.rollback()
+                                logger.warning(
+                                    "Failed to persist free_illustrated_story_id "
+                                    "for user=%s (%s)",
+                                    current_user_id,
+                                    exc,
+                                )
+                        elif claimed != story_identity:
+                            try:
+                                from backend.services.event_tracking_service import (
+                                    record_event,
+                                )
+                            except ImportError:
+                                from services.event_tracking_service import (
+                                    record_event,
+                                )
+
+                            record_event(
+                                "free_illustrated_story_limit_hit",
+                                user_id=current_user_id,
+                                tier=user_tier_for_gate,
+                                metadata={},
+                            )
+                            return (
+                                jsonify(
+                                    {
+                                        "illustrations": [],
+                                        "count": 0,
+                                        "code": "FREE_ILLUSTRATED_STORY_USED",
+                                        "quota_used": 1,
+                                        "quota_limit": 1,
+                                        "message": (
+                                            "You've used your free illustrated "
+                                            "story! Upgrade to Premium to bring "
+                                            "every story to life."
+                                        ),
+                                    }
+                                ),
+                                200,
+                            )
+                        # else: claimed == story_identity — continuing the
+                        # same free story's remaining pages; fall through.
+
                 # Server-key path — ALL non-BYOK ages are metered against the
                 # monthly illustration quota. Sprout (age <=5) uses a separate,
                 # generous cap (is_sprout=True; see ai_quota.py). A cache hit

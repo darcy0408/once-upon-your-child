@@ -34,7 +34,11 @@ def init_stripe_api(app):
         logger.info("✓ Stripe API configured via init_stripe_api")
 
 
-_PLACEHOLDER_PRICE_IDS = {"price_PLACEHOLDER_PREMIUM", "price_PLACEHOLDER_FAMILY"}
+_PLACEHOLDER_PRICE_IDS = {
+    "price_PLACEHOLDER_PREMIUM",
+    "price_PLACEHOLDER_FAMILY",
+    "price_PLACEHOLDER_PREMIUM_ANNUAL",
+}
 
 
 def get_price_ids():
@@ -43,10 +47,15 @@ def get_price_ids():
     If a real price ID isn't set in the environment, return None for that tier
     so the checkout route returns a clean 400 instead of silently asking Stripe
     to charge for a non-existent product.
+
+    "premium_annual" is not a subscription tier — it's the annual-billing
+    variant of the premium tier's price, keyed separately here so
+    `/create-checkout-session` can resolve it without a second price map.
     """
     raw = {
         "premium": os.getenv("STRIPE_PRICE_ID_PREMIUM", ""),
         "family": os.getenv("STRIPE_PRICE_ID_FAMILY", ""),
+        "premium_annual": os.getenv("STRIPE_PRICE_ID_PREMIUM_ANNUAL", ""),
     }
     return {
         tier: pid if pid and pid not in _PLACEHOLDER_PRICE_IDS else None
@@ -69,19 +78,33 @@ def get_trial_days():
 def create_checkout_session():
     data = request.get_json(silent=True) or {}
     tier = data.get("tier")
+    billing_period = data.get("billing_period", "monthly")
     # Always use the authenticated user ID for checkout
     user_id = request.current_user.id
 
     PRICE_IDS = get_price_ids()
-    logger.info(
-        f"Creating checkout for tier '{tier}' with price_id: {PRICE_IDS.get(tier)}"
-    )
 
     if not tier or tier not in PRICE_IDS:
         return jsonify({"error": "Invalid subscription tier"}), 400
-    if PRICE_IDS[tier] is None:
+    if billing_period not in ("monthly", "annual"):
+        return jsonify({"error": "Invalid billing period"}), 400
+    if billing_period == "annual" and tier != "premium":
+        return (
+            jsonify({"error": "Annual billing is only available for premium"}),
+            400,
+        )
+
+    # Annual is a price-ID variant of premium, not its own tier — resolve to
+    # the "premium_annual" key so the tier the user is entitled to (still
+    # "premium") stays separate from which Stripe Price gets billed.
+    price_key = "premium_annual" if billing_period == "annual" else tier
+    logger.info(
+        f"Creating checkout for tier '{tier}' ({billing_period}) with price_id: "
+        f"{PRICE_IDS.get(price_key)}"
+    )
+    if PRICE_IDS[price_key] is None:
         logger.error(
-            f"STRIPE_PRICE_ID_{tier.upper()} env var not configured — refusing checkout"
+            f"STRIPE_PRICE_ID_{price_key.upper()} env var not configured — refusing checkout"
         )
         return jsonify({"error": "Subscription tier temporarily unavailable"}), 503
 
@@ -90,15 +113,23 @@ def create_checkout_session():
         user = request.current_user
         session_params = dict(
             payment_method_types=["card"],
-            line_items=[{"price": PRICE_IDS[tier], "quantity": 1}],
+            line_items=[{"price": PRICE_IDS[price_key], "quantity": 1}],
             mode="subscription",
             success_url=f"{FRONTEND_URL}/#/subscription-success",
             cancel_url=f"{FRONTEND_URL}/#/subscription-canceled",
             client_reference_id=user_id,
             customer_email=user.email,
-            metadata={"user_id": user_id, "subscription_tier": tier},
+            metadata={
+                "user_id": user_id,
+                "subscription_tier": tier,
+                "billing_period": billing_period,
+            },
             subscription_data={
-                "metadata": {"user_id": user_id, "subscription_tier": tier}
+                "metadata": {
+                    "user_id": user_id,
+                    "subscription_tier": tier,
+                    "billing_period": billing_period,
+                }
             },
         )
         if user.stripe_customer_id:
@@ -112,7 +143,11 @@ def create_checkout_session():
         # Idempotency key: a client retry within the same coarse 5-minute
         # bucket dedupes to the same Stripe checkout session, while a
         # genuinely new checkout later (next bucket) still creates one.
-        idempotency_key = f"checkout:{user_id}:{tier}:{int(time.time() // 300)}"
+        # billing_period is included so switching Monthly<->Yearly within the
+        # same bucket creates a new session instead of deduping to the other.
+        idempotency_key = (
+            f"checkout:{user_id}:{tier}:{billing_period}:{int(time.time() // 300)}"
+        )
         checkout_session = stripe.checkout.Session.create(
             **session_params, idempotency_key=idempotency_key
         )

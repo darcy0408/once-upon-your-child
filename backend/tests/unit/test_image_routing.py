@@ -206,10 +206,13 @@ class TestIllustrationQuota:
     generous caps selected by is_sprout=True (cost-reduction 2026-05-17).
     """
 
-    def test_free_tier_has_10_image_cap(self):
+    def test_free_tier_has_15_image_cap(self):
+        """2026-07-05 pricing: free is a flat 15/month backstop for BOTH
+        Sprout and ages-6+ — the one-free-illustrated-story flag is now the
+        real gate (was 10 for ages-6+ / 60 for Sprout)."""
         from backend.utils.ai_quota import _get_illustration_limit
 
-        assert _get_illustration_limit("free") == 10
+        assert _get_illustration_limit("free") == 15
 
     def test_premium_tier_has_100_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
@@ -252,7 +255,7 @@ class TestIllustrationQuota:
 
         allowed, _, limit = check_illustration_quota("user-x", "free", 1)
         assert allowed is True
-        assert limit == 10
+        assert limit == 15
 
     def test_check_quota_no_redis_db_under_emergency_cap_allows(self, monkeypatch):
         """MT-169: Redis down + DB count under the emergency cap → allow.
@@ -265,13 +268,13 @@ class TestIllustrationQuota:
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
 
-        # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
-        # DB count 5 + req 1 = 6 ≤ 30 → allow.
+        # free ages-6+ cap = 15, multiplier default 3 → emergency_cap = 45.
+        # DB count 5 + req 1 = 6 ≤ 45 → allow.
         monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 5)
         allowed, used, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
         assert allowed is True
         assert used == 5
-        assert limit == 30  # emergency cap, not the Redis limit
+        assert limit == 45  # emergency cap, not the Redis limit
 
     def test_check_quota_no_redis_db_over_emergency_cap_blocks(self, monkeypatch):
         """MT-169: Redis down + DB count already at the emergency cap → BLOCK.
@@ -284,13 +287,13 @@ class TestIllustrationQuota:
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
 
-        # free ages-6+ cap = 10, multiplier default 3 → emergency_cap = 30.
-        # DB count 30 + req 1 = 31 > 30 → block.
-        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
+        # free ages-6+ cap = 15, multiplier default 3 → emergency_cap = 45.
+        # DB count 45 + req 1 = 46 > 45 → block.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 45)
         allowed, used, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
         assert allowed is False
-        assert used == 30
-        assert limit == 30
+        assert used == 45
+        assert limit == 45
 
     def test_check_quota_emergency_multiplier_env_override(self, monkeypatch):
         """ILLUSTRATIONS_EMERGENCY_MULTIPLIER tunes the fail-closed cap."""
@@ -299,11 +302,11 @@ class TestIllustrationQuota:
         monkeypatch.setenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", "1")
         from backend.utils import ai_quota
 
-        # multiplier 1 → emergency_cap = 10 (the base monthly cap).
-        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 10)
+        # multiplier 1 → emergency_cap = 15 (the base monthly cap).
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 15)
         allowed, _, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
         assert allowed is False
-        assert limit == 10
+        assert limit == 15
 
     def test_check_quota_redis_get_error_uses_db_fallback(self, monkeypatch):
         """MT-169: a Redis client that pings but then raises on GET must take
@@ -316,21 +319,23 @@ class TestIllustrationQuota:
                 raise RuntimeError("simulated GET failure")
 
         monkeypatch.setattr(ai_quota, "_get_redis", lambda: _BrokenRedis())
-        # DB count already over the emergency cap → block.
-        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
+        # DB count already over the emergency cap (free base 15 × 3 = 45) → block.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 45)
         allowed, _, limit = ai_quota.check_illustration_quota("user-x", "free", 1)
         assert allowed is False
-        assert limit == 30  # emergency cap, confirming we took the DB fallback
+        assert limit == 45  # emergency cap, confirming we took the DB fallback
 
     def test_check_quota_sprout_emergency_cap_uses_sprout_base(self, monkeypatch):
-        """Sprout's generous base cap (60) scales by the same multiplier."""
+        """Sprout free base is now flattened to 15 (was 60) — the
+        one-free-illustrated-story flag is the real gate; this backstop
+        emergency cap scales by the same multiplier as ages-6+ free."""
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         monkeypatch.delenv("ILLUSTRATIONS_EMERGENCY_MULTIPLIER", raising=False)
         from backend.utils import ai_quota
 
-        # sprout free base = 60, multiplier 3 → emergency_cap = 180.
-        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 100)
+        # sprout free base = 15, multiplier 3 → emergency_cap = 45.
+        monkeypatch.setattr(ai_quota, "_db_illustration_count", lambda _uid: 30)
         allowed, used, limit = ai_quota.check_illustration_quota(
             "user-x",
             "free",
@@ -338,8 +343,8 @@ class TestIllustrationQuota:
             is_sprout=True,
         )
         assert allowed is True
-        assert used == 100
-        assert limit == 180
+        assert used == 30
+        assert limit == 45
 
     def test_check_quota_byok_zero_sentinel_unchanged_under_redis_outage(
         self, monkeypatch
@@ -362,11 +367,12 @@ class TestIllustrationQuota:
 
     # --- Sprout (age <=5) monthly cap (cost-reduction 2026-05-17) ---
 
-    def test_sprout_free_tier_has_60_image_cap(self):
-        """Sprout free cap is generous — ~6 picture books at 10 images each."""
+    def test_sprout_free_tier_has_15_image_cap(self):
+        """2026-07-05 pricing: Sprout free is flattened to 15 (was 60) — the
+        one-free-illustrated-story flag replaces the old carve-out."""
         from backend.utils.ai_quota import _get_illustration_limit
 
-        assert _get_illustration_limit("free", is_sprout=True) == 60
+        assert _get_illustration_limit("free", is_sprout=True) == 15
 
     def test_sprout_premium_tier_has_250_image_cap(self):
         from backend.utils.ai_quota import _get_illustration_limit
@@ -385,10 +391,11 @@ class TestIllustrationQuota:
         assert _get_illustration_limit("byok", is_sprout=True) == 0
 
     def test_sprout_cap_does_not_change_ages6_caps(self):
-        """The Sprout caps must not regress the existing ages-6+ caps."""
+        """The Sprout caps must not regress the existing ages-6+ caps.
+        (free is 15 for both bands as of 2026-07-05 — see class docstring.)"""
         from backend.utils.ai_quota import _get_illustration_limit
 
-        assert _get_illustration_limit("free", is_sprout=False) == 10
+        assert _get_illustration_limit("free", is_sprout=False) == 15
         assert _get_illustration_limit("premium", is_sprout=False) == 100
         assert _get_illustration_limit("family", is_sprout=False) == 200
 
@@ -399,7 +406,8 @@ class TestIllustrationQuota:
         assert _get_illustration_limit("free", is_sprout=True) == 120
 
     def test_check_quota_uses_sprout_cap_when_is_sprout(self, monkeypatch):
-        """check_illustration_quota with is_sprout=True reports the Sprout limit."""
+        """check_illustration_quota with is_sprout=True reports the Sprout
+        limit — 15 for free as of 2026-07-05 (was 60)."""
         monkeypatch.setenv("REDIS_URL", "")
         monkeypatch.setenv("REDIS_PRIVATE_URL", "")
         from backend.utils.ai_quota import check_illustration_quota
@@ -411,7 +419,7 @@ class TestIllustrationQuota:
             is_sprout=True,
         )
         assert allowed is True
-        assert limit == 60
+        assert limit == 15
 
 
 class TestFluxSchnellGenerator:

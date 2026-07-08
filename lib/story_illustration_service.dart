@@ -133,6 +133,7 @@ class StoryIllustrationService {
     List<Map<String, String>>? companions, // NEW: Companions/pets
     String? sceneRequirements,
     String? heroPower,
+    String? storyId, // identifies the story for the free-illustrated-story gate
   }) async {
     // Split story into segments for illustration
     final segments = _identifyKeyScenes(storyText, numberOfImages);
@@ -161,6 +162,7 @@ class StoryIllustrationService {
           characterAppearance: characterAppearance,
           companions: companions,
           heroPower: heroPower,
+          storyId: storyId,
         );
 
         illustrations.add(StoryIllustration(
@@ -206,6 +208,7 @@ class StoryIllustrationService {
     Map<String, dynamic>? characterAppearance,
     List<Map<String, String>>? companions,
     String? heroPower,
+    String? storyId,
   }) async {
     final illHeaders = await ApiServiceManager.authHeaders();
     // Route the cover/inline illustration through the BYOK key when one is
@@ -221,6 +224,7 @@ class StoryIllustrationService {
         'style': style,
         'num_images': 1,
         'age': age,
+        if (storyId != null && storyId.isNotEmpty) 'story_id': storyId,
         'therapeutic_focus': therapeuticFocus,
         if (characterAppearance != null)
           'character_appearance': characterAppearance,
@@ -437,6 +441,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
     List<Map<String, String>>? companions,
     String? sceneRequirements,
     String? heroPower,
+    String? storyId,
   }) async {
     // Use the base implementation, which calls /generate-illustrations
     // with scene_description (the current backend contract).
@@ -453,6 +458,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
       companions: companions,
       sceneRequirements: sceneRequirements,
       heroPower: heroPower,
+      storyId: storyId,
     );
   }
 }
@@ -475,6 +481,7 @@ class MockIllustrationService extends StoryIllustrationService {
     List<Map<String, String>>? companions,
     String? sceneRequirements,
     String? heroPower,
+    String? storyId,
   }) async {
     // Generate mock illustrations with placeholder images
     final mockIllustrations = <StoryIllustration>[];

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'subscription_models.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'services/analytics_service.dart';
+import 'services/payment/payment_models.dart';
 import 'widgets/subscribe_button.dart';
 
 class PremiumUpgradeScreen extends StatefulWidget {
@@ -295,6 +296,13 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                     children: [
                       SubscribeButton(
                         tier: _selectedTier!,
+                        // Annual billing is only offered for premium (backend
+                        // rejects annual+family with a 400) — the toggle only
+                        // ever changes the price shown, never the tier.
+                        billingPeriod:
+                            _isYearly && _selectedTier == SubscriptionTier.premium
+                                ? BillingPeriod.annual
+                                : BillingPeriod.monthly,
                         onSuccess: () {
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(

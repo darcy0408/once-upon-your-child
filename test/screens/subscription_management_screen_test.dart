@@ -36,6 +36,7 @@ class _FakePaymentChannel implements PaymentChannel {
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
   }) async =>
       PurchaseResult.pending();
 

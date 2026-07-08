@@ -106,9 +106,15 @@ class IapService {
   }
 
   /// Buy the product for [tier], attributing it to [userId].
+  ///
+  /// [billingPeriod] is accepted for interface parity with the web (Stripe)
+  /// channel but currently ignored: annual store products (`premium_annual`)
+  /// are a TODO (STORE-1 / owner) for when App Store Connect / the Play
+  /// Console have annual listings. Every IAP purchase is monthly today.
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
   }) async {
     await initialize();
 

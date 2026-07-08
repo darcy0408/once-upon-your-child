@@ -639,6 +639,9 @@ def create_app(config_name):
             pending_cols = {
                 "stories_created_count": "INTEGER DEFAULT 0 NOT NULL",
                 "custom_avatars_generated": "INTEGER DEFAULT 0 NOT NULL",
+                # 2026-07-07 pricing: which story claimed the free tier's one
+                # fully-illustrated-story slot (see models/user.py).
+                "free_illustrated_story_id": "VARCHAR(64)",
                 "gemini_api_key_encrypted": "TEXT",
                 "has_byok": "BOOLEAN DEFAULT FALSE NOT NULL",
                 "stories_generated_this_month": "INTEGER DEFAULT 0 NOT NULL",

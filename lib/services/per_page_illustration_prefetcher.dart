@@ -277,6 +277,9 @@ class PerPageIllustrationPrefetcher {
             headers: headers,
             body: jsonEncode({
               'scene_description': scene,
+              // Lets the backend's one-free-illustrated-story gate identify
+              // the story exactly instead of falling back to a character hash.
+              'story_id': storyId,
               'character_name': characterName,
               'style': style,
               'num_images': 1,

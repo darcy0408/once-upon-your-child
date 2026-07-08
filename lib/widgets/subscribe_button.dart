@@ -17,6 +17,10 @@ class SubscribeButton extends StatefulWidget {
   final VoidCallback? onSuccess;
   final String? userId;
 
+  /// Monthly (default) or annual billing. Annual is only meaningful for the
+  /// premium tier — see [BillingPeriod].
+  final BillingPeriod billingPeriod;
+
   /// Optional injected channel for testing. Production builds let the widget
   /// create the platform-appropriate channel via [createPaymentChannel].
   final PaymentChannel? paymentChannel;
@@ -26,6 +30,7 @@ class SubscribeButton extends StatefulWidget {
     required this.tier,
     this.onSuccess,
     this.userId,
+    this.billingPeriod = BillingPeriod.monthly,
     this.paymentChannel,
   });
 
@@ -74,6 +79,7 @@ class _SubscribeButtonState extends State<SubscribeButton> {
       final result = await _channel.purchase(
         tier: widget.tier,
         userId: userId,
+        billingPeriod: widget.billingPeriod,
       );
 
       if (!mounted) return;

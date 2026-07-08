@@ -23,6 +23,22 @@ enum PaymentChannelKind {
   googleIap,
 }
 
+/// Which billing cadence a subscription purchase uses.
+///
+/// Single-tier launch pricing (2026-07-07): Premium sells at $9.99/mo or
+/// $59.99/yr. The backend resolves [annual] to a separate Stripe Price ID
+/// (`STRIPE_PRICE_ID_PREMIUM_ANNUAL`, lookup key `premium_annual`) — see
+/// `backend/routes/stripe_routes.py`. The IAP channels accept this but
+/// currently ignore it; annual store products are a TODO (STORE-1 / owner)
+/// for when the App Store Connect / Play Console listings exist.
+enum BillingPeriod {
+  /// Billed every month. Default for every tier.
+  monthly,
+
+  /// Billed once a year. Only offered for the premium tier.
+  annual,
+}
+
 /// Outcome of a [PaymentChannel.purchase] call.
 enum PurchaseOutcome {
   /// The purchase completed and the receipt was accepted by the backend. For

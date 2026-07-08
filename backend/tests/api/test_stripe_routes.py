@@ -64,6 +64,112 @@ def test_create_checkout_session_success(client, app, mocker):
     assert kwargs["mode"] == "subscription"
 
 
+def test_create_checkout_session_annual_premium_uses_annual_price_id(
+    client, app, mocker
+):
+    with app.app_context():
+        _create_user("u-1b")
+
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={
+            "premium": "price_premium_123",
+            "family": "price_family_456",
+            "premium_annual": "price_premium_annual_789",
+        },
+    )
+    create_mock = mocker.patch(
+        "backend.routes.stripe_routes.stripe.checkout.Session.create",
+        return_value=SimpleNamespace(
+            id="cs_test_annual", url="https://checkout.stripe.com/pay/cs_test_annual"
+        ),
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium", "user_id": "u-1b", "billing_period": "annual"},
+        headers=_auth_headers("u-1b"),
+    )
+
+    assert response.status_code == 200
+    kwargs = create_mock.call_args.kwargs
+    assert kwargs["line_items"][0]["price"] == "price_premium_annual_789"
+    assert kwargs["metadata"]["billing_period"] == "annual"
+    assert kwargs["metadata"]["subscription_tier"] == "premium"
+    assert kwargs["subscription_data"]["metadata"]["billing_period"] == "annual"
+
+
+def test_create_checkout_session_annual_premium_missing_price_id_returns_503(
+    client, app, mocker
+):
+    with app.app_context():
+        _create_user("u-1c")
+
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={
+            "premium": "price_premium_123",
+            "family": "price_family_456",
+            "premium_annual": None,
+        },
+    )
+    create_mock = mocker.patch(
+        "backend.routes.stripe_routes.stripe.checkout.Session.create",
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium", "user_id": "u-1c", "billing_period": "annual"},
+        headers=_auth_headers("u-1c"),
+    )
+
+    assert response.status_code == 503
+    assert response.get_json()["error"] == "Subscription tier temporarily unavailable"
+    create_mock.assert_not_called()
+
+
+def test_create_checkout_session_invalid_billing_period_returns_400(
+    client, app, mocker
+):
+    with app.app_context():
+        _create_user("u-1d")
+
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123", "family": "price_family_456"},
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium", "user_id": "u-1d", "billing_period": "biannual"},
+        headers=_auth_headers("u-1d"),
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid billing period"
+
+
+def test_create_checkout_session_annual_family_returns_400(client, app, mocker):
+    with app.app_context():
+        _create_user("u-1e")
+
+    mocker.patch(
+        "backend.routes.stripe_routes.get_price_ids",
+        return_value={"premium": "price_premium_123", "family": "price_family_456"},
+    )
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "family", "user_id": "u-1e", "billing_period": "annual"},
+        headers=_auth_headers("u-1e"),
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.get_json()["error"] == "Annual billing is only available for premium"
+    )
+
+
 def test_create_checkout_session_invalid_tier_returns_400(client, app):
     with app.app_context():
         _create_user("u-2")

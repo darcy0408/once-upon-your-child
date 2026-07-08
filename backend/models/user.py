@@ -33,6 +33,15 @@ class User(db.Model):
     # Premium/BYOK users are unlimited and not counted here.
     custom_avatars_generated = db.Column(db.Integer, default=0, nullable=False)
 
+    # 2026-07-07 pricing decision: the free tier gets exactly ONE fully-
+    # illustrated story (the "wow" story) — every story after that is
+    # text-only until the account upgrades. This records the id (or stable
+    # proxy identity — see story_routes._resolve_story_identity) of the
+    # story that claimed the free slot, so subsequent illustration requests
+    # for a DIFFERENT story can be blocked while the SAME story's remaining
+    # pages keep illustrating. Null = the free slot hasn't been claimed yet.
+    free_illustrated_story_id = db.Column(db.String(64), nullable=True)
+
     # BYOK (Bring Your Own API Key) support
     gemini_api_key_encrypted = db.Column(db.Text, nullable=True)  # Encrypted API key
     has_byok = db.Column(
@@ -95,6 +104,7 @@ class User(db.Model):
             "stripe_customer_id": self.stripe_customer_id,
             "stories_created_count": self.stories_created_count,
             "custom_avatars_generated": self.custom_avatars_generated,
+            "free_illustrated_story_id": self.free_illustrated_story_id,
             # BYOK fields
             "has_byok": self.has_byok,
             "stories_generated_this_month": self.stories_generated_this_month,
