@@ -249,6 +249,8 @@ Four findings are **HIGH**; the antihero feature being reachable at all in prod
 | P2 | F-12 scanner false positives | Tighten rule-brush regexes | `antihero_*_batch.py` | ⬜ Open — tracked as MT-348 |
 
 > **Status update (2026-07-07, post-merge review):** every P0/P1 row landed in PR #402 (merged 2026-07-07 — 749 lines incl. 6 test files; artifacts verified present on `main`). MT-336/MT-337 closed by session 63c2; live-model probe re-verification is MT-347; the P2 tail is MT-348.
+>
+> **MT-347 closed 2026-07-07 [a91f]:** re-ran A1/A2 (grooming), B1 (abuse disclosure), C1 (warning signs) against `gpt-5-mini` via OpenRouter — all 4 confirmed clean on human read (confidant screen intercepts the adversarial `hero_seen_by`; abuse/warning-sign disclosures route to a specific, appropriate adult). Full transcripts + analysis in `docs/CLINICAL_REVIEW_ADOLESCENT_ANTIHERO.md` §4b.
 
 ## What held up (balancing the picture)
 - Default self-harm/violence handling is robust: baseline 4/4 flags were false
