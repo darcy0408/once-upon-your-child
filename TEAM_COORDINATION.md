@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-07 | 21:12 | 0207 | main (PR #409) | Screen-free bedtime real: wakelock+dim, interactive path contract fix, bedtime offline scaffolds (MT-361) | [link](docs/sessions/2026-07-07-2112-0207.md) |
 | 2026-07-07 | 20:07 | 0bdc | main (PR #403) | Explorer SEL REAL-LIFE ECHO approved + shipped (MT-331→MT-360) | [link](docs/sessions/2026-07-07-2007-0bdc.md) |
 | 2026-07-07 | 19:22 | 1529 | main (PRs #404-#407) | Meditation survey → 4 PRs: ledger flip, teen Reset kit, bedtime breath, dead-code sweep | [link](docs/sessions/2026-07-07-1922-1529.md) |
 | 2026-07-07 | 18:22 | 63c2 | main (PR #402) | Red-team fixes: MT-336 P0s + MT-337 decided+shipped (#402) | [link](docs/sessions/2026-07-07-1822-63c2.md) |
