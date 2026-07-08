@@ -97,6 +97,13 @@ class StoryScaffold {
   /// story ends. Mirrors `LifeQuestScenario.grownupTip`.
   final String? grownupTip;
 
+  /// Bedtime scaffolds are calm, short, and end on a sleep transition.
+  /// They are ONLY served when the caller asks for bedtime (so a daytime
+  /// request never gets a sleepy story), and are PREFERRED for bedtime
+  /// requests (so a network hiccup at lights-out never serves an
+  /// energetic adventure).
+  final bool isBedtime;
+
   const StoryScaffold({
     required this.id,
     required this.title,
@@ -107,6 +114,7 @@ class StoryScaffold {
     this.archetypeFilter,
     this.feelingFilter,
     this.grownupTip,
+    this.isBedtime = false,
   });
 }
 
@@ -192,9 +200,28 @@ StoryScaffold? pickScaffoldFor({
   required AgeBand band,
   String? archetypeId,
   String? feelingId,
+  bool bedtime = false,
 }) {
+  // Bedtime requests strongly prefer a bedtime scaffold: a network failure
+  // at lights-out should produce a wind-down story, not a daytime
+  // adventure. Non-bedtime requests never see bedtime scaffolds.
+  if (bedtime) {
+    final bedtimeMatches = allStoryScaffolds
+        .where((s) => s.isBedtime && s.recommendedBands.contains(band))
+        .toList(growable: false);
+    if (bedtimeMatches.isNotEmpty) {
+      final scenarioMatch =
+          bedtimeMatches.where((s) => s.scenarioId == scenarioId).toList();
+      return scenarioMatch.isNotEmpty
+          ? scenarioMatch.first
+          : bedtimeMatches.first;
+    }
+    // No bedtime scaffold for this band — fall through to the normal
+    // library rather than returning nothing at all.
+  }
+
   final bandMatches = allStoryScaffolds
-      .where((s) => s.recommendedBands.contains(band))
+      .where((s) => !s.isBedtime && s.recommendedBands.contains(band))
       .toList(growable: false);
   if (bandMatches.isEmpty) return null;
 
@@ -237,6 +264,8 @@ StoryScaffold? pickScaffoldFor({
 const List<StoryScaffold> allStoryScaffolds = <StoryScaffold>[
   scaffoldVolcanoDragonsSproutStomp,
   scaffoldNeonJungleSproutForest,
+  scaffoldBedtimeYoungStarlitMeadow,
+  scaffoldBedtimeOlderQuietHarbor,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -258,8 +287,7 @@ const scaffoldVolcanoDragonsSproutStomp = StoryScaffold(
   segments: {
     'vds_start': QuestSegment(
       id: 'vds_start',
-      content:
-          'You are walking on a warm, bumpy path.\n\n'
+      content: 'You are walking on a warm, bumpy path.\n\n'
           'The ground says, "Rumble, rumble."\n\n'
           'A friendly dinosaur peeks out. '
           '«{companion} peeks out too. »'
@@ -281,8 +309,7 @@ const scaffoldVolcanoDragonsSproutStomp = StoryScaffold(
     ),
     'vds_stomp': QuestSegment(
       id: 'vds_stomp',
-      content:
-          'You stomp. STOMP-STOMP!\n\n'
+      content: 'You stomp. STOMP-STOMP!\n\n'
           'The dinosaur giggles a deep giggle.\n\n'
           '"You stomp like me!" {pronoun} rumbles.\n\n'
           'Your feet feel strong. '
@@ -302,8 +329,7 @@ const scaffoldVolcanoDragonsSproutStomp = StoryScaffold(
     ),
     'vds_wave': QuestSegment(
       id: 'vds_wave',
-      content:
-          'You wave. Just a tiny wave.\n\n'
+      content: 'You wave. Just a tiny wave.\n\n'
           'The dinosaur waves back with one big toe.\n\n'
           '«{companion} hides behind your leg. »'
           'Tiny waves are big enough. '
@@ -323,8 +349,7 @@ const scaffoldVolcanoDragonsSproutStomp = StoryScaffold(
     ),
     'vds_pond': QuestSegment(
       id: 'vds_pond',
-      content:
-          'The pond is warm like bath water.\n\n'
+      content: 'The pond is warm like bath water.\n\n'
           'Tiny dinosaurs splash in it. '
           'Splish! Splash!\n\n'
           'You dip one toe in. '
@@ -339,8 +364,7 @@ const scaffoldVolcanoDragonsSproutStomp = StoryScaffold(
     ),
     'vds_rock': QuestSegment(
       id: 'vds_rock',
-      content:
-          'The rock is warm like a hug from the sun.\n\n'
+      content: 'The rock is warm like a hug from the sun.\n\n'
           'You sit. The big dinosaur sits next to you. '
           'BOOM. The ground wiggles.\n\n'
           'You giggle. The dinosaur giggles.\n\n'
@@ -372,8 +396,7 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
   segments: {
     'mjs_start': QuestSegment(
       id: 'mjs_start',
-      content:
-          'You step into a soft, glowing forest.\n\n'
+      content: 'You step into a soft, glowing forest.\n\n'
           'The trees are green. The flowers are pink. '
           'Even the moss glows!\n\n'
           '«{companion} sniffs the air. »'
@@ -395,8 +418,7 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
     ),
     'mjs_whisper': QuestSegment(
       id: 'mjs_whisper',
-      content:
-          'You lean down close.\n\n'
+      content: 'You lean down close.\n\n'
           'You whisper, "You are pretty."\n\n'
           'The flower glows BRIGHT pink!\n\n'
           'Then a tree glows.\n\n'
@@ -418,8 +440,7 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
     ),
     'mjs_hum': QuestSegment(
       id: 'mjs_hum',
-      content:
-          'You hum. Mmm-hmm-hmm.\n\n'
+      content: 'You hum. Mmm-hmm-hmm.\n\n'
           'The little flower hums back.\n\n'
           'Soon the whole forest hums with you. '
           'Like a soft lullaby.\n\n'
@@ -441,8 +462,7 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
     ),
     'mjs_more': QuestSegment(
       id: 'mjs_more',
-      content:
-          'You tiptoe.\n\n'
+      content: 'You tiptoe.\n\n'
           'You find a sleepy mushroom. You whisper, "Good morning."\n\n'
           'POP! It glows orange.\n\n'
           'You find a sleepy vine. You whisper, "I see you."\n\n'
@@ -459,8 +479,7 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
     ),
     'mjs_heart': QuestSegment(
       id: 'mjs_heart',
-      content:
-          'In the middle of the forest is a HUGE tree.\n\n'
+      content: 'In the middle of the forest is a HUGE tree.\n\n'
           'It is the Heart Tree. '
           'It glows like a warm rainbow.\n\n'
           'You put your hand on the bark. '
@@ -471,6 +490,138 @@ const scaffoldNeonJungleSproutForest = StoryScaffold(
           'You sit in the soft moss. '
           'The whole forest glows around you.\n\n'
           'Your kind voice is magic, {name}.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCAFFOLD 3: The Starlit Meadow  [bedtime / Sprout + Explorer]
+// Offline wind-down story for the screen-free Bedtime Mode. Deliberately
+// linear (one segment) and QUIET: no stakes, no surprises, descending
+// energy, a breathing beat, and a sleep-transition ending. Served only
+// when pickScaffoldFor(bedtime: true) — see the picker notes above.
+// Word target: ~300 words.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const scaffoldBedtimeYoungStarlitMeadow = StoryScaffold(
+  id: 'bedtime_young_starlit_meadow',
+  title: 'The Starlit Meadow',
+  scenarioId: 'bedtime',
+  recommendedBands: [AgeBand.sprout, AgeBand.explorer],
+  isBedtime: true,
+  startSegmentId: 'bym_all',
+  grownupTip:
+      "Ask softly: 'Which sleepy animal did you like best?' Then take one "
+      "big slow breath together.",
+  segments: {
+    'bym_all': QuestSegment(
+      id: 'bym_all',
+      content: 'The sun has gone to bed, {name}.\n\n'
+          'The sky is soft and purple. '
+          'One little star wakes up. '
+          'Then another. '
+          'Then another.\n\n'
+          'You walk down a quiet path. '
+          '«{companion} walks beside you, slow and sleepy. »'
+          'The grass is cool. '
+          'The air smells like flowers.\n\n'
+          'You come to a meadow full of starlight. '
+          'Everything here is getting ready for sleep.\n\n'
+          'A bunny yawns a tiny yawn. '
+          'A bird tucks its head under its wing. '
+          'Even the flowers close their petals, one by one.\n\n'
+          'The wind whispers, "Hushhh. Hushhh."\n\n'
+          'You find a nest of moss, just your size. '
+          'It is warm. '
+          'It is soft. '
+          '«{companion} curls up next to you, warm as a blanket. »'
+          'You lie back and look up at the stars.\n\n'
+          'You take a big slow breath in... and let it out, nice and slow. '
+          'The stars twinkle a little softer.\n\n'
+          'You take another slow breath... in... and out. '
+          'Your arms feel heavy and cozy. '
+          'Your eyes feel soft.\n\n'
+          'The moon peeks over the hill. '
+          'It smiles at you, {name}. '
+          '"Goodnight, little friend," the moon hums. '
+          '"You did so many good things today. '
+          'Now it is time to rest."\n\n'
+          'The meadow rocks you gently, like a boat on calm water. '
+          'The stars sing a quiet song with no words.\n\n'
+          'Your eyes close, soft as petals.\n\n'
+          'Goodnight, {name}. '
+          'Sweet dreams.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCAFFOLD 4: The Quiet Harbor  [bedtime / Adventurer through Adult]
+// Older-band register for the same job: a calm, linear wind-down with a
+// sleep-transition ending. Second person to match bedtime voice mode.
+// Word target: ~380 words.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const scaffoldBedtimeOlderQuietHarbor = StoryScaffold(
+  id: 'bedtime_older_quiet_harbor',
+  title: 'The Quiet Harbor',
+  scenarioId: 'bedtime',
+  recommendedBands: [
+    AgeBand.adventurer,
+    AgeBand.creator,
+    AgeBand.adolescent,
+    AgeBand.adult,
+  ],
+  isBedtime: true,
+  startSegmentId: 'boh_all',
+  grownupTip:
+      'Every day ends like a boat coming home — whatever the weather was, '
+      'the harbor is still there.',
+  segments: {
+    'boh_all': QuestSegment(
+      id: 'boh_all',
+      content: 'By the time you reach the harbor, {name}, the day is already '
+          'folding itself away.\n\n'
+          'The sky over the water has gone the color of slate and rose. '
+          'Lanterns blink on along the pier, one by one, each small light '
+          'steady against the dusk. '
+          '«{companion} falls into step beside you, unhurried for once. »'
+          'Nobody here is in a rush anymore.\n\n'
+          'The last boats are coming in. '
+          'You watch them cross the calm water, slow and sure, their wakes '
+          'smoothing out behind them until the surface forgets they passed. '
+          'Whatever the day held for them — good winds or hard ones — it is '
+          'over now, and the harbor takes them all the same.\n\n'
+          'You find a bench at the end of the pier, wood worn smooth by '
+          'years of people doing exactly what you are doing: sitting down, '
+          'setting the day beside them, and letting it be finished.\n\n'
+          'So set yours down too. '
+          'The things you did well. '
+          'The things you would do differently. '
+          'They can all wait on the bench until morning — none of them need '
+          'you tonight.\n\n'
+          'The tide moves under the pier, in and out, patient as breathing. '
+          'You let your own breath slow to match it. '
+          'In, as the water gathers. '
+          'Out, as it eases back. '
+          '«Beside you, {companion} has gone still, breathing the same slow '
+          'rhythm. »'
+          'Again. '
+          'In... and out.\n\n'
+          'The lanterns blur a little at the edges. '
+          'The rocking of the water settles into your shoulders, your arms, '
+          'the backs of your eyes.\n\n'
+          'Far out past the harbor mouth, the first stars are surfacing, '
+          'quiet as fish rising in dark water. '
+          'You do not need to count them. '
+          'They will keep watch tonight.\n\n'
+          'The harbor holds the boats. '
+          'The night holds the harbor. '
+          'And sleep, arriving softly now like a tide you do not have to '
+          'swim against, holds you.\n\n'
+          'Rest well, {name}.',
       isEnding: true,
     ),
   },

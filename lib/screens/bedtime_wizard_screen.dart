@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
+import '../services/interactive_story_service.dart';
+import '../services/user_identity_service.dart';
+import '../widgets/crisis_resources_panel.dart';
 import '../models/story_generation_result.dart' show StoryGenerationCancelled;
 import '../models.dart';
 import '../models/hero_saga.dart';
@@ -37,19 +41,19 @@ class BedtimeWizardScreen extends ConsumerStatefulWidget {
 }
 
 enum BedtimeStep {
-  greeting,   // "Hi [name]! Let's make a bedtime story!"
-  age,        // "How old are you?" (only asked if age unknown)
-  sagaOffer,  // Returning hero with continuity — "continue your saga?"
-  heroName,   // "What's your hero's name?"
-  companion,  // "Who's coming with you?"
-  listeners,  // "Are any brothers, sisters, or friends listening too?"
-  setting,    // "Where will your adventure happen?"
-  feeling,    // "What kind of story?"
-  duration,   // "How long should the story be?"
-  confirm,    // "OK! Ready?"
+  greeting, // "Hi [name]! Let's make a bedtime story!"
+  age, // "How old are you?" (only asked if age unknown)
+  sagaOffer, // Returning hero with continuity — "continue your saga?"
+  heroName, // "What's your hero's name?"
+  companion, // "Who's coming with you?"
+  listeners, // "Are any brothers, sisters, or friends listening too?"
+  setting, // "Where will your adventure happen?"
+  feeling, // "What kind of story?"
+  duration, // "How long should the story be?"
+  confirm, // "OK! Ready?"
   generating, // "Making your story now... close your eyes..."
-  reading,    // Reading the story aloud
-  done,       // "The end. Goodnight!"
+  reading, // Reading the story aloud
+  done, // "The end. Goodnight!"
 }
 
 class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
@@ -97,11 +101,19 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   bool _isSpeaking = false;
   bool _timerExpired = false;
 
+  // Screen-free dimming: once narration starts the UI fades to near-black so
+  // the phone can sit face-up without lighting the room. A tap wakes it
+  // briefly (to find Exit); questions undim automatically (chips must be
+  // visible for the no-mic path).
+  bool _dimmed = false;
+  Timer? _undimTimer;
+
   late AnimationController _orbController;
   Timer? _sleepTimer;
 
-  int get _effectiveAge =>
-      _resolvedAge > 0 ? _resolvedAge : (widget.childAge > 0 ? widget.childAge : 8);
+  int get _effectiveAge => _resolvedAge > 0
+      ? _resolvedAge
+      : (widget.childAge > 0 ? widget.childAge : 8);
   AgeBand get _ageBand => ageBandFromAge(_effectiveAge);
   bool get _isMature =>
       _ageBand == AgeBand.creator ||
@@ -121,12 +133,45 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
+    // Screen-free mode's core promise: the phone can be put down and the
+    // story keeps playing. Without a wakelock the device sleeps mid-story
+    // and TTS dies with it. Released when the story ends (_releaseWakelock
+    // in the done/timer paths) so a dark phone left on the nightstand
+    // eventually times out per system settings. Best-effort: not every
+    // platform grants it (web needs a user gesture + https), and bedtime
+    // must never fail because the lock did.
+    unawaited(WakelockPlus.enable().catchError((_) {}));
+
     if (widget.timerMinutes > 0) {
       _sleepTimer =
           Timer(Duration(minutes: widget.timerMinutes), _handleSleepTimer);
     }
 
     _initAndStart();
+  }
+
+  void _releaseWakelock() {
+    unawaited(WakelockPlus.disable().catchError((_) {}));
+  }
+
+  /// Fade the UI once narration is running; bring it back for anything that
+  /// needs eyes (questions, errors, crisis resources).
+  void _setDimmed(bool value) {
+    if (!mounted || _dimmed == value) return;
+    setState(() => _dimmed = value);
+  }
+
+  /// A tap on a dimmed screen wakes it for a few seconds (long enough to
+  /// find Exit), then re-dims if the story is still being narrated.
+  void _wakeScreenBriefly() {
+    _undimTimer?.cancel();
+    _setDimmed(false);
+    _undimTimer = Timer(const Duration(seconds: 12), () {
+      if (mounted &&
+          (_step == BedtimeStep.reading || _step == BedtimeStep.done)) {
+        _setDimmed(true);
+      }
+    });
   }
 
   void _handleSleepTimer() async {
@@ -139,8 +184,22 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     await _speak(_isMature
         ? "Time's up. Rest well, ${widget.childName}."
         : "It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) Navigator.of(context).pop();
+    _settleForTheNight();
+  }
+
+  /// End-of-story resting state: the timer fired or the story finished, and
+  /// the child may already be asleep. Stay on this dark screen instead of
+  /// popping back to the bright home screen, release the wakelock so the
+  /// device can time out naturally, and let a tap exit whenever a grown-up
+  /// picks the phone up.
+  void _settleForTheNight() {
+    _releaseWakelock();
+    _undimTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _dimmed = true;
+      _statusText = 'Tap anywhere to exit';
+    });
   }
 
   Future<void> _initAndStart() async {
@@ -179,6 +238,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       unawaited(ApiServiceManager.cancelTask(taskId));
     }
     _sleepTimer?.cancel();
+    _undimTimer?.cancel();
+    _releaseWakelock();
     _orbController.dispose();
     _speech.stop();
     AppTtsService.instance.stop();
@@ -205,7 +266,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
           "How old are you? Say a number like five, seven, or ten.",
         );
         final parsed = _parseAge(ageAnswer);
-        _resolvedAge = parsed > 0 ? parsed : (widget.childAge > 0 ? widget.childAge : 8);
+        _resolvedAge =
+            parsed > 0 ? parsed : (widget.childAge > 0 ? widget.childAge : 8);
         _advance(_stepAfterAge);
         break;
 
@@ -263,8 +325,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.companion:
-        final answer =
-            await _askQuestion(_companionPrompt(), options: _companionOptions());
+        final answer = await _askQuestion(_companionPrompt(),
+            options: _companionOptions());
         _companionChoice = _fuzzyMatchCompanion(answer);
         // Sprout (3-5) gets the shortest possible flow: no listeners, feeling,
         // duration, or read-back — companion, place, story. Duration stays 0
@@ -293,8 +355,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         final answer =
             await _askQuestion(_settingPrompt(), options: _settingOptions());
         _settingChoice = _fuzzyMatchScenario(answer);
-        _advance(
-            _isSprout ? BedtimeStep.generating : BedtimeStep.feeling);
+        _advance(_isSprout ? BedtimeStep.generating : BedtimeStep.feeling);
         break;
 
       case BedtimeStep.feeling:
@@ -319,8 +380,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         _storyDurationMinutes = _matchDurationMinutes(answer);
         // A saga continuation was already confirmed at the offer step — no
         // recipe to read back, go straight to generating.
-        _advance(
-            _continueSaga ? BedtimeStep.generating : BedtimeStep.confirm);
+        _advance(_continueSaga ? BedtimeStep.generating : BedtimeStep.confirm);
         break;
 
       case BedtimeStep.confirm:
@@ -356,8 +416,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
             ? "That's the end. Rest well, ${widget.childName}."
             : "The end. Goodnight, ${widget.childName}. Sweet dreams.";
         await _speak(donePrompt);
-        await Future.delayed(const Duration(seconds: 3));
-        if (mounted) Navigator.of(context).pop();
+        _settleForTheNight();
         break;
     }
   }
@@ -415,6 +474,10 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
   Future<String> _askQuestion(String question,
       {List<String> options = const []}) async {
+    // Questions need eyes on the screen: chips are the whole interface when
+    // there's no mic, and even voice-first kids glance at them.
+    _undimTimer?.cancel();
+    _setDimmed(false);
     if (mounted && options.isNotEmpty) {
       setState(() => _choiceOptions = options);
     }
@@ -444,8 +507,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   /// Races speech recognition against a chip tap; first answer wins.
   Future<String> _listenOrTap() async {
     _tapCompleter = Completer<String>();
-    final answer =
-        await Future.any([_listen(), _tapCompleter!.future]);
+    final answer = await Future.any([_listen(), _tapCompleter!.future]);
     _tapCompleter = null;
     // If the tap won, _listen is still running — stop it so its onResult
     // can't overwrite the chosen answer's status text.
@@ -577,7 +639,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       AgeBand.adventurer ||
       AgeBand.creator ||
       AgeBand.adolescent ||
-      AgeBand.adult => {
+      AgeBand.adult =>
+        {
           'wolf': 'Thunder Wolf',
           'thunder': 'Thunder Wolf',
           'panther': 'Shadow Panther',
@@ -657,10 +720,14 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     if (lower.contains('archive') || lower.contains('library')) {
       return 'Deep Archive';
     }
-    if (lower.contains('tidal') || lower.contains('shrine') || lower.contains('ocean')) {
+    if (lower.contains('tidal') ||
+        lower.contains('shrine') ||
+        lower.contains('ocean')) {
       return 'Tidal Shrine';
     }
-    if (lower.contains('orbit') || lower.contains('station') || lower.contains('space')) {
+    if (lower.contains('orbit') ||
+        lower.contains('station') ||
+        lower.contains('space')) {
       return 'Orbital Station';
     }
     if (lower.contains('citadel') || lower.contains('ruin')) {
@@ -731,10 +798,23 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
   int _parseAge(String input) {
     final wordToNum = {
-      'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
-      'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11,
-      'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
-      'sixteen': 16, 'seventeen': 17, 'eighteen': 18,
+      'two': 2,
+      'three': 3,
+      'four': 4,
+      'five': 5,
+      'six': 6,
+      'seven': 7,
+      'eight': 8,
+      'nine': 9,
+      'ten': 10,
+      'eleven': 11,
+      'twelve': 12,
+      'thirteen': 13,
+      'fourteen': 14,
+      'fifteen': 15,
+      'sixteen': 16,
+      'seventeen': 17,
+      'eighteen': 18,
     };
     final lower = input.toLowerCase();
     for (final entry in wordToNum.entries) {
@@ -764,9 +844,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     _wizardData.storyLength = 'standard';
 
     final requestData = WizardDataMapper.mapToStoryRequest(_wizardData);
-    final additionalChars = _listenerNames
-        .map((n) => <String, dynamic>{'name': n})
-        .toList();
+    final additionalChars =
+        _listenerNames.map((n) => <String, dynamic>{'name': n}).toList();
 
     try {
       // Saga continuations always run as a single narrated Issue — the
@@ -811,7 +890,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     final result = await ApiServiceManager.generateStory(
         characterName: requestData['character'] ?? 'Hero',
         age: requestData['age'] ?? 5,
-        theme: continuing ? 'superhero' : (_settingChoice ?? 'Magical Adventure'),
+        theme:
+            continuing ? 'superhero' : (_settingChoice ?? 'Magical Adventure'),
         characterId: requestData['character_id']?.toString(),
         companion: requestData['companion'] ?? '',
         characterDetails: requestData['characterDetails'],
@@ -864,6 +944,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     }
 
     setState(() => _step = BedtimeStep.reading);
+    _setDimmed(true);
 
     // Wind-down beat: one guided breath between "it's ready" and the first
     // line, so the story starts on a settled exhale.
@@ -887,6 +968,16 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
+  /// Map the spoken duration choice onto the interactive endpoint's
+  /// short/medium/long contract so "a ten minute story" actually means
+  /// something in pick-a-path mode too. Sprout's unsent duration (0) lands
+  /// on 'short' — right for ages 3-5.
+  String _interactiveLength() {
+    if (_storyDurationMinutes <= 10) return 'short';
+    if (_storyDurationMinutes >= 20) return 'long';
+    return 'medium';
+  }
+
   Future<void> _runInteractiveStoryLoop(
       Map<String, dynamic> requestData) async {
     setState(() => _step = BedtimeStep.reading);
@@ -897,79 +988,134 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
     final characterName = requestData['character'] ?? 'Hero';
     final theme = _settingChoice ?? 'Magical Adventure';
-    final companion = requestData['companion'] ?? '';
 
-    Map<String, dynamic> currentSegment =
-        await ApiServiceManager.generateInteractiveStory(
-      characterName: characterName,
-      age: requestData['age'] ?? 5,
-      theme: theme,
-      companion: companion,
-      // Bedtime voice mode: keep the pick-a-path segments soft-edged.
-      tone: 'cozy-adventure',
-      includeImages: false, // audio-only: never renders image_url
-    );
+    // The magical companion AND any listening siblings/friends ride the
+    // `companions` payload, so the prompt's Companion Contract weaves them
+    // all into the segments. (Listeners were previously collected but
+    // silently dropped on this path.)
+    final companions = <Map<String, dynamic>>[
+      {'name': _companionChoice ?? _defaultCompanion()},
+      for (final n in _listenerNames) {'name': n},
+    ];
+
+    const service = InteractiveStoryService();
+    final userId = await UserIdentityService.getOrCreateUserId();
 
     int turnCount = 0;
     const maxTurns = 5;
 
-    String storySoFar = "";
-    List<String> choicesMade = [];
-
-    while (turnCount < maxTurns && !_timerExpired) {
-      final text = currentSegment['text'] as String?;
-      final choicesRaw = currentSegment['choices'];
-      final isEnding =
-          currentSegment['is_ending'] == true || turnCount == maxTurns - 1;
-
-      if (text != null && text.isNotEmpty) {
-        storySoFar += '$text ';
-        if (!mounted) return;
-        setState(() => _statusText = '...');
-        try {
-          await AppTtsService.instance
-              .speak(text.trim(), awaitCompletion: true);
-        } catch (_) {}
-      }
-
-      if (isEnding || _timerExpired) break;
-
-      // Ask for choice
-      String question = "What do you want to do next?";
-      final choices = choicesRaw is List
-          ? choicesRaw.map((c) => c.toString()).toList()
-          : const <String>[];
-      if (choices.length >= 2) {
-        question =
-            "Do you want to ${choices[0]}, or ${choices[1]}? Or something else?";
-      } else if (choices.length == 1) {
-        question = "Do you want to ${choices[0]}? Or something else?";
-      }
-
-      final answer = await _askQuestion(question, options: choices);
-      if (_timerExpired) break;
-
-      final choice = answer.isNotEmpty
-          ? answer
-          : (choicesRaw is List && choicesRaw.isNotEmpty
-              ? choicesRaw[0].toString()
-              : 'Keep going!');
-      choicesMade.add(choice);
-
-      setState(() => _statusText = 'Generating next part...');
-      currentSegment = await ApiServiceManager.continueInteractiveStory(
-        characterName: characterName,
+    try {
+      final start = await service.startInteractiveStory(
+        userId: userId,
+        // Voice-mode heroes aren't backend Character rows; an empty id skips
+        // the ownership lookup and the story is keyed to the account.
+        characterId: '',
         theme: theme,
-        choice: choice,
-        storySoFar: storySoFar,
-        choicesMade: choicesMade,
+        tone: 'cozy-adventure',
+        length: _interactiveLength(),
+        age: _effectiveAge,
+        characterName: characterName,
+        companions: companions,
         includeImages: false, // audio-only: never renders image_url
       );
 
-      turnCount++;
+      final storyId = start.storyId;
+      var segment = start.segment;
+      var isCompleted = start.isCompleted;
+
+      while (!_timerExpired) {
+        final text = segment.content.trim();
+        if (text.isNotEmpty) {
+          _setDimmed(true);
+          if (!mounted) return;
+          setState(() => _statusText = '...');
+          try {
+            await AppTtsService.instance.speak(text, awaitCompletion: true);
+          } catch (_) {}
+        }
+
+        if (isCompleted || turnCount >= maxTurns - 1 || _timerExpired) break;
+
+        final choices = segment.choices;
+        String question = "What do you want to do next?";
+        if (choices.length >= 2) {
+          question =
+              "Do you want to ${choices[0].text}, or ${choices[1].text}? Or something else?";
+        } else if (choices.length == 1) {
+          question = "Do you want to ${choices[0].text}? Or something else?";
+        }
+
+        final answer = await _askQuestion(question,
+            options: [for (final c in choices) c.text]);
+        if (_timerExpired) break;
+
+        // Match the answer back to a listed choice (a chip tap echoes the
+        // choice text verbatim; voice gets a contains-match in either
+        // direction). Anything else goes down the backend's free-text lane
+        // (choice_id 'custom'), which also runs its crisis screening.
+        final lower = answer.toLowerCase().trim();
+        StoryChoiceData? picked;
+        if (lower.isNotEmpty) {
+          for (final c in choices) {
+            final choiceText = c.text.toLowerCase().trim();
+            if (lower == choiceText ||
+                choiceText.contains(lower) ||
+                lower.contains(choiceText)) {
+              picked = c;
+              break;
+            }
+          }
+        } else if (choices.isNotEmpty) {
+          // Silence counts as "the first one" — keep the story moving.
+          picked = choices.first;
+        }
+
+        if (!mounted) return;
+        setState(() => _statusText = 'Generating next part...');
+        final next = await service.continueInteractiveStory(
+          storyId: storyId,
+          choiceId: picked?.id ?? 'custom',
+          customText: picked == null
+              ? (answer.length > 200 ? answer.substring(0, 200) : answer)
+              : null,
+          includeImages: false,
+        );
+        segment = next.segment;
+        isCompleted = next.isCompleted;
+        turnCount++;
+      }
+    } on CrisisDisclosureException catch (e) {
+      await _handleCrisisDisclosure(e.message);
+      return;
     }
 
     if (!_timerExpired) _advance(BedtimeStep.done);
+  }
+
+  /// The backend detected a self-harm disclosure in the child's free-text
+  /// answer (audit #5) and returned resources instead of a story segment.
+  /// Audio mode's version of pick_a_path_adventure_screen's handler: wake
+  /// the screen, say the gentle message out loud, and put the crisis panel
+  /// up for a grown-up. The story does not continue.
+  Future<void> _handleCrisisDisclosure(String? message) async {
+    _undimTimer?.cancel();
+    _setDimmed(false);
+    await _speak(message ??
+        "Thank you for telling me — that sounds really big. "
+            "Let's show a grown-up some people who can help, okay?");
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => const SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: SingleChildScrollView(child: CrisisResourcesPanel()),
+        ),
+      ),
+    );
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -978,108 +1124,121 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       backgroundColor: const Color(0xFF0D0B2E), // Deep night sky
       body: SafeArea(
         child: GestureDetector(
+          // Full-surface taps: exit once the story is over; wake a dimmed
+          // screen briefly (to find Exit) while it's still going.
+          behavior: HitTestBehavior.opaque,
           onTap: () {
-            if (_step == BedtimeStep.done && mounted) {
-              Navigator.of(context).pop();
+            if (_step == BedtimeStep.done) {
+              if (mounted) Navigator.of(context).pop();
+              return;
             }
+            if (_dimmed) _wakeScreenBriefly();
           },
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _orbController,
-                  builder: (context, child) {
-                    final scale = 1.0 + (_orbController.value * 0.3);
-                    final opacity = 0.4 + (_orbController.value * 0.6);
-                    return Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              _isListening
-                                  ? Colors.purple.withValues(alpha: opacity)
-                                  : _isSpeaking
-                                      ? Colors.amber.withValues(alpha: opacity)
-                                      : Colors.indigo
-                                          .withValues(alpha: opacity * 0.5),
-                              Colors.transparent,
-                            ],
+          child: AnimatedOpacity(
+            // Slow fade to near-black once narration starts — the phone can
+            // lie face-up without lighting the room. Never fully invisible so
+            // a glance still finds the orb.
+            opacity: _dimmed ? 0.08 : 1.0,
+            duration: const Duration(milliseconds: 2500),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedBuilder(
+                    animation: _orbController,
+                    builder: (context, child) {
+                      final scale = 1.0 + (_orbController.value * 0.3);
+                      final opacity = 0.4 + (_orbController.value * 0.6);
+                      return Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                _isListening
+                                    ? Colors.purple.withValues(alpha: opacity)
+                                    : _isSpeaking
+                                        ? Colors.amber
+                                            .withValues(alpha: opacity)
+                                        : Colors.indigo
+                                            .withValues(alpha: opacity * 0.5),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          child: Icon(
+                            _isListening
+                                ? Icons.mic
+                                : _isSpeaking
+                                    ? Icons.auto_stories
+                                    : Icons.star,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            size: 48,
                           ),
                         ),
-                        child: Icon(
-                          _isListening
-                              ? Icons.mic
-                              : _isSpeaking
-                                  ? Icons.auto_stories
-                                  : Icons.star,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          size: 48,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 40),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    _statusText,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
-                ),
-                // Tap-to-choose chips: shown for every choice question so
-                // the flow works without a mic. Kept dim — the screen should
-                // stay ignorable.
-                if (_choiceOptions.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: _choiceOptions
-                        .map(
-                          (option) => ActionChip(
-                            label: Text(option),
-                            onPressed: () => _onChipTap(option),
-                            labelStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
+                  const SizedBox(height: 40),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      _statusText,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Tap-to-choose chips: shown for every choice question so
+                  // the flow works without a mic. Kept dim — the screen should
+                  // stay ignorable.
+                  if (_choiceOptions.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: _choiceOptions
+                          .map(
+                            (option) => ActionChip(
+                              label: Text(option),
+                              onPressed: () => _onChipTap(option),
+                              labelStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.08),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.18),
+                              ),
                             ),
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.08),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.18),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 60),
+                  TextButton(
+                    onPressed: () {
+                      if (mounted) Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Exit Bedtime Mode',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
-                const SizedBox(height: 60),
-                TextButton(
-                  onPressed: () {
-                    if (mounted) Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Exit Bedtime Mode',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

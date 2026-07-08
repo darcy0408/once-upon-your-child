@@ -172,6 +172,10 @@ Future<StoryGenerationResult> runWithScaffoldFallback({
   String? gender,
   String? archetypeId,
   String? currentFeelingId,
+  // Bedtime requests must fall back to a CALM scaffold (wind-down pacing,
+  // sleep-transition ending) — serving an energetic daytime adventure at
+  // lights-out defeats the mode. See pickScaffoldFor's bedtime handling.
+  bool bedtime = false,
 }) async {
   try {
     return await attempt();
@@ -186,6 +190,7 @@ Future<StoryGenerationResult> runWithScaffoldFallback({
       band: band,
       archetypeId: archetypeId,
       feelingId: currentFeelingId,
+      bedtime: bedtime,
     );
 
     if (scaffold == null) {

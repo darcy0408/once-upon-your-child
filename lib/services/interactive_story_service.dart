@@ -107,6 +107,10 @@ class InteractiveStoryService {
     Map<String, int>? personalitySliders,
     Map<String, dynamic>? chronicleContext,
     Map<String, dynamic>? bigFeelingsContext,
+    // Audio-only ("no screen") callers never render segment.image_url — set
+    // false to skip illustration generation server-side. Not persisted by the
+    // backend, so audio callers must also pass it on every continue call.
+    bool includeImages = true,
   }) async {
     final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
@@ -120,6 +124,7 @@ class InteractiveStoryService {
             'theme': theme,
             'tone': tone,
             'length': length,
+            'include_images': includeImages,
             if (age != null) 'age': age,
             if (characterName != null) 'character_name': characterName,
             if (companions != null && companions.isNotEmpty)
@@ -156,12 +161,16 @@ class InteractiveStoryService {
     required String storyId,
     required String choiceId,
     String? customText,
+    // See [startInteractiveStory.includeImages] — pass false on every call
+    // for audio-only clients (the backend does not persist the flag).
+    bool includeImages = true,
   }) async {
     final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/continue-interactive-story');
     final body = <String, dynamic>{
       'story_id': storyId,
       'choice_id': choiceId,
+      'include_images': includeImages,
     };
     if (choiceId == 'custom' && customText != null) {
       body['custom_text'] = customText;
@@ -324,7 +333,10 @@ class InteractiveStoryService {
   String _parseError(http.Response response) {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return data['message'] ?? data['error'] ?? data['hint'] ?? 'Unknown error';
+      return data['message'] ??
+          data['error'] ??
+          data['hint'] ??
+          'Unknown error';
     } catch (_) {
       return response.body;
     }

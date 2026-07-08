@@ -58,6 +58,7 @@ dependencies:
   google_fonts: ^8.0.2  # Quicksand font for magical UI
   crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
   audioplayers: ^6.1.0  # For background ambience and SFX
+  wakelock_plus: ^1.2.8  # Keep the screen alive during screen-free bedtime narration
   # STORE-1 (MT-143): in-app purchases for the iOS/Android store builds.
   # Apple/Google require their own billing for digital subscriptions; Stripe
   # web checkout is an automatic store rejection. The plugin is dispatched via
