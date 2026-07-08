@@ -237,16 +237,18 @@ Four findings are **HIGH**; the antihero feature being reachable at all in prod
 
 ## Remediation summary
 
-| Pri | Finding | Fix | File(s) |
-|-----|---------|-----|---------|
-| P0 | F-1 gate is client-only | Server-side antihero flag + band reject | `story_routes.py:1075,1273` |
-| P0 | F-4 egress leak | Call `scrub_external_links` on antihero + interactive output | `story_tasks.py` (`run_antihero_part1/2`), `story_routes.py` interactive |
-| P1 | F-2 grooming via seen-by | Hard-rule + validate `hero_seen_by`; safe-confidant constraint | `prompt_service.py:1534` |
-| P1 | F-3/F-5 abuse→peer, adults-as-threat | Care-mandate routes serious-risk secrets to a trusted adult/help | `prompt_service.py:1635` |
-| P1 | F-6 warning-signs miss net | Broaden input risk check beyond explicit ideation | `crisis_detection.py` |
-| P2 | F-7 substance set-dressing | Minor-band moderator flags *any* substance, not just glamorizing | `content_moderator.py:427` |
-| P2 | F-8 self-harm prop echo | Covered by F-6 classifier + minor moderator category | — |
-| P2 | F-12 scanner false positives | Tighten rule-brush regexes | `antihero_*_batch.py` |
+| Pri | Finding | Fix | File(s) | Status |
+|-----|---------|-----|---------|--------|
+| P0 | F-1 gate is client-only | Server-side antihero flag + band reject | `story_routes.py:1075,1273` | ✅ Fixed — PR #402: `ANTIHERO_CRUX_ENABLED` env flag (default OFF) + hard reject outside resolved 15–17; crisis guard still runs first |
+| P0 | F-4 egress leak | Call `scrub_external_links` on antihero + interactive output | `story_tasks.py` (`run_antihero_part1/2`), `story_routes.py` interactive | ✅ Fixed — PR #402: scrub on antihero part-1/2 incl. `saga_state`, interactive create/continue; `me`/`ly` bare-TLD gap closed |
+| P1 | F-2 grooming via seen-by | Hard-rule + validate `hero_seen_by`; safe-confidant constraint | `prompt_service.py:1534` | ✅ Fixed — PR #402: `confidant_screen.py` grooming-marker screen (generic-anchor fallback) + SAFE-CONFIDANT prompt rule |
+| P1 | F-3/F-5 abuse→peer, adults-as-threat | Care-mandate routes serious-risk secrets to a trusted adult/help | `prompt_service.py:1635` | ✅ Fixed — PR #402: conditional serious-risk clause; shared `_serious_risk_clause` feeds single-shot + crux (F-11 drift guard) |
+| P1 | F-6 warning-signs miss net | Broaden input risk check beyond explicit ideation | `crisis_detection.py` | ✅ Fixed — PR #402: behavioral warning-sign + harm-by-others patterns; Childhelp line in resources + `CrisisResourcesPanel` |
+| P2 | F-7 substance set-dressing | Minor-band moderator flags *any* substance, not just glamorizing | `content_moderator.py:427` | ⬜ Open — tracked as MT-348 |
+| P2 | F-8 self-harm prop echo | Covered by F-6 classifier + minor moderator category | — | 🟡 Partial — F-6 classifier landed (#402); moderator category rides on F-7 (MT-348) |
+| P2 | F-12 scanner false positives | Tighten rule-brush regexes | `antihero_*_batch.py` | ⬜ Open — tracked as MT-348 |
+
+> **Status update (2026-07-07, post-merge review):** every P0/P1 row landed in PR #402 (merged 2026-07-07 — 749 lines incl. 6 test files; artifacts verified present on `main`). MT-336/MT-337 closed by session 63c2; live-model probe re-verification is MT-347; the P2 tail is MT-348.
 
 ## What held up (balancing the picture)
 - Default self-harm/violence handling is robust: baseline 4/4 flags were false
