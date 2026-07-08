@@ -1,6 +1,6 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-06-30
+**Last Updated:** 2026-07-07
 
 > Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name. The business now operates through an **LLC** (formed 2026-06-21).
 
@@ -27,7 +27,7 @@ Backlog: ~**80 open / 180+ done** manual tasks (`docs/MANUAL_TASKS.md`) — the 
 | Backups | External `pg_dump` → Cloudflare R2 (verified restorable, RTO ~2s) + `restore-drill.yml` |
 | TTS | **Azure AI Speech** (primary, real-time/no-retention) → Edge → on-device flutter_tts; ElevenLabs 13+ only; child-voice STT deleted |
 | Monitoring | Sentry crash reporting (Developer plan; `beforeSend` PII scrub) |
-| Payments | Stripe (Free / Adventurer / Family / BYOK tiers) |
+| Payments | Stripe — single Premium $9.99/mo / $59.99/yr (pricing decision 2026-07-07, PRs #395/#398); free = 5 stories/mo + 1 illustrated; Family + BYOK tiers dormant/hidden (BYOK direction = MT-358) |
 
 ## Completed Features
 
@@ -177,16 +177,18 @@ The launch-gate month. **Provider migration off Gemini** (MT-137 ToS): story tex
 
 - SMS / Stripe age verification
 - Guided meditation mode (additional patterns beyond Adult Breathe)
-- PDF story export
-- Parent dashboard & analytics
+- Parent dashboard & analytics (server-side half; basic on-device dashboard shipped)
 - Push notifications
-- Referral program
+- Referral program (parked — owner: zero value pre-launch)
 - Per-page illustration generation for Sprout Picture Book mode (B-BE4, deferred from child-UX audit)
 - Stripe v15 + ElevenLabs v2 floor bump after smoke-tests
-- 6 additional Creator/Adolescent Life Quests (authored, awaiting rollout)
 - MT-199 Direction C "Pop-Up Picture Book" reader for Sprout (backlog, pending signal)
 - MT-200 MT-099 polish: global warm "book-stage" background + title-page-leaf demotion
-- Frontend migration to Cloudflare Pages (branch `chore/frontend-cloudflare-pages`) + Netlify decommission
+- Netlify decommission (frontend already live on Cloudflare Pages; MT-205 sub-item)
+
+> Removed 2026-07-07 as shipped/stale: PDF story export (PR #399); "6 additional Creator/Adolescent
+> Life Quests awaiting rollout" (content verified present in `lib/data/life_quest_data.dart`).
+> Full unfinished-features sweep: `docs/UNFINISHED_FEATURES_AUDIT.md`.
 
 ## Resources
 
