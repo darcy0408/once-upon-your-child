@@ -1,20 +1,6 @@
-from datetime import datetime, timezone
 from functools import wraps
 
 from flask import Blueprint, current_app, jsonify, request
-
-from backend.database import db
-from backend.middleware.auth import require_auth, require_owner
-from backend.models.user import User
-
-
-def _format_timestamp(value):
-    if not value:
-        value = datetime.now(timezone.utc)
-    if value.tzinfo:
-        value = value.astimezone()
-    return value.replace(microsecond=0).isoformat() + "Z"
-
 
 # ---------------------------------------------------------------------------
 # M-8 (server-side entitlement enforcement)
@@ -82,33 +68,15 @@ def require_premium(f):
 
 
 def create_subscription_blueprint(limiter=None):
-    """Factory function to create subscription blueprint with rate limiting."""
+    """Factory function to create subscription blueprint with rate limiting.
+
+    The blueprint no longer registers any routes of its own — the client
+    reads subscription state via `/api/stripe/subscription-status/<id>`
+    (backend/routes/stripe_routes.py), and the `GET
+    /api/user/<user_id>/subscription` duplicate was removed as orphaned
+    (backend deadwood removal wave 1, 2026-07-07). The factory is kept
+    because `require_premium` / `_user_is_premium` in this module are
+    imported by story_routes.py, avatar_routes.py, and utility_routes.py.
+    """
     subscription_routes = Blueprint("subscription_routes", __name__)
-
-    @subscription_routes.route("/api/user/<user_id>/subscription", methods=["GET"])
-    @require_auth
-    @require_owner("user_id")
-    @limiter.limit("60 per minute")  # Read-heavy endpoint
-    def get_subscription(user_id):
-        try:
-            user = db.session.get(User, user_id)
-            if not user:
-                return jsonify({"error": "User not found"}), 404
-
-            subscription_data = {
-                "user_id": user.id,
-                "tier": user.subscription_tier or "free",
-                "status": user.subscription_status or "active",
-                "current_period_end": (
-                    _format_timestamp(user.current_period_end)
-                    if user.current_period_end
-                    else None
-                ),
-                "cancel_at_period_end": bool(user.cancel_at_period_end),
-            }
-            return jsonify(subscription_data)
-        except Exception:
-            current_app.logger.exception("Failed to load subscription for %s", user_id)
-            return jsonify({"error": "Internal server error"}), 500
-
     return subscription_routes

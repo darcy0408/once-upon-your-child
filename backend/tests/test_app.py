@@ -14,16 +14,6 @@ def test_health_endpoint(client):
     assert data["status"] == "ok"
 
 
-def test_get_story_themes(client):
-    """Test getting story themes"""
-    response = client.get("/get-story-themes")
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    assert isinstance(data, list)
-    assert len(data) > 0
-    assert "Adventure" in data
-
-
 def test_create_character(client, auth_headers, test_user):
     """Test character creation"""
     character_data = {

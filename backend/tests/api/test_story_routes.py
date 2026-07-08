@@ -17,46 +17,6 @@ from unittest.mock import MagicMock
 import pytest
 
 
-class TestGetStoryThemes:
-    """Test GET /get-story-themes endpoint"""
-
-    def test_get_themes_success(self, client):
-        """Test getting available story themes"""
-        response = client.get("/get-story-themes")
-
-        assert response.status_code == 200
-        data = response.get_json()
-
-        # Should return a list of themes
-        assert isinstance(data, list)
-        assert len(data) > 0
-
-        # Should include expected themes
-        assert "Adventure" in data
-        assert "Magic" in data
-        assert "Friendship" in data
-
-    def test_get_themes_cached(self, client):
-        """Test that themes endpoint is cached"""
-        # Make two requests
-        response1 = client.get("/get-story-themes")
-        response2 = client.get("/get-story-themes")
-
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-
-        # Both should return same data
-        assert response1.get_json() == response2.get_json()
-
-    def test_get_themes_returns_consistent_order(self, client):
-        """Test that themes are returned in consistent order"""
-        response1 = client.get("/get-story-themes")
-        response2 = client.get("/get-story-themes")
-
-        # Order should be consistent across requests
-        assert response1.get_json() == response2.get_json()
-
-
 class TestGenerateStory:
     """Test POST /generate-story endpoint"""
 

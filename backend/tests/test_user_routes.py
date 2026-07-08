@@ -112,22 +112,3 @@ def test_get_usage_stats_user_not_found(client, setup_data):
     assert response.status_code == 401
     data = response.get_json()
     assert data["error"] == "User not found"
-
-
-def test_cancel_subscription_success(client, setup_data):
-    with client.application.app_context():
-        user_id = _create_user()
-
-    headers = _auth_headers(client.application, user_id)
-    response = client.post(f"/api/user/{user_id}/cancel-subscription", headers=headers)
-    assert response.status_code == 200
-    data = response.get_json()
-
-    assert data["success"] is True
-    assert "Subscription will be canceled" in data["message"]
-    assert data["cancel_at_period_end"] is True
-
-    # Verify in DB
-    with client.application.app_context():
-        user = db.session.get(User, user_id)
-        assert user.cancel_at_period_end is True

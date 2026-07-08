@@ -12,25 +12,13 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  rollback-frontend:
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Notify Rollback Start
-        run: |
-          echo "Starting frontend rollback due to: ${{ github.event.inputs.reason }}"
-
-      - name: Rollback Netlify Deployment
-        run: |
-          # This would typically involve redeploying a previous version
-          # For Netlify, we can redeploy from git history
-          echo "Rolling back frontend to previous deployment"
-
-      - name: Verify Rollback
-        run: |
-          # Health check after rollback
-          echo "Frontend rollback completed"
-
+  # Frontend rollback: the prod frontend lives on Cloudflare Pages (moved off
+  # Netlify/Railway — see PR #169). Roll back a frontend deploy from the
+  # Cloudflare Pages dashboard (Workers & Pages > story-weaver > Deployments
+  # > pick a previous deployment > Rollback to this deployment); there is no
+  # CI job for it. The old `rollback-frontend` job here was a pure-echo
+  # no-op targeting the orphaned Netlify site and was removed (backend
+  # deadwood removal wave 1, 2026-07-07).
   rollback-backend:
     runs-on: ubuntu-latest
     environment: production
@@ -63,13 +51,12 @@ jobs:
 
   notify-teams:
     runs-on: ubuntu-latest
-    needs: [rollback-frontend, rollback-backend]
+    needs: [rollback-backend]
     if: always()
     steps:
       - name: Send Rollback Notification
         # Skip cleanly when Slack isn't configured, so the notify job doesn't
-        # fail (empty webhook -> action error) during a real rollback. Mirrors
-        # the guard in health-monitoring.yml. (MT-225)
+        # fail (empty webhook -> action error) during a real rollback. (MT-225)
         if: env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v3
         with:
@@ -83,7 +70,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Production Rollback Completed*\nReason: ${{ github.event.inputs.reason }}\nTime: $(date)\nStatus: ${{ job.status }}\n\nBoth frontend and backend have been rolled back to previous stable versions."
+                    "text": "*Production Rollback Completed*\nReason: ${{ github.event.inputs.reason }}\nTime: $(date)\nStatus: ${{ job.status }}\n\nBackend has been rolled back to a previous stable version. Frontend rollback (Cloudflare Pages) is handled separately from the CF dashboard."
                   }
                 }
               ]

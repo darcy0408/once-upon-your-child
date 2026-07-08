@@ -136,15 +136,6 @@ def test_health_detailed_endpoint_schema(client):
 
 
 @pytest.mark.api_contract
-def test_get_story_themes_contract(client):
-    response = client.get("/get-story-themes")
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert isinstance(payload, list)
-    assert len(payload) > 0
-
-
-@pytest.mark.api_contract
 def test_generate_story_requires_character(client):
     user_id = _create_user(client.application, user_id="gen-story-user-1")
     headers = _auth_headers(client.application, user_id)
@@ -176,57 +167,6 @@ def test_generate_story_mock_contract(client):
         story = payload.get("story", {})
     assert story.get("title") or payload.get("title")
     assert story.get("story_text") or payload.get("story_text")
-
-
-@pytest.mark.api_contract
-def test_generate_illustrations_mock_contract(client):
-    user_id = _create_user(client.application, user_id="gen-story-user-3")
-    headers = _auth_headers(client.application, user_id)
-    response = client.post(
-        "/generate-illustrations-mock",
-        json={
-            "scene_description": "A magical forest",
-            "character_name": "Luna",
-            "num_images": 1,
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload.get("count") == 1
-    illustrations = payload.get("illustrations", [])
-    assert len(illustrations) == 1
-    assert illustrations[0].get("image_data")
-
-
-@pytest.mark.api_contract
-def test_generate_coloring_pages_mock_requires_scene(client):
-    user_id = _create_user(client.application, user_id="gen-story-user-4")
-    headers = _auth_headers(client.application, user_id)
-    response = client.post("/generate-coloring-pages-mock", json={}, headers=headers)
-    assert response.status_code == 400
-    payload = response.get_json()
-    assert payload.get("error")
-
-
-@pytest.mark.api_contract
-def test_generate_coloring_pages_mock_contract(client):
-    user_id = _create_user(client.application, user_id="gen-story-user-5")
-    headers = _auth_headers(client.application, user_id)
-    response = client.post(
-        "/generate-coloring-pages-mock",
-        json={
-            "scenes": [{"description": "A castle on a hill", "title": "Castle"}],
-            "character_name": "Luna",
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload.get("count", 0) > 0
-    pages = payload.get("coloring_pages", [])
-    assert len(pages) > 0
-    assert pages[0].get("image_data")
 
 
 @pytest.mark.api_contract
@@ -479,54 +419,6 @@ def test_security_headers_present_on_json_response(client):
 
 
 @pytest.mark.api_contract
-def test_get_internal_subscription_contract(client):
-    user_id = _create_user(client.application, user_id="sub-user-1")
-    headers = _auth_headers(client.application, user_id)
-    response = client.get(f"/api/user/{user_id}/subscription", headers=headers)
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload.get("user_id") == user_id
-    assert "tier" in payload
-    assert "status" in payload
-    assert "current_period_end" in payload
-    assert "cancel_at_period_end" in payload
-
-
-@pytest.mark.api_contract
-def test_get_internal_subscription_404_for_unknown_user(client):
-    user_id = _create_user(client.application, user_id="some-user")
-    headers = _auth_headers(client.application, user_id)
-    response = client.get("/api/user/does-not-exist/subscription", headers=headers)
-    assert response.status_code == 403
-    payload = response.get_json()
-    assert payload.get("error")
-
-
-@pytest.mark.api_contract
-def test_cancel_subscription_contract_requires_owner(client):
-    user_id = _create_user(client.application, user_id="cancel-user-1")
-    headers = _auth_headers(client.application, user_id)
-    response = client.post(f"/api/user/{user_id}/cancel-subscription", headers=headers)
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload.get("success") is True
-    assert payload.get("cancel_at_period_end") is True
-
-
-@pytest.mark.api_contract
-def test_cancel_subscription_contract_forbidden_for_other_user(client):
-    owner_id = _create_user(client.application, user_id="cancel-user-owner")
-    _create_user(client.application, user_id="cancel-user-other")
-    headers = _auth_headers(client.application, owner_id)
-    response = client.post(
-        "/api/user/cancel-user-other/cancel-subscription", headers=headers
-    )
-    assert response.status_code == 403
-    payload = response.get_json()
-    assert payload.get("error")
-
-
-@pytest.mark.api_contract
 def test_report_story_contract(client):
     user_id = _create_user(client.application, user_id="report-user")
     headers = _auth_headers(client.application, user_id)
@@ -714,25 +606,6 @@ def test_avatar_gallery_select_contract(client):
     assert avatar.get("source") == "gallery"
     assert avatar.get("gallery_id") == avatar_id
     assert avatar.get("image_url")
-
-
-@pytest.mark.api_contract
-def test_avatar_generate_mock_contract(client):
-    user_id = _create_user(client.application, user_id="avatar-user-1")
-    headers = _auth_headers(client.application, user_id)
-    response = client.post(
-        "/avatar/generate-avatar-mock",
-        json={"character_name": "Luna", "age": 7, "style": "pixar"},
-        headers=headers,
-    )
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert payload.get("status") == "success"
-    avatar = payload.get("avatar") or {}
-    assert avatar.get("id")
-    assert avatar.get("image_base64")
-    assert avatar.get("style") == "pixar"
-    assert avatar.get("is_mock") is True
 
 
 @pytest.mark.api_contract

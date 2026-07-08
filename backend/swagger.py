@@ -21,7 +21,6 @@ spec = APISpec(
 with app.test_request_context():
     # Health and utility endpoints
     spec.path(view=app.view_functions["health"])
-    spec.path(view=app.view_functions["get_story_themes"])
     spec.path(view=app.view_functions["setup_test_account"])
     spec.path(view=app.view_functions["login"])
 

@@ -430,7 +430,19 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     @utility_bp.route("/auth/login", methods=["POST"])
     @rate_limit("10 per minute")
     def login():
-        """Simple login endpoint for testing."""
+        """Simple username/password login endpoint for testing.
+
+        Test scaffolding only — no client UI exists for it (the app is
+        anonymous-auth only via /auth/anonymous). Disabled in production,
+        mirroring the /setup-test-account gate: returns 404 so the
+        endpoint's existence is not even confirmed to an unauthenticated
+        caller. Kept (rather than deleted) because backend tests
+        authenticate through it. (Backend deadwood removal wave 1,
+        2026-07-07.)
+        """
+        if is_production():
+            return jsonify({"error": "Not found"}), 404
+
         data = request.get_json(silent=True) or {}
         username = data.get("username")
         password = data.get("password")

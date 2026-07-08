@@ -151,30 +151,6 @@ def create_user_routes_blueprint(limiter=None):
             current_app.logger.exception("Failed to get usage stats for %s", user_id)
             return jsonify({"error": "Internal server error"}), 500
 
-    @user_routes.route("/api/user/<user_id>/cancel-subscription", methods=["POST"])
-    @require_auth
-    @require_owner("user_id")
-    @limiter.limit("5 per hour")  # Strict limit on subscription changes
-    def cancel_subscription(user_id):
-        try:
-            # User already validated by @require_owner decorator
-            user = request.current_user
-
-            user.cancel_at_period_end = True
-            db.session.commit()
-
-            response = {
-                "success": True,
-                "message": "Subscription will be canceled at period end",
-                "cancel_at_period_end": True,
-            }
-            return jsonify(response)
-        except Exception:
-            current_app.logger.exception(
-                "Failed to cancel subscription for %s", user_id
-            )
-            return jsonify({"error": "Internal server error"}), 500
-
     # ================================================================
     # COPPA COMPLIANCE ENDPOINTS
     # ================================================================

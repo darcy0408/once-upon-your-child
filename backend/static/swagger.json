@@ -8,7 +8,6 @@
     "/character/get-characters": {},
     "/progression/sync-progression": {},
     "/progression/get-progression": {},
-    "/story/get-story-themes": {},
     "/story/generate-story": {},
     "/story/generate-multi-character-story": {},
     "/story/generate-interactive-story": {},
