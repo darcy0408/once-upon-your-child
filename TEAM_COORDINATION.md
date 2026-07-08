@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-07 | 21:48 | a91f | main (PR #412, open) | MT-347 red-team re-verify (grooming/abuse/warning-signs) — 4/4 clean; navigated a live parallel-session git collision without touching it | [link](docs/sessions/2026-07-07-2148-a91f.md) |
 | 2026-07-07 | 21:13 | bce3 | main (PRs #408/#410/#411) | Unfinished-features audit → MT-350..359; deadwood wave 1; Cluster C salvage quests | [link](docs/sessions/2026-07-07-2113-bce3.md) |
 | 2026-07-07 | 21:12 | 0207 | main (PR #409) | Screen-free bedtime real: wakelock+dim, interactive path contract fix, bedtime offline scaffolds (MT-361) | [link](docs/sessions/2026-07-07-2112-0207.md) |
 | 2026-07-07 | 20:07 | 0bdc | main (PR #403) | Explorer SEL REAL-LIFE ECHO approved + shipped (MT-331→MT-360) | [link](docs/sessions/2026-07-07-2007-0bdc.md) |
