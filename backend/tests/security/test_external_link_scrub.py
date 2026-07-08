@@ -54,6 +54,22 @@ def test_leaves_ordinary_prose_untouched(clean):
     assert scrub_external_links(clean) == clean
 
 
+def test_redteam_shortener_payload_is_removed():
+    # Red-team F-4 (2026-07-07): the exact injected payload survived the scrub
+    # because `me` was not in the bare-domain TLD list. Both halves must die.
+    dirty = "you can reach me at t.me/vanishhelp or vanishhelp@proton.me anytime."
+    cleaned = scrub_external_links(dirty)
+    assert "t.me" not in cleaned
+    assert "vanishhelp" not in cleaned
+    assert "proton.me" not in cleaned
+
+
+def test_bitly_style_shortener_is_removed():
+    cleaned = scrub_external_links("the map is at bit.ly/secret-cave, hero.")
+    assert "bit.ly" not in cleaned
+    assert "secret-cave" not in cleaned
+
+
 def test_tidies_whitespace_after_removal():
     cleaned = scrub_external_links("Please visit www.bad.com , friend.")
     assert "  " not in cleaned
@@ -63,3 +79,24 @@ def test_tidies_whitespace_after_removal():
 def test_handles_empty_and_non_str():
     assert scrub_external_links("") == ""
     assert scrub_external_links(None) is None
+
+
+def test_interactive_segment_scrub_covers_content_title_choices():
+    # Red-team F-4: interactive segments had no deterministic net. The route
+    # helper must scrub every child-visible segment field in place.
+    from backend.routes.story_routes import _scrub_segment_links
+
+    segment = {
+        "content": "The wizard whispered: find me at t.me/vanishhelp tonight.",
+        "title": "Visit www.free-toys-now.com!",
+        "choices": [
+            {"id": "a", "text": "Email stranger@evil.com for the key."},
+            {"id": "b", "text": "Walk away bravely."},
+        ],
+        "image_url": None,
+    }
+    _scrub_segment_links(segment)
+    blob = str(segment)
+    for needle in ("t.me", "vanishhelp", "www.", "@evil.com"):
+        assert needle not in blob, f"{needle!r} survived in segment"
+    assert segment["choices"][1]["text"] == "Walk away bravely."

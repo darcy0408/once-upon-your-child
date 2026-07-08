@@ -242,7 +242,10 @@ def sanitize_story_request(body: dict) -> dict:
 # safety probe) must never deliver a tappable web address / email to a child.
 #
 # Conservative by design: only scheme/`www.` URLs, `mailto:`/`tel:` schemes,
-# emails, and bare domains ending in a known TLD are removed. Bare digit runs
+# emails, and bare domains ending in a known TLD are removed. `me`/`ly` are in
+# the TLD list because the 2026-07-07 red-team's injected `t.me/...` handle
+# survived the scrub (Telegram/bit.ly-style shorteners are exactly the
+# off-platform channels this net exists for). Bare digit runs
 # (phone numbers) are intentionally NOT scrubbed here — too many false matches
 # in ordinary prose ("3 little pigs", "the year 2026"); the moderator clause
 # covers phone numbers and stranger handles semantically instead.
@@ -251,7 +254,7 @@ _EXTERNAL_LINK_RE = re.compile(r"""(?ix)
     | (?:mailto|tel):\S+                                    # mailto:/tel:
     | [a-z0-9][a-z0-9._%+\-]*@[a-z0-9.\-]+\.[a-z]{2,}       # email
     | \b(?:[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?\.)+             # bare domain ...
-      (?:com|net|org|io|app|co|gg|xyz|info|biz|link|site|online|shop|store)
+      (?:com|net|org|io|app|co|gg|xyz|info|biz|link|site|online|shop|store|me|ly)
       \b(?:/\S*)?                                           # ... + optional path
     """)
 

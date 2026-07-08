@@ -381,6 +381,70 @@ def _crisis_guard(logger, endpoint: str, user_id, *texts) -> dict | None:
     return None
 
 
+def _scrub_segment_links(segment: dict) -> None:
+    """Deterministic egress scrub on child-visible interactive-segment fields
+    (red-team F-4). `scrub_external_links` ran only on the main single-shot
+    story path; interactive segments went to the client with no deterministic
+    net. Scrubs content, title, and choice labels in place.
+    """
+    from ..utils.sanitizer import scrub_external_links
+
+    if not isinstance(segment, dict):
+        return
+    for key in ("content", "title"):
+        if isinstance(segment.get(key), str):
+            segment[key] = scrub_external_links(segment[key])
+    choices = segment.get("choices")
+    if isinstance(choices, list):
+        for c in choices:
+            if isinstance(c, dict) and isinstance(c.get("text"), str):
+                c["text"] = scrub_external_links(c["text"])
+
+
+def _antihero_gate(logger, endpoint: str, resolved_age: int | None = None):
+    """Server-side gate for the Adolescent antihero crux endpoints (red-team F-1).
+
+    The clinical-review gate was previously only `cruxChoiceEnabled = false` in
+    Dart — a compile-time client constant a direct API call never sees. This is
+    the authoritative check: the feature is OFF unless ANTIHERO_CRUX_ENABLED is
+    explicitly set, and even then only the adolescent band (15-17) may use it.
+
+    Returns a (json, status) tuple to return from the route, or None to proceed.
+    """
+    enabled = os.getenv("ANTIHERO_CRUX_ENABLED", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if not enabled:
+        logger.warning("%s rejected: ANTIHERO_CRUX_ENABLED is not set", endpoint)
+        return (
+            jsonify(
+                {
+                    "error": "FEATURE_DISABLED",
+                    "message": "This story mode isn't available yet.",
+                }
+            ),
+            403,
+        )
+    if resolved_age is not None and not (15 <= resolved_age <= 17):
+        logger.warning(
+            "%s rejected: resolved age %s outside adolescent band",
+            endpoint,
+            resolved_age,
+        )
+        return (
+            jsonify(
+                {
+                    "error": "AGE_BAND_NOT_SUPPORTED",
+                    "message": "This story mode is only available for ages 15-17.",
+                }
+            ),
+            403,
+        )
+    return None
+
+
 def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
     """Run story generation as a real Celery task, blocking for up to
     `sync_story_timeout` for the result.
@@ -692,6 +756,7 @@ def create_story_blueprint(
             payload.get("hero_secret"),
             payload.get("hero_tell"),
             payload.get("hero_line"),
+            payload.get("hero_seen_by"),
             payload.get("therapeutic_prompt"),
         )
         if crisis:
@@ -1082,9 +1147,14 @@ def create_story_blueprint(
             payload.get("hero_secret"),
             payload.get("hero_tell"),
             payload.get("hero_line"),
+            payload.get("hero_seen_by"),
         )
         if crisis:
             return jsonify(crisis), 200
+
+        gate = _antihero_gate(logger, "/generate-antihero-crux")
+        if gate:
+            return gate
 
         payload = sanitize_story_request(payload)
 
@@ -1135,6 +1205,12 @@ def create_story_blueprint(
             default=16,
             verified_age=_verified_age_anchor(owned_character),
         )
+
+        # Band reject AFTER the verified-age resolve so an under-15 account
+        # cannot reach the adolescent band by declaring a higher age.
+        gate = _antihero_gate(logger, "/generate-antihero-crux", resolved_age)
+        if gate:
+            return gate
 
         kw = _build_antihero_task_kwargs(payload, request.current_user, resolved_age)
         # Resolve the character display name for the prompt (owned char wins).
@@ -1272,6 +1348,10 @@ def create_story_blueprint(
         payload = request.get_json(silent=True) or {}
         user_id = request.current_user.id
 
+        gate = _antihero_gate(logger, "/generate-antihero-resolution")
+        if gate:
+            return gate
+
         continuation_token = payload.get("continuation_token")
         choice_id = payload.get("choice_id")
         if not continuation_token or not choice_id:
@@ -1310,6 +1390,14 @@ def create_story_blueprint(
                 ctx.get("user_id"),
             )
             return jsonify({"error": "Unauthorized"}), 403
+
+        # Belt-and-suspenders band check on the cached part-1 age (part 1 already
+        # rejected non-adolescent ages, but the token is the only input here).
+        gate = _antihero_gate(
+            logger, "/generate-antihero-resolution", int(ctx.get("age") or 16)
+        )
+        if gate:
+            return gate
 
         # Validate choice_id against the cached choices; resolve {id, text}.
         choices = ctx.get("choices") or []
@@ -1837,6 +1925,8 @@ def create_story_blueprint(
                     f"(story {result.get('story_id')})"
                 )
 
+            _scrub_segment_links(result["segment"])
+
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
 
@@ -2050,6 +2140,8 @@ def create_story_blueprint(
                     f"Interactive continuation replaced with safe fallback segment "
                     f"(story {story_id})"
                 )
+
+            _scrub_segment_links(result["segment"])
 
             logger.info(
                 f"Story {story_id} continued to segment {result['segment']['segment_number']}"

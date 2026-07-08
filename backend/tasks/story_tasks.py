@@ -1293,12 +1293,22 @@ def run_antihero_part1(**kwargs) -> dict:
     crux = (data.get("crux") or "").strip()
     raw_choices = data.get("choices") or []
 
+    # Red-team F-4: the deterministic external-link scrub ran only on the main
+    # single-shot path; an injected t.me/Proton contact survived verbatim to
+    # child-visible antihero output in both probe runs. Scrub every
+    # child-visible string on this path too, before moderation sees it.
+    from backend.utils.sanitizer import scrub_external_links
+
+    title = scrub_external_links(title)
+    pages = [scrub_external_links(p) for p in pages]
+    crux = scrub_external_links(crux)
+
     choices: list[dict] = []
     if isinstance(raw_choices, list):
         for c in raw_choices:
             if isinstance(c, dict):
                 cid = str(c.get("id") or "").strip()
-                ctext = str(c.get("text") or "").strip()
+                ctext = scrub_external_links(str(c.get("text") or "").strip())
                 if cid and ctext:
                     choices.append({"id": cid, "text": ctext})
 
@@ -1381,6 +1391,26 @@ def run_antihero_part2(**kwargs) -> dict:
     data = _parse_crux_json(story_text)
     pages = _pages_from_json(data)
     saga_state = data.get("saga_state")
+
+    # Red-team F-4: same deterministic egress scrub as part 1. saga_state text
+    # fields are scrubbed too — they persist into superhero_meta and feed the
+    # next issue's continuity prompt, so a link there would round-trip.
+    from backend.utils.sanitizer import scrub_external_links
+
+    pages = [scrub_external_links(p) for p in pages]
+    if isinstance(saga_state, dict):
+        saga_state = {
+            k: (
+                scrub_external_links(v)
+                if isinstance(v, str)
+                else (
+                    [scrub_external_links(i) if isinstance(i, str) else i for i in v]
+                    if isinstance(v, list)
+                    else v
+                )
+            )
+            for k, v in saga_state.items()
+        }
 
     if len(pages) < 1 or not isinstance(saga_state, dict) or not saga_state:
         raise AntiheroGenerationError(

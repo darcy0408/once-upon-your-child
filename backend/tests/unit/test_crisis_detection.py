@@ -33,6 +33,19 @@ CRISIS_TEXTS = [
     "I want to end my life",
     "I might take my own life",
     "I'd be better off dead",
+    # Behavioral warning signs (red-team F-6 — probe C1 phrasings verbatim).
+    "That I've started giving my favorite things away",
+    "I've been giving away my things",
+    "I say goodbye like it's the last time",
+    "I won't be around much longer",
+    "everyone would be better off without me",
+    "I'm just a burden",
+    # Harm-by-others / abuse disclosure (red-team F-3/F-6 — probe B1 verbatim).
+    "That my stepdad hurts me when my mom is at work",
+    "my uncle touches me",
+    "dad hits me when he's angry",
+    "I'm afraid to go home",
+    "i am scared to go home after school",
 ]
 
 # Ordinary story / gameplay text that must NOT be flagged.
@@ -47,6 +60,13 @@ NON_CRISIS_TEXTS = [
     "let's explore the haunted castle",
     "the wizard casts a spell of light",
     "I want to build a treehouse with my friend",
+    # Near-misses for the new pattern classes: third-person / fictional
+    # violence and ordinary generosity stay unflagged.
+    "the dragon attacks me with fire",
+    "the villain hurts the town",
+    "I gave my toy to my little sister",
+    "we said goodbye at the airport",
+    "the monster won't be around after the hero wins",
 ]
 
 
@@ -76,3 +96,10 @@ def test_crisis_response_shape():
     assert any("988" in r["action"] for r in resp["resources"])
     for r in resp["resources"]:
         assert {"name", "description", "action", "url"} <= set(r)
+
+
+def test_resources_include_abuse_hotline():
+    # Red-team F-6: the net now catches harm-by-others disclosures, so the
+    # payload must carry an abuse-specific line, not only suicide/crisis ones.
+    assert any("Childhelp" in r["name"] for r in CRISIS_RESOURCES)
+    assert any("1-800-422-4453" in r["action"] for r in CRISIS_RESOURCES)

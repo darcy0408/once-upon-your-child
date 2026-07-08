@@ -82,6 +82,16 @@ final List<CrisisResource> _usCrisisResources = [
       queryParameters: {'body': 'START'},
     ),
   ),
+  // The server-side net (backend/utils/crisis_detection.py) also catches
+  // someone-is-hurting-me disclosures; the lines above are all suicide/crisis
+  // focused, so an abuse-specific resource belongs in the same panel.
+  CrisisResource(
+    name: 'Childhelp National Child Abuse Hotline',
+    description: 'If someone is hurting you — call or text 1-800-422-4453',
+    action: '1-800-422-4453',
+    url: 'https://www.childhelphotline.org',
+    actionUri: Uri(scheme: 'tel', path: '18004224453'),
+  ),
 ];
 
 /// Calm, supportive panel listing the US crisis lines. Earthy/warm tones,

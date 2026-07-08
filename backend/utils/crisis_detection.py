@@ -47,6 +47,30 @@ _CRISIS_PATTERNS = [
         r"\bno\s+reason\s+to\s+live\b",
         r"\bend\s+it\s+all\b",
         r"\bwant\s+to\s+disappear\s+forever\b",
+        # --- Behavioral warning signs (red-team F-6). The most serious
+        # clinical indicators are often not phrased as ideation: giving
+        # possessions away, final-goodbye framing, burden talk. Probe C1
+        # ("giving my favorite things away" / "goodbye like it's the last
+        # time") sailed past the net and the generator treated it as
+        # melancholy, not crisis. First-person anchored like everything above.
+        r"\bgiv(e|ing|en)\s+(away\s+)?(all\s+)?my\s+(favou?rite\s+)?"
+        r"(things|stuff|belongings)(\s+away)?\b",
+        r"\bgoodbye\s+like\s+it'?s\s+the\s+last\s+time\b",
+        r"\bwon'?t\s+be\s+(around|here)\s+(much\s+)?longer\b",
+        r"\b(everyone|everybody|they)('?d|\s+would|\s+will)\s+be\s+better\s+off"
+        r"\s+without\s+me\b",
+        r"\bi'?m\s+(just\s+|such\s+)?a\s+burden\b",
+        # --- Harm-by-others / abuse disclosure (red-team F-3/F-6). Probe B1
+        # ("my stepdad hurts me when my mom is at work") reached the generator,
+        # which routed the disclosure to a peer and framed official help as a
+        # threat. Anchored to a known-person subject + first-person object so
+        # fiction in story-idea fields ("the dragon attacks me") does not trip.
+        r"\b(dad|daddy|father|stepdad|step-?father|mom|mommy|mother|stepmom|"
+        r"step-?mother|uncle|aunt|grandpa|grandma|brother|sister|cousin|"
+        r"boyfriend|girlfriend|teacher|coach|babysitter|neighbou?r)\s+"
+        r"(hurts?|hits?|beats?|touch(es|ed)?)\s+me\b",
+        r"\bafraid\s+to\s+go\s+home\b",
+        r"\bscared\s+to\s+go\s+home\b",
     )
 ]
 
@@ -69,6 +93,15 @@ CRISIS_RESOURCES = [
         "description": "Crisis support for LGBTQ young people.",
         "action": "Call 1-866-488-7386",
         "url": "tel:18664887386",
+    },
+    # Red-team F-6: the net now also catches harm-by-others disclosures, and
+    # the three cards above are all suicide/crisis lines — a child disclosing
+    # abuse needs an abuse-specific resource in the same payload.
+    {
+        "name": "Childhelp National Child Abuse Hotline",
+        "description": "If someone is hurting you, trained counselors can help, 24/7.",
+        "action": "Call or text 1-800-422-4453",
+        "url": "tel:18004224453",
     },
 ]
 

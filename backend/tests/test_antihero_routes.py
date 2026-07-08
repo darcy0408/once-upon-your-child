@@ -88,6 +88,14 @@ _PART2_JSON_TEMPLATE = json.dumps(
 )
 
 
+@pytest.fixture(autouse=True)
+def antihero_enabled(monkeypatch):
+    """The server-side gate (red-team F-1) defaults OFF; these tests exercise
+    the flow behind it, so enable it. Gate-specific tests below override this
+    per-test with delenv/setenv."""
+    monkeypatch.setenv("ANTIHERO_CRUX_ENABLED", "1")
+
+
 @pytest.fixture
 def fake_cache(app):
     """Swap the blueprint's NullCache for a dict-backed fake so the continuation
@@ -344,6 +352,219 @@ def test_resolution_missing_body_fields_returns_400(client, auth_headers, fake_c
         headers=auth_headers,
     )
     assert resp.status_code == 400
+
+
+# --- egress scrub on the antihero path (red-team F-4) ------------------------
+def test_crux_output_scrubs_injected_contact_strings(
+    client, auth_headers, monkeypatch, fake_cache, adolescent_character
+):
+    """An off-platform contact string in the model output (pages, crux, or a
+    choice label) must never reach the client — this path previously had no
+    deterministic net, and the probe's t.me/Proton payload survived verbatim."""
+    dirty = json.loads(_PART1_JSON)
+    dirty["pages"][0]["text"] = (
+        "Maya found the note: reach me at t.me/vanishhelp or "
+        "vanishhelp@proton.me if you ever need to vanish."
+    )
+    dirty["crux"] = "Trust the stranger at www.vanish-help.com, or walk away."
+    dirty["choices"][0]["text"] = "Message t.me/vanishhelp and disappear."
+    _mock_llm(monkeypatch, part1_text=json.dumps(dirty))
+
+    resp = client.post(
+        "/generate-antihero-crux",
+        json={
+            "character_id": adolescent_character.id,
+            "age": 16,
+            "hero_power": "strategist",
+        },
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    blob = json.dumps(resp.get_json())
+    for needle in ("t.me", "vanishhelp", "proton.me", "www.vanish-help.com"):
+        assert needle not in blob, f"{needle!r} survived to client output"
+
+
+def test_resolution_output_scrubs_injected_contact_strings(
+    client, auth_headers, monkeypatch, fake_cache, adolescent_character, app
+):
+    """Part-2 pages AND saga_state (which persists into superhero_meta and
+    feeds the next issue's continuity prompt) must be scrubbed."""
+    _mock_llm(monkeypatch)
+    crux_resp = client.post(
+        "/generate-antihero-crux",
+        json={
+            "character_id": adolescent_character.id,
+            "age": 16,
+            "hero_power": "strategist",
+        },
+        headers=auth_headers,
+    )
+    token = crux_resp.get_json()["continuation_token"]
+
+    dirty2 = json.loads(_PART2_JSON_TEMPLATE)
+    dirty2["pages"][0][
+        "text"
+    ] = "The note read: vanishhelp@proton.me — an offer that smelled of care."
+    dirty2["saga_state"]["next_hook"] = "Someone left a card: t.me/vanishhelp."
+    dirty2["saga_state"]["defining_choice"] = "She kept the number."
+    _mock_llm(monkeypatch, part2_text=json.dumps(dirty2))
+
+    res_resp = client.post(
+        "/generate-antihero-resolution",
+        json={"continuation_token": token, "choice_id": "a"},
+        headers=auth_headers,
+    )
+
+    assert res_resp.status_code == 200, res_resp.get_data(as_text=True)
+    body = res_resp.get_json()
+    blob = json.dumps(body)
+    for needle in ("t.me", "vanishhelp", "proton.me"):
+        assert needle not in blob, f"{needle!r} survived to client output"
+
+    # Clean up the persisted Story row (Story.user_id FK teardown, as above).
+    from backend.database import db
+    from backend.models.story import Story
+
+    with app.app_context():
+        Story.query.filter_by(id=body["story"]["id"]).delete()
+        db.session.commit()
+
+
+# --- server-side gate (red-team F-1) ----------------------------------------
+def test_crux_rejected_403_when_flag_unset(
+    client, auth_headers, monkeypatch, fake_cache, adolescent_character, app, test_user
+):
+    """Default posture: ANTIHERO_CRUX_ENABLED unset → 403, no generation, no
+    quota charge. This is the server-side mirror of Dart's cruxChoiceEnabled."""
+    _mock_llm(monkeypatch)
+    monkeypatch.delenv("ANTIHERO_CRUX_ENABLED", raising=False)
+    before = _month_count(app, test_user.id)
+
+    resp = client.post(
+        "/generate-antihero-crux",
+        json={
+            "character_id": adolescent_character.id,
+            "age": 16,
+            "hero_power": "strategist",
+        },
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 403
+    assert resp.get_json()["error"] == "FEATURE_DISABLED"
+    assert _month_count(app, test_user.id) == before
+    assert not fake_cache
+
+
+def test_resolution_rejected_403_when_flag_unset(
+    client, auth_headers, monkeypatch, fake_cache
+):
+    monkeypatch.delenv("ANTIHERO_CRUX_ENABLED", raising=False)
+    resp = client.post(
+        "/generate-antihero-resolution",
+        json={"continuation_token": "tok", "choice_id": "a"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 403
+    assert resp.get_json()["error"] == "FEATURE_DISABLED"
+
+
+def test_crux_rejects_age_outside_adolescent_band(
+    client, auth_headers, monkeypatch, fake_cache, app, test_user
+):
+    """Even with the flag on, only the 15-17 band may reach the antihero
+    builders — a 12-year-old payload age is refused."""
+    _mock_llm(monkeypatch)
+    before = _month_count(app, test_user.id)
+
+    resp = client.post(
+        "/generate-antihero-crux",
+        json={"character": "Kid", "age": 12, "hero_power": "strategist"},
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 403
+    assert resp.get_json()["error"] == "AGE_BAND_NOT_SUPPORTED"
+    assert _month_count(app, test_user.id) == before
+
+
+def test_crux_band_check_uses_verified_age_not_declared(
+    client, auth_headers, monkeypatch, fake_cache, app, test_user
+):
+    """A younger child cannot reach the adolescent band by declaring 16: the
+    owned character's age anchors the resolve DOWN, and the gate then rejects."""
+    from backend.database import db
+    from backend.models import Character
+
+    _mock_llm(monkeypatch)
+    with app.app_context():
+        character = Character(
+            id="char_kid_12",
+            user_id=test_user.id,
+            name="Kid",
+            age=12,
+            personality_sliders={},
+        )
+        db.session.add(character)
+        db.session.commit()
+
+    try:
+        resp = client.post(
+            "/generate-antihero-crux",
+            json={"character_id": "char_kid_12", "age": 16, "hero_power": "strategist"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 403
+        assert resp.get_json()["error"] == "AGE_BAND_NOT_SUPPORTED"
+    finally:
+        with app.app_context():
+            Character.query.filter_by(id="char_kid_12").delete()
+            db.session.commit()
+
+
+def test_crisis_check_runs_before_gate(
+    client, auth_headers, monkeypatch, fake_cache, adolescent_character
+):
+    """A distressed teen gets crisis resources, not a 403 — the crisis guard
+    deliberately runs before the feature gate."""
+    _mock_llm(monkeypatch)
+    monkeypatch.delenv("ANTIHERO_CRUX_ENABLED", raising=False)
+
+    resp = client.post(
+        "/generate-antihero-crux",
+        json={
+            "character_id": adolescent_character.id,
+            "age": 16,
+            "hero_secret": "I don't want to be alive anymore",
+        },
+        headers=auth_headers,
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json().get("crisis") is True
+
+
+def test_resolution_rejects_cached_context_outside_band(
+    client, auth_headers, monkeypatch, fake_cache, app, test_user
+):
+    """Belt-and-suspenders: a continuation context carrying a non-adolescent
+    age is refused at resolution time too."""
+    fake_cache["antihero-crux:tok-kid"] = {
+        "user_id": str(test_user.id),
+        "age": 12,
+        "choices": [{"id": "a", "text": "x"}, {"id": "b", "text": "y"}],
+        "part1_pages": ["p1"],
+        "title": "T",
+    }
+    resp = client.post(
+        "/generate-antihero-resolution",
+        json={"continuation_token": "tok-kid", "choice_id": "a"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 403
+    assert resp.get_json()["error"] == "AGE_BAND_NOT_SUPPORTED"
 
 
 # --- run_antihero_part2 unit test ------------------------------------------
