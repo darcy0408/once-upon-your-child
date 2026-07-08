@@ -383,6 +383,36 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     if (mounted) setState(() => _isSpeaking = false);
   }
 
+  /// One guided wind-down breath, spoken as the story begins — the
+  /// transition beat between wizard-question energy and listening
+  /// stillness. Voice-led with wall-clock breath timing (real pauses, not
+  /// TTS ellipses) while the ambient orb slows to breath tempo. Any TTS
+  /// failure falls through to the story; a fired sleep timer skips it.
+  Future<void> _windDownBreath() async {
+    if (_timerExpired || !mounted) return;
+    _orbController.duration = const Duration(seconds: 5);
+    _orbController.repeat(reverse: true);
+    try {
+      await _speak(_isMature
+          ? 'Almost ready. One slow breath first. In through your nose…'
+          : 'Your story is almost here. First, one big sleepy breath. '
+              'Breathe in… slow…');
+      await Future.delayed(const Duration(seconds: 4));
+      if (_timerExpired || !mounted) return;
+      await _speak(_isMature
+          ? '…and slowly out.'
+          : '…and let it out… slow and soft…');
+      await Future.delayed(const Duration(seconds: 6));
+    } catch (_) {
+      // Never let the breath block the story.
+    } finally {
+      if (mounted) {
+        _orbController.duration = const Duration(seconds: 3);
+        _orbController.repeat(reverse: true);
+      }
+    }
+  }
+
   Future<String> _askQuestion(String question,
       {List<String> options = const []}) async {
     if (mounted && options.isNotEmpty) {
@@ -835,6 +865,10 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
     setState(() => _step = BedtimeStep.reading);
 
+    // Wind-down beat: one guided breath between "it's ready" and the first
+    // line, so the story starts on a settled exhale.
+    await _windDownBreath();
+
     final paragraphs = result.storyText.split(RegExp(r'\n\n+'));
     for (final paragraph in paragraphs) {
       if (_timerExpired) return;
@@ -856,6 +890,10 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   Future<void> _runInteractiveStoryLoop(
       Map<String, dynamic> requestData) async {
     setState(() => _step = BedtimeStep.reading);
+
+    // Wind-down beat before the first segment request — for pick-a-path the
+    // breath doubles as cover for the opening generation wait.
+    await _windDownBreath();
 
     final characterName = requestData['character'] ?? 'Hero';
     final theme = _settingChoice ?? 'Magical Adventure';
