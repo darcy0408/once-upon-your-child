@@ -91,6 +91,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   bool get _isExplorer => ageBandFromAge(widget.childAge) == AgeBand.explorer;
   bool get _isAdventurer =>
       ageBandFromAge(widget.childAge) == AgeBand.adventurer;
+  bool get _isTeen {
+    final band = ageBandFromAge(widget.childAge);
+    return band == AgeBand.creator || band == AgeBand.adolescent;
+  }
 
   /// Friends that have at least one Sprout quest. Empty friends (e.g. Sunny Pup
   /// while no happy stories exist) are hidden from the entry grid so a
@@ -416,14 +420,15 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             style: _chromeStyle(band, color: Colors.white60, fontSize: 14),
           ),
         ),
-        // Coping Toolbox — Explorer + Adventurer. Sprout has the friend picker
-        // as its entry pattern; Creator+ get reframed-language techniques in
-        // a future pass (current set is too cartoony for 12+).
-        if (_isExplorer || _isAdventurer) _buildCopingToolbox(band),
+        // Coping Toolbox — Explorer/Adventurer get the young set; Creator/
+        // Adolescent get the teen "Reset kit" (box breath, physiological
+        // sigh, body scan, 5-4-3-2-1 in teen register). Sprout has the
+        // friend picker as its entry pattern instead.
+        if (_isExplorer || _isAdventurer || _isTeen) _buildCopingToolbox(band),
         // Section header — only when the toolbox is above it — so the two
         // interaction modes don't read as one undivided list: calm-down tools
         // you *practice* vs. stories you *step into*.
-        if ((_isExplorer || _isAdventurer) && quests.isNotEmpty)
+        if ((_isExplorer || _isAdventurer || _isTeen) && quests.isNotEmpty)
           _buildStoriesHeader(band),
         // Quest cards or empty state
         if (quests.isEmpty)
@@ -588,13 +593,15 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
     );
   }
 
-  // ── Coping Toolbox (Explorer) ─────────────────────────────────────────────
+  // ── Coping Toolbox (Explorer/Adventurer) · Reset kit (Creator/Adolescent) ─
   //
   // Horizontal strip of breath/grounding techniques shown above the quest
   // list. Always available — the kid can practice when they want, not only
   // when they hit a story trigger. Each card opens an animated guided
-  // practice via CopingPracticeSheet.
+  // practice via CopingPracticeSheet. Teens get the reframed technique set
+  // and quieter framing ("Reset kit", no toolbox emoji).
   Widget _buildCopingToolbox(AgeBandThemeData band) {
+    final techniques = copingTechniquesForAge(widget.childAge);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
@@ -604,10 +611,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Row(
               children: [
-                const Text('🧰', style: TextStyle(fontSize: 16)),
+                Text(_isTeen ? '⚡' : '🧰',
+                    style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
                 Text(
-                  'Feeling toolbox',
+                  _isTeen ? 'Reset kit' : 'Feeling toolbox',
                   style: _chromeStyle(band,
                       color: Colors.white,
                       fontSize: 14,
@@ -615,7 +623,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '— tap to practice anytime',
+                  _isTeen
+                      ? '— under a minute each'
+                      : '— tap to practice anytime',
                   style:
                       _chromeStyle(band, color: Colors.white54, fontSize: 11),
                 ),
@@ -641,10 +651,10 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                itemCount: allCopingTechniques.length,
+                itemCount: techniques.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (context, i) =>
-                    _buildToolboxCard(allCopingTechniques[i], band),
+                    _buildToolboxCard(techniques[i], band),
               ),
             ),
           ),
@@ -681,7 +691,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
   Widget _buildToolboxCard(CopingTechnique technique, AgeBandThemeData band) {
     final color = Color(technique.colorSeed);
     return GestureDetector(
-      onTap: () => CopingPracticeSheet.show(context, technique: technique),
+      onTap: () => CopingPracticeSheet.show(
+        context,
+        technique: technique,
+        childAge: widget.childAge,
+      ),
       child: Container(
         width: 110,
         padding: const EdgeInsets.all(10),
@@ -926,6 +940,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
           context,
           technique: technique,
           buddy: buddy,
+          childAge: widget.childAge,
         ),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -947,7 +962,11 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Try it with ${widget.childName}!',
+                      // Teens get an invitation, not a cheer — the younger
+                      // framing reads as babyish at 13+.
+                      _isTeen
+                          ? 'Take a minute'
+                          : 'Try it with ${widget.childName}!',
                       style: _chromeStyle(band,
                           color: Colors.white,
                           fontSize: 14,
@@ -955,7 +974,7 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${technique.nameForAge(widget.childAge)} — ${technique.tagline}',
+                      '${technique.nameForAge(widget.childAge)} — ${technique.taglineForAge(widget.childAge)}',
                       style: _chromeStyle(band,
                           color: Colors.white70, fontSize: 12),
                     ),

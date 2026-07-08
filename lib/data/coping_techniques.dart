@@ -4,8 +4,13 @@
 // in-story "Try it with [hero]!" break. Each technique is a sequence of
 // timed steps the practice widget animates and (optionally) speaks.
 //
-// Authored for ages 6-8 (Explorer band) — short cycles, simple language,
-// concrete imagery. Sprout reuses Belly Breath only via the in-story break.
+// Two registers live here:
+//  - The young set (ages 6-12) — short cycles, simple language, concrete
+//    imagery. Sprout reuses Belly Breath only via the in-story break.
+//  - The teen set (ages 13-17, Creator/Adolescent) — same practice
+//    machinery, reframed language: no cartoon imagery, evidence-flavored
+//    descriptions, techniques teens actually recognize (box breathing,
+//    physiological sigh, body scan). Pick via [copingTechniquesForAge].
 
 /// A single beat inside a coping technique — one breath, one trace, one
 /// grounding prompt. The widget renders the label/cue and animates for the
@@ -58,6 +63,14 @@ class CopingTechnique {
   /// ("Belly Breath" -> "Steady Breath"). Optional; falls back to [name].
   final String? olderName;
 
+  /// Teen-register (13+) copy overrides for techniques that appear in both
+  /// sets (currently 5-4-3-2-1). The name swap starts at 9 ([olderName])
+  /// because Adventurers eye-roll at babyish *labels*; the full tagline/
+  /// description reframe waits until 13 because the younger copy is what
+  /// shipped for 9-12 and reads fine there. Optional; fall back to base.
+  final String? olderTagline;
+  final String? olderDescription;
+
   const CopingTechnique({
     required this.id,
     required this.name,
@@ -68,11 +81,22 @@ class CopingTechnique {
     this.cycles = 3,
     required this.colorSeed,
     this.olderName,
+    this.olderTagline,
+    this.olderDescription,
   });
 
   /// Band-appropriate display name. 9+ gets [olderName] when set.
   String nameForAge(int age) =>
       (age >= 9 && olderName != null) ? olderName! : name;
+
+  /// Band-appropriate tagline / description. 13+ (Creator/Adolescent) gets
+  /// the teen-register copy when set.
+  String taglineForAge(int age) =>
+      (age >= teenCopingAge && olderTagline != null) ? olderTagline! : tagline;
+  String descriptionForAge(int age) =>
+      (age >= teenCopingAge && olderDescription != null)
+          ? olderDescription!
+          : description;
 
   /// Total duration of one full practice (all cycles).
   Duration get totalDuration {
@@ -88,6 +112,12 @@ class CopingTechnique {
 // Technique library
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Age at which the teen set + teen-register copy kick in. Mirrors the
+/// Creator-band floor in `ageBandFromAge` (≤12 is Adventurer) — kept as a
+/// local const so this file stays a pure-data module with no theme import.
+const int teenCopingAge = 13;
+
+/// The young set (6-12): playful, concrete imagery.
 const allCopingTechniques = <CopingTechnique>[
   copingDragonBreath,
   copingBellyBreath,
@@ -97,9 +127,27 @@ const allCopingTechniques = <CopingTechnique>[
   copingGrounding54321,
 ];
 
-/// Lookup by id — returns null if not found.
+/// The teen set (13-17, Creator/Adolescent): the "reframed-language
+/// techniques" the toolbox gate in life_quest_screen was waiting on.
+/// 5-4-3-2-1 appears in both sets (same object, teen copy via older*).
+const teenCopingTechniques = <CopingTechnique>[
+  copingBoxBreath,
+  copingPhysioSigh,
+  copingBodyScan,
+  copingGrounding54321,
+];
+
+/// Band-appropriate technique list for the Coping Toolbox / Reset kit.
+List<CopingTechnique> copingTechniquesForAge(int age) =>
+    age >= teenCopingAge ? teenCopingTechniques : allCopingTechniques;
+
+/// Lookup by id across BOTH sets — in-story coping breaks reference ids
+/// from either register. Returns null if not found.
 CopingTechnique? copingById(String id) {
   for (final t in allCopingTechniques) {
+    if (t.id == id) return t;
+  }
+  for (final t in teenCopingTechniques) {
     if (t.id == id) return t;
   }
   return null;
@@ -284,11 +332,16 @@ const copingGrounding54321 = CopingTechnique(
   olderName: '5-4-3-2-1 Grounding',
   emoji: '👀',
   tagline: 'Find your way back here.',
+  olderTagline: 'Come back to right now.',
   description:
       "When everything feels too big, your body forgets where you are. "
       "This is a tiny treasure hunt that brings you back. Look around. "
       "Each step pulls you a little more into right-now, where you're "
       "safe.",
+  olderDescription:
+      "When your head is spinning, your senses are the fastest road back. "
+      "Work through them one at a time — it interrupts the spiral by "
+      "giving your brain something real to hold onto.",
   colorSeed: 0xFF81C784, // grounded green
   cycles: 1,
   steps: [
@@ -320,6 +373,133 @@ const copingGrounding54321 = CopingTechnique(
       label: '1 thing you can TASTE',
       cue: 'just notice your mouth — that counts',
       duration: Duration(seconds: 6),
+      action: CopingAction.prompt,
+    ),
+  ],
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Teen set (13-17) — reframed register, no cartoon imagery.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// 🟦 Box Breath — focus / steadiness before pressure moments
+const copingBoxBreath = CopingTechnique(
+  id: 'box_breath',
+  name: 'Box Breath',
+  emoji: '🟦',
+  tagline: 'Four counts a side. Steady.',
+  description:
+      "Breathe around a square: in for 4, hold 4, out 4, hold 4. Pilots "
+      "and pro athletes use it before high-pressure moments — the even "
+      "count gives your mind one simple thing to track while your body "
+      "settles.",
+  colorSeed: 0xFF4DB6AC, // steady teal
+  cycles: 4,
+  steps: [
+    CopingStep(
+      label: 'Breathe in',
+      cue: 'count 4 — up one side of the square',
+      duration: Duration(seconds: 4),
+      action: CopingAction.breatheIn,
+    ),
+    CopingStep(
+      label: 'Hold',
+      cue: 'count 4 — across the top',
+      duration: Duration(seconds: 4),
+      action: CopingAction.hold,
+    ),
+    CopingStep(
+      label: 'Breathe out',
+      cue: 'count 4 — down the other side',
+      duration: Duration(seconds: 4),
+      action: CopingAction.breatheOut,
+    ),
+    CopingStep(
+      label: 'Hold',
+      cue: 'count 4 — along the bottom',
+      duration: Duration(seconds: 4),
+      action: CopingAction.hold,
+    ),
+  ],
+);
+
+// 🌊 Physiological Sigh — fastest downshift when stress spikes
+const copingPhysioSigh = CopingTechnique(
+  id: 'physio_sigh',
+  name: 'Physiological Sigh',
+  emoji: '🌊',
+  tagline: 'The fastest reset there is.',
+  description:
+      "Two inhales through your nose — one big, then a short top-up — "
+      "then one long, slow exhale through your mouth. It's the quickest "
+      "known way to dial your body's stress response down. Two or three "
+      "rounds is plenty.",
+  colorSeed: 0xFF64B5F6, // cool blue
+  cycles: 3,
+  steps: [
+    CopingStep(
+      label: 'Breathe in',
+      cue: 'through your nose, most of the way full',
+      duration: Duration(seconds: 2),
+      action: CopingAction.breatheIn,
+    ),
+    CopingStep(
+      label: 'Top it up',
+      cue: 'one more short sip of air',
+      duration: Duration(seconds: 1),
+      action: CopingAction.breatheIn,
+    ),
+    CopingStep(
+      label: 'Long exhale',
+      cue: 'slow, through your mouth — all the way out',
+      duration: Duration(seconds: 6),
+      action: CopingAction.breatheOut,
+    ),
+  ],
+);
+
+// 🧍 Body Scan — find and release parked tension (salvaged from the
+// retired coping_strategy_library; rebuilt on the CopingStep model)
+const copingBodyScan = CopingTechnique(
+  id: 'body_scan',
+  name: 'Body Scan',
+  emoji: '🧍',
+  tagline: 'Find where the stress is hiding.',
+  description:
+      "Tension parks itself in your body — jaw, shoulders, hands — long "
+      "before you notice it. Move your attention downward and let each "
+      "spot go loose. Nothing to force; just notice, soften, move on.",
+  colorSeed: 0xFF9575CD, // dusk violet
+  cycles: 1,
+  steps: [
+    CopingStep(
+      label: 'Jaw + face',
+      cue: 'unclench your teeth, let your face go slack',
+      duration: Duration(seconds: 10),
+      action: CopingAction.prompt,
+    ),
+    CopingStep(
+      label: 'Shoulders',
+      cue: 'let them drop away from your ears',
+      duration: Duration(seconds: 10),
+      action: CopingAction.prompt,
+    ),
+    CopingStep(
+      label: 'Hands',
+      cue: 'uncurl your fingers, let them go heavy',
+      duration: Duration(seconds: 10),
+      action: CopingAction.prompt,
+    ),
+    CopingStep(
+      label: 'Chest + belly',
+      cue: 'send one slow breath into any tight spot',
+      duration: Duration(seconds: 10),
+      action: CopingAction.prompt,
+    ),
+    CopingStep(
+      label: 'Legs + feet',
+      cue: 'notice the floor holding you up',
+      duration: Duration(seconds: 10),
       action: CopingAction.prompt,
     ),
   ],

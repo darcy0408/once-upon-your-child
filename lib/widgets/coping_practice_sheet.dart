@@ -20,12 +20,18 @@ import '../services/app_tts_service.dart';
 /// When set, the breathing figure is rendered as the buddy's portrait scaling
 /// in/out instead of the abstract orb, and a per-buddy pep-talk replaces the
 /// generic intro tagline. Older bands pass null and get the original orb.
+///
+/// [childAge] selects the copy register (teen names/taglines/descriptions at
+/// 13+) and the TTS default: narration is on for under-13s, off for teens —
+/// a narrated breathing exercise reads as babyish at 15. Pass [ttsEnabled]
+/// explicitly to override either default.
 class CopingPracticeSheet {
   static Future<void> show(
     BuildContext context, {
     required CopingTechnique technique,
-    bool ttsEnabled = true,
+    bool? ttsEnabled,
     SproutFriend? buddy,
+    int childAge = 0,
   }) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder(
@@ -34,8 +40,9 @@ class CopingPracticeSheet {
         transitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (_, __, ___) => _PracticeScreen(
           technique: technique,
-          ttsEnabled: ttsEnabled,
+          ttsEnabled: ttsEnabled ?? childAge < teenCopingAge,
           buddy: buddy,
+          childAge: childAge,
         ),
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
@@ -86,11 +93,13 @@ class _PracticeScreen extends StatefulWidget {
   final CopingTechnique technique;
   final bool ttsEnabled;
   final SproutFriend? buddy;
+  final int childAge;
 
   const _PracticeScreen({
     required this.technique,
     required this.ttsEnabled,
     this.buddy,
+    this.childAge = 0,
   });
 
   @override
@@ -105,6 +114,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
 
   CopingTechnique get _t => widget.technique;
   CopingStep get _currentStep => _t.steps[_stepIndex];
+  bool get _teen => widget.childAge >= teenCopingAge;
 
   Color get _accent => Color(_t.colorSeed);
 
@@ -186,7 +196,9 @@ class _PracticeScreenState extends State<_PracticeScreen> {
       return;
     }
     setState(() => _frame = _Frame.done);
-    AppTtsService.instance.speak('You did it! Nice work.', rateScale: 0.85);
+    if (widget.ttsEnabled) {
+      AppTtsService.instance.speak('You did it! Nice work.', rateScale: 0.85);
+    }
   }
 
   void _practiceAgain() {
@@ -233,7 +245,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
     final buddy = widget.buddy;
     return Column(
       children: [
-        _topBar(label: 'Try this', showClose: true),
+        _topBar(label: _teen ? 'Quick reset' : 'Try this', showClose: true),
         const SizedBox(height: 20),
         if (buddy != null)
           // Buddy portrait — clipped to a soft circle with an accent halo so
@@ -262,7 +274,9 @@ class _PracticeScreenState extends State<_PracticeScreen> {
           Text(_t.emoji, style: const TextStyle(fontSize: 80)),
         const SizedBox(height: 12),
         Text(
-          buddy != null ? _buddyDisplayName(buddy) : _t.name,
+          buddy != null
+              ? _buddyDisplayName(buddy)
+              : _t.nameForAge(widget.childAge),
           style: GoogleFonts.fredoka(
             color: _accent,
             fontSize: 32,
@@ -271,7 +285,9 @@ class _PracticeScreenState extends State<_PracticeScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          buddy != null ? _buddyPepTalk(buddy) : _t.tagline,
+          buddy != null
+              ? _buddyPepTalk(buddy)
+              : _t.taglineForAge(widget.childAge),
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: Colors.white70,
@@ -283,7 +299,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Text(
-            _t.description,
+            _t.descriptionForAge(widget.childAge),
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(
               color: Colors.white.withAlpha(220),
@@ -305,7 +321,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
               elevation: 6,
             ),
             child: Text(
-              "Let's go! ✨",
+              _teen ? 'Start' : "Let's go! ✨",
               style: GoogleFonts.fredoka(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -324,7 +340,8 @@ class _PracticeScreenState extends State<_PracticeScreen> {
     return Column(
       children: [
         _topBar(
-          label: '${_t.name}  •  Round $_cycle / ${_t.cycles}',
+          label:
+              '${_t.nameForAge(widget.childAge)}  •  Round $_cycle / ${_t.cycles}',
           showClose: true,
         ),
         const Spacer(),
@@ -434,7 +451,7 @@ class _PracticeScreenState extends State<_PracticeScreen> {
         const Text('🌟', style: TextStyle(fontSize: 96)),
         const SizedBox(height: 16),
         Text(
-          'You did it!',
+          _teen ? 'Reset complete' : 'You did it!',
           style: GoogleFonts.fredoka(
             color: Colors.white,
             fontSize: 36,
@@ -445,8 +462,11 @@ class _PracticeScreenState extends State<_PracticeScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 36),
           child: Text(
-            'Big feelings get smaller when you breathe through them.\n'
-            'You can come back to this anytime.',
+            _teen
+                ? 'A settled body makes a clearer head. This works before '
+                    'a test, after an argument — any time it gets loud.'
+                : 'Big feelings get smaller when you breathe through them.\n'
+                    'You can come back to this anytime.',
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(
               color: Colors.white70,
