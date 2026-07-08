@@ -252,6 +252,13 @@ const allLifeQuests = <LifeQuestScenario>[
   questBurningOut,
   questWhoAmIBecoming,
   questFirstPaycheck,
+  // Salvaged from the orphaned Character Evolution conflict-resolution
+  // library (lib/conflict_resolution_data.dart, UNFINISHED_FEATURES_AUDIT.md
+  // §1 Cluster C, owner-approved 2026-07-08). Explorer + Adventurer register.
+  questOuchThatHurt,
+  questLastCookie,
+  questMarbleRun,
+  questLoudMusic,
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -8286,6 +8293,681 @@ const questSecretWeight = LifeQuestScenario(
           'to a trusted grown-up is exactly what you\'re supposed to do. '
           'None of it was ever your fault.',
       choices: [],
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALVAGED FROM CONFLICT-RESOLUTION LIBRARY — Explorer + Adventurer
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// These four quests mine `lib/conflict_resolution_data.dart` (the orphaned
+// Character Evolution CYOA library, dead code since 2026-07-03) for the
+// strategies the live Life Quest set didn't already explicitly teach:
+// calm-words-not-retaliation, real compromise, a 3-step problem-solving
+// algorithm with a partner, and I-statements. Bullying, sibling anger,
+// apology, and not-being-picked are all already well covered elsewhere
+// (being_teased / peer_pressure / the_dare, sibling_conflict, owning_up /
+// sorry_stuck, not_fair / friend_got_picked / the_tryout) so those source
+// stories were left behind. See PR body for the full skip rationale.
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALVAGE QUEST 1: Ouch, That Hurt  [Explorer + Adventurer]
+// Calm words instead of retaliating, from "The Soccer Game" (usingWords).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questOuchThatHurt = LifeQuestScenario(
+  id: 'ouch_that_hurt',
+  title: 'Ouch, That Hurt',
+  hook: 'The ball smacked your leg. Hard. Now what comes out of your mouth?',
+  emoji: '⚽',
+  emotions: ['angry', 'frustrated'],
+  recommendedBands: [AgeBand.explorer, AgeBand.adventurer],
+  grownupTip:
+      'Ask: "Has anyone ever hurt you by accident? What did you do — and '
+      'what do you wish you\'d done?"',
+  startSegmentId: 'oth_start',
+  segments: {
+    'oth_start': QuestSegment(
+      id: 'oth_start',
+      copingBreakId: 'dragon_breath',
+      content:
+          'Recess. You and your friend are kicking the ball back and forth, '
+          'faster and faster — and then, WHAM. The ball catches you right in '
+          'the leg, way harder than a game-ball is supposed to hit.\n\n'
+          'It stings like crazy. Your eyes water a little. And underneath '
+          'the sting, something hotter is building — the ball probably '
+          'didn\'t mean to do that, but it still hurt, and your friend is '
+          'just standing there looking surprised instead of sorry.\n\n'
+          'Your hands are curling into fists before you even decide to make '
+          'them.\n\n'
+          '«{companion} is right beside you, watching to see what you do '
+          'next.»\n\n'
+          'What comes out first?',
+      choices: [
+        QuestChoice(
+          id: 'oth_c1a',
+          text: 'Push your friend back — "You did that on purpose!"',
+          nextSegmentId: 'oth_push',
+        ),
+        QuestChoice(
+          id: 'oth_c1b',
+          text: 'Breathe, then say "Ouch! That really hurt — please be more careful."',
+          nextSegmentId: 'oth_words',
+        ),
+        QuestChoice(
+          id: 'oth_c1c',
+          text: 'Just walk off the field without a word',
+          nextSegmentId: 'oth_silent',
+        ),
+      ],
+    ),
+
+    'oth_push': QuestSegment(
+      id: 'oth_push',
+      content:
+          'You shove. Harder than you meant to — the mad decided before you '
+          'did.\n\n'
+          'Your friend stumbles back, eyes wide. "Whoa! I didn\'t even — it '
+          'was an accident!"\n\n'
+          'A teacher\'s whistle cuts across the field before you can answer. '
+          'She jogs over, looks at both of you, and says, "Okay. Both of '
+          'you, with me." Recess isn\'t over, but yours basically is — you '
+          'spend the rest of it on the bench explaining what happened, '
+          'while your leg still throbs and now your stomach does too.\n\n'
+          '«{companion} sits with you on the bench. Doesn\'t say much. Just '
+          'stays.»\n\n'
+          'Your friend is over by the fence, rubbing their arm, not looking '
+          'at you.',
+      choices: [
+        QuestChoice(
+          id: 'oth_c2a',
+          text: 'Once you\'ve cooled off, go say what actually hurt',
+          nextSegmentId: 'oth_repair',
+        ),
+        QuestChoice(
+          id: 'oth_c2b',
+          text: 'Stay mad — they hit you first',
+          nextSegmentId: 'oth_stay_mad',
+        ),
+      ],
+    ),
+
+    'oth_words': QuestSegment(
+      id: 'oth_words',
+      content:
+          'You breathe in through your nose — one big breath, the kind that '
+          'buys your mouth a second before your hands do anything.\n\n'
+          '"Ouch! That really hurt," you say. Your voice comes out shakier '
+          'than you\'d like, but it comes out. "Can you be more careful?"\n\n'
+          'Your friend\'s face changes fast — from surprised to sorry. "Oh '
+          'man, are you okay? I didn\'t mean to kick it that hard, I '
+          'swear."\n\n'
+          '"I know," you say. And you do know, now that you\'ve heard it. '
+          'The mad has mostly drained out of your hands.\n\n'
+          'You rub your leg for a second, then get back in position. '
+          '"Softer this time," you say, and your friend actually laughs and '
+          'agrees.\n\n'
+          '«{companion} bumps your shoulder — nice one.»\n\n'
+          'The game starts again. Nobody\'s in trouble. Nobody\'s still hurt '
+          'inside. Just two kids, back to kicking a ball around.',
+      isEnding: true,
+    ),
+
+    'oth_silent': QuestSegment(
+      id: 'oth_silent',
+      content:
+          'You turn and walk off toward the fence without a word. Your leg '
+          'still stings and so does something else — the mad feeling has '
+          'nowhere to go, so it just sits there, heavy.\n\n'
+          'Your friend calls after you. "Hey — you okay?" You don\'t '
+          'answer. They jog over, but by the time they reach you, they\'re '
+          'guessing. "Was it something I did? Are you mad at me?"\n\n'
+          'You shrug. You didn\'t say what actually happened, so now your '
+          'friend doesn\'t know either — they\'re left trying to piece it '
+          'together from a shrug and a cold shoulder.\n\n'
+          '«{companion} nudges you, like: you could still tell them.»\n\n'
+          'Recess ends with the two of you sort of near each other and sort '
+          'of not. The sting in your leg fades by dinnertime. The confused, '
+          'prickly feeling between you and your friend takes a lot longer '
+          '— because nobody ever said what actually happened.',
+      isEnding: true,
+    ),
+
+    'oth_repair': QuestSegment(
+      id: 'oth_repair',
+      content:
+          'At the end of recess, you find your friend by the fence. Your '
+          'face is still a little hot, but the shove-mad has burned off.\n\n'
+          '"Hey," you say. "I shouldn\'t have pushed you. But that kick '
+          'really hurt, and it scared me for a second."\n\n'
+          'Your friend looks relieved. "I\'m sorry — I didn\'t mean to kick '
+          'it that hard. I should\'ve checked if you were okay right away '
+          'instead of just standing there."\n\n'
+          '«{companion} relaxes beside you — the prickly feeling in the air '
+          'finally lets go.»\n\n'
+          'You still have to talk to the teacher about the pushing part — '
+          'that part\'s not going away. But you and your friend walk back '
+          'inside together, and by the time you sit down, most of it feels '
+          'sorted.',
+      isEnding: true,
+    ),
+
+    'oth_stay_mad': QuestSegment(
+      id: 'oth_stay_mad',
+      content:
+          'You cross your arms and stare at the ground. Your friend tries '
+          'once more — "Come on, it was an accident" — and when you don\'t '
+          'answer, they give up and walk off.\n\n'
+          'For the rest of the day, you replay it: the sting of the ball, '
+          'the shove, the whistle. You were the one who got hurt first. '
+          'That part is still true. But somewhere in there, the story '
+          'became about the pushing instead of the accident, and now '
+          'you\'re both a little bit in trouble and a little bit apart.\n\n'
+          '«That night, {companion} is quiet next to you while you think '
+          'about it.»\n\n'
+          'Tomorrow, your friend will still be there at recess. The ball, '
+          'the push, the bench — none of it has to be the last word on the '
+          'two of you. But somebody\'s going to have to say something '
+          'first.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALVAGE QUEST 2: The Last Cookie  [Explorer + Adventurer]
+// Finding a real compromise, from "The Last Cookie" (findingCompromise).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questLastCookie = LifeQuestScenario(
+  id: 'last_cookie',
+  title: 'The Last Cookie',
+  hook: 'One cookie left. Two of you reaching for it.',
+  emoji: '\u{1F36A}',
+  emotions: ['frustrated', 'angry'],
+  recommendedBands: [AgeBand.explorer, AgeBand.adventurer],
+  grownupTip:
+      'Ask: "What\'s something you and a sibling or friend split evenly? '
+      'How did you decide?"',
+  startSegmentId: 'lc_start',
+  segments: {
+    'lc_start': QuestSegment(
+      id: 'lc_start',
+      copingBreakId: 'star_breath',
+      content:
+          'Dinner\'s over, dishes are drying, and there\'s exactly one '
+          'cookie left on the plate. Chocolate chip. The good kind, still a '
+          'little warm.\n\n'
+          'You spot it at the same second your little brother does. Both of '
+          'you freeze, then both of you lunge.\n\n'
+          '"I saw it first!" you say, snatching the plate away.\n\n'
+          '"But I\'m smaller, so I need it more!" he says, already reaching '
+          'again.\n\n'
+          'Neither of those is really an argument. It\'s just two kids who '
+          'both want the same cookie, both talking louder to try to win.\n\n'
+          '«{companion} watches from the counter, waiting to see what '
+          'happens.»\n\n'
+          'The plate is in your hands. What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'lc_c1a',
+          text: 'Eat it fast before he can argue anymore',
+          nextSegmentId: 'lc_grab',
+        ),
+        QuestChoice(
+          id: 'lc_c1b',
+          text: 'Break it in half — "Let\'s split it"',
+          nextSegmentId: 'lc_split',
+        ),
+        QuestChoice(
+          id: 'lc_c1c',
+          text: 'Yell for Mom to decide',
+          nextSegmentId: 'lc_mom',
+        ),
+      ],
+    ),
+
+    'lc_grab': QuestSegment(
+      id: 'lc_grab',
+      content:
+          'You turn away and take a giant bite before he can say another '
+          'word.\n\n'
+          'His face crumples instantly. "That\'s not FAIR!" he wails, loud '
+          'enough that footsteps start coming from the kitchen. You still '
+          'have half a cookie in your hand, but it doesn\'t taste as good '
+          'as you thought it would — not with him crying two feet away.\n\n'
+          '«{companion} winces at the noise.»\n\n'
+          'Mom appears in the doorway. "What happened to sharing?"',
+      choices: [
+        QuestChoice(
+          id: 'lc_c2a',
+          text: 'Offer him something else — first pick of tomorrow\'s snack',
+          nextSegmentId: 'lc_makeup',
+        ),
+        QuestChoice(
+          id: 'lc_c2b',
+          text: 'Say he\'s just being a baby about it',
+          nextSegmentId: 'lc_dismiss',
+        ),
+      ],
+    ),
+
+    'lc_split': QuestSegment(
+      id: 'lc_split',
+      content:
+          '"Let\'s split it," you say, and break the cookie right down the '
+          'middle — one half a little bigger than the other, but close '
+          'enough.\n\n'
+          'You hand him a piece. He looks at it, looks at you, and grins. '
+          '"Deal."\n\n'
+          'You both eat your halves standing right there at the counter. '
+          'It\'s the same amount of cookie either way you slice it — but '
+          'somehow splitting it felt better than winning it would have.\n\n'
+          '«{companion} steals a crumb off the plate — you let it slide.»\n\n'
+          'Mom walks by and doesn\'t even have to say anything. She just '
+          'smiles.',
+      isEnding: true,
+    ),
+
+    'lc_mom': QuestSegment(
+      id: 'lc_mom',
+      content:
+          '"MOOOM! He\'s trying to take the cookie!" you shout toward the '
+          'kitchen.\n\n'
+          'Mom comes in, tired in the specific way of someone who has '
+          'refereed this exact fight before. She looks at the cookie, looks '
+          'at both of you, and without much ceremony breaks it in half '
+          'herself — same solution you could have come up with, just '
+          'delivered by someone else, with a sigh attached.\n\n'
+          '"You two are both plenty old enough to split a cookie without '
+          'me," she says, heading back to the dishes.\n\n'
+          '«{companion} shrugs — you got your half either way.»\n\n'
+          'You got the same amount you would\'ve gotten by asking. You just '
+          'didn\'t get to be the one who thought of it.',
+      isEnding: true,
+    ),
+
+    'lc_makeup': QuestSegment(
+      id: 'lc_makeup',
+      content:
+          '"Hey," you say, crouching down. "I shouldn\'t have grabbed it '
+          'all. Tomorrow you get first pick of snack, promise."\n\n'
+          'He sniffles, considers it. "...The good granola bars?"\n\n'
+          '"The good granola bars," you agree.\n\n'
+          'He nods slowly, the tears drying up. It\'s not exactly the same '
+          'as splitting the cookie tonight — but it\'s you noticing you '
+          'took the whole thing and doing something about it instead of '
+          'just letting him stay upset.\n\n'
+          '«{companion} gives you a small nod — that\'s more like it.»\n\n'
+          'Mom, still in the doorway, relaxes. "That works," she says, and '
+          'goes back to the dishes.',
+      isEnding: true,
+    ),
+
+    'lc_dismiss': QuestSegment(
+      id: 'lc_dismiss',
+      content:
+          '"He\'s just being a baby," you mutter, licking chocolate off '
+          'your fingers.\n\n'
+          'Mom\'s eyebrows go up. "He wanted a cookie too. That\'s not '
+          'being a baby, that\'s wanting a cookie." She doesn\'t make you '
+          'give any back — it\'s already gone — but she does make you help '
+          'him pick tomorrow\'s snack, and you both stand at the pantry not '
+          'really talking.\n\n'
+          '«{companion} stays quiet next to you the whole time.»\n\n'
+          'The cookie is gone. So is most of the good feeling from '
+          'tonight. Both of those things are true, and only one of them '
+          'had to be.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALVAGE QUEST 3: The Marble Run  [Explorer + Adventurer]
+// The 3-step problem-solving algorithm with a partner, from
+// "The Science Project" (problemSolving).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questMarbleRun = LifeQuestScenario(
+  id: 'the_marble_run',
+  title: 'The Marble Run',
+  hook: 'Your partner wants speed. You want loops. The science fair is Friday.',
+  emoji: '\u{1F3A2}',
+  emotions: ['frustrated', 'angry'],
+  recommendedBands: [AgeBand.explorer, AgeBand.adventurer],
+  grownupTip:
+      'Ask: "Tell me about a project where you and a partner disagreed. '
+      'What finally got you unstuck?"',
+  startSegmentId: 'mr_start',
+  segments: {
+    'mr_start': QuestSegment(
+      id: 'mr_start',
+      copingBreakId: 'belly_breath',
+      content:
+          'For the science fair, you and your partner Sam are building a '
+          'marble run — the marble has to travel from a chair-top all the '
+          'way to the floor, and the judges want to see it do something '
+          'interesting on the way down.\n\n'
+          'You\'ve got it all planned: loop-the-loops, three of them, '
+          'stacked up like a rollercoaster. Sam has a totally different '
+          'plan: one long, fast ramp, straight down, with a jump at the '
+          'end.\n\n'
+          '"Loops are way cooler," you say.\n\n'
+          '"Loops just slow it down and it\'ll probably jam," Sam says. '
+          '"Speed is cooler."\n\n'
+          'You\'ve got two boxes of cardboard tubes, one afternoon before '
+          'the fair, and zero agreement on what you\'re even building.\n\n'
+          '«{companion} looks back and forth between the two of you, '
+          'waiting.»\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'mr_c1a',
+          text: 'Just start building your version — Sam can help or not',
+          nextSegmentId: 'mr_ignore',
+        ),
+        QuestChoice(
+          id: 'mr_c1b',
+          text: 'Try the steps your teacher taught: listen, find common ground, combine ideas',
+          nextSegmentId: 'mr_steps',
+        ),
+        QuestChoice(
+          id: 'mr_c1c',
+          text: 'Give up and ask the teacher for new partners',
+          nextSegmentId: 'mr_giveup',
+        ),
+      ],
+    ),
+
+    'mr_ignore': QuestSegment(
+      id: 'mr_ignore',
+      content:
+          'You grab the tubes and start taping loops together without '
+          'waiting for Sam to agree.\n\n'
+          'Sam watches for a minute, arms crossed, then wanders off to sit '
+          'on the other side of the table, doing nothing. By the time '
+          'you\'ve got two loops up, you realize you\'re out of tubes for '
+          'the third — Sam has the rest, and Sam isn\'t offering them.\n\n'
+          '"You didn\'t even ask what I thought," Sam says. "So build it '
+          'yourself."\n\n'
+          '«{companion} looks at the half-finished loops, then at Sam\'s '
+          'pile of unused tubes.»\n\n'
+          'The clock on the wall says you\'ve got about forty minutes left '
+          'and half a marble run.',
+      choices: [
+        QuestChoice(
+          id: 'mr_c2a',
+          text: 'Stop and actually ask Sam what they think',
+          nextSegmentId: 'mr_late_listen',
+        ),
+        QuestChoice(
+          id: 'mr_c2b',
+          text: 'Keep going without Sam\'s tubes — make it work somehow',
+          nextSegmentId: 'mr_solo_mess',
+        ),
+      ],
+    ),
+
+    'mr_steps': QuestSegment(
+      id: 'mr_steps',
+      content:
+          '"Wait," you say. "Let\'s do the steps. First we each say our '
+          'idea, no interrupting."\n\n'
+          'Sam nods, surprised you suggested it. You go first: loops, '
+          'because they look impressive rolling across the table at the '
+          'fair. Sam goes next: one fast ramp, because it\'s simpler to '
+          'build in one afternoon and less likely to jam.\n\n'
+          '"Okay," you say. "What do we actually agree on?"\n\n'
+          'You both think. "We want it to look impressive," Sam says. "And '
+          'not jam," you admit.\n\n'
+          '«{companion} tilts head, like: now what?»\n\n'
+          'That\'s two things you both want. Now you just need one plan '
+          'that gets both.',
+      choices: [
+        QuestChoice(
+          id: 'mr_c3a',
+          text: 'Try combining both ideas — one loop, then a fast drop',
+          nextSegmentId: 'mr_combine',
+        ),
+      ],
+    ),
+
+    'mr_combine': QuestSegment(
+      id: 'mr_combine',
+      content:
+          '"What if," Sam says slowly, "we do ONE loop — just one, so it '
+          'doesn\'t jam — and then the marble drops into your fast ramp '
+          'for the ending?"\n\n'
+          'You think about it. One loop is less impressive than three, but '
+          'it\'s way more impressive than zero, and the fast finish is '
+          'genuinely a good idea.\n\n'
+          '"Yeah," you say. "That could actually work."\n\n'
+          'You spend the next half hour building it together — you on the '
+          'loop, Sam on the ramp, meeting in the middle where the two '
+          'pieces connect. It takes two tries to get the loop not to jam, '
+          'and one argument about tape, but you work it out.\n\n'
+          '«{companion} watches the marble go: loop, then WHOOSH down the '
+          'ramp, off the end.»\n\n'
+          'At the fair, the marble loops once, drops, and rockets off the '
+          'ramp further than anyone else\'s. Judges love it. You and Sam '
+          'grin at each other — this version is better than either of your '
+          'original ideas would have been alone.',
+      isEnding: true,
+    ),
+
+    'mr_giveup': QuestSegment(
+      id: 'mr_giveup',
+      content:
+          '"I don\'t think we can agree on anything," you tell the '
+          'teacher. "Can I just work alone, or with someone else?"\n\n'
+          'The teacher raises an eyebrow. "You\'ve got one afternoon. New '
+          'partners means starting from zero. Are you sure?"\n\n'
+          'You look back at the table — at Sam, still standing there with '
+          'a box of unused tubes, and at your own half-formed loop idea. '
+          'Starting over sounds almost as hard as compromising did.\n\n'
+          '"...Never mind," you say. "We\'ll figure it out."\n\n'
+          '«{companion} looks relieved you didn\'t actually walk away.»\n\n'
+          'You go back to the table. You haven\'t solved anything yet — '
+          'but you also haven\'t lost the afternoon. Sometimes the first '
+          'step is just deciding not to give up on the person you\'re '
+          'stuck with.',
+      isEnding: true,
+    ),
+
+    'mr_late_listen': QuestSegment(
+      id: 'mr_late_listen',
+      content:
+          'You put down the tape. "Okay — what were you thinking? For '
+          'real, tell me."\n\n'
+          'Sam blinks, like they weren\'t expecting to actually be asked. '
+          'Then they explain the fast-ramp idea properly — how it avoids '
+          'the jamming problem, how it still looks cool at full speed.\n\n'
+          '"That\'s actually a good point about jamming," you admit. "What '
+          'if we keep one of my loops, but small, and then it drops into '
+          'your ramp?"\n\n'
+          'Sam considers it, then nods. "Okay. Let\'s try that."\n\n'
+          '«{companion} exhales — table\'s a team again.»\n\n'
+          'You\'ve lost some time you didn\'t need to lose. But you get the '
+          'marble run built, together, with about five minutes to spare '
+          'before the bell.',
+      isEnding: true,
+    ),
+
+    'mr_solo_mess': QuestSegment(
+      id: 'mr_solo_mess',
+      content:
+          'You keep building with what you\'ve got, taping and re-taping, '
+          'trying to make three loops out of tube pieces meant for two. It '
+          'kind of works. Kind of.\n\n'
+          'At the fair, the marble makes it through the first loop fine, '
+          'wobbles through the second, and gets stuck in the third — right '
+          'in front of the judges. You have to reach in and pop it loose '
+          'with your finger.\n\n'
+          'Sam watches from a few feet away, not helping, not really '
+          'watching either. "Told you it would jam," Sam says quietly, not '
+          'even mean about it, just tired.\n\n'
+          '«{companion} winces along with you.»\n\n'
+          'It\'s not a disaster — the judges smile, you both get a passing '
+          'grade. But you can\'t stop thinking that if you\'d actually '
+          'built it together, it probably wouldn\'t have jammed at all.',
+      isEnding: true,
+    ),
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALVAGE QUEST 4: The Loud Music  [Explorer + Adventurer]
+// I-statements as an explicitly-taught skill, from "The Loud Music"
+// (iStatements).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const questLoudMusic = LifeQuestScenario(
+  id: 'the_loud_music',
+  title: 'The Loud Music',
+  hook: 'Homework\'s due tomorrow. The bass won\'t stop.',
+  emoji: '\u{1F3B5}',
+  emotions: ['frustrated', 'angry'],
+  recommendedBands: [AgeBand.explorer, AgeBand.adventurer],
+  grownupTip:
+      'Ask: "What\'s an \'I feel ___ when ___\' sentence you could use the '
+      'next time something bugs you?"',
+  startSegmentId: 'lm_start',
+  segments: {
+    'lm_start': QuestSegment(
+      id: 'lm_start',
+      copingBreakId: 'volcano_breath',
+      content:
+          'You\'re halfway through your homework when the music starts — '
+          'loud, thumping, coming right through the wall from your '
+          'sibling\'s room.\n\n'
+          'You read the same math problem four times without it going in. '
+          'Your pencil taps faster and faster against the desk. The bass '
+          'just keeps going, like it doesn\'t know homework exists.\n\n'
+          'By the fifth try at that same problem, the frustrated feeling '
+          'has filled up your whole chest — tight and buzzy, like it wants '
+          'somewhere to go.\n\n'
+          '«{companion} watches you glare at the wall.»\n\n'
+          'What do you do?',
+      choices: [
+        QuestChoice(
+          id: 'lm_c1a',
+          text: 'Bang on the wall and yell "TURN IT DOWN, YOU\'RE SO ANNOYING!"',
+          nextSegmentId: 'lm_yell',
+        ),
+        QuestChoice(
+          id: 'lm_c1b',
+          text: 'Go say "I feel frustrated when the music\'s this loud, because I can\'t focus on my homework."',
+          nextSegmentId: 'lm_istatement',
+        ),
+        QuestChoice(
+          id: 'lm_c1c',
+          text: 'Just sit there and stew, saying nothing',
+          nextSegmentId: 'lm_stew',
+        ),
+      ],
+    ),
+
+    'lm_yell': QuestSegment(
+      id: 'lm_yell',
+      content:
+          'You pound the wall. "TURN IT DOWN! YOU\'RE SO ANNOYING!"\n\n'
+          'The music doesn\'t stop — it gets louder, and now there\'s '
+          'yelling back through the wall too. "YOU\'RE annoying! Stop '
+          'banging!"\n\n'
+          'A door opens down the hall. "What is going ON in here?" your mom '
+          'calls, already sounding done with both of you.\n\n'
+          '«{companion} covers ears — the whole hallway\'s a mess of noise '
+          'now.»\n\n'
+          'Now there are two problems: the music, still blasting, and a '
+          'parent who thinks you started a fight for no reason.',
+      choices: [
+        QuestChoice(
+          id: 'lm_c2a',
+          text: 'Explain the real problem calmly once things settle',
+          nextSegmentId: 'lm_recover',
+        ),
+        QuestChoice(
+          id: 'lm_c2b',
+          text: 'Slam your door and give up on the homework tonight',
+          nextSegmentId: 'lm_shutdown',
+        ),
+      ],
+    ),
+
+    'lm_istatement': QuestSegment(
+      id: 'lm_istatement',
+      content:
+          'You get up, knock on the door, and wait for the music to dip '
+          'enough to be heard.\n\n'
+          '"I feel frustrated when the music is this loud," you say, '
+          '"because I can\'t concentrate on my homework."\n\n'
+          'Your sibling blinks, surprised. "Oh — I didn\'t realize it was '
+          'going through the wall like that. Sorry." The volume drops to '
+          'something you can actually think through.\n\n'
+          '"Thanks," you say, and mean it. Nobody yelled. Nobody got in '
+          'trouble. You just said the true thing, plainly, and it '
+          'worked.\n\n'
+          '«{companion} settles back down next to your homework — much '
+          'easier to focus now.»\n\n'
+          'You finish the math problem on the first try this time.',
+      isEnding: true,
+    ),
+
+    'lm_stew': QuestSegment(
+      id: 'lm_stew',
+      content:
+          'You don\'t say anything. You just sit there, pencil gripped too '
+          'tight, replaying how annoying the bass is over and over instead '
+          'of doing the actual math.\n\n'
+          'Twenty minutes go by. The homework is barely further along than '
+          'when you started. Your sibling has no idea any of this is '
+          'happening — how would they? You never told them.\n\n'
+          'By the time you finally finish, way later than you should have, '
+          'you\'re still a little annoyed and a little tired, and nothing '
+          'about the music situation has changed for tomorrow.\n\n'
+          '«{companion} nudges the homework page, like: that took forever, '
+          'huh.»\n\n'
+          'The problem was fixable this whole time. It just needed you to '
+          'say something out loud.',
+      isEnding: true,
+    ),
+
+    'lm_recover': QuestSegment(
+      id: 'lm_recover',
+      content:
+          'Once your mom sends everyone to separate corners for a minute, '
+          'you knock on your sibling\'s door again — quieter this time.\n\n'
+          '"Sorry I yelled," you say. "The real thing is, I feel really '
+          'frustrated when it\'s that loud, because I can\'t focus on my '
+          'homework."\n\n'
+          'Your sibling shrugs, still a little annoyed about the yelling, '
+          'but nods. "...Yeah, okay. I get that. I\'ll turn it down when '
+          'you\'ve got homework — just tell me next time instead of '
+          'banging on the wall."\n\n'
+          '«{companion} relaxes as the hallway finally goes quiet.»\n\n'
+          'It took the long way around, but you get there — the music '
+          'comes down, and so does everything else.',
+      isEnding: true,
+    ),
+
+    'lm_shutdown': QuestSegment(
+      id: 'lm_shutdown',
+      content:
+          'You slam your door and shove your homework into your backpack, '
+          'unfinished. Let it be a problem for tomorrow-you.\n\n'
+          'The music is still going, muffled now behind two closed doors. '
+          'You lie on your bed, still annoyed, and the homework sits there '
+          'half-done, which is its own kind of annoying tomorrow '
+          'morning.\n\n'
+          '«{companion} lies down next to you, patient, waiting out the '
+          'mood.»\n\n'
+          'Nothing actually got fixed tonight — not the music, not the '
+          'math. It\'s still there in the morning, waiting, same as it '
+          'would\'ve been if you\'d just said something in the first '
+          'place.',
       isEnding: true,
     ),
   },
