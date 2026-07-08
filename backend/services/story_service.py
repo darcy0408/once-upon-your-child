@@ -1,5 +1,7 @@
+import hashlib
 import json
 import logging
+import random
 import re
 from typing import Any
 
@@ -171,6 +173,10 @@ _META_LEAK_TERMS = [
     "using their strengths",
     "option had a downside",
     "approached problems using",
+    "real-life echo",
+    "copyable action",
+    "skill practice",
+    "body clue",
 ]
 
 SAFETY_GUARDRAILS = """
@@ -296,6 +302,102 @@ VIRTUE_MAP = {
         "resourcefulness",
         "The protagonist solves the central challenge using something they already had — an overlooked skill, an ignored object, or an underestimated relationship.",
     ),
+    # SEL prompt-spine pass (2026-07-07): keyword gaps found in the Explorer
+    # audit — parents typed these and the block silently stayed empty. The
+    # sharpest was "boundaries": the app's flagship therapeutic goal had no
+    # keyword at all. See docs/SEL_PROMPT_SPINE_EXPLORER_DRAFT.md §4a.
+    "worried": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "worry": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "nervous": (
+        "courage",
+        "The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.",
+    ),
+    "left out": (
+        "inclusion",
+        "The protagonist notices someone alone or left out and takes one small, concrete action to include them.",
+    ),
+    "lonely": (
+        "inclusion",
+        "The protagonist notices someone alone or left out and takes one small, concrete action to include them.",
+    ),
+    "excluded": (
+        "inclusion",
+        "The protagonist notices someone alone or left out and takes one small, concrete action to include them.",
+    ),
+    "losing": (
+        "grace",
+        "The protagonist loses at something fair and square. Show the hot flash of it honestly, then one small generous act toward the winner — and what that act unlocks.",
+    ),
+    "lose": (
+        "grace",
+        "The protagonist loses at something fair and square. Show the hot flash of it honestly, then one small generous act toward the winner — and what that act unlocks.",
+    ),
+    "sore loser": (
+        "grace",
+        "The protagonist loses at something fair and square. Show the hot flash of it honestly, then one small generous act toward the winner — and what that act unlocks.",
+    ),
+    "mistake": (
+        "honesty",
+        "The protagonist causes a mistake they could hide, and tells the truth instead. The world answers with repair, never humiliation — fixing it together IS the resolution.",
+    ),
+    "sorry": (
+        "honesty",
+        "The protagonist causes a mistake they could hide, and tells the truth instead. The world answers with repair, never humiliation — fixing it together IS the resolution.",
+    ),
+    "honest": (
+        "honesty",
+        "The protagonist causes a mistake they could hide, and tells the truth instead. The world answers with repair, never humiliation — fixing it together IS the resolution.",
+    ),
+    "lying": (
+        "honesty",
+        "The protagonist causes a mistake they could hide, and tells the truth instead. The world answers with repair, never humiliation — fixing it together IS the resolution.",
+    ),
+    "truth": (
+        "honesty",
+        "The protagonist causes a mistake they could hide, and tells the truth instead. The world answers with repair, never humiliation — fixing it together IS the resolution.",
+    ),
+    "turns": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "waiting": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "wait": (
+        "patience",
+        "The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.",
+    ),
+    "boundaries": (
+        "self-respect",
+        "The protagonist feels the uh-oh feeling, names it internally, and says a clear kind no. The story shows the no being respected — and anyone who pushes past it is shown to be in the wrong, gently.",
+    ),
+    "saying no": (
+        "self-respect",
+        "The protagonist feels the uh-oh feeling, names it internally, and says a clear kind no. The story shows the no being respected — and anyone who pushes past it is shown to be in the wrong, gently.",
+    ),
+    "say no": (
+        "self-respect",
+        "The protagonist feels the uh-oh feeling, names it internally, and says a clear kind no. The story shows the no being respected — and anyone who pushes past it is shown to be in the wrong, gently.",
+    ),
+    "shy": (
+        "reaching out",
+        "The protagonist asks for help before the problem grows, and the helper is glad to be asked. Asking is shown as strength, never defeat.",
+    ),
+    "asking for help": (
+        "reaching out",
+        "The protagonist asks for help before the problem grows, and the helper is glad to be asked. Asking is shown as strength, never defeat.",
+    ),
+    "ask for help": (
+        "reaching out",
+        "The protagonist asks for help before the problem grows, and the helper is glad to be asked. Asking is shown as strength, never defeat.",
+    ),
 }
 
 
@@ -312,7 +414,7 @@ def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
     for keyword, (virtue, instruction) in VIRTUE_MAP.items():
         if keyword in prompt_lower:
             age_caveat = ""
-            if age <= 7:
+            if age <= 8:
                 age_caveat = " Keep it simple and concrete — no internal monologue, just visible action."
             elif age >= 14:
                 age_caveat = " For this age, lean into internal monologue and the cost of the choice."
@@ -326,7 +428,7 @@ def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
 
 
 def _build_feelings_instruction(
-    feelings_prompt: str | None, age: int, theme: str
+    feelings_prompt: str | None, age: int, theme: str, character: str = "the hero"
 ) -> str:
     if not feelings_prompt:
         return ""
@@ -362,13 +464,161 @@ def _build_feelings_instruction(
   - Never shame the feeling. The feeling is okay; the next choice matters.
 """
 
-    # Default — Explorer / Adventurer / Creator (ages 6–14)
+    if age <= 8:
+        # Explorer (6–8) — dedicated register (SEL prompt-spine pass 2026-07-07).
+        # Previously one thin block served ages 6–14; a 6-year-old and a
+        # 14-year-old need different registers. 9–14 keeps the prior text below.
+        return f"""
+**FEELINGS-FIRST GUIDANCE**:
+{feelings_prompt}{theme_rule}
+- Open by naming the feeling and one body clue ({character} feels it somewhere specific).
+- The coping action must be something a real 6-8 year old could copy tomorrow — visible,
+  concrete, doable — and it changes what happens next inside the plot.
+- Feelings can change size: show the feeling getting smaller or softer AFTER the action,
+  not because time passed.
+- If anyone got hurt along the way, include one small repair beat — checking on them,
+  fixing the thing, a genuine sorry — woven into the action, not a ceremony.
+- End with safety, reconnection, or relief rather than a lecture.
+"""
+
+    # Default — Adventurer / Creator (ages 9–14)
     return f"""
 **FEELINGS-FIRST GUIDANCE**:
 {feelings_prompt}{theme_rule}
 - Open by naming the feeling and the body clue immediately.
 - Let the coping action change what happens next inside the plot.
 - End with safety, reconnection, or relief rather than a lecture.
+"""
+
+
+# REAL-LIFE ECHO — ambient SEL skill practice (Explorer 6–8 worked example).
+# Every default story carries exactly ONE small skill moment, rotating across
+# 12 real-kid situations so no single situation appears in more than ~1-in-10
+# stories (under the locked ~1-in-5 boundary-beat cap; see
+# docs/SEL_PROMPT_SPINE_EXPLORER_DRAFT.md and memory boundary_skills_feature).
+# Design principles: one story one skill; consequence not narration; the
+# fantasy stays fantasy; parent context wins (guard at the call site).
+EXPLORER_SITUATION_MAP = {
+    "left_out_self": {
+        "skill_label": "noticing you're left out and asking to join",
+        "situation": "watching others play or do the exciting thing without you",
+        "body_cue": "chest goes heavy, watching from the edge",
+        "copyable_action": 'walking over and asking "Can I play too?"',
+    },
+    "left_out_other": {
+        "skill_label": "noticing someone ELSE is left out and making room",
+        "situation": "a side character hangs back at the edge of the action",
+        "body_cue": "the hero spots the clue: someone standing apart, quiet",
+        "copyable_action": "inviting them in by name, making a space",
+    },
+    "losing_game": {
+        "skill_label": "losing without melting down",
+        "situation": "losing a race, game, or contest fair and square",
+        "body_cue": "face goes hot, eyes feel prickly",
+        "copyable_action": 'one big slow breath, then something kind to the winner ("Good race")',
+    },
+    "taking_turns": {
+        "skill_label": "waiting for a turn when both want the same thing",
+        "situation": "two characters want the same thing at the same moment",
+        "body_cue": "grabby, buzzing hands",
+        "copyable_action": 'offering the other the FIRST turn, or saying "turns?" out loud',
+    },
+    "scary_first_try": {
+        "skill_label": "trying something new while still scared",
+        "situation": "a first time — the jump, the dark tunnel, the new door",
+        "body_cue": "butterflies, wobbly knees",
+        "copyable_action": "saying the fear out loud to the companion, then trying the smallest first step",
+    },
+    "truth_after_mistake": {
+        "skill_label": "telling the truth after breaking something",
+        "situation": "the hero causes an accident and could hide it",
+        "body_cue": "wobbly tummy, wanting to disappear",
+        "copyable_action": "saying what happened out loud and helping fix it (the world answers honesty with repair, never humiliation)",
+    },
+    "friend_sad": {
+        "skill_label": "reading a friend's feelings from their face",
+        "situation": "the companion goes quiet or droopy mid-adventure",
+        "body_cue": "the hero notices the clue: drooping ears, a too-quiet voice",
+        "copyable_action": 'sitting close, asking "What\'s wrong?", listening all the way to the end',
+    },
+    "frustration_reset": {
+        "skill_label": "cooling the volcano feeling when it won't work",
+        "situation": "the thing keeps failing or breaking",
+        "body_cue": "hot volcano feeling rising from tummy to ears",
+        "copyable_action": "putting it down, one slow dragon breath, looking again with fresh eyes",
+    },
+    "saying_no": {
+        "skill_label": 'the uh-oh feeling and saying "no thank you"',
+        "situation": "someone pushes the hero toward a thing that feels wrong",
+        "body_cue": "the uh-oh feeling — a small tummy-squeeze that says wait",
+        "copyable_action": 'standing still, saying "No thank you," staying kind AND firm; a true friend stays after you say no',
+    },
+    "asking_for_help": {
+        "skill_label": "asking for help before the stuck gets bigger",
+        "situation": "the hero is stuck and tries to hide it",
+        "body_cue": "tight shoulders, pretending it's fine",
+        "copyable_action": "asking the companion for help — and the helper is GLAD to be asked",
+    },
+    "try_again": {
+        "skill_label": "starting over after a flop",
+        "situation": "the first plan collapses completely",
+        "body_cue": "the give-up feeling, heavy arms",
+        "copyable_action": 'saying "one more try," changing ONE thing, trying again',
+    },
+    "worry_out_loud": {
+        "skill_label": "shrinking a worry by saying it",
+        "situation": "a worry about what's ahead grows page by page",
+        "body_cue": "a worry-knot in the tummy that gets tighter when hidden",
+        "copyable_action": "telling the companion the worry — hearing it get smaller once it's out",
+    },
+}
+
+
+def _pick_situation(seed: str | None = None) -> dict:
+    """Pick one situation from the rotation.
+
+    With a seed (eval harness / tests), selection is deterministic across
+    processes (hashlib, not the salted builtin hash). Without one (prod),
+    uniform random — the rotation goal is variety across a child's stories,
+    and no stable per-request id reaches this builder.
+    """
+    keys = list(EXPLORER_SITUATION_MAP)
+    if seed is not None:
+        digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+        return EXPLORER_SITUATION_MAP[keys[int(digest, 16) % len(keys)]]
+    return EXPLORER_SITUATION_MAP[random.choice(keys)]
+
+
+def _build_real_life_echo(age: int, situation: dict, character: str) -> str:
+    """Ambient SEL skill moment for the default story (no parent context).
+
+    Explorer (6–8) worked example — other bands return "" until their own
+    situation maps and registers are authored (rollout tracked separately).
+    The model gets ONE concrete situation per story, never the menu.
+    """
+    if age < 6 or age > 8:
+        return ""
+    return f"""
+**REAL-LIFE ECHO** (invisible skill practice — weave in, never announce):
+This story quietly gives {character} one moment of real-kid practice: {situation['skill_label']}.
+1. THE ECHO: Somewhere inside the adventure, one beat of the main problem takes the SHAPE
+   of this real situation: {situation['situation']}. Keep the magic — the situation wears a costume
+   (a dragon who won't take turns with the sky; a bridge that only holds two friends
+   walking together). The child should feel "that's like me" without the story ever
+   leaving its world.
+2. FEELING FIRST, BODY FIRST: When the moment lands, {character} feels it in the body
+   before acting — {situation['body_cue']}. Name the feeling simply, by name. Invent fresh wording
+   for THIS story; never reuse a stock line.
+3. THE SMALL ACTION IS THE KEY: What turns the moment is a small, copyable action a real
+   6-8 year old could do tomorrow: {situation['copyable_action']}. {character} (or the companion) DOES
+   it on the page — and the plot visibly improves BECAUSE of it. Not magic, not luck, not
+   a grown-up fixing it. If the story uses multiple attempts, an earlier attempt may fail
+   precisely because the feeling went unhandled (rushing while frustrated, grabbing
+   instead of asking, giving up too soon) — and this action is why the final attempt works.
+4. NO LESSON WORDS: No character explains why it worked. Nobody says "it's important
+   to..." or "see, when you...". The proof is what happens next in the story — the door
+   opens, the friend stays, the game turns fun again. If a sentence sounds like advice,
+   cut it and show the result instead.
 """
 
 
@@ -439,14 +689,14 @@ def _build_emotional_spine(age: int, theme: str, character: str) -> str:
     if age <= 12:
         return f"""
 **EMOTIONAL SPINE** (what makes the story land — follow closely):
-1. THEME AS SPINE: "{theme}" is the emotional through-line, not a label. Plant the feeling early, let it be genuinely hard in the middle — {character} can get it wrong first — and resolve it only through {character}'s own choices.
+1. THEME AS SPINE: Let the feeling at the heart of "{theme}" be the emotional through-line, not a label. Plant the feeling early, let it be genuinely hard in the middle — {character} can get it wrong first — and resolve it only through {character}'s own choices.
 2. THE MIDDLE MUST COST SOMETHING: Before the turn, let the difficulty be real on the page — a failed try, a hard trade, a feeling that won't be shooed away. Do not rush past it.
 3. EARNED CLOSING IMAGE: The final page shows the change through one concrete image, action, or line of dialogue. If the last page would still be true with the theme swapped out, it hasn't landed — tie it to what happened in THIS story.
 """
     if age <= 14:
         return f"""
 **EMOTIONAL SPINE** (what makes the story land — follow closely):
-1. THEME AS SPINE: "{theme}" is the emotional through-line, not a label. Ambivalence is welcome — {character} can be right and still feel bad about it.
+1. THEME AS SPINE: Let the feeling at the heart of "{theme}" be the emotional through-line, not a label. Ambivalence is welcome — {character} can be right and still feel bad about it.
 2. THE MIDDLE MUST COST SOMETHING: A real trade, a setback with consequences, a feeling that resists tidy naming. Do not rush past the hard part — it is the story.
 3. EARNED TURN: The shift comes from {character} — a choice, a realization, a risk — shown in action, never announced. The closing image belongs to THIS story; if it would survive the theme being swapped out, it hasn't landed.
 """
@@ -1060,7 +1310,17 @@ class AdvancedStoryEngine:
 
         # Derive invisible virtue instruction from therapeutic_prompt
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
-        feelings_instruction = _build_feelings_instruction(feelings_prompt, age, theme)
+        feelings_instruction = _build_feelings_instruction(
+            feelings_prompt, age, theme, character
+        )
+
+        # REAL-LIFE ECHO (SEL prompt-spine, 2026-07-07): ambient skill practice
+        # in every default Explorer story. Parent context wins — if the parent
+        # picked a focus (Big Feelings flow or therapeutic keywords), the
+        # rotation is skipped and their chosen skill is the story's skill.
+        real_life_echo = ""
+        if not feelings_instruction and not virtue_instruction:
+            real_life_echo = _build_real_life_echo(age, _pick_situation(), character)
 
         # Young-band delight rules — split by sub-band so the toddler-strict
         # "explain every fantasy noun inline" rule (#5) does not patronise
@@ -1185,7 +1445,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 {feelings_instruction}
-{virtue_instruction}{emotional_spine}
+{virtue_instruction}{emotional_spine}{real_life_echo}
 **WRITING GUIDELINES**:
 {pov_rule}
 - **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or climbing into the setting, and do NOT open with a "smelled like ..." line. Vary the entry point every time — begin in motion, mid-problem, in dialogue, or somewhere unexpected. Two stories about the same hero must not start the same way.

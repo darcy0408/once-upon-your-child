@@ -1,7 +1,10 @@
 # SEL Prompt Spine — Explorer (6–8) Worked Example — DRAFT
 
-**Status:** Review draft (Fable pass, 2026-07-07). Not committed, not implemented. Owner approves the
-shape here before this rolls to the other five bands.
+**Status:** APPROVED + IMPLEMENTED for Explorer (owner approved §3 as designed and all of §4,
+2026-07-07; MT-331 closed). §7 shipped: `EXPLORER_SITUATION_MAP` + `_build_real_life_echo` in
+`backend/services/story_service.py`, all §4 tightening items, snapshot registry refreshed,
+5-story OpenRouter verify batch passed the §6 rubric. Rollout to the other five bands (§8)
+remains open — this doc is the shape they follow.
 **Scope:** The live standard-story path only (`AdvancedStoryEngine.generate_enhanced_prompt`,
 `backend/services/story_service.py`). Superhero mode and the Interactive Adventure builder are
 structurally disconnected from all of this — tracked as follow-ups (§8), not this chunk.

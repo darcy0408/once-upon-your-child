@@ -1263,3 +1263,170 @@ class TestPriorAdventuresRecall:
             self._add_story(app, user.id, "char_legacy", themes=[], days_ago=1)
             self._add_story(app, user.id, "char_legacy", themes=[], days_ago=2)
             assert _build_prior_adventures_block("char_legacy") == ""
+
+
+class TestRealLifeEcho:
+    """SEL prompt-spine (2026-07-07): the ambient REAL-LIFE ECHO block,
+    the Explorer feelings register split, and the VIRTUE_MAP gap fixes.
+    See docs/SEL_PROMPT_SPINE_EXPLORER_DRAFT.md."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    # ---- the echo block itself -------------------------------------------
+
+    def test_default_explorer_story_gets_echo(self, engine):
+        """A default story (no parent context) at Explorer age carries the
+        ambient skill-practice block."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo", theme="Dragon Adventure", age=7
+        )
+        assert "REAL-LIFE ECHO" in prompt
+        assert "real-kid practice" in prompt
+        assert "NO LESSON WORDS" in prompt
+
+    def test_echo_skipped_when_feelings_prompt_present(self, engine):
+        """Parent context wins: Big Feelings flow suppresses the rotation."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo",
+            theme="Big Feelings",
+            age=7,
+            feelings_prompt="Milo is working through frustration",
+        )
+        assert "REAL-LIFE ECHO" not in prompt
+
+    def test_echo_skipped_when_therapeutic_keyword_matches(self, engine):
+        """Parent context wins: a matched therapeutic keyword suppresses
+        the rotation (their chosen skill is the story's skill)."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo",
+            theme="Adventure",
+            age=7,
+            therapeutic_prompt="help with anxiety about school",
+        )
+        assert "INVISIBLE VIRTUE" in prompt
+        assert "REAL-LIFE ECHO" not in prompt
+
+    def test_echo_absent_outside_explorer_band(self, engine):
+        """The worked example ships for 6-8 only; other bands roll out
+        separately with their own situation maps."""
+        for age in (4, 5, 9, 12, 16):
+            prompt = engine.generate_enhanced_prompt(
+                character="Milo", theme="Adventure", age=age
+            )
+            assert "REAL-LIFE ECHO" not in prompt, f"echo leaked into age {age}"
+
+    def test_echo_present_at_band_edges(self, engine):
+        for age in (6, 8):
+            prompt = engine.generate_enhanced_prompt(
+                character="Milo", theme="Adventure", age=age
+            )
+            assert "REAL-LIFE ECHO" in prompt, f"echo missing at age {age}"
+
+    def test_echo_contains_exactly_one_situation(self, engine):
+        """The model gets ONE concrete situation per story, never the menu."""
+        from backend.services.story_service import EXPLORER_SITUATION_MAP
+
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo", theme="Adventure", age=7
+        )
+        labels_present = sum(
+            1 for s in EXPLORER_SITUATION_MAP.values() if s["skill_label"] in prompt
+        )
+        assert labels_present == 1
+
+    def test_pick_situation_deterministic_with_seed(self):
+        from backend.services.story_service import (
+            EXPLORER_SITUATION_MAP,
+            _pick_situation,
+        )
+
+        a = _pick_situation(seed="req-123")
+        b = _pick_situation(seed="req-123")
+        assert a is b
+        assert a in EXPLORER_SITUATION_MAP.values()
+        # Different seeds cover more than one slot across the rotation.
+        picked = {_pick_situation(seed=f"req-{i}")["skill_label"] for i in range(50)}
+        assert len(picked) > 3
+
+    def test_situation_map_slots_complete(self):
+        from backend.services.story_service import EXPLORER_SITUATION_MAP
+
+        assert len(EXPLORER_SITUATION_MAP) == 12
+        for key, s in EXPLORER_SITUATION_MAP.items():
+            for slot in ("skill_label", "situation", "body_cue", "copyable_action"):
+                assert s[slot].strip(), f"{key}.{slot} empty"
+
+    # ---- VIRTUE_MAP gap fixes (§4a) --------------------------------------
+
+    def test_boundaries_keyword_now_matches(self):
+        """The flagship therapeutic goal previously produced NO virtue
+        content — a parent typing 'working on boundaries' got nothing."""
+        from backend.services.story_service import _get_virtue_instruction
+
+        instruction = _get_virtue_instruction("working on boundaries", age=7)
+        assert "SELF-RESPECT" in instruction
+        assert "uh-oh feeling" in instruction
+
+    @pytest.mark.parametrize(
+        "keyword,virtue",
+        [
+            ("my kid is worried about school", "COURAGE"),
+            ("feels lonely at recess", "INCLUSION"),
+            ("is a sore loser", "GRACE"),
+            ("lying about mistakes", "HONESTY"),
+            ("trouble waiting for turns", "PATIENCE"),
+            ("too shy to ask for help", "REACHING OUT"),
+        ],
+    )
+    def test_gap_keywords_fire(self, keyword, virtue):
+        from backend.services.story_service import _get_virtue_instruction
+
+        instruction = _get_virtue_instruction(keyword, age=7)
+        assert virtue in instruction, f"{keyword!r} produced: {instruction[:80]!r}"
+
+    def test_virtue_concrete_caveat_covers_age_8(self):
+        """§4c: the concrete/no-monologue caveat previously stopped at 7,
+        leaving 8-year-old Explorers with the bare instruction."""
+        from backend.services.story_service import _get_virtue_instruction
+
+        instruction = _get_virtue_instruction("anxiety", age=8)
+        assert "no internal monologue" in instruction
+
+    # ---- feelings register split (§4b) -----------------------------------
+
+    def test_feelings_explorer_register(self):
+        from backend.services.story_service import _build_feelings_instruction
+
+        block = _build_feelings_instruction(
+            "Milo is frustrated", age=7, theme="Adventure", character="Milo"
+        )
+        assert "change size" in block
+        assert "repair beat" in block
+        assert "Milo feels it somewhere specific" in block
+
+    def test_feelings_older_register_unchanged(self):
+        from backend.services.story_service import _build_feelings_instruction
+
+        block = _build_feelings_instruction(
+            "Ana is frustrated", age=11, theme="Adventure", character="Ana"
+        )
+        assert "change size" not in block
+        assert "body clue immediately" in block
+
+    # ---- meta-leak safety net (§4e) --------------------------------------
+
+    def test_new_craft_terms_in_leak_list(self):
+        from backend.services.story_service import _META_LEAK_TERMS
+
+        for term in (
+            "real-life echo",
+            "copyable action",
+            "skill practice",
+            "body clue",
+        ):
+            assert term in _META_LEAK_TERMS
+        # "uh-oh feeling" is kid-facing by design (locked through-line) —
+        # it must NEVER be added to the leak list.
+        assert "uh-oh feeling" not in _META_LEAK_TERMS

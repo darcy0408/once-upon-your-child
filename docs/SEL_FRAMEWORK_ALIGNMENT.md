@@ -96,8 +96,8 @@ career-readiness mindsets that simply don't apply to a non-school product.)*
 | B-SMS 1 | Responsibility for self and actions | Self-management | ◐ | Life Quest consequence chains; boundary-skill Outcome O1 (assert own limits). |
 | B-SMS 2 | Self-discipline and self-control | Self-management | ◐ | Coping Technique practice at moments of narrative tension. |
 | B-SMS 3 | Independent work | Self-management | ○ | Not targeted. |
-| B-SMS 4 | Delayed gratification for long-term rewards | Self-management | ○ | Not targeted. |
-| B-SMS 5 | Perseverance to achieve long- and short-term goals | Self-management | ○ | Not directly authored; incidental in some quest resolutions. |
+| B-SMS 4 | Delayed gratification for long-term rewards | Self-management | ◐ | REAL-LIFE ECHO rotation slot `taking_turns` (waiting for a turn when both want the same thing) — ambient in default Explorer stories at ~1-in-12 rotation (`EXPLORER_SITUATION_MAP`, `story_service.py`). |
+| B-SMS 5 | Perseverance to achieve long- and short-term goals | Self-management | ◐ | REAL-LIFE ECHO slots `try_again` (starting over after a flop) and `frustration_reset` (cooling the volcano feeling); previously only incidental in quest resolutions. |
 | B-SMS 6 | Ability to identify and overcome barriers | Self-management | ◐ | Every Life Quest is structurally "a barrier the protagonist works through." |
 | B-SMS 7 | Effective coping skills | Self-management | **●** | Direct, best match in this category — the Coping Technique library (`coping_techniques.dart`) is exactly this standard: named, practiced, evidence-informed regulation skills (paced breathing, grounding). |
 | B-SMS 8 | Balance of school, home, and community activities | Self-management | ○ | Not targeted. |
@@ -108,14 +108,14 @@ career-readiness mindsets that simply don't apply to a non-school product.)*
 
 | Code | ASCA standard | ASCA→CASEL | Coverage | Product tie |
 |---|---|---|---|---|
-| B-SS 1 | Effective oral/written communication and listening skills | Relationship skills | ◐ | Boundary-skill scripts ("say 'stop' or 'no thank you'") rehearse a specific assertive-communication line. |
+| B-SS 1 | Effective oral/written communication and listening skills | Relationship skills | ◐ | Boundary-skill scripts ("say 'stop' or 'no thank you'") rehearse a specific assertive-communication line; REAL-LIFE ECHO slots `left_out_self` ("Can I play too?"), `saying_no`, and `worry_out_loud` model copyable assertive lines inside default Explorer stories. |
 | B-SS 2 | Positive, respectful, supportive relationships with peers similar to and different from them | Relationship skills | ◐ | `brave_friend` Life Quest (joining a peer group); "different from them" half is not specifically addressed. |
-| B-SS 3 | Positive relationships with adults to support success | Relationship skills | ◐ | Boundary skill's "tell a trusted grown-up"; `grownupTip` field bridges the quest to a real caregiver conversation. |
+| B-SS 3 | Positive relationships with adults to support success | Relationship skills | ◐ | Boundary skill's "tell a trusted grown-up"; `grownupTip` field bridges the quest to a real caregiver conversation; REAL-LIFE ECHO slot `asking_for_help` practices the ask-before-the-stuck-gets-bigger move (companion-directed in-story; the transferable skill is help-seeking itself). |
 | B-SS 4 | Empathy | Social awareness | ◐ | `standing_tall` (noticing a peer's distress); `boundary_respect_others` ("watch faces and feelings for an uh-oh"). |
 | B-SS 5 | Ethical decision-making and social responsibility | Responsible decision-making | ◐ | The Life Quest choice/consequence loop generally; most explicit in `standing_tall` (choosing to help vs. staying silent). |
 | B-SS 6 | Effective collaboration and cooperation skills | Relationship skills | ○ | Not modeled — the product is single-protagonist narrative, not group/multiplayer mechanics. |
 | B-SS 7 | Leadership and teamwork skills in diverse groups | Relationship skills | ○ | Not modeled, for the same reason. |
-| B-SS 8 | Advocacy skills for self and others; ability to assert self when necessary | Relationship skills | **●** | Direct match — this is literally the boundary-setting feature's thesis: `boundary_say_no` (self-advocacy) and `standing_tall` (advocacy for a peer). |
+| B-SS 8 | Advocacy skills for self and others; ability to assert self when necessary | Relationship skills | **●** | Direct match — this is literally the boundary-setting feature's thesis: `boundary_say_no` (self-advocacy) and `standing_tall` (advocacy for a peer). The "ambient boundary beats in ordinary stories" half (MT-232 Phase 2) is now **shipped for Explorer** via the REAL-LIFE ECHO `saying_no` rotation slot (2026-07-07); other bands pending. |
 | B-SS 9 | Social maturity and behaviors appropriate to the situation | Social awareness | ◐ | General Life Quest social scenarios; not a named, separately-tracked skill. |
 | B-SS 10 | Cultural awareness, sensitivity, and responsiveness | Relationship skills | ○ | **Named gap.** No Life Quest or therapeutic-goal content is currently authored specifically around cross-cultural awareness. Flagging honestly rather than force-mapping an unrelated feature to this code. |
 

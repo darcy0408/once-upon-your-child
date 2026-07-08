@@ -53,7 +53,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="d02a08ad670b20f3",
+        content_hash="ce70d726ed719611",
         source_file="backend/services/story_service.py",
         line_start=770,
         line_end=816,
@@ -89,7 +89,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="d8818642f8222d1b",
+        content_hash="6a4b96ff8f8f7524",
         source_file="backend/services/story_service.py",
         line_start=1268,
         line_end=1306,
@@ -109,7 +109,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="8eeb3caa95bf3cf0",
+        content_hash="d4ba272131ad2c96",
         source_file="backend/services/story_service.py",
         line_start=1308,
         line_end=1354,
@@ -132,7 +132,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="ae634bd4d2230df5",
+        content_hash="37cc3b56bb45df06",
         source_file="backend/services/story_service.py",
         line_start=1510,
         line_end=1542,
@@ -162,7 +162,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="66a8028826ce6799",
+        content_hash="fe32ba8552105d92",
         source_file="backend/services/story_service.py",
         line_start=1691,
         line_end=1753,
@@ -185,7 +185,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="adcb430286569025",
+        content_hash="e48d43634e296c1e",
         source_file="backend/services/prompt_service.py",
         line_start=284,
         line_end=417,
@@ -209,7 +209,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="75b8159d5f6784c8",
+        content_hash="2f31c61caeea1258",
         source_file="backend/services/prompt_service.py",
         line_start=418,
         line_end=577,
@@ -234,7 +234,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T8_SUPERHERO_ADVENTURER",
-        content_hash="d0bc0141366d86bc",
+        content_hash="e2d630d216a57a70",
         source_file="backend/services/prompt_service.py",
         line_start=610,
         line_end=782,
@@ -267,7 +267,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     # template_ids; the numbering is a label, not a namespace.)
     PromptTemplate(
         template_id="T8_SAFETY_GUARDRAILS",
-        content_hash="d22eae8afc8d11d8",
+        content_hash="052b57833e0c6007",
         source_file="backend/services/story_service.py",
         line_start=149,
         line_end=155,
@@ -280,7 +280,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T9_STRICT_OUTPUT",
-        content_hash="d5821a3f674a9f2e",
+        content_hash="e4f5a19068b973b1",
         source_file="backend/services/story_service.py",
         line_start=126,
         line_end=137,
@@ -293,7 +293,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T11_VIRTUE",
-        content_hash="6c68bf3ea15fe035",
+        content_hash="b67f758684259db6",
         source_file="backend/services/story_service.py",
         line_start=159,
         line_end=214,
@@ -306,7 +306,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T12_FEELINGS",
-        content_hash="5c396364fca19032",
+        content_hash="faac3d74bc377cb9",
         source_file="backend/services/story_service.py",
         line_start=217,
         line_end=259,
@@ -319,7 +319,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T13_PRIOR_ADVENTURES",
-        content_hash="c8d7a5b1ef3b7809",
+        content_hash="999a2ba4f1a4bc42",
         source_file="backend/services/story_service.py",
         line_start=405,
         line_end=504,
