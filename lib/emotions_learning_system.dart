@@ -73,49 +73,8 @@ class EmotionMoment {
       );
 }
 
-/// Child's current emotion check-in
-class EmotionCheckIn {
-  final String emotionId;
-  final int intensity; // 1-5
-  final String? whatHappened; // Optional context
-  final String? whatHelped; // What they tried
-  final List<String> copingStrategies;
-  final DateTime timestamp;
-
-  EmotionCheckIn({
-    required this.emotionId,
-    required this.intensity,
-    this.whatHappened,
-    this.whatHelped,
-    this.copingStrategies = const [],
-    required this.timestamp,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'emotion_id': emotionId,
-        'intensity': intensity,
-        'what_happened': whatHappened,
-        'what_helped': whatHelped,
-        'coping_strategies': copingStrategies,
-        'timestamp': timestamp.toIso8601String(),
-      };
-
-  factory EmotionCheckIn.fromJson(Map<String, dynamic> json) => EmotionCheckIn(
-        emotionId: json['emotion_id'],
-        intensity: json['intensity'],
-        whatHappened: json['what_happened'],
-        whatHelped: json['what_helped'],
-        copingStrategies: (json['coping_strategies'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            const [],
-        timestamp: DateTime.parse(json['timestamp']),
-      );
-}
-
 /// Service to manage emotion learning
 class EmotionsLearningService {
-  static const String _checkInsKey = 'emotion_check_ins';
   static const String _learnedEmotionsKey = 'learned_emotions';
   static const String _storyMomentsKey = 'emotion_story_moments';
 
@@ -405,69 +364,6 @@ class EmotionsLearningService {
     ),
   ];
 
-  /// Record emotion check-in
-  Future<void> recordCheckIn(EmotionCheckIn checkIn) async {
-    final prefs = await SharedPreferences.getInstance();
-    final checkIns = await getCheckIns();
-    checkIns.add(checkIn);
-
-    // Keep last 100 check-ins
-    if (checkIns.length > 100) {
-      checkIns.removeRange(0, checkIns.length - 100);
-    }
-
-    await prefs.setString(
-      _checkInsKey,
-      jsonEncode(checkIns.map((c) => c.toJson()).toList()),
-    );
-
-    // Mark emotion as learned
-    await _markEmotionLearned(checkIn.emotionId);
-
-    // Track analytics
-    try {
-      final emotion = getEmotionById(checkIn.emotionId);
-      if (emotion != null) {
-        await TherapeuticAnalytics.trackFeelingsCheckIn(
-          emotionName: emotion.name,
-          intensity: checkIn.intensity,
-          copingStrategies: checkIn.copingStrategies,
-        );
-      }
-    } catch (e) {
-      // Analytics failure shouldn't break check-in
-      debugPrint('Failed to track feelings check-in analytics: $e');
-    }
-  }
-
-  /// Get all check-ins
-  Future<List<EmotionCheckIn>> getCheckIns() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_checkInsKey);
-
-    if (jsonString == null || jsonString.isEmpty) {
-      return [];
-    }
-
-    try {
-      final List list = jsonDecode(jsonString);
-      return list.map((json) => EmotionCheckIn.fromJson(json)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /// Mark an emotion as learned
-  Future<void> _markEmotionLearned(String emotionId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final learned = await getLearnedEmotions();
-
-    if (!learned.contains(emotionId)) {
-      learned.add(emotionId);
-      await prefs.setString(_learnedEmotionsKey, jsonEncode(learned));
-    }
-  }
-
   /// Get learned emotions
   Future<List<String>> getLearnedEmotions() async {
     final prefs = await SharedPreferences.getInstance();
@@ -482,26 +378,6 @@ class EmotionsLearningService {
     } catch (e) {
       return [];
     }
-  }
-
-  /// Get emotion statistics
-  Future<Map<String, int>> getEmotionStats() async {
-    final checkIns = await getCheckIns();
-    final stats = <String, int>{};
-
-    for (final checkIn in checkIns) {
-      stats[checkIn.emotionId] = (stats[checkIn.emotionId] ?? 0) + 1;
-    }
-
-    return stats;
-  }
-
-  /// Get recent check-ins (last 7 days)
-  Future<List<EmotionCheckIn>> getRecentCheckIns({int days = 7}) async {
-    final all = await getCheckIns();
-    final cutoff = DateTime.now().subtract(Duration(days: days));
-
-    return all.where((c) => c.timestamp.isAfter(cutoff)).toList();
   }
 
   /// Record emotion moment from story

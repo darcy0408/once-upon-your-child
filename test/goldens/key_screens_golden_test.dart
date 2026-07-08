@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:story_weaver_app/feelings_wheel_screen.dart';
 import 'package:story_weaver_app/models/subscription_status.dart';
 import 'package:story_weaver_app/screens/subscription_management_screen.dart';
 import 'package:story_weaver_app/screens/subscription_success_screen.dart';
@@ -131,25 +130,4 @@ void main() {
     );
   });
 
-  testWidgets('Feelings wheel screen', (tester) async {
-    await pumpGoldenApp(
-      tester,
-      Scaffold(
-        appBar: AppBar(title: const Text('Feelings Wheel')),
-        body: const SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: SingleChildScrollView(
-              child: FeelingsWheelScreen(ageYears: 8),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    await expectLater(
-      find.byType(Scaffold),
-      matchesGoldenFile('feelings_wheel_screen.png'),
-    );
-  });
 }

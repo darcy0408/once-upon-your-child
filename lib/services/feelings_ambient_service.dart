@@ -9,7 +9,39 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../feelings_wheel_data.dart';
-import '../pre_story_feelings_dialog.dart';
+
+/// A child's recent emotional context, assembled from the feelings journal
+/// for story generation. Relocated from the retired pre_story_feelings_dialog
+/// (2026-07-07 dead-code sweep) — this model is live; the dialog was not.
+class CurrentFeeling {
+  final SelectedFeeling selectedFeeling;
+  final int intensity;
+  final String? whatHappened;
+  final List<String>? physicalSigns;
+  final List<String>? copingStrategies;
+
+  CurrentFeeling({
+    required this.selectedFeeling,
+    required this.intensity,
+    this.whatHappened,
+    this.physicalSigns,
+    this.copingStrategies,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'emotion_name': selectedFeeling.tertiary,
+        'emotion_description':
+            '${selectedFeeling.core} → ${selectedFeeling.secondary}',
+        'emotion_emoji': selectedFeeling.emoji,
+        'core_emotion': selectedFeeling.core,
+        'secondary_emotion': selectedFeeling.secondary,
+        'tertiary_emotion': selectedFeeling.tertiary,
+        'intensity': intensity,
+        'what_happened': whatHappened,
+        'physical_signs': physicalSigns?.join(', '),
+        'coping_strategies': copingStrategies ?? const [],
+      };
+}
 
 class FeelingsAmbientService {
   static const _journalKey = 'feelings_journal';
