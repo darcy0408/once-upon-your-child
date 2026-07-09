@@ -1746,7 +1746,15 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     conflict_hook=kwargs.get("conflict_hook", ""),
                     sensory_palette=kwargs.get("sensory_palette", ""),
                 )
-                logger.info(f"Full prompt for rhyme time mode: {prompt}")
+                # MT-364: do NOT log the assembled prompt here — at this point
+                # in the if/elif chain it has not yet passed through
+                # _scrub_real_name() (that runs once, after the chain, at the
+                # "M-7: final boundary scrub" line below), so it can still
+                # carry the child's real name via character_details/
+                # feelings_prompt/prior-adventures text. A non-PII, already-
+                # scrubbed snippet is logged later ("Generated Prompt
+                # Snippet") once the scrub has run.
+                logger.debug("Rhyme time prompt built (length: %d)", len(prompt))
             else:
                 # Standard enhanced prompt
                 logger.info(
@@ -1812,9 +1820,19 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
             logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
 
-            logger.info(f"Companion Pets: {companion_pets}")
-            logger.info(f"Companion Character Details: {companion_character_details}")
-            logger.info(f"Generated Prompt Snippet: {prompt[:500]}...")
+            # MT-364: companion pets/characters carry real names (a pet's name,
+            # a sibling/friend's name) that are never pseudonymized like the
+            # hero name is — log only counts, never the objects themselves.
+            logger.info(
+                "Companion Pets: %d, Companion Character Details: %d",
+                len(companion_pets or []),
+                len(companion_character_details or []),
+            )
+            # MT-364: `prompt` has been through _scrub_real_name() above, so the
+            # hero's real name is gone, but companion/extra-character real
+            # names are legitimate prompt content and are NOT scrubbed — a
+            # text excerpt here would still leak them. Log length only.
+            logger.info("Generated prompt length: %d chars", len(prompt))
 
             # Collect mandatory names for validation
             mandatory_names = [character_name]
@@ -1834,7 +1852,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     if name:
                         mandatory_names.append(name)
 
-            logger.info(f"Mandatory names for validation: {mandatory_names}")
+            # MT-364: mandatory_names is real child/companion PII (only the
+            # first entry, character_name, is the pseudonym token — every
+            # other entry is a raw companion/extra-character name). Log the
+            # count, never the names themselves.
+            logger.info(
+                "Mandatory names for validation: %d entries", len(mandatory_names)
+            )
 
             # Tier-aware retry cap: free tier gets 2 attempts (not 3) to bound
             # Gemini cost on validation failures. Premium/Family/BYOK keep 3.
@@ -2617,12 +2641,17 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         )
                     )
                     db.session.commit()
+                    # MT-364: `_characters` (characters_featured) has already
+                    # been through restore_hero_name() above, so it carries
+                    # the child's real name (and any companion real names) —
+                    # log a count, never the list itself. `_themes`/`_arc` are
+                    # story-metadata labels, not PII.
                     logger.info(
-                        "story_persisted id=%s character_id=%s themes=%s chars=%s arc=%s",
+                        "story_persisted id=%s character_id=%s themes=%s chars=%d arc=%s",
                         story_id,
                         character_id,
                         _themes,
-                        _characters,
+                        len(_characters),
                         _arc,
                     )
                 except Exception:  # noqa: BLE001
