@@ -374,7 +374,9 @@ def test_generate_custom_avatar_blocked_when_consent_explicitly_false(
     assert spy.called is False
 
 
-def test_generate_custom_avatar_blocked_when_consent_withdrawn(client, app, monkeypatch):
+def test_generate_custom_avatar_blocked_when_consent_withdrawn(
+    client, app, monkeypatch
+):
     """A withdrawn consent record must not satisfy the gate, even if it once
     had allow_photo_avatar=True — fail closed (CMP-8 pattern)."""
     with app.app_context():
