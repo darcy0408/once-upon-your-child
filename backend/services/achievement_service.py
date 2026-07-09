@@ -168,4 +168,3 @@ class AchievementService:
         except Exception as e:
             logger.error(f"Failed to get achievement data for user {user_id}: {e}")
             return {"achievements": [], "stats": {}}
-

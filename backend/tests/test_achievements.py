@@ -80,5 +80,3 @@ def test_get_achievement_data(client):
     assert "stats" in data
     assert isinstance(data["achievements"], list)
     assert isinstance(data["stats"], dict)
-
-
