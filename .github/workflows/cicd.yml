@@ -209,15 +209,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy build/web --project-name=once-upon-your-child --branch=main
-
-  # Backend Deployment Check
-  backend-deploy-check:
-    runs-on: ubuntu-latest
-    needs: [backend-test]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/grok/cicd-enhancement'
-    steps:
-      - name: Check Railway deployment status
-        run: |
-          echo "Backend deployment should be handled by Railway auto-deploy"
-          echo "Monitor Railway dashboard for deployment status"
-          echo "Railway URL: https://railway.app/project/..."
