@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-09 | 17:50 | b4b1 | main (PRs #423, #424) | iOS App Store readiness assessment + `IOS_APP_STORE_CRITICAL_PATH.md` (#423) + store privacy-forms draft (MT-145) + MT-365 ElevenLabs under-18 gate fix (#424) | [link](docs/sessions/2026-07-09-1750-b4b1.md) |
 | 2026-07-09 | 15:47 | 3a1e | main | MT-359 wave 2 (avatar deadwood) shipped as PR #422 | [link](docs/sessions/2026-07-09-1547-3a1e.md) |
 | 2026-07-08 | 17:50 | 0823 | main | PR-queue clear (#412 merged) + MT-362 branch cleanup executed by owner | [link](docs/sessions/2026-07-08-1750-0823.md) |
 | 2026-07-08 | 14:03 | 2c74 | main (PR #398) | Rescued stranded PR #398 (annual billing/quota); owner lifted launch pause; full launch-readiness reconciliation → `LAUNCH_CRITICAL_PATH_2026-07-08.md`, MT-363/364 filed | [link](docs/sessions/2026-07-08-1403-2c74.md) |
