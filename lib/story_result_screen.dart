@@ -1857,25 +1857,32 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.flag_outlined, color: Colors.white),
-              title: Text(
-                'Report this content',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: band.uiFontFamily,
+            // Wrap in a transparent Material so the ListTile paints its ink
+            // splash on THIS Material rather than searching past the coloured
+            // Container above (a DecoratedBox), which Flutter asserts against
+            // ("ListTile background color or ink splashes may be invisible").
+            Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.flag_outlined, color: Colors.white),
+                title: Text(
+                  'Report this content',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: band.uiFontFamily,
+                  ),
                 ),
+                subtitle: const Text(
+                  'Tell us if something here seems wrong or unsafe',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _reportContent();
+                },
               ),
-              subtitle: const Text(
-                'Tell us if something here seems wrong or unsafe',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _reportContent();
-              },
             ),
           ],
         ),
