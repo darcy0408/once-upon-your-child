@@ -124,9 +124,7 @@ class TestGenerateStoryTaskDoesNotLogRealNames:
                 ],
             )
 
-            mocker.patch(
-                "backend.tasks.story_tasks.get_flask_app", return_value=app
-            )
+            mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)
             mocker.patch(
                 "backend.utils.content_moderator.moderate_story_content",
                 return_value=(True, ""),
@@ -204,9 +202,7 @@ class TestGenerateStoryTaskDoesNotLogRealNames:
                 "user_id": "anonymous",
                 "age": 8,
                 "rhyme_time_mode": True,
-                "companion_pets": [
-                    {"name": companion_pet_name, "species": "dragon"}
-                ],
+                "companion_pets": [{"name": companion_pet_name, "species": "dragon"}],
                 # Raw parent free text — this is how a stray real name has
                 # historically reached the assembled prompt pre-scrub.
                 "custom_elements": f"Please make sure {real_name} feels brave.",
