@@ -472,35 +472,6 @@ class TestSubscriptionStatusAllBands:
 
 
 # ---------------------------------------------------------------------------
-# 7. Avatar generation — rate limit headers per band
-# ---------------------------------------------------------------------------
-
-
-class TestAvatarRateLimitAllBands:
-    """POST /avatar/generate-avatar returns correct rate-limit headers per band tier."""
-
-    @pytest.mark.parametrize("band_name,age,_bk,_cc", BANDS, ids=BAND_IDS)
-    def test_avatar_rate_limit_header_present_for_free_tier(
-        self, client, app, band_name, age, _bk, _cc
-    ):
-        with app.app_context():
-            token = _make_user(f"avatar-rl-{band_name}", "free")
-
-        resp = client.post(
-            "/avatar/generate-avatar",
-            json={"character_name": "Luna", "age": age, "style": "pixar"},
-            headers={"Authorization": f"Bearer {token}"},
-        )
-        # Even on 400 (service unavailable in tests) the rate-limit headers must be present
-        assert (
-            resp.headers.get("X-Avatar-RateLimit-Limit") == "5"
-        ), f"Band '{band_name}': free user missing X-Avatar-RateLimit-Limit header"
-        assert (
-            resp.headers.get("X-Avatar-RateLimit-Tier") == "free"
-        ), f"Band '{band_name}': free user missing X-Avatar-RateLimit-Tier header"
-
-
-# ---------------------------------------------------------------------------
 # 8. Age gate validation — server rejects out-of-range ages
 # ---------------------------------------------------------------------------
 

@@ -870,7 +870,6 @@ def create_app(config_name):
 
     try:
         from backend.routes.admin_routes import create_admin_blueprint
-        from backend.routes.avatar_gallery_routes import avatar_gallery_bp
         from backend.routes.avatar_routes import create_avatar_blueprint
         from backend.routes.character_routes import create_character_blueprint
         from backend.routes.chronicle_routes import create_chronicle_blueprint
@@ -879,7 +878,6 @@ def create_app(config_name):
         from backend.routes.utility_routes import create_utility_blueprint
     except ImportError:
         from routes.admin_routes import create_admin_blueprint
-        from routes.avatar_gallery_routes import avatar_gallery_bp
         from routes.avatar_routes import create_avatar_blueprint
         from routes.character_routes import create_character_blueprint
         from routes.chronicle_routes import create_chronicle_blueprint
@@ -923,7 +921,6 @@ def create_app(config_name):
     app.register_blueprint(utility_bp)
     app.register_blueprint(chronicle_bp)
     app.register_blueprint(create_avatar_blueprint(limiter), url_prefix="/avatar")
-    app.register_blueprint(avatar_gallery_bp, url_prefix="/avatar/gallery")
 
     # TTS narration (lazy — works without Google credentials, returns 503)
     try:

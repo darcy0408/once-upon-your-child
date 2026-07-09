@@ -3,8 +3,6 @@
 Covers:
   * IAP upsert refuses to reassign a store_transaction_id to a different user
     (P2#16 — cross-user subscription takeover).
-  * /select-avatar rejects a non-numeric id before building a filesystem path
-    (P2#15 — path-traversal on the URL param).
   * The OpenRouter generator sends a child-safety system prompt (P2#23).
 """
 
@@ -69,16 +67,6 @@ def test_iap_upsert_refuses_cross_user_reassignment(app):
         rows = IapPurchase.query.filter_by(store_transaction_id=txn).all()
         assert len(rows) == 1
         assert str(rows[0].user_id) == str(owner), "txn was reassigned to attacker"
-
-
-def test_select_avatar_rejects_non_numeric_id(client, auth_headers):
-    """A crafted (non-numeric) avatar id is rejected with 400, not used to
-    build a filesystem path."""
-    resp = client.post("/avatar/gallery/select-avatar/abc", headers=auth_headers)
-    assert resp.status_code == 400
-
-    resp2 = client.post("/avatar/gallery/select-avatar/1.1.1", headers=auth_headers)
-    assert resp2.status_code == 400
 
 
 def test_openrouter_generator_sends_system_prompt(monkeypatch):
