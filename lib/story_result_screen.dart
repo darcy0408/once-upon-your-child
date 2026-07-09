@@ -248,6 +248,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   double _storyRating = 4.0;
   bool _hasExplicitlyRated = false; // true once user taps a rating
 
+  // MT-353 — content-report affordance; guards _reportContent() against
+  // double-submits while the backend call is in flight.
+  bool _isReportingContent = false;
+
   FlutterTts? _tts;
   AudioPlayer? _audioPlayer;
   bool _ttsAutoEnabled = false;
@@ -1879,10 +1883,54 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     );
   }
 
-  /// Opens the parent's email client pre-filled with a content report for the
-  /// current AI-generated story. No backend endpoint — a mailto: to the
-  /// support address keeps the report path lightweight and store-compliant.
+  /// MT-353 — reports the current AI-generated story to the moderation team
+  /// via the backend `/report-story` endpoint (see
+  /// backend/routes/story_routes.py). This fires a real moderation alert, so
+  /// it must be a grown-up's decision, not a child tapping around: it sits
+  /// behind [ParentalGateDialog] (the same "ask a grown-up" math-challenge
+  /// gate `byok_setup_wizard.dart` and `utils/paywall_gate.dart` use for
+  /// other sensitive actions) before the reason dialog ever shows.
   Future<void> _reportContent() async {
+    final gatePassed = await ParentalGateDialog.show(context);
+    if (!gatePassed || !mounted) return;
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const _ReportReasonDialog(),
+    );
+    if (reason == null || !mounted) return; // cancelled
+
+    if (_isReportingContent) return;
+    setState(() => _isReportingContent = true);
+    try {
+      await ApiServiceManager().reportStory(
+        storyId: widget.storyId ?? _analyticsStoryId,
+        reason: reason.isEmpty ? 'No reason provided' : reason,
+        storyPreview: widget.storyText.length > 200
+            ? '${widget.storyText.substring(0, 200)}...'
+            : widget.storyText,
+      );
+      _trackResultAction('content_reported');
+      if (!mounted) return;
+      _showSnackBar(
+        'Thanks — a grown-up will review this.',
+        backgroundColor: Colors.green,
+      );
+    } catch (e) {
+      debugPrint('⚠️ /report-story call failed: $e');
+      if (!mounted) return;
+      // Fall back to the mailto path so the report still reaches a human
+      // even if the backend is unreachable.
+      await _reportContentViaEmail();
+    } finally {
+      if (mounted) setState(() => _isReportingContent = false);
+    }
+  }
+
+  /// Fallback for [_reportContent] when the backend call fails: opens the
+  /// grown-up's email client pre-filled with a content report for the
+  /// current AI-generated story so the report still reaches a human.
+  Future<void> _reportContentViaEmail() async {
     final subject = Uri.encodeComponent('Content report: "${widget.title}"');
     final body = Uri.encodeComponent(
       'Please describe what seemed wrong or unsafe in this AI-generated '
@@ -1904,14 +1952,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       await Clipboard.setData(
           const ClipboardData(text: 'darcy@onceuponyourchild.app'));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Email darcy@onceuponyourchild.app to report this content '
-                  '(address copied to clipboard).'),
-        ),
-      );
     }
+    _showSnackBar(
+      opened
+          ? 'Could not reach our server — opened your email app instead.'
+          : 'Could not reach our server. Email darcy@onceuponyourchild.app '
+              'to report this content (address copied to clipboard).',
+      backgroundColor: Colors.orange,
+    );
   }
 
   void _showShareOptions() {
@@ -5386,6 +5434,69 @@ class _RemixTile extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+
+/// MT-353 — reason-capture step of the "Report this content" flow, shown
+/// only after the [ParentalGateDialog] challenge has been solved. Uses the
+/// plain [AlertDialog] style already used elsewhere on this screen (e.g.
+/// [ColoringSettingsDialog]) rather than the warm-toned sensitivity surfaces
+/// — reporting is a matter-of-fact action, not a "quiet heads-up".
+class _ReportReasonDialog extends StatefulWidget {
+  const _ReportReasonDialog();
+
+  @override
+  State<_ReportReasonDialog> createState() => _ReportReasonDialogState();
+}
+
+class _ReportReasonDialogState extends State<_ReportReasonDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.flag_outlined, color: Colors.redAccent),
+          SizedBox(width: 8),
+          Text('Report this content'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Tell us what felt wrong or unsafe.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Optional: add details',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+          child: const Text('Report'),
+        ),
+      ],
+    );
+  }
+}
 
 class ColoringSettingsDialog extends StatefulWidget {
   final int initialPageCount;

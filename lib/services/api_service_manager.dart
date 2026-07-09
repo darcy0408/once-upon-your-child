@@ -604,6 +604,29 @@ class ApiServiceManager {
     }
   }
 
+  /// MT-353 — content-report affordance required by app-store review and
+  /// kidSAFE. POSTs to the existing `/report-story` endpoint
+  /// (backend/routes/story_routes.py), which just logs the report for
+  /// manual review and returns 200. Callers only care whether the call
+  /// succeeded; this throws on failure, mirroring [post]'s error handling.
+  Future<void> reportStory({
+    required String storyId,
+    required String reason,
+    String? storyPreview,
+    http.Client? client,
+  }) async {
+    await post(
+      '/report-story',
+      {
+        'story_id': storyId,
+        'reason': reason,
+        if (storyPreview != null && storyPreview.isNotEmpty)
+          'story_preview': storyPreview,
+      },
+      client: client,
+    );
+  }
+
   /// Allow tests to inject a mock HTTP client.
   static void setTestClient(http.Client? client) {
     _testClient = client;
