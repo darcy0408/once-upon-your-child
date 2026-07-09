@@ -676,6 +676,32 @@ class ApiServiceManager {
     }
   }
 
+  /// MT-351: PATCHes `/api/user/<id>/age` so the server's `declared_age`
+  /// (what `ENFORCE_RESOLVED_AGE` checks — see backend/middleware/auth.py)
+  /// tracks the client's locally-declared age. Best-effort with a couple of
+  /// quick retries: a failed sync is logged and swallowed, never thrown —
+  /// syncing the age must not block a child's onboarding/story flow (mirrors
+  /// SubscriptionSyncService's non-blocking sync pattern). Requires an
+  /// authenticated [userId]; callers should skip invoking this if one isn't
+  /// available yet.
+  static Future<void> syncDeclaredAge(String userId, int age) async {
+    if (userId.isEmpty) return;
+    const maxAttempts = 2;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final mgr = ApiServiceManager();
+        await mgr.patch('/api/user/$userId/age', {'age': age});
+        return;
+      } catch (e) {
+        if (attempt >= maxAttempts) {
+          debugPrint('syncDeclaredAge($userId, $age) failed (best-effort): $e');
+          return;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+      }
+    }
+  }
+
   /// Flattens the mixed `additionalCharacters` payload into display names for
   /// prompt text. The payload intentionally mixes plain-string guest names with
   /// `{name, is_adult_relative}` dicts (Family-tier adult relatives) — the
