@@ -3,8 +3,22 @@ name: Story Weaver Tests
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'backend/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/main_tests.yml'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'backend/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/main_tests.yml'
 
 jobs:
   backend-tests:
