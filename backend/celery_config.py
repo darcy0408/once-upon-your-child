@@ -1,7 +1,30 @@
+import logging
 import os
 
 from celery import Celery
 from celery.schedules import crontab
+
+# MT-364: Celery's own success tracer (celery.app.trace) logs the FULL
+# return value of every task at INFO level by default — the format string
+# is "Task X[id] succeeded in Ys: {retval}" (see celery/app/trace.py
+# build_tracer's `_does_info` gate). For generate_story_task, that return
+# value IS the complete personalized story payload: the child's real name
+# (restored from the HERO_1 pseudonym — see M-7 in story_tasks.py) plus
+# every companion name, dumped to worker stdout (which ships off-box to
+# Railway/Sentry) on every single successful story generation, regardless
+# of anything the task itself does to keep its own logs PII-free.
+#
+# Silence just this one internal logger. It's evaluated once, lazily, the
+# first time a task's tracer is built (cached on the Task object after
+# that) — so this must run at import time, before any task ever executes.
+# Celery's own worker bootstrap (`setup_logging_subsystem`) only reconfigures
+# the root logger, the multiprocessing logger, and "celery.task" — it never
+# touches "celery.app.trace" — so this explicit level sticks regardless of
+# the worker's --loglevel flag. Our application logger
+# (backend.tasks.story_tasks, a sibling under "celery.task") is completely
+# unaffected and keeps reporting attempt counts, timings, and other
+# non-PII diagnostics at INFO.
+logging.getLogger("celery.app.trace").setLevel(logging.WARNING)
 
 # Get Redis URL from environment
 # If not present, default to memory/cache to avoid connection errors on localhost
