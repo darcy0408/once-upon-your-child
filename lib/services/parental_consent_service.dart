@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service_manager.dart';
@@ -93,6 +95,25 @@ class ParentalConsentService {
   Future<void> saveDeclaredAge(int age) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyAge, age);
+    // MT-351: best-effort server sync of the declared age. `recordConsent`
+    // already syncs `declared_age` server-side as a side effect of the
+    // /consent write, but this is the single choke point every "age is set"
+    // caller (including any future one that doesn't route through consent)
+    // goes through, so wire the sync here too. Fire-and-forget — never
+    // blocks the caller on a network error.
+    unawaited(_syncAgeToBackend(age));
+  }
+
+  /// PATCHes `/api/user/<id>/age` (MT-351) so the server has a resolved
+  /// `declared_age` for `ENFORCE_RESOLVED_AGE`. No-op if there is no
+  /// authenticated user id yet (e.g. auth hasn't completed). Best-effort:
+  /// failures are logged inside [ApiServiceManager.syncDeclaredAge] and
+  /// never surfaced here.
+  Future<void> _syncAgeToBackend(int age) async {
+    final api = ApiServiceManager();
+    final userId = await api.getUserId();
+    if (userId == null || userId.isEmpty) return;
+    await ApiServiceManager.syncDeclaredAge(userId, age);
   }
 
   /// Records a consent decision locally and (best-effort) on the backend.
