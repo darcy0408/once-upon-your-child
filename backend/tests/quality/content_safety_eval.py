@@ -21,6 +21,7 @@ Run from repo root (NOT backend/ — the git-guard hook deadlocks in subdirs):
 Reads AZURE_CONTENT_SAFETY_* from backend/.env. Severity guide (8-level scale):
   0-1 none/safe · 2-3 low · 4-5 medium · 6-7 high.  REVIEW threshold here = >=2.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,7 +35,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # local import of clie
 
 from dotenv import load_dotenv  # noqa: E402
 
-for _env in (REPO_ROOT / "backend" / ".env", Path(r"C:/dev/story-weaver-app/backend/.env")):
+for _env in (
+    REPO_ROOT / "backend" / ".env",
+    Path(r"C:/dev/story-weaver-app/backend/.env"),
+):
     if _env.exists():
         load_dotenv(_env)
         break
@@ -167,10 +171,14 @@ def _verdict(sev: dict) -> tuple[bool, int]:
 
 
 def score_corpus() -> None:
-    print(f"Content Safety eval — {len(CORPUS)} labelled samples "
-          f"(REVIEW threshold: any severity >= {REVIEW_AT})\n")
-    header = f"{'label':<34} {'vector':<20} {'should':<6} " \
-             f"{'  '.join(c[:4] for c in CATEGORIES):<26} regex verdict"
+    print(
+        f"Content Safety eval — {len(CORPUS)} labelled samples "
+        f"(REVIEW threshold: any severity >= {REVIEW_AT})\n"
+    )
+    header = (
+        f"{'label':<34} {'vector':<20} {'should':<6} "
+        f"{'  '.join(c[:4] for c in CATEGORIES):<26} regex verdict"
+    )
     print(header)
     print("-" * len(header))
 
@@ -182,8 +190,10 @@ def score_corpus() -> None:
         rows.append((s, sev, flagged, top, regex_hit))
         verdict = "REVIEW" if flagged else "ok"
         rx = "rx+" if regex_hit else "rx-"
-        print(f"{s['label']:<34} {s['vector']:<20} {s['should']:<6} "
-              f"{_fmt_sev(sev):<26} {rx:<4} {verdict} (max {top})")
+        print(
+            f"{s['label']:<34} {s['vector']:<20} {s['should']:<6} "
+            f"{_fmt_sev(sev):<26} {rx:<4} {verdict} (max {top})"
+        )
 
     # --- agreement / gap analysis vs the intended (should) label and vs regex ---
     print("\n==== ANALYSIS ====")
@@ -191,30 +201,42 @@ def score_corpus() -> None:
     fp = [s for (s, _sv, fl, _t, _rx) in rows if s["should"] == "pass" and fl]
     cs_only = [s for (s, _sv, fl, _t, rx) in rows if fl and not rx]
     rx_only = [s for (s, _sv, fl, _t, rx) in rows if rx and not fl]
-    print(f"  Content Safety MISSED (should flag, scored <{REVIEW_AT}): "
-          f"{[s['label'] for s in fn] or 'none'}")
-    print(f"  Content Safety false-positive on a control:            "
-          f"{[s['label'] for s in fp] or 'none'}")
-    print(f"  Caught by Content Safety but NOT the regex brush:      "
-          f"{[s['label'] for s in cs_only] or 'none'}")
-    print(f"  Caught by regex brush but NOT Content Safety:          "
-          f"{[s['label'] for s in rx_only] or 'none'}")
+    print(
+        f"  Content Safety MISSED (should flag, scored <{REVIEW_AT}): "
+        f"{[s['label'] for s in fn] or 'none'}"
+    )
+    print(
+        f"  Content Safety false-positive on a control:            "
+        f"{[s['label'] for s in fp] or 'none'}"
+    )
+    print(
+        f"  Caught by Content Safety but NOT the regex brush:      "
+        f"{[s['label'] for s in cs_only] or 'none'}"
+    )
+    print(
+        f"  Caught by regex brush but NOT Content Safety:          "
+        f"{[s['label'] for s in rx_only] or 'none'}"
+    )
 
 
 def score_dir(path: Path) -> None:
     files = sorted(path.glob("*.txt"))
     if not files:
         sys.exit(f"No *.txt files in {path}")
-    print(f"Scoring {len(files)} story outputs in {path} "
-          f"(REVIEW if any severity >= {REVIEW_AT})\n")
+    print(
+        f"Scoring {len(files)} story outputs in {path} "
+        f"(REVIEW if any severity >= {REVIEW_AT})\n"
+    )
     header = f"{'file':<40} {'  '.join(c[:4] for c in CATEGORIES):<26} verdict"
     print(header)
     print("-" * len(header))
     for f in files:
         sev = analyze_text(f.read_text(encoding="utf-8", errors="ignore"))
         flagged, top = _verdict(sev)
-        print(f"{f.name:<40} {_fmt_sev(sev):<26} "
-              f"{'REVIEW' if flagged else 'ok'} (max {top})")
+        print(
+            f"{f.name:<40} {_fmt_sev(sev):<26} "
+            f"{'REVIEW' if flagged else 'ok'} (max {top})"
+        )
 
 
 def main() -> None:

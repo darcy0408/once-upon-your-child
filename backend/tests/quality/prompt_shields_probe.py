@@ -9,6 +9,7 @@ plus controls (a benign request + a classic overt jailbreak, to calibrate).
 
 Run from repo root:  python backend/tests/quality/prompt_shields_probe.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dotenv import load_dotenv  # noqa: E402
 
-for _env in (REPO_ROOT / "backend" / ".env", Path(r"C:/dev/story-weaver-app/backend/.env")):
+for _env in (
+    REPO_ROOT / "backend" / ".env",
+    Path(r"C:/dev/story-weaver-app/backend/.env"),
+):
     if _env.exists():
         load_dotenv(_env)
         break
@@ -68,8 +72,10 @@ PROBES = [
 
 
 def main() -> None:
-    print(f"Prompt Shields probe — {len(PROBES)} inputs "
-          f"(does the INPUT gate flag injection?)\n")
+    print(
+        f"Prompt Shields probe — {len(PROBES)} inputs "
+        f"(does the INPUT gate flag injection?)\n"
+    )
     print(f"{'label':<32} {'expect':<8} attackDetected")
     print("-" * 60)
     for p in PROBES:

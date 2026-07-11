@@ -13,6 +13,7 @@ sends text to the owner's own Azure resource (same trust boundary as narration).
     from azure_content_safety import analyze_text
     analyze_text("some story prose") -> {"Hate":0,"SelfHarm":6,"Sexual":0,"Violence":0}
 """
+
 from __future__ import annotations
 
 import os
@@ -56,8 +57,11 @@ def _chunks(text: str) -> list[str]:
 
 
 def shield_prompt(
-    user_prompt: str = "", documents: list[str] | None = None,
-    *, throttle: float = 1.1, max_retries: int = 6,
+    user_prompt: str = "",
+    documents: list[str] | None = None,
+    *,
+    throttle: float = 1.1,
+    max_retries: int = 6,
 ) -> dict:
     """Prompt Shields: detect injection/jailbreak in INPUT (not output harm).
 
