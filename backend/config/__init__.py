@@ -192,19 +192,14 @@ class Config:
         ]
 
         # Allow a specific preview or alternate deploy URL via env var.
-        # Accepts Netlify (https://*.netlify.app), Railway
-        # (https://*.up.railway.app), and Cloudflare Pages
+        # Accepts Railway (https://*.up.railway.app) and Cloudflare Pages
         # (https://*.pages.dev) origins so future re-deploys / preview builds
         # only need an env-var update rather than a code change.
         preview_url = os.environ.get("PREVIEW_DEPLOY_URL")
         if (
             preview_url
             and preview_url.startswith("https://")
-            and (
-                "netlify.app" in preview_url
-                or "up.railway.app" in preview_url
-                or "pages.dev" in preview_url
-            )
+            and ("up.railway.app" in preview_url or "pages.dev" in preview_url)
         ):
             base_origins.append(preview_url)
 
