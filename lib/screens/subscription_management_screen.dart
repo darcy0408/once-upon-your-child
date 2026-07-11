@@ -13,6 +13,8 @@ import '../services/user_identity_service.dart';
 import '../services/stripe_service.dart';
 import '../services/api_service_manager.dart';
 import '../services/payment/payment_channel.dart';
+import '../premium_upgrade_screen.dart';
+import '../utils/paywall_gate.dart';
 
 typedef SubscriptionLoader = Future<SubscriptionStatus?> Function(String userId);
 typedef SubscriptionSyncer = Future<void> Function(String userId);
@@ -452,13 +454,21 @@ class _SubscriptionManagementScreenState
         tier == SubscriptionTier.free ? 'Upgrade to Premium' : 'Upgrade to Family';
 
     return FilledButton(
-      onPressed: () {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label coming soon')),
-        );
-      },
+      onPressed: () => _openUpgradeScreen(),
       child: Text(label),
+    );
+  }
+
+  /// Routes to the upgrade screen through the COPPA-safe gate (kids get the
+  /// "ask a grown-up" math challenge before any pricing is shown). Mirrors
+  /// the gated navigation hero_creator_step.dart uses for its upgrade teasers.
+  Future<void> _openUpgradeScreen() async {
+    if (!mounted) return;
+    await showPaywallGated<void>(
+      context: context,
+      showActualPaywall: () => Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => const PremiumUpgradeScreen()),
+      ),
     );
   }
 

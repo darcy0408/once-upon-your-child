@@ -20,48 +20,6 @@ class TestAchievementService:
             assert stats_first.user_id == test_user.id
             self._cleanup_for_user(test_user.id)
 
-    def test_record_story_created_updates_stats_and_unlocks(self, app, test_user):
-        service = AchievementService()
-
-        with app.app_context():
-            result = service.record_story_created(test_user.id, theme="Adventure")
-            stats = AchievementStats.query.filter_by(user_id=test_user.id).first()
-            first_story = UserAchievement.query.filter_by(
-                user_id=test_user.id,
-                achievement_type="firstStory",
-            ).first()
-
-            assert result["status"] == "success"
-            assert "firstStory" in result["new_unlocks"]
-            assert stats.total_stories == 1
-            assert stats.current_streak == 1
-            assert stats.longest_streak == 1
-            assert first_story is not None
-            assert first_story.is_unlocked is True
-            self._cleanup_for_user(test_user.id)
-
-    def test_record_character_created_unlocks_character_creator(self, app, test_user):
-        service = AchievementService()
-
-        with app.app_context():
-            stats = service.get_or_create_stats(test_user.id)
-            stats.characters_created = 2
-            db.session.commit()
-
-            result = service.record_character_created(test_user.id)
-            refreshed = AchievementStats.query.filter_by(user_id=test_user.id).first()
-            achievement = UserAchievement.query.filter_by(
-                user_id=test_user.id,
-                achievement_type="characterCreator",
-            ).first()
-
-            assert result["status"] == "success"
-            assert "characterCreator" in result["new_unlocks"]
-            assert refreshed.characters_created == 3
-            assert achievement is not None
-            assert achievement.is_unlocked is True
-            self._cleanup_for_user(test_user.id)
-
     def test_sync_achievement_progress_updates_records_and_stats(self, app, test_user):
         service = AchievementService()
 

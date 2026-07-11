@@ -355,12 +355,15 @@ def create_tts_blueprint(limiter, require_auth):
         # chain below.
         premium_voice = bool(data.get("premium_voice"))
         wants_dialogue = bool((data.get("character_voice_id") or "").strip())
-        if (premium_voice or wants_dialogue) and is_under_13:
-            # Opted into a premium/dialogue ElevenLabs voice, but the user is
-            # under 13 — refuse ElevenLabs and let the default Gemini -> Edge
-            # chain serve the narration instead.
+        if (premium_voice or wants_dialogue) and is_under_18:
+            # Opted into a premium/dialogue ElevenLabs voice, but the user is a
+            # minor — ElevenLabs' ToS bar ALL under-18s, not just under-13s
+            # (MT-365; the is_under_18 flag already gates the legacy Gemini
+            # chain below for the same reason). Refuse ElevenLabs and let the
+            # default fallback serve the narration: Gemini is also under-18-
+            # barred, so teens land on Edge while under-13s 503 to on-device.
             audit_log(
-                "tts_elevenlabs_under13_blocked",
+                "tts_elevenlabs_minor_blocked",
                 user_id=user_id,
                 data={"premium_voice": premium_voice, "wants_dialogue": wants_dialogue},
             )

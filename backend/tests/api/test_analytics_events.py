@@ -16,6 +16,7 @@ import jwt
 from backend.database import db
 from backend.models import User
 from backend.models.analytics_event import AnalyticsEvent
+from backend.models.consent_record import ConsentRecord
 from backend.routes import avatar_routes
 from backend.services.event_tracking_service import record_event
 
@@ -196,6 +197,19 @@ def test_avatar_limit_hit_emitted_at_403_gate(client, app):
     """A free user past the 1-free-avatar gate emits avatar_limit_hit + 403."""
     with app.app_context():
         token = _create_user("avatar-limit-user", "free", custom_avatars_generated=1)
+        # MT-363: this test exercises the 1-free-avatar gate, which sits
+        # behind the photo-avatar consent gate — grant consent so the request
+        # reaches that gate instead of being rejected earlier for a different
+        # reason.
+        db.session.add(
+            ConsentRecord(
+                user_id="avatar-limit-user",
+                child_age=9,
+                consent_method="parent",
+                allow_photo_avatar=True,
+            )
+        )
+        db.session.commit()
 
     resp = client.post(
         "/avatar/generate-custom-avatar",
@@ -225,6 +239,17 @@ def test_avatar_limit_hit_not_emitted_on_success(client, app, monkeypatch):
     """A free user under the gate generates normally with no limit event."""
     with app.app_context():
         token = _create_user("avatar-ok-user", "free", custom_avatars_generated=0)
+        # MT-363: grant photo-avatar consent so this success-path test isn't
+        # rejected by the (unrelated) photo-avatar consent gate.
+        db.session.add(
+            ConsentRecord(
+                user_id="avatar-ok-user",
+                child_age=9,
+                consent_method="parent",
+                allow_photo_avatar=True,
+            )
+        )
+        db.session.commit()
 
     class _StubAvatarService:
         def generate_custom_avatar(self, **kwargs):

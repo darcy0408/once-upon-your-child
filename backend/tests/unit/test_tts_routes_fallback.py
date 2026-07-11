@@ -584,3 +584,49 @@ class TestTeenGeminiGate:
         assert status == 503
         assert body["error"] == "TTS service unavailable"
         tts.gemini.generate_speech_with_timestamps.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# 13-17 ElevenLabs gate (MT-365) — ElevenLabs' ToS bar ALL minors under 18
+# ---------------------------------------------------------------------------
+
+
+class TestTeenElevenLabsGate:
+    """A 13-17 user (``is_under_13=False``, ``declared_age`` a teen value) who
+    opts into a premium/dialogue voice must NOT reach ElevenLabs — its ToS bar
+    all under-18s, not just under-13s (MT-365). The opt-in gate previously
+    checked only ``is_under_13``, so this population slipped through. Unlike
+    under-13s, teens keep their (unchanged) Edge gate, so the request succeeds
+    on Edge in the legacy fallback rather than 503-ing."""
+
+    def test_teen_premium_voice_blocked_from_elevenlabs_serves_edge(
+        self, client, teen_user_headers, tts: TTSMocks
+    ) -> None:
+        # Explicit premium opt-in, but the user is 13-17 — ElevenLabs is
+        # refused (under-18 ToS bar). Gemini is also under-18-barred, so the
+        # narration lands on Edge rather than the premium voice.
+        status, body = _post_synthesize(client, teen_user_headers, premium_voice=True)
+
+        assert status == 200
+        assert body["provider"] == "edge"
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.elevenlabs.generate_speech_chunked.assert_not_called()
+        tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()
+
+    def test_teen_dialogue_request_blocked_from_elevenlabs_serves_edge(
+        self, client, teen_user_headers, tts: TTSMocks
+    ) -> None:
+        # character_voice_id normally forces ElevenLabs (only multi-voice
+        # provider). For a teen it must still be refused; the request falls
+        # through to a single-voice Edge narration rather than reaching
+        # ElevenLabs' dialogue endpoint.
+        status, body = _post_synthesize(
+            client, teen_user_headers, character_voice_id="some-character-voice"
+        )
+
+        assert status == 200
+        assert body["provider"] == "edge"
+        tts.elevenlabs.generate_speech_with_dialogue.assert_not_called()
+        tts.elevenlabs.generate_speech_with_timestamps.assert_not_called()
+        tts.gemini.generate_speech_with_timestamps.assert_not_called()

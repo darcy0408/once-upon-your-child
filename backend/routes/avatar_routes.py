@@ -16,12 +16,20 @@ FREE_CUSTOM_AVATARS = 1
 
 try:
     from backend.database import db
-    from backend.middleware.auth import require_auth, require_parental_consent
+    from backend.middleware.auth import (
+        require_auth,
+        require_parental_consent,
+        require_photo_avatar_consent,
+    )
     from backend.routes.subscription_routes import _user_is_premium, require_premium
     from backend.utils.app_helpers import get_user_tier
 except ImportError:
     from database import db
-    from middleware.auth import require_auth, require_parental_consent
+    from middleware.auth import (
+        require_auth,
+        require_parental_consent,
+        require_photo_avatar_consent,
+    )
     from routes.subscription_routes import _user_is_premium, require_premium
     from utils.app_helpers import get_user_tier
 
@@ -106,6 +114,7 @@ def create_avatar_blueprint(limiter):
     @avatar_bp.route("/generate-custom-avatar", methods=["POST"])
     @require_auth
     @require_parental_consent
+    @require_photo_avatar_consent  # MT-363: fail-closed gate on the photo itself
     @limiter.limit(_tier_limit(free=3, premium=20))
     def generate_custom_avatar():
         """
@@ -117,6 +126,16 @@ def create_avatar_blueprint(limiter):
         - gender: 'boy' | 'girl'
         - eye_color: str
         - favorite_color: str
+
+        MT-363: this is the one avatar route that sends a REAL photo of a
+        child's face to the image-generation provider (face-likeness / "photo
+        to Pixar" pipeline). @require_photo_avatar_consent runs before this
+        handler body — and therefore before the uploaded photo is read at all
+        — so a request lacking the parental allow_photo_avatar opt-in never
+        reaches request.files["photo"].read(), let alone the image provider.
+        DiceBear/description-based avatars (/generate-avatar,
+        /regenerate-avatar) do not process a real photo and are intentionally
+        NOT gated here.
         """
         try:
             # Check if photo is present

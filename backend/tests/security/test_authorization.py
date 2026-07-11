@@ -411,7 +411,9 @@ def test_achievement_data_scoped_to_current_user(client, app, test_user, other_u
     user_headers = _jwt_extended_headers(app, test_user)
     other_headers = _jwt_extended_headers(app, other_user)
     create_response = client.post(
-        "/achievement/record/story", json={"theme": "Adventure"}, headers=user_headers
+        "/achievement/sync",
+        json={"achievements": [], "stats": {"total_stories": 1}},
+        headers=user_headers,
     )
     response = client.get("/achievement/data", headers=other_headers)
 
