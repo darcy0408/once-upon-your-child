@@ -223,6 +223,32 @@ def premium_user_headers(premium_user):
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
+@pytest.fixture
+def premium_user_photo_consent(app, premium_user):
+    """Grant the premium test user the MT-363 ``allow_photo_avatar`` opt-in.
+
+    Routes protected by ``@require_photo_avatar_consent`` (photo-based avatar
+    generation: /generate-custom-avatar, /transform-superhero,
+    /generate-pet-avatar) fail closed with 403 unless the requesting user has a
+    non-withdrawn ConsentRecord with allow_photo_avatar=True. Depend on this
+    fixture in any route test that must reach such a handler.
+    """
+    from backend.database import db
+    from backend.models import ConsentRecord
+
+    with app.app_context():
+        record = ConsentRecord(
+            user_id=premium_user.id,
+            child_age=9,
+            consent_method="parent",
+            allow_photo_avatar=True,
+            withdrawn=False,
+        )
+        db.session.add(record)
+        db.session.commit()
+    return record
+
+
 # ============================================================================
 # STRIPE MOCKING FIXTURES
 # ============================================================================

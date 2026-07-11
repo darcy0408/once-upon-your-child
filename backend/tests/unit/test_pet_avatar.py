@@ -6,7 +6,9 @@ from unittest.mock import MagicMock, patch
 _VALID_PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 
 
-def test_generate_pet_avatar_route_success(client, premium_user_headers, test_user):
+def test_generate_pet_avatar_route_success(
+    client, premium_user_headers, test_user, premium_user_photo_consent
+):
     """Test successful pet avatar generation via route."""
     # Mock the avatar service
     with patch("backend.routes.avatar_routes.get_avatar_service") as mock_get_service:
@@ -48,7 +50,7 @@ def test_generate_pet_avatar_route_success(client, premium_user_headers, test_us
 
 
 def test_generate_pet_avatar_route_missing_data(
-    client, premium_user_headers, test_user
+    client, premium_user_headers, test_user, premium_user_photo_consent
 ):
     """Test pet avatar generation with missing fields."""
     data = {

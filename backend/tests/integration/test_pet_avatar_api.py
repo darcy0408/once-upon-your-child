@@ -18,7 +18,7 @@ def clear_rate_limits(app):
             app._avatar_generate_counts.clear()
 
 
-def test_pet_avatar_api_e2e(client, premium_user_headers):
+def test_pet_avatar_api_e2e(client, premium_user_headers, premium_user_photo_consent):
     """
     E2E-style test for the pet avatar API route.
     Verifies that the route correctly handles multipart data and returns the expected structure.
@@ -76,7 +76,9 @@ def test_pet_avatar_api_e2e(client, premium_user_headers):
         assert isinstance(kwargs["photo_bytes"], bytes)
 
 
-def test_pet_avatar_api_missing_fields(client, premium_user_headers):
+def test_pet_avatar_api_missing_fields(
+    client, premium_user_headers, premium_user_photo_consent
+):
     """Test error handling for missing metadata fields."""
     data = {
         "photo": (BytesIO(b"bytes"), "test.jpg"),
@@ -98,7 +100,7 @@ def test_pet_avatar_api_missing_fields(client, premium_user_headers):
 
 
 def test_pet_avatar_api_returns_partial_success_for_original_photo_fallback(
-    client, premium_user_headers
+    client, premium_user_headers, premium_user_photo_consent
 ):
     """Returning the original pet photo should surface as HTTP 206 with provider metadata."""
     with patch(
