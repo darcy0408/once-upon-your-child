@@ -5,6 +5,8 @@ Provides JWT-based authentication and authorization decorators.
 Security features:
 - require_auth: Validates JWT token and attaches user to request; sets g.minor_age_cap
 - require_parental_consent: COPPA gate — blocks under-13 users without a ConsentRecord
+- require_photo_avatar_consent: COPPA gate — blocks photo-based avatar generation
+  without the parental `allow_photo_avatar` opt-in (MT-363)
 - require_admin: Validates user has admin role
 - require_owner: Validates user owns the requested resource (IDOR protection)
 - get_current_user_id: Safely extracts user ID from JWT without requiring auth
@@ -278,6 +280,72 @@ def require_parental_consent(f):
                     ),
                     403,
                 )
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def require_photo_avatar_consent(f):
+    """
+    Decorator that enforces the parental ``allow_photo_avatar`` opt-in before a
+    route may read/process an uploaded photo of a child's face (MT-363).
+    Must be used after @require_auth.
+
+    This is a SEPARATE, narrower gate than ``require_parental_consent``:
+    - ``require_parental_consent`` only fires for under-13 accounts and checks
+      that *some* consent record exists.
+    - ``require_photo_avatar_consent`` applies to EVERY account regardless of
+      declared age (every account on this app belongs to a child-directed
+      product) and specifically checks the ``allow_photo_avatar`` opt-in,
+      because photo-based avatar generation sends a real photo of a child's
+      face to a third-party image-generation provider — a distinct,
+      affirmative consent from the general COPPA gate.
+
+    FAIL CLOSED (CMP-8): if no non-withdrawn ConsentRecord exists for the
+    user, or the most recent one has ``allow_photo_avatar`` != True, the
+    request is rejected. Any ambiguity — no record at all, a withdrawn
+    record, a record that predates the opt-in — denies rather than allows.
+    Callers must apply this BEFORE reading the uploaded photo bytes or
+    invoking the image-generation service.
+
+    Usage:
+        @avatar_bp.route("/generate-custom-avatar", methods=["POST"])
+        @require_auth
+        @require_parental_consent
+        @require_photo_avatar_consent
+        def generate_custom_avatar():
+            ...
+    """
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not hasattr(request, "current_user") or not request.current_user:
+            return jsonify({"error": "Authentication required"}), 401
+
+        user = request.current_user
+
+        consent = (
+            ConsentRecord.query.filter_by(user_id=user.id, withdrawn=False)
+            .order_by(ConsentRecord.consent_given_at.desc())
+            .first()
+        )
+        if not consent or not consent.allow_photo_avatar:
+            logger.warning(
+                "MT-363: user %s attempted photo-based avatar generation "
+                "without allow_photo_avatar consent (consent_record=%s)",
+                user.id,
+                getattr(consent, "id", None),
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Parental consent for photo-based avatars is required",
+                        "code": "PHOTO_AVATAR_CONSENT_REQUIRED",
+                    }
+                ),
+                403,
+            )
 
         return f(*args, **kwargs)
 

@@ -604,6 +604,29 @@ class ApiServiceManager {
     }
   }
 
+  /// MT-353 — content-report affordance required by app-store review and
+  /// kidSAFE. POSTs to the existing `/report-story` endpoint
+  /// (backend/routes/story_routes.py), which just logs the report for
+  /// manual review and returns 200. Callers only care whether the call
+  /// succeeded; this throws on failure, mirroring [post]'s error handling.
+  Future<void> reportStory({
+    required String storyId,
+    required String reason,
+    String? storyPreview,
+    http.Client? client,
+  }) async {
+    await post(
+      '/report-story',
+      {
+        'story_id': storyId,
+        'reason': reason,
+        if (storyPreview != null && storyPreview.isNotEmpty)
+          'story_preview': storyPreview,
+      },
+      client: client,
+    );
+  }
+
   /// Allow tests to inject a mock HTTP client.
   static void setTestClient(http.Client? client) {
     _testClient = client;
@@ -673,6 +696,32 @@ class ApiServiceManager {
           .timeout(const Duration(seconds: 10));
     } catch (e) {
       debugPrint('cancelTask($taskId) failed (best-effort): $e');
+    }
+  }
+
+  /// MT-351: PATCHes `/api/user/<id>/age` so the server's `declared_age`
+  /// (what `ENFORCE_RESOLVED_AGE` checks — see backend/middleware/auth.py)
+  /// tracks the client's locally-declared age. Best-effort with a couple of
+  /// quick retries: a failed sync is logged and swallowed, never thrown —
+  /// syncing the age must not block a child's onboarding/story flow (mirrors
+  /// SubscriptionSyncService's non-blocking sync pattern). Requires an
+  /// authenticated [userId]; callers should skip invoking this if one isn't
+  /// available yet.
+  static Future<void> syncDeclaredAge(String userId, int age) async {
+    if (userId.isEmpty) return;
+    const maxAttempts = 2;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final mgr = ApiServiceManager();
+        await mgr.patch('/api/user/$userId/age', {'age': age});
+        return;
+      } catch (e) {
+        if (attempt >= maxAttempts) {
+          debugPrint('syncDeclaredAge($userId, $age) failed (best-effort): $e');
+          return;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 300 * attempt));
+      }
     }
   }
 

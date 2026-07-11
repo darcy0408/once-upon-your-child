@@ -11,6 +11,8 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-10 | 14:30 | 3b29 | main | Google Play Organization account setup walkthrough (console-only) + MT-367 filed | [link](docs/sessions/2026-07-10-1430-3b29.md) |
+| 2026-07-10 | 09:44 | 9f2b | main (PR #425 open) | GitHub Actions billing risk analysis for the public→private repo decision; shipped CI trigger trimming (PR #425, unmerged); filed MT-366 | [link](docs/sessions/2026-07-10-0944-9f2b.md) |
 | 2026-07-09 | 17:50 | b4b1 | main (PRs #423, #424) | iOS App Store readiness assessment + `IOS_APP_STORE_CRITICAL_PATH.md` (#423) + store privacy-forms draft (MT-145) + MT-365 ElevenLabs under-18 gate fix (#424) | [link](docs/sessions/2026-07-09-1750-b4b1.md) |
 | 2026-07-09 | 15:47 | 3a1e | main | MT-359 wave 2 (avatar deadwood) shipped as PR #422 | [link](docs/sessions/2026-07-09-1547-3a1e.md) |
 | 2026-07-08 | 17:50 | 0823 | main | PR-queue clear (#412 merged) + MT-362 branch cleanup executed by owner | [link](docs/sessions/2026-07-08-1750-0823.md) |

@@ -6,6 +6,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
+import '../services/bedtime_replay_service.dart';
 import '../services/interactive_story_service.dart';
 import '../services/user_identity_service.dart';
 import '../widgets/crisis_resources_panel.dart';
@@ -27,12 +28,21 @@ class BedtimeWizardScreen extends ConsumerStatefulWidget {
   final bool isInteractive;
   final int timerMinutes;
 
+  // MT-361(b): "Play last night's story again". When both are non-empty the
+  // wizard skips the whole Q&A flow and goes straight to narrating this saved
+  // story instead of generating a new one — zero generation cost, instant
+  // start. Passed in by bedtime_launch_sheet.dart's replay entry point.
+  final String? replayTitle;
+  final String? replayStoryText;
+
   const BedtimeWizardScreen({
     super.key,
     required this.childName,
     required this.childAge,
     this.isInteractive = false,
     this.timerMinutes = 0,
+    this.replayTitle,
+    this.replayStoryText,
   });
 
   @override
@@ -110,6 +120,16 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
   late AnimationController _orbController;
   Timer? _sleepTimer;
+
+  // MT-361(c): the story-body narration loop (_readStoryAloud) previously
+  // always used AppTtsService.speak's default rateScale (0.85) with no
+  // young-band slowdown, even though the wizard's Q&A copy already reads
+  // differently per band. 0.65 mirrors the Sprout-specific rate other
+  // screens already use for this band (see life_quest_screen.dart and
+  // hero_creator_step.dart's _speakForSprout) — slower than the default,
+  // but not as slow as the 0.6-0.72 used for short single-line prompts,
+  // since a full story read at that pace would run long.
+  static const double _sproutStoryRateScale = 0.65;
 
   int get _effectiveAge => _resolvedAge > 0
       ? _resolvedAge
@@ -205,6 +225,16 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   Future<void> _initAndStart() async {
     _speechAvailable = await _speech.initialize();
     _resolvedAge = widget.childAge > 0 ? widget.childAge : 0;
+
+    // MT-361(b): "Play last night's story again" — a saved story takes
+    // priority over the wizard. No generation, no saga lookup, just narrate
+    // straight away.
+    final replayText = widget.replayStoryText?.trim();
+    if (replayText != null && replayText.isNotEmpty) {
+      await _replaySavedStory(replayText);
+      return;
+    }
+
     // Load any saved hero + saga for this child so bedtime can continue the
     // story where the superhero flow left off. Continuity is a bonus — a
     // failed load must never block bedtime.
@@ -218,6 +248,23 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       _heroProfile = null;
     }
     await _runStep();
+  }
+
+  /// MT-361(b): narrate a previously-saved bedtime story instead of running
+  /// the wizard. Mirrors the tail end of [_runRegularStory] (dim, wind-down
+  /// breath, read paragraphs, done) minus everything upstream of "the story
+  /// text is ready" — there is no generation call and nothing to save here.
+  Future<void> _replaySavedStory(String storyText) async {
+    setState(() => _step = BedtimeStep.reading);
+    final title = widget.replayTitle?.trim();
+    final hasTitle = title != null && title.isNotEmpty;
+    await _speak(_isMature
+        ? "Playing back your last story${hasTitle ? ', $title' : ''}."
+        : "Let's hear your story again!");
+    _setDimmed(true);
+    await _windDownBreath();
+    await _readStoryAloud(storyText);
+    if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
   /// Whether this child can be offered a saga continuation tonight: they have
@@ -926,6 +973,17 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     // PERF-04: story text is in hand — nothing left to cancel.
     _activeTaskId = null;
 
+    // MT-361(b): save so "Play last night's story again" can replay this one
+    // next time with zero generation cost. Best-effort and fire-and-forget —
+    // a failed save must never delay tonight's story. Interactive stories
+    // aren't saved here (see _runInteractiveStoryLoop) since a pick-a-path
+    // transcript isn't a simple story to replay verbatim.
+    unawaited(BedtimeReplayService.save(
+      characterId: _characterId,
+      title: result.title ?? '',
+      storyText: result.storyText,
+    ));
+
     // Fold the completed Issue back into the saga so the next bedtime (or the
     // visual superhero flow) picks up where tonight left off. Non-fatal — the
     // story still reads if persistence fails.
@@ -950,7 +1008,20 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     // line, so the story starts on a settled exhale.
     await _windDownBreath();
 
-    final paragraphs = result.storyText.split(RegExp(r'\n\n+'));
+    await _readStoryAloud(result.storyText);
+
+    if (!_timerExpired) _advance(BedtimeStep.done);
+  }
+
+  /// Reads [storyText] aloud paragraph-by-paragraph. Shared by the normal
+  /// generate-then-read path ([_runRegularStory]) and the zero-generation
+  /// replay path ([_replaySavedStory]).
+  ///
+  /// MT-361(c): slows down for the Sprout band (2-5) — 0.65 mirrors the
+  /// Sprout-specific rate already used elsewhere for full narration (see
+  /// _sproutStoryRateScale). Every other band keeps the service default.
+  Future<void> _readStoryAloud(String storyText) async {
+    final paragraphs = storyText.split(RegExp(r'\n\n+'));
     for (final paragraph in paragraphs) {
       if (_timerExpired) return;
       if (paragraph.trim().isEmpty) continue;
@@ -960,12 +1031,11 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         await AppTtsService.instance.speak(
           paragraph.trim(),
           awaitCompletion: true,
+          rateScale: _isSprout ? _sproutStoryRateScale : 0.85,
         );
       } catch (_) {}
       await Future.delayed(const Duration(milliseconds: 800));
     }
-
-    if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
   /// Map the spoken duration choice onto the interactive endpoint's
@@ -1030,7 +1100,14 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
           if (!mounted) return;
           setState(() => _statusText = '...');
           try {
-            await AppTtsService.instance.speak(text, awaitCompletion: true);
+            // MT-361(c): same Sprout-band slowdown as _readStoryAloud — this
+            // segment text is also story-body narration, just delivered a
+            // chunk at a time instead of all at once.
+            await AppTtsService.instance.speak(
+              text,
+              awaitCompletion: true,
+              rateScale: _isSprout ? _sproutStoryRateScale : 0.85,
+            );
           } catch (_) {}
         }
 

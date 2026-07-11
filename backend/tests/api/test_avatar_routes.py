@@ -5,6 +5,7 @@ import jwt
 
 from backend.database import db
 from backend.models import User
+from backend.models.consent_record import ConsentRecord
 from backend.routes import avatar_routes
 
 # Minimal valid PNG signature + padding so the avatar route's magic-byte
@@ -34,6 +35,26 @@ def _create_user(user_id: str, tier: str) -> str:
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     return jwt.encode(payload, "dev-secret-key", algorithm="HS256")
+
+
+def _grant_photo_avatar_consent(
+    user_id: str, allow_photo_avatar: bool = True, withdrawn: bool = False
+) -> ConsentRecord:
+    """Create a non-withdrawn ConsentRecord for user_id (MT-363 test helper).
+
+    Mirrors the shape written by POST /api/user/<id>/consent in
+    backend/routes/user_routes.py.
+    """
+    record = ConsentRecord(
+        user_id=user_id,
+        child_age=9,
+        consent_method="parent",
+        allow_photo_avatar=allow_photo_avatar,
+        withdrawn=withdrawn,
+    )
+    db.session.add(record)
+    db.session.commit()
+    return record
 
 
 def test_avatar_generate_route_enforces_free_tier_limit(client, app):
@@ -105,6 +126,7 @@ def test_generate_custom_avatar_accepts_age_99(client, app, monkeypatch):
     """Custom avatar endpoint should accept upper bound age 99."""
     with app.app_context():
         token = _create_user("custom-avatar-user-99", "free")
+        _grant_photo_avatar_consent("custom-avatar-user-99")
 
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -225,6 +247,7 @@ def test_generate_custom_avatar_returns_400_for_out_of_range_age(
     """Out-of-range custom avatar ages should return validation error with 400."""
     with app.app_context():
         token = _create_user("custom-avatar-user-err", "free")
+        _grant_photo_avatar_consent("custom-avatar-user-err")
 
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -253,6 +276,152 @@ def test_generate_custom_avatar_returns_400_for_out_of_range_age(
     assert body["status"] == "error"
     assert body["error_code"] == "VALIDATION_ERROR"
     assert body["message"] == "Age must be between 3 and 99"
+
+
+# ---------------------------------------------------------------------------
+# MT-363 — /generate-custom-avatar must fail-closed on the parental
+# allow_photo_avatar opt-in before reading/sending the uploaded child photo.
+# ---------------------------------------------------------------------------
+
+
+def _custom_avatar_request(client, headers):
+    return client.post(
+        "/avatar/generate-custom-avatar",
+        data={
+            "photo": (io.BytesIO(_VALID_PNG_BYTES), "photo.png"),
+            "character_name": "Luna",
+            "age": "7",
+            "gender": "girl",
+            "eye_color": "Brown",
+            "favorite_color": "Blue",
+        },
+        headers=headers,
+        content_type="multipart/form-data",
+    )
+
+
+class _SpyAvatarService:
+    """Stub avatar service that records whether it was ever invoked, so a
+    rejected request can be asserted to never have reached the image
+    provider."""
+
+    def __init__(self):
+        self.called = False
+
+    def generate_custom_avatar(self, **kwargs):
+        self.called = True
+        return {
+            "id": "avatar-should-not-be-reached",
+            "image_base64": "data:image/png;base64,ZmFrZQ==",
+        }
+
+
+def test_generate_custom_avatar_allowed_when_consent_granted(client, app, monkeypatch):
+    """allow_photo_avatar=True on the latest consent record permits generation."""
+    with app.app_context():
+        token = _create_user("photo-consent-granted-user", "free")
+        _grant_photo_avatar_consent(
+            "photo-consent-granted-user", allow_photo_avatar=True
+        )
+
+    spy = _SpyAvatarService()
+    monkeypatch.setattr(avatar_routes, "_avatar_service", spy)
+
+    resp = _custom_avatar_request(client, {"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "success"
+    assert spy.called is True
+
+
+def test_generate_custom_avatar_blocked_when_no_consent_record(
+    client, app, monkeypatch
+):
+    """No ConsentRecord at all → fail closed with 403, image provider never called."""
+    with app.app_context():
+        token = _create_user("photo-consent-missing-user", "free")
+        # Deliberately: no ConsentRecord created for this user at all.
+
+    spy = _SpyAvatarService()
+    monkeypatch.setattr(avatar_routes, "_avatar_service", spy)
+
+    resp = _custom_avatar_request(client, {"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 403
+    body = resp.get_json()
+    assert body["code"] == "PHOTO_AVATAR_CONSENT_REQUIRED"
+    assert spy.called is False
+
+
+def test_generate_custom_avatar_blocked_when_consent_explicitly_false(
+    client, app, monkeypatch
+):
+    """A consent record exists but allow_photo_avatar=False → still rejected."""
+    with app.app_context():
+        token = _create_user("photo-consent-false-user", "free")
+        _grant_photo_avatar_consent(
+            "photo-consent-false-user", allow_photo_avatar=False
+        )
+
+    spy = _SpyAvatarService()
+    monkeypatch.setattr(avatar_routes, "_avatar_service", spy)
+
+    resp = _custom_avatar_request(client, {"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 403
+    body = resp.get_json()
+    assert body["code"] == "PHOTO_AVATAR_CONSENT_REQUIRED"
+    assert spy.called is False
+
+
+def test_generate_custom_avatar_blocked_when_consent_withdrawn(
+    client, app, monkeypatch
+):
+    """A withdrawn consent record must not satisfy the gate, even if it once
+    had allow_photo_avatar=True — fail closed (CMP-8 pattern)."""
+    with app.app_context():
+        token = _create_user("photo-consent-withdrawn-user", "free")
+        _grant_photo_avatar_consent(
+            "photo-consent-withdrawn-user", allow_photo_avatar=True, withdrawn=True
+        )
+
+    spy = _SpyAvatarService()
+    monkeypatch.setattr(avatar_routes, "_avatar_service", spy)
+
+    resp = _custom_avatar_request(client, {"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 403
+    body = resp.get_json()
+    assert body["code"] == "PHOTO_AVATAR_CONSENT_REQUIRED"
+    assert spy.called is False
+
+
+def test_generate_custom_avatar_uses_most_recent_consent_record(
+    client, app, monkeypatch
+):
+    """When multiple consent records exist, the gate must honor the most
+    recent one (matches require_parental_consent's own ordering), not just
+    whether ANY prior record ever granted the opt-in."""
+    with app.app_context():
+        token = _create_user("photo-consent-latest-user", "free")
+        older = _grant_photo_avatar_consent(
+            "photo-consent-latest-user", allow_photo_avatar=True
+        )
+        # Force the older record's timestamp earlier so ordering is deterministic.
+        older.consent_given_at = datetime.now(timezone.utc) - timedelta(days=1)
+        db.session.commit()
+        # A newer record revokes the opt-in (e.g. parent changed their mind).
+        _grant_photo_avatar_consent(
+            "photo-consent-latest-user", allow_photo_avatar=False
+        )
+
+    spy = _SpyAvatarService()
+    monkeypatch.setattr(avatar_routes, "_avatar_service", spy)
+
+    resp = _custom_avatar_request(client, {"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 403
+    assert spy.called is False
 
 
 # ---------------------------------------------------------------------------
