@@ -11,6 +11,7 @@ For the global manual-task backlog, see `docs/MANUAL_TASKS.md`.
 | Date  | Time  | ID   | Branch | Topic | File |
 |-------|-------|------|--------|-------|------|
 <!-- New session-close entries go here. Most recent at top. -->
+| 2026-07-11 | 08:09 | 6334 | main | Cleared the 12-PR queue (#413–#422/#425/#426); 2 conflict resolutions (#422 tests, #425 MANUAL_TASKS); full worktree/branch cleanup → main-only | [link](docs/sessions/2026-07-11-0809-6334.md) |
 | 2026-07-10 | 16:56 | 3f61 | session/ops-check (PR #426) | Azure (MT-259) + Play (MT-367) owner-ops status check: Azure still unconverted (~4d to lapse), Play $25 fee PAID → awaiting Google verification | [link](docs/sessions/2026-07-10-1656-3f61.md) |
 | 2026-07-10 | 14:30 | 3b29 | main | Google Play Organization account setup walkthrough (console-only) + MT-367 filed | [link](docs/sessions/2026-07-10-1430-3b29.md) |
 | 2026-07-10 | 09:44 | 9f2b | main (PR #425 open) | GitHub Actions billing risk analysis for the public→private repo decision; shipped CI trigger trimming (PR #425, unmerged); filed MT-366 | [link](docs/sessions/2026-07-10-0944-9f2b.md) |
