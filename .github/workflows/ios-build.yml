@@ -9,14 +9,6 @@ on:
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/ios-build.yml'
-  push:
-    branches: [ main ]
-    paths:
-      - 'lib/**'
-      - 'ios/**'
-      - 'pubspec.yaml'
-      - 'pubspec.lock'
-      - '.github/workflows/ios-build.yml'
   workflow_dispatch:
 
 concurrency:
