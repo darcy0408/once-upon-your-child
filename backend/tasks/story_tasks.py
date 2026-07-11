@@ -1575,13 +1575,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                     "gender": char_record.gender,
                                 }
                             )
-                            logger.info(
-                                f"Found companion character: {char_name} (age {char_record.age}, {char_record.role})"
+                            logger.debug(
+                                # MT-364: no child/companion PII (name/age) in worker logs
+                                "Found companion character in DB (role=%s)",
+                                char_record.role,
                             )
                         else:
                             # Character not found in database, just pass the name
                             logger.warning(
-                                f"Companion character '{char_name}' not found in database"
+                                # MT-364: companion name is child-provided PII — do not log it
+                                "Companion character not found in database"
                             )
                             companion_character_details.append({"name": char_name})
 

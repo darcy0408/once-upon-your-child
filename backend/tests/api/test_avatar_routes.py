@@ -99,6 +99,9 @@ def test_transform_superhero_premium_returns_portrait(client, app, monkeypatch):
     """Premium user gets a superhero portrait; costume ids reach the service."""
     with app.app_context():
         token = _create_user("superhero-premium-user", "premium")
+        # MT-363: transform-superhero re-renders a real uploaded photo, so it is
+        # now gated on the parental allow_photo_avatar opt-in.
+        _grant_photo_avatar_consent("superhero-premium-user")
 
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -146,6 +149,9 @@ def test_transform_superhero_requires_photo(client, app):
     """Missing photo → 400 MISSING_PHOTO (premium user, so not blocked on tier)."""
     with app.app_context():
         token = _create_user("superhero-nophoto-user", "premium")
+        # MT-363: grant photo consent so the request passes the consent gate and
+        # reaches the missing-photo (400) check under test here.
+        _grant_photo_avatar_consent("superhero-nophoto-user")
 
     resp = client.post(
         "/avatar/transform-superhero",
@@ -174,6 +180,57 @@ def test_transform_superhero_blocks_free_tier(client, app):
     )
 
     assert resp.status_code == 403
+
+
+def test_transform_superhero_blocked_when_photo_consent_false(client, app):
+    """MT-363: the allow_photo_avatar gate now covers transform-superhero. A
+    premium user whose parent declined photo-avatar consent is fail-closed (403)
+    before the uploaded photo is read."""
+    with app.app_context():
+        token = _create_user("superhero-noconsent-user", "premium")
+        _grant_photo_avatar_consent(
+            "superhero-noconsent-user", allow_photo_avatar=False
+        )
+
+    resp = client.post(
+        "/avatar/transform-superhero",
+        data={
+            "photo": (io.BytesIO(_VALID_PNG_BYTES), "avatar.png"),
+            "power": "flying",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="multipart/form-data",
+    )
+
+    assert resp.status_code == 403
+    assert resp.get_json()["code"] == "PHOTO_AVATAR_CONSENT_REQUIRED"
+
+
+def test_generate_pet_avatar_blocked_when_photo_consent_false(client, app):
+    """MT-363: generate-pet-avatar ingests a real uploaded photo (the
+    companion_type='human' path sends a real face), so it is fail-closed on the
+    allow_photo_avatar opt-in like the other photo routes."""
+    with app.app_context():
+        token = _create_user("pet-avatar-noconsent-user", "premium")
+        _grant_photo_avatar_consent(
+            "pet-avatar-noconsent-user", allow_photo_avatar=False
+        )
+
+    resp = client.post(
+        "/avatar/generate-pet-avatar",
+        data={
+            "photo": (io.BytesIO(_VALID_PNG_BYTES), "pet.png"),
+            "pet_name": "Buddy",
+            "species": "Dog",
+            "breed_description": "Golden Retriever",
+            "owner_favorite_color": "Blue",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+        content_type="multipart/form-data",
+    )
+
+    assert resp.status_code == 403
+    assert resp.get_json()["code"] == "PHOTO_AVATAR_CONSENT_REQUIRED"
 
 
 def test_generate_custom_avatar_returns_400_for_out_of_range_age(

@@ -357,6 +357,7 @@ def create_avatar_blueprint(limiter):
     @require_auth
     @require_premium  # Re-rendering the avatar is an image-gen cost; paid feature.
     @require_parental_consent
+    @require_photo_avatar_consent  # MT-363: re-renders a REAL uploaded child photo — gate on the photo opt-in
     @limiter.limit(_tier_limit(free=0, premium=20))
     def transform_superhero():
         """Re-render an existing child avatar as a superhero portrait.
@@ -477,6 +478,7 @@ def create_avatar_blueprint(limiter):
     @require_auth
     @require_premium  # M-8: photo->cartoon companion creation is a premium capability (image-gen cost)
     @require_parental_consent
+    @require_photo_avatar_consent  # MT-363: ingests a real uploaded photo (companion_type="human" sends a real face) — gate on the photo opt-in
     @limiter.limit(_tier_limit(free=3, premium=20))
     def generate_pet_avatar():
         """
