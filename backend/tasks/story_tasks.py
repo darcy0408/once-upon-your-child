@@ -2504,7 +2504,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # child-visible text (title + every page). Belt to the moderator's
             # suspenders — guarantees no web address / email reaches the reader
             # even if the model emitted one and the classifier was unavailable.
-            from backend.utils.sanitizer import scrub_external_links
+            from backend.utils.sanitizer import (
+                scrub_external_links,
+                scrub_external_links_deep,
+            )
 
             title = scrub_external_links(title)
             story_body = scrub_external_links(story_body)
@@ -2544,6 +2547,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 _arc = story_metadata.get("emotional_arc")
             except NameError:
                 _themes, _characters, _arc = [], [], None
+            # Egress scrub (extends Audit P1#2 to model-authored metadata):
+            # emotional_arc is free model text returned to the client on every
+            # theme — strip any injected link from it too, not just page prose.
+            _arc = scrub_external_links_deep(_arc)
 
             # M-7: substitute the real hero name back into every output surface
             # locally — the child sees their own name even though every provider
@@ -2614,6 +2621,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         )
                     except (TypeError, ValueError):
                         pass
+                    # Egress scrub: saga_state is free model text that reaches the
+                    # child AND round-trips into the next Issue as prior_saga —
+                    # strip any injected link (mirrors run_antihero_part2 / F-4).
+                    _saga_state = scrub_external_links_deep(_saga_state)
                     superhero_meta = {**superhero_meta, "saga_state": _saga_state}
                 story_payload["superhero_meta"] = superhero_meta
 

@@ -7,7 +7,7 @@ while leaving ordinary prose (including plain numbers) untouched.
 
 import pytest
 
-from backend.utils.sanitizer import scrub_external_links
+from backend.utils.sanitizer import scrub_external_links, scrub_external_links_deep
 
 
 @pytest.mark.parametrize(
@@ -100,3 +100,71 @@ def test_interactive_segment_scrub_covers_content_title_choices():
     for needle in ("t.me", "vanishhelp", "www.", "@evil.com"):
         assert needle not in blob, f"{needle!r} survived in segment"
     assert segment["choices"][1]["text"] == "Walk away bravely."
+
+
+def test_deep_scrub_walks_nested_structure_preserving_shape():
+    # scrub_external_links_deep scrubs every string leaf in a dict/list/tuple
+    # while leaving non-string leaves and the container shape intact.
+    payload = {
+        "nemesis": "The Whisper, who says: reach me at t.me/vanishhelp.",
+        "allies": ["Mara", "the mentor — email helper@evil.com for help"],
+        "issue_count": 3,
+        "flags": (True, "the map is at www.free-toys-now.com"),
+        "nested": {"next_hook": "Find the rest at bit.ly/secret-cave, hero."},
+    }
+    cleaned = scrub_external_links_deep(payload)
+    blob = str(cleaned)
+    for needle in (
+        "t.me",
+        "vanishhelp",
+        "helper@evil.com",
+        "www.",
+        "bit.ly",
+        "secret-cave",
+    ):
+        assert needle not in blob, f"{needle!r} survived deep scrub"
+    # non-string leaves + container types preserved
+    assert cleaned["issue_count"] == 3
+    assert cleaned["flags"][0] is True
+    assert isinstance(cleaned["flags"], tuple)
+    assert cleaned["allies"][0] == "Mara"
+
+
+def test_deep_scrub_saga_state_egress_payload_is_removed():
+    # The real superhero saga_state shape (single-shot Adolescent/Creator path).
+    # An injected link in any free-text field must not survive to the client —
+    # it would also round-trip into the next Issue's prompt as prior_saga.
+    saga_state = {
+        "nemesis": "The Collector, who whispers: find me at t.me/vanishhelp.",
+        "nemesis_status": "circling",
+        "what_changed": "She let one person see her.",
+        "what_it_cost": "The comfort of the mask.",
+        "next_hook": "A note appears: vanishhelp@proton.me is always open.",
+        "allies": ["Mara", "reach the guide at www.free-toys-now.com"],
+        "defining_choice": "She chose to be known.",
+    }
+    cleaned = scrub_external_links_deep(saga_state)
+    blob = str(cleaned)
+    for needle in ("t.me", "vanishhelp", "proton.me", "www.", "free-toys-now"):
+        assert needle not in blob, f"{needle!r} survived saga_state scrub"
+    # benign narrative text is untouched
+    assert cleaned["defining_choice"] == "She chose to be known."
+    assert cleaned["allies"][0] == "Mara"
+
+
+def test_deep_scrub_leaves_clean_saga_state_identical():
+    saga_state = {
+        "nemesis": "The Doubt Dragon",
+        "nemesis_status": "wounded but circling",
+        "allies": ["Pip", "Bramble"],
+        "what_changed": "She learned her voice could be steady.",
+        "defining_choice": "She told someone the truth.",
+    }
+    assert scrub_external_links_deep(saga_state) == saga_state
+
+
+def test_deep_scrub_handles_scalars_and_none():
+    assert scrub_external_links_deep(None) is None
+    assert scrub_external_links_deep(7) == 7
+    out = scrub_external_links_deep("reach me at t.me/vanishhelp")
+    assert "t.me" not in out and "vanishhelp" not in out

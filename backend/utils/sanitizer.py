@@ -275,3 +275,24 @@ def scrub_external_links(text):
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\s+([.,!?;:])", r"\1", cleaned)
     return cleaned.strip()
+
+
+def scrub_external_links_deep(value):
+    """Recursively apply :func:`scrub_external_links` to every string inside a
+    nested structure (str / list / tuple / dict), preserving the original shape.
+
+    For model-authored metadata objects that are returned to the client but are
+    NOT plain page prose — e.g. the superhero ``saga_state`` and the
+    ``emotional_arc`` — where an injected link could otherwise reach a child (and,
+    for ``saga_state``, round-trip into the next Issue's prompt as ``prior_saga``).
+    Non-string leaves are returned untouched; a no-op on clean data.
+    """
+    if isinstance(value, str):
+        return scrub_external_links(value)
+    if isinstance(value, list):
+        return [scrub_external_links_deep(v) for v in value]
+    if isinstance(value, tuple):
+        return tuple(scrub_external_links_deep(v) for v in value)
+    if isinstance(value, dict):
+        return {k: scrub_external_links_deep(v) for k, v in value.items()}
+    return value
