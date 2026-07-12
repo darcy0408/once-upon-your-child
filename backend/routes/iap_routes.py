@@ -23,6 +23,7 @@ this task's scope. Without them, `IAP_VERIFICATION_ENABLED` defaults off and
 the endpoints return 503 rather than silently granting entitlement.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -77,6 +78,7 @@ iap_routes = Blueprint("iap_routes", __name__)
 # ---------------------------------------------------------------------------
 _PRODUCT_TIER_MAP: Dict[str, str] = {
     "premium_monthly": "premium",
+    "premium_annual": "premium",
     "family_monthly": "family",
 }
 
@@ -181,9 +183,26 @@ def _handle_verify(*, store: str):
     # --- Verify the receipt with the store --------------------------------
     try:
         if store == STORE_APPLE:
-            verified = _verify_with_apple(verification_data)
+            verified = _verify_with_apple(verification_data, product_id)
         else:
             verified = _verify_with_google(verification_data, product_id)
+    except IapVerificationConfigError:
+        # Flag flipped on but store credentials aren't provisioned yet — fail
+        # CLOSED with the same 503 as the disabled path, never a blind grant.
+        logger.error(
+            "IAP %s verify: verification enabled but store credentials are "
+            "not configured",
+            store,
+        )
+        return (
+            jsonify(
+                {
+                    "error": "In-app purchases are not yet available",
+                    "code": "iap_not_configured",
+                }
+            ),
+            503,
+        )
     except SQLAlchemyError:
         raise
     except Exception:  # noqa: BLE001 - store/network errors -> 502
@@ -366,55 +385,317 @@ def _handle_notification_stub(*, store: str):
 
 
 # ===========================================================================
-# Store verification helpers — Phase 1 stubs
+# Store verification helpers
 # ===========================================================================
 
+# Apple App Store receipt verification (verifyReceipt). The client sends a
+# base64 StoreKit receipt; we validate it with Apple's shared-secret endpoint.
+# Per Apple's guidance always POST production first and retry sandbox on a 21007
+# status, so TestFlight/sandbox receipts verify through the same code path.
+_APPLE_VERIFY_URL_PROD = "https://buy.itunes.apple.com/verifyReceipt"
+_APPLE_VERIFY_URL_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt"
 
-def _verify_with_apple(receipt_data: str) -> Dict[str, Any]:
-    """Validate a StoreKit receipt with Apple.
 
-    Returns a dict: { valid: bool, status, expires_at, store_transaction_id,
-    reason }.
+def _apple_ms_to_datetime(value: Any) -> Optional[datetime]:
+    """Convert Apple's millisecond-epoch (expires_date_ms) to an aware datetime."""
+    if value is None:
+        return None
+    try:
+        return datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc)
+    except (ValueError, TypeError):
+        return None
 
-    TODO(STORE-1 phase 2 / owner): implement against the App Store Server API
-    (https://developer.apple.com/documentation/appstoreserverapi). Prefer the
-    Server API over the legacy /verifyReceipt endpoint. Steps:
-      1. Build a JWT signed with the App Store Connect API .p8 key.
-      2. Call `GET /inApps/v1/subscriptions/{originalTransactionId}` (or decode
-         the StoreKit2 signed transaction the client sent).
-      3. Read the renewal info: product ID, expiresDate, auto-renew status.
-      4. Map to { valid, status, expires_at, store_transaction_id }.
-    Needs: APPLE_ISSUER_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (.p8),
-    APPLE_BUNDLE_ID.
+
+def _latest_apple_entry(entries: list) -> Optional[Dict[str, Any]]:
+    """Return the receipt transaction with the latest expires_date_ms."""
+    best: Optional[Dict[str, Any]] = None
+    best_ms = -1
+    for entry in entries or []:
+        try:
+            ms_int = int(entry.get("expires_date_ms"))
+        except (ValueError, TypeError):
+            continue
+        if ms_int > best_ms:
+            best_ms = ms_int
+            best = entry
+    return best
+
+
+def _map_apple_receipt(data: Dict[str, Any], product_id: str) -> Dict[str, Any]:
+    """Map an Apple verifyReceipt response to the shared verify shape.
+
+    status 0 = valid; 21006 = valid receipt whose subscription has expired (it
+    still carries the transaction info). Any other status is a rejected receipt
+    -> { valid: False } -> HTTP 400.
     """
-    raise NotImplementedError(
-        "Apple receipt verification not implemented — STORE-1 phase 2. "
-        "Provision App Store Server API credentials and implement "
-        "_verify_with_apple()."
+    status = data.get("status")
+    if status not in (0, 21006):
+        return {"valid": False, "reason": "apple verifyReceipt status %s" % status}
+
+    # Subscriptions surface in latest_receipt_info; fall back to receipt.in_app.
+    entries = data.get("latest_receipt_info") or []
+    if not entries:
+        entries = (data.get("receipt") or {}).get("in_app") or []
+
+    matching = [e for e in entries if e.get("product_id") == product_id]
+    if product_id and entries and not matching:
+        return {
+            "valid": False,
+            "reason": "receipt has no transaction for %s" % product_id,
+        }
+
+    latest = _latest_apple_entry(matching or entries)
+    expires_at = None
+    store_txn_id = None
+    if latest:
+        expires_at = _apple_ms_to_datetime(latest.get("expires_date_ms"))
+        store_txn_id = latest.get("original_transaction_id") or latest.get(
+            "transaction_id"
+        )
+
+    now = datetime.now(timezone.utc)
+    if status == 21006 or (expires_at is not None and expires_at <= now):
+        entitlement_status = "inactive"
+    else:
+        entitlement_status = "active"
+
+    return {
+        "valid": True,
+        "status": entitlement_status,
+        "expires_at": expires_at,
+        "store_transaction_id": store_txn_id,
+    }
+
+
+def _post_apple_verify(url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """POST a verifyReceipt payload to Apple and return the parsed JSON."""
+    import requests
+
+    response = requests.post(url, json=payload, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+def _fetch_apple_verify_receipt(receipt_data: str) -> Dict[str, Any]:
+    """Verify a StoreKit receipt with Apple's verifyReceipt endpoint.
+
+    Isolated (and patched in tests) so _map_apple_receipt can be exercised
+    without network or credentials. A missing APP_STORE_SHARED_SECRET or a 21004
+    (shared-secret mismatch) fails CLOSED via IapVerificationConfigError (-> 503);
+    a 21005 (Apple server unavailable) surfaces as a transient error (-> 502).
+    """
+    shared_secret = os.getenv("APP_STORE_SHARED_SECRET")
+    if not shared_secret:
+        raise IapVerificationConfigError(
+            "Apple verification is enabled but APP_STORE_SHARED_SECRET is unset."
+        )
+
+    payload = {
+        "receipt-data": receipt_data,
+        "password": shared_secret,
+        "exclude-old-transactions": True,
+    }
+    data = _post_apple_verify(_APPLE_VERIFY_URL_PROD, payload)
+    # 21007: a sandbox receipt reached the prod endpoint -> retry sandbox.
+    if data.get("status") == 21007:
+        data = _post_apple_verify(_APPLE_VERIFY_URL_SANDBOX, payload)
+    if data.get("status") == 21004:
+        raise IapVerificationConfigError(
+            "APP_STORE_SHARED_SECRET does not match the app's shared secret."
+        )
+    if data.get("status") == 21005:
+        # Apple's receipt server is temporarily unavailable -> 502, retryable.
+        raise RuntimeError("Apple receipt server temporarily unavailable (21005)")
+    return data
+
+
+def _verify_with_apple(receipt_data: str, product_id: str) -> Dict[str, Any]:
+    """Validate a StoreKit receipt with Apple (verifyReceipt) and map the result.
+
+    The client sends a base64 StoreKit receipt (serverVerificationData). We POST
+    it to Apple's shared-secret endpoint and map the authoritative expiry/state
+    to { valid, status, expires_at, store_transaction_id }; the client's claim is
+    never trusted.
+
+    Needs (owner-provisioned, STORE-1): APP_STORE_SHARED_SECRET (the App Store
+    Connect app-specific shared secret). A missing secret / 21004 -> 503; a bad
+    receipt -> 400; a transient Apple outage -> 502.
+
+    NOTE: verifyReceipt is Apple's legacy (still functional) endpoint. Migrating
+    to the App Store Server API (StoreKit2 signed transactions) is a post-launch
+    hardening step.
+    """
+    data = _fetch_apple_verify_receipt(receipt_data)
+    return _map_apple_receipt(data, product_id)
+
+
+# ---------------------------------------------------------------------------
+# Google Play Developer API — purchases.subscriptionsv2.get
+# ---------------------------------------------------------------------------
+_GOOGLE_PLAY_API_BASE = "https://androidpublisher.googleapis.com/androidpublisher/v3"
+_GOOGLE_ANDROIDPUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher"
+
+# Google subscriptionState -> our entitlement status vocabulary. States absent
+# from this map (EXPIRED / ON_HOLD / PAUSED / PENDING / UNSPECIFIED) do NOT
+# grant access. CANCELED still grants until expiryTime (auto-renew is off but
+# access continues), so it maps to "active".
+_GOOGLE_STATE_TO_STATUS = {
+    "SUBSCRIPTION_STATE_ACTIVE": "active",
+    "SUBSCRIPTION_STATE_IN_GRACE_PERIOD": "grace_period",
+    "SUBSCRIPTION_STATE_CANCELED": "active",
+}
+
+
+def _parse_rfc3339(value: Optional[str]) -> Optional[datetime]:
+    """Parse an RFC3339 timestamp (e.g. Google's expiryTime) to an aware UTC
+    datetime.
+
+    Tolerates a trailing 'Z' and sub-microsecond precision (Google may send
+    nanoseconds, which datetime.fromisoformat rejects). Returns None when the
+    value is missing or unparseable.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    if "." in text:
+        head, _, tail = text.partition(".")
+        frac = ""
+        rest = ""
+        for idx, char in enumerate(tail):
+            if char.isdigit():
+                frac += char
+            else:
+                rest = tail[idx:]
+                break
+        text = head + ("." + frac[:6] if frac else "") + rest
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _latest_google_expiry(line_items: list) -> Optional[datetime]:
+    """Return the latest expiryTime across a subscription's line items."""
+    latest: Optional[datetime] = None
+    for item in line_items or []:
+        parsed = _parse_rfc3339(item.get("expiryTime"))
+        if parsed and (latest is None or parsed > latest):
+            latest = parsed
+    return latest
+
+
+def _map_google_subscription(data: Dict[str, Any], product_id: str) -> Dict[str, Any]:
+    """Map a purchases.subscriptionsv2 response to the shared verify shape.
+
+    Returns { valid, status, expires_at, reason }; _verify_with_google adds the
+    stable store_transaction_id (the purchase token). `valid` means the token
+    resolved to a genuine subscription for the claimed product; `status`
+    (derived from subscriptionState) is what _handle_verify uses to decide
+    between granting the tier and dropping to FREE.
+    """
+    line_items = data.get("lineItems") or []
+    product_ids = {li.get("productId") for li in line_items if li.get("productId")}
+
+    # The token must resolve to the product the client claimed.
+    if product_id and product_ids and product_id not in product_ids:
+        return {
+            "valid": False,
+            "reason": "purchase token resolves to %s, not claimed %s"
+            % (sorted(product_ids), product_id),
+        }
+
+    expires_at = _latest_google_expiry(line_items)
+    state = data.get("subscriptionState", "")
+    status = _GOOGLE_STATE_TO_STATUS.get(state)
+
+    if status is None:
+        # A real subscription, but in a non-granting state (expired/on-hold/...).
+        return {
+            "valid": True,
+            "status": "inactive",
+            "expires_at": expires_at,
+            "reason": "subscription state %s does not grant access"
+            % (state or "unknown"),
+        }
+
+    return {
+        "valid": True,
+        "status": status,
+        "expires_at": expires_at,
+    }
+
+
+def _fetch_google_subscriptionv2(
+    package_name: str, purchase_token: str
+) -> Dict[str, Any]:
+    """Call the Play Developer API purchases.subscriptionsv2.get.
+
+    Isolated (and patched in tests) so the pure mapping in
+    _map_google_subscription can be exercised without network or credentials.
+    Reads the service-account JSON + package name from the environment; a
+    missing credential fails CLOSED via IapVerificationConfigError (-> 503).
+    A 404 (unknown/expired token) raises IapVerificationError (-> 400).
+    """
+    raw_creds = os.getenv("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON")
+    if not raw_creds or not package_name:
+        raise IapVerificationConfigError(
+            "Google Play verification is enabled but not configured "
+            "(GOOGLE_PLAY_SERVICE_ACCOUNT_JSON / ANDROID_PACKAGE_NAME unset)."
+        )
+
+    from google.auth.transport.requests import AuthorizedSession
+    from google.oauth2 import service_account
+
+    credentials = service_account.Credentials.from_service_account_info(
+        json.loads(raw_creds), scopes=[_GOOGLE_ANDROIDPUBLISHER_SCOPE]
     )
+    session = AuthorizedSession(credentials)
+    url = "%s/applications/%s/purchases/subscriptionsv2/tokens/%s" % (
+        _GOOGLE_PLAY_API_BASE,
+        package_name,
+        purchase_token,
+    )
+    response = session.get(url, timeout=15)
+    if response.status_code == 404:
+        raise IapVerificationError("Google purchase token not found")
+    response.raise_for_status()
+    return response.json()
 
 
 def _verify_with_google(purchase_token: str, product_id: str) -> Dict[str, Any]:
     """Validate a Google Play purchase token with the Play Developer API.
 
-    Returns a dict: { valid: bool, status, expires_at, store_transaction_id,
-    reason }.
+    Authenticates with the service-account JSON (scope androidpublisher), calls
+    purchases.subscriptionsv2.get, and maps the authoritative subscription
+    state to { valid, status, expires_at, store_transaction_id }. The store
+    response is the authority — the client's claim is never trusted.
 
-    TODO(STORE-1 phase 2 / owner): implement against the Google Play Developer
-    API `purchases.subscriptionsv2.get` (or `purchases.subscriptions.get`).
-    Steps:
-      1. Authenticate with the service-account JSON (scope
-         androidpublisher).
-      2. Call subscriptionsv2.get(packageName, token=purchase_token).
-      3. Read lineItems -> productId + expiryTime, and subscriptionState.
-      4. Map to { valid, status, expires_at, store_transaction_id }.
-    Needs: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, ANDROID_PACKAGE_NAME.
+    Needs (owner-provisioned, STORE-1): GOOGLE_PLAY_SERVICE_ACCOUNT_JSON,
+    ANDROID_PACKAGE_NAME. A not-found token -> { valid: False } -> HTTP 400;
+    a missing credential -> IapVerificationConfigError -> HTTP 503.
+
+    TODO(STORE-1): free-trial detection (offerDetails) currently maps to
+    "active" — this grants correctly but is not surfaced as "trialing".
     """
-    raise NotImplementedError(
-        "Google receipt verification not implemented — STORE-1 phase 2. "
-        "Provision a Play Developer API service account and implement "
-        "_verify_with_google()."
-    )
+    package_name = (os.getenv("ANDROID_PACKAGE_NAME") or "").strip()
+    try:
+        data = _fetch_google_subscriptionv2(package_name, purchase_token)
+    except IapVerificationError as exc:
+        return {"valid": False, "reason": str(exc)}
+    result = _map_google_subscription(data, product_id)
+    if result.get("valid"):
+        # The purchase token is the stable per-subscription key: it matches the
+        # IapPurchase.store_transaction_id contract and is what a Real-Time
+        # Developer Notification carries, so renewals/cancels/refunds can be
+        # linked back to this row. (latestOrderId increments every renewal, so
+        # it is not a stable key.)
+        result["store_transaction_id"] = purchase_token
+    return result
 
 
 # ===========================================================================

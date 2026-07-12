@@ -51,6 +51,7 @@ class IapService {
   /// The store product IDs STORE-1 sells. Must match the consoles.
   static const Set<String> _productIds = {
     kIapProductPremiumMonthly,
+    kIapProductPremiumAnnual,
     kIapProductFamilyMonthly,
   };
 
@@ -82,7 +83,7 @@ class IapService {
     }
     if (response.notFoundIDs.isNotEmpty) {
       // TODO(STORE-1 / owner): product IDs missing from the store consoles.
-      // Create `premium_monthly` / `family_monthly` in App Store Connect AND
+      // Create `premium_monthly` / `premium_annual` in App Store Connect AND
       // the Google Play Console before the IAP path can be tested.
       debugPrint(
         'IapService: product IDs not found in store: ${response.notFoundIDs}',
@@ -105,12 +106,13 @@ class IapService {
     return products;
   }
 
-  /// Buy the product for [tier], attributing it to [userId].
+  /// Buy the product for [tier] and [billingPeriod], attributing it to [userId].
   ///
-  /// [billingPeriod] is accepted for interface parity with the web (Stripe)
-  /// channel but currently ignored: annual store products (`premium_annual`)
-  /// are a TODO (STORE-1 / owner) for when App Store Connect / the Play
-  /// Console have annual listings. Every IAP purchase is monthly today.
+  /// [billingPeriod] selects the store product: premium resolves to
+  /// `premium_monthly` or `premium_annual` (2026-07-07 pricing). The owner must
+  /// have created the matching product in App Store Connect / the Play Console;
+  /// an annual purchase on a device whose store lacks `premium_annual` returns a
+  /// "not available in the store" error rather than silently billing monthly.
   Future<PurchaseResult> purchase({
     required SubscriptionTier tier,
     required String userId,
@@ -118,7 +120,7 @@ class IapService {
   }) async {
     await initialize();
 
-    final productId = iapProductIdForTier(tier);
+    final productId = iapProductIdForTier(tier, period: billingPeriod);
     if (productId == null) {
       return PurchaseResult.error('Tier ${tier.name} is not purchasable.');
     }

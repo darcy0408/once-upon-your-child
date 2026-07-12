@@ -172,6 +172,7 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     )
     from backend.models.character import Character
     from backend.models.consent_record import ConsentRecord, ConsentVerificationCode
+    from backend.models.iap_event import IapPurchase
     from backend.models.parent_hidden_context import ParentHiddenContext
     from backend.models.story import Story
 
@@ -199,6 +200,13 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     # --- Delete achievements ---
     UserAchievement.query.filter_by(user_id=user_id).delete()
     AchievementStats.query.filter_by(user_id=user_id).delete()
+
+    # --- Delete IAP purchase records ---
+    # IapPurchase is the per-user store-subscription record and carries a
+    # user_id, so it must be erased. IapNotificationEvent is intentionally
+    # left alone: it is a dedup table keyed by the store notification id (not
+    # a user_id) and holds no user-scoped PII — see backend/models/iap_event.py.
+    IapPurchase.query.filter_by(user_id=user_id).delete()
 
     # --- Delete consent records + transient verification codes ---
     # Codes carry an FK to consent_record.id, so they must go first.

@@ -28,9 +28,9 @@ enum PaymentChannelKind {
 /// Single-tier launch pricing (2026-07-07): Premium sells at $9.99/mo or
 /// $59.99/yr. The backend resolves [annual] to a separate Stripe Price ID
 /// (`STRIPE_PRICE_ID_PREMIUM_ANNUAL`, lookup key `premium_annual`) — see
-/// `backend/routes/stripe_routes.py`. The IAP channels accept this but
-/// currently ignore it; annual store products are a TODO (STORE-1 / owner)
-/// for when the App Store Connect / Play Console listings exist.
+/// `backend/routes/stripe_routes.py`. The IAP channels now resolve [annual] to
+/// the `premium_annual` store product (see [iapProductIdForTier]); the owner
+/// must still create that product in App Store Connect / the Play Console.
 enum BillingPeriod {
   /// Billed every month. Default for every tier.
   monthly,
@@ -134,15 +134,23 @@ class PaymentProduct {
 /// TODO(STORE-1 / owner): create these exact product IDs in BOTH consoles
 /// before the IAP path can be tested against the sandbox / test track.
 const String kIapProductPremiumMonthly = 'premium_monthly';
+const String kIapProductPremiumAnnual = 'premium_annual';
 const String kIapProductFamilyMonthly = 'family_monthly';
 
 /// Map a [SubscriptionTier] to its store product ID. Returns null for tiers
 /// that are not sold as an in-app product (e.g. [SubscriptionTier.free]).
-String? iapProductIdForTier(SubscriptionTier tier) {
+String? iapProductIdForTier(
+  SubscriptionTier tier, {
+  BillingPeriod period = BillingPeriod.monthly,
+}) {
   switch (tier) {
     case SubscriptionTier.premium:
-      return kIapProductPremiumMonthly;
+      // Premium is the only tier sold annually (2026-07-07 pricing).
+      return period == BillingPeriod.annual
+          ? kIapProductPremiumAnnual
+          : kIapProductPremiumMonthly;
     case SubscriptionTier.family:
+      // Family is monthly-only (and hidden at launch).
       return kIapProductFamilyMonthly;
     case SubscriptionTier.free:
       return null;
@@ -153,6 +161,7 @@ String? iapProductIdForTier(SubscriptionTier tier) {
 SubscriptionTier? tierForIapProductId(String productId) {
   switch (productId) {
     case kIapProductPremiumMonthly:
+    case kIapProductPremiumAnnual:
       return SubscriptionTier.premium;
     case kIapProductFamilyMonthly:
       return SubscriptionTier.family;

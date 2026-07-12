@@ -70,6 +70,44 @@ def test_purge_deletes_hidden_context_and_consent_codes(app, mocker):
         assert ConsentRecord.query.filter_by(user_id=user.id).count() == 0
 
 
+def test_purge_deletes_iap_purchase_records(app, mocker):
+    """IAP-ERASE: erasure removes IapPurchase rows; IapNotificationEvent is a
+    store-notification dedup table with no user_id, so it is left untouched."""
+    from backend.models.iap_event import IapNotificationEvent, IapPurchase
+
+    with app.app_context():
+        user = _make_user(uid="erase_iap")
+        purchase = IapPurchase(
+            user_id=user.id,
+            store="apple",
+            product_id="premium_monthly",
+            tier="premium",
+            store_transaction_id="txn_erase_iap_1",
+            status="active",
+        )
+        event = IapNotificationEvent(
+            store="apple",
+            notification_id="notif_erase_iap_1",
+            notification_type="DID_RENEW",
+        )
+        db.session.add_all([purchase, event])
+        db.session.commit()
+
+        # Stripe is best-effort; stub it so the test never touches the network.
+        mocker.patch("stripe.Customer.delete")
+
+        purge_user_data(user, commit=True)
+
+        assert IapPurchase.query.filter_by(user_id=user.id).count() == 0
+        # Not user-scoped — deliberately not touched by erasure.
+        assert (
+            IapNotificationEvent.query.filter_by(
+                notification_id="notif_erase_iap_1"
+            ).count()
+            == 1
+        )
+
+
 def test_purge_propagates_erasure_to_stripe(app, mocker):
     """PRIV-05: erasure deletes the Stripe customer and nulls the local id."""
     with app.app_context():
