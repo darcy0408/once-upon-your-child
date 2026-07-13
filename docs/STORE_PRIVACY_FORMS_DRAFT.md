@@ -12,10 +12,13 @@
 > which is a worse outcome than an honestly-disclosed data flow.
 >
 > Positioning used throughout: **Families app, under-13 primary**, general-audience
-> listing (not Apple's dedicated Kids Category) — per the task brief. Note this is
-> still an **open owner decision (D1)** in `docs/IOS_APP_STORE_CRITICAL_PATH.md`
-> §4.1; if Kids Category is chosen instead, Section 4 item G4 below changes the
-> Firebase Analytics answer materially.
+> listing (not Apple's dedicated Kids Category) — per the task brief. **D1/D2
+> DECIDED 2026-07-13** — see
+> `docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md`: general-audience
+> Books/Education listing (NOT Apple's Kids Category), Firebase Analytics and
+> Sentry kept with the §4 hardening steps (H-1…H-6) implemented. This closes
+> Gap 4 below as resolved-by-decision and confirms the Section 1/3 answers in
+> this draft (they already assumed the general-Families positioning).
 
 ---
 
@@ -40,8 +43,8 @@ non-default config.
 | **Stripe** | Parent payment info (web checkout only; tokenized, no card data touches this app's servers) | Subscription billing on the **web** channel | **Live (web only)** | `backend/requirements.in:52`; `in_app_purchase` is the store-build channel instead (see below) |
 | **Apple / Google IAP** (`in_app_purchase` 3.2.0) | Store transaction ID, product ID, purchase receipt | Subscription billing on **iOS/Android store builds** (Stripe web checkout is compiled out of store builds — App Store/Play Store forbid it for digital subscriptions) | **Live (store builds)** | `pubspec.yaml:62-67`; `lib/services/payment/`; `backend/routes/iap_routes.py`; `backend/models/iap_event.py` |
 | **Railway (Postgres)** | All first-party app data: accounts, characters, stories, consent records, subscription state | Cloud hosting / database of record | **Live** | `backend_db_architecture` — Postgres on Railway since 2026-05-14 |
-| **Firebase Analytics** | Anonymized usage events, user ID (when enabled) | App analytics | **Wired but collection defaults OFF; enabled only for self-attested age ≥ 18 AND explicit consent** | `lib/services/firebase_analytics_service.dart:23-48`; `lib/services/privacy_service.dart:58-81`; `lib/services/privacy_defaults.dart` (CAADCA `adultAge = 18`) |
-| **Sentry** | Crash/error diagnostics, `sendDefaultPii=false`, breadcrumbs stripped of message/data | Crash reporting / stability | **Wired but reporting defaults OFF; enabled only under the same consent+18 gate as Firebase Analytics** (same `applyConsentDecision` call) | `lib/main.dart:20-76`; `lib/services/sentry_consent_gate.dart` |
+| **Firebase Analytics** | Anonymized usage events (NO user ID as of H-2, 2026-07-13 — `setUserId` removed; a session cannot be re-linked to an account) | App analytics | **Wired but collection defaults OFF; enabled only for self-attested age ≥ 18 AND a SEPARATE, explicit, default-OFF analytics opt-in (H-4)** | `lib/services/firebase_analytics_service.dart` (`setUserProperties`, `setUserId` call removed); `lib/services/privacy_service.dart`; `lib/services/privacy_defaults.dart` (CAADCA `adultAge = 18`); `lib/screens/parental_consent_screen.dart` (analytics toggle) |
+| **Sentry** | Crash/error diagnostics, `sendDefaultPii=false`, breadcrumbs stripped of message/data, event tags/extra stripped by key pattern (H-5) | Crash reporting / stability | **Wired but reporting defaults OFF; enabled only under the same consent+18 gate as Firebase Analytics** (same `applyConsentDecision` call) | `lib/main.dart` (`beforeSend`/`beforeBreadcrumb`); `lib/services/sentry_consent_gate.dart` |
 | **Resend** | Parent/guardian email address, consent verification code | COPPA parental-consent verification emails | **Live when `RESEND_API_KEY` configured** | `backend/utils/email_service.py`; `backend/.env.example:32` |
 
 **No ad SDK / no tracking SDK found**: no `google_mobile_ads`, no Facebook Audience
@@ -75,13 +78,13 @@ Data tied to the account (`user.id`) or a named child profile.
 | **Identifiers** — User ID | Yes | App Functionality | `user.id` (UUID), `child_profile_id` |
 | **Identifiers** — Device ID | **OWNER VERIFY** | — | No explicit device-ID collection found server-side; `package_info_plus`/`flutter_secure_storage` are local-only. Verify no IAP/Sentry payload includes a device identifier before answering "No." |
 | **Purchases** — Purchase History | Yes | App Functionality | Subscription tier, IAP product/transaction IDs, Stripe customer ID |
-| **Usage Data** — Product Interaction | Yes (first-party) | Analytics, App Functionality | In-house `analytics_events` / `audit_log` Postgres tables, linked to `user_id` (`backend/models/analytics_event.py`, `backend/models/audit_log.py`) — **not** shared with a third party; separate from the optional third-party Firebase Analytics below |
+| **Usage Data** — Product Interaction | Yes (first-party) | Analytics, App Functionality | In-house `analytics_events` / `audit_log` Postgres tables, linked to `user_id` (`backend/models/analytics_event.py`, `backend/models/audit_log.py`) — **not** shared with a third party; separate from the optional third-party Firebase Analytics below. As of H-3 (2026-07-13), the three therapeutic/emotional-state events (`feelings_check_in`, `therapeutic_feedback`, `story_emotion_moment`) also route ONLY here (categorical-only payloads: enumerated emotion/coping labels, integer intensity, feedback length as an int) — they never reach Firebase |
 | **Diagnostics** — Crash Data | Yes, consent-gated | App Functionality (stability) | Sentry, off by default, on only after consent + self-attested age ≥ 18 (see vendor table). If answering strictly for what a *child's* session can ever send: **No** (gate never opens for a declared-minor session) |
 
 ### Bucket: Data Not Linked to You
 | Apple category | Collected? | Purpose(s) | Notes |
 |---|---|---|---|
-| **Usage Data** — Product Interaction (Firebase Analytics) | Optional, consent-gated | Analytics | Only fires for a session that both (a) got explicit consent and (b) self-attested age ≥ 18 (`PrivacyDefaults.adultAge`). Firebase's own SDK can technically link a user ID if `setUserId` is called (`firebase_analytics_service.dart:74`) — **that actually makes this Linked, not Not-Linked; OWNER VERIFY which bucket to use.** Recommend listing under Data Linked to You instead, given `setUserId` is called in `setUserProperties`. |
+| **Usage Data** — Product Interaction (Firebase Analytics) | Optional, consent-gated | Analytics | Only fires for a session that both (a) got a SEPARATE, explicit, default-OFF analytics opt-in (H-4) and (b) self-attested age ≥ 18 (`PrivacyDefaults.adultAge`). **RESOLVED (H-2, 2026-07-13):** `setUserId` was removed from `firebase_analytics_service.dart`'s `setUserProperties` — Firebase no longer receives the account/child id, so this correctly belongs in **Data Not Linked to You** (the earlier "recommend Linked" caveat no longer applies). The three therapeutic/emotional-state events no longer flow here at all (see H-3 note in the vendor table / Data Linked bucket above) — they never reached this analytics stream's third-party leg after this decision. |
 | **Identifiers** — Image cache key | No (not personal data) | — | `illustration_cache` rows are keyed by a one-way SHA-256 of inputs, no `user_id` column (`backend/services/data_retention.py:361-369`) |
 
 ### Not collected (explicitly ruled out by code)
@@ -143,14 +146,15 @@ the D1 open-decision caveat in the header). Answers below assume that positionin
 | Data collection from children without parental consent | No — COPPA verifiable-parental-consent gate exists for declared age below the jurisdiction's consent age (13 in the US per COPPA, 16 in the EEA per GDPR Art. 8) | `lib/screens/parental_consent_screen.dart`; `backend/models/consent_record.py`; `lib/services/consent_age.dart` |
 | Third-party analytics/ads targeting children | No ads. Analytics (Firebase) is wired but **collection is off by default and only turns on for a self-attested adult (18+) who explicitly consents** — never for a declared minor | See vendor table above; this is the strongest evidence for a "no behavioral advertising / no under-13 analytics" answer |
 
-**Apple Kids Category note (cross-reference only, not this task's decision):**
-`docs/IOS_APP_STORE_CRITICAL_PATH.md` §4.1/§4.2 flags that if the owner later decides
-to list under Apple's formal **Kids Category** instead of general Families, Apple's
-Guideline 5.1.4 requires **no third-party analytics SDK at all**, which would mean
-`firebase_analytics` must be stripped from that build entirely — not just consent-gated.
-The current code's consent-gate-to-18 approach is compliant with a **general Families**
-listing but may not satisfy strict Kids Category review. Confirm the listing category
-before finalizing this answer.
+**Apple Kids Category note — DECIDED 2026-07-13 (D1):** per
+`docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md`, the app lists as a
+**general-audience app (Books or Education category, 4+ age rating)** and does
+**NOT** enter Apple's Kids Category. Guideline 5.1.4's "no third-party
+analytics SDK" restriction therefore does not apply — `firebase_analytics`
+stays in the build, hardened per §4 (H-1…H-6) of the memo. (Kids Category
+entry is a one-way door per Apple's own guideline text and forum precedent —
+see the memo's "Why D1" section — so this is treated as decided, not
+provisional.)
 
 ---
 
@@ -182,14 +186,18 @@ that is NOT disclosed in the privacy policy"). That's a good guard rail, but it'
 actual configured value. OWNER VERIFY the live `STORY_GEN_PROVIDER` value on Railway
 before attesting "story text goes to OpenAI" to either console.
 
-### Gap 4 — Kids Category vs. Families listing decision (D1) changes the Firebase Analytics answer (MEDIUM)
+### Gap 4 — Kids Category vs. Families listing decision (D1) changes the Firebase Analytics answer (MEDIUM) — ✅ RESOLVED-BY-DECISION 2026-07-13
 
-Already tracked as an open owner decision in `docs/IOS_APP_STORE_CRITICAL_PATH.md`
-§4.1/§4.2/D1. This draft answers the forms for a **general Families listing**
-(analytics consent-gated to 18+ is compliant). If Apple's formal Kids Category is
-chosen instead, Guideline 5.1.4 likely requires stripping `firebase_analytics` from
-that build entirely — the consent gate alone would not be sufficient. Resolve D1
-before finalizing Section 1/3.
+Was tracked as an open owner decision in `docs/IOS_APP_STORE_CRITICAL_PATH.md`
+§4.1/§4.2/D1. **Decided 2026-07-13** in
+`docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md`: **D1 = general-
+audience Books/Education listing, NOT Apple's Kids Category; D2 = keep
+Firebase Analytics and Sentry, hardened per the memo's §4 (H-1…H-6).** This
+draft's Section 1/3 answers, written for a general-Families listing, are
+therefore final, not provisional — no further owner action needed on this
+gap. H-1 through H-6 (ad-signal plist key, `setUserId` removal, therapeutic
+events rerouted to first-party, separate analytics consent toggle, Sentry
+tag/extra scrubbing, this label update) are implemented as of this commit.
 
 ### Gap 5 — IP address collection isn't named in the "Information We Collect" section (LOW-MEDIUM)
 

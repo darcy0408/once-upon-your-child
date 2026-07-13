@@ -53,5 +53,10 @@
 	<string>Story Weaver uses the microphone for optional voice input while creating stories.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Story Weaver uses speech recognition to turn your voice into text during story setup.</string>
+	<!-- H-1 (docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md): child-directed
+	     configuration for Firebase/Google Analytics — never allow ad-personalization
+	     signals to be derived from analytics data, regardless of consent state. -->
+	<key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
+	<false/>
 </dict>
 </plist>

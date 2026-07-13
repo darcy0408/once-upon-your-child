@@ -36,7 +36,11 @@ Not a template with a name swapped in. Your child's name, their look, their comp
 ### Stories that do something
 Every story has a spine: recognizing the "uh-oh feeling," saying no and meaning it, being seen when you feel invisible. Entertainment that leaves something behind — the language kids need for their next hard moment.
 
-### Built like it's for kids — because it is
+### Safety built in, not bolted on
+<!-- M-1 (docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md): reworded
+     from "Built like it's for kids — because it is" — avoid "for kids"
+     audience framing in listing/marketing copy (Apple guideline 2.3.8
+     reserves that phrasing for Kids-Category apps). -->
 No ads. No selling data. Parent consent before anything else, content moderation on every story, and privacy built for COPPA from day one. You stay in control; your child just gets the magic.
 
 ---

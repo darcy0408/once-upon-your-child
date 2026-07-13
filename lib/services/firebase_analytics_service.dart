@@ -65,13 +65,26 @@ class FirebaseAnalyticsService {
     }
   }
 
+  /// Sets Firebase Analytics user properties WITHOUT linking them to the
+  /// account/child identity.
+  ///
+  /// SECURITY (H-2, docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md):
+  /// this used to call `analytics.setUserId(id: userId)`, which is what made
+  /// Firebase Analytics data "Linked to you" on the App Store privacy label.
+  /// Firebase can be anonymous/aggregate — first-party per-user funnel
+  /// analysis already lives in the backend `analytics_events` table
+  /// (`backend/models/analytics_event.py`), so Firebase never needs the
+  /// account id. The [userId] parameter is intentionally unused; it is kept
+  /// only so existing call sites don't need to change their signature. Do NOT
+  /// reintroduce `setUserId` with the account id. If a stable per-session
+  /// identifier is ever truly needed, use a per-install random id, never the
+  /// account/child id.
   static Future<void> setUserProperties(
     String userId,
     Map<String, dynamic> properties,
   ) async {
     if (!_initialized || !_collectionEnabled) return;
     try {
-      await analytics.setUserId(id: userId);
       for (final entry in properties.entries) {
         await analytics.setUserProperty(
           name: entry.key,

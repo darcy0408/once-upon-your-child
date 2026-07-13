@@ -14,6 +14,7 @@ class ParentalConsentService {
   static const _keyConsentVerified = 'parental_consent_verified';
   static const _keyRecordedAt = 'parental_consent_recorded_at';
   static const _keyAllowPhotoAvatar = 'allow_photo_avatar';
+  static const _keyAllowAnalytics = 'allow_analytics_at_consent';
   static const _keyDailyLimitMinutes = 'screen_time_daily_limit';
   static const _keyBedtimeLockoutHour = 'screen_time_bedtime_hour';
   static const _keyBedtimeLockoutMinute = 'screen_time_bedtime_minute';
@@ -30,6 +31,23 @@ class ParentalConsentService {
   Future<void> setAllowPhotoAvatar(bool allow) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAllowPhotoAvatar, allow);
+  }
+
+  /// H-4 (docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md, amended
+  /// COPPA §312.5 separability): the parent's analytics opt-in choice made
+  /// ON the consent screen, stored separately from [_keyConsent] (core
+  /// consent to collect data / use the app). Defaults to false — analytics
+  /// is never bundled into required consent. [PrivacyService.applyConsentDecision]
+  /// reads this back (via [getAllowAnalytics]) as its `consentGranted` input
+  /// instead of reusing the core-consent boolean.
+  Future<bool> getAllowAnalytics() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyAllowAnalytics) ?? false;
+  }
+
+  Future<void> setAllowAnalytics(bool allow) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyAllowAnalytics, allow);
   }
 
   /// Validates an email address well enough for a COPPA verifiable-consent
@@ -132,6 +150,8 @@ class ParentalConsentService {
     String? parentEmail,
     String method = 'self_attested',
     bool allowPhotoAvatar = false,
+    // H-4: separate, default-OFF analytics opt-in — see [getAllowAnalytics].
+    bool allowAnalytics = false,
     bool verified = false,
     bool syncToServer = true,
   }) async {
@@ -149,6 +169,7 @@ class ParentalConsentService {
     await prefs.setBool(_keyConsentVerified, verified);
     await prefs.setString(_keyRecordedAt, recordedAt);
     await prefs.setBool(_keyAllowPhotoAvatar, allowPhotoAvatar);
+    await prefs.setBool(_keyAllowAnalytics, allowAnalytics);
     if (parentEmail != null && parentEmail.isNotEmpty) {
       await prefs.setString(_keyParentEmail, parentEmail);
     }
@@ -236,6 +257,7 @@ class ParentalConsentService {
     required int age,
     required String parentEmail,
     bool allowPhotoAvatar = false,
+    bool allowAnalytics = false,
   }) async {
     final email = parentEmail.trim();
     if (!isValidEmail(email)) {
@@ -252,6 +274,7 @@ class ParentalConsentService {
       parentEmail: email,
       method: 'email_pending',
       allowPhotoAvatar: allowPhotoAvatar,
+      allowAnalytics: allowAnalytics,
       verified: false,
       syncToServer: false,
     );

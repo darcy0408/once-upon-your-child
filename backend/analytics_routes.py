@@ -29,11 +29,22 @@ except ImportError:
 # client-supplied string must never create a new event stream or be written
 # verbatim. Server-internal events (e.g. 'avatar_limit_hit') are recorded
 # directly via record_event and are intentionally NOT in this list.
+#
+# 'feelings_check_in' / 'therapeutic_feedback' / 'story_emotion_moment'
+# (H-3, docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md) were
+# rerouted here from Firebase Analytics — a child's emotional-state events
+# must stay first-party only. The client (lib/services/therapeutic_analytics.dart)
+# sends categorical-only metadata (enumerated emotion/coping labels, integer
+# intensity, feedback length as an int) — the generic string/int/bool/float
+# sanitization below already strips anything else.
 _CLIENT_EVENT_ALLOWLIST = frozenset(
     {
         "paywall_viewed",
         "upgrade_clicked",
         "checkout_started",
+        "feelings_check_in",
+        "therapeutic_feedback",
+        "story_emotion_moment",
     }
 )
 

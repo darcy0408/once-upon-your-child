@@ -903,8 +903,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         // M-9 / CAADCA: reconcile analytics with the consent result. Any minor
         // (under 18) ⇒ stays off by default regardless of consent
         // (applyConsentDecision enforces the adult-age default gate).
+        // H-4: `consentGranted` here is the parent's SEPARATE analytics
+        // opt-in from the consent screen (default OFF), not the required
+        // core-consent checkbox — see ParentalConsentService.getAllowAnalytics.
+        final allowAnalytics =
+            await const ParentalConsentService().getAllowAnalytics();
         await PrivacyService.applyConsentDecision(
-          consentGranted: true,
+          consentGranted: allowAnalytics,
           declaredAge: _selectedAge!,
         );
         final prefs = await SharedPreferences.getInstance();
@@ -1039,9 +1044,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     if (mounted) {
       await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
     }
-    // M-9: 13+ self-attested consent — analytics may now be enabled.
+    // H-4 (amended COPPA §312.5 separability): this 13-17/18+ path has no
+    // dedicated consent screen/toggle — analytics must never be auto-granted
+    // by self-attesting core consent here, so it stays OFF by default.
+    // Parent Controls (reachable anytime post-onboarding) is the separate,
+    // explicit, default-OFF surface where analytics can be opted into later.
     await PrivacyService.applyConsentDecision(
-      consentGranted: true,
+      consentGranted: false,
       declaredAge: _selectedAge!,
     );
     if (mounted) {

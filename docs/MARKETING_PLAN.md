@@ -20,7 +20,7 @@
 |---|---|---|
 | **It's THEIR story** | Your child by name, their face, their pet, their fears — not a template with a name swapped in | Product demo; avatar + companion + saga fields |
 | **Stories that do something** | SEL is the spine: boundary-setting, "uh-oh feeling," being-seen arcs — not empty entertainment | NEED: CASEL 5 mapping doc + named advisory clinician (see §2, this closes the Slumberkins gap) |
-| **Built like it's for kids, because it is** | COPPA-compliant, parent-consent flows, moderated content, no ads, no data sold | Consent system, moderation layer, privacy policy; kidSAFE seal later |
+| **Safety built in, not bolted on** *(reworded from "Built like it's for kids, because it is" — M-1, docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md: avoid "for kids" audience framing in listing/marketing copy, Apple guideline 2.3.8)* | COPPA-compliant, parent-consent flows, moderated content, no ads, no data sold | Consent system, moderation layer, privacy policy; kidSAFE seal later |
 
 **What we never do in marketing:** target children directly (parents only — COPPA discipline extends to ads/content), overclaim therapy ("supports SEL," never "treats anxiety"), or use real kids' generated stories without explicit parental permission.
 

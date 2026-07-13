@@ -49,14 +49,26 @@
   - **Status:** Verified via code review (explicit events `softPromptShown` and `hardLimitReached` are tracked).
 
 ## Feelings / Therapeutic
+> **H-3 (2026-07-13, docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md):**
+> these three events no longer go to Firebase Analytics. They are sent via
+> `AnalyticsService.track` to the first-party backend `POST /analytics/event`
+> sink (`backend/analytics_routes.py` -> `analytics_events` table), with
+> categorical-only payloads (enumerated emotion/coping labels, integer
+> intensity, feedback *length* as an int — never free text).
+
 - `feelings_check_in` (voluntary)  
-  - **Trigger:** Feelings Corner interactions (not exercised here; confirm screen implementation)  
-  - **Params:** emotion, intensity, voluntary=true  
+  - **Trigger:** `TherapeuticAnalytics.trackFeelingsCheckIn` (Feelings Corner interactions; not currently wired to a UI call site — confirm screen implementation)  
+  - **Params:** emotion, intensity, coping_strategies_count  
   - **Status:** Verified via code review.
 
-- Therapeutic feedback  
-  - **Trigger:** `TherapeuticAnalytics.trackTherapeuticFeedback` in feedback submit  
-  - **Params:** rating, feedback_text?  
+- `story_emotion_moment`  
+  - **Trigger:** `TherapeuticAnalytics.trackStoryMoment`, called from `emotions_learning_system.dart` after a story moment is recorded  
+  - **Params:** emotion, coping_strategy  
+  - **Status:** Verified via code review.
+
+- `therapeutic_feedback`  
+  - **Trigger:** `TherapeuticAnalytics.trackTherapeuticFeedback` in feedback submit (`story_result_screen.dart`)  
+  - **Params:** rating, feedback_length (int — never the feedback text itself)  
   - **Status:** Verified via code review.
 
 ## Feature Discovery

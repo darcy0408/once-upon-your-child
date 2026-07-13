@@ -12,11 +12,20 @@ Think of it as a magical story creator that weaves unique tales featuring your c
 
 **Primary Users:** Parents, caregivers, teachers, and children
 
-**Target Audience:**
-- Children ages 3-16
+**Target Audience (store-facing framing — M-4,
+docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md):** Parents and
+caregivers of children ages 3-16. The app is operated, consented-to, and
+purchased by a parent/guardian; the child is the story's subject/beneficiary,
+never the app's customer or operator. (Apple guideline 2.3.8 and the 2025
+COPPA amendments treat "audience = children" marketing language as
+directed-to-children evidence, so store/marketing copy should lead with the
+parent, not the child — see the decision memo.)
+
+Internally, the app is used by:
 - Families looking for personalized bedtime stories
 - Educators creating engaging classroom content
 - Parents wanting to encourage reading and imagination
+- Children ages 3-16, as the story's hero/subject
 
 ---
 

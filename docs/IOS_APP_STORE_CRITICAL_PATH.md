@@ -118,14 +118,19 @@ implement them. Gates a *working paid* iOS build. Needs Phase 1.5 products to sa
 
 ## Phase 4 — Kids-Category / review compliance (OWNER + light CODE)
 
-- [ ] **4.1 DECISION: formal Kids Category vs general-audience Families listing.** Kids Category =
-      strictest review (Guideline 1.3 / 5.1.4): mandatory parental gate for *any* data collection, and
-      **no third-party analytics or ads**. This forces 4.2.
-- [ ] **4.2 Firebase Analytics decision.** App ships `firebase_analytics: ^12.2.0` + a real
-      `GoogleService-Info.plist`. Third-party analytics in a Kids-Category app is a known **rejection risk**
-      (5.1.4). Likely must **disable/strip Firebase Analytics on the kids build** (or list general-Families).
-      Note: no `NSUserTrackingUsageDescription` is present — for a kids app the right posture is *no tracking*
-      / no IDFA / no ATT prompt, so declare "Data Not Used to Track You."
+- [x] **4.1 DECISION: formal Kids Category vs general-audience Families listing. DECIDED 2026-07-13** —
+      see `docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md`. **D1 = general-audience listing
+      (Books or Education category, 4+ age rating). Do NOT enter Apple's Kids Category** — it is a
+      one-way door (Guideline 1.3, forum precedent) for zero launch benefit given the app's
+      parent-directed acquisition model.
+- [x] **4.2 Firebase Analytics decision. DECIDED 2026-07-13** — same memo. **D2 = keep Firebase
+      Analytics and Sentry**, hardened per the memo's §4 (H-1…H-6, implemented): ad-personalization
+      signals disabled at the plist level, `setUserId` removed (analytics data is Not Linked), the two
+      most sensitive Firebase events rerouted to first-party only, a separate default-OFF analytics
+      consent toggle, and a Sentry event tag/extra scrubber. No stripping required — the general-Families
+      listing (4.1) does not trigger Guideline 5.1.4's Kids-Category analytics ban.
+      Note: no `NSUserTrackingUsageDescription` is present — no tracking / no IDFA / no ATT prompt
+      anywhere in the project (verified 2026-07-13), so "Data Not Used to Track You" is accurate.
 - [ ] **4.3 Apple Privacy Nutrition Label** — enumerate every SDK/data flow (Gemini, OpenAI, Replicate,
       Cloudflare, Azure, Stripe, Firebase, Sentry, Resend). **Not drafted** — the MT-145 attempt hit a usage
       limit before writing `docs/STORE_PRIVACY_FORMS_DRAFT.md` (file absent). Highest-value artifact to produce next.
@@ -169,8 +174,8 @@ These live in `docs/LAUNCH_CRITICAL_PATH_2026-07-08.md` and must be cleared rega
 
 | # | Decision | Why it matters |
 |---|----------|----------------|
-| D1 | Kids Category vs general-Families listing (4.1) | Determines whether Firebase Analytics must be stripped |
-| D2 | Firebase Analytics on kids build — keep/strip/gate (4.2) | Rejection risk vs. losing analytics signal |
+| D1 | ✅ **DECIDED 2026-07-13** — Kids Category vs general-Families listing (4.1) | General-Families listing chosen; see `docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md` |
+| D2 | ✅ **DECIDED 2026-07-13** — Firebase Analytics on kids build — keep/strip/gate (4.2) | Kept + hardened (§4 of the same memo), not stripped |
 | D3 | IAP migration timing (MT-143 D-2) — before store launch, or web-first + IAP fast-follow | Sets whether Phase 3 blocks first submission |
 | D4 | Small Business Program enrollment (1.2) | 30%→15% commission on all IAP revenue |
 

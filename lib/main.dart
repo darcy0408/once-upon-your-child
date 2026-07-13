@@ -49,7 +49,8 @@ Future<void> main() async {
                         false)) ??
                 false) ??
             false;
-        return isDwds ? null : event;
+        if (isDwds) return null;
+        return _scrubSentryEvent(event);
       };
       // STORE-2 follow-up (COPPA §312.5 / Apple Kids-Category 1.3, 5.1.4):
       // breadcrumbs can passively capture child PII (typed text, URLs, request
@@ -100,6 +101,31 @@ Future<void> main() async {
       );
     },
   );
+}
+
+/// H-5 (docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md) — client-side
+/// twin of the backend's Celery PII-redaction gate. `beforeBreadcrumb` above
+/// already drops every breadcrumb's free-form message/data outright; this does
+/// the equivalent for the EVENT payload's tags/extra, which `beforeBreadcrumb`
+/// does not touch. Nothing in the app currently sends child name or story text
+/// this way, but `LoggerService.error` does attach the raw log message as a
+/// Sentry tag (`log_message`) for developer correlation, and any future call
+/// site could too — this strips any tag/extra whose KEY suggests it may carry
+/// free-text user input, by pattern rather than by an exact, easily-missed name.
+final RegExp _sentrySensitiveKeyPattern = RegExp(
+  r'(message|text|name|story|feeling|note|content|email|address|photo)',
+  caseSensitive: false,
+);
+
+SentryEvent _scrubSentryEvent(SentryEvent event) {
+  event.tags?.removeWhere(
+    (key, _) => _sentrySensitiveKeyPattern.hasMatch(key),
+  );
+  // ignore: deprecated_member_use
+  event.extra?.removeWhere(
+    (key, _) => _sentrySensitiveKeyPattern.hasMatch(key),
+  );
+  return event;
 }
 
 class StoryWeaverApp extends ConsumerStatefulWidget {

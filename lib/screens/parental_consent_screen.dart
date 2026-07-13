@@ -63,6 +63,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   String? _parentEmail;
   bool _consentGiven = false;
   bool _allowPhotoAvatar = false; // COPPA: parent must explicitly opt in
+  // H-4 (amended COPPA §312.5 separability): analytics opt-in is its OWN
+  // optional toggle, independent of the required consent checkbox below.
+  // Defaults OFF. See docs/DECISION_D1_D2_KIDS_CATEGORY_ANALYTICS_2026-07-13.md.
+  bool _allowAnalytics = false;
   bool _submitting = false;
   final _scrollController = ScrollController();
   double _scrollProgress = 0.0;
@@ -547,6 +551,43 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
+                            // ── Analytics opt-in (H-4) ─────────────────────────────
+                            // A SEPARATE, optional toggle from the required consent
+                            // checkbox below — amended COPPA §312.5 requires
+                            // consent-to-collect and consent-to-disclose-to-third-
+                            // parties to be separable choices. Off by default;
+                            // even when on, analytics never actually turns on for a
+                            // declared minor (PrivacyDefaults.adultAge = 18) — this
+                            // just records the parent's choice honestly. Can be
+                            // changed anytime in Parent Controls.
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(20),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white38),
+                              ),
+                              child: SwitchListTile(
+                                title: const Text(
+                                  'Allow anonymous usage analytics',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: const Text(
+                                  'Optional, and separate from the consent above — helps us see which '
+                                  'features are used. Off by default. Analytics is never enabled for '
+                                  'anyone under 18, regardless of this choice, and you can change it '
+                                  'anytime in Parent Controls.',
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 13),
+                                ),
+                                activeThumbColor: const Color(0xFFFFD700),
+                                value: _allowAnalytics,
+                                onChanged: (value) =>
+                                    setState(() => _allowAnalytics = value),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
                             Row(
                               children: [
                                 TextButton(
@@ -869,6 +910,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         parentEmail: _parentEmail?.trim(),
         method: 'self_attested',
         allowPhotoAvatar: _allowPhotoAvatar,
+        allowAnalytics: _allowAnalytics,
         verified: false,
       );
       if (!mounted) return;
@@ -898,6 +940,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         age: widget.declaredAge,
         method: 'debug_bypass',
         allowPhotoAvatar: _allowPhotoAvatar,
+        allowAnalytics: _allowAnalytics,
         verified: false,
       );
       if (!mounted) return;
@@ -929,6 +972,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         age: widget.declaredAge,
         parentEmail: email,
         allowPhotoAvatar: _allowPhotoAvatar,
+        allowAnalytics: _allowAnalytics,
       );
       if (!mounted) return;
       if (!queued) {
@@ -1008,6 +1052,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         age: widget.declaredAge,
         parentEmail: email,
         allowPhotoAvatar: _allowPhotoAvatar,
+        allowAnalytics: _allowAnalytics,
       );
       if (!mounted) return;
       setState(() => _verifying = false);
