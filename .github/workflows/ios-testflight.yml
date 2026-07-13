@@ -112,3 +112,6 @@ jobs:
           name: ios-ipa
           path: build/ios/ipa/*.ipa
           if-no-files-found: error
+          # The IPA is already on TestFlight by this step; the artifact is a
+          # debugging keepsake, not the distribution channel.
+          retention-days: 7

@@ -183,7 +183,10 @@ jobs:
         with:
           name: flutter-web-build
           path: build/web/
-          retention-days: 7
+          # Only exists to hand the build to the deploy job below — consumed
+          # within minutes. 1 day (the minimum) keeps ~4 builds/day × 72 MB
+          # from exhausting the account-wide artifact storage quota.
+          retention-days: 1
 
   # Deploy Frontend to Cloudflare Pages (Production)
   # Replaces the previous Netlify staging + production jobs. The frontend now

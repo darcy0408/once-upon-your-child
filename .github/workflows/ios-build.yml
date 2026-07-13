@@ -81,3 +81,4 @@ jobs:
             /Users/runner/Library/Logs/CocoaPods
             /Users/runner/Library/Developer/Xcode/DerivedData/**/Logs
           if-no-files-found: ignore
+          retention-days: 7
