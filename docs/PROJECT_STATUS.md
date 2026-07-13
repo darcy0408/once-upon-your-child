@@ -1,6 +1,6 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-07-07
+**Last Updated:** 2026-07-13
 
 > Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name. The business now operates through an **LLC** (formed 2026-06-21).
 
@@ -169,9 +169,10 @@ The launch-gate month. **Provider migration off Gemini** (MT-137 ToS): story tex
 1. **Gemini fully off child paths, but owner ops flips remain** — story text (OpenAI), avatars (OpenAI), narration (Azure) are migrated. Residual: set `DISABLE_GEMINI_IMAGE=1` on Railway + enable Zero Data Retention (MT-295); confirm `ALLOW_DIRECT_GEMINI_IMAGE` stays unset (MT-309); the LLM-moderator decouple is in a pending PR (tonight).
 2. **COPPA launch-gate config flips (owner, Railway)** — `ENFORCE_RESOLVED_AGE`, `COPPA_REQUIRE_VERIFIED_CONSENT`, `COPPA_REQUIRE_CURRENT_POLICY_VERSION` all default OFF so testers aren't broken; flip in-order before public launch (MT-310). Full checklist in `docs/LEGAL_LIABILITY_AUDIT_2026-06-28.md`. `ENCRYPTION_KEY` still unset in prod → server-side BYOK key-save 500s until set (MT-238).
 3. **Clinical/legal external sign-off outstanding** — Adolescent antihero band is gated OFF pending clinical review (MT-266c; packet ready at `docs/CLINICAL_REVIEW_ADOLESCENT_ANTIHERO.md`); COPPA verifiable-consent mechanics + crisis-flow US-hardcoding route to counsel/clinician (`docs/SAFETY_AUDIT_REMEDIATION.md`).
-4. **Azure AI Speech trial lapses ~2026-07-14** — convert free→Pay-As-You-Go before then or narration degrades to on-device voice (MT-259; calendar reminder set 2026-07-09).
-5. **Backlog is verification-heavy** — most open MTs are device/browser verification of already-shipped fixes or owner ops, not unstarted code. Art recommissions (MT-268/270/271/272/281/282/287) need Imagen + owner taste.
-6. **Local `backend_errors.log`** carries only dev/test noise (unset keys, dev JWT, Redis-down breaker by design) — not production errors.
+4. **Backlog is verification-heavy** — most open MTs are device/browser verification of already-shipped fixes or owner ops, not unstarted code. Art recommissions (MT-268/270/271/272/281/282/287) need Imagen + owner taste.
+5. **Local `backend_errors.log`** carries only dev/test noise (unset keys, dev JWT, Redis-down breaker by design) — not production errors.
+
+> Resolved 2026-07-12: Azure AI Speech subscription converted free→Pay-As-You-Go, owner-verified in the portal (MT-259 closed) — the ~2026-07-14 trial-lapse risk is gone.
 
 ## Planned (v1.1+)
 
