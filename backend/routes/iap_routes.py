@@ -16,18 +16,19 @@ endpoints validate the receipt with Apple/Google server-side, then resolve the
 tier and call the SHARED `apply_entitlement()` so all three channels (Stripe,
 Apple, Google) write entitlement through one function.
 
-PHASE 1 IS A SCAFFOLD. The Apple/Google API calls are stubbed with explicit
-TODOs and a feature flag — the real calls need owner-provided credentials
-(Apple App Store Server API key, Google service-account JSON) that are out of
-this task's scope. Without them, `IAP_VERIFICATION_ENABLED` defaults off and
-the endpoints return 503 rather than silently granting entitlement.
+Credentials are owner-provisioned (APP_STORE_SHARED_SECRET, Google
+service-account JSON, GOOGLE_PUBSUB_AUDIENCE, Apple root CA). Without them the
+verify endpoints fail CLOSED behind `IAP_VERIFICATION_ENABLED` (503, never a
+blind grant) and the notification endpoints fail CLOSED at the signature gate
+(503, never a blind ACK).
 """
 
+import base64
 import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -41,8 +42,10 @@ try:
     from ..models.iap_event import (
         STORE_APPLE,
         STORE_GOOGLE,
+        IapNotificationEvent,
         IapPurchase,
     )
+    from ..models.user import User
     from ..services.entitlement_service import FREE_TIER, apply_entitlement
     from ..utils.iap_notification_verify import (
         IapVerificationConfigError,
@@ -56,8 +59,10 @@ except ImportError:  # pragma: no cover - flat-module layout
     from models.iap_event import (
         STORE_APPLE,
         STORE_GOOGLE,
+        IapNotificationEvent,
         IapPurchase,
     )
+    from models.user import User
     from services.entitlement_service import FREE_TIER, apply_entitlement
     from utils.iap_notification_verify import (
         IapVerificationConfigError,
@@ -81,6 +86,11 @@ _PRODUCT_TIER_MAP: Dict[str, str] = {
     "premium_annual": "premium",
     "family_monthly": "family",
 }
+
+# Store statuses that grant the paid tier. Anything else (expired / on_hold /
+# refunded / inactive / ...) drops the user to FREE. Must stay a subset of
+# entitlement_service._ACCESS_STATUSES.
+_GRANTING_STATUSES = ("active", "trialing", "grace_period")
 
 
 def _verification_enabled() -> bool:
@@ -232,7 +242,7 @@ def _handle_verify(*, store: str):
 
     # --- Record the store purchase + apply entitlement --------------------
     try:
-        _upsert_iap_purchase(
+        record = _upsert_iap_purchase(
             user_id=user.id,
             store=store,
             product_id=product_id,
@@ -242,11 +252,31 @@ def _handle_verify(*, store: str):
             expires_at=expires_at,
             event_time=datetime.now(timezone.utc),
         )
+        if record is None or str(record.user_id) != str(user.id):
+            # Ownership guard (audit P2#16): the receipt is already registered
+            # to a DIFFERENT account. _upsert_iap_purchase refused to reassign
+            # the row — and entitlement must follow the same verdict, or one
+            # shared receipt would unlock premium on any number of accounts.
+            db.session.rollback()
+            logger.warning(
+                "IAP %s verify: receipt txn already registered to another "
+                "account — refusing to grant user %s",
+                store,
+                user.id,
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "This purchase is already linked to another "
+                        "account",
+                        "code": "receipt_owned_elsewhere",
+                    }
+                ),
+                409,
+            )
         apply_entitlement(
             user,
-            tier=(
-                tier if status in ("active", "trialing", "grace_period") else FREE_TIER
-            ),
+            tier=(tier if status in _GRANTING_STATUSES else FREE_TIER),
             status=status,
             period_end=expires_at,
             source=store,
@@ -285,26 +315,23 @@ def apple_server_notifications():
     `signedPayload` JWS; the payload's `notificationUUID` is the dedup key.
 
     SECURITY GATE (S-06): the `signedPayload` JWS is verified against Apple's
-    root CA BEFORE anything else. An unverifiable payload is rejected with 403;
-    a missing-config situation (Apple root CA not bundled) fails CLOSED with
+    root CA BEFORE anything else (as is the inner `signedTransactionInfo` JWS
+    before it is trusted). An unverifiable payload is rejected with 403; a
+    missing-config situation (Apple root CA not bundled) fails CLOSED with
     503 — never a blind ACK.
 
-    TODO(STORE-1 phase 2 / owner): implement entitlement application.
-      1. Parse the `signedPayload` JWS.  [DONE — verified below]
-      2. Verify the x5c certificate chain against Apple's root CA.  [DONE]
-      3. Decode `notificationType` / `subtype` and the `data.signedTransactionInfo`
-         + `data.signedRenewalInfo` to get product, expiry and state.
-      4. Map originalTransactionId -> IapPurchase, apply ordering guard against
-         `last_event_time`, update status/expiry, and call apply_entitlement().
-    Requires the App Store Server API config (issuer ID, key ID, .p8 key).
+    Response contract (Apple retries any non-200 up to 5 times over 72h):
+      200 — processed, duplicate, stale, or nothing to apply.
+      403 — signature verification failed.
+      404 — transaction unknown here (the /verify call that creates the
+            IapPurchase row may not have landed yet — retry converges).
+      500 — transient DB failure (retry).
+      503 — verification not configured (fail closed).
     """
     body = request.get_json(silent=True) or {}
-    signed_payload = body.get("signedPayload")
     try:
-        # Verified payload is intentionally NOT consumed yet — entitlement
-        # mutation is the phase-2 TODO above. This gate only proves the
-        # request is genuinely from Apple before the stub ACKs it.
-        verify_apple_jws(signed_payload)
+        payload = verify_apple_jws(body.get("signedPayload"))
+        return _handle_apple_notification(payload)
     except IapVerificationConfigError:
         logger.error("Apple S2S notification: verification not configured")
         return (
@@ -318,8 +345,10 @@ def apple_server_notifications():
     except IapVerificationError as exc:
         logger.warning("Apple S2S notification rejected: %s", exc)
         return jsonify({"error": "notification verification failed"}), 403
-
-    return _handle_notification_stub(store=STORE_APPLE)
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.exception("Apple S2S notification: DB error")
+        return jsonify({"error": "could not record notification"}), 500
 
 
 @iap_routes.route("/iap/google/notifications", methods=["POST"])
@@ -328,27 +357,30 @@ def google_server_notifications():
 
     Delivered via Google Cloud Pub/Sub: the request body is a Pub/Sub envelope
     whose `message.data` is base64 JSON carrying `subscriptionNotification`
-    (with `purchaseToken` and `notificationType`).
+    (with `purchaseToken` and `notificationType`) or
+    `voidedPurchaseNotification` (refunds). The envelope `messageId` is the
+    dedup key. The notification body is never trusted for state — the
+    authoritative subscription state is re-queried from the Play Developer API
+    via the same `_verify_with_google` path the verify endpoint uses.
 
     SECURITY GATE (S-06): the Pub/Sub push OIDC bearer token is verified
     against Google's public keys (audience = GOOGLE_PUBSUB_AUDIENCE) BEFORE
     anything else. A missing/invalid token is rejected with 403; an unset
     GOOGLE_PUBSUB_AUDIENCE fails CLOSED with 503 — never a blind ACK.
 
-    TODO(STORE-1 phase 2 / owner): implement entitlement application.
-      1. (Recommended) verify the Pub/Sub push OIDC token.  [DONE — below]
-      2. Base64-decode `message.data`; read `purchaseToken` + `notificationType`.
-      3. Re-query the Google Play Developer API for the authoritative
-         subscription state (never trust the notification body alone).
-      4. Map purchaseToken -> IapPurchase, apply the ordering guard, update
-         status/expiry, and call apply_entitlement().
-    Requires the Google service-account JSON with Play Developer API access.
+    Response contract (Pub/Sub redelivers any non-2xx with backoff):
+      200 — processed, duplicate, or nothing to apply.
+      400 — undecodable message data (genuine-but-malformed; will retry).
+      403 — OIDC verification failed.
+      404 — purchase token unknown here (the /verify call that creates the
+            IapPurchase row may not have landed yet — redelivery converges).
+      500 — transient DB failure (retry).
+      502 — Play Developer API unreachable (retry).
+      503 — verification / Play API credentials not configured (fail closed).
     """
     try:
-        # Verified claims intentionally not consumed yet — entitlement
-        # mutation is the phase-2 TODO above. This gate only proves the
-        # request is a genuine Google Pub/Sub push before the stub ACKs it.
         verify_google_pubsub_oidc(request)
+        return _handle_google_notification(request.get_json(silent=True) or {})
     except IapVerificationConfigError:
         logger.error("Google S2S notification: verification not configured")
         return (
@@ -362,26 +394,443 @@ def google_server_notifications():
     except IapVerificationError as exc:
         logger.warning("Google S2S notification rejected: %s", exc)
         return jsonify({"error": "notification verification failed"}), 403
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.exception("Google S2S notification: DB error")
+        return jsonify({"error": "could not record notification"}), 500
+    except Exception:  # noqa: BLE001 - Play API network errors -> 502
+        db.session.rollback()
+        logger.exception("Google S2S notification: Play API re-query raised")
+        return jsonify({"error": "could not reach the store"}), 502
 
-    return _handle_notification_stub(store=STORE_GOOGLE)
+
+def _ack(handled: bool, reason: Optional[str] = None, status_code: int = 200):
+    """Uniform notification response."""
+    body: Dict[str, Any] = {
+        "status": "processed" if handled else "acknowledged",
+        "handled": handled,
+    }
+    if reason:
+        body["reason"] = reason
+    return jsonify(body), status_code
 
 
-def _handle_notification_stub(*, store: str):
-    """Phase-1 placeholder for the S2S notification handlers.
+def _naive_utc(value: Optional[datetime]) -> Optional[datetime]:
+    """Normalize an aware datetime to the naive-UTC convention the DB uses."""
+    if value is not None and value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
 
-    Records the notification for observability (and dedup, once the IDs are
-    parsed) and ACKs with 200 so the store does not enter an endless retry
-    loop while the full handler is still being built. It deliberately does NOT
-    mutate any entitlement — that is gated on the phase-2 implementation above.
+
+def _record_notification_event(
+    *,
+    store: str,
+    notification_id: str,
+    notification_type: Optional[str],
+    notification_time: Optional[datetime],
+) -> bool:
+    """Insert the dedup row for a store notification ID.
+
+    Returns True if this is the first delivery (row flushed, NOT yet
+    committed — the caller commits atomically with the entitlement write, so a
+    failure later re-opens the dedup window for the store's retry). Returns
+    False on a duplicate delivery.
     """
-    logger.warning(
-        "IAP %s S2S notification received but handler is a Phase-1 stub — "
-        "acknowledged without applying entitlement (STORE-1 phase 2 TODO).",
-        store,
+    event = IapNotificationEvent(
+        store=store,
+        notification_id=notification_id,
+        notification_type=notification_type,
+        notification_time=_naive_utc(notification_time),
     )
-    # 200 so Apple/Google stop retrying; once the real handler lands it will
-    # parse the payload, dedup on the notification ID, and apply entitlement.
-    return jsonify({"status": "acknowledged", "handled": False}), 200
+    db.session.add(event)
+    try:
+        db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        return False
+    return True
+
+
+def _apply_notification_state(
+    *,
+    store: str,
+    purchase: IapPurchase,
+    product_id: Optional[str],
+    status: str,
+    expires_at: Optional[datetime],
+    event_time: Optional[datetime],
+    cancel_at_period_end: Optional[bool] = None,
+) -> bool:
+    """Write a store-notified subscription state through the shared helpers.
+
+    Resolves the tier, updates the IapPurchase row (via `_upsert_iap_purchase`,
+    which owns the ordering + ownership guards) and applies entitlement to the
+    row's user. Flushes but does NOT commit — the caller commits atomically
+    with the dedup row. Returns False when the user row no longer exists.
+    """
+    tier = _tier_for_product(product_id) or purchase.tier
+    _upsert_iap_purchase(
+        user_id=purchase.user_id,
+        store=store,
+        product_id=product_id or purchase.product_id,
+        tier=tier,
+        store_transaction_id=purchase.store_transaction_id,
+        status=status,
+        expires_at=expires_at,
+        event_time=event_time,
+    )
+
+    user = db.session.get(User, purchase.user_id)
+    if user is None:
+        logger.error(
+            "IAP %s notification: purchase %s references missing user %s — "
+            "recorded store state without entitlement",
+            store,
+            purchase.store_transaction_id,
+            purchase.user_id,
+        )
+        return False
+
+    apply_entitlement(
+        user,
+        tier=(tier if status in _GRANTING_STATUSES else FREE_TIER),
+        status=status,
+        period_end=expires_at,
+        cancel_at_period_end=cancel_at_period_end,
+        source=store,
+        commit=False,
+    )
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Apple notification handling
+# ---------------------------------------------------------------------------
+
+
+def _apple_notification_state(
+    notification_type: str,
+    subtype: Optional[str],
+    txn: Dict[str, Any],
+) -> Tuple[str, Optional[datetime], Optional[bool]]:
+    """Map a V2 notification + decoded transaction to (status, expires_at,
+    cancel_at_period_end).
+
+    State is derived from the transaction fields wherever possible (Apple's
+    recommended state-over-event approach); the notification type only breaks
+    the ties the transaction can't (grace period vs. billing retry). A
+    subscription with no expiry fails CLOSED to inactive — we only sell
+    auto-renewable subscriptions, which always carry `expiresDate`.
+    """
+    expires_at = _apple_ms_to_datetime(txn.get("expiresDate"))
+
+    cancel_at_period_end: Optional[bool] = None
+    if notification_type == "DID_CHANGE_RENEWAL_STATUS":
+        if subtype == "AUTO_RENEW_DISABLED":
+            cancel_at_period_end = True
+        elif subtype == "AUTO_RENEW_ENABLED":
+            cancel_at_period_end = False
+
+    # A revoked/refunded transaction never grants, whatever the expiry says.
+    if txn.get("revocationDate") is not None or notification_type in (
+        "REFUND",
+        "REVOKE",
+    ):
+        return "refunded", expires_at, cancel_at_period_end
+
+    if notification_type == "DID_FAIL_TO_RENEW":
+        # Billing retry: access continues only inside Apple's grace period.
+        if subtype == "GRACE_PERIOD":
+            return "grace_period", expires_at, cancel_at_period_end
+        return "on_hold", expires_at, cancel_at_period_end
+
+    if notification_type in ("EXPIRED", "GRACE_PERIOD_EXPIRED"):
+        return "expired", expires_at, cancel_at_period_end
+
+    # SUBSCRIBED / DID_RENEW / DID_CHANGE_RENEWAL_* / OFFER_REDEEMED / ... —
+    # trust the transaction's own expiry window.
+    if expires_at is None or expires_at <= datetime.now(timezone.utc):
+        return "inactive", expires_at, cancel_at_period_end
+    return "active", expires_at, cancel_at_period_end
+
+
+def _handle_apple_notification(payload: Dict[str, Any]):
+    """Apply a verified App Store Server Notifications V2 payload.
+
+    `payload` is the decoded (signature-verified) outer JWS. The inner
+    `data.signedTransactionInfo` JWS is verified with the same Apple root CA
+    chain before any field of it is trusted.
+    """
+    notification_type = payload.get("notificationType") or ""
+    subtype = payload.get("subtype")
+    notification_uuid = payload.get("notificationUUID")
+    signed_txn = (payload.get("data") or {}).get("signedTransactionInfo")
+
+    if not signed_txn or not notification_uuid:
+        # TEST notifications and summary/external-purchase payloads carry no
+        # per-transaction state — nothing to apply. ACK so Apple stops.
+        logger.info(
+            "Apple S2S notification %s (%s): no transaction payload — "
+            "acknowledged without entitlement change",
+            notification_type or "<untyped>",
+            notification_uuid or "no-uuid",
+        )
+        return _ack(False, reason="no transaction payload")
+
+    # The inner transaction JWS is signed the same way as the envelope; verify
+    # it before trusting any field (raises -> 403/503 in the route).
+    txn = verify_apple_jws(signed_txn)
+
+    # Defense in depth: Apple's root CA signs notifications for EVERY app, so
+    # a genuine payload may belong to someone else's app. The txn-id -> row
+    # lookup below is the primary gate (unknown -> 404); when IOS_BUNDLE_ID is
+    # set, reject foreign-app payloads explicitly as well.
+    expected_bundle = (os.getenv("IOS_BUNDLE_ID") or "").strip()
+    txn_bundle = txn.get("bundleId")
+    if expected_bundle and txn_bundle and txn_bundle != expected_bundle:
+        logger.warning(
+            "Apple S2S notification %s is for bundle %s, not ours — "
+            "acknowledged without entitlement change",
+            notification_uuid,
+            txn_bundle,
+        )
+        return _ack(False, reason="bundle mismatch")
+
+    original_txn_id = txn.get("originalTransactionId")
+    if not original_txn_id:
+        logger.error(
+            "Apple S2S notification %s has no originalTransactionId — "
+            "acknowledged without entitlement change",
+            notification_uuid,
+        )
+        return _ack(False, reason="no originalTransactionId")
+
+    purchase = (
+        db.session.query(IapPurchase)
+        .filter_by(store_transaction_id=original_txn_id)
+        .first()
+    )
+    if purchase is None:
+        # The purchase's /verify call may not have landed yet (the SUBSCRIBED
+        # notification often races it by seconds). Non-200 -> Apple retries in
+        # 1h, by which time the row exists. Nothing is committed on this path,
+        # so the retry reprocesses from scratch.
+        logger.warning(
+            "Apple S2S notification %s: unknown originalTransactionId — "
+            "requesting retry",
+            notification_uuid,
+        )
+        return _ack(False, reason="transaction unknown", status_code=404)
+
+    event_time = _apple_ms_to_datetime(
+        payload.get("signedDate") or txn.get("signedDate")
+    )
+
+    if not _record_notification_event(
+        store=STORE_APPLE,
+        notification_id=notification_uuid,
+        notification_type=notification_type,
+        notification_time=event_time,
+    ):
+        logger.info(
+            "Apple S2S notification %s already processed — duplicate delivery",
+            notification_uuid,
+        )
+        return _ack(False, reason="duplicate")
+
+    # Ordering guard: Apple state is derived from THIS payload, so a stale
+    # out-of-order delivery must not regress entitlement (e.g. an old EXPIRED
+    # arriving after a newer DID_RENEW). The duplicate row above still commits,
+    # so the same stale notification won't be reconsidered on a redelivery.
+    stale = (
+        event_time is not None
+        and purchase.last_event_time is not None
+        and _naive_utc(event_time) < purchase.last_event_time
+    )
+    if stale:
+        logger.warning(
+            "Apple S2S notification %s (%s) predates last applied state — "
+            "dropped as stale",
+            notification_uuid,
+            notification_type,
+        )
+        db.session.commit()
+        return _ack(False, reason="stale")
+
+    status, expires_at, cancel_at_period_end = _apple_notification_state(
+        notification_type, subtype, txn
+    )
+    applied = _apply_notification_state(
+        store=STORE_APPLE,
+        purchase=purchase,
+        product_id=txn.get("productId"),
+        status=status,
+        expires_at=expires_at,
+        event_time=event_time,
+        cancel_at_period_end=cancel_at_period_end,
+    )
+    db.session.commit()
+
+    logger.info(
+        "Apple S2S notification %s applied: type=%s subtype=%s status=%s",
+        notification_uuid,
+        notification_type,
+        subtype,
+        status,
+    )
+    return _ack(applied, reason=None if applied else "user missing")
+
+
+# ---------------------------------------------------------------------------
+# Google notification handling
+# ---------------------------------------------------------------------------
+
+
+def _decode_pubsub_data(message: Dict[str, Any]) -> Dict[str, Any]:
+    """Decode the base64 JSON `message.data` of a Pub/Sub envelope."""
+    raw = message.get("data")
+    if not raw or not isinstance(raw, str):
+        raise ValueError("Pub/Sub message has no data")
+    decoded = json.loads(base64.b64decode(raw))
+    if not isinstance(decoded, dict):
+        raise ValueError("Pub/Sub message data is not a JSON object")
+    return decoded
+
+
+def _handle_google_notification(envelope: Dict[str, Any]):
+    """Apply a verified Google Real-Time Developer Notification.
+
+    The RTDN body is only used to locate the subscription (purchase token) —
+    the authoritative state is re-queried from the Play Developer API, so an
+    out-of-order delivery still applies the CURRENT state and needs no
+    payload-level ordering guard (`event_time` is the query time, matching the
+    verify endpoint's convention). The exception is `voidedPurchaseNotification`
+    (refund), which is applied directly: revocation must not depend on how the
+    re-queried state presents it.
+    """
+    message = envelope.get("message") or {}
+    message_id = message.get("messageId")
+
+    if not message_id or not message.get("data"):
+        logger.info(
+            "Google S2S notification without message data — acknowledged "
+            "without entitlement change"
+        )
+        return _ack(False, reason="no message data")
+
+    try:
+        notification = _decode_pubsub_data(message)
+    except (ValueError, json.JSONDecodeError) as exc:
+        logger.error("Google S2S notification %s undecodable: %s", message_id, exc)
+        return jsonify({"error": "undecodable Pub/Sub message data"}), 400
+
+    sub_notification = notification.get("subscriptionNotification") or {}
+    voided_notification = notification.get("voidedPurchaseNotification") or {}
+    purchase_token = sub_notification.get("purchaseToken") or voided_notification.get(
+        "purchaseToken"
+    )
+    notification_type = (
+        "voided"
+        if voided_notification
+        else str(sub_notification.get("notificationType") or "")
+    )
+
+    if not purchase_token:
+        # testNotification (or an unhandled kind, e.g. one-time products,
+        # which we do not sell) — nothing to apply.
+        logger.info(
+            "Google S2S notification %s carries no purchase token "
+            "(kinds: %s) — acknowledged without entitlement change",
+            message_id,
+            sorted(k for k in notification if k != "version"),
+        )
+        return _ack(False, reason="no purchase token")
+
+    purchase = (
+        db.session.query(IapPurchase)
+        .filter_by(store_transaction_id=purchase_token)
+        .first()
+    )
+    if purchase is None:
+        # The /verify call that creates the row may not have landed yet —
+        # non-2xx makes Pub/Sub redeliver with backoff until it converges.
+        # Nothing is committed on this path.
+        logger.warning(
+            "Google S2S notification %s: unknown purchase token (…%s) — "
+            "requesting redelivery",
+            message_id,
+            purchase_token[-8:],
+        )
+        return _ack(False, reason="purchase unknown", status_code=404)
+
+    notification_time = _apple_ms_to_datetime(notification.get("eventTimeMillis"))
+
+    if voided_notification:
+        # Refund/void: revoke directly off the store's explicit signal.
+        if not _record_notification_event(
+            store=STORE_GOOGLE,
+            notification_id=message_id,
+            notification_type=notification_type,
+            notification_time=notification_time,
+        ):
+            return _ack(False, reason="duplicate")
+        applied = _apply_notification_state(
+            store=STORE_GOOGLE,
+            purchase=purchase,
+            product_id=purchase.product_id,
+            status="refunded",
+            expires_at=purchase.expires_at,
+            event_time=datetime.now(timezone.utc),
+        )
+        db.session.commit()
+        logger.info(
+            "Google S2S notification %s applied: voided purchase — refunded",
+            message_id,
+        )
+        return _ack(applied, reason=None if applied else "user missing")
+
+    # Re-query the authoritative subscription state (never trust the RTDN
+    # body for state). Raises IapVerificationConfigError -> 503 / network
+    # errors -> 502 in the route; both make Pub/Sub redeliver.
+    product_id = sub_notification.get("subscriptionId") or purchase.product_id
+    verified = _verify_with_google(purchase_token, product_id)
+    if not verified.get("valid"):
+        # A token Google no longer recognizes, or a product mismatch. Do NOT
+        # revoke off a failed lookup — log loudly and ACK so this doesn't
+        # retry forever; the daily reconciliation/verify path stays authoritative.
+        logger.error(
+            "Google S2S notification %s: re-query did not validate (%s) — "
+            "no entitlement change",
+            message_id,
+            verified.get("reason"),
+        )
+        return _ack(False, reason="re-query did not validate")
+
+    if not _record_notification_event(
+        store=STORE_GOOGLE,
+        notification_id=message_id,
+        notification_type=notification_type,
+        notification_time=notification_time,
+    ):
+        return _ack(False, reason="duplicate")
+
+    applied = _apply_notification_state(
+        store=STORE_GOOGLE,
+        purchase=purchase,
+        product_id=product_id,
+        status=verified.get("status", "inactive"),
+        expires_at=verified.get("expires_at"),
+        event_time=datetime.now(timezone.utc),
+    )
+    db.session.commit()
+
+    logger.info(
+        "Google S2S notification %s applied: rtdn_type=%s status=%s",
+        message_id,
+        notification_type,
+        verified.get("status"),
+    )
+    return _ack(applied, reason=None if applied else "user missing")
 
 
 # ===========================================================================
