@@ -60,14 +60,16 @@ void main() {
     expect(find.text('Start a Hero Saga'), findsOneWidget);
   });
 
-  testWidgets('Adult Creative Brief has no antihero entry (no backend tier)',
-      (tester) async {
+  testWidgets(
+      'Adult Creative Brief shows the "Start a Hero Saga" entry '
+      '(rides the Creator tier), never the antihero one', (tester) async {
     silenceAssetErrors();
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(subject(adultTheme, 25));
     await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Start a Hero Saga'), findsOneWidget);
+    // The antihero "double life" flow stays Adolescent-only.
     expect(find.text('Live a double life'), findsNothing);
-    expect(find.text('Start a Hero Saga'), findsNothing);
   });
 }

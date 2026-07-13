@@ -530,3 +530,48 @@ def test_creator_prompt_derives_villain_and_problem_when_missing():
     )
     assert any(v["name"] in prompt for v in CREATOR_VILLAINS.values())
     assert any(p["verb"] in prompt for p in CREATOR_PROBLEMS.values())
+
+
+# --- Adult (18+) rides the Creator tier -------------------------------------
+# The client (AgeBand.usesHeroSaga + SuperheroEntryScreen.visualBand) now
+# exposes the full Hero Saga loop to Adult users; the backend has routed 18+
+# to the Creator builder since the T9 dispatch fix. These lock the two halves
+# together: an adult request must land on the Creator template AND honor a
+# returning hero's prior_saga exactly like a 13-14 request does.
+
+
+def test_adult_18plus_routes_to_creator_builder():
+    prompt = PromptService.build_story_prompt(
+        character="Dana",
+        theme="superhero",
+        age=34,
+        hero_power="strategist",
+    )
+    assert "Creator band" in prompt
+
+
+def test_adult_18plus_prior_saga_threads_continuity_and_callback():
+    prior = {
+        "issue_number": 3,
+        "nemesis": "The Optimizer",
+        "nemesis_status": "still-at-large",
+        "what_changed": "Dana traced the shell company to the marina",
+        "what_it_cost": "Burned her source at the records office",
+        "next_hook": "The ledger page was missing exactly one name",
+        "hero_code": "Never trade someone else's secret",
+        "allies": ["Priya"],
+        "key_choices": ["Let the courier walk to protect Priya"],
+    }
+    prompt = PromptService.build_story_prompt(
+        character="Dana",
+        theme="superhero",
+        age=34,
+        hero_power="strategist",
+        prior_saga=prior,
+    )
+    assert "CONTINUITY" in prompt and "ISSUE #3" in prompt
+    assert "The Optimizer" in prompt
+    assert "Never trade someone else's secret" in prompt
+    # The Creator tier's consequence-callback mandate must fire for adults too.
+    assert "CONSEQUENCE CALLBACK" in prompt
+    assert "Burned her source at the records office" in prompt

@@ -248,8 +248,30 @@ void main() {
     expect(find.text('🦸'), findsOneWidget);
   });
 
-  testWidgets('Adult band does NOT show the superhero button', (tester) async {
-    await expectNoSuperheroButton(tester, band: AgeBand.adult);
+  testWidgets('Adult band shows the "Be a superhero!" button', (tester) async {
+    // Adult (18+) joined the Hero Saga bands (rides the Creator tier;
+    // AgeBand.usesHeroSaga gates the entry card), so the gated button must
+    // render for adults too. Sprout is now the only band without it.
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final wd = _makeWizardData(age: 25);
+    final imagineCtl = TextEditingController();
+    final wishCtl = TextEditingController();
+    addTearDown(imagineCtl.dispose);
+    addTearDown(wishCtl.dispose);
+
+    await tester.pumpWidget(_bootstrap(
+      wizardData: wd,
+      band: AgeBand.adult,
+      imagineCtl: imagineCtl,
+      wishCtl: wishCtl,
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Be a superhero!'), findsOneWidget);
+    expect(find.text('🦸'), findsOneWidget);
   });
 
   testWidgets(

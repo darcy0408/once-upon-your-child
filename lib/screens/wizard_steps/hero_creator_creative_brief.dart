@@ -71,7 +71,8 @@ class CreativeBriefWidget extends StatelessWidget {
 
   /// Launches the superhero / antihero flow (costume -> Edge -> saga). Null
   /// for bands without a backend tier; when set, a "double life" entry CTA is
-  /// shown. Supplied for Creator (T9) and Adolescent (T10).
+  /// shown. Supplied for Creator (T9), Adolescent (T10), and Adult (18+ —
+  /// rides the Creator tier end to end).
   ///
   /// [forcedMode] pins [WizardData.heroMode] and skips the vibe chooser:
   ///   • null (the 'superhero' scenario tile) → Adolescent sees the vibe
@@ -971,14 +972,16 @@ class CreativeBriefWidget extends StatelessWidget {
 
   // ── antihero entry ───────────────────────────────────────────────────────
 
-  /// "Live a double life" CTA shown only for bands with a backend antihero
-  /// tier (Creator T9 / Adolescent T10) when [onLaunchSuperhero] is supplied.
-  /// Launches the costume -> Edge -> saga flow. Empty box otherwise.
+  /// "Live a double life" CTA shown only for bands with a backend superhero
+  /// tier (Creator T9 / Adolescent T10 / Adult riding T9) when
+  /// [onLaunchSuperhero] is supplied. Launches the costume -> Edge -> saga
+  /// flow. Empty box otherwise.
   Widget _buildAntiheroEntry(
       BuildContext context, AgeBandThemeData band, Color accent) {
     final launch = onLaunchSuperhero;
-    final supported =
-        band.band == AgeBand.creator || band.band == AgeBand.adolescent;
+    final supported = band.band == AgeBand.creator ||
+        band.band == AgeBand.adolescent ||
+        band.band == AgeBand.adult;
     if (launch == null || !supported) return const SizedBox.shrink();
     final isAdolescent = band.band == AgeBand.adolescent;
     final title = isAdolescent ? 'Live a double life' : 'Start a Hero Saga';

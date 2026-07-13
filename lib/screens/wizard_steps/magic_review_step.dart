@@ -559,11 +559,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         final isAdventurerBand = sagaAgeBand == AgeBand.adventurer;
         final isExplorerBand = sagaAgeBand == AgeBand.explorer;
         // MT-235 / antihero saga: the returnable saga now serves the
-        // Explorer (6-8), Adventurer (9-12), Creator (13-14), and Adolescent
-        // antihero (15-17) bands. Each has the welcome-back recap card + backend
-        // continuity/consequence-callback wired (Explorer/Adventurer omit
-        // what_it_cost by design); this gate is what feeds them the persisted
-        // saga data.
+        // Explorer (6-8), Adventurer (9-12), Creator (13-14), Adolescent
+        // antihero (15-17), and Adult (18+ — Creator tier) bands. Each has the
+        // welcome-back recap card + backend continuity/consequence-callback
+        // wired (Explorer/Adventurer omit what_it_cost by design); this gate
+        // is what feeds them the persisted saga data.
         // MT-286: gate the saga WRITE path on the shared `usesHeroSaga`
         // predicate (single source of truth, mirrored by the welcome-back READ
         // path) so Explorer can never silently regress to a Creator-only write.
@@ -723,8 +723,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             // Persistence failure is non-fatal.
           }
 
-          // MT-235 Phase 2 (the returnable saga): for a Creator OR Adolescent
-          // antihero, fold this Issue's emitted `saga_state` (nemesis / status /
+          // MT-235 Phase 2 (the returnable saga): for any saga band, fold
+          // this Issue's emitted `saga_state` (nemesis / status /
           // what_changed / next_hook — plus allies / defining_choice — surfaced
           // by the backend on superhero_meta) forward into the persisted
           // HeroSaga so the NEXT Issue opens on continuity. The hero's personal

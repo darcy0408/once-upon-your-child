@@ -347,18 +347,17 @@ class _ImagineItScreenState extends State<ImagineItScreen> {
               ),
             ),
           ),
-          // Superhero entry for Explorer (6-8), Adventurer (9-12), Creator
-          // (13-14 — Hero Saga), and Adolescent (15-17 — antihero "double
-          // life"). Backend prompt routing has a dedicated tier for each
-          // (T7/T8/T9 + T10_ANTIHERO_ADOLESCENT). Not exposed to Sprout or Adult.
-          if (Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.explorer ||
-              Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.adventurer ||
-              Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.creator ||
-              Theme.of(context).extension<AgeBandThemeData>()?.band ==
-                  AgeBand.adolescent) ...[
+          // Superhero entry for every Hero Saga band — Explorer (6-8),
+          // Adventurer (9-12), Creator (13-14), Adolescent (15-17 — antihero
+          // "double life"), and Adult (18+ — rides the Creator tier). Backend
+          // prompt routing has a dedicated tier for each (T7/T8/T9 +
+          // T10_ANTIHERO_ADOLESCENT; 18+ → T9). Not exposed here for Sprout,
+          // which reaches Superhero Mode from its idea list instead.
+          if (Theme.of(context)
+                  .extension<AgeBandThemeData>()
+                  ?.band
+                  .usesHeroSaga ??
+              false) ...[
             const SizedBox(height: 14),
             Row(
               children: [

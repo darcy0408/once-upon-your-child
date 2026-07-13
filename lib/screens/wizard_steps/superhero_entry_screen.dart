@@ -1,4 +1,4 @@
-// Superhero Mode (Sprout 3-5, Explorer 6-8, Adventurer 9-12) — entry dispatcher.
+// Superhero Mode (all bands, Sprout 3-5 through Adult 18+) — entry dispatcher.
 //
 // Reads the [heroProfileProvider] for the current character and renders
 // either the welcome-back screen (returning user) or the costume picker
@@ -39,6 +39,16 @@ class SuperheroEntryScreen extends ConsumerWidget {
     return 'temp_hero';
   }
 
+  /// The band whose superhero screens (costume, power roster, welcome-back
+  /// copy) an age band uses. Adult (18+) has no dedicated superhero screen
+  /// set; it rides the Creator (13-14) noir visuals and roster — the exact
+  /// mirror of the backend, which routes 18+ to the Creator "Hero Saga"
+  /// prompt tier and Creator villain/problem tables
+  /// (prompt_service.build_story_prompt / _superhero_band_for_age).
+  /// Every other band maps to itself.
+  static AgeBand visualBand(AgeBand band) =>
+      band == AgeBand.adult ? AgeBand.creator : band;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final characterId = resolveCharacterId(wizardData);
@@ -47,8 +57,8 @@ class SuperheroEntryScreen extends ConsumerWidget {
     // Sprout (3-5), Explorer (6-8), Adventurer (9-12), Creator (13-14 — Hero
     // Saga), and Adolescent (15-17 — antihero "double life"); each has its own
     // copy register, power roster, and backend prompt tier (T7/T8/T9 +
-    // T10_ANTIHERO_ADOLESCENT). Adult (18+): no tier yet.
-    final band = ageBandFromAge(wizardData.characterAge);
+    // T10_ANTIHERO_ADOLESCENT). Adult (18+) rides the Creator screens.
+    final band = visualBand(ageBandFromAge(wizardData.characterAge));
 
     return async.when(
       loading: () => _loadingScaffold(band),

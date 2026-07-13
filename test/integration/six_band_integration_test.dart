@@ -133,6 +133,7 @@ void main() {
       AgeBand.adventurer,
       AgeBand.creator,
       AgeBand.adolescent,
+      AgeBand.adult,
     };
     for (final band in AgeBand.values) {
       final shouldUse = sagaBands.contains(band);
@@ -148,9 +149,12 @@ void main() {
       expect(AgeBand.explorer.usesHeroSaga, isTrue);
     });
 
-    test('Sprout and Adult are NOT saga bands', () {
+    test('Sprout is the only band without a saga', () {
       expect(AgeBand.sprout.usesHeroSaga, isFalse);
-      expect(AgeBand.adult.usesHeroSaga, isFalse);
+    });
+
+    test('Adult (18+) IS a saga band — rides the Creator tier', () {
+      expect(AgeBand.adult.usesHeroSaga, isTrue);
     });
   });
 
