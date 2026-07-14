@@ -14,13 +14,14 @@ Channel-specific code (verifying a Stripe price ID, an Apple receipt, a Google
 token) lives in each channel's route module; this module only owns the final,
 channel-agnostic write.
 
-Phase 1 status:
-  - The IAP routes (`routes/iap_routes.py`) call `apply_entitlement()`.
-  - The Stripe webhook (`routes/webhook_handler.py`) still has its own
-    `_apply_subscription_updates()`. TODO(STORE-1 phase 2): migrate the Stripe
-    webhook onto `apply_entitlement()` so all three channels literally share
-    this function. It is deliberately NOT done in Phase 1 to avoid destabilising
-    the working, well-tested Stripe path.
+All three channels are live on this path (STORE-1 phase 2 complete):
+  - The IAP routes (`routes/iap_routes.py`) — Apple/Google verify + S2S
+    notification handlers.
+  - The Stripe webhook (`routes/webhook_handler.py`) —
+    `_apply_subscription_updates()` keeps the Stripe-specific stale-event
+    guard and per-user cursor, then delegates the column writes here.
+  - Gift redemption (`routes/gift_routes.py`) and the gift expiry sweep
+    (`tasks/subscription_tasks.py`).
 """
 
 import logging
@@ -63,8 +64,8 @@ def status_grants_access(tier: Optional[str], status: Optional[str]) -> bool:
 def apply_entitlement(
     user: User,
     *,
-    tier: str,
-    status: str,
+    tier: Optional[str],
+    status: Optional[str],
     period_end: Optional[datetime] = None,
     cancel_at_period_end: Optional[bool] = None,
     source: str = "unknown",
@@ -80,28 +81,34 @@ def apply_entitlement(
     Args:
         user: the User row to update.
         tier: resolved tier ('free' | 'premium' | 'family'). Unknown values
-            fail closed to 'free'.
+            fail closed to 'free'. None leaves the current tier untouched —
+            for status-only channel events (e.g. Stripe
+            invoice.payment_failed) that carry no tier information; this also
+            keeps non-store tiers (a legacy 'byok' row) from being clobbered
+            by such events.
         status: subscription status ('active' | 'trialing' | 'past_due' |
-            'canceled' | 'expired' | ...).
-        period_end: paid-through / renewal datetime (UTC), if known.
+            'canceled' | 'expired' | ...). None/empty leaves it untouched.
+        period_end: paid-through / renewal datetime (UTC), if known. None
+            leaves it untouched.
         cancel_at_period_end: whether the sub is set to lapse at period end.
+            None leaves it untouched.
         source: free-text channel label for logging ('stripe' | 'apple' |
             'google') — diagnostic only.
         commit: commit the session here. Pass False to batch with other writes.
     """
-    norm_tier = (tier or "").strip().lower()
-    if norm_tier not in PAID_TIERS and norm_tier != FREE_TIER:
-        logger.error(
-            "apply_entitlement: unknown tier '%s' from source '%s' for user "
-            "%s — failing closed to '%s'",
-            tier,
-            source,
-            getattr(user, "id", "?"),
-            FREE_TIER,
-        )
-        norm_tier = FREE_TIER
-
-    user.subscription_tier = norm_tier
+    if tier is not None:
+        norm_tier = tier.strip().lower()
+        if norm_tier not in PAID_TIERS and norm_tier != FREE_TIER:
+            logger.error(
+                "apply_entitlement: unknown tier '%s' from source '%s' for user "
+                "%s — failing closed to '%s'",
+                tier,
+                source,
+                getattr(user, "id", "?"),
+                FREE_TIER,
+            )
+            norm_tier = FREE_TIER
+        user.subscription_tier = norm_tier
     if status:
         user.subscription_status = status.strip().lower()
     if period_end is not None:
@@ -120,6 +127,6 @@ def apply_entitlement(
         "Entitlement applied for user %s via %s: tier=%s status=%s",
         getattr(user, "id", "?"),
         source,
-        norm_tier,
+        user.subscription_tier,
         user.subscription_status,
     )

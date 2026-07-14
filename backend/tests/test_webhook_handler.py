@@ -201,6 +201,109 @@ def test_payment_failed_marks_past_due(client, monkeypatch):
         assert updated.subscription_status == "past_due"
 
 
+def test_payment_failed_keeps_tier_and_period_end(client, monkeypatch):
+    # STORE-1 phase 2 pin: invoice.payment_failed is a status-only update.
+    # Routing it through the shared apply_entitlement() must not touch the
+    # tier or the paid-through date.
+    period_end = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=30)
+    with client.application.app_context():
+        user = _create_user(
+            subscription_tier="premium",
+            subscription_status="active",
+            current_period_end=period_end.replace(tzinfo=None),
+        )
+        user_id = user.id
+
+    event = _build_event(
+        "invoice.payment_failed",
+        {
+            "metadata": {"user_id": user_id},
+        },
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        updated = db.session.get(User, user_id)
+        assert updated.subscription_status == "past_due"
+        assert updated.subscription_tier == "premium"
+        assert _timestamp(updated.current_period_end) == _timestamp(period_end)
+
+
+def test_unknown_metadata_tier_hint_fails_closed_to_free(client, monkeypatch):
+    # The metadata tier hint is client-supplied. When the price ID is
+    # unresolvable AND the hint is not a known tier, the shared
+    # apply_entitlement() fails closed to 'free' instead of writing the raw
+    # client string (pre-phase-2 the webhook wrote it verbatim).
+    with client.application.app_context():
+        user = _create_user(subscription_tier="free", subscription_status="inactive")
+        user_id = user.id
+
+    event = _build_event(
+        "customer.subscription.updated",
+        {
+            "metadata": {"user_id": user_id, "subscription_tier": "gold"},
+            "status": "active",
+            "current_period_end": int(datetime.now(timezone.utc).timestamp()),
+            "cancel_at_period_end": False,
+        },
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        updated = db.session.get(User, user_id)
+        assert updated.subscription_tier == "free"
+        assert updated.subscription_status == "active"
+
+
+def test_unexpanded_checkout_clears_period_end(client, monkeypatch):
+    # Stripe delivers checkout.session.completed with `subscription` as a bare
+    # ID (or absent) unless expansion was requested. The webhook's historical
+    # contract clears current_period_end in that case — the follow-up
+    # customer.subscription.updated event supplies the real date. Pin that the
+    # phase-2 delegation preserved the explicit clear.
+    stale_period_end = datetime.now(timezone.utc).replace(
+        microsecond=0, tzinfo=None
+    ) - timedelta(days=3)
+    with client.application.app_context():
+        user = _create_user(
+            subscription_tier="premium",
+            subscription_status="canceled",
+            current_period_end=stale_period_end,
+        )
+        user_id = user.id
+
+    event = _build_event(
+        "checkout.session.completed",
+        {
+            "client_reference_id": user_id,
+            "metadata": {"subscription_tier": "premium"},
+            # no "subscription" key — unexpanded payload
+        },
+    )
+    _mock_construct_event(monkeypatch, event)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 200
+
+    with client.application.app_context():
+        updated = db.session.get(User, user_id)
+        assert updated.subscription_tier == "premium"
+        assert updated.subscription_status == "active"
+        assert updated.current_period_end is None
+
+
 def test_invalid_signature_returns_401(client, monkeypatch):
     def _raise_signature_error(payload, sig_header, secret):
         raise stripe.SignatureVerificationError("bad signature", sig_header)

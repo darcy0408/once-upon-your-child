@@ -22,15 +22,13 @@ from backend.models.gift_code import (
 from backend.models.stripe_event import StripeSubscriptionCursor, StripeWebhookEvent
 from backend.models.user import User
 from backend.routes.stripe_routes import get_price_ids
+from backend.services.entitlement_service import FREE_TIER as _FREE_TIER
+from backend.services.entitlement_service import apply_entitlement
 from backend.utils.email_service import send_gift_code_email
 
 webhook_routes = Blueprint("webhook_routes", __name__)
 
 _UNSET = object()
-
-# Lowest / unpaid tier. Used as the fail-closed fallback when a subscription's
-# price ID cannot be mapped to a known paid tier.
-_FREE_TIER = "free"
 
 
 def _price_id_to_tier_map() -> Dict[str, str]:
@@ -668,16 +666,28 @@ def _apply_subscription_updates(
         )
         return
 
-    if tier is not _UNSET and tier:
-        user.subscription_tier = tier
-    if status is not _UNSET and status:
-        user.subscription_status = status
-    if period_end is not _UNSET:
-        user.current_period_end = period_end
-    if cancel_at_period_end is not _UNSET:
-        user.cancel_at_period_end = bool(cancel_at_period_end)
+    # STORE-1 phase 2: the column writes go through the shared single-writer
+    # so Stripe / Apple / Google entitlements can never drift. _UNSET (and a
+    # falsy tier/status) map onto apply_entitlement's None = leave-unchanged.
+    apply_entitlement(
+        user,
+        tier=tier if (tier is not _UNSET and tier) else None,
+        status=status if (status is not _UNSET and status) else None,
+        period_end=period_end if period_end is not _UNSET else None,
+        cancel_at_period_end=(
+            bool(cancel_at_period_end) if cancel_at_period_end is not _UNSET else None
+        ),
+        source="stripe",
+        commit=False,
+    )
+    # apply_entitlement treats period_end=None as leave-unchanged (the IAP and
+    # gift callers depend on that), but this webhook's historical contract is
+    # that an explicitly-passed None CLEARS the column — e.g. an unexpanded
+    # checkout.session.completed, where the follow-up subscription.updated
+    # event supplies the real date. Preserve that one difference here.
+    if period_end is not _UNSET and period_end is None:
+        user.current_period_end = None
 
-    db.session.add(user)
     # Advance the per-user high-water mark so a later replay of an older event
     # is recognised as stale.
     _advance_cursor(user.id, event_ts, event_id)
