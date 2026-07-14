@@ -61,4 +61,8 @@ the willingness-to-pay bullet with a prose-critique ask:
 > blunt sentences of it — would be worth more to me than a dozen bug reports.
 
 **Tracking:** log sends + replies informally; if volume grows, add a table like the clinician
-doc's. First sends: Eng Lit professor (2026-07-14, Gmail draft staged).
+doc's. First send: **Prof. Tomie Bitton** (English Faculty, CSU Global, tomie.bitton@csuglobal.edu,
+cell 405-332-6100) — NOT the cold template: she asked to see the app and pre-agreed to a
+follow-up ("Sounds great!", June 10 thread "An update on my app (and a thank you)"). Sent as a
+warm reply-in-thread 2026-07-14 delivering the promised link + the prose-critique ask. Pattern
+for future warm contacts: deliver on the promise in the existing thread, don't start cold.
