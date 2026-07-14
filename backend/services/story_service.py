@@ -589,6 +589,60 @@ def _pick_situation(seed: str | None = None) -> dict:
     return EXPLORER_SITUATION_MAP[random.choice(keys)]
 
 
+# "Once upon a time" carries half the rotation's weight (3 of 6 slots) — the
+# classic ritual is the point of the feature; the rest share the other half so
+# a 5-story month doesn't read copy-pasted.
+_EXPLORER_OPENER_ROTATION = (
+    "Once upon a time",
+    "Once upon a time",
+    "Once upon a time",
+    "One day",
+    "Long, long ago",
+    "Early one morning",
+)
+
+
+def _get_opening_rule(age: int, seed: str | None = None) -> str:
+    """Opening-line rule for the standard prompt, by band.
+
+    Sprout (≤5) always opens "Once upon a time" — at this age the ritual
+    predictability of the classic phrase is the feature, so it overrides the
+    vary-every-time fresh-opening rule the older bands get. Explorer (6-8)
+    keeps the phrase half the time and rotates other classic openers
+    otherwise, picked server-side (seed semantics mirror ``_pick_situation``)
+    so variety doesn't depend on the model. 9+ keeps the anti-sameness rule
+    unchanged.
+    """
+    if age <= 5:
+        return (
+            "- **STORY OPENING (MANDATORY)**: The story's very first words must be "
+            'exactly "Once upon a time" — every story, this exact phrase. It is a '
+            "comfort ritual at this age. Vary what happens AFTER the phrase from "
+            "story to story."
+        )
+    if age <= 8:
+        if seed is not None:
+            digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+            opener = _EXPLORER_OPENER_ROTATION[
+                int(digest, 16) % len(_EXPLORER_OPENER_ROTATION)
+            ]
+        else:
+            opener = random.choice(_EXPLORER_OPENER_ROTATION)
+        return (
+            "- **STORY OPENING (MANDATORY)**: The story's very first words must be "
+            f'exactly "{opener}". After that phrase, vary the entry point — do NOT '
+            'continue with the hero arriving at the setting or a "smelled like ..." '
+            "line; two stories about the same hero must not continue the same way."
+        )
+    return (
+        "- **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or "
+        'climbing into the setting, and do NOT open with a "smelled like ..." line. '
+        "Vary the entry point every time — begin in motion, mid-problem, in dialogue, "
+        "or somewhere unexpected. Two stories about the same hero must not start the "
+        "same way."
+    )
+
+
 def _build_real_life_echo(age: int, situation: dict, character: str) -> str:
     """Ambient SEL skill moment for the default story (no parent context).
 
@@ -1423,6 +1477,8 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
                 'choose consistently. Never address the reader as "you".'
             )
 
+        opening_rule = _get_opening_rule(age)
+
         return f"""
 {persona}
 
@@ -1448,7 +1504,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 {virtue_instruction}{emotional_spine}{real_life_echo}
 **WRITING GUIDELINES**:
 {pov_rule}
-- **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or climbing into the setting, and do NOT open with a "smelled like ..." line. Vary the entry point every time — begin in motion, mid-problem, in dialogue, or somewhere unexpected. Two stories about the same hero must not start the same way.
+{opening_rule}
 {craft_rules}
 - **Tone**: {config['notes']}
 {young_delight_rules}- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.{word_ceiling_note}{sprout_page_rule}

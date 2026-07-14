@@ -1430,3 +1430,59 @@ class TestRealLifeEcho:
         # "uh-oh feeling" is kid-facing by design (locked through-line) —
         # it must NEVER be added to the leak list.
         assert "uh-oh feeling" not in _META_LEAK_TERMS
+
+
+class TestOpeningRule:
+    """Age-banded story-opening rule (Sprout ritual / Explorer rotation / 9+ fresh)."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    def test_sprout_always_opens_once_upon_a_time(self, engine):
+        """Every Sprout prompt mandates the exact classic phrase."""
+        for age in (3, 4, 5):
+            prompt = engine.generate_enhanced_prompt(
+                character="Mia", theme="bedtime", age=age
+            )
+            assert 'exactly "Once upon a time"' in prompt
+            assert "FRESH OPENING" not in prompt
+
+    def test_explorer_gets_a_rotation_opener(self, engine):
+        """Explorer prompts mandate one opener from the rotation, chosen server-side."""
+        from backend.services.story_service import _EXPLORER_OPENER_ROTATION
+
+        for age in (6, 7, 8):
+            prompt = engine.generate_enhanced_prompt(
+                character="Milo", theme="adventure", age=age
+            )
+            assert "STORY OPENING (MANDATORY)" in prompt
+            assert any(
+                f'exactly "{opener}"' in prompt
+                for opener in set(_EXPLORER_OPENER_ROTATION)
+            )
+            assert "FRESH OPENING" not in prompt
+
+    def test_explorer_rotation_is_weighted_toward_classic(self):
+        """ "Once upon a time" holds exactly half the rotation's slots."""
+        from backend.services.story_service import _EXPLORER_OPENER_ROTATION
+
+        classic = _EXPLORER_OPENER_ROTATION.count("Once upon a time")
+        assert classic * 2 == len(_EXPLORER_OPENER_ROTATION)
+
+    def test_explorer_seeded_pick_is_deterministic(self):
+        """Same seed -> same opener, across calls (mirrors _pick_situation)."""
+        from backend.services.story_service import _get_opening_rule
+
+        a = _get_opening_rule(7, seed="stable-seed")
+        b = _get_opening_rule(7, seed="stable-seed")
+        assert a == b
+
+    def test_nine_plus_keeps_fresh_opening_rule(self, engine):
+        """Adventurer and up keep the anti-sameness rule, no fixed opener."""
+        for age in (9, 12, 16, 25):
+            prompt = engine.generate_enhanced_prompt(
+                character="Ana", theme="mystery", age=age
+            )
+            assert "FRESH OPENING (MANDATORY)" in prompt
+            assert "STORY OPENING (MANDATORY)" not in prompt
