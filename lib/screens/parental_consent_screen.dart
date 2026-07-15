@@ -645,7 +645,13 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   /// consent checkbox become available, so a child cannot complete consent
   /// alone. Reuses the shared [ParentalGateDialog] from the BYOK wizard.
   Future<void> _runParentGate() async {
-    final passed = await ParentalGateDialog.show(context);
+    final passed = await ParentalGateDialog.show(
+      context,
+      // Consent continues IN the app — don't reuse the default
+      // "opens an external website" wording (UX walkthrough 2026-07-15).
+      message: 'Quick check that a grown-up is holding the device. '
+          'Solve this to unlock the consent form.',
+    );
     if (!mounted) return;
     if (passed) {
       setState(() => _parentGatePassed = true);

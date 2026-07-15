@@ -1710,7 +1710,14 @@ class ApiServiceManager {
         // TimeoutException('Story generation polling timed out') below.
         final http.Response statusResponse;
         try {
-          statusResponse = await httpClient.get(statusUri).timeout(
+          // /task-status requires the same JWT as /generate-story (the authz
+          // hardening sweep gated it); polling without headers 401s forever,
+          // so the async 202 path could never complete on prod (2026-07-15
+          // walkthrough: adult Medium story spun until timeout while the
+          // client re-submitted duplicate generations).
+          statusResponse = await httpClient
+              .get(statusUri, headers: await authHeaders())
+              .timeout(
                 pollInterval * 2,
               );
         } on TimeoutException {

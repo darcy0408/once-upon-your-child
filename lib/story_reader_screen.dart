@@ -930,7 +930,10 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                                                   color: AppColors.gold.withValues(alpha: 0.8)),
                                               const SizedBox(width: 3),
                                               Text(
-                                                'ElevenLabs voice',
+                                                // Provider-neutral: the backend picks the voice
+                                                // provider (Azure first; ElevenLabs is 13+ opt-in),
+                                                // and the client is never told which one served.
+                                                'Storyteller voice',
                                                 style: GoogleFonts.quicksand(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w600,

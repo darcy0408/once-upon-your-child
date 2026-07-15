@@ -214,5 +214,71 @@ void main() {
         ),
       );
     });
+
+    test('async 202 path polls /task-status WITH auth headers', () async {
+      // Regression: /task-status is auth-gated server-side, but the poll GET
+      // was sent without headers → perpetual 401 → the async story path never
+      // completed on prod (2026-07-15 walkthrough). Pin that every status poll
+      // carries an Authorization header and that a complete envelope parses.
+      var statusPolls = 0;
+      // Well-formed unexpired JWT (no exp claim) so _isTokenExpired passes.
+      final fakeJwt = '${base64Url.encode(utf8.encode('{"alg":"none"}'))}'
+          '.${base64Url.encode(utf8.encode('{"sub":"user_test"}'))}'
+          '.sig';
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path.contains('auth')) {
+          return http.Response(
+              jsonEncode({
+                'token': fakeJwt,
+                'user_id': 'user_test',
+              }),
+              200);
+        }
+        if (path.contains('generate-story')) {
+          return http.Response(jsonEncode({'task_id': 'task-123'}), 202);
+        }
+        if (path.contains('task-status')) {
+          statusPolls++;
+          final auth = request.headers['Authorization'] ??
+              request.headers['authorization'];
+          expect(auth, isNotNull,
+              reason: '/task-status poll must send the JWT — an unauthenticated '
+                  'poll 401s forever and the async story path never completes');
+          expect(auth, isNotEmpty);
+          return http.Response(
+              jsonEncode({
+                'status': 'complete',
+                'result': {
+                  'story': {'story_text': 'Async story done'}
+                },
+              }),
+              200);
+        }
+        return http.Response('not found', 404);
+      });
+
+      // _ensureAuthenticated fetches the anonymous token through _testClient
+      // (not the per-call client), so route BOTH through the same mock and
+      // start from a clean auth slate.
+      await ApiServiceManager.resetAuthForTest();
+      ApiServiceManager.setTestClient(mockClient);
+      addTearDown(() async {
+        ApiServiceManager.setTestClient(null);
+        await ApiServiceManager.resetAuthForTest();
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Async Hero',
+        theme: 'Adventure',
+        age: 30,
+        currentFeeling: null,
+        client: mockClient,
+        requestTimeout: const Duration(seconds: 10),
+      );
+
+      expect(statusPolls, greaterThan(0));
+      expect(story.storyText, 'Async story done');
+    });
   });
 }
