@@ -19,16 +19,6 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
   late AnimationController _glowController;
   late Animation<double> _glowAnim;
 
-  // The shared card art reads too bright in the Sprout band. Nudge contrast
-  // up (×1.18) and brightness down so the scene art has more depth. Offset
-  // -53 keeps mid-tones near pivot: 128*(1-1.18) ≈ -23, plus -30 brightness.
-  static const ColorFilter _sproutContrastFilter = ColorFilter.matrix(<double>[
-    1.18, 0, 0, 0, -53, //
-    0, 1.18, 0, 0, -53, //
-    0, 0, 1.18, 0, -53, //
-    0, 0, 0, 1, 0, //
-  ]);
-
   @override
   void initState() {
     super.initState();
@@ -47,19 +37,18 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
     super.dispose();
   }
 
-  Widget _maybeToneDown(bool isSprout, Widget child) => isSprout
-      ? ColorFiltered(colorFilter: _sproutContrastFilter, child: child)
-      : child;
-
   @override
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isSprout = band.band == AgeBand.sprout;
-    // Audit S-02: the shared Imagine It art is a ~5-6yo girl with a picture
-    // book — far too young for the older bands. Each band from Adventurer up
-    // serves its own age-tuned, textless dreamscape; Sprout/Explorer keep the
-    // original. (Resolver mirrors sceneAsset() in hero_creator_scene_page.dart.)
+    // Audit S-02: the shared Imagine It art reads young — right for
+    // Sprout/Explorer, wrong above. Each band from Adventurer up serves its
+    // own age-tuned, textless dreamscape; Sprout/Explorer share a cozy
+    // child-and-owl night scene (cropped 18:11 from the original 1024²
+    // imagine_it_btn art — the old pale watercolor read washed out next to
+    // the other tiles). (Resolver mirrors sceneAsset() in
+    // hero_creator_scene_page.dart.)
     final sceneArtDir = switch (band.band) {
       AgeBand.adventurer => 'adventurer',
       AgeBand.creator => 'creator',
@@ -129,22 +118,19 @@ class _ImagineItHeroCardState extends State<ImagineItHeroCard>
                                 ? Colors.black.withAlpha(70)
                                 : Colors.transparent,
                           ),
-                          child: _maybeToneDown(
-                            isSprout,
-                            SafeAssetImage(
-                              asset,
-                              fit: BoxFit.cover,
-                              placeholder: Container(
-                                color: const Color(0xFF2C1B47),
-                                child: Center(
-                                  child: Text(
-                                    isSprout
-                                        ? 'Make One Up! ✨'
-                                        : 'Imagine It ✨',
-                                    style: GoogleFonts.fredoka(
-                                        color: const Color(0xFFFFD700),
-                                        fontSize: 22),
-                                  ),
+                          child: SafeAssetImage(
+                            asset,
+                            fit: BoxFit.cover,
+                            placeholder: Container(
+                              color: const Color(0xFF2C1B47),
+                              child: Center(
+                                child: Text(
+                                  isSprout
+                                      ? 'Make One Up! ✨'
+                                      : 'Imagine It ✨',
+                                  style: GoogleFonts.fredoka(
+                                      color: const Color(0xFFFFD700),
+                                      fontSize: 22),
                                 ),
                               ),
                             ),

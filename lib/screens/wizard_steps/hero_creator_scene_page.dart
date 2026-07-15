@@ -355,10 +355,18 @@ class HeroScenePage extends StatelessWidget {
         ),
       ),
     );
-    if (saved == true && band?.band == AgeBand.sprout) {
-      unawaited(onSpeakForSprout('Great idea! Tap next when you are ready.'));
-    }
     onChanged();
+    // Saving from the Imagine It screen is an explicit commit ("Use this
+    // idea!"), so carry the momentum forward instead of stranding the user
+    // back on the scene picker hunting for the Next arrow — preset tiles
+    // already auto-advance for ≤8 (MT-279), and after a save there is
+    // nothing left to browse for anyone.
+    if (saved == true) {
+      if (band?.band == AgeBand.sprout) {
+        unawaited(onSpeakForSprout('Great idea!'));
+      }
+      onContinue();
+    }
   }
 }
 
