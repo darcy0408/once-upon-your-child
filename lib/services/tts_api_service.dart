@@ -20,6 +20,23 @@ class TtsRateLimitException implements Exception {
   String toString() => 'TtsRateLimitException: ElevenLabs rate limit exceeded';
 }
 
+/// Thrown when the backend returns HTTP 429 with `code: TTS_QUOTA_EXCEEDED` —
+/// the user's DAILY synthesis quota is spent (`_TTS_DAILY_LIMITS` /
+/// `TTS_QUOTA_*` env overrides, counted per UTC day in Redis). Unlike a plain
+/// 429 (transient rate limit), retrying is pointless until tomorrow. Callers
+/// should stay SILENT — never the robotic on-device fallback — and stop
+/// issuing synthesis requests for the rest of the session.
+class TtsQuotaExceededException implements Exception {
+  final int dailyLimit;
+  final int synthesesUsed;
+
+  TtsQuotaExceededException({this.dailyLimit = 0, this.synthesesUsed = 0});
+
+  @override
+  String toString() =>
+      'TtsQuotaExceededException($synthesesUsed/$dailyLimit today)';
+}
+
 /// Thrown when the backend refuses synthesis with HTTP 403 and a COPPA
 /// age/consent gate code (`AGE_REQUIRED`, `PARENTAL_CONSENT_REQUIRED`,
 /// `PARENTAL_CONSENT_UNVERIFIED`): the server has no resolved age (or no
@@ -132,6 +149,8 @@ class TtsApiService {
       return mapResponse(response);
     } on TtsRateLimitException {
       rethrow;
+    } on TtsQuotaExceededException {
+      rethrow;
     } on TtsCapExceededException {
       rethrow;
     } on TtsConsentGateException {
@@ -175,6 +194,22 @@ class TtsApiService {
     }
 
     if (response.statusCode == 429) {
+      // Two distinct 429s: the daily per-user quota (code TTS_QUOTA_EXCEEDED —
+      // won't clear until tomorrow, stop trying) vs the flask-limiter rate
+      // limit (transient — back off and retry).
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body['code'] == 'TTS_QUOTA_EXCEEDED') {
+          throw TtsQuotaExceededException(
+            dailyLimit: (body['daily_limit'] as num?)?.toInt() ?? 0,
+            synthesesUsed: (body['syntheses_used'] as num?)?.toInt() ?? 0,
+          );
+        }
+      } on TtsQuotaExceededException {
+        rethrow;
+      } catch (_) {
+        // Body wasn't JSON or didn't match — treat as a plain rate limit.
+      }
       throw TtsRateLimitException();
     }
     // 403 with a COPPA gate code = the server has no resolved age / verified

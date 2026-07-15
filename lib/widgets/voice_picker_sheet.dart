@@ -66,6 +66,12 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
     } on TtsConsentGateException {
       // COPPA gate — treat like "unavailable" and fall into the snackbar path.
       ttsResult = null;
+    } on TtsQuotaExceededException {
+      // Daily quota spent — snackbar path, no robotic preview.
+      ttsResult = null;
+    } on TtsRateLimitException {
+      // Transient rate limit — snackbar path.
+      ttsResult = null;
     }
     final mp3 = ttsResult?.audioBytes;
 

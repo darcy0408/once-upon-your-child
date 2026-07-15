@@ -4,10 +4,18 @@ Avatar Routes - API endpoints for magical avatar generation
 
 import concurrent.futures
 import logging
+import os
 
 from flask import Blueprint, jsonify, request
 
-_AVATAR_TIMEOUT_SECONDS = 30
+# MT-155 set a 30s bound in the Gemini Flash era (5-15s per image). Avatars
+# now run on OpenAI gpt-image, where a photo-referenced generation routinely
+# takes 30-90s — at 30s every request timed out and the feature was dead in
+# prod (found 2026-07-15). 110s stays under gunicorn's --timeout 120 so the
+# worker is never killed mid-request. Env-overridable for tuning without a
+# deploy; the OpenAI client's own 100s timeout (openai_image_generator.py)
+# usually fires first so abandoned threads are bounded too.
+_AVATAR_TIMEOUT_SECONDS = int(os.getenv("AVATAR_TIMEOUT_SECONDS", "110"))
 
 # Every account gets ONE free AI photo-avatar — the "magic moment" that lets a
 # child see themselves as a cartoon hero; further custom avatars require a paid

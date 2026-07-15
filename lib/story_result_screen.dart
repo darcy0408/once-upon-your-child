@@ -779,6 +779,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       // COPPA gate — no resolved age/consent server-side. Stay silent
       // rather than narrating the page in the robotic on-device voice.
       return;
+    } on TtsQuotaExceededException {
+      // Daily synthesis quota spent — silence, never robotic.
+      return;
+    } on TtsRateLimitException {
+      // Transient rate limit — skip this utterance silently.
+      return;
     } catch (_) {}
     await _tts?.speak(text);
   }

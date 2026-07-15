@@ -47,7 +47,13 @@ class OpenAIImageGenerator:
             raise ImportError(
                 "The 'openai' package is required for OpenAIImageGenerator"
             ) from exc
-        self._client = OpenAI(api_key=self.api_key)
+        # Bound every HTTP call. The avatar route's _run_with_timeout abandons
+        # its worker thread on timeout, and with the SDK defaults (10-minute
+        # timeout, 2 retries) an abandoned generation kept running — holding a
+        # connection — for many minutes. 100s sits under the route's 110s
+        # deadline so the client timeout fires first; no automatic retries — a
+        # retry would land after the caller has already given up.
+        self._client = OpenAI(api_key=self.api_key, timeout=100.0, max_retries=0)
         logger.info("OpenAIImageGenerator initialized (model=%s)", OPENAI_IMAGE_MODEL)
 
     # ------------------------------------------------------------------

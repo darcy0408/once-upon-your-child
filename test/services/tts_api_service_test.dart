@@ -45,6 +45,37 @@ void main() {
       );
     });
 
+    test('429 TTS_QUOTA_EXCEEDED throws TtsQuotaExceededException', () {
+      final resp = http.Response(
+        jsonEncode({
+          'error': 'Daily narration limit reached',
+          'code': 'TTS_QUOTA_EXCEEDED',
+          'daily_limit': 300,
+          'syntheses_used': 300,
+        }),
+        429,
+      );
+      expect(
+        () => TtsApiService.mapResponse(resp),
+        throwsA(
+          isA<TtsQuotaExceededException>()
+              .having((e) => e.dailyLimit, 'dailyLimit', 300)
+              .having((e) => e.synthesesUsed, 'synthesesUsed', 300),
+        ),
+      );
+    });
+
+    test('429 with non-quota JSON body throws TtsRateLimitException', () {
+      final resp = http.Response(
+        jsonEncode({'error': 'rate limit exceeded'}),
+        429,
+      );
+      expect(
+        () => TtsApiService.mapResponse(resp),
+        throwsA(isA<TtsRateLimitException>()),
+      );
+    });
+
     for (final code in [
       'AGE_REQUIRED',
       'PARENTAL_CONSENT_REQUIRED',

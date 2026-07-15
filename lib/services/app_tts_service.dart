@@ -190,6 +190,13 @@ class AppTtsService {
   // clears re-kicks it.
   bool _consentGatePrewarmPending = false;
 
+  // Set when the server reports the DAILY per-user synthesis quota is spent
+  // (429 TTS_QUOTA_EXCEEDED). Unlike a transient rate limit it won't clear
+  // until the next UTC day, so speak() stops issuing backend requests for the
+  // rest of the session — cached phrases still play, everything else stays
+  // SILENT (owner rule: never the robotic fallback).
+  bool _quotaExhausted = false;
+
   // Bumped on every stop() and every speak() entry. In-flight speak() calls
   // capture their generation and bail at the next await if it changes — this
   // prevents an aborted play() from triggering the on-device fallback with
@@ -246,6 +253,15 @@ class AppTtsService {
   static const int _maxPrewarmRetries = 4;
   static const int _maxPrewarmConsecutiveNulls = 3;
 
+  // Cap how many phrases one warm-up pass may fetch. Every fetch counts
+  // against the user's DAILY synthesis quota (2026-07-15: free tier burned
+  // its whole day's quota on a single 130-phrase warm-up and went robotic
+  // for everything after). kWarmUpPhrases is ordered most-urgent-first, so
+  // the cap keeps the rapid-tap Sprout/welcome phrases instant; the tail
+  // synthesizes warm on first use instead. Remove once the backend serves
+  // common phrases from a shared cache that doesn't count against quota.
+  static const int _maxPrewarmPhrases = 40;
+
   Future<void> _prewarm(List<String> phrases) async {
     // Deduplicate concurrent warm-up calls within a session.
     if (_prewarming) return;
@@ -254,7 +270,7 @@ class AppTtsService {
       final voiceId = await _savedVoiceId();
       var backoffMs = 2000;
       var consecutiveNulls = 0;
-      for (final phrase in phrases) {
+      for (final phrase in phrases.take(_maxPrewarmPhrases)) {
         final key = phrase.trim();
         if (_cache.containsKey(key)) continue;
         var attempts = 0;
@@ -285,6 +301,12 @@ class AppTtsService {
             );
             await Future<void>.delayed(Duration(milliseconds: backoffMs));
             backoffMs = (backoffMs * 2).clamp(2000, 30000);
+          } on TtsQuotaExceededException catch (e) {
+            // Daily quota spent — every further request today 429s the same
+            // way. Abort the pass and stop hitting the backend this session.
+            _quotaExhausted = true;
+            debugPrint('[TTS] warm-up aborted: daily quota spent ($e)');
+            return;
           } on TtsConsentGateException {
             // COPPA gate — every phrase would 403 identically, so abort the
             // whole pass instead of burning one doomed request per phrase.
@@ -334,6 +356,9 @@ class AppTtsService {
     try {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
+        // Daily quota already spent this session: every request would 429.
+        // Cached phrases (above) still play; everything else stays silent.
+        if (_quotaExhausted) return;
         final id = voiceId ?? (await _savedVoiceId());
         if (myGen != _speakGen) return;
         // Pass rateScale to ElevenLabs so the actual audio is slower for young
@@ -386,6 +411,21 @@ class AppTtsService {
       if (myGen != _speakGen) return;
       _consentGatePrewarmPending = true;
       debugPrint('TTS blocked by ${e.code}; staying silent (no robotic fallback)');
+      return;
+    } on TtsQuotaExceededException catch (e) {
+      // Daily synthesis quota spent (429 TTS_QUOTA_EXCEEDED) — won't clear
+      // until tomorrow. Stay SILENT (never robotic) and stop issuing backend
+      // requests for the rest of the session.
+      if (myGen != _speakGen) return;
+      _quotaExhausted = true;
+      debugPrint('TTS daily quota spent ($e); staying silent');
+      return;
+    } on TtsRateLimitException {
+      // Transient rate limit. The next utterance may well succeed — but THIS
+      // one stays silent rather than robotic (2026-07-15 owner rule: the
+      // robotic fallback is worse than a quiet miss).
+      if (myGen != _speakGen) return;
+      debugPrint('TTS rate limited; staying silent for this utterance');
       return;
     } on TtsCapExceededException catch (e) {
       // Premium voice budget exhausted — fall through to flutter_tts and

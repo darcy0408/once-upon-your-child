@@ -432,6 +432,14 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       // gated user must never get the robotic fallback: stay silent.
       if (mounted) setState(() => _isLoadingAudio = false);
       return;
+    } on TtsQuotaExceededException {
+      // Daily synthesis quota spent — silence, never robotic.
+      if (mounted) setState(() => _isLoadingAudio = false);
+      return;
+    } on TtsRateLimitException {
+      // Transient rate limit — stop loading; the user can tap play again.
+      if (mounted) setState(() => _isLoadingAudio = false);
+      return;
     }
     if (!mounted) return;
 
