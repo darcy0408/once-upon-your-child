@@ -177,7 +177,7 @@ weight than the original ~17 MB estimate:
 
 Applying all of the above lands assets/ around **25–27 MB** (from the original 61 MB).
 
-**UPDATE 2: image conversions EXECUTED same day** (commit dd6a2dd9) — all four image rows
+**UPDATE 2: image conversions EXECUTED same day** (commit 54509881) — all four image rows
 applied and verified (visual spot-checks + analyze + widget tests). assets/ is now
 **29.7 MB (from 61.1 MB — a 51% reduction)**. Only the ambience-mp3 re-encode remains open,
 pending the owner listening to 96 kbps re-encodes of space_hum/ocean_waves (−2 to −3.5 MB
