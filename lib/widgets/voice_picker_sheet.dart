@@ -57,10 +57,16 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
       _isLoadingPreview = true;
     });
 
-    final ttsResult = await TtsApiService.synthesize(
-      _previewText,
-      voiceId: voiceId,
-    );
+    TtsSynthesisResult? ttsResult;
+    try {
+      ttsResult = await TtsApiService.synthesize(
+        _previewText,
+        voiceId: voiceId,
+      );
+    } on TtsConsentGateException {
+      // COPPA gate — treat like "unavailable" and fall into the snackbar path.
+      ttsResult = null;
+    }
     final mp3 = ttsResult?.audioBytes;
 
     if (!mounted) return;

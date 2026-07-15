@@ -419,25 +419,37 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     final voiceId = ref.read(voicePreferenceNotifierProvider);
     final characterVoiceId = ElevenLabsVoice.characterVoiceForNarrator(voiceId);
     setState(() => _isLoadingAudio = true);
-    final result = await TtsApiService.synthesize(
-      widget.storyText,
-      voiceId: voiceId,
-      characterVoiceId: characterVoiceId,
-    );
+    final TtsSynthesisResult? result;
+    try {
+      result = await TtsApiService.synthesize(
+        widget.storyText,
+        voiceId: voiceId,
+        characterVoiceId: characterVoiceId,
+      );
+    } on TtsConsentGateException {
+      // COPPA gate — no resolved age/consent server-side. Unreachable in
+      // practice (a story can't be generated behind the same gate), but a
+      // gated user must never get the robotic fallback: stay silent.
+      if (mounted) setState(() => _isLoadingAudio = false);
+      return;
+    }
     if (!mounted) return;
 
     if (result != null) {
       // ── Neural2 path ────────────────────────────────────────────────
+      // Non-null local: the try-assigned `result` can't promote inside the
+      // setState closure below.
+      final synthesis = result;
       await _tts.stop();
       setState(() {
         _isLoadingAudio = false;
         _isPlaying = true;
         _usingNeural2 = true;
         _currentWordIndex = -1;
-        _wordTimestamps = result.wordTimestamps;
+        _wordTimestamps = synthesis.wordTimestamps;
         _startPlayPulse();
       });
-      await _audioPlayer.play(BytesSource(result.audioBytes));
+      await _audioPlayer.play(BytesSource(synthesis.audioBytes));
       await _audioPlayer.setPlaybackRate(_playbackRate);
     } else {
       // ── flutter_tts fallback ────────────────────────────────────────

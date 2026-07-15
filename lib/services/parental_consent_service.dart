@@ -122,6 +122,20 @@ class ParentalConsentService {
     unawaited(_syncAgeToBackend(age));
   }
 
+  /// Back-fills the locally-stored declared age to the server.
+  ///
+  /// Sessions that declared an age before MT-351 shipped the onboarding sync
+  /// (or whose fire-and-forget sync raced auth and was dropped) have
+  /// `declared_age = NULL` server-side, so every ENFORCE_RESOLVED_AGE-gated
+  /// endpoint 403s forever — seen 2026-07-14 as the web app opening with the
+  /// robotic on-device voice. Called at startup, after auth is ready, from
+  /// [AppTtsService.init]. No-op when this device never declared an age.
+  Future<void> syncStoredAgeToBackend() async {
+    final age = await getRecordedAge();
+    if (age == null) return;
+    await _syncAgeToBackend(age);
+  }
+
   /// PATCHes `/api/user/<id>/age` (MT-351) so the server has a resolved
   /// `declared_age` for `ENFORCE_RESOLVED_AGE`. No-op if there is no
   /// authenticated user id yet (e.g. auth hasn't completed). Best-effort:

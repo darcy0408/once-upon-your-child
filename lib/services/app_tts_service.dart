@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/elevenlabs_voice.dart';
 import '../theme/age_band_theme.dart';
 import 'api_service_manager.dart';
+import 'parental_consent_service.dart';
 import 'tts_api_service.dart';
 import 'web_audio_player_stub.dart'
     if (dart.library.html) 'web_audio_player.dart';
@@ -183,6 +184,12 @@ class AppTtsService {
   bool _ready = false;
   bool _prewarming = false;
 
+  // Set when a synthesize call was refused by the server's COPPA age/consent
+  // gate (403 AGE_REQUIRED / PARENTAL_CONSENT_*). The warm-up pass aborts
+  // while the gate is engaged; the first successful speak() after the gate
+  // clears re-kicks it.
+  bool _consentGatePrewarmPending = false;
+
   // Bumped on every stop() and every speak() entry. In-flight speak() calls
   // capture their generation and bail at the next await if it changes — this
   // prevents an aborted play() from triggering the on-device fallback with
@@ -208,7 +215,25 @@ class AppTtsService {
   Future<void> init({List<String> warmUpPhrases = kWarmUpPhrases}) async {
     // Kick off auth token fetch synchronously (before any awaits) so that
     // speak() can await _authReady regardless of when it is called.
-    _authReady = ApiServiceManager.authHeaders().then((_) {});
+    //
+    // Chained behind auth: back-fill the locally-stored declared age to the
+    // server. Sessions that set their age before MT-351 shipped the
+    // onboarding sync (or whose fire-and-forget sync raced auth and was
+    // dropped) have declared_age = NULL server-side, and with
+    // ENFORCE_RESOLVED_AGE ON in prod every /tts/synthesize call 403s —
+    // the app opened with the robotic on-device voice (2026-07-14 report).
+    // Ordering matters: speak() and _prewarm await this chain, so the FIRST
+    // utterance of the session is already the warm voice. Best-effort and
+    // time-bounded — a slow or failed sync must never wedge TTS.
+    _authReady = ApiServiceManager.authHeaders()
+        .then(
+          (_) => ParentalConsentService()
+              .syncStoredAgeToBackend()
+              .timeout(const Duration(seconds: 10)),
+        )
+        .catchError((Object e) {
+      debugPrint('TTS init: declared-age back-fill skipped: $e');
+    });
 
     await _fallback.setLanguage('en-US');
     await _fallback.setSpeechRate(0.42);
@@ -260,6 +285,13 @@ class AppTtsService {
             );
             await Future<void>.delayed(Duration(milliseconds: backoffMs));
             backoffMs = (backoffMs * 2).clamp(2000, 30000);
+          } on TtsConsentGateException {
+            // COPPA gate — every phrase would 403 identically, so abort the
+            // whole pass instead of burning one doomed request per phrase.
+            // speak() re-kicks the warm-up after the gate clears.
+            _consentGatePrewarmPending = true;
+            debugPrint('[TTS] warm-up aborted: server age/consent gate');
+            return;
           } catch (e) {
             debugPrint('TTS prewarm failed for phrase: $e');
             break;
@@ -317,6 +349,12 @@ class AppTtsService {
       }
       if (myGen != _speakGen) return;
       if (mp3 != null && mp3.isNotEmpty) {
+        // A successful synth means the consent gate (if it was ever engaged)
+        // has cleared — re-run the warm-up pass it aborted.
+        if (_consentGatePrewarmPending) {
+          _consentGatePrewarmPending = false;
+          unawaited(_prewarm(kWarmUpPhrases));
+        }
         if (kIsWeb) {
           // On web, audioplayers' BytesSource converts bytes to a data: URI and
           // connects the element to a Web AudioContext with crossOrigin='anonymous'.
@@ -338,6 +376,17 @@ class AppTtsService {
         }
         return;
       }
+    } on TtsConsentGateException catch (e) {
+      // COPPA gate: the server has no resolved age/consent for this user yet,
+      // so it refuses to forward text to the TTS vendor. Stay SILENT — do NOT
+      // speak the robotic on-device fallback; a robotic greeting is worse
+      // than a quiet one. The gate clears as soon as the age gate / consent
+      // flow syncs an age, and the next speak() plays the warm voice (and
+      // re-kicks the aborted warm-up pass).
+      if (myGen != _speakGen) return;
+      _consentGatePrewarmPending = true;
+      debugPrint('TTS blocked by ${e.code}; staying silent (no robotic fallback)');
+      return;
     } on TtsCapExceededException catch (e) {
       // Premium voice budget exhausted — fall through to flutter_tts and
       // surface a notice the UI can present as an upgrade toast.

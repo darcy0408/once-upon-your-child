@@ -775,6 +775,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         await _audioPlayer?.play(BytesSource(mp3));
         return;
       }
+    } on TtsConsentGateException {
+      // COPPA gate — no resolved age/consent server-side. Stay silent
+      // rather than narrating the page in the robotic on-device voice.
+      return;
     } catch (_) {}
     await _tts?.speak(text);
   }
