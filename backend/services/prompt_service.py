@@ -6,6 +6,7 @@ try:
     from ..data.superhero_matrix import pick_pairing as _sh_pick_pairing
     from ..utils.confidant_screen import is_risky_confidant as _is_risky_confidant
     from .emotion_service import EmotionService
+    from .story_service import _get_opening_rule
 except ImportError:
     from data.superhero_matrix import POWERS as _SH_POWERS
     from data.superhero_matrix import PROBLEMS as _SH_PROBLEMS
@@ -13,6 +14,9 @@ except ImportError:
     from data.superhero_matrix import get_band_tables as _sh_get_band_tables
     from data.superhero_matrix import pick_pairing as _sh_pick_pairing
     from services.emotion_service import EmotionService
+    from services.story_service import (  # type: ignore[no-redef]
+        _get_opening_rule,
+    )
     from utils.confidant_screen import (  # type: ignore[no-redef]
         is_risky_confidant as _is_risky_confidant,
     )
@@ -594,8 +598,8 @@ Create the rhyming learning-to-read story about {character_name} now:
 
         # --- The 6 beats in plain language (the model fills in the prose) ---
         beat1 = (
-            f"{character} put on the {color} suit. Today, {character} "
-            f"is {identity_tag}!"
+            f"Once upon a time, {character} put on the {color} suit. "
+            f"Today, {character} is {identity_tag}!"
         )
         # Bug 1 fix (audit 05): the matrix's villain['action'] is a finite-verb
         # clause (e.g. "won't share the slide"), so the old "came to {action}"
@@ -624,6 +628,10 @@ Create the rhyming learning-to-read story about {character_name} now:
         # Use a tagged, structured format so the validator in story_tasks.py
         # can still strip the meta if it leaks. The model is told repeatedly:
         # 150 words MAX, sentences 3-7 words, no scary content.
+        # Banded opener (#437 chunk 2): Sprout always opens with the ritual
+        # "Once upon a time," — beat1 already embeds it; this rule pins it as
+        # an exact, non-negotiable requirement so the model can't paraphrase.
+        opening_rule = _get_opening_rule(age)
         return f"""SUPERHERO MODE STORY (Ages 3-5 — Sprout band)
 
 You are writing a short, picture-book-style superhero story for a {age}-year-old.
@@ -653,6 +661,7 @@ STORY MUST FOLLOW THESE 6 BEATS IN ORDER:
 6. CHEER       — Close with: "{beat6}"
 
 HARD RULES — these are non-negotiable:
+{opening_rule}
 - MAXIMUM 130 words TOTAL. Count and STOP at 130.
 - TARGET 100–130 words. Anything under 90 is too short.
 - Pages: Return between 8 and 12 pages. Each page MUST be 5-25 words. Each page's "text" must contain ONLY story words for that page — do NOT include any page numbers or labels inside the page text (no "Page 1", no "Page 1 —", no "pg. 1", no beat names).
@@ -905,6 +914,12 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a p
                     f"adventure of its own."
                 )
 
+        # Banded opener (#437 chunk 2): Explorer (6-8) opens with a rotated
+        # classic opener ("Once upon a time," / "One day," / …), chosen
+        # server-side by _get_opening_rule so variety doesn't depend on the
+        # model. The beat seeds below are rewrite-only plot ideas, so the exact
+        # opening phrase is enforced here as a hard rule, not in a beat seed.
+        opening_rule = _get_opening_rule(age)
         return f"""SUPERHERO MODE STORY (Ages 6-8 — Explorer band)
 
 You are writing a short-chapter superhero story for a {age}-year-old early reader.
@@ -934,6 +949,7 @@ STORY MUST FOLLOW THESE 5 PARAGRAPHS IN ORDER (output is plain prose — DO NOT 
 5. RESOLUTION VIA EMPATHY OR CLEVERNESS — {villain['name']} {villain['softens']}. Everyone — including the villain — leaves a little wiser. The hero speaks ONE line of dialogue (in quotation marks). If the refrain has not yet recurred in paragraph 4, it MUST recur verbatim here. Seed idea — a plot idea only, NOT sentence text to copy (write the villain's softening moment and the closing line in fresh wording every time): "{beat5_seed}"
 
 HARD RULES — these are non-negotiable:
+{opening_rule}
 - LENGTH: 250-350 words TOTAL. Count carefully and STOP at 350. Anything under 250 is too short.
 - READING LEVEL: Grade 1-3. A 6-8 year old should be able to read most of the story aloud without help.
 - FLESCH-KINCAID READING EASE target: 60-80. Keep words short and concrete.

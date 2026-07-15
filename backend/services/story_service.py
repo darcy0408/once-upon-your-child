@@ -2694,6 +2694,14 @@ def _build_bedtime_prompt(
         )[length_key]
     age_notes = AGE_CONSTRAINTS.get(band, AGE_CONSTRAINTS["5-7"])["notes"]
 
+    # Banded opener (#437 chunk 2): the young bands get a ritual/classic
+    # opener even at bedtime — "Once upon a time," for Sprout (≤5) and a
+    # rotated classic for Explorer (6-8). 9+ deliberately gets NONE: the
+    # standard-path FRESH OPENING rule ("begin in motion, mid-problem, in
+    # dialogue") fights bedtime's soothing pacing, so older bedtime stories
+    # keep their calm, unconstrained open.
+    opening_block = f"{_get_opening_rule(age)}\n\n" if age <= 8 else ""
+
     # World description — use rich setting or fall back to the raw theme string.
     world_desc = _BEDTIME_SETTINGS.get(theme.lower().strip(), theme)
 
@@ -2776,7 +2784,7 @@ WORD COUNT: {word_range[0]}–{word_range[1]} words total across all pages.
 
 ━━━ BEDTIME STORY RULES (MANDATORY) ━━━
 
-1. SOOTHING PACING
+{opening_block}1. SOOTHING PACING
    Each scene lingers on textures, soft sounds, and warmth. No rushed action. Every paragraph should feel like a slow exhale.
 
 2. ALL HEROES PRESENT
