@@ -539,7 +539,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                       fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: const Text(
-                                  'Your child can choose a premade avatar, or use a photo to create a cartoon one. '
+                                  'Leaving this OFF does not stop your child from making an avatar — they can still pick a premade hero or design their own. '
+                                  'This setting only controls the extra option to turn a photo into a cartoon avatar. '
                                   'If turned on, the photo is sent securely to generate the avatar and is used for nothing else. Off by default.',
                                   style: TextStyle(
                                       color: Colors.white70, fontSize: 13),

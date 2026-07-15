@@ -778,7 +778,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       children: [
         const SizedBox(height: 4),
         const Text(
-          'How old is the child?',
+          'How old is the storyteller?',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,
@@ -788,9 +788,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         ),
         const SizedBox(height: 8),
         const Text(
-          'Parents/guardians — please enter the child\'s real age. '
-          'This determines which content is appropriate. '
-          'Once Upon YOUR Child is a storytelling app for ages 3 to 17.',
+          'Please enter the storyteller\'s real age — parents and guardians, '
+          'use your child\'s. This determines which content is appropriate. '
+          'Once Upon YOUR Child is a storytelling app for ages 3 and up — '
+          'kids, teens, and adults.',
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
