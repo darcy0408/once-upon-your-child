@@ -917,8 +917,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
       // it succeeded, threw, or was cancelled. Without this, a throw on the
       // generation path would leave _activeTaskId set, so a later dispose()
       // would fire a pointless cancel against an already-terminal task.
-      // Mirrors quick_story_screen.dart, which nulls its id in the success
-      // path and never re-fires after failure. The success path in
+      // Nulls the id in the success path and never re-fires after failure
+      // (same pattern the old quick-story screen used). The success path in
       // _runRegularStory already nulls it before reading; this is the safety
       // net for the error/cancel paths.
       _activeTaskId = null;

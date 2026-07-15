@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../utils/motion_utils.dart';
 import '../theme/age_band_theme.dart';
-import '../theme/age_band_asset_resolver.dart';
 import 'safe_asset_image.dart';
 
 /// Image-based Make Magic Button using transparent PNG asset.
@@ -44,17 +43,14 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   // Press feedback
   bool _isPressed = false;
 
-  String get _assetNormal {
-    final band = widget.ageBand;
-    if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal.png');
-    return 'assets/images/ui/clean/make_magic_button.webp';
-  }
+  // One shared button art for every band. (A per-band variant path existed
+  // here but could never load — it asked uiPath for .png names while the band
+  // folders held .webp — so the band assets were dead weight and got purged
+  // in the 2026-07-15 asset audit; ageBand still drives the label below.)
+  String get _assetNormal => 'assets/images/ui/clean/make_magic_button.webp';
 
-  String get _assetPressed {
-    final band = widget.ageBand;
-    if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal_clicked.png');
-    return 'assets/images/ui/clean/make_magic_button_pressed.webp';
-  }
+  String get _assetPressed =>
+      'assets/images/ui/clean/make_magic_button_pressed.webp';
 
   @override
   void initState() {
