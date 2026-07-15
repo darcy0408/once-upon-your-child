@@ -239,6 +239,10 @@ def _generate_one(keys: list[str], prompt: str) -> bytes:
                 print("    (quota on this key, rotating...)")
                 last_exc = e
                 continue
+            if "api_key_invalid" in msg or "api key not valid" in msg:
+                print("    (invalid key, rotating...)")
+                last_exc = e
+                continue
             raise
     raise last_exc or RuntimeError("all keys exhausted")
 

@@ -670,17 +670,17 @@ class CreativeBriefWidget extends StatelessWidget {
     // uniform and no world is dropped (MT-269). Keep in sync with the files
     // under assets/images/scenarios/<band>/.
     //
-    // All three mature bands ship art for these four. The Adolescent band
-    // additionally has bespoke cinematic art for the rest of its settings
-    // (MT-303), so those render real art for teens while Creator/Adult keep the
-    // accent-gradient fallback until their own art is authored.
+    // All three mature bands ship art for these four. Adolescent (MT-303) and
+    // Adult additionally have bespoke art for the rest of their settings, so
+    // those render real art while Creator keeps the accent-gradient fallback
+    // until its own art is authored.
     const sharedArtBackedIds = {
       'vanishing_colors',
       'crystal_cavern',
       'volcano_dragons',
       'big_feelings_quest',
     };
-    const adolescentArtBackedIds = {
+    const extendedArtBackedIds = {
       'doorway_seasons',
       'neon_jungle',
       'storm_chaser_sky',
@@ -690,9 +690,10 @@ class CreativeBriefWidget extends StatelessWidget {
       'midnight_mystery',
       'survival_island',
     };
-    final artBackedIds = band.band == AgeBand.adolescent
-        ? {...sharedArtBackedIds, ...adolescentArtBackedIds}
-        : sharedArtBackedIds;
+    final artBackedIds =
+        band.band == AgeBand.adolescent || band.band == AgeBand.adult
+            ? {...sharedArtBackedIds, ...extendedArtBackedIds}
+            : sharedArtBackedIds;
 
     final sceneTiles = <Widget>[
       ...scenarios.map((s) {
