@@ -236,7 +236,7 @@ const sproutCompanions = [
     id: 'sprout/mochi',
     name: 'Mochi',
     tagline: 'Found something! Come see, come see!',
-    imagePathOverride: 'assets/images/companions/sprout/mochi.jpg',
+    imagePathOverride: 'assets/images/companions/sprout/mochi.webp',
     backgroundColor: Color(0xFFFF8F00),
   ),
   CompanionData(
@@ -269,7 +269,7 @@ const explorerCompanions = [
     id: 'clover',
     name: 'Clover',
     tagline: 'Knows the way. Always has a map.',
-    imagePathOverride: 'assets/images/companions/explorer/clover.jpg',
+    imagePathOverride: 'assets/images/companions/explorer/clover.webp',
     personality:
         'Clover (Pattern Seer) is an orange tabby with round glasses and a compass who knows the way through any enchanted wood. Her stardust spirals when she\'s solving something. She spots patterns others miss and offers one clear, calm next step. Catchphrases: "Found it!" / "Follow me — I have the map."',
   ),
@@ -277,7 +277,7 @@ const explorerCompanions = [
     id: 'biscuit',
     name: 'Biscuit',
     tagline: 'Wand ready. Adventure compass spinning.',
-    imagePathOverride: 'assets/images/companions/explorer/biscuit.jpg',
+    imagePathOverride: 'assets/images/companions/explorer/biscuit.webp',
     personality:
         'Biscuit (Hope Engine) is a golden puppy in an adventure vest who aims her wand at the sky and leaves sparkle trails to follow. Gets there first, bounces back to get you, and guides you in with her whole wagging body. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'m right here!"',
   ),
@@ -291,7 +291,7 @@ const adventurerCompanions = [
     id: 'atlas',
     name: 'Atlas',
     tagline: 'Three routes mapped. Option two is most interesting.',
-    imagePathOverride: 'assets/images/companions/adventurer/atlas.jpg',
+    imagePathOverride: 'assets/images/companions/adventurer/atlas.webp',
     personality:
         'Atlas (Pattern Seer) is a blue-green scholar dragon with a compass medallion who knows every constellation. When the path is unclear he lifts his glasses and calculates. He admits when the map was wrong. Speaks in short verdicts — "Noted." "Risky." "Better." Catchphrases: "Look again." / "Follow the pattern."',
   ),
@@ -299,7 +299,7 @@ const adventurerCompanions = [
     id: 'kodiak',
     name: 'Kodiak',
     tagline: 'Pack moves together. Never gives up on you.',
-    imagePathOverride: 'assets/images/companions/adventurer/kodiak.jpg',
+    imagePathOverride: 'assets/images/companions/adventurer/kodiak.webp',
     personality:
         'Kodiak (Hope Engine) is a galaxy-furred husky who can read stardust like a map and smell storms three hours before they arrive. Runs ahead, checks back, positions himself on your left without being asked. Sniffs out the most trustworthy person in a room. Catchphrases: "One more step!" / "I\'ve got your left side."',
   ),
@@ -326,7 +326,7 @@ const creatorCompanions = [
     id: 'cipher',
     name: 'Cipher',
     tagline: 'Finds the flaw before it\'s a problem.',
-    imagePathOverride: 'assets/images/companions/creator/cipher.jpg',
+    imagePathOverride: 'assets/images/companions/creator/cipher.webp',
     personality:
         'Cipher (Pattern Seer) is a blue-green dragon who breathes orbiting gears and compass roses. Finds the flaw in a plan before it\'s a problem. When the puzzle breaks open, his eyes flash gold. Treats problems like games and always offers two clever options. Catchphrases: "Interesting. The pieces fit — if you look at it sideways." / "Watch this."',
   ),
@@ -334,7 +334,7 @@ const creatorCompanions = [
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Loud, on time, strong opinions.',
-    imagePathOverride: 'assets/images/companions/creator/rockin_robin.jpg',
+    imagePathOverride: 'assets/images/companions/creator/rockin_robin.webp',
     personality:
         'Rockin\' Robin (Guardian) wears a leather jacket and carries drum sticks. Louder than necessary, always right on time. Has strong opinions, follows your lead anyway. She scouts ahead and bats away threats with fierce loyalty. Catchphrases: "I have a new sound for this." / "NO. Back. NOW." / "I handled it."',
   ),
@@ -342,7 +342,7 @@ const creatorCompanions = [
     id: 'vesper',
     name: 'Vesper',
     tagline: 'Notices what doesn\'t fit the pattern.',
-    imagePathOverride: 'assets/images/companions/creator/vesper.jpg',
+    imagePathOverride: 'assets/images/companions/creator/vesper.webp',
     personality:
         'Vesper (Boundary Guardian) is a black cat in leather gear trailing purple smoke. Notices the thing that doesn\'t fit the pattern. Has decided, after careful consideration, that you are worth trusting. Appears exactly when someone is being manipulative. Catchphrases: "Something\'s about to change." / "No is complete." / "We leave—now."',
   ),
@@ -404,7 +404,7 @@ const adultCompanions = [
     id: 'rockin_robin',
     name: 'Rockin\' Robin',
     tagline: 'Still the same bird. Learned what you actually need.',
-    imagePathOverride: 'assets/images/companions/adult/rockin_robin.jpg',
+    imagePathOverride: 'assets/images/companions/adult/rockin_robin.webp',
     personality:
         'Rockin\' Robin (Guardian) still wears a leather harness, hamsa charm, and backpack of maps. Has learned what you actually need. When frightened she stays closer. Her protectiveness is not performance. It is love at full volume. Catchphrases: "I know. I know. I still had to check." / "(soft) You\'re okay. I\'ve got you."',
   ),

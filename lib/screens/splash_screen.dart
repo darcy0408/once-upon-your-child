@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
         },
         child: Center(
           child: SafeAssetImage(
-            'assets/images/splash_logo.png',
+            'assets/images/splash_logo.webp',
             width: 320,
             fit: BoxFit.contain,
           ),

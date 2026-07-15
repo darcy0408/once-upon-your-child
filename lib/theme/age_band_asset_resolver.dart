@@ -17,7 +17,7 @@ class AgeBandAssetResolver {
 
   /// Scenario/scene card illustration — e.g. 'enchanted_forest', 'orbital_station'.
   static String scenePath(AgeBand band, String sceneId) =>
-      'assets/images/scenes/${_folder(band)}/$sceneId.jpg';
+      'assets/images/scenes/${_folder(band)}/$sceneId.webp';
 
   /// Companion creature image — pass the full filename including extension,
   /// e.g. 'pebble.png' or 'mochi.jpg'.
