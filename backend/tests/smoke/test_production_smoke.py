@@ -56,8 +56,26 @@ def auth_headers(session_client: requests.Session) -> dict[str, str]:
     payload = _assert_json_response(response)
     token = payload.get("token") or payload.get("access_token")
     assert token, f"Auth response missing token: {payload!r}"
-    assert payload.get("user_id"), f"Auth response missing user_id: {payload!r}"
-    return {"Authorization": f"Bearer {token}"}
+    user_id = payload.get("user_id")
+    assert user_id, f"Auth response missing user_id: {payload!r}"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # MT-369 / F-1: prod enforces ENFORCE_RESOLVED_AGE, so a session that
+    # never declares an age is refused at gated endpoints with 403
+    # AGE_REQUIRED (TestCoppaAgeGateSmoke pins that behaviour). Declare an
+    # adult age up front so the authenticated happy-path flows clear the
+    # gate — mirrors the client-side back-fill added in PR #442.
+    age_response = session_client.patch(
+        f"{BASE_URL}/api/user/{user_id}/age",
+        json={"age": 30},
+        headers=headers,
+        timeout=REQUEST_TIMEOUT,
+    )
+    assert age_response.status_code == 200, (
+        f"Declaring smoke-session age failed: status={age_response.status_code} "
+        f"body={age_response.text[:500]!r}"
+    )
+    return headers
 
 
 @pytest.fixture
@@ -190,6 +208,47 @@ class TestAPIContractSmoke:
         )
         assert response.status_code == 404
         _assert_json_response(response)
+
+
+class TestCoppaAgeGateSmoke:
+    def test_no_age_session_blocked_with_age_required(
+        self, session_client: requests.Session
+    ):
+        """F-1 launch gate (MT-310/MT-369): an anonymous session that never
+        declares an age must be refused at gated endpoints with 403
+        AGE_REQUIRED. This is the positive proof that ENFORCE_RESOLVED_AGE
+        is live in production — if this test fails, the COPPA age gate is
+        off or broken."""
+        response = session_client.post(
+            f"{BASE_URL}/auth/anonymous",
+            json={"client_id": f"smoke_noage_{uuid.uuid4().hex[:12]}"},
+            timeout=REQUEST_TIMEOUT,
+        )
+        assert (
+            response.status_code == 200
+        ), f"Anonymous auth failed: status={response.status_code} body={response.text[:500]!r}"
+        payload = _assert_json_response(response)
+        token = payload.get("token") or payload.get("access_token")
+        assert token, f"Auth response missing token: {payload!r}"
+        headers = {"Authorization": f"Bearer {token}"}
+
+        gen_response = session_client.post(
+            f"{BASE_URL}/generate-story",
+            json={
+                "character": "No Age Smoke",
+                "age": 7,
+                "theme": "Adventure",
+                "story_length": "short",
+                "include_illustrations": False,
+            },
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
+        )
+        assert gen_response.status_code == 403, (
+            f"Expected the no-age session to be blocked (403), got "
+            f"status={gen_response.status_code} body={gen_response.text[:500]!r}"
+        )
+        assert _assert_json_response(gen_response).get("code") == "AGE_REQUIRED"
 
 
 class TestAuthenticatedCriticalFlows:
