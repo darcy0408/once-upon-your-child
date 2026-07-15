@@ -577,11 +577,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
-  /// Plays shimmer chime + shows a brief star-burst particle overlay.
+  /// Plays a short sparkle chime + shows a brief star-burst particle overlay.
   void _triggerPageCelebration() {
     final age = widget.wizardData.characterAge;
     if (age >= 9) return; // Only for Sprout/Explorer
-    AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3');
+    // sparkle_chime.mp3 is a purpose-made one-shot with a natural decay tail,
+    // so it fades out on its own (no playback cap / hard cut-off needed). The
+    // old magical_shimmer.mp3 was a long loopable pad that stopped abruptly.
+    AudioAmbienceService().playSfx('sounds/sparkle_chime.mp3');
     _showStarBurst();
   }
 

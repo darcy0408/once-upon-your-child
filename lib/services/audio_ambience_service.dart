@@ -54,6 +54,15 @@ class AudioAmbienceService {
     'sounds/magical_shimmer.mp3': Duration(milliseconds: 900),
   };
 
+  /// How long a capped one-shot SFX spends ramping its volume down to zero
+  /// before it is stopped. This replaces the old hard cut-off so long
+  /// sparkle-pad assets tail off gently instead of stopping mid-sample.
+  static const Duration _sfxFadeOutDuration = Duration(milliseconds: 350);
+
+  /// Number of volume steps used during the fade-out ramp. More steps = a
+  /// smoother fade; ~14 over 350ms is one step every 25ms.
+  static const int _sfxFadeOutSteps = 14;
+
   /// Plays a one-shot sound effect (respects mute).
   Future<void> playSfx(String sfxPath) async {
     if (_isMuted) return;
@@ -64,9 +73,11 @@ class AudioAmbienceService {
       await sfxPlayer.play(AssetSource(sfxPath));
 
       var disposed = false;
+      Timer? fadeTimer;
       Future<void> safeDispose({bool stopFirst = false}) async {
         if (disposed) return;
         disposed = true;
+        fadeTimer?.cancel();
         if (stopFirst) {
           try {
             await sfxPlayer.stop();
@@ -80,16 +91,52 @@ class AudioAmbienceService {
       // Cleanup player after completion.
       sfxPlayer.onPlayerComplete.listen((_) => unawaited(safeDispose()));
 
-      // For long sparkle-pad files, force a short one-shot playback.
+      // For long sparkle-pad files, force a short one-shot playback that
+      // fades out smoothly instead of cutting off abruptly. The tail end of
+      // the window is reserved for the fade so total length stays close to
+      // maxDuration.
       final maxDuration = _sfxPlaybackLimits[sfxPath];
       if (maxDuration != null) {
-        unawaited(Future<void>.delayed(maxDuration, () async {
-          await safeDispose(stopFirst: true);
+        final fadeDuration = _sfxFadeOutDuration < maxDuration
+            ? _sfxFadeOutDuration
+            : maxDuration;
+        final holdDuration = maxDuration - fadeDuration;
+        final stepInterval = Duration(
+          milliseconds:
+              (fadeDuration.inMilliseconds / _sfxFadeOutSteps).ceil(),
+        );
+
+        unawaited(Future<void>.delayed(holdDuration, () async {
+          if (disposed) return;
+          var step = 0;
+          fadeTimer = Timer.periodic(stepInterval, (timer) {
+            step++;
+            if (disposed) {
+              timer.cancel();
+              return;
+            }
+            final remaining = 1.0 - step / _sfxFadeOutSteps;
+            if (remaining <= 0) {
+              timer.cancel();
+              unawaited(safeDispose(stopFirst: true));
+              return;
+            }
+            // Fire-and-forget; a dropped ramp frame is inaudible.
+            unawaited(_trySetSfxVolume(sfxPlayer, remaining));
+          });
         }));
       }
     } catch (_) {
       // Non-critical effect; fail silently.
     }
+  }
+
+  /// Sets a one-shot SFX player's volume, swallowing errors that can occur
+  /// if the player was disposed mid-ramp.
+  Future<void> _trySetSfxVolume(AudioPlayer player, double volume) async {
+    try {
+      await player.setVolume(volume.clamp(0.0, 1.0));
+    } catch (_) {}
   }
 
   /// Starts playing ambience for a specific theme.
