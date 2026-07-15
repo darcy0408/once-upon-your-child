@@ -139,6 +139,40 @@ def test_purge_survives_stripe_failure(app, mocker):
         assert user.stripe_customer_id is None
 
 
+def test_purge_deletes_owned_illustration_cache_entries(app, mocker):
+    """F-4 / G-5: erasure evicts the cache rows this account created, but
+    leaves rows owned by other accounts (and legacy rows with no owner)
+    untouched — the cache is a shared, content-addressed resource, not a
+    per-user table."""
+    from backend.models.illustration_cache import IllustrationCache
+
+    with app.app_context():
+        user = _make_user(uid="erase_cache")
+        db.session.add_all(
+            [
+                IllustrationCache(
+                    cache_key="owned_1", user_id="erase_cache", image_data="a"
+                ),
+                IllustrationCache(
+                    cache_key="owned_2", user_id="erase_cache", image_data="b"
+                ),
+                IllustrationCache(
+                    cache_key="other_user", user_id="someone_else", image_data="c"
+                ),
+                IllustrationCache(cache_key="legacy_no_owner", image_data="d"),
+            ]
+        )
+        db.session.commit()
+
+        mocker.patch("stripe.Customer.delete")
+
+        purge_user_data(user, commit=True)
+
+        assert IllustrationCache.query.filter_by(user_id="erase_cache").count() == 0
+        remaining = {r.cache_key for r in IllustrationCache.query.all()}
+        assert remaining == {"other_user", "legacy_no_owner"}
+
+
 # --- Amended-COPPA fast-follows: G-5 (cache TTL) + G-7 (unconsented contact) ---
 
 

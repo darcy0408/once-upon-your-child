@@ -123,6 +123,10 @@ what those operations are. Here is the complete list:
   lets the app remember its own settings and sync subscription status.
 - **Crash-report identifiers**: let our error-monitoring service group technical
   error reports about the same bug together.
+- **The IP address on your consent record**: captured at the moment a parent
+  gives consent and kept alongside that record as proof consent was actually
+  given and to guard against fraudulent consent attempts — never used for
+  tracking, location, or any other purpose.
 
 These identifiers are random — they contain no personal information — and we use
 them **only** for the purposes above: keeping your child signed in, syncing your

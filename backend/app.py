@@ -742,6 +742,42 @@ def create_app(config_name):
                 _mig_err,
             )
 
+        # Auto-migrate: add illustration_cache.user_id. db.create_all() above
+        # already creates the table with this column on a fresh database; this
+        # block adds it to an existing table created before F-4/G-5 (COPPA
+        # amended-rule review, 2026-07-13) added the column so purge_user_data
+        # can evict a deleted account's cached illustrations. Nullable, so
+        # existing rows (no known owner) simply stay unattributed and are
+        # still reachable by the illustration-cache TTL eviction.
+        try:
+            from sqlalchemy import inspect as sa_inspect
+            from sqlalchemy import text as sa_text
+
+            inspector = sa_inspect(db.engine)
+            if "illustration_cache" in inspector.get_table_names():
+                cache_cols = {
+                    c["name"] for c in inspector.get_columns("illustration_cache")
+                }
+                if "user_id" not in cache_cols:
+                    with db.engine.connect() as _conn:
+                        _conn.execute(
+                            sa_text(
+                                "ALTER TABLE illustration_cache "
+                                "ADD COLUMN user_id VARCHAR(36)"
+                            )
+                        )
+                        _conn.commit()
+                        logger.info(
+                            "Auto-migration: added column 'user_id' to "
+                            "illustration_cache table"
+                        )
+        except Exception as _mig_err:
+            logger.warning(
+                "illustration_cache.user_id auto-migration check failed "
+                "(non-fatal): %s",
+                _mig_err,
+            )
+
         # Ensure anonymous user exists for story generation
         try:
             anonymous_user = db.session.get(User, "anonymous")

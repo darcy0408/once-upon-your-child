@@ -67,6 +67,58 @@ class TestCacheKeyStability:
         other["companions"] = ["fox", "owl"]
         assert compute_cache_key(**base) == compute_cache_key(**other)
 
+    def test_key_is_salted_not_plain_sha256(self, monkeypatch):
+        """F-4 / G-5: the key must be an HMAC keyed with SECRET_KEY, not a
+        plain unsalted sha256 — otherwise a low-entropy field like
+        character_name is dictionary-attackable (hash every common name and
+        look up the row)."""
+        import hashlib
+
+        monkeypatch.setenv("SECRET_KEY", "test-salt-one")
+        kwargs = self._base_kwargs()
+        key = compute_cache_key(**kwargs)
+
+        # Reconstruct the canonical string the same way the implementation
+        # does and confirm the returned key is NOT its plain sha256.
+        from backend.services.illustration_cache_service import (
+            _appearance_hash,
+            _norm_companions,
+            _norm_text,
+        )
+
+        parts = [
+            f"scene={_norm_text(kwargs['scene_description'])}",
+            f"char={_norm_text(kwargs['character_name'])}",
+            f"style={_norm_text(kwargs['style'])}",
+            f"age={_norm_text(kwargs['age'])}",
+            f"focus={_norm_text(kwargs['therapeutic_focus'])}",
+            f"companions={_norm_companions(kwargs['companions'])}",
+            f"power={_norm_text(kwargs['power_id'])}",
+            f"appearance={_appearance_hash(kwargs['character_appearance'])}",
+        ]
+        canonical = "\n".join(parts)
+        plain_sha256 = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+        assert key != plain_sha256
+
+    def test_different_secret_key_produces_different_key(self, monkeypatch):
+        """Salting means the key depends on the server secret: two
+        deployments (or a rotated secret) must not collide."""
+        kwargs = self._base_kwargs()
+
+        monkeypatch.setenv("SECRET_KEY", "secret-a")
+        key_a = compute_cache_key(**kwargs)
+
+        monkeypatch.setenv("SECRET_KEY", "secret-b")
+        key_b = compute_cache_key(**kwargs)
+
+        assert key_a != key_b
+
+    def test_same_secret_key_is_deterministic(self, monkeypatch):
+        monkeypatch.setenv("SECRET_KEY", "stable-secret")
+        kwargs = self._base_kwargs()
+        assert compute_cache_key(**kwargs) == compute_cache_key(**kwargs)
+
     def test_custom_avatar_changes_key(self):
         """A custom avatar must be part of the key (correct per-avatar image)."""
         base = self._base_kwargs()
@@ -128,6 +180,35 @@ class TestCacheReadWrite:
             )
             cached = get_cached_illustration(key)
             assert cached["image_data"] == "FIRST"
+
+    def test_store_records_creating_user_id(self, app):
+        """F-4 / G-5: the row is attributed to the account that created it so
+        purge_user_data can find and delete it later."""
+        with app.app_context():
+            from backend.database import db
+            from backend.models.illustration_cache import IllustrationCache
+
+            key = "u" * 64
+            assert (
+                store_illustration(
+                    key, "IMG", provider="flux_schnell", user_id="user-123"
+                )
+                is True
+            )
+            row = db.session.query(IllustrationCache).filter_by(cache_key=key).one()
+            assert row.user_id == "user-123"
+
+    def test_store_without_user_id_leaves_it_null(self, app):
+        """Omitting user_id (e.g. an anonymous/unauthenticated write) must not
+        raise — the row is just unattributed and only reachable by the TTL."""
+        with app.app_context():
+            from backend.database import db
+            from backend.models.illustration_cache import IllustrationCache
+
+            key = "v" * 64
+            assert store_illustration(key, "IMG", provider="flux_schnell") is True
+            row = db.session.query(IllustrationCache).filter_by(cache_key=key).one()
+            assert row.user_id is None
 
 
 class TestCacheDegradesOpen:

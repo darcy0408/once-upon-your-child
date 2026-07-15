@@ -17,18 +17,43 @@ Design rules:
     differences (extra spaces, capitalization) still hit; the character
     appearance / custom avatar is hashed verbatim so a custom-avatar user
     still gets correct images (just a lower hit rate).
+  * The key is HMAC-SHA256'd with the app SECRET_KEY (COPPA amended-rule F-4 /
+    G-5). A plain, unsalted sha256 of a low-entropy input like a child's first
+    name is dictionary-attackable — hash every common name and you can look up
+    which row belongs to "Emma". Keying with a server secret closes that.
+    Rows written under the pre-salt scheme simply miss under the new key and
+    age out via ``purge_stale_illustration_cache``'s TTL — no migration.
 """
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Fallback pepper used only if SECRET_KEY is somehow unset (mirrors
+# config._get_required_secret's dev-fallback posture; SECRET_KEY is required
+# in production so this path is dev/test-only). A fixed fallback still beats
+# no salt at all, and keeps compute_cache_key deterministic within a process.
+_DEV_FALLBACK_SALT = "dev-secret-key-fallback-illustration-cache"
+
+
+def _cache_key_salt() -> str:
+    """Resolve the HMAC salt for cache-key hashing.
+
+    Reads SECRET_KEY directly from the environment (not Flask's
+    ``current_app.config``) so this works identically from a request handler
+    and from any future non-request caller, matching the resolution pattern
+    ``data_retention._delete_stripe_customer`` uses for STRIPE_API_KEY.
+    """
+    return os.getenv("SECRET_KEY") or _DEV_FALLBACK_SALT
 
 
 def _norm_text(value: Any) -> str:
@@ -80,13 +105,16 @@ def compute_cache_key(
     power_id: Any = None,
     character_appearance: Any = None,
 ) -> str:
-    """Return the sha256 hex cache key for a set of illustration inputs.
+    """Return the salted HMAC-SHA256 hex cache key for a set of illustration
+    inputs.
 
-    The key is a sha256 over a normalized, field-tagged concatenation of every
-    input that influences the generated image. Normalization (lowercase +
-    whitespace collapse) means trivially different requests still collide on a
-    hit; the appearance component is a sub-hash that includes any custom
-    avatar base64.
+    The key is an HMAC-SHA256 (keyed with the app's SECRET_KEY) over a
+    normalized, field-tagged concatenation of every input that influences the
+    generated image. Normalization (lowercase + whitespace collapse) means
+    trivially different requests still collide on a hit; the appearance
+    component is a sub-hash that includes any custom avatar base64. Salting
+    the outer hash (rather than plain sha256) means the key can't be
+    dictionary-attacked via the low-entropy character_name field.
     """
     parts = [
         f"scene={_norm_text(scene_description)}",
@@ -99,7 +127,9 @@ def compute_cache_key(
         f"appearance={_appearance_hash(character_appearance)}",
     ]
     canonical = "\n".join(parts)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return hmac.new(
+        _cache_key_salt().encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
 
 
 def get_cached_illustration(cache_key: str) -> dict | None:
@@ -155,8 +185,14 @@ def store_illustration(
     *,
     image_format: str | None = None,
     provider: str | None = None,
+    user_id: str | None = None,
 ) -> bool:
     """Store a freshly generated image under *cache_key*. Never raises.
+
+    ``user_id`` (F-4 / G-5) records the account that created this row, so
+    ``purge_user_data`` can evict it on that account's right-to-erasure
+    request. Optional — omit for callers with no authenticated user; the row
+    is then only reachable by the illustration-cache TTL eviction.
 
     Returns True on a successful write, False otherwise. A pre-existing row for
     the same key (e.g. a concurrent write) is treated as success.
@@ -178,6 +214,7 @@ def store_illustration(
         now = datetime.now(timezone.utc)
         row = IllustrationCache(
             cache_key=cache_key,
+            user_id=user_id,
             image_data=image_data,
             image_format=image_format,
             provider=provider,

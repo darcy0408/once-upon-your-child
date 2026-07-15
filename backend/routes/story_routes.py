@@ -2887,6 +2887,9 @@ def create_story_blueprint(
                             if using_flux_schnell
                             else "gemini_openrouter"
                         ),
+                        # F-4 / G-5: attribute the row to its creating
+                        # account so a later erasure request can purge it.
+                        user_id=current_user_id,
                     )
 
             # Increment monthly quota for ALL non-BYOK ages (Sprout included).

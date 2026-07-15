@@ -173,6 +173,7 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     from backend.models.character import Character
     from backend.models.consent_record import ConsentRecord, ConsentVerificationCode
     from backend.models.iap_event import IapPurchase
+    from backend.models.illustration_cache import IllustrationCache
     from backend.models.parent_hidden_context import ParentHiddenContext
     from backend.models.story import Story
 
@@ -217,6 +218,15 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     # Child-sensitive emotional data (trigger / coping tool / repair goal);
     # right-to-erasure must remove it (COPPA §312.7 / GDPR Art.17).
     ParentHiddenContext.query.filter_by(user_id=user_id).delete()
+
+    # --- Delete this account's cached illustrations (F-4 / G-5) ---
+    # The illustration cache is otherwise a shared, content-addressed cost
+    # optimisation (see illustration_cache_service) that would only ever
+    # expire via the 365-day TTL (purge_stale_illustration_cache); an account
+    # deletion right must not wait a year for content it caused to be
+    # generated to disappear. Rows written before the user_id column existed
+    # have no attributable owner and are left for the TTL to age out.
+    IllustrationCache.query.filter_by(user_id=user_id).delete()
 
     # --- Anonymize user record ---
     # Capture the Stripe customer id before nulling it so erasure can be
@@ -370,11 +380,15 @@ def purge_stale_illustration_cache(stale_days: int | None = None) -> dict:
     """Evict cached illustrations not served within the retention window.
 
     The ``illustration_cache`` table is a shared, content-addressed cost
-    optimisation: rows have no ``user_id`` and the ``cache_key`` is a one-way
-    sha256 of the inputs (no recoverable child name in the row). What the row
-    *does* hold is the generated ``image_data``, which for a custom-avatar story
-    can embed the child's likeness — so under the amended COPPA Rule's
-    retention-limit requirement (R-6) it must not be retained indefinitely.
+    optimisation: the ``cache_key`` is a salted HMAC-SHA256 of the inputs (no
+    recoverable child name in the row — F-4 / G-5). What the row *does* hold
+    is the generated ``image_data``, which for a custom-avatar story can embed
+    the child's likeness — so under the amended COPPA Rule's retention-limit
+    requirement (R-6) it must not be retained indefinitely. Rows also carry an
+    optional ``user_id`` recording the account that created them, so
+    ``purge_user_data`` evicts a deleted account's entries immediately rather
+    than waiting on this TTL; this eviction is the backstop for everything
+    else (cross-account shared hits, and legacy rows with no ``user_id``).
 
     This evicts every row whose ``last_accessed_at`` is older than the window,
     so a story re-read within the window stays free (cache hit) while abandoned

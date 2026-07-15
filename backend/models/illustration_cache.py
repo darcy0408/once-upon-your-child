@@ -26,8 +26,18 @@ class IllustrationCache(db.Model):
     __tablename__ = "illustration_cache"
 
     id = db.Column(db.Integer, primary_key=True)
-    # sha256 hex of the normalized illustration inputs — the lookup key.
+    # HMAC-SHA256 (salted with the app SECRET_KEY) of the normalized
+    # illustration inputs — the lookup key. Salting means the key is not a
+    # dictionary-attackable hash of a low-entropy input like a first name
+    # (COPPA amended-rule F-4 / G-5); see compute_cache_key().
     cache_key = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    # Account that created this row (F-4 / G-5: right-to-erasure). Nullable —
+    # legacy rows written before this column existed, and rows written by the
+    # shared 'anonymous' guest session, have no individually-deletable owner.
+    # The cache is otherwise a shared, content-addressed resource: this
+    # records who *created* the row, not every account that has since hit it.
+    # purge_user_data() deletes the rows an account created.
+    user_id = db.Column(db.String(36), nullable=True, index=True)
     # Base64-encoded image payload (matches how images travel through the
     # /generate-illustrations response, i.e. the `image_data` field).
     image_data = db.Column(db.Text, nullable=False)
@@ -48,6 +58,7 @@ class IllustrationCache(db.Model):
         return {
             "id": self.id,
             "cache_key": self.cache_key,
+            "user_id": self.user_id,
             "image_data": self.image_data,
             "image_format": self.image_format,
             "provider": self.provider,
