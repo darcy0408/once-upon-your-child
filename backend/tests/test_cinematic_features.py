@@ -80,7 +80,11 @@ class TestCinematicFeatures(unittest.TestCase):
         # Assertions
         self.assertIn("**STORY SPECS**:", prompt)
         self.assertIn(f"- **CONFLICT**: {conflict_hook}", prompt)
-        self.assertIn(f"- **SENSORY PALETTE**: {sensory_palette}", prompt)
+        self.assertIn(
+            "- **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with it, "
+            f"but it must never drive the plot): {sensory_palette}",
+            prompt,
+        )
 
     def test_story_length(self):
         # Test Data

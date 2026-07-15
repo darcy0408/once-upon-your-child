@@ -616,9 +616,9 @@ def _get_opening_rule(age: int, seed: str | None = None) -> str:
     if age <= 5:
         return (
             "- **STORY OPENING (MANDATORY)**: The story's very first words must be "
-            'exactly "Once upon a time" — every story, this exact phrase. It is a '
-            "comfort ritual at this age. Vary what happens AFTER the phrase from "
-            "story to story."
+            'exactly "Once upon a time," — every story, this exact phrase, comma '
+            "included. It is a comfort ritual at this age. Vary what happens AFTER "
+            "the phrase from story to story."
         )
     if age <= 8:
         if seed is not None:
@@ -630,9 +630,10 @@ def _get_opening_rule(age: int, seed: str | None = None) -> str:
             opener = random.choice(_EXPLORER_OPENER_ROTATION)
         return (
             "- **STORY OPENING (MANDATORY)**: The story's very first words must be "
-            f'exactly "{opener}". After that phrase, vary the entry point — do NOT '
-            'continue with the hero arriving at the setting or a "smelled like ..." '
-            "line; two stories about the same hero must not continue the same way."
+            f'exactly "{opener}," — the comma is part of the required phrase. After '
+            "that phrase, vary the entry point — do NOT continue with the hero "
+            'arriving at the setting or a "smelled like ..." line; two stories about '
+            "the same hero must not continue the same way."
         )
     return (
         "- **FRESH OPENING (MANDATORY)**: Do NOT open with the hero arriving at or "
@@ -643,37 +644,78 @@ def _get_opening_rule(age: int, seed: str | None = None) -> str:
     )
 
 
-# A-1 (competitive audit, 2026-07-14): with no caller-supplied sensory_palette,
-# every default-path story fell back to one hardcoded string, and "sweet
-# smells" showed up in all six sampled bands — at the oldest band it drove
-# the entire story premise (a bakery/"sugar hour" concept). Rotate a small
-# set of options across senses/moods instead of always defaulting to sweets;
-# "Bright colors, soft sounds, sweet smells." stays in the rotation as one
-# option among several rather than being retired outright.
-_DEFAULT_SENSORY_PALETTE_ROTATION = (
-    "Bright colors, soft sounds, sweet smells.",
-    "Cool shadows, distant music, the taste of rain in the air.",
-    "Warm light, rustling leaves, the hum of something waking up.",
-    "Sharp winter air, crunching footsteps, the smell of woodsmoke.",
-    "Salt spray, creaking wood, gulls calling somewhere overhead.",
-    "Dust motes in a sunbeam, the click of old machinery, a faint hum of static.",
-)
+# Per-age-band sensory palette rotation (audit A-1, 2026-07-14): the old
+# default hard-coded "Bright colors, soft sounds, sweet smells." for every
+# story with no caller-provided palette. At younger ages the palette leans on
+# food/scene cues that drove the whole premise toward baked sweets; rotating
+# a table keeps "sweet smells" as one option among several instead of the
+# only default, and gives older bands palettes that fit their register.
+_SENSORY_PALETTE_ROTATION: dict[str, tuple[str, ...]] = {
+    "sprout": (  # ≤5 — concrete, cozy, toddler-comprehensible
+        "Bright colors, soft sounds, sweet smells.",
+        "Splashy puddle colors, pitter-pat rain sounds, the smell of wet grass.",
+        "Warm sunshine yellows, buzzing bee sounds, the smell of just-cut grass.",
+        "Cozy blanket colors, crackly leaf sounds, the smell of warm bread.",
+        "Sparkly snow whites, crunchy footstep sounds, cold fresh air on cheeks.",
+        "Garden greens and reds, chirping bird sounds, the smell of rain coming.",
+    ),
+    "explorer": (  # 6-8
+        "Golden lantern light, echoing footsteps, pine and campfire smoke.",
+        "Sea-glass blues and greens, gull cries over crashing waves, salt spray on the wind.",
+        "Deep forest greens, leaves rustling overhead, damp earth after rain.",
+        "Sunset oranges, a far-off rumble of thunder, the sharp smell of coming rain.",
+        "Berry-stained purples, a bubbling brook, honeysuckle on the breeze.",
+        "Torch-flicker golds, drippy cave echoes, cool stone under fingertips.",
+    ),
+    "adventurer": (  # 9-12
+        "Torchlight and long shadows, dripping cave echoes, cold mineral air.",
+        "Autumn rust and gold, wind through dry cornstalks, drifting woodsmoke.",
+        "Neon reflections in puddles, low city hum, hot pavement after rain.",
+        "Moonlit silver-blue, an owl's call, crushed pine needles underfoot.",
+        "Storm-green sky, halyards clanging on masts, brine and tar on the wind.",
+        "Dusty attic light, floorboard creaks, old paper and cedar.",
+    ),
+    "teen": (  # 13-17
+        "A flickering streetlight, bass thudding through a wall, rain on hot asphalt.",
+        "Overcast grays, the rhythm of train tracks, diesel and cold coffee.",
+        "Late golden light, cicada drone, dust and sunscreen.",
+        "Fluorescent hallway glare, locker doors slamming in rhythm, chlorine and floor wax.",
+        "Blue phone-screen glow, one cricket outside, night air through a window screen.",
+        "Bonfire sparks against dark, wind off the water, smoke caught in a sweater.",
+    ),
+    "adult": (  # 18+
+        "Low winter light, a kettle ticking as it cools, wet wool and old paper.",
+        "Sodium-lit fog, the wash of distant traffic, iron railings cold under the palm.",
+        "Harvest dusk, dry leaves skittering on the road, woodsmoke and windfall apples.",
+        "Morning glare off office glass, espresso-machine hiss, toner and rain-damp coats.",
+        "A porch at blue hour, moths at the bulb, cut hay and gasoline.",
+    ),
+}
 
 
-def _pick_default_sensory_palette(seed: str | None = None) -> str:
-    """Fallback sensory palette when the caller supplies none.
+def _pick_sensory_palette(age: int, seed: str | None = None) -> str:
+    """Pick one sensory palette from the band-appropriate rotation.
 
-    Seed semantics mirror ``_get_opening_rule``/``_pick_situation``: with a
-    seed (eval harness / tests) selection is deterministic; without one
-    (prod), uniform random, since no stable per-request id reaches this
-    builder and the rotation goal is variety across a child's stories.
+    With a seed (eval harness / tests), selection is deterministic across
+    processes (hashlib, not the salted builtin hash). Without one (prod),
+    uniform random — the rotation goal is variety across a child's stories,
+    and no stable per-request id reaches this builder.
     """
+    if age <= 5:
+        band = "sprout"
+    elif age <= 8:
+        band = "explorer"
+    elif age <= 12:
+        band = "adventurer"
+    elif age <= 17:
+        band = "teen"
+    else:
+        band = "adult"
+    options = _SENSORY_PALETTE_ROTATION[band]
     if seed is not None:
         digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
-        return _DEFAULT_SENSORY_PALETTE_ROTATION[
-            int(digest, 16) % len(_DEFAULT_SENSORY_PALETTE_ROTATION)
-        ]
-    return random.choice(_DEFAULT_SENSORY_PALETTE_ROTATION)
+        return options[int(digest, 16) % len(options)]
+    return random.choice(options)
 
 
 def _build_real_life_echo(age: int, situation: dict, character: str) -> str:
@@ -1433,7 +1475,7 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
 1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — keep them sprinkled, not constant.
 2. RULE OF THREE: {character} must attempt to solve the main problem THREE times before succeeding. Attempts 1 and 2 fail in surprising, slightly funny ways. Attempt 3 succeeds because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere.
 3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or worry in their own fresh words (do NOT reuse a stock phrase) before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
-4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward.
+4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward. Vary the hook form — no more than two pages in the whole story may end with a question.
 5. WOW-WORD POLICY (Spark band): It is OK — and good — to use grade 1-2 "wow words" (e.g. "shimmered", "tumbled", "lantern", "festival"). Each new wow word must earn a context clue in the same paragraph: a vivid action, a comparison, or the reaction it causes — but invent fresh imagery every time; do NOT fall back on stock phrases. Do NOT stop and define every fantasy noun inline as if explaining to a toddler — that flattens the story. The check is: a 6-7 year old should be able to guess the word from its surroundings on first listen.
 """
         elif age <= 12:
@@ -1511,6 +1553,7 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
             )
 
         opening_rule = _get_opening_rule(age)
+        sensory_palette = sensory_palette or _pick_sensory_palette(age)
 
         return f"""
 {persona}
@@ -1520,7 +1563,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 **STORY SPECS**:
 - **THEME**: {theme}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
-- **SENSORY PALETTE**: {sensory_palette or _pick_default_sensory_palette()}
+- **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with it, but it must never drive the plot): {sensory_palette}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
 {('- **SPECIAL ABILITY**: ' + special_ability + ' (MUST be used at the climax as the decisive turning point).') if special_ability else '- **SPECIAL ABILITY**: None — hero relies on wit, kindness, and courage.'}

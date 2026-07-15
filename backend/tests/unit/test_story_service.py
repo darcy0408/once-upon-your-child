@@ -1445,7 +1445,7 @@ class TestOpeningRule:
             prompt = engine.generate_enhanced_prompt(
                 character="Mia", theme="bedtime", age=age
             )
-            assert 'exactly "Once upon a time"' in prompt
+            assert 'exactly "Once upon a time,"' in prompt
             assert "FRESH OPENING" not in prompt
 
     def test_explorer_gets_a_rotation_opener(self, engine):
@@ -1458,7 +1458,7 @@ class TestOpeningRule:
             )
             assert "STORY OPENING (MANDATORY)" in prompt
             assert any(
-                f'exactly "{opener}"' in prompt
+                f'exactly "{opener},"' in prompt
                 for opener in set(_EXPLORER_OPENER_ROTATION)
             )
             assert "FRESH OPENING" not in prompt
@@ -1488,67 +1488,87 @@ class TestOpeningRule:
             assert "STORY OPENING (MANDATORY)" not in prompt
 
 
-class TestDefaultSensoryPalette:
-    """A-1 (competitive audit 2026-07-14): rotate the default sensory palette
-    instead of always falling back to the same 'sweet smells' string — the
-    old hardcoded default drove the entire premise of a live 16-year-old
-    sample ("sugar hour")."""
+class TestSensoryPaletteRotation:
+    """Per-age-band sensory palette rotation (audit A-1, 2026-07-14).
+
+    Mirrors the ``_pick_situation`` / ``_get_opening_rule`` rotation tests:
+    deterministic with a seed, uniform random without one, and the old
+    hard-coded default is no longer the only thing a seedless call can
+    produce. Supersedes the interim global rotation from 6f5db470.
+    """
 
     @pytest.fixture
     def engine(self):
         return AdvancedStoryEngine()
 
-    def test_default_palette_rotates(self):
-        """Across many seeded picks, more than one palette shows up."""
+    def test_pick_sensory_palette_deterministic_with_seed(self):
+        from backend.services.story_service import _pick_sensory_palette
+
+        a = _pick_sensory_palette(age=7, seed="req-123")
+        b = _pick_sensory_palette(age=7, seed="req-123")
+        assert a == b
+        # Different seeds cover more than one slot across the rotation.
+        picked = {_pick_sensory_palette(age=7, seed=f"req-{i}") for i in range(50)}
+        assert len(picked) > 1
+
+    @pytest.mark.parametrize(
+        ("age", "band"),
+        [
+            (4, "sprout"),
+            (7, "explorer"),
+            (10, "adventurer"),
+            (15, "teen"),
+            (30, "adult"),
+        ],
+    )
+    def test_band_returns_palette_from_its_own_table(self, age, band):
         from backend.services.story_service import (
-            _DEFAULT_SENSORY_PALETTE_ROTATION,
-            _pick_default_sensory_palette,
+            _SENSORY_PALETTE_ROTATION,
+            _pick_sensory_palette,
         )
 
-        picked = {_pick_default_sensory_palette(seed=f"req-{i}") for i in range(50)}
-        assert len(picked) > 1
-        assert picked <= set(_DEFAULT_SENSORY_PALETTE_ROTATION)
+        picked = {_pick_sensory_palette(age=age, seed=f"seed-{i}") for i in range(20)}
+        assert picked <= set(_SENSORY_PALETTE_ROTATION[band])
 
-    def test_default_palette_seeded_is_deterministic(self):
-        """Same seed -> same palette, across calls (mirrors _pick_situation)."""
-        from backend.services.story_service import _pick_default_sensory_palette
+    def test_generate_enhanced_prompt_rotates_when_palette_omitted(self, engine):
+        """A seedless call with no caller palette still always embeds SOME
+        rotation palette line — not always the old hard-coded default."""
+        from backend.services.story_service import _SENSORY_PALETTE_ROTATION
 
-        a = _pick_default_sensory_palette(seed="stable-seed")
-        b = _pick_default_sensory_palette(seed="stable-seed")
-        assert a == b
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo", theme="adventure", age=7
+        )
+        assert any(option in prompt for option in _SENSORY_PALETTE_ROTATION["explorer"])
 
-    def test_classic_sweets_palette_still_in_rotation(self):
-        """Old hardcoded default stays available as one option, not retired."""
-        from backend.services.story_service import _DEFAULT_SENSORY_PALETTE_ROTATION
+    def test_generate_enhanced_prompt_passes_through_caller_palette(self, engine):
+        """A caller-provided palette must pass through unchanged — only the
+        None/empty default rotates."""
+        custom = "Rust-orange dusk, distant train whistle, warm diesel air."
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo",
+            theme="adventure",
+            age=7,
+            sensory_palette=custom,
+        )
+        assert custom in prompt
+
+    def test_sensory_palette_line_uses_new_label(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Milo", theme="adventure", age=7
+        )
+        assert (
+            "- **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with "
+            "it, but it must never drive the plot):"
+        ) in prompt
+
+    def test_classic_sweets_palette_still_in_sprout_rotation(self):
+        """The old hardcoded default stays available as one Sprout option
+        among several, not retired outright (audit A-1 intent)."""
+        from backend.services.story_service import _SENSORY_PALETTE_ROTATION
 
         assert (
             "Bright colors, soft sounds, sweet smells."
-            in _DEFAULT_SENSORY_PALETTE_ROTATION
-        )
-
-    def test_no_sensory_palette_supplied_falls_back_to_rotation(self, engine):
-        """Omitting sensory_palette still produces a palette drawn from the
-        rotation, not a bare fallback string outside the set."""
-        from backend.services.story_service import _DEFAULT_SENSORY_PALETTE_ROTATION
-
-        prompt = engine.generate_enhanced_prompt(
-            character="Ana", theme="mystery", age=10
-        )
-        assert any(
-            f"- **SENSORY PALETTE**: {p}" in prompt
-            for p in _DEFAULT_SENSORY_PALETTE_ROTATION
-        )
-
-    def test_caller_supplied_palette_overrides_rotation(self, engine):
-        prompt = engine.generate_enhanced_prompt(
-            character="Ana",
-            theme="mystery",
-            age=10,
-            sensory_palette="Neon signs, wet pavement, distant traffic hum.",
-        )
-        assert (
-            "- **SENSORY PALETTE**: Neon signs, wet pavement, distant traffic hum."
-            in prompt
+            in _SENSORY_PALETTE_ROTATION["sprout"]
         )
 
 
