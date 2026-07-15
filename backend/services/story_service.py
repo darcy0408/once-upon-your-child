@@ -643,6 +643,39 @@ def _get_opening_rule(age: int, seed: str | None = None) -> str:
     )
 
 
+# A-1 (competitive audit, 2026-07-14): with no caller-supplied sensory_palette,
+# every default-path story fell back to one hardcoded string, and "sweet
+# smells" showed up in all six sampled bands — at the oldest band it drove
+# the entire story premise (a bakery/"sugar hour" concept). Rotate a small
+# set of options across senses/moods instead of always defaulting to sweets;
+# "Bright colors, soft sounds, sweet smells." stays in the rotation as one
+# option among several rather than being retired outright.
+_DEFAULT_SENSORY_PALETTE_ROTATION = (
+    "Bright colors, soft sounds, sweet smells.",
+    "Cool shadows, distant music, the taste of rain in the air.",
+    "Warm light, rustling leaves, the hum of something waking up.",
+    "Sharp winter air, crunching footsteps, the smell of woodsmoke.",
+    "Salt spray, creaking wood, gulls calling somewhere overhead.",
+    "Dust motes in a sunbeam, the click of old machinery, a faint hum of static.",
+)
+
+
+def _pick_default_sensory_palette(seed: str | None = None) -> str:
+    """Fallback sensory palette when the caller supplies none.
+
+    Seed semantics mirror ``_get_opening_rule``/``_pick_situation``: with a
+    seed (eval harness / tests) selection is deterministic; without one
+    (prod), uniform random, since no stable per-request id reaches this
+    builder and the rotation goal is variety across a child's stories.
+    """
+    if seed is not None:
+        digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+        return _DEFAULT_SENSORY_PALETTE_ROTATION[
+            int(digest, 16) % len(_DEFAULT_SENSORY_PALETTE_ROTATION)
+        ]
+    return random.choice(_DEFAULT_SENSORY_PALETTE_ROTATION)
+
+
 def _build_real_life_echo(age: int, situation: dict, character: str) -> str:
     """Ambient SEL skill moment for the default story (no parent context).
 
@@ -1360,7 +1393,7 @@ class AdvancedStoryEngine:
             )
         craft_rules = f"""- **LANGUAGE (MANDATORY)**: Earn wonder with specific nouns and strong verbs — never label it. In the story text, "magical", "amazing", "wonderful", and "special" are banned as descriptions; show why the thing is remarkable instead. Also banned anywhere in the story (rewrite the sentence if one appears): "little did ... know", "couldn't help but", "with newfound", "a mix of ... and ...", "the adventure had just begun", "grinned/smiled from ear to ear".{scene_rule}
 - **ENDING (MANDATORY)**: Land the final page exactly as the EMOTIONAL SPINE above directs — concrete, specific to THIS story. Never state the lesson — endings built on "learned that", "From that day on", or "would never forget" are banned.
-- **TITLE**: Do not default to the "[Hero] and the [Adjective] [Noun]" formula. Prefer a title drawn from a specific image, object, or spoken line inside this story."""
+- **TITLE**: Do not default to the "[Hero] and the [Adjective] [Noun]" formula. Prefer a title drawn from a specific image, object, or spoken line inside this story. Use title case (capitalize every major word) — never render it in all lowercase."""
 
         # Derive invisible virtue instruction from therapeutic_prompt
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
@@ -1487,7 +1520,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 **STORY SPECS**:
 - **THEME**: {theme}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
-- **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
+- **SENSORY PALETTE**: {sensory_palette or _pick_default_sensory_palette()}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
 {('- **SPECIAL ABILITY**: ' + special_ability + ' (MUST be used at the climax as the decisive turning point).') if special_ability else '- **SPECIAL ABILITY**: None — hero relies on wit, kindness, and courage.'}

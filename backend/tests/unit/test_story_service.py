@@ -1486,3 +1486,83 @@ class TestOpeningRule:
             )
             assert "FRESH OPENING (MANDATORY)" in prompt
             assert "STORY OPENING (MANDATORY)" not in prompt
+
+
+class TestDefaultSensoryPalette:
+    """A-1 (competitive audit 2026-07-14): rotate the default sensory palette
+    instead of always falling back to the same 'sweet smells' string — the
+    old hardcoded default drove the entire premise of a live 16-year-old
+    sample ("sugar hour")."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    def test_default_palette_rotates(self):
+        """Across many seeded picks, more than one palette shows up."""
+        from backend.services.story_service import (
+            _DEFAULT_SENSORY_PALETTE_ROTATION,
+            _pick_default_sensory_palette,
+        )
+
+        picked = {_pick_default_sensory_palette(seed=f"req-{i}") for i in range(50)}
+        assert len(picked) > 1
+        assert picked <= set(_DEFAULT_SENSORY_PALETTE_ROTATION)
+
+    def test_default_palette_seeded_is_deterministic(self):
+        """Same seed -> same palette, across calls (mirrors _pick_situation)."""
+        from backend.services.story_service import _pick_default_sensory_palette
+
+        a = _pick_default_sensory_palette(seed="stable-seed")
+        b = _pick_default_sensory_palette(seed="stable-seed")
+        assert a == b
+
+    def test_classic_sweets_palette_still_in_rotation(self):
+        """Old hardcoded default stays available as one option, not retired."""
+        from backend.services.story_service import _DEFAULT_SENSORY_PALETTE_ROTATION
+
+        assert (
+            "Bright colors, soft sounds, sweet smells."
+            in _DEFAULT_SENSORY_PALETTE_ROTATION
+        )
+
+    def test_no_sensory_palette_supplied_falls_back_to_rotation(self, engine):
+        """Omitting sensory_palette still produces a palette drawn from the
+        rotation, not a bare fallback string outside the set."""
+        from backend.services.story_service import _DEFAULT_SENSORY_PALETTE_ROTATION
+
+        prompt = engine.generate_enhanced_prompt(
+            character="Ana", theme="mystery", age=10
+        )
+        assert any(
+            f"- **SENSORY PALETTE**: {p}" in prompt
+            for p in _DEFAULT_SENSORY_PALETTE_ROTATION
+        )
+
+    def test_caller_supplied_palette_overrides_rotation(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Ana",
+            theme="mystery",
+            age=10,
+            sensory_palette="Neon signs, wet pavement, distant traffic hum.",
+        )
+        assert (
+            "- **SENSORY PALETTE**: Neon signs, wet pavement, distant traffic hum."
+            in prompt
+        )
+
+
+class TestTitleCasing:
+    """A-2 (competitive audit 2026-07-14): title-case nit, batched with A-1
+    since both touch the same prompt block."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    def test_title_rule_requires_title_case(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Ana", theme="mystery", age=13
+        )
+        assert "Use title case" in prompt
+        assert "never render it in all lowercase" in prompt
