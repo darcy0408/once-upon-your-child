@@ -1,10 +1,14 @@
 name: iOS Build (No Codesign)
 
+# macos-latest runners are the only jobs here that meter on a public repo, and
+# they bill at 10x Linux. Triggering on 'lib/**' fired this on nearly every PR
+# and consumed $75 of the ~$80 monthly allowance in July 2026, which blocked all
+# CI account-wide. Keep this scoped to genuine iOS changes; use workflow_dispatch
+# before a release.
 on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'lib/**'
       - 'ios/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
