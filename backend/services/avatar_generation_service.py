@@ -256,6 +256,7 @@ class AvatarGenerationService:
 Transform the reference image into a fully illustrated storybook character
 in the following style: {art_style_directive}.
 Maintain the character's facial features while converting them into the target art style.
+The final image must read as {stylization_register} — NOT a retouched, filtered, or beautified photograph.
 
 **Core Capabilities**
 * Character Stylist: translating reference features into {art_style_directive} character designs.
@@ -265,7 +266,10 @@ Maintain the character's facial features while converting them into the target a
 
 **Technical Configuration**
 * Style: {art_style_directive}. NOT a photograph. NOT hyper-realistic.
-* Use the reference image for head shape, skin tone, facial structure, AND hair (length, style, color).
+* Stylization Strength: {stylization}
+* Use the reference image for head shape, skin tone, facial structure, AND hair (length, style, color) —
+  but re-draw every feature IN the target art style; likeness comes from shapes and colors, never from
+  keeping photographic detail.
 * Lighting Direction: {lighting_style}
 
 **Character Design**
@@ -292,6 +296,8 @@ Maintain the character's facial features while converting them into the target a
             wardrobe=band_style["wardrobe"].format(favorite_color=favorite_color),
             environment_style=band_style["environment"],
             lighting_style=band_style["lighting"],
+            stylization=band_style["stylization"],
+            stylization_register=band_style["stylization_register"],
             photo_context=f"\n* {photo_context}" if photo_context else "",
         )
 
@@ -465,6 +471,12 @@ Maintain the character's facial features while converting them into the target a
             return {
                 "band_name": "Sprout (3-5)",
                 "art_style": "Soft, rounded watercolor-adjacent 3D animation with gentle edges",
+                "stylization": (
+                    "FULLY cartoon. Simplify and exaggerate into soft picture-book shapes: "
+                    "big round eyes, button nose, round cheeks. Skin is smooth matte color with "
+                    "ZERO photographic texture — no pores, no blemishes, no skin sheen."
+                ),
+                "stylization_register": "a page from a toddler's picture book",
                 "proportions": "Large head-to-body ratio, chubby limbs, big expressive eyes, round cheeks",
                 "complexity": "Simple costume with 2-3 colors max, no fine detail",
                 "tone": "Warm, safe, friendly",
@@ -481,7 +493,17 @@ Maintain the character's facial features while converting them into the target a
         elif age <= 8:
             return {
                 "band_name": "Explorer (6-8)",
-                "art_style": "Bright cartoon with clear outlines, Pixar-style 3D animation",
+                "art_style": (
+                    "Bright stylized 3D-animated-film cartoon (Pixar-style) with clear "
+                    "outlines and exaggerated features"
+                ),
+                "stylization": (
+                    "FULLY cartoon — an animated-movie hero, never a filtered photo. "
+                    "Exaggerate: oversized expressive eyes, simplified rounded facial planes, "
+                    "clean bold shapes, saturated colors. Skin is smooth and flat-shaded with "
+                    "ZERO photographic texture — no pores, no fine lines, no photoreal skin detail."
+                ),
+                "stylization_register": "a frame from a Pixar-style animated film",
                 "proportions": "Slightly elongated body, expressive face, rounded features",
                 "complexity": "Simple costume with one defining accessory",
                 "tone": "Playful, adventurous",
@@ -499,6 +521,12 @@ Maintain the character's facial features while converting them into the target a
             return {
                 "band_name": "Adventurer (9-11)",
                 "art_style": "Stylized cartoon with semi-realistic faces, rich color palette",
+                "stylization": (
+                    "Clearly illustrated animated-film character: stylized facial planes and "
+                    "simplified painterly skin shading — no photographic skin texture — while "
+                    "keeping believable proportions."
+                ),
+                "stylization_register": "a still from a stylized animated adventure film",
                 "proportions": "Balanced proportions with more anatomical detail, expressive posture",
                 "complexity": "Costume with role-specific gear and layered elements",
                 "tone": "Capable, cool, relatable",
@@ -516,6 +544,11 @@ Maintain the character's facial features while converting them into the target a
             return {
                 "band_name": "Creator (12-14)",
                 "art_style": "Semi-realistic graphic novel style with detailed shading",
+                "stylization": (
+                    "Visibly illustrated graphic-novel rendering: drawn linework and painted "
+                    "shading — never photographic."
+                ),
+                "stylization_register": "a panel from an illustrated graphic novel",
                 "proportions": "Near-realistic proportions, detailed facial features",
                 "complexity": "Detailed outfit reflecting personal style, layered accessories",
                 "tone": "Authentic, edgy-lite, identity-forward",
@@ -533,6 +566,11 @@ Maintain the character's facial features while converting them into the target a
             return {
                 "band_name": "Adolescent/Adult (15+)",
                 "art_style": "Stylized realistic or anime-influenced illustration with painterly textures",
+                "stylization": (
+                    "Painterly, hand-crafted illustration finish: visible brushwork and "
+                    "artistic rendering — clearly art, never a photograph or photo filter."
+                ),
+                "stylization_register": "a painted character illustration",
                 "proportions": "Realistic proportions, expressive posture, detailed features",
                 "complexity": "Full outfit detail with personal style and expressive posture",
                 "tone": "Sophisticated, aspirational, self-expressive",

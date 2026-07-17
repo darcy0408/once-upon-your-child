@@ -681,7 +681,10 @@ class ScenarioData {
       id: 'superhero',
       emoji: '🦸',
       title: 'Superhero Story',
-      illustration: 'images/scenarios/my_big_feelings_btn.webp',
+      // Dedicated flying-hero art (512x512, circle-crop safe). Was the Big
+      // Feelings meditation tile — wrong subject and under-res for the Magic
+      // Review orb (image-cohesion audit 2026-07-15, P2).
+      illustration: 'images/scenarios/superhero_btn.webp',
       description:
           'A superhero adventure where the child is the hero.',
       // Mission-briefing preview line, age-tiered so 9-12 isn't shown the

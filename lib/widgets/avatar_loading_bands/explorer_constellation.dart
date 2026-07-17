@@ -50,6 +50,21 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
   // Burst effects
   final List<_BurstEffect> _bursts = [];
 
+  // Firework palettes for tap bursts (mirrors MagicalLoadingView's set so
+  // catching a star feels the same here as during story generation).
+  static const List<List<Color>> _fireworkPalettes = <List<Color>>[
+    [Color(0xFFFFD700), Color(0xFFFFAB00), Color(0xFFFFFFFF)], // sunburst
+    [Color(0xFFFF4081), Color(0xFFFF80AB), Color(0xFFFFFFFF)], // pink pop
+    [Color(0xFF40E0FF), Color(0xFF80DEEA), Color(0xFFFFFFFF)], // aqua wish
+    [Color(0xFFB388FF), Color(0xFFE1BEE7), Color(0xFFFFD700)], // royal sparkle
+    [
+      Color(0xFFFFD700),
+      Color(0xFFFF4081),
+      Color(0xFF40E0FF),
+      Color(0xFF7CFC00),
+    ], // rainbow mix
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -159,9 +174,25 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
     HapticFeedback.lightImpact();
     widget.onTap();
 
-    // Spawn burst at target position
+    // Spawn a firework burst at the target position. Under reduced motion
+    // the burst still fires (it's direct tap feedback) but with fewer,
+    // shorter-lived sparks — same convention as MagicalLoadingView.
+    final reduced = MotionPrefs.reduceMotion(context);
+    final palette = _fireworkPalettes[_rng.nextInt(_fireworkPalettes.length)];
+    final particleCount = reduced ? 5 : (10 + _rng.nextInt(4));
+    final particles = List<_FireworkParticle>.generate(particleCount, (i) {
+      final base = (i / particleCount) * 2 * pi;
+      final jitter = (_rng.nextDouble() - 0.5) * 0.45;
+      return _FireworkParticle(
+        angle: base + jitter,
+        distance: (reduced ? 32.0 : 58.0) + _rng.nextDouble() * 38.0,
+        color: palette[_rng.nextInt(palette.length)],
+        size: 5.0 + _rng.nextDouble() * 4.5,
+      );
+    });
+
     final burstCtrl = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     burstCtrl.forward().then((_) {
@@ -175,7 +206,11 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
     setState(() {
       target.ctrl.dispose();
       _tapTargets.remove(target);
-      _bursts.add(_BurstEffect(center: target.center, ctrl: burstCtrl));
+      _bursts.add(_BurstEffect(
+        center: target.center,
+        ctrl: burstCtrl,
+        particles: particles,
+      ));
     });
   }
 
@@ -215,34 +250,6 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
                 ),
               ),
 
-              // ── Burst effects ──────────────────────────────────────────────
-              for (final burst in _bursts)
-                AnimatedBuilder(
-                  animation: burst.ctrl,
-                  builder: (_, __) {
-                    final v = burst.ctrl.value;
-                    final radius = v * 40.0;
-                    final alpha = (1.0 - v).clamp(0.0, 1.0);
-                    return Positioned(
-                      left: burst.center.dx - radius,
-                      top: burst.center.dy - radius,
-                      child: IgnorePointer(
-                        child: Container(
-                          width: radius * 2,
-                          height: radius * 2,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: bt.accent.withValues(alpha: alpha),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
               // ── Tap targets ────────────────────────────────────────────────
               for (final target in List.of(_tapTargets))
                 _TapTargetWidget(
@@ -252,15 +259,32 @@ class _ExplorerConstellationState extends State<ExplorerConstellation>
                   onTap: () => _onHitTarget(target),
                 ),
 
-              // Invisible hit area over entire stage for "miss" feedback
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTapDown: (details) {
-                    // Check if we hit a target (targets handle their own taps)
+              // ── Firework bursts (on top so they read clearly) ──────────────
+              //
+              // NOTE: nothing tappable may sit above the tap targets — a
+              // previous full-stage GestureDetector here won the gesture arena
+              // and silently swallowed every star tap (topmost recognizer
+              // wins, even with HitTestBehavior.translucent).
+              for (final burst in _bursts)
+                AnimatedBuilder(
+                  animation: burst.ctrl,
+                  builder: (_, __) {
+                    const burstStage = 220.0;
+                    return Positioned(
+                      left: burst.center.dx - burstStage / 2,
+                      top: burst.center.dy - burstStage / 2,
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          size: const Size(burstStage, burstStage),
+                          painter: _FireworkBurstPainter(
+                            progress: burst.ctrl.value,
+                            particles: burst.particles,
+                          ),
+                        ),
+                      ),
+                    );
                   },
                 ),
-              ),
             ],
           );
         },
@@ -631,11 +655,105 @@ class _TapTarget {
 class _BurstEffect {
   final Offset center;
   final AnimationController ctrl;
+  final List<_FireworkParticle> particles;
 
   _BurstEffect({
     required this.center,
     required this.ctrl,
+    required this.particles,
   });
+}
+
+class _FireworkParticle {
+  final double angle; // radians, direction of travel
+  final double distance; // peak travel distance in px
+  final Color color;
+  final double size; // sparkle radius at peak
+
+  _FireworkParticle({
+    required this.angle,
+    required this.distance,
+    required this.color,
+    required this.size,
+  });
+}
+
+/// Firework burst painter — ported from MagicalLoadingView so star-catch
+/// feedback matches the story-generation mini-game.
+class _FireworkBurstPainter extends CustomPainter {
+  final double progress; // 0..1
+  final List<_FireworkParticle> particles;
+
+  _FireworkBurstPainter({required this.progress, required this.particles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final eased = Curves.easeOutCubic.transform(progress);
+    const fadeStart = 0.55;
+    final opacity = progress < fadeStart
+        ? 1.0
+        : (1.0 - (progress - fadeStart) / (1.0 - fadeStart)).clamp(0.0, 1.0);
+
+    for (final p in particles) {
+      final gravity = progress * progress * 14.0;
+      final dx = cos(p.angle) * p.distance * eased;
+      final dy = sin(p.angle) * p.distance * eased + gravity;
+      final pos = center + Offset(dx, dy);
+
+      // Streak from ~55% behind current pos to current pos so each spark
+      // reads as a moving sparkle, not a static dot.
+      const tailFrac = 0.55;
+      final tailEased = eased * tailFrac;
+      final tailGravity = gravity * tailFrac * tailFrac;
+      final tail = center +
+          Offset(
+            cos(p.angle) * p.distance * tailEased,
+            sin(p.angle) * p.distance * tailEased + tailGravity,
+          );
+      canvas.drawLine(
+        tail,
+        pos,
+        Paint()
+          ..color = p.color.withValues(alpha: 0.45 * opacity)
+          ..strokeWidth = 2.4
+          ..strokeCap = StrokeCap.round,
+      );
+
+      _drawSparkle(
+          canvas, pos, p.size * (1.0 - 0.35 * progress), p.color, opacity);
+    }
+  }
+
+  /// Four-point sparkle (rounded diamond cross) — visually distinct from the
+  /// solid star icon used for tap targets.
+  void _drawSparkle(
+      Canvas canvas, Offset c, double r, Color color, double alpha) {
+    if (r <= 0) return;
+    final r2 = r * 0.32;
+    final path = Path()
+      ..moveTo(c.dx, c.dy - r)
+      ..lineTo(c.dx + r2, c.dy - r2)
+      ..lineTo(c.dx + r, c.dy)
+      ..lineTo(c.dx + r2, c.dy + r2)
+      ..lineTo(c.dx, c.dy + r)
+      ..lineTo(c.dx - r2, c.dy + r2)
+      ..lineTo(c.dx - r, c.dy)
+      ..lineTo(c.dx - r2, c.dy - r2)
+      ..close();
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color.withValues(alpha: alpha * 0.55)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawPath(path, Paint()..color = color.withValues(alpha: alpha));
+  }
+
+  @override
+  bool shouldRepaint(covariant _FireworkBurstPainter old) =>
+      old.progress != progress || old.particles != particles;
 }
 
 // ── Minimal seeded pseudo-random (compile-time constant) ──────────────────────
