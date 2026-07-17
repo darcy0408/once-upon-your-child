@@ -1,12 +1,12 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-07-15
+**Last Updated:** 2026-07-17
 
 > Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name. The business now operates through an **LLC** (formed 2026-06-21).
 
 ## Current Status: Pre-Launch Compliance & Safety Hardening
 
-The core product is feature-complete across all 6 age bands; the work through June 2026 has been a **launch-gate compliance and safety sweep**, not new features. The app is deployed (backend on Railway; frontend on **Cloudflare Pages** at onceuponyourchild.app — the old Netlify/Railway `grand-light` frontends are both orphaned). **No live users yet** — every safety/compliance item is gated on *launch*, not on production traffic.
+The core product is feature-complete across all 6 age bands; the work through June 2026 has been a **launch-gate compliance and safety sweep**, not new features. The app is deployed (backend on Railway; frontend on **Cloudflare Pages** at onceuponyourchild.app, both apex and www — the old Netlify site and Railway `grand-light` frontend service were both deleted 2026-07-17). **No live users yet** — every safety/compliance item is gated on *launch*, not on production traffic.
 
 The single largest change this month: **all AI provider paths moved off Google Gemini** for child-directed content, because Gemini's API ToS (and Vertex's) prohibit apps directed at under-18s ("MT-137"). Story **text** now runs on **OpenAI GPT-5 mini** for all tiers; **avatars** on OpenAI gpt-image; **narration** on **Azure AI Speech**; **illustrations** stay on Cloudflare Flux (clean). Gemini is down to residual image-fallback paths being retired.
 
@@ -104,7 +104,7 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 ### Story Generation & Quality (Phase 6)
 - **Prompt-template versioning** (MT-187 F-01) — prompts are versioned and tracked
 - **Streaming story backend** (PERF-01) + cancel foundation (PERF-04)
-- Story-quality **eval/judge harness** (MT-186) — GitHub Models gpt-4.1 judge, scheduled daily, story text truncated to 5k chars to avoid 413
+- Story-quality **eval/judge harness** (MT-186) — GitHub Models gpt-4.1 judge, story text truncated to 5k chars to avoid 413; the scheduled-daily workflow (`eval-judge-resume.yml`) was later deleted in #168, so the harness now runs on-demand only, not on a schedule
 - Themes feature (story themes recall, wired end-to-end)
 
 ### Therapeutic / Safety (Phase 6 additions)

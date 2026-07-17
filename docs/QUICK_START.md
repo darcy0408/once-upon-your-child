@@ -2,6 +2,8 @@
 
 **Updated:** 2026-01-10 (Post-restart recovery)
 
+> **⚠️ ARCHIVED (2026-07-17):** The Netlify deployment path described below no longer applies. Frontend is **Cloudflare Pages** at onceuponyourchild.app (cutover 2026-07-15; Railway/Netlify frontends decommissioned). Backend is still Railway. Kept for historical reference only.
+
 ---
 
 ## ✅ Current Status

@@ -3,6 +3,8 @@
 **Goal:** Deploy with minimal cost, maximum reliability
 **Strategy:** Netlify free tier (frontend) + Railway paid (backend), with Railway backup ready
 
+> **⚠️ ARCHIVED (2026-07-17):** This guide's Netlify/Railway frontend strategy is obsolete. Frontend is now **Cloudflare Pages** at onceuponyourchild.app (cutover 2026-07-15; the Netlify site and the Railway `grand-light` frontend service have both been deleted). Backend remains on Railway per Part 3/Option B below. Kept for historical reference only — do not follow the Netlify steps.
+
 ---
 
 ## Quick Decision Guide
