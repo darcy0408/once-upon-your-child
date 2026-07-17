@@ -82,7 +82,9 @@ class TestCinematicFeatures(unittest.TestCase):
         self.assertIn(f"- **CONFLICT**: {conflict_hook}", prompt)
         self.assertIn(
             "- **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with it, "
-            f"but it must never drive the plot): {sensory_palette}",
+            "but it must never drive the plot, and its wording must never be "
+            "copied into the story text verbatim — reimagine the images in "
+            f"your own words): {sensory_palette}",
             prompt,
         )
 

@@ -1558,7 +1558,9 @@ class TestSensoryPaletteRotation:
         )
         assert (
             "- **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with "
-            "it, but it must never drive the plot):"
+            "it, but it must never drive the plot, and its wording must never "
+            "be copied into the story text verbatim — reimagine the images in "
+            "your own words):"
         ) in prompt
 
     def test_classic_sweets_palette_still_in_sprout_rotation(self):
