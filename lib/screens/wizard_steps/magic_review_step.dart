@@ -72,7 +72,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   // Double-submit guard: set synchronously at the very top of
   // _launchStoryCreation, BEFORE the first await. _isGenerating only flips true
   // after several awaits (getCountdownCount → getRecentFeeling →
-  // isUsingOwnApiKey), so a 2nd tap during that window used to slip past the
+  // subscription reads), so a 2nd tap during that window used to slip past the
   // guard and start a 2nd Celery task + 2nd screen. This bridges the gap until
   // _isGenerating takes over. Reset on every abort/error/finally path so a
   // failed attempt never permanently locks the Create-Story button.
@@ -363,7 +363,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // Silently check for a recent feelings journal entry (last 24 h) BEFORE showing the loader
     final currentFeeling = await FeelingsAmbientService.getRecentFeeling();
 
-    // Get subscription status and BYOK status
+    // Get subscription status
     final subState = ref.read(subscriptionProvider);
     final isPremium = subState.tier == 'premium' || subState.tier == 'family';
     final subscription = UserSubscription(
@@ -374,9 +374,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               : SubscriptionTier.free),
       isActive: subState.status == 'active',
     );
-    final isUsingOwnKey = await ApiServiceManager.isUsingOwnApiKey();
     final canGetIllustrations =
-        isPremium || isUsingOwnKey || widget.wizardData.learningToReadMode;
+        isPremium || widget.wizardData.learningToReadMode;
 
     setState(() {
       _isGenerating = true;
@@ -539,7 +538,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       })));
         }
       } else {
-        // Only request illustrations from backend if user is premium/BYOK
+        // Only request illustrations from backend if user is premium
         final shouldRequestIllustrations =
             widget.wizardData.includeIllustrations && canGetIllustrations;
 
@@ -862,7 +861,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         }
 
         List<Map<String, dynamic>> inlineIllustrations = result.illustrations;
-        // Only try to generate inline illustrations if user is premium/BYOK
+        // Only try to generate inline illustrations if user is premium
         if (widget.wizardData.includeIllustrations &&
             canGetIllustrations &&
             _illustrationPreference != IllustrationPreference.none &&
@@ -956,7 +955,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             errText.contains('rate limit') ||
             errText.contains('rate-limit') ||
             errText.contains('too many requests')) {
-          // Gemini free-tier exhaustion — commonly a BYOK key with limit:0.
+          // Provider quota exhaustion or server-side rate limit.
           errorMsg =
               'Stories are taking a quick break — try again in a minute! ✨\n'
               'Stories temporarily limited by API quota.';
@@ -983,8 +982,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     Map<String, dynamic>? priorSaga,
   }) async {
     final cruxResult = await ApiServiceManager.generateAntiheroCrux(
-      characterName:
-          requestData['character']?.toString() ?? widget.wizardData.characterName,
+      characterName: requestData['character']?.toString() ??
+          widget.wizardData.characterName,
       age: (requestData['age'] as int?) ?? widget.wizardData.characterAge,
       characterId: requestData['character_id']?.toString(),
       subscriptionTier: subscription.tier.name,
@@ -1025,8 +1024,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               cruxContinuationToken: cruxResult.continuationToken,
               cruxChoices: cruxResult.choices,
               cruxText: cruxResult.crux,
-              onCruxResolved: (superheroMeta) =>
-                  _recordAntiheroSaga(heroCharacterId, superheroMeta, cruxTitle),
+              onCruxResolved: (superheroMeta) => _recordAntiheroSaga(
+                  heroCharacterId, superheroMeta, cruxTitle),
             )));
     if (mounted) {
       setState(() {
@@ -1759,9 +1758,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     // Adult band: surface the scenario's introspective question as a quiet
     // editorial banner above the summary (MT-275). Only the Adult band carries
     // adultThematicQuestion, so this stays null for Adolescent.
-    final adultQuestion = band.band == AgeBand.adult
-        ? scenarioCard?.adultThematicQuestion
-        : null;
+    final adultQuestion =
+        band.band == AgeBand.adult ? scenarioCard?.adultThematicQuestion : null;
     final companionLine =
         data.companionNames.isEmpty ? 'Solo' : data.companionNames.join(', ');
 

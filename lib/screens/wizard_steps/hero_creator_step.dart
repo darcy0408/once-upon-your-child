@@ -989,8 +989,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Page 1 → Page 3 once an avatar lands. Two entry points hit this:
     //   1. Gallery opens directly from Page 1 (when !_shouldShowBuildHeroPage),
     //      so Page 2 is skipped entirely.
-    //   2. BYOK upgrade mid-flow: a non-premium user on Page 1 taps Next →
-    //      gallery → "Create custom avatar" → BYOK wizard. The wizard flips
+    //   2. Premium upgrade mid-flow: a non-premium user on Page 1 taps Next →
+    //      gallery → "Create custom avatar" → Premium upsell. Subscribing flips
     //      _isPremium → true (and thus _shouldShowBuildHeroPage → true), then
     //      drops the user straight into CustomAvatarScreen. Without dropping
     //      the !_shouldShowBuildHeroPage guard, the avatar lands but no
@@ -2896,15 +2896,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         // When a premium user taps the gallery's "Create a custom avatar
         // that looks like me!" banner, close the gallery and route into
         // the custom-avatar wizard. Without this the banner would re-show
-        // the BYOK setup upsell even for users who already have a key.
+        // the Premium upsell even for users who are already premium.
         onCreateCustomAvatar: () {
           Navigator.of(ctx).pop();
           _openCustomAvatarScreen();
         },
       ),
     );
-    // Gallery may have completed BYOK setup (via its own CTA or the tweak panel).
-    // Re-check premium so downstream gates (build-hero page, illustrations) update.
+    // The user may have subscribed inside the gallery (via its CTA or the tweak
+    // panel). Re-check premium so downstream gates (build-hero page,
+    // illustrations) update.
     await _refreshPremiumStatus();
   }
 
@@ -3045,7 +3046,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   /// One "before" or "after" panel in the avatar upgrade teaser.
-  Widget _buildAvatarTeaserPanel({required String label, required Widget child}) {
+  Widget _buildAvatarTeaserPanel(
+      {required String label, required Widget child}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

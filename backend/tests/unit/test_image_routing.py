@@ -10,8 +10,8 @@ Sprout was switched off Gemini-primary to Flux Schnell primary for cost
 (~13× cheaper); Gemini-via-OpenRouter remains the fallback so a child always
 gets a picture.
 
-Also covers the BYOK override (user_api_key forces Gemini regardless of age)
-and the FLUX_SCHNELL_DISABLED kill-switch env var.
+Also covers the FLUX_SCHNELL_DISABLED kill-switch env var. (The BYOK
+user_api_key override was removed with the BYOK sunset, MT-358.)
 """
 
 from __future__ import annotations

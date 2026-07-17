@@ -9,9 +9,11 @@ Flutter (lib/)  ──REST──►  Flask (backend/)  ──►  Gemini API
                                               ──►  OpenRouter (images)
 ```
 
-Two API modes:
-- **Standard users**: Flutter calls Flask backend, which calls Gemini using the server-side API key.
-- **BYOK users**: Flutter calls Gemini directly (bypassing backend) via `flutter_secure_storage` + `google_generative_ai` package.
+All AI calls run server-side: Flutter calls the Flask backend, which calls the
+AI providers (story text = OpenAI; images = Cloudflare Flux/OpenRouter;
+narration = Azure Speech) with server-managed keys. There is no client-side
+AI-provider path (the old BYOK direct-Gemini mode was removed 2026-07-15,
+MT-358).
 
 All Flutter→backend routing goes through `lib/services/api_service_manager.dart`.
 

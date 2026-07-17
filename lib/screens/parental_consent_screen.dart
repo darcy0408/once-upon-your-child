@@ -8,7 +8,7 @@ import '../services/app_tts_service.dart';
 import '../services/consent_age.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
-import 'byok_setup_wizard.dart' show ParentalGateDialog;
+import '../widgets/parental_gate_dialog.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
@@ -131,8 +131,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     // compile-time `_kConsentTestBypass` flag (`--dart-define`), default OFF —
     // it cannot be triggered by a URL query parameter or any runtime input.
     if (_kConsentTestBypass) {
-      debugPrint(
-          '🔓 COPPA consent bypassed (CONSENT_TEST_BYPASS build flag)');
+      debugPrint('🔓 COPPA consent bypassed (CONSENT_TEST_BYPASS build flag)');
       // Schedule after first frame so Navigator/context are ready.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _debugBypassConsent();
@@ -230,402 +229,399 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
               : !_parentGatePassed
                   ? _buildHandoffStep()
                   : Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg,
-                          AppSpacing.md,
-                          AppSpacing.lg,
-                          AppSpacing.md,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Parent-directed legal notice. The child-facing
-                            // intro and kid summary are shown on the prior
-                            // hand-off step (CMP-6); this section is for the
-                            // parent/guardian who has cleared the parental gate.
-                            Text(
-                              'Notice to Parents & Guardians',
-                              style: GoogleFonts.fredoka(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.md,
+                              AppSpacing.lg,
+                              AppSpacing.md,
                             ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Your child (age ${widget.declaredAge}) would like to use Once Upon YOUR Child. '
-                              'As required by COPPA, we need your verifiable consent before your child can use this app.',
-                              style: GoogleFonts.fredoka(
-                                  color: Colors.white, fontSize: 16),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            // AI-transparency notice at consent time (STORE-6 /
-                            // PP-6): parents must know content is AI-generated.
-                            Row(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('✨',
-                                    style: TextStyle(fontSize: 16)),
-                                const SizedBox(width: AppSpacing.xs),
-                                Expanded(
-                                  child: Text(
-                                    'Please note: stories, illustrations, and avatars are created by AI from your child\'s inputs. AI content can be imperfect and is not human-authored or pre-reviewed.',
-                                    style: GoogleFonts.fredoka(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                // Parent-directed legal notice. The child-facing
+                                // intro and kid summary are shown on the prior
+                                // hand-off step (CMP-6); this section is for the
+                                // parent/guardian who has cleared the parental gate.
+                                Text(
+                                  'Notice to Parents & Guardians',
+                                  style: GoogleFonts.fredoka(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            // Not-therapy boundary + crisis resource
-                            // (parent-facing). The product touches feelings
-                            // ("big feelings", Life Quests, the older-band
-                            // "secret" mechanic), so a parent must understand
-                            // it is NOT therapeutic and where real help lives.
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color:
-                                        const Color(0xFFC9A678).withAlpha(150)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.favorite_rounded,
-                                          size: 18, color: Color(0xFFC9A678)),
-                                      const SizedBox(width: AppSpacing.xs),
-                                      Text(
-                                        'For stories — not therapy',
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  'Your child (age ${widget.declaredAge}) would like to use Once Upon YOUR Child. '
+                                  'As required by COPPA, we need your verifiable consent before your child can use this app.',
+                                  style: GoogleFonts.fredoka(
+                                      color: Colors.white, fontSize: 16),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                // AI-transparency notice at consent time (STORE-6 /
+                                // PP-6): parents must know content is AI-generated.
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('✨',
+                                        style: TextStyle(fontSize: 16)),
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Expanded(
+                                      child: Text(
+                                        'Please note: stories, illustrations, and avatars are created by AI from your child\'s inputs. AI content can be imperfect and is not human-authored or pre-reviewed.',
                                         style: GoogleFonts.fredoka(
-                                          color: const Color(0xFFC9A678),
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                // Not-therapy boundary + crisis resource
+                                // (parent-facing). The product touches feelings
+                                // ("big feelings", Life Quests, the older-band
+                                // "secret" mechanic), so a parent must understand
+                                // it is NOT therapeutic and where real help lives.
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: const Color(0xFFC9A678)
+                                            .withAlpha(150)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.favorite_rounded,
+                                              size: 18,
+                                              color: Color(0xFFC9A678)),
+                                          const SizedBox(width: AppSpacing.xs),
+                                          Text(
+                                            'For stories — not therapy',
+                                            style: GoogleFonts.fredoka(
+                                              color: const Color(0xFFC9A678),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                        'Once Upon YOUR Child is for fun and imagination. It is not therapy, counseling, or medical advice, and is not a substitute for professional care. If your child is struggling with their feelings or safety, please reach out to a professional.',
+                                        style: textWhite70,
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                        'Free, confidential help is available 24/7 — call or text 988 (Suicide & Crisis Lifeline), or text HOME to 741741.',
+                                        style: textWhite70,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                // Notice to Parents box
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: const Color(0xFFFFD700)
+                                            .withAlpha(120)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'What We Collect & Why',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFFFD700),
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          '• Child\'s first name and age — to personalize stories',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Character choices and avatar selections — saved for your child\'s stories',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Story preferences and any "big feelings" your child chooses to share — used to personalize that story. This emotional-state text is sent to our AI provider as part of generating the story. It is not a health or therapy record and is not used to build a profile of your child.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Usage data — to improve the app (no personal identifiers)',
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'What We Do NOT Do',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFFFD700),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          "• Never sell or share your child's personal information",
+                                          style: textWhite70),
+                                      const Text(
+                                          '• No behavioral advertising or third-party tracking',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Your child can choose a premade avatar instead of creating a cartoon image from a photo',
+                                          style: textWhite70),
+                                      const Text(
+                                          "• Your child's stories and characters are saved on our secure servers — you can view or delete them any time from Parent Controls",
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Photo-based avatars are optional and off by default — if you turn them on, a photo is sent securely to create the cartoon avatar and is used for nothing else',
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'Third-Party Services',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFFFD700),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          '• OpenAI — AI story-text generation and character-avatar generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image/avatar prompts; on the photo-avatar path, the child\'s photo.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Cloudflare Workers AI — AI story-page illustrations (primary). Receives image prompts.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Google Gemini — fallback for story illustrations, and a voice-narration option (Gemini Flash TTS). Receives image prompts or generated story text.',
+                                          style: textWhite70),
+                                      const Text(
+                                          "• OpenRouter, Replicate — additional AI image/avatar generation (fallback). Receive image prompts, and on the photo-avatar path the child's photo.",
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Microsoft (Azure AI Speech / Edge) and Google (Gemini Flash TTS) — voice narration. Receive generated story text to convert it to spoken audio.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• ElevenLabs — premium/character voice narration (ages 13+ only; never for children under 13). Receives generated story text.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Stripe — payment processing. Receives parent payment info; never child data.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Railway — secure cloud hosting. Stores profiles, stories, and preferences (United States).',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Firebase / Google Analytics — app analytics. Anonymized usage events only; off by default and not enabled for children under 13.',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Sentry — error monitoring. Receives crash and error diagnostics.',
+                                          style: textWhite70),
+                                      const Text(
+                                          "• Resend — sends this consent verification email. Receives the parent/guardian email address.",
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          'Each provider receives only the minimum data needed and is governed by its own privacy policy. The full list also appears in our Privacy Policy.',
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        'Who Operates This App',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFFFD700),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      // CMP-11 / COPPA §312.4(d): the direct notice
+                                      // to parents must name the operator and give
+                                      // a postal address and phone number.
+                                      const Text('• Operator: Darcy VanPelt',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Postal address: 2816 Orchard Ave, Grand Junction, CO 81501',
+                                          style: textWhite70),
+                                      const Text('• Phone: 970-640-2011',
+                                          style: textWhite70),
+                                      const Text(
+                                          '• Email: darcy@onceuponyourchild.app',
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          'Contact us using the details above to review, delete, or stop further collection of your child\'s information.',
+                                          style: textWhite70),
                                     ],
                                   ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                    'Once Upon YOUR Child is for fun and imagination. It is not therapy, counseling, or medical advice, and is not a substitute for professional care. If your child is struggling with their feelings or safety, please reach out to a professional.',
-                                    style: textWhite70,
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                    'Free, confidential help is available 24/7 — call or text 988 (Suicide & Crisis Lifeline), or text HOME to 741741.',
-                                    style: textWhite70,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            // Notice to Parents box
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color:
-                                        const Color(0xFFFFD700).withAlpha(120)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'What We Collect & Why',
-                                    style: GoogleFonts.fredoka(
-                                      color: const Color(0xFFFFD700),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                TextField(
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: _requiresEmailVerification
+                                        ? 'Parent/Guardian Email (required)'
+                                        : 'Your Email (optional)',
+                                    labelStyle:
+                                        const TextStyle(color: Colors.white70),
+                                    hintText: 'parent@example.com',
+                                    hintStyle: TextStyle(
+                                        color: Colors.white.withAlpha(120)),
+                                    helperText: _requiresEmailVerification
+                                        ? 'Required — we email a code to confirm you are the parent (COPPA verifiable consent).'
+                                        : 'Recommended — allows us to send you account confirmations.',
+                                    helperStyle: const TextStyle(
+                                        color: Colors.white54, fontSize: 12),
+                                    helperMaxLines: 3,
+                                    errorText: (_parentEmail != null &&
+                                            (_parentEmail!.trim().isNotEmpty ||
+                                                _requiresEmailVerification) &&
+                                            !_emailValid)
+                                        ? 'Enter a valid email address'
+                                        : null,
+                                    errorStyle: const TextStyle(
+                                        color: Color(0xFFFF8A80), fontSize: 12),
+                                    prefixIcon: const Icon(Icons.email_outlined,
+                                        color: Colors.white70),
+                                    filled: true,
+                                    fillColor: Colors.white.withAlpha(25),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                          color: Colors.white54),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                          color: Colors.white54),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                          color: Color(0xFFFFD700), width: 2),
                                     ),
                                   ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      '• Child\'s first name and age — to personalize stories',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Character choices and avatar selections — saved for your child\'s stories',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Story preferences and any "big feelings" your child chooses to share — used to personalize that story. This emotional-state text is sent to our AI provider as part of generating the story. It is not a health or therapy record and is not used to build a profile of your child.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Usage data — to improve the app (no personal identifiers)',
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    'What We Do NOT Do',
-                                    style: GoogleFonts.fredoka(
-                                      color: const Color(0xFFFFD700),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  keyboardType: TextInputType.emailAddress,
+                                  onChanged: (value) =>
+                                      setState(() => _parentEmail = value),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                // ── Photo avatar opt-out ───────────────────────────────────
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white38),
                                   ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      "• Never sell or share your child's personal information",
-                                      style: textWhite70),
-                                  const Text(
-                                      '• No behavioral advertising or third-party tracking',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Your child can choose a premade avatar instead of creating a cartoon image from a photo',
-                                      style: textWhite70),
-                                  const Text(
-                                      "• Your child's stories and characters are saved on our secure servers — you can view or delete them any time from Parent Controls",
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Photo-based avatars are optional and off by default — if you turn them on, a photo is sent securely to create the cartoon avatar and is used for nothing else',
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    'Third-Party Services',
-                                    style: GoogleFonts.fredoka(
-                                      color: const Color(0xFFFFD700),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                  child: SwitchListTile(
+                                    title: const Text(
+                                      'Allow photo-based avatar creation',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600),
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      '• OpenAI — AI story-text generation and character-avatar generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image/avatar prompts; on the photo-avatar path, the child\'s photo.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Cloudflare Workers AI — AI story-page illustrations (primary). Receives image prompts.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Google Gemini — fallback for story illustrations, and a voice-narration option (Gemini Flash TTS). Receives image prompts or generated story text.',
-                                      style: textWhite70),
-                                  const Text(
-                                      "• OpenRouter, Replicate — additional AI image/avatar generation (fallback). Receive image prompts, and on the photo-avatar path the child's photo.",
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Microsoft (Azure AI Speech / Edge) and Google (Gemini Flash TTS) — voice narration. Receive generated story text to convert it to spoken audio.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• ElevenLabs — premium/character voice narration (ages 13+ only; never for children under 13). Receives generated story text.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Stripe — payment processing. Receives parent payment info; never child data.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Railway — secure cloud hosting. Stores profiles, stories, and preferences (United States).',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Firebase / Google Analytics — app analytics. Anonymized usage events only; off by default and not enabled for children under 13.',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Sentry — error monitoring. Receives crash and error diagnostics.',
-                                      style: textWhite70),
-                                  const Text(
-                                      "• Resend — sends this consent verification email. Receives the parent/guardian email address.",
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      "• Optional — your own Google Gemini key: if you choose to connect your own API key, your child's story details are sent to Google (Gemini) under your own Google account and Google's terms, which restrict use for children. This is your choice and your responsibility; leaving it unset keeps story generation on the providers above.",
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      'Each provider receives only the minimum data needed and is governed by its own privacy policy. The full list also appears in our Privacy Policy.',
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
-                                    'Who Operates This App',
-                                    style: GoogleFonts.fredoka(
-                                      color: const Color(0xFFFFD700),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                                    subtitle: const Text(
+                                      'Leaving this OFF does not stop your child from making an avatar — they can still pick a premade hero or design their own. '
+                                      'This setting only controls the extra option to turn a photo into a cartoon avatar. '
+                                      'If turned on, the photo is sent securely to generate the avatar and is used for nothing else. Off by default.',
+                                      style: TextStyle(
+                                          color: Colors.white70, fontSize: 13),
                                     ),
+                                    activeThumbColor: const Color(0xFFFFD700),
+                                    value: _allowPhotoAvatar,
+                                    onChanged: (value) => setState(
+                                        () => _allowPhotoAvatar = value),
                                   ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  // CMP-11 / COPPA §312.4(d): the direct notice
-                                  // to parents must name the operator and give
-                                  // a postal address and phone number.
-                                  const Text(
-                                      '• Operator: Darcy VanPelt',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Postal address: 2816 Orchard Ave, Grand Junction, CO 81501',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Phone: 970-640-2011',
-                                      style: textWhite70),
-                                  const Text(
-                                      '• Email: darcy@onceuponyourchild.app',
-                                      style: textWhite70),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  const Text(
-                                      'Contact us using the details above to review, delete, or stop further collection of your child\'s information.',
-                                      style: textWhite70),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            TextField(
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: _requiresEmailVerification
-                                    ? 'Parent/Guardian Email (required)'
-                                    : 'Your Email (optional)',
-                                labelStyle:
-                                    const TextStyle(color: Colors.white70),
-                                hintText: 'parent@example.com',
-                                hintStyle: TextStyle(
-                                    color: Colors.white.withAlpha(120)),
-                                helperText: _requiresEmailVerification
-                                    ? 'Required — we email a code to confirm you are the parent (COPPA verifiable consent).'
-                                    : 'Recommended — allows us to send you account confirmations.',
-                                helperStyle: const TextStyle(
-                                    color: Colors.white54, fontSize: 12),
-                                helperMaxLines: 3,
-                                errorText: (_parentEmail != null &&
-                                        (_parentEmail!.trim().isNotEmpty ||
-                                            _requiresEmailVerification) &&
-                                        !_emailValid)
-                                    ? 'Enter a valid email address'
-                                    : null,
-                                errorStyle: const TextStyle(
-                                    color: Color(0xFFFF8A80), fontSize: 12),
-                                prefixIcon: const Icon(Icons.email_outlined,
-                                    color: Colors.white70),
-                                filled: true,
-                                fillColor: Colors.white.withAlpha(25),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      const BorderSide(color: Colors.white54),
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      const BorderSide(color: Colors.white54),
+                                const SizedBox(height: AppSpacing.sm),
+                                // ── Analytics opt-in (H-4) ─────────────────────────────
+                                // A SEPARATE, optional toggle from the required consent
+                                // checkbox below — amended COPPA §312.5 requires
+                                // consent-to-collect and consent-to-disclose-to-third-
+                                // parties to be separable choices. Off by default;
+                                // even when on, analytics never actually turns on for a
+                                // declared minor (PrivacyDefaults.adultAge = 18) — this
+                                // just records the parent's choice honestly. Can be
+                                // changed anytime in Parent Controls.
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white38),
+                                  ),
+                                  child: SwitchListTile(
+                                    title: const Text(
+                                      'Allow anonymous usage analytics',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    subtitle: const Text(
+                                      'Optional, and separate from the consent above — helps us see which '
+                                      'features are used. Off by default. Analytics is never enabled for '
+                                      'anyone under 18, regardless of this choice, and you can change it '
+                                      'anytime in Parent Controls.',
+                                      style: TextStyle(
+                                          color: Colors.white70, fontSize: 13),
+                                    ),
+                                    activeThumbColor: const Color(0xFFFFD700),
+                                    value: _allowAnalytics,
+                                    onChanged: (value) =>
+                                        setState(() => _allowAnalytics = value),
+                                  ),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                      color: Color(0xFFFFD700), width: 2),
-                                ),
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                              onChanged: (value) =>
-                                  setState(() => _parentEmail = value),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            // ── Photo avatar opt-out ───────────────────────────────────
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(20),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white38),
-                              ),
-                              child: SwitchListTile(
-                                title: const Text(
-                                  'Allow photo-based avatar creation',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: const Text(
-                                  'Leaving this OFF does not stop your child from making an avatar — they can still pick a premade hero or design their own. '
-                                  'This setting only controls the extra option to turn a photo into a cartoon avatar. '
-                                  'If turned on, the photo is sent securely to generate the avatar and is used for nothing else. Off by default.',
-                                  style: TextStyle(
-                                      color: Colors.white70, fontSize: 13),
-                                ),
-                                activeThumbColor: const Color(0xFFFFD700),
-                                value: _allowPhotoAvatar,
-                                onChanged: (value) =>
-                                    setState(() => _allowPhotoAvatar = value),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            // ── Analytics opt-in (H-4) ─────────────────────────────
-                            // A SEPARATE, optional toggle from the required consent
-                            // checkbox below — amended COPPA §312.5 requires
-                            // consent-to-collect and consent-to-disclose-to-third-
-                            // parties to be separable choices. Off by default;
-                            // even when on, analytics never actually turns on for a
-                            // declared minor (PrivacyDefaults.adultAge = 18) — this
-                            // just records the parent's choice honestly. Can be
-                            // changed anytime in Parent Controls.
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(20),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white38),
-                              ),
-                              child: SwitchListTile(
-                                title: const Text(
-                                  'Allow anonymous usage analytics',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: const Text(
-                                  'Optional, and separate from the consent above — helps us see which '
-                                  'features are used. Off by default. Analytics is never enabled for '
-                                  'anyone under 18, regardless of this choice, and you can change it '
-                                  'anytime in Parent Controls.',
-                                  style: TextStyle(
-                                      color: Colors.white70, fontSize: 13),
-                                ),
-                                activeThumbColor: const Color(0xFFFFD700),
-                                value: _allowAnalytics,
-                                onChanged: (value) =>
-                                    setState(() => _allowAnalytics = value),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Row(
-                              children: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const PrivacyPolicyScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text('Privacy Policy',
-                                      style:
-                                          TextStyle(color: Color(0xFFFFD700))),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const TermsOfServiceScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text('Terms of Service',
-                                      style:
-                                          TextStyle(color: Color(0xFFFFD700))),
+                                const SizedBox(height: AppSpacing.sm),
+                                Row(
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const PrivacyPolicyScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Privacy Policy',
+                                          style: TextStyle(
+                                              color: Color(0xFFFFD700))),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const TermsOfServiceScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Terms of Service',
+                                          style: TextStyle(
+                                              color: Color(0xFFFFD700))),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        _buildStickyFooter(),
+                      ],
                     ),
-                    _buildStickyFooter(),
-                  ],
-                ),
         ),
       ),
     );
@@ -643,7 +639,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   /// CMP-6 — parental gate guarding the consent action. The parent must solve
   /// the multiplication challenge before the legal notice, email entry and
   /// consent checkbox become available, so a child cannot complete consent
-  /// alone. Reuses the shared [ParentalGateDialog] from the BYOK wizard.
+  /// alone. Reuses the shared [ParentalGateDialog].
   Future<void> _runParentGate() async {
     final passed = await ParentalGateDialog.show(
       context,

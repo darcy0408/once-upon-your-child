@@ -280,80 +280,9 @@ def _jwt_extended_headers(app, user: User) -> dict[str, str]:
     }
 
 
-def test_api_key_set_requires_auth(client):
-    response = client.post(
-        "/api/user/settings/api-key", json={"api_key": "AIza" + ("a" * 35)}
-    )
-
-    assert response.status_code == 401
-
-
-def test_api_key_set_own_key_succeeds(client, auth_headers, mocker, app, test_user):
-    mocker.patch(
-        "backend.routes.api_key_routes.test_gemini_api_key", return_value=(True, None)
-    )
-    mocker.patch(
-        "backend.routes.api_key_routes.encrypt_api_key", return_value="encrypted-key"
-    )
-    response = client.post(
-        "/api/user/settings/api-key",
-        json={"api_key": "AIza" + ("a" * 35)},
-        headers=auth_headers,
-    )
-
-    assert response.status_code == 200
-    with app.app_context():
-        user = db.session.get(User, test_user.id)
-        assert user.has_byok is True
-
-
-def test_api_key_cross_user_blocked(
-    client, auth_headers, mocker, app, test_user, other_user
-):
-    mocker.patch(
-        "backend.routes.api_key_routes.test_gemini_api_key", return_value=(True, None)
-    )
-    mocker.patch(
-        "backend.routes.api_key_routes.encrypt_api_key", return_value="encrypted-key"
-    )
-    headers = {**auth_headers, "X-User-ID": other_user.id}
-    response = client.post(
-        "/api/user/settings/api-key",
-        json={"api_key": "AIza" + ("a" * 35)},
-        headers=headers,
-    )
-
-    assert response.status_code == 200
-    with app.app_context():
-        assert db.session.get(User, test_user.id).has_byok is True
-        assert db.session.get(User, other_user.id).has_byok is False
-
-
-def test_api_key_delete_requires_auth(client):
-    response = client.delete("/api/user/settings/api-key")
-
-    assert response.status_code == 401
-
-
-def test_api_key_usage_requires_auth(client):
-    response = client.get("/api/user/usage")
-
-    assert response.status_code == 401
-
-
-def test_api_key_usage_cross_user_blocked(
-    client, auth_headers, app, test_user, other_user
-):
-    with app.app_context():
-        db.session.get(User, test_user.id).stories_generated_this_month = 1
-        db.session.get(User, other_user.id).stories_generated_this_month = 9
-        db.session.commit()
-    response = client.get(
-        "/api/user/usage", headers={**auth_headers, "X-User-ID": other_user.id}
-    )
-
-    assert response.status_code == 200
-    assert response.get_json()["stories"]["used"] == 1
+# The /api/user/settings/api-key and /api/user/usage routes were removed with
+# the BYOK sunset (MT-358) — their auth/IDOR tests went with them. 404s for
+# unknown routes are covered by Flask itself.
 
 
 def test_generate_illustrations_requires_auth(client):

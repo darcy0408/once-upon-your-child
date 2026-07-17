@@ -162,8 +162,6 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 
 The exact AI image provider used may vary by build and availability: story-page illustrations use Cloudflare Workers AI (with Replicate, then Gemini, as fallbacks), and character avatars use OpenAI (with Replicate as fallback).
 
-**Bring-your-own-key (optional).** You may optionally connect your own Google Gemini API key. If you do, your child's story details and image prompts are sent directly to Google (Gemini) under **your** Google account and Google's terms of service — which restrict use for children. Connecting a key is your choice and your responsibility as the account holder; we store the key encrypted and use it only to generate your child's stories. Leaving it unset keeps story generation on the providers listed above. We require an explicit acknowledgment before saving a key.
-
 **Photo avatars (optional).** If you choose to create a character avatar from a photo, the photo is sent to our servers and then to the active AI image provider solely to generate the cartoon avatar. It is not stored on our servers, is not used for advertising or any other purpose, and is not sold or shared. Photo-based avatars are turned off by default and require a parent or guardian to opt in.
 
 ## Changes to This Policy

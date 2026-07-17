@@ -196,18 +196,18 @@ def create_avatar_blueprint(limiter):
                 request.form.get("refinement_note") or ""
             ).strip() or None
 
-            # Refinement is BYOK-only: one free API call is expensive; BYOK users
-            # supply their own key so the cost falls on them.
+            # Refinement is premium-only: it costs an extra image-generation
+            # call, so it rides the paid tier.
             if refinement_note:
                 tier = (get_user_tier() or "free").lower()
-                if tier != "byok":
+                if tier not in ("premium", "family"):
                     return (
                         jsonify(
                             {
                                 "status": "error",
-                                "error_code": "BYOK_REQUIRED",
-                                "message": "Avatar refinement is available for BYOK subscribers. "
-                                "Set up your own API key in Parent Controls to unlock this.",
+                                "error_code": "PREMIUM_REQUIRED",
+                                "message": "Avatar refinement requires a premium "
+                                "subscription.",
                             }
                         ),
                         403,
@@ -704,9 +704,9 @@ def create_avatar_blueprint(limiter):
         Edit a curated gallery avatar (premium-only).
         Multipart form: image (WebP bytes), hair_length (opt), eye_color (opt).
         """
-        # This feature is premium/byok only
+        # This feature is premium-only
         tier = (get_user_tier() or "free").lower()
-        if tier not in ("premium", "family", "byok"):
+        if tier not in ("premium", "family"):
             return (
                 jsonify(
                     {

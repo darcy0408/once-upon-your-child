@@ -27,7 +27,14 @@ const bool _kDevSamplePhoto = bool.fromEnvironment('DEV_SAMPLE_PHOTO');
 
 // ── Step definitions ─────────────────────────────────────────────────────────
 // sproutWelcome is only included in the step order for Sprout (3-5) band.
-enum _AvatarStep { sproutWelcome, gender, hairColor, eyeColor, favoriteColor, photo }
+enum _AvatarStep {
+  sproutWelcome,
+  gender,
+  hairColor,
+  eyeColor,
+  favoriteColor,
+  photo
+}
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 class CustomAvatarScreen extends StatefulWidget {
@@ -81,7 +88,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   // Enforced inside this screen, not only by hiding an entry button.
   bool? _photoAvatarAllowed;
 
-  // One-time refinement (Adventurer+ / BYOK only)
+  // One-time refinement (Adventurer+ / Premium only)
   bool _hasUsedRefinement = false;
   bool _showRefinementInput = false;
   final TextEditingController _refinementController = TextEditingController();
@@ -96,8 +103,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Age band helpers ────────────────────────────────────────────────────────
   int get _age => widget.initialAge ?? 7;
-  String get _name =>
-      (widget.initialName?.trim().isNotEmpty == true) ? widget.initialName! : '';
+  String get _name => (widget.initialName?.trim().isNotEmpty == true)
+      ? widget.initialName!
+      : '';
   AgeBand get _ageBand => ageBandFromAge(_age);
   AgeBandThemeData get _bt => themeForBand(_ageBand);
   bool get _isSprout => _ageBand == AgeBand.sprout;
@@ -111,10 +119,26 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   // Omit Gold/Teal (not intuitive crayon colors). Blue/Light Blue/Dark Blue are
   // natural kid language ("sky blue", "dark blue") and visually distinct.
   static const _sproutFavoriteColors = [
-    'Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Light Blue', 'Dark Blue', 'Purple', 'Pink',
+    'Red',
+    'Orange',
+    'Yellow',
+    'Green',
+    'Blue',
+    'Light Blue',
+    'Dark Blue',
+    'Purple',
+    'Pink',
   ];
   static const _allFavoriteColors = [
-    'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
+    'Red',
+    'Blue',
+    'Green',
+    'Yellow',
+    'Purple',
+    'Pink',
+    'Orange',
+    'Teal',
+    'Gold'
   ];
   static const _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
   static const _hairColors = [
@@ -395,7 +419,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       // Fall back to gallery/file picker so the button is never a dead end.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Camera isn't available here — opening your photos instead!"),
+          content: Text(
+              "Camera isn't available here — opening your photos instead!"),
           duration: Duration(seconds: 2),
         ));
       }
@@ -440,10 +465,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     const s = 320.0;
-    canvas.drawRect(const Rect.fromLTWH(0, 0, s, s), Paint()..color = const Color(0xFF8FA8CF));
-    canvas.drawCircle(const Offset(160, 158), 80, Paint()..color = const Color(0xFFEAC6A0)); // face
-    canvas.drawCircle(const Offset(134, 142), 9, Paint()..color = const Color(0xFF3A2A1A)); // eyes
-    canvas.drawCircle(const Offset(186, 142), 9, Paint()..color = const Color(0xFF3A2A1A));
+    canvas.drawRect(const Rect.fromLTWH(0, 0, s, s),
+        Paint()..color = const Color(0xFF8FA8CF));
+    canvas.drawCircle(const Offset(160, 158), 80,
+        Paint()..color = const Color(0xFFEAC6A0)); // face
+    canvas.drawCircle(const Offset(134, 142), 9,
+        Paint()..color = const Color(0xFF3A2A1A)); // eyes
+    canvas.drawCircle(
+        const Offset(186, 142), 9, Paint()..color = const Color(0xFF3A2A1A));
     canvas.drawRRect(
       RRect.fromLTRBR(140, 182, 180, 192, const Radius.circular(5)),
       Paint()..color = const Color(0xFF8A5A3A),
@@ -584,10 +613,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF2D1060),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Text(
                 'Unlock more magic ✨',
-                style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w800),
+                style: GoogleFonts.nunito(
+                    color: Colors.white, fontWeight: FontWeight.w800),
               ),
               content: Text(
                 msg,
@@ -596,14 +627,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text('Maybe later', style: GoogleFonts.quicksand(color: Colors.white60)),
+                  child: Text('Maybe later',
+                      style: GoogleFonts.quicksand(color: Colors.white60)),
                 ),
                 if (widget.onOpenGallery != null)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF5F4BDB),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () {
                       Navigator.of(ctx).pop();
@@ -631,10 +664,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF2D1060),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(
               _isSprout ? "Oops! Something went wrong." : 'Generation failed',
-              style: GoogleFonts.nunito(color: Colors.white, fontWeight: FontWeight.w800),
+              style: GoogleFonts.nunito(
+                  color: Colors.white, fontWeight: FontWeight.w800),
             ),
             content: Text(
               msg,
@@ -643,14 +678,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: Text('Try Again', style: GoogleFonts.quicksand(color: Colors.white60)),
+                child: Text('Try Again',
+                    style: GoogleFonts.quicksand(color: Colors.white60)),
               ),
               if (widget.onOpenGallery != null)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF5F4BDB),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
                     Navigator.of(ctx).pop();
@@ -711,8 +748,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             ),
           ),
           const Spacer(),
-          const Icon(Icons.lock_outline_rounded,
-              color: Colors.white, size: 56),
+          const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 56),
           const SizedBox(height: 16),
           Text(
             _isSprout
@@ -751,11 +787,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5F4BDB),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    vertical: 14, horizontal: 28),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 28),
                 shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(_bt.buttonRadiusBase)),
+                    borderRadius: BorderRadius.circular(_bt.buttonRadiusBase)),
               ),
             )
           else
@@ -883,8 +918,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             // TTS replay button
             TextButton.icon(
               onPressed: _speakPrompt,
-              icon: Icon(Icons.volume_up_rounded,
-                  color: _bt.accent, size: 26),
+              icon: Icon(Icons.volume_up_rounded, color: _bt.accent, size: 26),
               label: Text(
                 'Read it to me!',
                 style: GoogleFonts.nunito(
@@ -1145,10 +1179,18 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildGenderCard(value: 'girl', assetPath: girlAsset, label: 'Girl',
-                w: halfW, h: cardH),
-            _buildGenderCard(value: 'boy', assetPath: boyAsset, label: 'Boy',
-                w: halfW, h: cardH),
+            _buildGenderCard(
+                value: 'girl',
+                assetPath: girlAsset,
+                label: 'Girl',
+                w: halfW,
+                h: cardH),
+            _buildGenderCard(
+                value: 'boy',
+                assetPath: boyAsset,
+                label: 'Boy',
+                w: halfW,
+                h: cardH),
           ],
         );
       },
@@ -1159,12 +1201,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     final band = _ageBand;
     final g = gender == 'boy' ? 'boy' : 'girl';
     return switch (band) {
-      AgeBand.sprout     => 'assets/images/ui/gender/gender_sprout_$g.webp',
-      AgeBand.explorer   => 'assets/images/ui/gender/gender_explorer_$g.webp',
+      AgeBand.sprout => 'assets/images/ui/gender/gender_sprout_$g.webp',
+      AgeBand.explorer => 'assets/images/ui/gender/gender_explorer_$g.webp',
       AgeBand.adventurer => 'assets/images/ui/gender/gender_adventurer_$g.webp',
-      AgeBand.creator    => 'assets/images/ui/gender/gender_creator_$g.webp',
+      AgeBand.creator => 'assets/images/ui/gender/gender_creator_$g.webp',
       AgeBand.adolescent => 'assets/images/ui/gender/gender_adolescent_$g.webp',
-      AgeBand.adult      => 'assets/images/ui/gender/gender_adult_$g.webp',
+      AgeBand.adult => 'assets/images/ui/gender/gender_adult_$g.webp',
     };
   }
 
@@ -1204,13 +1246,19 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           height: h,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_bt.cardRadiusBase),
-            color: sel ? _bt.primary.withAlpha(160) : Colors.white.withAlpha(22),
+            color:
+                sel ? _bt.primary.withAlpha(160) : Colors.white.withAlpha(22),
             border: Border.all(
               color: sel ? _bt.accent : Colors.white.withAlpha(55),
               width: sel ? 3 : 1.5,
             ),
             boxShadow: sel
-                ? [BoxShadow(color: _bt.accent.withAlpha(90), blurRadius: 22, spreadRadius: 2)]
+                ? [
+                    BoxShadow(
+                        color: _bt.accent.withAlpha(90),
+                        blurRadius: 22,
+                        spreadRadius: 2)
+                  ]
                 : [],
           ),
           child: Column(
@@ -1239,14 +1287,18 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                 label,
                 style: _isSprout
                     ? GoogleFonts.nunito(
-                        fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white)
                     : GoogleFonts.quicksand(
-                        fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white),
               ),
               if (sel) ...[
                 SizedBox(height: _isSprout ? 6 : 4),
-                Icon(Icons.check_circle_rounded, color: _bt.accent,
-                    size: _isSprout ? 28 : 20),
+                Icon(Icons.check_circle_rounded,
+                    color: _bt.accent, size: _isSprout ? 28 : 20),
               ],
             ],
           ),
@@ -1336,10 +1388,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                     name,
                     style: GoogleFonts.quicksand(
                       fontSize: _isCreator ? 12 : 13,
-                      fontWeight:
-                          isSel ? FontWeight.w800 : FontWeight.w500,
-                      color:
-                          isSel ? Colors.white : Colors.white.withAlpha(170),
+                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                      color: isSel ? Colors.white : Colors.white.withAlpha(170),
                     ),
                   ),
                 ],
@@ -1404,8 +1454,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         if (_isSprout)
           Container(
             margin: const EdgeInsets.only(bottom: 20),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               color: Colors.white.withAlpha(22),
@@ -1462,12 +1511,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5F4BDB),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                 minimumSize: const Size(double.infinity, 52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
                 ),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                textStyle:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -1481,12 +1532,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7A3FC8),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
                 minimumSize: const Size(double.infinity, 52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
                 ),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                textStyle:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -1581,8 +1634,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           backgroundColor: _bt.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.white24,
-          padding:
-              EdgeInsets.symmetric(vertical: _isSprout ? 18 : 14),
+          padding: EdgeInsets.symmetric(vertical: _isSprout ? 18 : 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
           ),
@@ -1601,8 +1653,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             ),
             if (!_isLastStep) ...[
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_rounded,
-                  size: _isSprout ? 26 : 20),
+              Icon(Icons.arrow_forward_rounded, size: _isSprout ? 26 : 20),
             ],
           ],
         ),
@@ -1680,29 +1731,33 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                   label: 'What would you like to change?',
                   textField: true,
                   child: TextField(
-                  controller: _refinementController,
-                  style: GoogleFonts.quicksand(color: Colors.white, fontSize: 14),
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. lighter hair, more curly',
-                    hintStyle: GoogleFonts.quicksand(color: Colors.white38, fontSize: 13),
-                    filled: true,
-                    fillColor: Colors.white.withAlpha(12),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white24),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: accentColor, width: 1.5),
+                    controller: _refinementController,
+                    style: GoogleFonts.quicksand(
+                        color: Colors.white, fontSize: 14),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. lighter hair, more curly',
+                      hintStyle: GoogleFonts.quicksand(
+                          color: Colors.white38, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide:
+                            const BorderSide(color: accentColor, width: 1.5),
+                      ),
                     ),
                   ),
-                ),
                 ),
               ),
               if (_refinementSpeechEnabled) ...[
@@ -1821,10 +1876,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              final dataUri =
-                  'data:image/png;base64,$_generatedImageBase64';
-              final customAvatar =
-                  CharacterAvatar.defaultAvatar.copyWith(
+              final dataUri = 'data:image/png;base64,$_generatedImageBase64';
+              final customAvatar = CharacterAvatar.defaultAvatar.copyWith(
                 customImagePath: dataUri,
                 isCustom: true,
                 generationAttributes: _generatedAttributes,
@@ -1842,16 +1895,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF208D62),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                  vertical: 16, horizontal: 32),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(_bt.buttonRadiusBase),
+                borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          // "Make a Change" — Adventurer+ (9+) and BYOK only, one use per session
+          // "Make a Change" — Adventurer+ (9+) and Premium only, one use per session
           if (_canRefine && !_hasUsedRefinement) ...[
             const SizedBox(height: 4),
             if (_showRefinementInput)

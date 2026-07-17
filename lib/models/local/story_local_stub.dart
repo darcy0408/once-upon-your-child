@@ -17,9 +17,10 @@ class StoryLocal {
   String? charactersJson;
 
   // Persisted illustrations so a re-opened story shows its pictures without
-  // regenerating them (regeneration needs a BYOK key and costs money/time).
+  // regenerating them (regeneration costs server money/time).
   String? coverImageBase64; // base64 of the cover illustration bytes
-  String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
+  String?
+      pageIllustrationsJson; // JSON array of base64 strings, indexed by page
 
   // PDF export (premium keepsake feature): mirrors story_local_io.dart's
   // pagesJson field. Keep both in sync — this file has no codegen, so it is
@@ -34,7 +35,8 @@ class StoryLocal {
     return StoryLocal()
       ..storyId = json['storyId']?.toString() ?? ''
       ..title = json['title']?.toString() ?? ''
-      ..storyText = json['storyText']?.toString() ?? json['story_text']?.toString() ?? ''
+      ..storyText =
+          json['storyText']?.toString() ?? json['story_text']?.toString() ?? ''
       ..theme = json['theme']?.toString() ?? ''
       ..isFavorite = json['isFavorite'] == true
       ..imageUrl = json['imageUrl']?.toString() ?? json['image_url']?.toString()

@@ -2,10 +2,7 @@
 // Upgrade prompt with tier comparison table
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../screens/byok_setup_wizard.dart';
 import '../services/grace_period_analytics.dart';
-import '../settings_screen.dart';
 
 class UpgradePromptDialog extends StatelessWidget {
   final bool isSoftPrompt; // true = soft prompt, false = hard limit
@@ -81,72 +78,6 @@ class UpgradePromptDialog extends StatelessWidget {
 
             // Tier comparison table
             _buildTierComparison(context),
-
-            const SizedBox(height: 16),
-
-            // Alternative: BYOK option
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[200]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.key, color: Colors.blue, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Bring Your Own API Key',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[900],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Custom avatars, illustrations, unlimited stories — free with your own Gemini key (~\$0.10-0.50/month).',
-                    style: TextStyle(fontSize: 12, color: Colors.blue[800]),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final container = ProviderScope.containerOf(context);
-                        Navigator.pop(context, false);
-                        final result = await Navigator.of(context).push<String>(
-                          MaterialPageRoute(
-                            builder: (_) => const ByokSetupWizardScreen(),
-                            fullscreenDialog: true,
-                          ),
-                        );
-                        if (result != null && result.isNotEmpty) {
-                          await container.read(settingsProvider.notifier).reload();
-                        }
-                      },
-                      icon: const Icon(Icons.key, size: 16),
-                      label: const Text(
-                        'Set Up Free Premium →',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.blue[800],
-                        side: BorderSide(color: Colors.blue[400]!),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -154,7 +85,8 @@ class UpgradePromptDialog extends StatelessWidget {
         if (isSoftPrompt)
           TextButton(
             onPressed: () {
-              GracePeriodAnalytics.upgradePromptClicked(promptType: 'soft_continue');
+              GracePeriodAnalytics.upgradePromptClicked(
+                  promptType: 'soft_continue');
               Navigator.pop(context, false);
             },
             child: const Text('Continue'),

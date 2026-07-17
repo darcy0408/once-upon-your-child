@@ -108,8 +108,6 @@ We share only the minimum data required for each service to function. Each provi
 
 The exact AI image provider used may vary by build and availability.
 
-Bring-your-own-key (optional): you may optionally connect your own Google Gemini API key. If you do, your child's story details and image prompts are sent directly to Google (Gemini) under your own Google account and Google's terms — which restrict use for children. Connecting a key is your choice and your responsibility as the account holder; we store it encrypted and use it only to generate your child's stories. Leaving it unset keeps story generation on the providers above. We require an explicit acknowledgment before saving a key.
-
 Photo avatars (optional): if you choose to create an avatar from a photo, the photo is sent to our servers and then to the active AI image provider solely to generate the cartoon avatar. It is not stored on our servers and is used for nothing else.
 ''',
             ),

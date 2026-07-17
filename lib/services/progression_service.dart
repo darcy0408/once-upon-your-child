@@ -74,7 +74,8 @@ class UnlockableFeatures {
   static const String customColors = 'custom_colors';
   static const String rhymeTimeMode = 'rhyme_time_mode';
   static const String superheroMode = 'superhero_mode'; // Premium only
-  static const String interactiveStories = 'interactive_stories'; // Premium only
+  static const String interactiveStories =
+      'interactive_stories'; // Premium only
 }
 
 /// Service to manage user progression and unlocks
@@ -104,17 +105,15 @@ class ProgressionService {
     await prefs.setString(_cacheKey, jsonEncode(progress.toJson()));
   }
 
-  /// Check if user has premium access (BYOK or paid)
+  /// Check if user has a paid premium subscription
   Future<bool> hasPremiumAccess() async {
     final prefs = await SharedPreferences.getInstance();
-    final byokPremium = prefs.getBool('is_premium_byok') ?? false;
-    final paidPremium = prefs.getBool('is_paid_premium') ?? false;
-    return byokPremium || paidPremium;
+    return prefs.getBool('is_paid_premium') ?? false;
   }
 
   /// Check if user has access to a specific feature
   Future<bool> hasAccessToFeature(String featureKey) async {
-    // Premium features require either BYOK or paid subscription
+    // Premium features require a paid subscription
     if (featureKey == UnlockableFeatures.superheroMode ||
         featureKey == UnlockableFeatures.interactiveStories) {
       return await hasPremiumAccess();

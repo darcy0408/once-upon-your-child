@@ -52,7 +52,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
     final rng = DateTime.now().millisecondsSinceEpoch;
     // Multiplication (not addition) so the gate is not trivially solved by the
     // 6–12-year-olds it protects. Operands stay single-digit so a parent
-    // answers instantly. Mirrors ParentalGateDialog (byok_setup_wizard.dart).
+    // answers instantly. Mirrors ParentalGateDialog (widgets/parental_gate_dialog.dart).
     _a = 3 + (rng % 7); // 3-9
     _b = 4 + ((rng ~/ 100) % 6); // 4-9
   }

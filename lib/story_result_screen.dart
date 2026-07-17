@@ -59,11 +59,10 @@ import 'utils/motion_utils.dart';
 import 'utils/paywall_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/subscription_provider.dart';
-import 'screens/byok_setup_wizard.dart';
+import 'widgets/parental_gate_dialog.dart';
 import 'screens/story_notes_screen.dart';
 import 'screens/wizard_story_screen.dart';
 import 'screens/chronicles_list_screen.dart';
-import 'settings_screen.dart';
 import 'subscription_screen.dart';
 import 'services/per_page_illustration_prefetcher.dart';
 import 'widgets/per_page_illustration.dart';
@@ -88,7 +87,6 @@ class StoryResultScreen extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>>? backendIllustrations;
   final UserSubscription? subscription;
   final bool isLearningToReadMode;
-  final bool usedUserApiKey;
   final bool asyncIllustrations;
   final List<String>? choicesMade;
   // NEW: Page-based story structure
@@ -168,7 +166,6 @@ class StoryResultScreen extends ConsumerStatefulWidget {
     this.backendIllustrations,
     this.subscription,
     this.isLearningToReadMode = false,
-    this.usedUserApiKey = false,
     this.asyncIllustrations = false,
     this.choicesMade,
     this.pages,
@@ -266,7 +263,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   bool get _hasPersistedPageIllustrations =>
       _persistedPageIllustrations.any((b) => b != null);
 
-  /// Per-page background prefetcher (BYOK only). Lazily created in initState.
+  /// Per-page background prefetcher. Lazily created in initState.
   PerPageIllustrationPrefetcher? _perPagePrefetcher;
 
   /// True once the character-details fetch has finished (success OR failure).
@@ -351,7 +348,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// True when an illustration is actually rendered on the page (vs merely
   /// possible based on subscription tier). The "Picture Book" badge should
   /// only claim that label when art is truly present — otherwise, the badge
-  /// promises something the BYOK upsell is simultaneously gating.
+  /// promises something the illustration paywall is simultaneously gating.
   bool get _hasRenderedIllustrations =>
       _inlineIllustrations.isNotEmpty ||
       _hasPersistedPageIllustrations ||
@@ -362,8 +359,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     switch (band.band) {
       case AgeBand.sprout:
         // Honest copy: only show "Picture Book" when art is actually
-        // rendered. When illustrations are gated behind BYOK, the page is
-        // really a "Read Along" experience.
+        // rendered. When illustrations are gated behind the paywall, the
+        // page is really a "Read Along" experience.
         return _hasRenderedIllustrations
             ? 'Reading Level: Picture Book'
             : 'Reading Level: Read Along';
@@ -870,14 +867,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   /// Start a per-page background prefetcher. Eligibility:
-  ///   - BYOK on:    uses the user's own Gemini key (no server cost)
-  ///   - Sprout band: uses server Gemini-via-OpenRouter (per-page art is
-  ///                  essential to the 3-5 picture-book experience)
-  ///   - Ages 6+ non-BYOK: NEW — uses Flux Schnell at $0.003/image, server
-  ///                       enforces a monthly quota (Free 10, Premium 100,
-  ///                       Family 200) and returns ILLUSTRATION_QUOTA_EXCEEDED
-  ///                       past the cap. The prefetcher will start; individual
-  ///                       page fetches will return empty once capped.
+  ///   - Sprout band: per-page art is essential to the 3-5 picture-book
+  ///                  experience.
+  ///   - Ages 6+:     Flux Schnell at $0.003/image; the server enforces a
+  ///                  monthly quota (Free 10, Premium 100, Family 200) and
+  ///                  returns ILLUSTRATION_QUOTA_EXCEEDED past the cap. The
+  ///                  prefetcher will start; individual page fetches will
+  ///                  return empty once capped.
   /// Safe to call multiple times — only the first call wires up.
   void _maybeStartPerPagePrefetcher() {
     if (!mounted || _perPagePrefetcher != null || _perPagePrefetcherStarting) {
@@ -893,13 +889,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         !_characterLoadDone) {
       return;
     }
-    final settings = ref.read(settingsProvider);
-    final isSproutBand = ageBandFromAge(_effectiveAge) == AgeBand.sprout;
-    final hasByok = settings.useOwnApiKey || widget.usedUserApiKey;
-    // All age bands are eligible now; backend's illustration quota gates the
-    // ages-6+ non-BYOK path.
-    final allowServerKey = isSproutBand || (!hasByok && _effectiveAge >= 6);
-    if (!hasByok && !allowServerKey) return;
+    // All age bands are eligible; the backend's illustration quota gates the
+    // ages-6+ path.
 
     // Pages restored from a saved story already have art — never regenerate
     // them. If every page is persisted, skip the prefetcher entirely so a
@@ -914,15 +905,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // be loaded to base64). Claim the start slot now so a concurrent caller
     // doesn't wire up a second prefetcher across that await.
     _perPagePrefetcherStarting = true;
-    unawaited(_wirePerPagePrefetcher(allowServerKey, skipPages));
+    unawaited(_wirePerPagePrefetcher(skipPages));
   }
 
   bool _perPagePrefetcherStarting = false;
 
-  Future<void> _wirePerPagePrefetcher(
-    bool allowServerKey,
-    Set<int> skipPages,
-  ) async {
+  Future<void> _wirePerPagePrefetcher(Set<int> skipPages) async {
     final characterAppearance = await _characterAppearanceForBackend();
     if (!mounted || _perPagePrefetcher != null) {
       _perPagePrefetcherStarting = false;
@@ -941,8 +929,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
           ? null
           : widget.customElements,
       heroPower: widget.wizardData?.heroPower,
-      // Server key is used for Sprout AND ages-6+ non-BYOK (Flux Schnell route).
-      allowServerKey: allowServerKey,
+      // Server-managed image keys for every band (Flux Schnell route).
+      allowServerKey: true,
       skipPages: skipPages,
     );
     _perPagePrefetcher = prefetcher;
@@ -1022,8 +1010,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     };
 
     // The avatar image itself — used as a true likeness reference by
-    // image-capable backends (the BYOK Gemini path). The non-BYOK Flux path is
-    // text-to-image only and ignores it; see MT-129.
+    // image-capable backends. The Flux path is text-to-image only and
+    // ignores it; see MT-129.
     final avatarReference = await _resolveAvatarReferenceBase64();
     if (avatarReference != null && avatarReference.isNotEmpty) {
       payload['custom_avatar_base64'] = avatarReference;
@@ -1905,8 +1893,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// backend/routes/story_routes.py). This fires a real moderation alert, so
   /// it must be a grown-up's decision, not a child tapping around: it sits
   /// behind [ParentalGateDialog] (the same "ask a grown-up" math-challenge
-  /// gate `byok_setup_wizard.dart` and `utils/paywall_gate.dart` use for
-  /// other sensitive actions) before the reason dialog ever shows.
+  /// gate `widgets/parental_gate_dialog.dart` and `utils/paywall_gate.dart`
+  /// use for other sensitive actions) before the reason dialog ever shows.
   Future<void> _reportContent() async {
     final gatePassed = await ParentalGateDialog.show(context);
     if (!gatePassed || !mounted) return;
@@ -2464,33 +2452,6 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            // Secondary: BYOK link for users who'd rather supply their own
-            // Gemini key (free, but ~5 minutes of parent setup). Premium is
-            // the recommended path because it also unlocks ElevenLabs voice
-            // — which BYOK cannot replace.
-            TextButton.icon(
-              onPressed: () async {
-                final container = ProviderScope.containerOf(ctx);
-                Navigator.pop(ctx);
-                final result = await Navigator.of(ctx).push<String>(
-                  MaterialPageRoute(
-                    builder: (_) => const ByokSetupWizardScreen(),
-                    fullscreenDialog: true,
-                  ),
-                );
-                if (result != null && result.isNotEmpty) {
-                  await container.read(settingsProvider.notifier).reload();
-                }
-              },
-              icon: const Icon(Icons.key, size: 16),
-              label: const Text(
-                'Or paste a free Gemini key',
-                style: TextStyle(fontSize: 13),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF7E57C2),
-              ),
-            ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('Maybe later',
@@ -3113,7 +3074,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Per-page illustration. Renders art persisted from a saved
-              // story directly, otherwise the BYOK background prefetch:
+              // story directly, otherwise the background prefetch:
               // bytes when ready, a skeleton while loading, an upsell card
               // when the free-tier monthly cap is hit (older bands only),
               // and nothing otherwise.
@@ -3813,11 +3774,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // the app is currently themed to. Falls back to the themed band only when
     // no age is known.
     final disclosureAge = widget.practicedAge ?? widget.characterAge;
-    final disclosureBand = (disclosureAge != null &&
-            disclosureAge >= 3 &&
-            disclosureAge <= 100)
-        ? ageBandFromAge(disclosureAge)
-        : band.band;
+    final disclosureBand =
+        (disclosureAge != null && disclosureAge >= 3 && disclosureAge <= 100)
+            ? ageBandFromAge(disclosureAge)
+            : band.band;
     return [
       const SizedBox(height: 12),
       StoryNotesButton(
@@ -4604,7 +4564,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                             // Free-tier illustration cap banner.
                                             // Shown once per story for younger
                                             // bands (per-page cards cover older
-                                            // bands). BYOK + Sprout never trip.
+                                            // bands). Sprout never trips.
                                             if (_perPagePrefetcher != null &&
                                                 !_useInlineQuotaUpsell)
                                               _buildQuotaBanner(),
@@ -4905,9 +4865,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
-                isFreeTier: (widget.subscription?.isFree ?? true) &&
-                    !widget.usedUserApiKey &&
-                    !ref.watch(settingsProvider).useOwnApiKey,
+                isFreeTier: widget.subscription?.isFree ?? true,
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,

@@ -1,11 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/generated_avatar.dart';
-import '../screens/byok_setup_wizard.dart';
+import '../premium_upgrade_screen.dart';
 import '../services/api_service_manager.dart';
 import '../services/avatar_service.dart';
-import '../settings_screen.dart';
 import '../theme/age_band_theme.dart';
 import '../ui/widgets/magical_avatar.dart';
 import '../utils/motion_utils.dart';
@@ -26,7 +24,7 @@ class AvatarGallerySelector extends StatefulWidget {
   /// me!" banner AND they already have premium access. The parent should
   /// dismiss the gallery and route to the custom-avatar wizard. When null
   /// (or when the user is not yet premium), tapping the banner shows the
-  /// BYOK setup upsell instead.
+  /// Premium upsell instead.
   final VoidCallback? onCreateCustomAvatar;
 
   const AvatarGallerySelector({
@@ -47,8 +45,10 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
 
   /// Full filtered pool
   List<String> _pool = [];
+
   /// Current displayed batch
   List<String> _batch = [];
+
   /// Tracks which pool indices have been shown this round
   List<int> _remaining = [];
 
@@ -56,9 +56,9 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   String? _selectedAvatarPath;
 
   /// Mirrors widget.isPremium initially, but is refreshed live after the
-  /// BYOK setup wizard completes so the "Create a custom avatar that looks
+  /// Premium upsell closes so the "Create a custom avatar that looks
   /// like me!" banner can route the user straight into the custom-avatar
-  /// flow on their next tap instead of bouncing them back to setup.
+  /// flow on their next tap instead of bouncing them back to the upsell.
   late bool _isPremium = widget.isPremium;
 
   @override
@@ -101,7 +101,8 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       _remaining = List.generate(_pool.length, (i) => i);
       _remaining.shuffle(_rng);
     }
-    final take = _remaining.length < _kBatchSize ? _remaining.length : _kBatchSize;
+    final take =
+        _remaining.length < _kBatchSize ? _remaining.length : _kBatchSize;
     final indices = _remaining.sublist(0, take);
     _remaining = _remaining.sublist(take);
     final newBatch = indices.map((i) => _pool[i]).toList();
@@ -151,10 +152,10 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           },
           onBack: () {
             setState(() => _selectedAvatarPath = null);
-            // MT-069(a): the tweak panel has its own "Set Up Free Premium"
-            // BYOK CTA. If the user set up a key inside the panel, re-check
-            // premium on return so the gallery's custom-avatar banner reflects
-            // the now-unlocked state instead of re-showing the setup upsell.
+            // MT-069(a): the tweak panel has its own Premium CTA. If the user
+            // subscribed inside the panel, re-check premium on return so the
+            // gallery's custom-avatar banner reflects the now-unlocked state
+            // instead of re-showing the upsell.
             _refreshPremiumStatus();
           },
         ),
@@ -291,7 +292,8 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                         !isSelected &&
                         !MotionPrefs.reduceMotion(context)
                     ? BreathingAvatar(
-                        period: Duration(milliseconds: 2800 + (index % 6) * 400),
+                        period:
+                            Duration(milliseconds: 2800 + (index % 6) * 400),
                         minScale: 0.97,
                         maxScale: 1.03,
                         glowColor: Colors.amber.withAlpha(38),
@@ -359,7 +361,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           // Custom avatar upsell — shown to all users as a teaser.
           // When premium is already unlocked, tapping routes straight into
           // the custom-avatar flow (if the parent provided a callback)
-          // instead of re-showing the BYOK setup upsell.
+          // instead of re-showing the Premium upsell.
           GestureDetector(
             onTap: () => _handleCustomAvatarTap(context),
             child: Container(
@@ -448,18 +450,13 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('✅ Unlock with Free Premium:',
+                  Text('⭐ Included with Premium:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   SizedBox(height: 4),
                   Text('• Custom AI avatar generation',
                       style: TextStyle(fontSize: 13)),
                   Text('• Story illustrations', style: TextStyle(fontSize: 13)),
                   Text('• Unlimited stories', style: TextStyle(fontSize: 13)),
-                  SizedBox(height: 4),
-                  Text(
-                    'Use your own free Google AI key — most families spend under \$0.50/month.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
                 ],
               ),
             ),
@@ -472,31 +469,28 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              final container = ProviderScope.containerOf(context);
               Navigator.pop(ctx);
-              final result = await Navigator.of(context).push<String>(
+              await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const ByokSetupWizardScreen(),
+                  builder: (_) => const PremiumUpgradeScreen(
+                    requiredFeature: 'custom_avatar',
+                  ),
                   fullscreenDialog: true,
                 ),
               );
-              if (result != null && result.isNotEmpty) {
-                await container.read(settingsProvider.notifier).reload();
-                // Pick up is_premium_byok=true that the wizard just saved,
-                // so the next banner tap recognises the user as premium.
-                await _refreshPremiumStatus();
-                // The user came here intending to make a custom avatar.
-                // Now that they have premium, jump straight into that flow
-                // rather than making them tap the banner again.
-                if (mounted &&
-                    _isPremium &&
-                    widget.onCreateCustomAvatar != null) {
-                  widget.onCreateCustomAvatar!();
-                }
+              // The user may have subscribed while the upsell was open.
+              await _refreshPremiumStatus();
+              // The user came here intending to make a custom avatar.
+              // Now that they have premium, jump straight into that flow
+              // rather than making them tap the banner again.
+              if (mounted &&
+                  _isPremium &&
+                  widget.onCreateCustomAvatar != null) {
+                widget.onCreateCustomAvatar!();
               }
             },
-            icon: const Icon(Icons.key, size: 16),
-            label: const Text('Set Up Free Premium →'),
+            icon: const Icon(Icons.star_rounded, size: 16),
+            label: const Text('See Premium Plans →'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7E57C2),
               foregroundColor: Colors.white,
@@ -506,5 +500,4 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       ),
     );
   }
-
 }

@@ -28,6 +28,7 @@ import 'services/api_service_manager.dart';
 
 import 'services/isar_service.dart';
 import 'models/local/character_local.dart';
+
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
 
@@ -350,7 +351,8 @@ class _CharacterCreationScreenEnhancedState
       debugPrint('[Character Creation] Initializing avatar service...');
       final avatarService = AvatarService(isar: null);
       await avatarService.initialize();
-      debugPrint('[Character Creation] Avatar service initialized successfully');
+      debugPrint(
+          '[Character Creation] Avatar service initialized successfully');
 
       final age = int.tryParse(_ageController.text.trim()) ?? 8;
       debugPrint('[Character Creation] Character age: $age');
@@ -359,8 +361,10 @@ class _CharacterCreationScreenEnhancedState
       Map<String, String>? initialSelection;
       if (_avatarParams != null) {
         try {
-          initialSelection = Map<String, String>.from(json.decode(_avatarParams!));
-          debugPrint('[Character Creation] Loaded initial selections: $initialSelection');
+          initialSelection =
+              Map<String, String>.from(json.decode(_avatarParams!));
+          debugPrint(
+              '[Character Creation] Loaded initial selections: $initialSelection');
         } catch (e) {
           debugPrint('[Character Creation] Error parsing existing params: $e');
         }
@@ -379,7 +383,8 @@ class _CharacterCreationScreenEnhancedState
         ),
       );
 
-      debugPrint('[Character Creation] Returned from Avatar Picker with result: $result');
+      debugPrint(
+          '[Character Creation] Returned from Avatar Picker with result: $result');
       if (mounted && result != null) {
         setState(() {
           _avatarParams = result;
@@ -411,12 +416,14 @@ class _CharacterCreationScreenEnhancedState
         ),
       );
 
-      debugPrint('[Character Creation] Returned from Midjourney picker with result: $result');
+      debugPrint(
+          '[Character Creation] Returned from Midjourney picker with result: $result');
       if (result != null) {
         setState(() {
           _midjourneyAvatarId = result;
         });
-        debugPrint('[Character Creation] Midjourney avatar saved: $_midjourneyAvatarId');
+        debugPrint(
+            '[Character Creation] Midjourney avatar saved: $_midjourneyAvatarId');
       }
     } catch (e) {
       debugPrint('[Character Creation] Error in Midjourney picker: $e');
@@ -473,7 +480,8 @@ class _CharacterCreationScreenEnhancedState
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
               ElevatedButton.icon(
@@ -486,7 +494,8 @@ class _CharacterCreationScreenEnhancedState
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
               ElevatedButton.icon(
@@ -499,7 +508,8 @@ class _CharacterCreationScreenEnhancedState
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
             ],
@@ -714,7 +724,10 @@ class _CharacterCreationScreenEnhancedState
       final headers = await ApiServiceManager.authHeaders();
       final resp = await http.post(
         url,
-        headers: {...headers, 'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json; charset=UTF-8'
+        },
         body: json.encode(body),
       );
 
@@ -1054,7 +1067,6 @@ class _CharacterCreationScreenEnhancedState
             DropdownMenuItem(value: 'Girly Girl', child: Text('Girly Girl')),
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
-
             DropdownMenuItem(value: 'Explorer', child: Text('Explorer')),
             DropdownMenuItem(
                 value: 'Couch Potato', child: Text('Couch Potato')),
@@ -1080,7 +1092,7 @@ class _CharacterCreationScreenEnhancedState
         'icon': Icons.flash_on,
         'color': Colors.red,
         'locked': !_hasPremium,
-        'unlockMsg': 'Premium feature - Use BYOK or subscribe'
+        'unlockMsg': 'Premium feature - subscribe to unlock'
       },
       {
         'name': 'Princess/Prince',

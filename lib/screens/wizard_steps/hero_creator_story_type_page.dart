@@ -41,7 +41,7 @@ class HeroStoryTypePage extends StatelessWidget {
   /// When null the superhero orb is not shown (e.g. Sprout / Creator+).
   final Future<void> Function()? onLaunchSuperhero;
 
-  /// Whether the current user can generate illustrations (premium or BYOK).
+  /// Whether the current user can generate illustrations (premium).
   /// When false, story-type labels avoid promising pictures.
   final bool illustrationsEnabled;
 
@@ -352,26 +352,26 @@ class HeroStoryTypePage extends StatelessWidget {
                   label: 'Story idea',
                   textField: true,
                   child: TextField(
-                  controller: wishController,
-                  style:
-                      TextStyle(color: Colors.white, fontSize: band.body(14)),
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    hintText: 'I want to ride a magic carpet…',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    filled: true,
-                    fillColor: Colors.white.withAlpha(20),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(band.radiusMd),
-                      borderSide: BorderSide.none,
+                    controller: wishController,
+                    style:
+                        TextStyle(color: Colors.white, fontSize: band.body(14)),
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'I want to ride a magic carpet…',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(band.radiusMd),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: band.space(12),
+                        vertical: band.space(10),
+                      ),
                     ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: band.space(12),
-                      vertical: band.space(10),
-                    ),
+                    onChanged: (v) => wizardData.customElements = v,
                   ),
-                  onChanged: (v) => wizardData.customElements = v,
-                ),
                 ),
               ),
               SizedBox(width: band.space(8)),
@@ -493,7 +493,7 @@ class HeroStoryTypePage extends StatelessWidget {
           // MT-280: signpost the free-tier illustration loss UP FRONT, before
           // the parent picks a story style, instead of silently swapping the
           // "with pictures!" copy for "a magical adventure story". `illustrations
-          // Enabled` is the existing premium/BYOK tier check passed from the
+          // Enabled` is the existing premium tier check passed from the
           // wizard — no tier logic is hardcoded here.
           if (!illustrationsEnabled) ...[
             Padding(
@@ -656,8 +656,8 @@ class HeroStoryTypePage extends StatelessWidget {
                         // toward the two high-value modes they skip. Exactly one
                         // of Rhyme Time / Pick a Path is spotlighted per session,
                         // chosen deterministically (no Random, no persistence).
-                        spotlight: band.band == AgeBand.explorer &&
-                            rhymeSpotlighted,
+                        spotlight:
+                            band.band == AgeBand.explorer && rhymeSpotlighted,
                         primaryColor: const Color(0xFF00D4DD),
                         secondaryColor: const Color(0xFF7FDDFF),
                       ),
@@ -685,8 +685,8 @@ class HeroStoryTypePage extends StatelessWidget {
                         },
                         // MT-051: the complement of the Rhyme Time spotlight —
                         // exactly one of the two is lit at a time (Explorer-only).
-                        spotlight: band.band == AgeBand.explorer &&
-                            !rhymeSpotlighted,
+                        spotlight:
+                            band.band == AgeBand.explorer && !rhymeSpotlighted,
                         primaryColor: const Color(0xFF9E6CFF),
                         secondaryColor: const Color(0xFFFFB3E6),
                       ),
@@ -873,12 +873,10 @@ class HeroStoryTypePage extends StatelessWidget {
                     label: n[0],
                     value: n[1],
                     fontFamily: chipFontFamily,
-                    selected:
-                        (wizardData.personalitySliders[n[1]] ?? 50) >= 80,
+                    selected: (wizardData.personalitySliders[n[1]] ?? 50) >= 80,
                     onTap: () {
                       final cur = wizardData.personalitySliders[n[1]] ?? 50;
-                      wizardData.personalitySliders[n[1]] =
-                          cur >= 80 ? 50 : 80;
+                      wizardData.personalitySliders[n[1]] = cur >= 80 ? 50 : 80;
                       onChanged();
                     },
                   ),

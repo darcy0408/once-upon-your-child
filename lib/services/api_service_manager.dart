@@ -10,20 +10,16 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/secure_storage_service.dart';
 
-import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
-import '../character_traits_data.dart';
 import '../models/antihero_crux_result.dart';
 import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
 import 'logger_service.dart';
-import 'story_complexity_service.dart';
 import 'story_scaffold_fallback.dart';
 import 'user_identity_service.dart';
 
-/// Manages API calls - routes to either local backend or direct Gemini API
-/// based on user's API key configuration
+/// Manages API calls to the Story Weaver backend.
 class ApiServiceManager {
   static String get _localBackendUrl => Environment.backendUrl;
   static http.Client? _testClient;
@@ -648,35 +644,22 @@ class ApiServiceManager {
     await SecureStorageService.deleteRefreshToken();
   }
 
-  /// Check if user has configured their own API key
-  static Future<bool> isUsingOwnApiKey() async {
-    final apiKey = await SecureStorageService.getApiKey('gemini');
-    return apiKey != null && apiKey.isNotEmpty;
-  }
-
-  /// Get user's API key (if configured)
-  static Future<String?> getUserApiKey() async {
-    return SecureStorageService.getApiKey('gemini');
-  }
-
   /// COSMETIC premium check — drives UI affordances ONLY (M-8, client half).
   ///
-  /// `is_premium_byok` / `is_paid_premium` are plain SharedPreferences bools
-  /// and therefore editable on a rooted device or via a backup round-trip.
-  /// They are NOT a security boundary: every premium-gated capability is
-  /// enforced server-side off `User.subscription_tier`, so a tampered-up
-  /// value buys a misleading UI and nothing more. `is_paid_premium` is kept
-  /// in sync with the backend by `SubscriptionSyncService`, which overwrites
-  /// it (including downgrades) on every sync — the local cache can never
+  /// `is_paid_premium` is a plain SharedPreferences bool and therefore
+  /// editable on a rooted device or via a backup round-trip. It is NOT a
+  /// security boundary: every premium-gated capability is enforced
+  /// server-side off `User.subscription_tier`, so a tampered-up value buys
+  /// a misleading UI and nothing more. `is_paid_premium` is kept in sync
+  /// with the backend by `SubscriptionSyncService`, which overwrites it
+  /// (including downgrades) on every sync — the local cache can never
   /// override the backend's entitlement.
   ///
   /// Do NOT use this result to authorize a paid action; rely on the backend
   /// to reject unentitled requests.
   static Future<bool> hasPremiumAccess() async {
     final prefs = await SharedPreferences.getInstance();
-    final byokPremium = prefs.getBool('is_premium_byok') ?? false;
-    final paidPremium = prefs.getBool('is_paid_premium') ?? false;
-    return byokPremium || paidPremium;
+    return prefs.getBool('is_paid_premium') ?? false;
   }
 
   /// PERF-04: best-effort cancellation of an in-flight story-generation task.
@@ -725,26 +708,7 @@ class ApiServiceManager {
     }
   }
 
-  /// Flattens the mixed `additionalCharacters` payload into display names for
-  /// prompt text. The payload intentionally mixes plain-string guest names with
-  /// `{name, is_adult_relative}` dicts (Family-tier adult relatives) — the
-  /// backend reads the raw dicts off the wire (`story_service.py`), but the
-  /// client-side prompt builders below need just the names. Passing the mixed
-  /// list straight into the old `List<String>?` params used to throw
-  /// `type 'List<Object>' is not a subtype of type 'List<String>?'` and abort
-  /// generation; this normalizes it safely.
-  static List<String> _additionalCharacterDisplayNames(List<dynamic>? chars) {
-    if (chars == null) return <String>[];
-    final names = <String>[];
-    for (final c in chars) {
-      final name = c is Map ? (c['name'] ?? '').toString() : c.toString();
-      final trimmed = name.trim();
-      if (trimmed.isNotEmpty) names.add(trimmed);
-    }
-    return names;
-  }
-
-  /// Generate a story using appropriate method (backend or direct API)
+  /// Generate a story via the backend.
   static Future<StoryGenerationResult> generateStory({
     required String characterName,
     required String theme,
@@ -819,21 +783,14 @@ class ApiServiceManager {
     // backend path. Null for Issue #1 / non-Creator stories.
     Map<String, dynamic>? priorSaga,
   }) async {
-    final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
     final String normalizedTier =
         (subscriptionTier.isEmpty ? 'free' : subscriptionTier).toLowerCase();
     final http.Client? effectiveClient = client ?? _testClient;
 
-    final bool needsBackendForFeatures = includeIllustrations ||
-        learningToReadMode ||
-        currentFeeling != null ||
-        (childProfileId != null && childProfileId.trim().isNotEmpty);
-
     // Pull the bits the offline scaffold fallback needs out of the
     // (potentially nested) characterDetails / currentFeeling maps, so we
-    // can hand them to runWithScaffoldFallback once and reuse for both
-    // the backend and BYOK code paths below. See
+    // can hand them to runWithScaffoldFallback. See
     // lib/services/story_scaffold_fallback.dart for the policy.
     final String? archetypeId = characterDetails?['archetype'] as String?;
     final String? genderField = characterDetails?['gender'] as String?;
@@ -858,79 +815,6 @@ class ApiServiceManager {
                 requestTimeout.inSeconds + (companionCount * 30).clamp(0, 120),
           );
 
-    if (!useOwnKey || needsBackendForFeatures) {
-      final userApiKey = useOwnKey ? await getUserApiKey() : null;
-      return await runWithScaffoldFallback(
-        scenarioId: theme,
-        age: age,
-        name: characterName,
-        companion: companion ?? '',
-        gender: genderField,
-        archetypeId: archetypeId,
-        currentFeelingId: feelingId,
-        bedtime: bedtimeMode,
-        attempt: () => _generateStoryWithBackendRetry(
-          characterName: characterName,
-          theme: theme,
-          age: age,
-          characterId: characterId,
-          childProfileId: childProfileId,
-          companion: companion,
-          characterDetails: characterDetails,
-          additionalCharacters: additionalCharacters,
-          rhymeTimeMode: rhymeTimeMode,
-          learningToReadMode: learningToReadMode,
-          includeIllustrations: includeIllustrations,
-          subscriptionTier: normalizedTier,
-          userId: userId,
-          userApiKey: userApiKey,
-          currentFeeling: currentFeeling,
-          feelingTrigger: feelingTrigger,
-          bodySignal: bodySignal,
-          copingTool: copingTool,
-          repairGoal: repairGoal,
-          parentHiddenContext: parentHiddenContext,
-          characterEvolution: characterEvolution,
-          client: effectiveClient,
-          maxAttempts: maxAttempts,
-          initialDelay: retryInitialDelay,
-          requestTimeout: effectiveRequestTimeout,
-          companionPets: companionPets,
-          companionCharacters: companionCharacters,
-          storyLength: storyLength,
-          customElements: customElements,
-          bedtimeMode: bedtimeMode,
-          bedtimeMood: bedtimeMood,
-          bedtimeDurationMinutes: bedtimeDurationMinutes,
-          onProgress: onProgress,
-          onPartial: onPartial,
-          onTaskId: onTaskId,
-          progressPhases: progressPhases,
-          therapeuticPrompt: therapeuticPrompt,
-          conflictHook: conflictHook,
-          sensoryPalette: sensoryPalette,
-          worldBible: worldBible,
-          moodPhysics: moodPhysics,
-          lifeChallenge: lifeChallenge,
-          heroCostumeColor: heroCostumeColor,
-          heroCapeStyle: heroCapeStyle,
-          heroEmblem: heroEmblem,
-          heroPower: heroPower,
-          heroMode: heroMode,
-          heroCatchphrase: heroCatchphrase,
-          heroAlias: heroAlias,
-          heroSecret: heroSecret,
-          heroTell: heroTell,
-          heroLine: heroLine,
-          heroSeenBy: heroSeenBy,
-          heroNemesisId: heroNemesisId,
-          recentVillains: recentVillains,
-          recentProblems: recentProblems,
-          priorSaga: priorSaga,
-        ),
-      );
-    }
-
     return await runWithScaffoldFallback(
       scenarioId: theme,
       age: age,
@@ -940,10 +824,11 @@ class ApiServiceManager {
       archetypeId: archetypeId,
       currentFeelingId: feelingId,
       bedtime: bedtimeMode,
-      attempt: () => _generateStoryWithGemini(
+      attempt: () => _generateStoryWithBackendRetry(
         characterName: characterName,
         theme: theme,
         age: age,
+        characterId: characterId,
         childProfileId: childProfileId,
         companion: companion,
         characterDetails: characterDetails,
@@ -951,6 +836,8 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         includeIllustrations: includeIllustrations,
+        subscriptionTier: normalizedTier,
+        userId: userId,
         currentFeeling: currentFeeling,
         feelingTrigger: feelingTrigger,
         bodySignal: bodySignal,
@@ -958,6 +845,10 @@ class ApiServiceManager {
         repairGoal: repairGoal,
         parentHiddenContext: parentHiddenContext,
         characterEvolution: characterEvolution,
+        client: effectiveClient,
+        maxAttempts: maxAttempts,
+        initialDelay: retryInitialDelay,
+        requestTimeout: effectiveRequestTimeout,
         companionPets: companionPets,
         companionCharacters: companionCharacters,
         storyLength: storyLength,
@@ -965,6 +856,31 @@ class ApiServiceManager {
         bedtimeMode: bedtimeMode,
         bedtimeMood: bedtimeMood,
         bedtimeDurationMinutes: bedtimeDurationMinutes,
+        onProgress: onProgress,
+        onPartial: onPartial,
+        onTaskId: onTaskId,
+        progressPhases: progressPhases,
+        therapeuticPrompt: therapeuticPrompt,
+        conflictHook: conflictHook,
+        sensoryPalette: sensoryPalette,
+        worldBible: worldBible,
+        moodPhysics: moodPhysics,
+        lifeChallenge: lifeChallenge,
+        heroCostumeColor: heroCostumeColor,
+        heroCapeStyle: heroCapeStyle,
+        heroEmblem: heroEmblem,
+        heroPower: heroPower,
+        heroMode: heroMode,
+        heroCatchphrase: heroCatchphrase,
+        heroAlias: heroAlias,
+        heroSecret: heroSecret,
+        heroTell: heroTell,
+        heroLine: heroLine,
+        heroSeenBy: heroSeenBy,
+        heroNemesisId: heroNemesisId,
+        recentVillains: recentVillains,
+        recentProblems: recentProblems,
+        priorSaga: priorSaga,
       ),
     );
   }
@@ -1183,127 +1099,6 @@ class ApiServiceManager {
     return '${body.substring(0, maxLength)}...';
   }
 
-  /// Generate story using direct Gemini API
-  static Future<StoryGenerationResult> _generateStoryWithGemini({
-    required String characterName,
-    required String theme,
-    required int age,
-    String? childProfileId,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<dynamic>? additionalCharacters,
-    bool rhymeTimeMode = false,
-    bool learningToReadMode = false,
-    bool includeIllustrations = false,
-    Map<String, dynamic>? currentFeeling,
-    String? feelingTrigger,
-    String? bodySignal,
-    String? copingTool,
-    String? repairGoal,
-    String? parentHiddenContext,
-    Map<String, dynamic>? characterEvolution,
-    List<Map<String, dynamic>>? companionPets,
-    List<dynamic>? companionCharacters,
-    String storyLength = 'standard',
-    String customElements = '',
-    bool bedtimeMode = false,
-    String bedtimeMood = 'calming',
-    int? bedtimeDurationMinutes,
-  }) async {
-    final apiKey = await getUserApiKey();
-    if (apiKey == null) {
-      throw Exception(
-        'No API key configured. Add your Gemini key in Settings to generate stories directly.',
-      );
-    }
-
-    final model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: apiKey,
-    );
-
-    // Build the prompt — use bedtime-specific builder when in bedtime mode.
-    final prompt = bedtimeMode
-        ? _buildBedtimePrompt(
-            characterName: characterName,
-            theme: theme,
-            age: age,
-            mood: bedtimeMood,
-            companion: companion,
-            additionalCharacters: additionalCharacters,
-            companionPets: companionPets,
-            companionCharacters: companionCharacters,
-            storyLength: storyLength,
-            durationMinutes: bedtimeDurationMinutes,
-          )
-        : _buildStoryPrompt(
-            characterName: characterName,
-            theme: theme,
-            age: age,
-            companion: companion,
-            characterDetails: characterDetails,
-            additionalCharacters: additionalCharacters,
-            learningToReadMode: learningToReadMode,
-            currentFeeling: currentFeeling,
-            feelingTrigger: feelingTrigger,
-            bodySignal: bodySignal,
-            copingTool: copingTool,
-            repairGoal: repairGoal,
-            parentHiddenContext: parentHiddenContext,
-            characterEvolution: characterEvolution,
-            companionPets: companionPets,
-            companionCharacters: companionCharacters,
-            storyLength: storyLength,
-            customElements: customElements,
-          );
-
-    try {
-      final response = await model.generateContent([Content.text(prompt)]);
-      final storyText = response.text ?? '';
-
-      if (storyText.isEmpty) {
-        throw StateError(
-            'Gemini returned an empty response for story content.');
-      }
-
-      // Try to parse as JSON if it looks like JSON
-      final trimmed = storyText.trim();
-      if (trimmed.startsWith('{') || trimmed.contains('"pages":')) {
-        try {
-          // Clean potential markdown fences
-          var cleanText = trimmed;
-          if (cleanText.startsWith('```')) {
-            cleanText = cleanText.replaceAll(
-                RegExp(r'^```(?:json)?\s*', multiLine: true), '');
-            cleanText =
-                cleanText.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
-          }
-          final data = jsonDecode(cleanText);
-          return StoryGenerationResult.fromBackend(
-              {'story': data, 'used_user_key': true});
-        } catch (e) {
-          debugPrint('Failed to parse Gemini JSON: $e');
-          // Fallback to legacy parsing if JSON fails
-        }
-      }
-
-      return StoryGenerationResult(
-        storyText: storyText,
-        title: null,
-        wisdomGem: null,
-        usedUserKey: true,
-      );
-    } catch (error, stackTrace) {
-      debugPrint('Gemini story generation failed: $error');
-      Error.throwWithStackTrace(
-        Exception(
-          'Could not generate story with Gemini at this time. Please try again shortly.',
-        ),
-        stackTrace,
-      );
-    }
-  }
-
   static Future<StoryGenerationResult> _generateStoryWithBackendRetry({
     required String characterName,
     required String theme,
@@ -1318,7 +1113,6 @@ class ApiServiceManager {
     bool includeIllustrations = false,
     required String subscriptionTier,
     required String userId,
-    String? userApiKey,
     Map<String, dynamic>? currentFeeling,
     String? feelingTrigger,
     String? bodySignal,
@@ -1389,7 +1183,6 @@ class ApiServiceManager {
           includeIllustrations: includeIllustrations,
           subscriptionTier: subscriptionTier,
           userId: userId,
-          userApiKey: userApiKey,
           currentFeeling: currentFeeling,
           feelingTrigger: feelingTrigger,
           bodySignal: bodySignal,
@@ -1471,7 +1264,6 @@ class ApiServiceManager {
     bool includeIllustrations = false,
     required String subscriptionTier,
     required String userId,
-    String? userApiKey,
     Map<String, dynamic>? currentFeeling,
     String? feelingTrigger,
     String? bodySignal,
@@ -1569,9 +1361,6 @@ class ApiServiceManager {
       if (lifeChallenge != null && lifeChallenge.isNotEmpty)
         'lifeChallenge': lifeChallenge,
     };
-    if (userApiKey != null && userApiKey.isNotEmpty) {
-      body['user_api_key'] = userApiKey;
-    }
 
     // Superhero Mode — only attach the costume/power + no-repeat hints when
     // the wizard selected that scenario. Backend route is gated on theme.
@@ -1829,807 +1618,6 @@ class ApiServiceManager {
         httpClient.close();
       }
     }
-  }
-
-  /// Build the story generation prompt (matching backend logic)
-  static String _buildTherapeuticPrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    required String lengthGuideline,
-    required Map<String, dynamic> currentFeeling,
-    String? feelingTrigger,
-    String? bodySignal,
-    String? copingTool,
-    String? repairGoal,
-    String? parentHiddenContext,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<dynamic>? additionalCharacters,
-    Map<String, dynamic>? characterEvolution,
-    String customElements = '',
-  }) {
-    final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
-
-    final bool useSecondPerson = age <= 5;
-    final String perspectiveInstruction = useSecondPerson
-        ? 'SECOND PERSON ("You"). Address the child directly as "You". Do NOT use the name "$characterName" to refer to the protagonist.'
-        : 'THIRD PERSON ("$characterName").';
-
-    // Extract emotion data first (needed for examples below)
-    final emotionName = currentFeeling['emotion_name'] as String?;
-    final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
-    final emotionDescription = currentFeeling['emotion_description'] as String?;
-    final intensity = currentFeeling['intensity'] as int?;
-    final whatHappened = ((currentFeeling['what_happened'] ??
-            currentFeeling['trigger']) as String?) ??
-        feelingTrigger;
-    final physicalSigns =
-        (currentFeeling['physical_signs'] as String?) ?? bodySignal;
-    final copingStrategies =
-        currentFeeling['coping_strategies'] as List<dynamic>?;
-    final resolvedCopingStrategies = <String>[
-      if (copingTool != null && copingTool.trim().isNotEmpty) copingTool.trim(),
-      ...?copingStrategies
-          ?.map((s) => s.toString())
-          .where((s) => s.trim().isNotEmpty),
-    ];
-    final resolvedRepairGoal =
-        (currentFeeling['repair_goal'] as String?) ?? repairGoal;
-
-    final String directFeeling = emotionName?.toLowerCase() ?? 'big';
-    final String startExample1 =
-        whatHappened != null && whatHappened.trim().isNotEmpty
-            ? (useSecondPerson
-                ? '"You felt so $directFeeling when $whatHappened."'
-                : '"$characterName felt so $directFeeling when $whatHappened."')
-            : (useSecondPerson
-                ? '"You felt so $directFeeling."'
-                : '"$characterName felt so $directFeeling."');
-    final String startExample2 = useSecondPerson
-        ? '"Your body could feel it right away."'
-        : '"$characterName could feel it in their body right away."';
-
-    // Build FEELINGS-CENTERED opening (PRIORITY #1)
-    String feelingsSection = '';
-
-    String intensityText = '';
-    if (intensity != null) {
-      if (intensity <= 2) {
-        intensityText = 'a little bit ';
-      } else if (intensity == 3) {
-        intensityText = '';
-      } else if (intensity == 4) {
-        intensityText = 'quite ';
-      } else {
-        intensityText = 'very strongly ';
-      }
-    }
-
-    feelingsSection = '''
-
-🌟 === CURRENT EMOTIONAL STATE (MOST IMPORTANT) === 🌟
-
-$characterName is feeling $intensityText$emotionEmoji $emotionName right now.
-$emotionName means: $emotionDescription
-
-${whatHappened != null ? "Context: $whatHappened\n" : ""}
-Physical signs: $physicalSigns
-
-CRITICAL THERAPEUTIC REQUIREMENTS:
-1. START the story by acknowledging this feeling: $startExample1 or $startExample2
-2. The story MUST help $characterName understand and work through this EXACT feeling
-3. Show $characterName experiencing the physical sensations: $physicalSigns
-4. Have $characterName use these coping strategies naturally in the story:
-${resolvedCopingStrategies.map((s) => '   - $s').join('\n')}
-5. By the end, $characterName should feel better about the $emotionName feeling - not making it disappear, but learning to work with it
-6. Validate the emotion: "$emotionName is a normal, okay feeling to have"
-7. Show that feelings come and go, and we can handle them
-${resolvedRepairGoal != null && resolvedRepairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $resolvedRepairGoal\n" : ""}${age <= 5 ? '9. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
-
-This is a FEELINGS-FIRST story. The emotion is the main character's journey.
-''';
-
-    // Build character integration if available (SECONDARY to feelings)
-    String characterIntegration = '';
-    if (characterDetails != null) {
-      final fears =
-          (characterDetails['fears'] as List?)?.whereType<String>().toList();
-      final strengths = (characterDetails['strengths'] as List?)
-          ?.whereType<String>()
-          .toList();
-      final likes =
-          (characterDetails['likes'] as List?)?.whereType<String>().toList();
-      final dislikes =
-          (characterDetails['dislikes'] as List?)?.whereType<String>().toList();
-      final comfortItem = characterDetails['comfort_item'] as String?;
-
-      if (fears != null && fears.isNotEmpty) {
-        characterIntegration += '\n\nCHARACTER FEARS: ${fears.join(", ")}';
-        characterIntegration +=
-            '\nIf relevant to the current feeling, you may weave in how the feeling relates to these fears.';
-      }
-
-      if (strengths != null && strengths.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER STRENGTHS: ${strengths.join(", ")}. Show $characterName using these strengths to cope with the feeling.';
-      }
-
-      if (likes != null && likes.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER LIKES: ${likes.join(", ")}. These can be calming or comforting activities in the story.';
-      }
-
-      if (dislikes != null && dislikes.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER DISLIKES: ${dislikes.join(", ")}. These can be sources of discomfort connected to the feeling.';
-      }
-
-      if (comfortItem != null && comfortItem.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCOMFORT ITEM: $comfortItem. This item can help $characterName feel safe while processing the emotion.';
-      }
-
-      Map<String, dynamic>? sliderMap;
-      final rawSliderMap = characterDetails['personality_sliders'];
-      if (rawSliderMap is Map<String, dynamic>) {
-        sliderMap = rawSliderMap;
-      } else if (rawSliderMap is Map) {
-        sliderMap = rawSliderMap.map(
-          (key, value) => MapEntry(key.toString(), value),
-        );
-      }
-      final sliderText = _buildSliderSummary(sliderMap);
-      if (sliderText.isNotEmpty) {
-        characterIntegration += sliderText;
-      }
-    }
-
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty) {
-      companionText =
-          '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
-    }
-
-    String multiCharacterText = '';
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}. These characters can support $characterName emotionally.';
-    }
-
-    // Build character evolution context
-    String evolutionContext = '';
-    String customRequestsText = '';
-    if (customElements.isNotEmpty) {
-      customRequestsText =
-          '\n\nCUSTOM REQUESTS: $customElements (Use the exact words from this request at least once each, verbatim, in the story).';
-    }
-
-    if (characterEvolution != null) {
-      final developmentStage =
-          characterEvolution['development_stage'] as String?;
-      final therapeuticProgress =
-          characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final evolvedTraits =
-          characterEvolution['evolved_traits'] as Map<String, dynamic>?;
-      if (developmentStage != null) {
-        evolutionContext +=
-            '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
-
-        // Adapt story complexity based on development stage
-        switch (developmentStage.toLowerCase()) {
-          case 'novice':
-          case 'beginner':
-            evolutionContext +=
-                '\nCreate a simpler story with basic emotional learning. Focus on naming feelings and simple coping strategies.';
-            break;
-          case 'intermediate':
-            evolutionContext +=
-                '\nCreate a moderately complex story. Include emotional regulation techniques and some problem-solving.';
-            break;
-          case 'advanced':
-            evolutionContext +=
-                '\nCreate a complex story with deeper emotional processing. Include perspective-taking and helping others.';
-            break;
-          case 'master':
-            evolutionContext +=
-                '\nCreate an advanced story focused on emotional leadership. Include teaching others and complex emotional situations.';
-            break;
-        }
-      }
-
-      if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
-        evolutionContext +=
-            '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
-        evolutionContext +=
-            '\nBuild upon these existing therapeutic skills in the story.';
-      }
-
-      if (evolvedTraits != null) {
-        final confidence = evolvedTraits['confidence'] as int?;
-        final empathy = evolvedTraits['empathy'] as int?;
-        final emotionalIntelligence =
-            evolvedTraits['emotional_intelligence'] as int?;
-
-        if (confidence != null && confidence > 50) {
-          evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has grown confident ($confidence%). Show them taking brave actions.';
-        }
-        if (empathy != null && empathy > 50) {
-          evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has developed empathy ($empathy%). Include opportunities to understand others\' feelings.';
-        }
-        if (emotionalIntelligence != null && emotionalIntelligence > 50) {
-          evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence ($emotionalIntelligence%). Create nuanced emotional challenges.';
-        }
-      }
-    }
-
-    return '''
-You are an experienced children's author running the Engaging Storycraft v9.0 engine for a feelings-first story.
-
-REQUEST SUMMARY
-- Child/Character: $characterName (age $age)
-- Theme: $theme
-- Perspective: $perspectiveInstruction
-- Mode: Linear story, feelings-centered
-- Length target: $lengthGuideline (Short default)
-- Companion: ${companion ?? 'None'}
-$companionText$multiCharacterText$feelingsSection$characterIntegration$evolutionContext$customRequestsText
-
-STORY
-STORY START
-Write immersive, age-appropriate prose (no code fences) that leads with the current emotion, names body sensations, and sets a clear, kid-repeatable problem. Include at least two rising steps ("and then...") before resolving. Show coping skills in action.
-STORY END
-
-ADVENTURE REPORT
-- PLOT BEATS: 3-6 bullets summarizing arc
-- CHARACTER SNAPSHOT: who they are + how they changed
-- EMOTION NOTES: how feelings showed and shifted
-- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs
-
-9-POINT STORYCRAFT CHECK (ensure output reflects):
-1) Main character kids can mirror (want/quirk/feeling).
-2) One-sentence kid-repeatable problem appears early.
-3) At least two rising steps before resolution.
-4) Embodied emotion (body cues).
-5) Age-appropriate rhythm and repetition.
-6) Small heart lesson, not preachy.
-7) Playful delight: surprise + giggle + gentle wonder.
-8) Ending echoes an opening image/line with inner shift.
-9) Re-read hooks present.
-
-$ageInstructions
-SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
-Maintain plain text (no markdown fences).''';
-  }
-
-  static const _bedtimeSettingDescriptions = <String, String>{
-    'Rainbow World':
-        'a shimmering realm where the sky holds soft arcs of rose and gold, gentle streams of liquid light wind between velvet hills, and cloud creatures drift on warm honeysuckle breezes',
-    'Cave of Crystals':
-        'a vast underground grotto lit by glowing crystals of rose, blue, and amber whose walls hum a low peaceful note — every echo returns as a soft musical chord',
-    'Cave Full of Crystals':
-        'a vast underground grotto lit by glowing crystals of rose, blue, and amber whose walls hum a low peaceful note — every echo returns as a soft musical chord',
-    'Friendly Dragons':
-        'a warm valley where gentle dragons curl in cosy nests, their slow steady breath filling the air with the scent of cinnamon and sending up wisps of soft golden smoke',
-    'Making a New Friend':
-        'a sun-warmed village at the edge of a silvery wood, where doorways glow with warm lamplight and the cobblestones stay warm even after sunset',
-    'Big Feelings':
-        'a quiet hilltop garden where the wind is always gentle and a great ancient tree spreads wide warm branches that seem to listen without saying a word',
-    'Magical Forest':
-        'a moonlit forest where silver-leafed trees hum a low steady song, fireflies trace slow spirals through the air, and the moss underfoot is deep and impossibly soft',
-    'Enchanted Ocean':
-        'a calm warm sea under a sky full of stars, where bioluminescent creatures drift like living lanterns and the waves make a slow rhythmic shushing sound',
-    'Dreamy Clouds':
-        'soft billowy cloudscapes high above the sleeping world, where cloud creatures make homes from moonlight and every step springs gently underfoot like the best pillow imaginable',
-  };
-
-  static String _buildBedtimePrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    String mood = 'calming',
-    String? companion,
-    List<dynamic>? additionalCharacters,
-    List<Map<String, dynamic>>? companionPets,
-    List<dynamic>? companionCharacters,
-    String storyLength = 'standard',
-    int? durationMinutes,
-  }) {
-    // Word count targets for bedtime — shorter than adventure stories.
-    final (int minWords, int maxWords) =
-        durationMinutes != null && durationMinutes > 0
-            ? ((durationMinutes * 110), (durationMinutes * 150))
-            : switch (age) {
-                <= 4 => storyLength == 'short' ? (180, 260) : (260, 380),
-                <= 7 => storyLength == 'short' ? (300, 420) : (420, 580),
-                <= 10 => storyLength == 'short' ? (480, 650) : (650, 900),
-                <= 13 => storyLength == 'short' ? (650, 850) : (850, 1100),
-                _ => storyLength == 'short' ? (750, 950) : (950, 1250),
-              };
-
-    final worldDesc = _bedtimeSettingDescriptions[theme] ?? theme;
-
-    // All heroes — protagonist + siblings/friends listening.
-    final allHeroes = <String>[
-      characterName,
-      ..._additionalCharacterDisplayNames(additionalCharacters),
-    ];
-    final heroesStr = allHeroes.length == 1
-        ? allHeroes.first
-        : '${allHeroes.sublist(0, allHeroes.length - 1).join(', ')} and ${allHeroes.last}';
-
-    // Companions (magical creatures / friends).
-    final compParts = <String>[];
-    for (final p in companionPets ?? []) {
-      final name = p['name'] as String?;
-      final species = p['species'] as String?;
-      if (name != null) {
-        compParts.add(species != null ? '$name the $species' : name);
-      }
-    }
-    for (final c in companionCharacters ?? []) {
-      final name = c is Map ? c['name'] as String? : c?.toString();
-      if (name != null && name.isNotEmpty) compParts.add(name);
-    }
-    if (compParts.isEmpty && companion != null && companion.isNotEmpty) {
-      compParts.add(companion);
-    }
-    final compStr = compParts.isEmpty ? 'None' : compParts.join(', ');
-
-    final allMandatory = [...allHeroes, ...compParts];
-    final mandatoryStr = allMandatory.join(', ');
-
-    final moodHint = switch (mood.toLowerCase()) {
-      'brave' =>
-        'gently brave — the challenge is real but never frightening, resolved with warmth and quiet confidence',
-      'funny' =>
-        'softly funny — gentle wordplay and cosy silliness, nothing rowdy or over-stimulating',
-      'friendship' =>
-        'warm and connective — the bond between the heroes is the heart of every scene',
-      _ =>
-        'deeply peaceful and soothing — every sentence should slow the listener\'s breathing',
-    };
-
-    return '''You are a master bedtime storyteller. Create a magical, soothing bedtime story.
-
-HEROES (ALL MUST APPEAR BY NAME): $heroesStr
-Every hero listed above MUST have at least one warm, meaningful moment in the story. Use their names naturally and often.
-
-MAGICAL COMPANIONS: $compStr
-(Mandatory — every name here MUST appear: $mandatoryStr)
-
-SETTING: $worldDesc
-
-MOOD: $moodHint
-
-AUDIENCE AGE: $age years old
-
-WORD COUNT: $minWords–$maxWords words total.
-
-━━━ BEDTIME STORY RULES (MANDATORY) ━━━
-
-1. SOOTHING PACING — each scene lingers on soft textures, gentle sounds, and warmth. No rushed action.
-2. ALL HEROES PRESENT — $mandatoryStr must all appear and do something meaningful.
-3. COZY EMOTIONAL LANDING — ends with everyone safe, snug, drifting toward sleep. No cliffhangers.
-4. AUDIO-FIRST PROSE — no bold text, no bullet points, no markdown. Rich sensory language beautiful when read aloud.
-5. REDUCED STIMULATION — no chases, battles, or scary moments. Gentle challenges, gentle resolutions.
-6. CALM MAGIC — things glow softly, float gently, hum quietly. Nothing explodes, races, or shocks.
-7. SLEEP TRANSITION — weave in natural sleep cues: sky deepening to indigo, stars appearing, characters yawning and finding a perfect warm place to rest.
-8. COZY CLOSING — end the final page with a warm, comforting sentence that feels like a goodnight hug — woven naturally into the narrative.
-
-OUTPUT FORMAT — return ONLY valid JSON, no prose outside it:
-{
-  "title": "Story Title",
-  "pages": [
-    {"text": "First page prose..."},
-    {"text": "Second page prose..."},
-    ...
-  ]
-}
-
-Each page should be 2–4 sentences. Do NOT include page numbers inside the text.
-No extra keys. No prose outside the JSON.''';
-  }
-
-  static String _buildAdventurePrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    required String lengthGuideline,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<dynamic>? additionalCharacters,
-    Map<String, dynamic>? characterEvolution,
-    String customElements = '',
-  }) {
-    final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
-    String pageGuideline = '10-12 pages';
-    String wordsPerPageGuideline = 'about 60-80 words per page';
-    if (lengthGuideline.contains('300-400')) {
-      pageGuideline = '6-7 pages';
-      wordsPerPageGuideline = 'about 45-60 words per page';
-    } else if (lengthGuideline.contains('1000-1200')) {
-      pageGuideline = '12-14 pages';
-      wordsPerPageGuideline = 'about 85-110 words per page';
-    }
-
-    final bool useSecondPerson = age <= 5;
-    final String perspectiveInstruction = useSecondPerson
-        ? 'SECOND PERSON ("You"). Address the child directly as "You". Do NOT use the name "$characterName" to refer to the protagonist.'
-        : 'THIRD PERSON ("$characterName").';
-
-    // Build character integration
-    String characterIntegration = '';
-    if (characterDetails != null) {
-      final fears =
-          (characterDetails['fears'] as List?)?.whereType<String>().toList();
-      final strengths = (characterDetails['strengths'] as List?)
-          ?.whereType<String>()
-          .toList();
-      final likes =
-          (characterDetails['likes'] as List?)?.whereType<String>().toList();
-      final dislikes =
-          (characterDetails['dislikes'] as List?)?.whereType<String>().toList();
-      final comfortItem = characterDetails['comfort_item'] as String?;
-
-      if (fears != null && fears.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER FEARS: ${fears.join(", ")}. The story can involve $characterName facing or learning about these fears.';
-      }
-      if (strengths != null && strengths.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER STRENGTHS: ${strengths.join(", ")}. Show $characterName using these strengths in the adventure.';
-      }
-      if (likes != null && likes.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER LIKES: ${likes.join(", ")}. Weave these interests into the story naturally.';
-      }
-      if (dislikes != null && dislikes.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCHARACTER DISLIKES: ${dislikes.join(", ")}. These can appear as challenges to overcome with support.';
-      }
-      if (comfortItem != null && comfortItem.isNotEmpty) {
-        characterIntegration +=
-            '\n\nCOMFORT ITEM: $comfortItem. This special item can be part of the adventure.';
-      }
-    }
-
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty) {
-      companionText =
-          '\n\nCOMPANION: Include $companion as $characterName\'s friend and adventure partner.';
-    }
-
-    String multiCharacterText = '';
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}. These characters join the adventure.';
-    }
-
-    String customRequestsText = '';
-    if (customElements.isNotEmpty) {
-      customRequestsText =
-          '\n\nCUSTOM REQUESTS: $customElements (Use the exact words from this request at least once each, verbatim, in the story).';
-    }
-
-    // Build character evolution context for adventure stories
-    String evolutionContext = '';
-    if (characterEvolution != null) {
-      final developmentStage =
-          characterEvolution['development_stage'] as String?;
-      final therapeuticProgress =
-          characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final evolvedTraits =
-          characterEvolution['evolved_traits'] as Map<String, dynamic>?;
-
-      if (developmentStage != null) {
-        evolutionContext +=
-            '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
-
-        // Adapt adventure complexity based on development stage
-        switch (developmentStage.toLowerCase()) {
-          case 'novice':
-          case 'beginner':
-            evolutionContext +=
-                '\nCreate a simple adventure with clear emotional lessons. Focus on basic feelings and simple friendships.';
-            break;
-          case 'intermediate':
-            evolutionContext +=
-                '\nCreate a moderately challenging adventure. Include teamwork, emotional awareness, and helping others.';
-            break;
-          case 'advanced':
-            evolutionContext +=
-                '\nCreate a complex adventure with emotional depth. Include leadership, empathy, and complex social situations.';
-            break;
-          case 'master':
-            evolutionContext +=
-                '\nCreate an epic adventure focused on emotional wisdom. Include mentoring others and profound emotional insights.';
-            break;
-        }
-      }
-
-      if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
-        evolutionContext +=
-            '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
-        evolutionContext +=
-            '\nIncorporate these therapeutic themes naturally into the adventure.';
-      }
-
-      if (evolvedTraits != null) {
-        final confidence = evolvedTraits['confidence'] as int?;
-        final empathy = evolvedTraits['empathy'] as int?;
-
-        if (confidence != null && confidence > 50) {
-          evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has grown confident ($confidence%). Show them taking leadership in the adventure.';
-        }
-        if (empathy != null && empathy > 50) {
-          evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has developed empathy ($empathy%). Include moments where they understand and help others emotionally.';
-        }
-      }
-    }
-
-    return '''
-You are a MASTER STORYTELLER for children. Create a magical, adventurous, and vivid story.
-
-Child profile:
-- Name: $characterName
-- Age: $age
-- Theme: $theme
-- Perspective: $perspectiveInstruction
-- Companion: ${companion ?? 'None'}
-$companionText$multiCharacterText$characterIntegration$evolutionContext$customRequestsText
-
-OUTPUT FORMAT:
-You MUST return a STRICT JSON object. No prose outside the JSON. No markdown formatting.
-
-JSON SCHEMA:
-{
-  "title": "A Catchy Adventure Title",
-  "pages": [
-    "Page 1 text...",
-    "Page 2 text...",
-    "..."
-  ],
-  "post_story": {
-    "adventure_report": {
-      "plot_beats": ["string"],
-      "character_snapshot": "string",
-      "emotion_notes": ["string"],
-      "rereadability_hooks": ["string"]
-    }
-  }
-}
-
-STORY REQUIREMENTS:
-- TARGET LENGTH: $lengthGuideline total.
-- PAGES: Split into $pageGuideline.
-- PAGE DENSITY: Keep $wordsPerPageGuideline.
-- TONE: For an 8-year-old, make it magical, adventurous, funny, and vivid.
-- NO META: Do NOT include "PAGE X", "REQUEST SUMMARY", or any internal labels inside the page text.
-- READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.
-- SENSORY: Include rich sensory details.
-
-$ageInstructions
-SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
-''';
-  }
-
-  static String _buildLearningToReadPrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<dynamic>? additionalCharacters,
-    String customElements = '',
-  }) {
-    String detailSection = '';
-    List<String>? extractStringList(dynamic raw) {
-      if (raw is List) {
-        return raw
-            .whereType<String>()
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-      }
-      return null;
-    }
-
-    String formatDetail(String label, List<String>? values) {
-      if (values == null || values.isEmpty) return '';
-      return '\n$label: ${values.take(5).join(", ")}';
-    }
-
-    if (characterDetails != null) {
-      final likes = extractStringList(characterDetails['likes']);
-      final strengths = extractStringList(characterDetails['strengths']);
-      final comfortItem = characterDetails['comfort_item'] as String?;
-
-      detailSection += formatDetail('LIKES', likes);
-      detailSection += formatDetail('STRENGTHS', strengths);
-      if (comfortItem != null && comfortItem.isNotEmpty) {
-        detailSection += '\nCOMFORT ITEM: $comfortItem';
-      }
-    }
-
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      detailSection +=
-          '\nFRIENDS IN STORY: ${_additionalCharacterDisplayNames(additionalCharacters).join(", ")}';
-    }
-
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty && companion != 'None') {
-      companionText = '\nCOMPANION: Include $companion as a gentle helper.';
-    }
-
-    String customRequestsText = '';
-    if (customElements.isNotEmpty) {
-      customRequestsText = '\nCUSTOM REQUESTS: $customElements';
-    }
-
-    return '''
-You are creating a LEARNING TO READ rhyming story for a $age-year-old named $characterName.
-
-STRICT REQUIREMENTS (NO EXCEPTIONS):
-1. TOTAL LENGTH: 50-100 words (stop inside this range).
-2. RHYME PATTERN: Simple AABB scheme (line 1 rhymes with 2, line 3 rhymes with 4, etc.).
-3. LINE LENGTH: 4-6 short words per line (keep it punchy).
-4. VOCABULARY: Only CVC words (cat, dog, hop, sun) and common sight words (the, and, can, see, like, play). No tricky spellings, blends, or silent letters.
-5. STRUCTURE: Repetition helps reading. Use predictable frames like "Can $characterName ___? Yes! $characterName can ___!".
-6. TONE: Encouraging, musical, and confidence-building.
-7. FORMAT: Each sentence or phrase on its own line for easy finger-tracking.
-
-THEME: $theme$companionText$detailSection$customRequestsText
-
-Create the rhyming learning-to-read story about $characterName now:
-''';
-  }
-
-  static String _buildStoryPrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<dynamic>? additionalCharacters,
-    bool learningToReadMode = false,
-    Map<String, dynamic>? currentFeeling,
-    String? feelingTrigger,
-    String? bodySignal,
-    String? copingTool,
-    String? repairGoal,
-    String? parentHiddenContext,
-    Map<String, dynamic>? characterEvolution,
-    List<Map<String, dynamic>>? companionPets,
-    List<dynamic>? companionCharacters,
-    String storyLength = 'standard',
-    String customElements = '',
-  }) {
-    // Map story length to word count targets (matching backend).
-    String lengthGuideline;
-    switch (storyLength) {
-      case 'quick':
-        lengthGuideline = '300-400 words';
-        break;
-      case 'epic':
-        lengthGuideline = '1000-1200 words';
-        break;
-      case 'standard':
-      default:
-        lengthGuideline = '600-800 words';
-        break;
-    }
-
-    // Merge companions for prompt building
-    final effectiveAdditionalChars =
-        _additionalCharacterDisplayNames(additionalCharacters);
-
-    if (companionCharacters != null) {
-      for (final char in companionCharacters) {
-        if (char is String) {
-          effectiveAdditionalChars.add(char);
-        } else if (char is Map) {
-          final name = char['name'] ?? 'Friend';
-          final desc = char['description'] ?? char['role'] ?? '';
-          final power = char['signaturePower'];
-
-          String entry = name;
-          if (desc.isNotEmpty) entry += ' ($desc)';
-          if (power != null) entry += ' [Magic: $power]';
-
-          effectiveAdditionalChars.add(entry);
-        }
-      }
-    }
-    if (companionPets != null) {
-      for (final p in companionPets) {
-        effectiveAdditionalChars.add('${p['name']} (a ${p['species']})');
-      }
-    }
-
-    if (learningToReadMode) {
-      return _buildLearningToReadPrompt(
-        characterName: characterName,
-        theme: theme,
-        age: age,
-        companion: companion,
-        characterDetails: characterDetails,
-        additionalCharacters: effectiveAdditionalChars,
-        customElements: customElements,
-      );
-    }
-
-    if (currentFeeling != null) {
-      return _buildTherapeuticPrompt(
-        characterName: characterName,
-        theme: theme,
-        age: age,
-        lengthGuideline: lengthGuideline,
-        currentFeeling: currentFeeling,
-        feelingTrigger: feelingTrigger,
-        bodySignal: bodySignal,
-        copingTool: copingTool,
-        repairGoal: repairGoal,
-        parentHiddenContext: parentHiddenContext,
-        companion: companion,
-        characterDetails: characterDetails,
-        additionalCharacters: effectiveAdditionalChars,
-        characterEvolution: characterEvolution,
-        customElements: customElements,
-      );
-    } else {
-      return _buildAdventurePrompt(
-        characterName: characterName,
-        theme: theme,
-        age: age,
-        lengthGuideline: lengthGuideline,
-        companion: companion,
-        characterDetails: characterDetails,
-        additionalCharacters: effectiveAdditionalChars,
-        characterEvolution: characterEvolution,
-        customElements: customElements,
-      );
-    }
-  }
-
-  static String _buildSliderSummary(Map<String, dynamic>? sliderValues) {
-    if (sliderValues == null || sliderValues.isEmpty) {
-      return '';
-    }
-    final buffer = StringBuffer('\n\nPERSONALITY STYLE INSIGHTS:\n');
-    var hasData = false;
-    for (final slider in CharacterTraitsData.personalitySliders) {
-      final parsedValue = _parseSliderValue(sliderValues[slider.key]);
-      if (parsedValue == null) {
-        continue;
-      }
-      hasData = true;
-      final towardLabel =
-          parsedValue > 50 ? slider.rightLabel : slider.leftLabel;
-      buffer.writeln(
-        '- ${slider.label}: ${slider.describeValue(parsedValue)} '
-        '($parsedValue/100 toward ${towardLabel.toLowerCase()})',
-      );
-    }
-    return hasData ? buffer.toString() : '';
-  }
-
-  static int? _parseSliderValue(dynamic value) {
-    if (value is num) {
-      return value.clamp(0, 100).round();
-    }
-    if (value is String) {
-      final parsed = double.tryParse(value);
-      if (parsed != null) {
-        return parsed.clamp(0, 100).round();
-      }
-    }
-    return null;
   }
 
   /// Tweak a curated gallery avatar by changing hair length or eye colour.

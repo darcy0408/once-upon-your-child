@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../screens/byok_setup_wizard.dart';
+import '../premium_upgrade_screen.dart';
 import '../services/api_service_manager.dart';
 import 'safe_asset_image.dart';
 
@@ -46,21 +46,27 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
   String? _selectedEye;
   bool _isGenerating = false;
   bool _premiumExpanded = false;
-  bool _premiumOverride = false; // becomes true after BYOK wizard succeeds
+  bool _premiumOverride =
+      false; // becomes true if premium is bought mid-session
   String? _tweakedImageData; // base64 data URI when generation succeeds
 
   bool get _hasChanges => _selectedHair != null || _selectedEye != null;
   bool get _isPremium => widget.isPremium || _premiumOverride;
 
-  Future<void> _openByokWizard() async {
-    final result = await Navigator.of(context).push<String>(
+  Future<void> _openPremiumUpsell() async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => const ByokSetupWizardScreen(),
+        builder: (_) => const PremiumUpgradeScreen(
+          requiredFeature: 'custom_avatar_tweaks',
+        ),
         fullscreenDialog: true,
       ),
     );
     if (!mounted) return;
-    if (result != null && result.isNotEmpty) {
+    // Re-check: the user may have subscribed while the upsell was open.
+    final premium = await ApiServiceManager.hasPremiumAccess();
+    if (!mounted) return;
+    if (premium) {
       setState(() {
         _premiumOverride = true;
         _premiumExpanded = true;
@@ -157,7 +163,8 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
               onTap: () => setState(() => onSelect(isSelected ? '' : opt)),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? const Color(0xFFFFD54F)
@@ -265,7 +272,8 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
           ),
           TextButton.icon(
             onPressed: widget.onBack,
-            icon: const Icon(Icons.arrow_back, size: 16, color: Color(0xFF3B2363)),
+            icon: const Icon(Icons.arrow_back,
+                size: 16, color: Color(0xFF3B2363)),
             label: const Text(
               'Pick another',
               style: TextStyle(color: Color(0xFF3B2363), fontSize: 13),
@@ -351,10 +359,10 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('🔑', style: TextStyle(fontSize: 11)),
+                    Text('⭐', style: TextStyle(fontSize: 11)),
                     SizedBox(width: 4),
                     Text(
-                      'Free with your key',
+                      'Premium',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -385,7 +393,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
               ),
               child: Row(
                 children: [
-                  const Text('🔑', style: TextStyle(fontSize: 14)),
+                  const Text('⭐', style: TextStyle(fontSize: 14)),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Column(
@@ -402,7 +410,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Free — uses your own Google AI key',
+                          'Included with Premium',
                           style: TextStyle(
                             color: Colors.white54,
                             fontSize: 11,
@@ -426,7 +434,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
             const SizedBox(height: 12),
             _buildAttributePickers(),
             const SizedBox(height: 12),
-            _buildSetUpFreePremiumCta(),
+            _buildPremiumCta(),
           ],
         ] else ...[
           // Premium users get the full expanded pickers
@@ -454,12 +462,12 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
     );
   }
 
-  Widget _buildSetUpFreePremiumCta() {
+  Widget _buildPremiumCta() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         GestureDetector(
-          onTap: _openByokWizard,
+          onTap: _openPremiumUpsell,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 15),
             decoration: BoxDecoration(
@@ -484,10 +492,10 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.key, size: 18, color: Color(0xFF3B2363)),
+                Icon(Icons.star_rounded, size: 18, color: Color(0xFF3B2363)),
                 SizedBox(width: 10),
                 Text(
-                  'Set Up Free Premium →',
+                  'Unlock with Premium →',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -501,7 +509,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Free with your own Google AI key (~\$0.10–0.50/month for most families).',
+          'Custom looks, story illustrations and unlimited stories — one subscription.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 11,
@@ -595,7 +603,9 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: canAct ? const Color(0xFF3B2363) : const Color(0xFFD4ADFF).withAlpha(150),
+                color: canAct
+                    ? const Color(0xFF3B2363)
+                    : const Color(0xFFD4ADFF).withAlpha(150),
                 letterSpacing: 0.3,
               ),
             ),
@@ -680,8 +690,7 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
           style: ElevatedButton.styleFrom(
             backgroundColor: buttonColor,
             foregroundColor: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),

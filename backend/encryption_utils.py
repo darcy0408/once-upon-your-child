@@ -10,7 +10,6 @@ lazily re-wrapped into GCM format on first access.
 import base64
 import logging
 import os
-import re
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
@@ -216,71 +215,3 @@ def decrypt_user_api_key(user, db_session=None) -> str:
                 pass
 
     return plain_key
-
-
-def validate_gemini_api_key_format(key: str) -> bool:
-    """
-    Validate that an API key matches the expected Gemini API key format.
-
-    Gemini API keys typically start with 'AIza' and are 39 characters long.
-    Example: AIzaSyAbc123...
-
-    Args:
-        key: The API key to validate
-
-    Returns:
-        True if the format is valid, False otherwise
-    """
-    if not key or not isinstance(key, str):
-        return False
-
-    # Gemini API keys: AIza[A-Za-z0-9_-]{35}
-    pattern = r"^AIza[A-Za-z0-9_-]{35}$"
-
-    if re.match(pattern, key):
-        return True
-
-    logger.warning(
-        f"API key format validation failed. Length: {len(key)}, Starts with AIza: {key.startswith('AIza') if key else False}"
-    )
-    return False
-
-
-def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
-    """
-    Test an API key by listing available models via the Gemini API.
-
-    Args:
-        api_key: The API key to test
-
-    Returns:
-        Tuple of (is_valid, error_message)
-        If valid: (True, "")
-        If invalid: (False, "error description")
-    """
-    from google import genai
-
-    try:
-        client = genai.Client(api_key=api_key)
-
-        # Listing models is the lightest possible authenticated call —
-        # no content generation, no response-parsing edge cases.
-        models = list(client.models.list())
-        logger.info(f"API key test successful. Found {len(models)} models.")
-        return (True, "")
-
-    except Exception as e:
-        error_msg = str(e)
-        logger.warning(f"API key test failed: {error_msg}")
-
-        if "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower():
-            return (False, "Invalid API key. Please check your key and try again.")
-        elif "quota" in error_msg.lower() or "429" in error_msg:
-            return (
-                False,
-                "API key is valid but quota exceeded. Please check your Google Cloud quota.",
-            )
-        elif "permission" in error_msg.lower() or "403" in error_msg:
-            return (False, "API key doesn't have permission to use Gemini API.")
-        else:
-            return (False, f"API key test failed: {error_msg}")

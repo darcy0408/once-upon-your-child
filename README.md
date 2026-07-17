@@ -143,11 +143,10 @@ lib/
 │   │   └── magic_review_step.dart           # Review + generate
 │   ├── parental_consent_screen.dart         # COPPA Notice to Parents + consent
 │   ├── parent_controls_screen.dart          # Screen time, Big Feelings guidance, data deletion
-│   ├── byok_setup_wizard.dart               # 3-step BYOK setup
 │   ├── character_library_screen.dart
 │   └── subscription_management_screen.dart
 ├── services/
-│   ├── api_service_manager.dart             # Backend vs. direct Gemini routing
+│   ├── api_service_manager.dart             # All backend API routing
 │   ├── parental_consent_service.dart        # COPPA consent (local + backend sync)
 │   ├── child_profile_service.dart           # Profiles + backend deletion
 │   ├── grace_period_service.dart            # 3-day grace + monthly limit
@@ -173,8 +172,7 @@ lib/
 - Flutter 3.24+ / Dart 3.5+
 - **Riverpod** (`flutter_riverpod`) for all state management
 - **Isar** for local story/character cache (web stub + native implementations)
-- **flutter_secure_storage** for BYOK API keys
-- **google_generative_ai** for direct Gemini calls (BYOK mode)
+- **flutter_secure_storage** for auth tokens
 - **ElevenLabs TTS** (via backend) for narration
 - **page_flip_builder** for storybook animations
 

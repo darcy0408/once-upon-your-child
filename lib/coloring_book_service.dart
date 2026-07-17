@@ -283,8 +283,7 @@ class GeminiColoringBookService extends ColoringBookService {
           'the character';
 
       // Call backend to generate therapeutic coloring pages
-      final geminiColoringHeaders = await ApiServiceManager.authHeaders();
-      final userApiKey = await ApiServiceManager.getUserApiKey();
+      final coloringHeaders = await ApiServiceManager.authHeaders();
       final requestBody = {
         'scenes': scenesData,
         'character_name': characterName,
@@ -293,13 +292,10 @@ class GeminiColoringBookService extends ColoringBookService {
         'character_appearance': characterAppearanceJson,
         'companions': companions,
       };
-      if (userApiKey != null && userApiKey.isNotEmpty) {
-        requestBody['user_api_key'] = userApiKey;
-      }
       final response = await http
           .post(
             Uri.parse('$backendUrl/generate-coloring-pages'),
-            headers: geminiColoringHeaders,
+            headers: coloringHeaders,
             body: jsonEncode(requestBody),
           )
           .timeout(const Duration(seconds: 65));

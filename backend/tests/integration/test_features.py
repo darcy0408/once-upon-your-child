@@ -169,18 +169,24 @@ def test_feature_rhyme_time_mode_is_forwarded(client, auth_headers, mock_story_t
     assert forwarded["rhyme_time_mode"] is True
 
 
-def test_feature_illustration_generation_returns_images(client, auth_headers, mocker):
-    mock_generator = mocker.MagicMock()
-    mock_generator.generate_story_illustration.return_value = [
-        {
-            "id": "img-1",
-            "image_data": "a" * 256,
-            "prompt": "A bright forest clearing with friendly companions.",
-        }
-    ]
-    mock_generator_cls = mocker.patch(
-        "backend.routes.story_routes.GeminiImageGenerator",
-        return_value=mock_generator,
+def test_feature_illustration_generation_ignores_user_api_key(
+    client, auth_headers, monkeypatch
+):
+    """BYOK sunset (MT-358): a stray `user_api_key` from an old client is
+    ignored — generation always runs on the server-managed pipeline and the
+    response reports used_user_key=False."""
+    from backend.routes import story_routes
+
+    monkeypatch.setattr(
+        story_routes,
+        "_generate_flux_illustration",
+        lambda **kwargs: [
+            {
+                "id": "img-1",
+                "image_data": "a" * 256,
+                "prompt": "A bright forest clearing with friendly companions.",
+            }
+        ],
     )
 
     response = client.post(
@@ -188,7 +194,7 @@ def test_feature_illustration_generation_returns_images(client, auth_headers, mo
         json={
             "scene_description": "A bright forest clearing with friendly companions.",
             "character_name": "FeatureTester",
-            "user_api_key": "test-key",
+            "user_api_key": "stale-byok-key",
             "companion_pets": [{"name": "Milo", "species": "dog"}],
         },
         headers=auth_headers,
@@ -199,9 +205,4 @@ def test_feature_illustration_generation_returns_images(client, auth_headers, mo
     assert isinstance(payload.get("illustrations"), list)
     assert payload.get("count") == 1
     assert payload["illustrations"][0].get("image_data")
-
-    mock_generator_cls.assert_called_once_with(api_key="test-key")
-    mock_generator.generate_story_illustration.assert_called_once()
-    call_kwargs = mock_generator.generate_story_illustration.call_args.kwargs
-    assert call_kwargs["scene_description"].startswith("A bright forest")
-    assert call_kwargs["companions"] == [{"name": "Milo", "species": "dog"}]
+    assert payload.get("used_user_key") is False

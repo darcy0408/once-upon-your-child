@@ -20,10 +20,8 @@ import '../services/local_data_eraser.dart';
 import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../services/screen_time_service.dart';
-import '../settings_screen.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
-import 'byok_setup_wizard.dart';
 import 'subscription_management_screen.dart';
 import 'wizard_story_screen.dart';
 
@@ -70,15 +68,14 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     'try again with warmth': (label: 'Try again', emoji: '🔁'),
   };
 
-  static const _triggerData = <
-      ({
-        String value,
-        String label,
-        String emoji,
-        String description,
-        List<String> defaultCoping,
-        List<String> defaultRepair,
-      })>[
+  static const _triggerData = <({
+    String value,
+    String label,
+    String emoji,
+    String description,
+    List<String> defaultCoping,
+    List<String> defaultRepair,
+  })>[
     (
       value: ParentFocusKeys.limitSet,
       label: 'Hearing no',
@@ -133,12 +130,12 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   // ── State ─────────────────────────────────────────────────────────────────
 
   bool _allowPhotoAvatar = false; // CMP-8: fail safe until the real value loads
-  bool _hasApiKey = false;
   bool _loading = true;
   bool _deletingData = false;
   bool _exportingData = false;
   bool _analyticsEnabled = false;
-  bool _analyticsAgeAllowed = false; // analytics toggle usable only for age >= 13
+  bool _analyticsAgeAllowed =
+      false; // analytics toggle usable only for age >= 13
   int? _dailyLimitMinutes;
   bool _bedtimeEnabled = false;
   int _bedtimeHour = 20;
@@ -193,7 +190,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final hasKey = await ApiServiceManager.isUsingOwnApiKey();
     final allowPhoto = await _consentService.getAllowPhotoAvatar();
     final limit = await _consentService.getDailyLimitMinutes();
     final bedtimeEnabled = await _consentService.isBedtimeLockoutEnabled();
@@ -240,7 +236,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     final recordedAge = await _consentService.getRecordedAge();
 
     setState(() {
-      _hasApiKey = hasKey;
       _allowPhotoAvatar = allowPhoto;
       _dailyLimitMinutes = limit;
       _bedtimeEnabled = bedtimeEnabled;
@@ -267,11 +262,23 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   /// The chip presets shown on the Family panel. "Other..." opens a free-text
   /// field so culturally-specific labels (Tata, Abuela, Yia Yia, etc.) work.
   static const _caregiverPresets = <String>[
-    'Mommy', 'Mama', 'Mom', 'Mum',
-    'Daddy', 'Dada', 'Papa', 'Pa', 'Dad',
-    'Grandma', 'Nana', 'Granny',
-    'Grandpa', 'Granddad', 'Pop-Pop',
-    'Auntie', 'Uncle',
+    'Mommy',
+    'Mama',
+    'Mom',
+    'Mum',
+    'Daddy',
+    'Dada',
+    'Papa',
+    'Pa',
+    'Dad',
+    'Grandma',
+    'Nana',
+    'Granny',
+    'Grandpa',
+    'Granddad',
+    'Pop-Pop',
+    'Auntie',
+    'Uncle',
   ];
 
   Future<void> _setPrimaryCaregiver(String? value) async {
@@ -287,7 +294,12 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
 
   Set<String> _splitSaved(dynamic raw) {
     if (raw == null || raw.toString().trim().isEmpty) return {};
-    return raw.toString().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet();
+    return raw
+        .toString()
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
   }
 
   Future<Map<String, dynamic>?> _loadHiddenContext(String profileId) async {
@@ -378,44 +390,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     onChanged: (v) async {
                       await _consentService.setAllowPhotoAvatar(v);
                       if (mounted) setState(() => _allowPhotoAvatar = v);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _SectionHeader(title: '🔑  Unlock Premium Features — Free'),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Text(
-                      'Connect a free Google Gemini API key to unlock '
-                      'premium AI illustrations and personalised avatars. '
-                      'Google offers a generous free tier — most families '
-                      'never pay a cent, though very heavy use could incur '
-                      'small charges on your Google account.',
-                      style: GoogleFonts.fredoka(
-                          color: Colors.white70, fontSize: 14),
-                    ),
-                  ),
-                  _ActionTile(
-                    icon: _hasApiKey
-                        ? Icons.check_circle_rounded
-                        : Icons.vpn_key_rounded,
-                    title: _hasApiKey
-                        ? 'API key connected'
-                        : 'Connect your free API key',
-                    subtitle: _hasApiKey
-                        ? 'Tap to update or remove your Gemini key'
-                        : 'Takes 2 minutes — unlock premium illustrations & avatars',
-                    onTap: () async {
-                      final result = await Navigator.of(context).push<String>(
-                        MaterialPageRoute(
-                          builder: (_) => const ByokSetupWizardScreen(),
-                        ),
-                      );
-                      if (result != null && result.isNotEmpty && context.mounted) {
-                        setState(() => _hasApiKey = true);
-                        await ProviderScope.containerOf(context)
-                            .read(settingsProvider.notifier)
-                            .reload();
-                      }
                     },
                   ),
                   const SizedBox(height: AppSpacing.lg),
@@ -601,7 +575,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF7E57C2).withAlpha(25),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF7E57C2).withAlpha(80)),
+                      border: Border.all(
+                          color: const Color(0xFF7E57C2).withAlpha(80)),
                     ),
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
@@ -907,8 +882,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
         return;
       }
       final export = await _api.get('/api/user/$userId/export');
-      final jsonText =
-          const JsonEncoder.withIndent('  ').convert(export);
+      final jsonText = const JsonEncoder.withIndent('  ').convert(export);
 
       if (kIsWeb) {
         // path_provider/share file delivery is unavailable on web — show the
@@ -982,8 +956,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       children: [
         // Header row
         GestureDetector(
-          onTap: () =>
-              setState(() => _familyExpanded = !_familyExpanded),
+          onTap: () => setState(() => _familyExpanded = !_familyExpanded),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
@@ -1021,9 +994,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   ),
                 ),
                 Icon(
-                  _familyExpanded
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  _familyExpanded ? Icons.expand_less : Icons.expand_more,
                   color: Colors.white70,
                 ),
               ],
@@ -1041,8 +1012,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   'Pick the name your child uses for their main grown-up. '
                   'Stories will say it instead of "your grown-up". '
                   'Stays on this device — never uploaded.',
-                  style: GoogleFonts.fredoka(
-                      color: Colors.white70, fontSize: 13),
+                  style:
+                      GoogleFonts.fredoka(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (!hasProfile)
@@ -1227,8 +1198,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.shield_moon_rounded,
-                    color: Color(0xFFFFD700)),
+                const Icon(Icons.shield_moon_rounded, color: Color(0xFFFFD700)),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
@@ -1265,9 +1235,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   ),
                 ),
                 Icon(
-                  _bigFeelingsExpanded
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  _bigFeelingsExpanded ? Icons.expand_less : Icons.expand_more,
                   color: Colors.white70,
                 ),
               ],
@@ -1410,8 +1378,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                 child: TextField(
                   controller: _mathController,
                   keyboardType: TextInputType.number,
-                  style: GoogleFonts.fredoka(
-                      color: Colors.white, fontSize: 18),
+                  style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18),
                   decoration: InputDecoration(
                     isDense: true,
                     labelText: 'Answer',
@@ -1420,15 +1387,12 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(
-                        color: _mathWrong
-                            ? Colors.redAccent
-                            : Colors.white38,
+                        color: _mathWrong ? Colors.redAccent : Colors.white38,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                          color: Color(0xFFFFD700)),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700)),
                     ),
                   ),
                   onSubmitted: (_) => _checkMath(),
@@ -1444,8 +1408,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                       horizontal: AppSpacing.md, vertical: 10),
                 ),
                 child: Text('Unlock',
-                    style: GoogleFonts.fredoka(
-                        fontWeight: FontWeight.w700)),
+                    style: GoogleFonts.fredoka(fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -1453,8 +1416,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Not quite -- try again.',
-              style: GoogleFonts.fredoka(
-                  color: Colors.redAccent, fontSize: 13),
+              style: GoogleFonts.fredoka(color: Colors.redAccent, fontSize: 13),
             ),
           ],
         ],
@@ -1484,8 +1446,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Text(
               privacyNote,
-              style:
-                  GoogleFonts.fredoka(color: Colors.white54, fontSize: 12),
+              style: GoogleFonts.fredoka(color: Colors.white54, fontSize: 12),
             ),
           ),
 
@@ -1686,9 +1647,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                               isExpanded ? null : trigger.value,
                         ),
                         child: Icon(
-                          isExpanded
-                              ? Icons.expand_less
-                              : Icons.tune_rounded,
+                          isExpanded ? Icons.expand_less : Icons.tune_rounded,
                           color: const Color(0xFFFFD700),
                           size: 20,
                         ),
@@ -1789,7 +1748,6 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       ],
     );
   }
-
 }
 
 // ─── Reusable widgets ─────────────────────────────────────────────────────────
@@ -1866,6 +1824,7 @@ class _ControlTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool value;
+
   /// Null disables the switch (e.g. analytics toggle for an under-13 account).
   final ValueChanged<bool>? onChanged;
 
@@ -1892,57 +1851,6 @@ class _ControlTile extends StatelessWidget {
           activeThumbColor: const Color(0xFFFFD700),
           value: value,
           onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white24),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFFFFD700), size: 28),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16)),
-                  Text(subtitle,
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 13)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white54),
-          ],
         ),
       ),
     );

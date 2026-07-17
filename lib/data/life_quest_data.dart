@@ -5,7 +5,7 @@
 // ignore_for_file: unused_import
 import '../theme/age_band_theme.dart' show AgeBand;
 // Choose-your-own-adventure stories about real-life situations that
-// work WITHOUT any AI generation (no BYOK required).
+// work WITHOUT any AI generation.
 //
 // String interpolation slots:
 //   {name}       — character's name (used in dialogue/address by others)
@@ -26,10 +26,10 @@ import '../theme/age_band_theme.dart' show AgeBand;
 /// stories and is the entry point in the Big Feelings section. Older bands
 /// don't see friends — they get a flat quest list.
 enum SproutFriend {
-  pup,     // happy / excited (Sunny Pup)
-  bunny,   // sad (Rainy Bunny)
-  lion,    // mad / frustrated (Roary Lion)
-  mouse,   // scared / shy (Shy Mouse)
+  pup, // happy / excited (Sunny Pup)
+  bunny, // sad (Rainy Bunny)
+  lion, // mad / frustrated (Roary Lion)
+  mouse, // scared / shy (Shy Mouse)
 }
 
 /// How emotionally heavy a quest's subject matter is. Drives the parent-facing
@@ -48,17 +48,23 @@ class LifeQuestScenario {
   final String title;
   final String hook; // one-line teaser shown on quest card
   final String emoji;
+
   /// Which emotions this quest is relevant for (matches badge grid ids).
   final List<String> emotions;
+
   /// Which age bands this quest is appropriate for.
   final List<AgeBand> recommendedBands;
+
   /// All segments in this quest, keyed by segment id.
   final Map<String, QuestSegment> segments;
+
   /// The id of the first segment.
   final String startSegmentId;
+
   /// Sprout-band animal friend this quest belongs to. Null for non-Sprout
   /// quests — they appear in a flat list under the older-band "Life Quest" UI.
   final SproutFriend? friend;
+
   /// One-sentence prompt for a grown-up to read aloud after the story ends.
   /// Surfaced as a soft callout on the ending screen — not the kid's content.
   final String? grownupTip;
@@ -97,7 +103,11 @@ class LifeQuestScenario {
     required this.hook,
     required this.emoji,
     required this.emotions,
-    this.recommendedBands = const [AgeBand.adventurer, AgeBand.creator, AgeBand.adolescent],
+    this.recommendedBands = const [
+      AgeBand.adventurer,
+      AgeBand.creator,
+      AgeBand.adolescent
+    ],
     required this.segments,
     required this.startSegmentId,
     this.friend,
@@ -316,8 +326,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_sit': QuestSegment(
       id: 'lo_sit',
-      content:
-          'You slide into the only open gap — a folding chair wedged at '
+      content: 'You slide into the only open gap — a folding chair wedged at '
           'the end of the table. Someone says hey. You say hey back. The '
           'conversation keeps rolling without a pause: the slide that was '
           'terrifying, the nachos that were overpriced, the sunburn Jayden '
@@ -356,8 +365,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_alone': QuestSegment(
       id: 'lo_alone',
-      content:
-          'You walk to the far end of the cafeteria, near the windows, '
+      content: 'You walk to the far end of the cafeteria, near the windows, '
           'and sit down at an empty table. Nobody follows. Nobody calls '
           'your name.\n\n'
           'The food doesn\'t taste like anything. Outside the window '
@@ -392,8 +400,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_confront': QuestSegment(
       id: 'lo_confront',
-      content:
-          'You walk straight up to the table. The laughter cuts out '
+      content: 'You walk straight up to the table. The laughter cuts out '
           'faster than a light switch.\n\n'
           '"You all went to the waterpark this weekend?"\n\n'
           'Maya shifts in her seat. Jayden looks at the table. Riley '
@@ -434,8 +441,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_join_convo': QuestSegment(
       id: 'lo_join_convo',
-      content:
-          '"Was the big slide actually scary?" you ask.\n\n'
+      content: '"Was the big slide actually scary?" you ask.\n\n'
           'Maya turns — surprised, then relieved to have a normal '
           'question to answer. "Oh my GOD. I screamed the entire way '
           'down." She holds out her phone. The video is her, both hands '
@@ -460,8 +466,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_text': QuestSegment(
       id: 'lo_text',
-      content:
-          'Under the table, you open your messages and text your cousin: '
+      content: 'Under the table, you open your messages and text your cousin: '
           'Having the worst lunch. The cousin writes back immediately — '
           'a string of memes, increasingly unhinged, each one slightly '
           'less appropriate than the last.\n\n'
@@ -513,8 +518,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_tell_alex': QuestSegment(
       id: 'lo_tell_alex',
-      content:
-          'You look at your sandwich, not at Alex. "My whole friend '
+      content: 'You look at your sandwich, not at Alex. "My whole friend '
           'group went to the waterpark this weekend and nobody told me."\n\n'
           'Alex is quiet. You wait for the advice — have you tried '
           'talking to them, maybe they just forgot — but it doesn\'t '
@@ -537,8 +541,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_enjoy_alex': QuestSegment(
       id: 'lo_enjoy_alex',
-      content:
-          'You decide not to bring it up. Today the waterpark doesn\'t '
+      content: 'You decide not to bring it up. Today the waterpark doesn\'t '
           'exist. Just this table, this window, Alex\'s very detailed '
           'description of how the frog escaped from the science lab '
           'and why Mr. Torres\'s reaction violated at least three '
@@ -564,8 +567,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_calm_honest': QuestSegment(
       id: 'lo_calm_honest',
-      content:
-          '"I just wish someone had let me know." You keep your voice '
+      content: '"I just wish someone had let me know." You keep your voice '
           'level. It wants to wobble. You don\'t let it.\n\n'
           'Jayden looks at the table. Maya looks at Jayden. The silence '
           'has a different quality now — not tense, just thinking.\n\n'
@@ -588,8 +590,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_walk_away': QuestSegment(
       id: 'lo_walk_away',
-      content:
-          '"Whatever. Doesn\'t matter." You turn and go, tray in both '
+      content: '"Whatever. Doesn\'t matter." You turn and go, tray in both '
           'hands, shoulders straight, looking at the floor so you '
           'don\'t have to look at anyone.\n\n'
           'It does matter. You both know it.\n\n'
@@ -623,8 +624,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_reply_honest': QuestSegment(
       id: 'lo_reply_honest',
-      content:
-          'You type: Yeah, that hurt.\n\n'
+      content: 'You type: Yeah, that hurt.\n\n'
           'Three dots. They disappear. Then: I\'m really sorry. I '
           'genuinely thought Jayden had told you. That\'s not an excuse — '
           'I should have checked. Do you want to hang out this weekend? '
@@ -647,8 +647,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_leave_read': QuestSegment(
       id: 'lo_leave_read',
-      content:
-          'You put the phone face-down.\n\n'
+      content: 'You put the phone face-down.\n\n'
           'Not to be cruel. Just because you don\'t have the words yet, '
           'and sending the wrong words feels worse than sending nothing. '
           'You lie on your bed and stare at the ceiling and let the '
@@ -673,8 +672,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_push_back': QuestSegment(
       id: 'lo_push_back',
-      content:
-          '"Five in the car." You say it back like a question — except '
+      content: '"Five in the car." You say it back like a question — except '
           'it\'s not really a question and everyone can hear that.\n\n'
           'Jayden\'s jaw tightens. "It was last minute. My family '
           'organized it."\n\n'
@@ -703,8 +701,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_deescalate': QuestSegment(
       id: 'lo_deescalate',
-      content:
-          'You take a breath. The slow kind — the kind you actually '
+      content: 'You take a breath. The slow kind — the kind you actually '
           'have to work for, pulling the air all the way in.\n\n'
           '"Sorry. I\'m just hurt. I get that it was last minute."\n\n'
           'The tension breaks. Not shatters — just softens. Jayden\'s '
@@ -725,8 +722,7 @@ const questLeftOut = LifeQuestScenario(
 
     'lo_double_down': QuestSegment(
       id: 'lo_double_down',
-      content:
-          '"You could have texted." Your voice is flat.\n\n'
+      content: '"You could have texted." Your voice is flat.\n\n'
           'Jayden unfolds his arms. "Okay, {name}. Sorry we didn\'t '
           'plan our whole weekend around your schedule." The words '
           'land like a slap. Someone at the table makes a small sound. '
@@ -764,8 +760,7 @@ const questPeerPressure = LifeQuestScenario(
   segments: {
     'pp_start': QuestSegment(
       id: 'pp_start',
-      content:
-          'Tuesday afternoon at the creek path behind the park. The air '
+      content: 'Tuesday afternoon at the creek path behind the park. The air '
           'smells like cut grass and something electrical — the way it '
           'smells right before a thunderstorm, or right before '
           'something you\'re not sure about.\n\n'
@@ -806,8 +801,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_decline': QuestSegment(
       id: 'pp_decline',
-      content:
-          '"Nah, I\'m good."\n\n'
+      content: '"Nah, I\'m good."\n\n'
           'Tyler raises one eyebrow. The can is still extended toward '
           'you, arm straight, like the offer doesn\'t expire. '
           '"Seriously? It\'s just paint."\n\n'
@@ -841,8 +835,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_take': QuestSegment(
       id: 'pp_take',
-      content:
-          'You take the can. It\'s heavier than it looks — a solid '
+      content: 'You take the can. It\'s heavier than it looks — a solid '
           'weight in your palm. You shake it once, hear the ball '
           'bearing rattle. Everyone is quiet in that particular way '
           'of a crowd holding its breath.\n\n'
@@ -878,8 +871,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_joke': QuestSegment(
       id: 'pp_joke',
-      content:
-          '"I can\'t even draw on paper," you say, and do your '
+      content: '"I can\'t even draw on paper," you say, and do your '
           'best smile. "You don\'t want me on the bridge. '
           'I\'d make it worse."\n\n'
           'Some kids laugh. The real kind — surprised-out-of-them. '
@@ -915,8 +907,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_stand_firm': QuestSegment(
       id: 'pp_stand_firm',
-      content:
-          '"Call me lame. I really don\'t care."\n\n'
+      content: '"Call me lame. I really don\'t care."\n\n'
           'You say it even. Not loud. Not showing your teeth. '
           'Just a statement of fact.\n\n'
           'Tyler blinks. He puts the can down by his side. Something '
@@ -943,8 +934,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_excuse': QuestSegment(
       id: 'pp_excuse',
-      content:
-          'You pull out your phone with the practiced efficiency of '
+      content: 'You pull out your phone with the practiced efficiency of '
           'someone who has done this before — the quick glance down, '
           'the slight look of obligation.\n\n'
           '"My grown-up just texted. I have to go."\n\n'
@@ -969,8 +959,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_warn': QuestSegment(
       id: 'pp_warn',
-      content:
-          '"Guys." You keep your voice flat. "There\'s a camera."\n\n'
+      content: '"Guys." You keep your voice flat. "There\'s a camera."\n\n'
           'Everyone stops. Heads turn. It takes a moment to find it — '
           'the light post, the little black dome angled down at the '
           'bridge. When Riley sees it, she swears and steps back. '
@@ -995,8 +984,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_step_back': QuestSegment(
       id: 'pp_step_back',
-      content:
-          'You set the can down on the concrete railing. No '
+      content: 'You set the can down on the concrete railing. No '
           'announcement. No drama. Just a can on a railing.\n\n'
           'Nobody notices — they\'re too busy cheering for whatever '
           'Tyler just tagged. You drift backward, one step, two, '
@@ -1021,8 +1009,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_watch': QuestSegment(
       id: 'pp_watch',
-      content:
-          'You stay.\n\n'
+      content: 'You stay.\n\n'
           'The group keeps going — another tag, and another, until '
           'the underside of the bridge looks like every surface in a '
           'city you\'ve seen in movies. Up close it\'s messier than '
@@ -1047,8 +1034,7 @@ const questPeerPressure = LifeQuestScenario(
 
     'pp_leave_clean': QuestSegment(
       id: 'pp_leave_clean',
-      content:
-          '"Catch you later." You say it easily, the casual wave of '
+      content: '"Catch you later." You say it easily, the casual wave of '
           'someone with a destination.\n\n'
           'And then you walk.\n\n'
           'Nobody calls after you. Nobody says wait up. You just '
@@ -1093,8 +1079,7 @@ const questSchoolStress = LifeQuestScenario(
     'ss_start': QuestSegment(
       id: 'ss_start',
       copingBreakId: 'grounding_54321',
-      content:
-          '8:47 PM.\n\n'
+      content: '8:47 PM.\n\n'
           'The test is in eleven hours and the textbook has been open '
           'on your desk for the past forty minutes, but the words '
           'haven\'t moved from the page to your brain. Fractions '
@@ -1131,11 +1116,9 @@ const questSchoolStress = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_power': QuestSegment(
       id: 'ss_power',
-      content:
-          'You flip your phone face-down. The chat goes silent. '
+      content: 'You flip your phone face-down. The chat goes silent. '
           'You stare at the textbook.\n\n'
           'Ten minutes pass. Then fifteen. The fraction section slowly '
           'starts making a kind of sense — not confident sense, but '
@@ -1166,11 +1149,9 @@ const questSchoolStress = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_ask_parent': QuestSegment(
       id: 'ss_ask_parent',
-      content:
-          'You close the textbook and walk to the kitchen.\n\n'
+      content: 'You close the textbook and walk to the kitchen.\n\n'
           'Your grown-up is cleaning up after dinner, shoulders tight with '
           'their own kind of tired. You stand in the doorway.\n\n'
           '"Can you help me? I\'m kind of freaking out about tomorrow."\n\n'
@@ -1191,11 +1172,9 @@ const questSchoolStress = LifeQuestScenario(
           'is still on the table when you turn off the kitchen light.',
       isEnding: true,
     ),
-
     'ss_text_friend': QuestSegment(
       id: 'ss_text_friend',
-      content:
-          'You text Jordan: are you studying? I\'m completely lost.\n\n'
+      content: 'You text Jordan: are you studying? I\'m completely lost.\n\n'
           'Jordan: YES omg. Facetime? We can quiz each other.\n\n'
           'You spend the next hour in a corner of your room with '
           'Jordan\'s face small on your screen, talking your way '
@@ -1216,11 +1195,9 @@ const questSchoolStress = LifeQuestScenario(
           'were seven that you never took down. You forgot it was there.',
       isEnding: true,
     ),
-
     'ss_break': QuestSegment(
       id: 'ss_break',
-      content:
-          'You set a ten-minute timer on your phone and get up.\n\n'
+      content: 'You set a ten-minute timer on your phone and get up.\n\n'
           'You get a glass of water. You stand at the kitchen window '
           'and look at the dark street. You do one of those standing '
           'stretches where you reach your arms over your head and feel '
@@ -1242,11 +1219,9 @@ const questSchoolStress = LifeQuestScenario(
           'You\'re asleep before you know it.',
       isEnding: true,
     ),
-
     'ss_focus_strengths': QuestSegment(
       id: 'ss_focus_strengths',
-      content:
-          'You flip past the word problems without ceremony.\n\n'
+      content: 'You flip past the word problems without ceremony.\n\n'
           'Fractions: you drill until they\'re automatic. Decimals: '
           'every practice problem, twice. Operations: you can do '
           'these almost without looking. You build a floor of things '
@@ -1286,8 +1261,7 @@ const questSiblingConflict = LifeQuestScenario(
     'sc_start': QuestSegment(
       id: 'sc_start',
       copingBreakId: 'volcano_breath',
-      content:
-          'You\'re in the middle of the good part.\n\n'
+      content: 'You\'re in the middle of the good part.\n\n'
           'It doesn\'t matter what — homework, a drawing, a show '
           'you\'re three episodes into — but the point is you\'re '
           'in it. The kind of focused where the rest of the world '
@@ -1327,11 +1301,9 @@ const questSiblingConflict = LifeQuestScenario(
         ),
       ],
     ),
-
     'sc_yell': QuestSegment(
       id: 'sc_yell',
-      content:
-          '"GET OUT!"\n\n'
+      content: '"GET OUT!"\n\n'
           'It comes out louder than you meant — louder than you knew '
           'you had — and for one sharp second the whole house '
           'holds its breath.\n\n'
@@ -1364,11 +1336,9 @@ const questSiblingConflict = LifeQuestScenario(
         ),
       ],
     ),
-
     'sc_boundary': QuestSegment(
       id: 'sc_boundary',
-      content:
-          'One breath. You take it slowly, all the way in, like you\'re '
+      content: 'One breath. You take it slowly, all the way in, like you\'re '
           'filling something up.\n\n'
           '"I need thirty minutes alone," you say. "After that, '
           'you can come in."\n\n'
@@ -1391,11 +1361,9 @@ const questSiblingConflict = LifeQuestScenario(
           'You got the time you needed without burning anything down.',
       isEnding: true,
     ),
-
     'sc_parent': QuestSegment(
       id: 'sc_parent',
-      content:
-          'You walk past your sibling without a word and down the '
+      content: 'You walk past your sibling without a word and down the '
           'hall to find a grown-up.\n\n'
           'Your grown-up is in the living room, phone in hand, looking '
           'tired in the specific way of someone who has mediated '
@@ -1418,11 +1386,9 @@ const questSiblingConflict = LifeQuestScenario(
           'You pick it up. You keep going.',
       isEnding: true,
     ),
-
     'sc_explain': QuestSegment(
       id: 'sc_explain',
-      content:
-          'You take a breath. Not for drama — just to make sure '
+      content: 'You take a breath. Not for drama — just to make sure '
           'what comes out is words and not just noise.\n\n'
           '"They came in four times," you say. "I asked them to '
           'stop every time. I shouldn\'t have yelled — but I was '
@@ -1447,11 +1413,9 @@ const questSiblingConflict = LifeQuestScenario(
           'The air in the room is still.',
       isEnding: true,
     ),
-
     'sc_unfair': QuestSegment(
       id: 'sc_unfair',
-      content:
-          '"This is SO unfair! They bother me all day and I\'M the '
+      content: '"This is SO unfair! They bother me all day and I\'M the '
           'one who gets in trouble?"\n\n'
           'Your parent\'s face goes flat. "We don\'t raise our '
           'voices in this house."\n\n'
@@ -1493,8 +1457,7 @@ const questBeingTeased = LifeQuestScenario(
     'bt_start': QuestSegment(
       id: 'bt_start',
       copingBreakId: 'belly_breath',
-      content:
-          'The hallway between second and third period is pure noise — '
+      content: 'The hallway between second and third period is pure noise — '
           'lockers slamming, sneakers squeaking, two hundred separate '
           'conversations layered on top of each other.\n\n'
           'You\'re walking through it the way you always do, keeping '
@@ -1532,11 +1495,9 @@ const questBeingTeased = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_keep_walking': QuestSegment(
       id: 'bt_keep_walking',
-      content:
-          'You keep walking.\n\n'
+      content: 'You keep walking.\n\n'
           'Shoulders level. Jaw loose. Eyes on the door at the end '
           'of the hall. You pass through the noise and out the other '
           'side and into the relative quiet of the bathroom, where '
@@ -1567,11 +1528,9 @@ const questBeingTeased = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_fire_back': QuestSegment(
       id: 'bt_fire_back',
-      content:
-          'You stop. You turn around.\n\n'
+      content: 'You stop. You turn around.\n\n'
           'The comeback is already forming — something quick, '
           'specific, aimed at exactly the thing that will puncture '
           'the most — and it comes out clean and sharp and '
@@ -1602,11 +1561,9 @@ const questBeingTeased = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_tell_adult': QuestSegment(
       id: 'bt_tell_adult',
-      content:
-          'After class, you find Ms. Chen in her room — the one who '
+      content: 'After class, you find Ms. Chen in her room — the one who '
           'keeps the door open during lunch on purpose, who notices '
           'things.\n\n'
           '"Something happened in the hallway and I need to '
@@ -1632,11 +1589,9 @@ const questBeingTeased = LifeQuestScenario(
           'without anyone noticing.',
       isEnding: true,
     ),
-
     'bt_text_friend': QuestSegment(
       id: 'bt_text_friend',
-      content:
-          'You text Sam: someone just made fun of me in the hall.\n\n'
+      content: 'You text Sam: someone just made fun of me in the hall.\n\n'
           'Sam replies in about forty-five seconds: WHO. I will '
           'fight them.\n\n'
           'You have to cover your face to not laugh out loud. '
@@ -1656,11 +1611,9 @@ const questBeingTeased = LifeQuestScenario(
           'belongs to more people than just the one who laughed.',
       isEnding: true,
     ),
-
     'bt_let_go': QuestSegment(
       id: 'bt_let_go',
-      content:
-          'You splash cold water on your face, take one more look '
+      content: 'You splash cold water on your face, take one more look '
           'in the mirror, and go to class.\n\n'
           'The comment runs on a loop for the next hour. '
           'Forty-five minutes. Thirty. By the time you\'re two-thirds '
@@ -1681,11 +1634,9 @@ const questBeingTeased = LifeQuestScenario(
           'with the trees. You stop for a second and look at it.',
       isEnding: true,
     ),
-
     'bt_walk_away_after': QuestSegment(
       id: 'bt_walk_away_after',
-      content:
-          'You turn and walk.\n\n'
+      content: 'You turn and walk.\n\n'
           'Your hands are shaking slightly — the kind that happens '
           'when adrenaline finds nowhere to go. The hallway noise '
           'closes behind you like water. You don\'t look back.\n\n'
@@ -1705,11 +1656,9 @@ const questBeingTeased = LifeQuestScenario(
           'your palms. You\'re late for class. You go anyway.',
       isEnding: true,
     ),
-
     'bt_escalate': QuestSegment(
       id: 'bt_escalate',
-      content:
-          'The back-and-forth goes up, and up, and then the teacher '
+      content: 'The back-and-forth goes up, and up, and then the teacher '
           'is right there with both of you and the hallway is '
           'a crowd.\n\n'
           '"Both of you. My classroom. Now."\n\n'
@@ -1749,8 +1698,7 @@ const questFamilyStress = LifeQuestScenario(
   segments: {
     'fs_start': QuestSegment(
       id: 'fs_start',
-      content:
-          'Your room should be a safe place. You\'ve got the door '
+      content: 'Your room should be a safe place. You\'ve got the door '
           'closed, the lamp on, the homework spread out on the bed '
           'in an optimistic way.\n\n'
           'But the voices downstairs aren\'t loud enough to understand '
@@ -1787,11 +1735,9 @@ const questFamilyStress = LifeQuestScenario(
         ),
       ],
     ),
-
     'fs_headphones': QuestSegment(
       id: 'fs_headphones',
-      content:
-          'You put them on. Volume up. The music goes all the way '
+      content: 'You put them on. Volume up. The music goes all the way '
           'around you — bass through your chest, a wall of sound '
           'between you and the house.\n\n'
           'For thirty minutes, nothing reaches you. The walls stop '
@@ -1812,11 +1758,9 @@ const questFamilyStress = LifeQuestScenario(
           'for no reason that makes sense.',
       isEnding: true,
     ),
-
     'fs_text': QuestSegment(
       id: 'fs_text',
-      content:
-          'You open your messages and text Kai: what are you up to?\n\n'
+      content: 'You open your messages and text Kai: what are you up to?\n\n'
           'You don\'t explain. You don\'t say my parents are arguing '
           'downstairs and I can\'t focus on anything. You just '
           'ask what they\'re up to.\n\n'
@@ -1837,11 +1781,9 @@ const questFamilyStress = LifeQuestScenario(
           'It\'s easier to breathe than it was an hour ago.',
       isEnding: true,
     ),
-
     'fs_intervene': QuestSegment(
       id: 'fs_intervene',
-      content:
-          'You put down your pencil and walk downstairs.\n\n'
+      content: 'You put down your pencil and walk downstairs.\n\n'
           'Both of them stop when you appear. One face changes '
           'first — going careful, the way it does when a grown-up\'s trying '
           'to figure out what you\'ve heard.\n\n'
@@ -1876,11 +1818,9 @@ const questFamilyStress = LifeQuestScenario(
         ),
       ],
     ),
-
     'fs_journal': QuestSegment(
       id: 'fs_journal',
-      content:
-          'You find a notebook — not a pretty one, just a spiral-bound '
+      content: 'You find a notebook — not a pretty one, just a spiral-bound '
           'thing — and you write.\n\n'
           'Not in sentences. Not for anyone. Just the inside of your '
           'head on paper: I hate when this happens. I feel like I\'m '
@@ -1903,11 +1843,9 @@ const questFamilyStress = LifeQuestScenario(
           'You sit inside it for a while.',
       isEnding: true,
     ),
-
     'fs_grandma': QuestSegment(
       id: 'fs_grandma',
-      content:
-          'She picks up on the second ring.\n\n'
+      content: 'She picks up on the second ring.\n\n'
           '"Hey, sweetie." Just her voice — warm and certain in '
           'that way that doesn\'t change no matter how old you get — '
           'makes your eyes sting. You weren\'t expecting that.\n\n'
@@ -1963,8 +1901,7 @@ const questFeelingDifferent = LifeQuestScenario(
   segments: {
     'fd_start': QuestSegment(
       id: 'fd_start',
-      content:
-          'Spirit week. The word alone produces a specific texture '
+      content: 'Spirit week. The word alone produces a specific texture '
           'of dread.\n\n'
           'Today is Twin Day, which means the hallways are full of '
           'matching pairs — coordinated shirts, color-blocked sets, '
@@ -2003,11 +1940,9 @@ const questFeelingDifferent = LifeQuestScenario(
         ),
       ],
     ),
-
     'fd_own_it': QuestSegment(
       id: 'fd_own_it',
-      content:
-          'You square your shoulders and walk.\n\n'
+      content: 'You square your shoulders and walk.\n\n'
           'When someone asks — and someone does ask, inevitably, a kid '
           'from your English class with the bright curiosity of someone '
           'who genuinely wants to know — you say:\n\n'
@@ -2030,11 +1965,9 @@ const questFeelingDifferent = LifeQuestScenario(
           'what you are, without apology.',
       isEnding: true,
     ),
-
     'fd_find_solo': QuestSegment(
       id: 'fd_find_solo',
-      content:
-          'You find them by accident.\n\n'
+      content: 'You find them by accident.\n\n'
           'Dev is on a bench by the water fountain, reading a book, '
           'resolutely not dressed as anyone\'s twin. You sit down next '
           'to them without quite planning to.\n\n'
@@ -2057,11 +1990,9 @@ const questFeelingDifferent = LifeQuestScenario(
           'You just had to sit down on the right bench.',
       isEnding: true,
     ),
-
     'fd_library': QuestSegment(
       id: 'fd_library',
-      content:
-          'The library is warm in the way of rooms that take their '
+      content: 'The library is warm in the way of rooms that take their '
           'temperature from old books — a specific kind of warmth, '
           'like tea.\n\n'
           'Mr. Park nods when you come in. No questions. He has that '
@@ -2095,11 +2026,9 @@ const questFeelingDifferent = LifeQuestScenario(
         ),
       ],
     ),
-
     'fd_read': QuestSegment(
       id: 'fd_read',
-      content:
-          'You pick up a book at random — the one on the end of the '
+      content: 'You pick up a book at random — the one on the end of the '
           'display shelf, spine-out, a kid on the cover standing on '
           'some kind of alien landscape.\n\n'
           'Ten pages in, you\'re somewhere else entirely.\n\n'
@@ -2121,11 +2050,9 @@ const questFeelingDifferent = LifeQuestScenario(
           'showed you. There\'s a difference.',
       isEnding: true,
     ),
-
     'fd_go_back': QuestSegment(
       id: 'fd_go_back',
-      content:
-          'You stand up.\n\n'
+      content: 'You stand up.\n\n'
           'Staying in the library doesn\'t feel right. It feels like '
           'letting the hallway win. And the hallway is just a hallway '
           '— people and lockers and noise, nothing more.\n\n'
@@ -2167,8 +2094,7 @@ const questLosingFriendship = LifeQuestScenario(
   segments: {
     'lf_start': QuestSegment(
       id: 'lf_start',
-      content:
-          'Since second grade.\n\n'
+      content: 'Since second grade.\n\n'
           'That\'s how long you and Morgan have been the kind of '
           'friends where it didn\'t require any maintenance — you '
           'just were, the way some things just are.\n\n'
@@ -2207,11 +2133,9 @@ const questLosingFriendship = LifeQuestScenario(
         ),
       ],
     ),
-
     'lf_text': QuestSegment(
       id: 'lf_text',
-      content:
-          'You draft it six times.\n\n'
+      content: 'You draft it six times.\n\n'
           'Hey are we okay — too blunt. I feel like we haven\'t talked '
           'in forever — too sad. What\'s going on with you — too '
           'casual. Finally you send: Hey, I feel like we don\'t hang '
@@ -2243,11 +2167,9 @@ const questLosingFriendship = LifeQuestScenario(
         ),
       ],
     ),
-
     'lf_new_friends': QuestSegment(
       id: 'lf_new_friends',
-      content:
-          'Instead of hovering at the edge of the soccer table or '
+      content: 'Instead of hovering at the edge of the soccer table or '
           'sitting alone, you walk to the art kids.\n\n'
           'You\'ve watched them from a distance all year — the group '
           'that always seems to be in the middle of an argument about '
@@ -2271,11 +2193,9 @@ const questLosingFriendship = LifeQuestScenario(
           'up, and that\'s enough for today.',
       isEnding: true,
     ),
-
     'lf_face_to_face': QuestSegment(
       id: 'lf_face_to_face',
-      content:
-          'You catch Morgan at the lockers — the five-minute window '
+      content: 'You catch Morgan at the lockers — the five-minute window '
           'before last period when the hall is almost empty.\n\n'
           '"Hey. Can we talk for a sec?"\n\n'
           'Morgan\'s face does something complicated. Surprised, a '
@@ -2298,7 +2218,6 @@ const questLosingFriendship = LifeQuestScenario(
           'cracked open, and you were the one who knocked.',
       isEnding: true,
     ),
-
     'lf_plan': QuestSegment(
       id: 'lf_plan',
       content:
@@ -2323,11 +2242,9 @@ const questLosingFriendship = LifeQuestScenario(
           'You\'ll answer in the morning.',
       isEnding: true,
     ),
-
     'lf_leave_it': QuestSegment(
       id: 'lf_leave_it',
-      content:
-          'Okay. Just wanted to check.\n\n'
+      content: 'Okay. Just wanted to check.\n\n'
           'You put the phone down. The response was honest. Morgan '
           'sounded like she meant it. Of course we\'re okay. '
           'The exclamation point was real, probably.\n\n'
@@ -2369,8 +2286,7 @@ const questWobblyDay = LifeQuestScenario(
   segments: {
     'wd_start': QuestSegment(
       id: 'wd_start',
-      content:
-          'Your tummy has butterflies this morning.\n\n'
+      content: 'Your tummy has butterflies this morning.\n\n'
           'Today is your first day — new classroom, new teacher, new everything. '
           'You\'ve been thinking about it all week.\n\n'
           '«{companion} walks beside you. "{companion} says: \'You\'ve got this.\'"»\n\n'
@@ -2392,7 +2308,6 @@ const questWobblyDay = LifeQuestScenario(
         ),
       ],
     ),
-
     'wd_brave': QuestSegment(
       id: 'wd_brave',
       content:
@@ -2414,11 +2329,9 @@ const questWobblyDay = LifeQuestScenario(
         ),
       ],
     ),
-
     'wd_peek': QuestSegment(
       id: 'wd_peek',
-      content:
-          'You watch through the window for a moment.\n\n'
+      content: 'You watch through the window for a moment.\n\n'
           'Then the teacher opens the door — and almost walks right into you! '
           '{pronoun} laughs. A nice laugh. "Oh! Are you coming in?"\n\n'
           'Your cheeks go warm. But {pronoun} holds the door open wide '
@@ -2436,11 +2349,9 @@ const questWobblyDay = LifeQuestScenario(
         ),
       ],
     ),
-
     'wd_hi': QuestSegment(
       id: 'wd_hi',
-      content:
-          '"Hi, I\'m {name}," you say.\n\n'
+      content: '"Hi, I\'m {name}," you say.\n\n'
           'The kid with the green pencil case says their name back. '
           'Then: "Do you like stickers?"\n\n'
           'You laugh — you didn\'t expect that. But yeah, actually, '
@@ -2450,11 +2361,9 @@ const questWobblyDay = LifeQuestScenario(
           'Sometimes being brave is just saying two words.',
       isEnding: true,
     ),
-
     'wd_quiet': QuestSegment(
       id: 'wd_quiet',
-      content:
-          'You smile back but stay quiet for now. That\'s okay too.\n\n'
+      content: 'You smile back but stay quiet for now. That\'s okay too.\n\n'
           'At lunch, the same kid taps your shoulder. '
           '"Is this seat taken?"\n\n'
           'You shake your head. They sit down.\n\n'
@@ -2463,11 +2372,9 @@ const questWobblyDay = LifeQuestScenario(
           'Butterflies don\'t last forever.',
       isEnding: true,
     ),
-
     'wd_thanks': QuestSegment(
       id: 'wd_thanks',
-      content:
-          '"Thank you," you say, and step inside.\n\n'
+      content: '"Thank you," you say, and step inside.\n\n'
           'The teacher shows you your desk. There\'s a little name card '
           'on it — with your name spelled perfectly.\n\n'
           'Someone already knew you were coming. '
@@ -2475,7 +2382,6 @@ const questWobblyDay = LifeQuestScenario(
           'That\'s a good feeling to hold onto.',
       isEnding: true,
     ),
-
     'wd_window': QuestSegment(
       id: 'wd_window',
       content:
@@ -2504,8 +2410,7 @@ const questSorryStuck = LifeQuestScenario(
   segments: {
     'ss_start': QuestSegment(
       id: 'ss_start',
-      content:
-          'It was just a game.\n\n'
+      content: 'It was just a game.\n\n'
           'You were losing and you got really frustrated. The words came '
           'out before you could stop them — something mean, something '
           'you didn\'t totally mean.\n\n'
@@ -2530,11 +2435,9 @@ const questSorryStuck = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_sorry_now': QuestSegment(
       id: 'ss_sorry_now',
-      content:
-          'You walk over. Your heart is going fast.\n\n'
+      content: 'You walk over. Your heart is going fast.\n\n'
           '"Hey," you say. Your friend doesn\'t turn around yet.\n\n'
           'You take a breath. "I\'m sorry. What I said was mean. '
           'I was frustrated but that\'s not an excuse."\n\n'
@@ -2554,11 +2457,9 @@ const questSorryStuck = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_wait': QuestSegment(
       id: 'ss_wait',
-      content:
-          'You wait. The minutes feel long.\n\n'
+      content: 'You wait. The minutes feel long.\n\n'
           'Your friend doesn\'t come over. Lunch ends. The bell rings.\n\n'
           'Walking to class, they\'re ahead of you. The sorry is still '
           'stuck in your throat, getting heavier.\n\n'
@@ -2576,11 +2477,9 @@ const questSorryStuck = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_do_something': QuestSegment(
       id: 'ss_do_something',
-      content:
-          '"Is there anything I can do?" you ask.\n\n'
+      content: '"Is there anything I can do?" you ask.\n\n'
           'Your friend thinks for a second. "Let me win the next game," '
           'they say — but then they smile. A wobbly, still-a-little-hurt smile.\n\n'
           'You laugh. Relief-laugh. Like letting out a breath '
@@ -2589,11 +2488,9 @@ const questSorryStuck = LifeQuestScenario(
           'Saying sorry is scary. But it makes room for the good stuff to come back.',
       isEnding: true,
     ),
-
     'ss_space': QuestSegment(
       id: 'ss_space',
-      content:
-          'You step back and give them room.\n\n'
+      content: 'You step back and give them room.\n\n'
           'It\'s hard not to keep apologising — but sometimes sorry '
           'needs a moment to settle in.\n\n'
           'By the time recess is over, your friend comes and sits next to you.\n\n'
@@ -2601,11 +2498,9 @@ const questSorryStuck = LifeQuestScenario(
           'Sometimes the best thing after sorry is just... quiet.',
       isEnding: true,
     ),
-
     'ss_sorry_late': QuestSegment(
       id: 'ss_sorry_late',
-      content:
-          'You run to catch up. "Hey — wait."\n\n'
+      content: 'You run to catch up. "Hey — wait."\n\n'
           'Your friend stops.\n\n'
           '"I\'m really sorry," you say, a little out of breath. '
           '"I should have said it sooner."\n\n'
@@ -2616,11 +2511,9 @@ const questSorryStuck = LifeQuestScenario(
           'Sorrys don\'t expire. They just need to get out.',
       isEnding: true,
     ),
-
     'ss_text': QuestSegment(
       id: 'ss_text',
-      content:
-          'That night, you type it out. Delete it. Type it again.\n\n'
+      content: 'That night, you type it out. Delete it. Type it again.\n\n'
           'Finally you send it: "I\'m really sorry about what I said. '
           'I didn\'t mean it like that. Are we okay?"\n\n'
           'You watch the little dots appear. Disappear. Appear again.\n\n'
@@ -2657,8 +2550,7 @@ const questOwningUp = LifeQuestScenario(
     'os_start': QuestSegment(
       id: 'os_start',
       copingBreakId: 'belly_breath',
-      content:
-          'The class volcano is the size of a beach ball. Everyone helped '
+      content: 'The class volcano is the size of a beach ball. Everyone helped '
           'build it — layers of newspaper and paste, painted red and brown, '
           'a real crater on top. It has lived on the back shelf for two '
           'weeks, drying.\n\n'
@@ -2697,11 +2589,9 @@ const questOwningUp = LifeQuestScenario(
         ),
       ],
     ),
-
     'os_truth': QuestSegment(
       id: 'os_truth',
-      content:
-          '"It was me," you say. Your voice comes out smaller than you '
+      content: '"It was me," you say. Your voice comes out smaller than you '
           'wanted — but it comes out.\n\n'
           'The whole room looks at you now. That\'s the part you were scared '
           'of, all those eyes. But it\'s already done, and the strange thing '
@@ -2723,11 +2613,9 @@ const questOwningUp = LifeQuestScenario(
           'And so, somehow, do you.',
       isEnding: true,
     ),
-
     'os_quiet': QuestSegment(
       id: 'os_quiet',
-      content:
-          'You look down at your shoes. You don\'t say anything.\n\n'
+      content: 'You look down at your shoes. You don\'t say anything.\n\n'
           '"I didn\'t do it," the quiet kid says again, but their voice '
           'wobbles and nobody\'s really listening. Your teacher sighs. '
           '"We\'ll sort it out later. Everyone, line up."\n\n'
@@ -2754,11 +2642,9 @@ const questOwningUp = LifeQuestScenario(
         ),
       ],
     ),
-
     'os_fix': QuestSegment(
       id: 'os_fix',
-      content:
-          'You barely sleep. But in the morning you get to school early, '
+      content: 'You barely sleep. But in the morning you get to school early, '
           'before the noise starts, and you find your teacher at their '
           'desk.\n\n'
           '"Yesterday — the volcano. It was me. I was too scared to say it, '
@@ -2777,11 +2663,9 @@ const questOwningUp = LifeQuestScenario(
           'worth it. Late is not the same as never.',
       isEnding: true,
     ),
-
     'os_carry': QuestSegment(
       id: 'os_carry',
-      content:
-          'You decide to bury it.\n\n'
+      content: 'You decide to bury it.\n\n'
           'For a few days, it sort of works. You don\'t think about it at '
           'lunch. You don\'t think about it in math. But it has a way of '
           'surfacing — when you see the empty back shelf, when the quiet kid '
@@ -2799,7 +2683,6 @@ const questOwningUp = LifeQuestScenario(
           'You\'ll know when you\'re ready. The choice stays yours.',
       isEnding: true,
     ),
-
     'os_private': QuestSegment(
       id: 'os_private',
       content:
@@ -2841,8 +2724,7 @@ const questFriendGotPicked = LifeQuestScenario(
   emotions: ['jealous', 'sad', 'frustrated'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
   startSegmentId: 'hf_start',
-  grownupTip:
-      'Ask: "Has there ever been a time you felt happy for someone and '
+  grownupTip: 'Ask: "Has there ever been a time you felt happy for someone and '
       'jealous at the same time? Did you know you\'re allowed to feel both '
       'at once?"',
   segments: {
@@ -2882,7 +2764,8 @@ const questFriendGotPicked = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'hf_c1b',
-          text: 'Be honest and kind: "I\'m happy for you — and a little sad too."',
+          text:
+              'Be honest and kind: "I\'m happy for you — and a little sad too."',
           nextSegmentId: 'hf_honest',
         ),
         QuestChoice(
@@ -2892,11 +2775,9 @@ const questFriendGotPicked = LifeQuestScenario(
         ),
       ],
     ),
-
     'hf_honest': QuestSegment(
       id: 'hf_honest',
-      content:
-          'You take a breath and decide to just be real.\n\n'
+      content: 'You take a breath and decide to just be real.\n\n'
           '"I\'m really happy for you," you say. "For real. And also — I\'m a '
           'little sad, because I wanted it too. Both at the same time. Is '
           'that okay?"\n\n'
@@ -2912,7 +2793,6 @@ const questFriendGotPicked = LifeQuestScenario(
           'carry — especially out loud, especially with a friend.',
       isEnding: true,
     ),
-
     'hf_space': QuestSegment(
       id: 'hf_space',
       content:
@@ -2935,11 +2815,9 @@ const questFriendGotPicked = LifeQuestScenario(
           'minute, and a minute was enough.',
       isEnding: true,
     ),
-
     'hf_hide': QuestSegment(
       id: 'hf_hide',
-      content:
-          '"That\'s so cool!" you say — big smile, two thumbs up. "You '
+      content: '"That\'s so cool!" you say — big smile, two thumbs up. "You '
           'totally deserve it!"\n\n'
           'And you sort of mean it. But you shove the other feeling, the '
           'heavy one, way down where it won\'t show. The smile is real on '
@@ -2968,7 +2846,6 @@ const questFriendGotPicked = LifeQuestScenario(
         ),
       ],
     ),
-
     'hf_comeclean': QuestSegment(
       id: 'hf_comeclean',
       content:
@@ -2993,7 +2870,6 @@ const questFriendGotPicked = LifeQuestScenario(
           'friend\'s drawing — and you\'re glad it\'s there.',
       isEnding: true,
     ),
-
     'hf_deny': QuestSegment(
       id: 'hf_deny',
       content:
@@ -3033,8 +2909,7 @@ const questTryout = LifeQuestScenario(
     'tt_start': QuestSegment(
       id: 'tt_start',
       copingBreakId: 'star_breath',
-      content:
-          'The sign-up sheet went up three weeks ago and you stared at it '
+      content: 'The sign-up sheet went up three weeks ago and you stared at it '
           'for four days before you wrote your name. Your handwriting looked '
           'wrong — too small, like part of you was already trying to take it back.\n\n'
           '«{companion} saw you do it. "Finally," {pronoun} said, '
@@ -3066,7 +2941,6 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_mental': QuestSegment(
       id: 'tt_mental',
       content:
@@ -3092,7 +2966,6 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_watch': QuestSegment(
       id: 'tt_watch',
       content:
@@ -3116,11 +2989,9 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_connect': QuestSegment(
       id: 'tt_connect',
-      content:
-          'You lean over to the person next to you. '
+      content: 'You lean over to the person next to you. '
           '"Have you done one of these before?"\n\n'
           'They shake their head. "First time. You?"\n\n'
           '"Same."\n\n'
@@ -3141,11 +3012,9 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_through': QuestSegment(
       id: 'tt_through',
-      content:
-          'You get through it.\n\n'
+      content: 'You get through it.\n\n'
           'Not perfectly. There\'s a moment somewhere in the middle '
           'where you feel the wobble — the catch, the half-second '
           'where the whole thing almost unravels. '
@@ -3167,11 +3036,9 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_overcontrol': QuestSegment(
       id: 'tt_overcontrol',
-      content:
-          'You go in tight. Everything controlled. No mistakes.\n\n'
+      content: 'You go in tight. Everything controlled. No mistakes.\n\n'
           'And you\'re right — there are no mistakes. '
           'But there\'s also no breath in it, no risk. '
           'You can feel yourself holding back, playing it safe, '
@@ -3192,11 +3059,9 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_pause': QuestSegment(
       id: 'tt_pause',
-      content:
-          '"Could I have just a second?" you ask.\n\n'
+      content: '"Could I have just a second?" you ask.\n\n'
           'The judge nods. A beat of silence, longer than a heartbeat, '
           'shorter than it felt.\n\n'
           'You breathe. Find the beginning. Begin.\n\n'
@@ -3211,11 +3076,9 @@ const questTryout = LifeQuestScenario(
         ),
       ],
     ),
-
     'tt_end_good': QuestSegment(
       id: 'tt_end_good',
-      content:
-          'The waiting is its own thing. A different kind of hard.\n\n'
+      content: 'The waiting is its own thing. A different kind of hard.\n\n'
           'But here\'s what you know for certain, regardless of what comes back: '
           'three weeks ago you were standing in front of a sign-up sheet '
           'that you almost didn\'t touch. Today you stood in the room.\n\n'
@@ -3223,11 +3086,9 @@ const questTryout = LifeQuestScenario(
           'Everything else is just outcome.',
       isEnding: true,
     ),
-
     'tt_end_spiral': QuestSegment(
       id: 'tt_end_spiral',
-      content:
-          'You replay it. The wobble. The half-second catch. '
+      content: 'You replay it. The wobble. The half-second catch. '
           'What you should have done instead.\n\n'
           'You could do that for the rest of the afternoon, or you could '
           'notice that you actually got through it — '
@@ -3238,11 +3099,9 @@ const questTryout = LifeQuestScenario(
           'They\'re the doing of it.',
       isEnding: true,
     ),
-
     'tt_end_safe': QuestSegment(
       id: 'tt_end_safe',
-      content:
-          'Maybe. Or maybe you\'ll never know.\n\n'
+      content: 'Maybe. Or maybe you\'ll never know.\n\n'
           'The thing about playing it safe is that you don\'t fail — '
           'but you also don\'t find out what you\'re actually capable of.\n\n'
           'There\'ll be another tryout. Another room. '
@@ -3251,11 +3110,9 @@ const questTryout = LifeQuestScenario(
           'You don\'t have to decide today.',
       isEnding: true,
     ),
-
     'tt_end_learn': QuestSegment(
       id: 'tt_end_learn',
-      content:
-          'Good. File it.\n\n'
+      content: 'Good. File it.\n\n'
           'The fact that you know the difference — between the version '
           'that can\'t fail and the version that could be great — '
           'means you\'re already further along than you think.\n\n'
@@ -3309,11 +3166,9 @@ const questThreeCrowd = LifeQuestScenario(
         ),
       ],
     ),
-
     'tc_go_over': QuestSegment(
       id: 'tc_go_over',
-      content:
-          'You take a big breath and walk over.\n\n'
+      content: 'You take a big breath and walk over.\n\n'
           '"Hi," you say. Your voice comes out smaller than you wanted.\n\n'
           'Your friend\'s face lights up. '
           '"Oh! This is {name}!" {Pronoun} turns to the new kid. '
@@ -3334,11 +3189,9 @@ const questThreeCrowd = LifeQuestScenario(
         ),
       ],
     ),
-
     'tc_hang_back': QuestSegment(
       id: 'tc_hang_back',
-      content:
-          'You stay back and watch.\n\n'
+      content: 'You stay back and watch.\n\n'
           'They\'re laughing a lot. '
           'Your friend doesn\'t look over, not even once.\n\n'
           'The tight feeling gets a bit bigger. '
@@ -3358,11 +3211,9 @@ const questThreeCrowd = LifeQuestScenario(
         ),
       ],
     ),
-
     'tc_end_join': QuestSegment(
       id: 'tc_end_join',
-      content:
-          'You mess up the handshake three times, '
+      content: 'You mess up the handshake three times, '
           'and on the fourth try you finally get it.\n\n'
           'You all cheer. Your friend squeezes your arm.\n\n'
           'It still feels a little strange — '
@@ -3371,11 +3222,9 @@ const questThreeCrowd = LifeQuestScenario(
           'Sometimes your circle just gets a little bigger.',
       isEnding: true,
     ),
-
     'tc_end_ask_alone': QuestSegment(
       id: 'tc_end_ask_alone',
-      content:
-          'You and your friend step a little bit away.\n\n'
+      content: 'You and your friend step a little bit away.\n\n'
           '"I just felt kind of left out," you say.\n\n'
           'Your friend looks surprised. "I didn\'t mean to do that. '
           'I was going to find you at lunch!"\n\n'
@@ -3385,11 +3234,9 @@ const questThreeCrowd = LifeQuestScenario(
           'Saying the hard thing out loud made it smaller.',
       isEnding: true,
     ),
-
     'tc_end_go_over_late': QuestSegment(
       id: 'tc_end_go_over_late',
-      content:
-          'You walk over, and your friend immediately waves you in.\n\n'
+      content: 'You walk over, and your friend immediately waves you in.\n\n'
           '"Where were you? I kept looking for you!"\n\n'
           'Oh. {Pronoun} was looking.\n\n'
           'You just couldn\'t tell from far away.\n\n'
@@ -3397,11 +3244,9 @@ const questThreeCrowd = LifeQuestScenario(
           'than they do from across the playground.',
       isEnding: true,
     ),
-
     'tc_end_find_someone': QuestSegment(
       id: 'tc_end_find_someone',
-      content:
-          'You find something else to do — '
+      content: 'You find something else to do — '
           'a ball game, a book, a quiet spot by the fence.\n\n'
           'It\'s okay. Not every playtime has to be with the same person.\n\n'
           'At the end of lunch, your friend runs over. '
@@ -3430,8 +3275,7 @@ const questBrokenThing = LifeQuestScenario(
   segments: {
     'bt_start': QuestSegment(
       id: 'bt_start',
-      content:
-          'It happened so fast.\n\n'
+      content: 'It happened so fast.\n\n'
           'One second you were just reaching for something, '
           'and then there was a crash, and now there\'s a broken thing '
           'on the floor in front of you.\n\n'
@@ -3454,11 +3298,9 @@ const questBrokenThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_tell': QuestSegment(
       id: 'bt_tell',
-      content:
-          'Your legs feel shaky as you walk over.\n\n'
+      content: 'Your legs feel shaky as you walk over.\n\n'
           '"I broke something," you say. '
           '"It was an accident. I\'m really sorry."\n\n'
           'The grown-up looks at the broken thing. '
@@ -3479,11 +3321,9 @@ const questBrokenThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_hide': QuestSegment(
       id: 'bt_hide',
-      content:
-          'You push the pieces out of sight and walk away.\n\n'
+      content: 'You push the pieces out of sight and walk away.\n\n'
           'But the bad feeling doesn\'t go away. '
           'It follows you all morning, sitting in your stomach like a stone.\n\n'
           'At lunch you can\'t really eat. '
@@ -3503,11 +3343,9 @@ const questBrokenThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'bt_end_relief': QuestSegment(
       id: 'bt_end_relief',
-      content:
-          'You breathe out the longest breath.\n\n'
+      content: 'You breathe out the longest breath.\n\n'
           'The whole thing was still scary — '
           'but it was over in two minutes '
           'instead of sitting in your tummy all day.\n\n'
@@ -3517,11 +3355,9 @@ const questBrokenThing = LifeQuestScenario(
           'That matters.',
       isEnding: true,
     ),
-
     'bt_end_still_bad': QuestSegment(
       id: 'bt_end_still_bad',
-      content:
-          'Sometimes even when things go okay, '
+      content: 'Sometimes even when things go okay, '
           'it still takes a while for the wobbly feeling to calm down.\n\n'
           'That\'s normal.\n\n'
           'Your body was ready for something scary, '
@@ -3529,11 +3365,9 @@ const questBrokenThing = LifeQuestScenario(
           'You told the truth. That was brave.',
       isEnding: true,
     ),
-
     'bt_end_tell_late': QuestSegment(
       id: 'bt_end_tell_late',
-      content:
-          'It takes a lot of courage to walk back and say it.\n\n'
+      content: 'It takes a lot of courage to walk back and say it.\n\n'
           '"I broke something earlier," you say. '
           '"I was scared to tell you. I\'m sorry I waited."\n\n'
           'The grown-up nods. '
@@ -3542,11 +3376,9 @@ const questBrokenThing = LifeQuestScenario(
           'You did the right thing.',
       isEnding: true,
     ),
-
     'bt_end_keep_hiding': QuestSegment(
       id: 'bt_end_keep_hiding',
-      content:
-          'Keeping a secret like this is really hard work.\n\n'
+      content: 'Keeping a secret like this is really hard work.\n\n'
           'It takes up a lot of brain space that could be used for '
           'things that are actually fun.\n\n'
           'The thing is — it\'s never too late to tell the truth. '
@@ -3572,8 +3404,7 @@ const questNotFair = LifeQuestScenario(
   segments: {
     'nf_start': QuestSegment(
       id: 'nf_start',
-      content:
-          'The teacher says the name — and it isn\'t yours.\n\n'
+      content: 'The teacher says the name — and it isn\'t yours.\n\n'
           'It should have been yours. You worked hard. '
           'You had your hand up. '
           'You\'ve been waiting for this all week.\n\n'
@@ -3595,11 +3426,9 @@ const questNotFair = LifeQuestScenario(
         ),
       ],
     ),
-
     'nf_say_it': QuestSegment(
       id: 'nf_say_it',
-      content:
-          'The words come out before you can stop them.\n\n'
+      content: 'The words come out before you can stop them.\n\n'
           '"That\'s not fair!"\n\n'
           'The room goes a little quiet. '
           'Everyone is looking at you now. '
@@ -3620,11 +3449,9 @@ const questNotFair = LifeQuestScenario(
         ),
       ],
     ),
-
     'nf_swallow': QuestSegment(
       id: 'nf_swallow',
-      content:
-          'You press your lips together and look at your desk.\n\n'
+      content: 'You press your lips together and look at your desk.\n\n'
           'The hot feeling is still there. '
           'It doesn\'t go away just because you didn\'t say it.\n\n'
           'It sort of... sits there.\n\n'
@@ -3644,11 +3471,9 @@ const questNotFair = LifeQuestScenario(
         ),
       ],
     ),
-
     'nf_end_explain': QuestSegment(
       id: 'nf_end_explain',
-      content:
-          'You take a breath. '
+      content: 'You take a breath. '
           '"I\'ve had my hand up a lot, and I\'ve been practising. '
           'I just really wanted this one."\n\n'
           'The teacher nods. '
@@ -3659,11 +3484,9 @@ const questNotFair = LifeQuestScenario(
           'You\'re getting better at it.',
       isEnding: true,
     ),
-
     'nf_end_embarrassed': QuestSegment(
       id: 'nf_end_embarrassed',
-      content:
-          'You shake your head and look down.\n\n'
+      content: 'You shake your head and look down.\n\n'
           'The big feeling came out and now you wish it hadn\'t.\n\n'
           'That\'s okay. It happens to everyone.\n\n'
           'Big feelings are strong — '
@@ -3672,22 +3495,18 @@ const questNotFair = LifeQuestScenario(
           'catching them before they get out.',
       isEnding: true,
     ),
-
     'nf_end_tell_someone': QuestSegment(
       id: 'nf_end_tell_someone',
-      content:
-          '"It wasn\'t fair," you say. "I\'m really annoyed."\n\n'
+      content: '"It wasn\'t fair," you say. "I\'m really annoyed."\n\n'
           'The person you\'re talking to nods. "That sounds really frustrating."\n\n'
           'Just having someone understand makes the feeling smaller.\n\n'
           'Feelings don\'t always need to be fixed — '
           'sometimes they just need to be heard.',
       isEnding: true,
     ),
-
     'nf_end_let_go': QuestSegment(
       id: 'nf_end_let_go',
-      content:
-          'You think about something you\'re looking forward to. '
+      content: 'You think about something you\'re looking forward to. '
           'Lunch. Home time. A game you want to play.\n\n'
           'Little by little, the hot feeling cools.\n\n'
           'Not every unfair thing can be fixed right away. '
@@ -3713,8 +3532,7 @@ const questSleepover = LifeQuestScenario(
   segments: {
     'gf_start': QuestSegment(
       id: 'gf_start',
-      content:
-          'The lights go off. '
+      content: 'The lights go off. '
           'Sleeping bags rustle. '
           'Someone giggles in the dark.\n\n'
           'Everyone else seems fine.\n\n'
@@ -3739,7 +3557,6 @@ const questSleepover = LifeQuestScenario(
         ),
       ],
     ),
-
     'gf_try': QuestSegment(
       id: 'gf_try',
       content:
@@ -3766,11 +3583,9 @@ const questSleepover = LifeQuestScenario(
         ),
       ],
     ),
-
     'gf_tell_friend': QuestSegment(
       id: 'gf_tell_friend',
-      content:
-          '"I feel a bit homesick," you whisper.\n\n'
+      content: '"I feel a bit homesick," you whisper.\n\n'
           'There\'s a pause. '
           'Then your friend whispers back: '
           '"I felt like that at my cousin\'s house once. '
@@ -3791,11 +3606,9 @@ const questSleepover = LifeQuestScenario(
         ),
       ],
     ),
-
     'gf_end_call': QuestSegment(
       id: 'gf_end_call',
-      content:
-          'A grown-up passes you the phone.\n\n'
+      content: 'A grown-up passes you the phone.\n\n'
           'You hear the voice you needed to hear. '
           'It\'s just a few words — '
           '"We love you. You\'re doing great." — '
@@ -3806,11 +3619,9 @@ const questSleepover = LifeQuestScenario(
           'It\'s knowing what you need.',
       isEnding: true,
     ),
-
     'gf_end_keep_trying': QuestSegment(
       id: 'gf_end_keep_trying',
-      content:
-          'You stay curled up and keep breathing slowly.\n\n'
+      content: 'You stay curled up and keep breathing slowly.\n\n'
           'Slowly, slowly, the room feels a tiny bit less strange. '
           'The sounds around you start to feel like background, not alarm.\n\n'
           'You don\'t know exactly when it happened, '
@@ -3820,11 +3631,9 @@ const questSleepover = LifeQuestScenario(
           'You made it.',
       isEnding: true,
     ),
-
     'gf_end_talk': QuestSegment(
       id: 'gf_end_talk',
-      content:
-          'You talk quietly about small things — '
+      content: 'You talk quietly about small things — '
           'favourite animals, weird dreams, what you want for breakfast.\n\n'
           'The homesick feeling doesn\'t disappear, '
           'but it gets softer and smaller '
@@ -3852,8 +3661,7 @@ const questMyTurnTalk = LifeQuestScenario(
   segments: {
     'mtt_start': QuestSegment(
       id: 'mtt_start',
-      content:
-          'The teacher calls your name.\n\n'
+      content: 'The teacher calls your name.\n\n'
           'This is it. Your turn to stand up and talk to the class.\n\n'
           'Your heart is going VERY fast. '
           'Your hands feel a little bit sweaty. '
@@ -3875,11 +3683,9 @@ const questMyTurnTalk = LifeQuestScenario(
         ),
       ],
     ),
-
     'mtt_back_wall': QuestSegment(
       id: 'mtt_back_wall',
-      content:
-          'You focus on a spot above everyone\'s heads.\n\n'
+      content: 'You focus on a spot above everyone\'s heads.\n\n'
           'You start talking. Your voice shakes a little at first. '
           'Then it gets steadier.\n\n'
           'Mostly you\'re just saying the words, one after another, '
@@ -3898,11 +3704,9 @@ const questMyTurnTalk = LifeQuestScenario(
         ),
       ],
     ),
-
     'mtt_friendly_face': QuestSegment(
       id: 'mtt_friendly_face',
-      content:
-          'You find someone who looks kind — '
+      content: 'You find someone who looks kind — '
           'a friend, or someone who\'s smiling at you.\n\n'
           'You talk to them. Just them. '
           'Like it\'s a normal conversation, not a performance.\n\n'
@@ -3921,11 +3725,9 @@ const questMyTurnTalk = LifeQuestScenario(
         ),
       ],
     ),
-
     'mtt_lose_place': QuestSegment(
       id: 'mtt_lose_place',
-      content:
-          'Oh no. You had it — and now you don\'t.\n\n'
+      content: 'Oh no. You had it — and now you don\'t.\n\n'
           'The blank is just a few seconds, but it feels like forever.\n\n'
           'What do you do?',
       choices: [
@@ -3941,11 +3743,9 @@ const questMyTurnTalk = LifeQuestScenario(
         ),
       ],
     ),
-
     'mtt_end_strong_finish': QuestSegment(
       id: 'mtt_end_strong_finish',
-      content:
-          'You finish. You sit down.\n\n'
+      content: 'You finish. You sit down.\n\n'
           'Your heart is still going fast — '
           'but a different kind of fast. '
           'The kind that happens after something hard '
@@ -3955,11 +3755,9 @@ const questMyTurnTalk = LifeQuestScenario(
           'You just did it.',
       isEnding: true,
     ),
-
     'mtt_end_recover': QuestSegment(
       id: 'mtt_end_recover',
-      content:
-          'You find the words again and keep going.\n\n'
+      content: 'You find the words again and keep going.\n\n'
           'Maybe one or two people noticed. '
           'Most didn\'t.\n\n'
           'Everyone who has ever talked in front of a class '
@@ -3969,11 +3767,9 @@ const questMyTurnTalk = LifeQuestScenario(
           'That\'s what you just did.',
       isEnding: true,
     ),
-
     'mtt_end_rush': QuestSegment(
       id: 'mtt_end_rush',
-      content:
-          'You tumble through the last bit really fast '
+      content: 'You tumble through the last bit really fast '
           'and sit down hard.\n\n'
           'Phew. Over.\n\n'
           'It wasn\'t perfect. '
@@ -4002,8 +3798,7 @@ const questGroupChat = LifeQuestScenario(
   segments: {
     'gc_start': QuestSegment(
       id: 'gc_start',
-      content:
-          'You typed it fast. A joke — or what you thought was a joke.\n\n'
+      content: 'You typed it fast. A joke — or what you thought was a joke.\n\n'
           'It landed in the group chat and then... nothing. '
           'The typing bubbles that were bouncing a second ago '
           'have gone still. Thirty people in this chat '
@@ -4026,7 +3821,6 @@ const questGroupChat = LifeQuestScenario(
         ),
       ],
     ),
-
     'gc_fix': QuestSegment(
       id: 'gc_fix',
       content:
@@ -4049,11 +3843,9 @@ const questGroupChat = LifeQuestScenario(
         ),
       ],
     ),
-
     'gc_wait': QuestSegment(
       id: 'gc_wait',
-      content:
-          'You put the phone face-down on your desk.\n\n'
+      content: 'You put the phone face-down on your desk.\n\n'
           'Your brain is not face-down. Your brain is replaying '
           'every possible reading of that message on a loop. '
           'Are they talking about you in a different chat right now? '
@@ -4076,11 +3868,9 @@ const questGroupChat = LifeQuestScenario(
         ),
       ],
     ),
-
     'gc_end_dm': QuestSegment(
       id: 'gc_end_dm',
-      content:
-          '"Hey, I\'m sorry about what I said in the chat. '
+      content: '"Hey, I\'m sorry about what I said in the chat. '
           'I didn\'t mean it that way."\n\n'
           'They take a minute to reply. Then: '
           '"It\'s okay. It did sting a bit but I know you didn\'t mean it."\n\n'
@@ -4091,11 +3881,9 @@ const questGroupChat = LifeQuestScenario(
           'But owning it quickly does.',
       isEnding: true,
     ),
-
     'gc_end_leave_it': QuestSegment(
       id: 'gc_end_leave_it',
-      content:
-          'Maybe it is fine. Maybe they barely noticed.\n\n'
+      content: 'Maybe it is fine. Maybe they barely noticed.\n\n'
           'Or maybe they\'re doing the same thing you\'re doing — '
           'staring at their phone, wondering whether they overreacted.\n\n'
           'The thing about text is that silence can mean "no worries" '
@@ -4105,11 +3893,9 @@ const questGroupChat = LifeQuestScenario(
           'it might be worth a quick word in person.',
       isEnding: true,
     ),
-
     'gc_end_late_apology': QuestSegment(
       id: 'gc_end_late_apology',
-      content:
-          'You type it out. Delete it. Type it again. Hit send.\n\n'
+      content: 'You type it out. Delete it. Type it again. Hit send.\n\n'
           '"Hey, that thing I said earlier — I\'m sorry. '
           'It wasn\'t what I meant."\n\n'
           'Someone replies: "oh lol I already forgot about that"\n\n'
@@ -4119,11 +3905,9 @@ const questGroupChat = LifeQuestScenario(
           'Late apologies still count.',
       isEnding: true,
     ),
-
     'gc_end_in_person': QuestSegment(
       id: 'gc_end_in_person',
-      content:
-          'The next day you find them by the lockers.\n\n'
+      content: 'The next day you find them by the lockers.\n\n'
           '"Hey — about what I said in the group chat. '
           'It came out wrong. I\'m sorry."\n\n'
           'They look surprised. "Oh. Thanks for saying that."\n\n'
@@ -4152,8 +3936,7 @@ const questMyWorkMyWay = LifeQuestScenario(
   segments: {
     'mw_start': QuestSegment(
       id: 'mw_start',
-      content:
-          'You worked on this for days. '
+      content: 'You worked on this for days. '
           'It\'s not perfect — you know that — '
           'but it\'s yours, and when you look at it you feel something.\n\n'
           'Then someone in class glances at it and says, '
@@ -4177,11 +3960,9 @@ const questMyWorkMyWay = LifeQuestScenario(
         ),
       ],
     ),
-
     'mw_defend': QuestSegment(
       id: 'mw_defend',
-      content:
-          '"I actually like it," you say.\n\n'
+      content: '"I actually like it," you say.\n\n'
           'It comes out quieter than you wanted, '
           'but you said it. The person who laughed shrugs '
           'and looks away.\n\n'
@@ -4201,11 +3982,9 @@ const questMyWorkMyWay = LifeQuestScenario(
         ),
       ],
     ),
-
     'mw_fold': QuestSegment(
       id: 'mw_fold',
-      content:
-          'You turn it over, face-down. '
+      content: 'You turn it over, face-down. '
           'The laughter fades into normal classroom noise.\n\n'
           'But the feeling doesn\'t fade. '
           'Something that was open is closed now, '
@@ -4225,11 +4004,9 @@ const questMyWorkMyWay = LifeQuestScenario(
         ),
       ],
     ),
-
     'mw_end_still_proud': QuestSegment(
       id: 'mw_end_still_proud',
-      content:
-          'Good.\n\n'
+      content: 'Good.\n\n'
           'Here\'s the thing about making something real: '
           'not everyone will get it. '
           'That doesn\'t mean it\'s wrong — '
@@ -4239,11 +4016,9 @@ const questMyWorkMyWay = LifeQuestScenario(
           'Keep making things that make you feel something.',
       isEnding: true,
     ),
-
     'mw_end_doubt': QuestSegment(
       id: 'mw_end_doubt',
-      content:
-          'Doubt is normal after someone laughs at your work. '
+      content: 'Doubt is normal after someone laughs at your work. '
           'It doesn\'t mean they\'re right.\n\n'
           'There\'s a difference between useful feedback '
           'and someone who just wants a reaction. '
@@ -4255,11 +4030,9 @@ const questMyWorkMyWay = LifeQuestScenario(
           'You\'ll know.',
       isEnding: true,
     ),
-
     'mw_end_show_friend': QuestSegment(
       id: 'mw_end_show_friend',
-      content:
-          'You turn it over, slowly.\n\n'
+      content: 'You turn it over, slowly.\n\n'
           'Your friend looks at it properly — '
           'not a glance, not a joke, '
           'an actual look.\n\n'
@@ -4271,7 +4044,6 @@ const questMyWorkMyWay = LifeQuestScenario(
           'Not everyone has earned that.',
       isEnding: true,
     ),
-
     'mw_end_change_it': QuestSegment(
       id: 'mw_end_change_it',
       content:
@@ -4303,8 +4075,7 @@ const questMirrorMirror = LifeQuestScenario(
   segments: {
     'mm_start': QuestSegment(
       id: 'mm_start',
-      content:
-          'You see them every day — that person who just seems '
+      content: 'You see them every day — that person who just seems '
           'to have it figured out. The right clothes. '
           'The easy laugh. The way people gravitate toward them '
           'like it costs them nothing.\n\n'
@@ -4327,11 +4098,9 @@ const questMirrorMirror = LifeQuestScenario(
         ),
       ],
     ),
-
     'mm_compare': QuestSegment(
       id: 'mm_compare',
-      content:
-          'The comparing starts and it doesn\'t stop.\n\n'
+      content: 'The comparing starts and it doesn\'t stop.\n\n'
           'At school you notice everything — '
           'how they walk, what they eat, '
           'who sits next to them. '
@@ -4352,11 +4121,9 @@ const questMirrorMirror = LifeQuestScenario(
         ),
       ],
     ),
-
     'mm_stop': QuestSegment(
       id: 'mm_stop',
-      content:
-          'You pull on what you had and walk out the door.\n\n'
+      content: 'You pull on what you had and walk out the door.\n\n'
           'It\'s not a victory — more like a truce. '
           'You don\'t love what you see in the mirror, '
           'but you\'re not going to let it eat your morning.\n\n'
@@ -4377,11 +4144,9 @@ const questMirrorMirror = LifeQuestScenario(
         ),
       ],
     ),
-
     'mm_end_talk': QuestSegment(
       id: 'mm_end_talk',
-      content:
-          '"I just feel like everyone else has it figured out '
+      content: '"I just feel like everyone else has it figured out '
           'and I\'m still... figuring."\n\n'
           'The person you\'re talking to is quiet for a second. '
           'Then: "Yeah. Me too, honestly."\n\n'
@@ -4392,11 +4157,9 @@ const questMirrorMirror = LifeQuestScenario(
           'The question is whether you let it run your day.',
       isEnding: true,
     ),
-
     'mm_end_examine': QuestSegment(
       id: 'mm_end_examine',
-      content:
-          'You sit with it. What exactly do they have?\n\n'
+      content: 'You sit with it. What exactly do they have?\n\n'
           'Confidence? A certain look? The way people respond to them?\n\n'
           'Here\'s the thing: some of that is real. '
           'Some of it is performance. '
@@ -4406,11 +4169,9 @@ const questMirrorMirror = LifeQuestScenario(
           'That\'s never going to be a fair comparison.',
       isEnding: true,
     ),
-
     'mm_end_accept': QuestSegment(
       id: 'mm_end_accept',
-      content:
-          'You let the nice thing sit for a moment '
+      content: 'You let the nice thing sit for a moment '
           'instead of explaining it away.\n\n'
           'It doesn\'t fix everything. '
           'The mirror will still be difficult some mornings.\n\n'
@@ -4420,11 +4181,9 @@ const questMirrorMirror = LifeQuestScenario(
           'the mirror doesn\'t show.',
       isEnding: true,
     ),
-
     'mm_end_dismiss': QuestSegment(
       id: 'mm_end_dismiss',
-      content:
-          'You wave it off. Easy to do. '
+      content: 'You wave it off. Easy to do. '
           'Dismissing compliments is almost automatic by now.\n\n'
           'But notice what you just did: '
           'you accepted the criticism from your own head instantly, '
@@ -4452,8 +4211,7 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
   segments: {
     'sh_start': QuestSegment(
       id: 'sh_start',
-      content:
-          'It\'s been building for weeks.\n\n'
+      content: 'It\'s been building for weeks.\n\n'
           'Your friend used to be the first person in the group chat, '
           'the one who made plans, the one who showed up early. '
           'Now they cancel everything. They laugh at the wrong moments. '
@@ -4478,11 +4236,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
         ),
       ],
     ),
-
     'sh_ask': QuestSegment(
       id: 'sh_ask',
-      content:
-          'You find a moment when it\'s just the two of you.\n\n'
+      content: 'You find a moment when it\'s just the two of you.\n\n'
           '"Hey. I\'ve noticed you seem really different lately. '
           'Are you actually okay?"\n\n'
           'They go quiet. For a long time. '
@@ -4503,11 +4259,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
         ),
       ],
     ),
-
     'sh_tell_adult': QuestSegment(
       id: 'sh_tell_adult',
-      content:
-          'You find a teacher you trust.\n\n'
+      content: 'You find a teacher you trust.\n\n'
           '"I\'m worried about someone. '
           'I don\'t know if it\'s serious, but something feels wrong."\n\n'
           'The teacher listens. Takes it seriously. '
@@ -4527,11 +4281,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
         ),
       ],
     ),
-
     'sh_end_listen': QuestSegment(
       id: 'sh_end_listen',
-      content:
-          'You sit with them. You don\'t fill the silence.\n\n'
+      content: 'You sit with them. You don\'t fill the silence.\n\n'
           'They talk, stop, talk again. It comes out in fragments. '
           'You don\'t understand all of it, '
           'but you don\'t need to.\n\n'
@@ -4545,11 +4297,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
           'aren\'t opposites.',
       isEnding: true,
     ),
-
     'sh_end_suggest': QuestSegment(
       id: 'sh_end_suggest',
-      content:
-          '"I\'m glad you told me," you say. '
+      content: '"I\'m glad you told me," you say. '
           '"But I think you should talk to someone '
           'who knows more than I do. '
           'A counsellor, or an adult you trust."\n\n'
@@ -4564,11 +4314,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
           'if you\'re still worried.',
       isEnding: true,
     ),
-
     'sh_end_relief': QuestSegment(
       id: 'sh_end_relief',
-      content:
-          'You did the right thing.\n\n'
+      content: 'You did the right thing.\n\n'
           'It doesn\'t feel triumphant. It feels heavy. '
           'But this is what caring about someone looks like sometimes — '
           'doing the thing that helps them '
@@ -4578,11 +4326,9 @@ const questSomeoneNeedsHelp = LifeQuestScenario(
           'That\'s not betrayal — that\'s love.',
       isEnding: true,
     ),
-
     'sh_end_guilt': QuestSegment(
       id: 'sh_end_guilt',
-      content:
-          'The guilt is real. You might feel like a snitch, '
+      content: 'The guilt is real. You might feel like a snitch, '
           'a bad friend, someone who broke a trust.\n\n'
           'But here\'s what you need to hear: '
           'there are situations where keeping a secret '
@@ -4628,8 +4374,7 @@ const questThingIDidntSay = LifeQuestScenario(
   segments: {
     'ts_start': QuestSegment(
       id: 'ts_start',
-      content:
-          'It happened in front of you.\n\n'
+      content: 'It happened in front of you.\n\n'
           'A comment. A push. A joke that wasn\'t a joke. '
           'Someone targeted, someone laughing, '
           'and you — standing right there — '
@@ -4653,11 +4398,9 @@ const questThingIDidntSay = LifeQuestScenario(
         ),
       ],
     ),
-
     'ts_reach_out': QuestSegment(
       id: 'ts_reach_out',
-      content:
-          'You find them. They look tired.\n\n'
+      content: 'You find them. They look tired.\n\n'
           '"Hey. About earlier — that wasn\'t okay. '
           'I\'m sorry I didn\'t say anything."\n\n'
           'They look at you for a long moment. '
@@ -4677,11 +4420,9 @@ const questThingIDidntSay = LifeQuestScenario(
         ),
       ],
     ),
-
     'ts_sit_with_it': QuestSegment(
       id: 'ts_sit_with_it',
-      content:
-          'Why did you freeze?\n\n'
+      content: 'Why did you freeze?\n\n'
           'Fear? You didn\'t want to become the next target.\n'
           'Shock? It happened too fast to process.\n'
           'Social calculus? You weighed the cost of speaking up '
@@ -4702,11 +4443,9 @@ const questThingIDidntSay = LifeQuestScenario(
         ),
       ],
     ),
-
     'ts_end_ask_how': QuestSegment(
       id: 'ts_end_ask_how',
-      content:
-          'They think about it.\n\n'
+      content: 'They think about it.\n\n'
           '"Honestly? Just... don\'t pretend it didn\'t happen. '
           'Everyone else is acting like it was nothing."\n\n'
           'That\'s the thing about being a bystander — '
@@ -4717,11 +4456,9 @@ const questThingIDidntSay = LifeQuestScenario(
           'refusing to pretend — that\'s not nothing.',
       isEnding: true,
     ),
-
     'ts_end_be_honest': QuestSegment(
       id: 'ts_end_be_honest',
-      content:
-          '"I froze. I want to do better next time."\n\n'
+      content: '"I froze. I want to do better next time."\n\n'
           'They nod slowly. '
           '"At least you\'re being honest about it."\n\n'
           'There\'s something powerful about admitting you fell short '
@@ -4732,11 +4469,9 @@ const questThingIDidntSay = LifeQuestScenario(
           'is more likely to break it next time.',
       isEnding: true,
     ),
-
     'ts_end_next_time': QuestSegment(
       id: 'ts_end_next_time',
-      content:
-          'You can\'t script it perfectly. '
+      content: 'You can\'t script it perfectly. '
           'You can\'t guarantee you\'ll be braver.\n\n'
           'But you can decide, right now, in this calm moment, '
           'what kind of person you want to be '
@@ -4748,11 +4483,9 @@ const questThingIDidntSay = LifeQuestScenario(
           'It\'s deciding that something else matters more.',
       isEnding: true,
     ),
-
     'ts_end_report': QuestSegment(
       id: 'ts_end_report',
-      content:
-          'You find a teacher or counsellor.\n\n'
+      content: 'You find a teacher or counsellor.\n\n'
           '"Something happened earlier and I didn\'t say anything at the time. '
           'But I think someone should know."\n\n'
           'They listen. They ask clarifying questions. '
@@ -4782,8 +4515,7 @@ const questWhereAreYouGoing = LifeQuestScenario(
   segments: {
     'way_start': QuestSegment(
       id: 'way_start',
-      content:
-          'The question comes at you from every direction.\n\n'
+      content: 'The question comes at you from every direction.\n\n'
           'Teachers. Parents. Relatives you see once a year. '
           'Even friends — casually, like it\'s simple: '
           '"So what are you going to do after school?"\n\n'
@@ -4807,11 +4539,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
         ),
       ],
     ),
-
     'way_bluff': QuestSegment(
       id: 'way_bluff',
-      content:
-          '"Probably something with computers," you say, '
+      content: '"Probably something with computers," you say, '
           'or "Maybe business," or whatever answer '
           'will end the conversation fastest.\n\n'
           'They nod, satisfied. Move on.\n\n'
@@ -4834,11 +4564,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
         ),
       ],
     ),
-
     'way_honest': QuestSegment(
       id: 'way_honest',
-      content:
-          '"I don\'t know yet."\n\n'
+      content: '"I don\'t know yet."\n\n'
           'The person\'s face does a thing — '
           'surprise, then maybe a flicker of concern, '
           'then an attempt to be helpful.\n\n'
@@ -4859,11 +4587,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
         ),
       ],
     ),
-
     'way_end_explore': QuestSegment(
       id: 'way_end_explore',
-      content:
-          'You think about it differently this time.\n\n'
+      content: 'You think about it differently this time.\n\n'
           'Not "what job" but "what pulls me in." '
           'What do you lose time doing? '
           'What problems do you actually care about? '
@@ -4873,11 +4599,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
           'is how you eventually find one.',
       isEnding: true,
     ),
-
     'way_end_table_it': QuestSegment(
       id: 'way_end_table_it',
-      content:
-          'You decide, deliberately, to be okay with not knowing.\n\n'
+      content: 'You decide, deliberately, to be okay with not knowing.\n\n'
           'Not forever. Not as an excuse. '
           'But as an honest statement about where you are '
           'right now.\n\n'
@@ -4889,11 +4613,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
           'It\'s the starting condition for everyone.',
       isEnding: true,
     ),
-
     'way_end_panicked': QuestSegment(
       id: 'way_end_panicked',
-      content:
-          'The panic is real. It sits in your chest like a timer '
+      content: 'The panic is real. It sits in your chest like a timer '
           'counting down to something you can\'t see.\n\n'
           'But here\'s what nobody tells you: '
           'almost nobody at your age actually knows. '
@@ -4906,11 +4628,9 @@ const questWhereAreYouGoing = LifeQuestScenario(
           'That\'s a better starting point than a fake answer.',
       isEnding: true,
     ),
-
     'way_end_steady': QuestSegment(
       id: 'way_end_steady',
-      content:
-          'Good.\n\n'
+      content: 'Good.\n\n'
           '"I don\'t know yet" is an honest answer '
           'in a world that rewards confident performances.\n\n'
           'Some people will try to make you feel bad about it. '
@@ -4940,8 +4660,7 @@ const questFightAtHome = LifeQuestScenario(
   segments: {
     'fh_start': QuestSegment(
       id: 'fh_start',
-      content:
-          'You can still hear the door slam in your ears.\n\n'
+      content: 'You can still hear the door slam in your ears.\n\n'
           'The argument built fast. '
           'Something they said. Something you said back. '
           'Then everything you\'ve been holding for months, '
@@ -4965,11 +4684,9 @@ const questFightAtHome = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_go_out': QuestSegment(
       id: 'fh_go_out',
-      content:
-          'You walk down the hall.\n\n'
+      content: 'You walk down the hall.\n\n'
           'Your parent is at the sink, back to you. They don\'t turn around.\n\n'
           '"Hey."\n\n'
           '"Hey." Still not turning.\n\n'
@@ -4993,11 +4710,9 @@ const questFightAtHome = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_stay_in': QuestSegment(
       id: 'fh_stay_in',
-      content:
-          'You stay put. The light fades outside.\n\n'
+      content: 'You stay put. The light fades outside.\n\n'
           'Your phone buzzes once. Maybe your parent. Maybe not.\n'
           'You don\'t check.\n\n'
           'You weren\'t wrong. You know that. '
@@ -5018,11 +4733,9 @@ const questFightAtHome = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_end_smooth': QuestSegment(
       id: 'fh_end_smooth',
-      content:
-          'Your parent turns around, looking tired.\n\n'
+      content: 'Your parent turns around, looking tired.\n\n'
           '"Okay. Forget it."\n\n'
           'And just like that, the fight is filed away.\n\n'
           'The house warms up again. Dinner happens. '
@@ -5036,11 +4749,9 @@ const questFightAtHome = LifeQuestScenario(
           'Only you know which one this was.',
       isEnding: true,
     ),
-
     'fh_end_partial': QuestSegment(
       id: 'fh_end_partial',
-      content:
-          'Your parent puts down the dish towel.\n\n'
+      content: 'Your parent puts down the dish towel.\n\n'
           'They look at you for a long moment. '
           'You can see them deciding something.\n\n'
           '"Okay," they say. "I can work with that."\n\n'
@@ -5053,11 +4764,9 @@ const questFightAtHome = LifeQuestScenario(
           'You stayed in the room.',
       isEnding: true,
     ),
-
     'fh_end_text': QuestSegment(
       id: 'fh_end_text',
-      content:
-          'You type and delete three drafts before one feels honest:\n\n'
+      content: 'You type and delete three drafts before one feels honest:\n\n'
           '*I\'m still mad. But I don\'t want us not talking. '
           'I\'ll come out when dinner\'s ready.*\n\n'
           'You send it. The three dots appear.\n\n'
@@ -5072,11 +4781,9 @@ const questFightAtHome = LifeQuestScenario(
           'It\'s refusing to let silence grow teeth.',
       isEnding: true,
     ),
-
     'fh_end_hold': QuestSegment(
       id: 'fh_end_hold',
-      content:
-          'You hold.\n\n'
+      content: 'You hold.\n\n'
           'Dinner comes and goes. You don\'t eat with them. '
           'The house stays cold.\n\n'
           'Eventually you fall asleep. '
@@ -5097,8 +4804,7 @@ const questFightAtHome = LifeQuestScenario(
   // their parent. Adolescent band only, but the interstitial still gives
   // the grown-up a heads-up so they can choose proximity.
   sensitivityTopics: ['family conflict', 'after an argument'],
-  parentNote:
-      'This quest opens after a fight between a teen and a parent. The '
+  parentNote: 'This quest opens after a fight between a teen and a parent. The '
       'story explores the quiet hours after — apologising, holding firm, '
       'or sitting with it — and ends with the door, not slammed, but open.',
   sensitivity: QuestSensitivity.heavy,
@@ -5120,8 +4826,7 @@ const questAfterTheBreakup = LifeQuestScenario(
   segments: {
     'br_start': QuestSegment(
       id: 'br_start',
-      content:
-          'The message came in ten minutes ago.\n\n'
+      content: 'The message came in ten minutes ago.\n\n'
           '*I think we need to stop.*\n\n'
           'That\'s it. No "let\'s talk." No explanation. '
           'Three months of something that felt real, '
@@ -5136,16 +4841,15 @@ const questAfterTheBreakup = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'br_dont_reply',
-          text: 'Don\'t reply. Sit with it. Don\'t give them your reaction for free.',
+          text:
+              'Don\'t reply. Sit with it. Don\'t give them your reaction for free.',
           nextSegmentId: 'br_dont_reply',
         ),
       ],
     ),
-
     'br_reply_now': QuestSegment(
       id: 'br_reply_now',
-      content:
-          'You open the thread.\n\n'
+      content: 'You open the thread.\n\n'
           'You start typing. You delete it. You start again.\n\n'
           'You could lay it all out — '
           'what you thought this was, what it meant to you, '
@@ -5165,11 +4869,9 @@ const questAfterTheBreakup = LifeQuestScenario(
         ),
       ],
     ),
-
     'br_dont_reply': QuestSegment(
       id: 'br_dont_reply',
-      content:
-          'You put the phone face-down.\n\n'
+      content: 'You put the phone face-down.\n\n'
           'An hour passes. Another. '
           'You keep almost picking it up.\n\n'
           'You start narrating conversations in your head — '
@@ -5190,11 +4892,9 @@ const questAfterTheBreakup = LifeQuestScenario(
         ),
       ],
     ),
-
     'br_end_send_everything': QuestSegment(
       id: 'br_end_send_everything',
-      content:
-          'You send it. All of it.\n\n'
+      content: 'You send it. All of it.\n\n'
           'Three days later they reply with something hollow. '
           '*I\'m sorry. I didn\'t mean to hurt you.*\n\n'
           'You gave them every piece of you '
@@ -5205,11 +4905,9 @@ const questAfterTheBreakup = LifeQuestScenario(
           'That\'s a person who refuses to shrink to look cool.',
       isEnding: true,
     ),
-
     'br_end_ask_why': QuestSegment(
       id: 'br_end_ask_why',
-      content:
-          'You send it.\n\n'
+      content: 'You send it.\n\n'
           '*Why now?*\n\n'
           'They take a while. Then: '
           '*Honestly? I\'ve been pretending for a month. '
@@ -5222,11 +4920,9 @@ const questAfterTheBreakup = LifeQuestScenario(
           'You just did that.',
       isEnding: true,
     ),
-
     'br_end_block': QuestSegment(
       id: 'br_end_block',
-      content:
-          'You press block. The thread disappears.\n\n'
+      content: 'You press block. The thread disappears.\n\n'
           'For about an hour you feel taller.\n\n'
           'Then the silence has a different weight — '
           'not peace, just absence. '
@@ -5239,11 +4935,9 @@ const questAfterTheBreakup = LifeQuestScenario(
           'Just now you get to do it without them watching.',
       isEnding: true,
     ),
-
     'br_end_sit_quiet': QuestSegment(
       id: 'br_end_sit_quiet',
-      content:
-          'Days pass. You don\'t reply.\n\n'
+      content: 'Days pass. You don\'t reply.\n\n'
           'At some point the urge gets quieter '
           'than the person you were with them. '
           'You start remembering who you were before.\n\n'
@@ -5260,8 +4954,7 @@ const questAfterTheBreakup = LifeQuestScenario(
   // no self-harm; the story is about the first hours of grief after a
   // three-month relationship ends by text.
   sensitivityTopics: ['breakup', 'heartbreak'],
-  parentNote:
-      'This quest is about a teen processing a breakup that arrived by '
+  parentNote: 'This quest is about a teen processing a breakup that arrived by '
       'text. It handles the moment gently and lands on self-respect, but '
       'it may surface feelings if your teen is going through something '
       'similar.',
@@ -5284,8 +4977,7 @@ const questScreenshotSpreading = LifeQuestScenario(
   segments: {
     'ss_start': QuestSegment(
       id: 'ss_start',
-      content:
-          'Something you sent — in what you thought was a private chat — '
+      content: 'Something you sent — in what you thought was a private chat — '
           'is being screenshotted.\n\n'
           'You can feel it. '
           'Messages slowing. People viewing stories and not replying. '
@@ -5308,11 +5000,9 @@ const questScreenshotSpreading = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_get_ahead': QuestSegment(
       id: 'ss_get_ahead',
-      content:
-          'You open the app. Your thumb hovers over the keyboard.\n\n'
+      content: 'You open the app. Your thumb hovers over the keyboard.\n\n'
           'You could deny it. '
           '"That\'s taken out of context. I didn\'t mean it like that."\n\n'
           'Or you could own it. '
@@ -5332,11 +5022,9 @@ const questScreenshotSpreading = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_go_dark': QuestSegment(
       id: 'ss_go_dark',
-      content:
-          'You close everything. Phone face-down. '
+      content: 'You close everything. Phone face-down. '
           'You don\'t check for an hour.\n\n'
           'Then two hours. Then a whole evening.\n\n'
           'Your head is loud. Every scenario you can imagine, '
@@ -5355,11 +5043,9 @@ const questScreenshotSpreading = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_end_deny': QuestSegment(
       id: 'ss_end_deny',
-      content:
-          'You post the denial. '
+      content: 'You post the denial. '
           'Some people believe you. Some don\'t.\n\n'
           'The screenshot keeps spreading.\n\n'
           'Denying something you actually said '
@@ -5373,11 +5059,9 @@ const questScreenshotSpreading = LifeQuestScenario(
           'But later costs more than now.',
       isEnding: true,
     ),
-
     'ss_end_own': QuestSegment(
       id: 'ss_end_own',
-      content:
-          'You post it. '
+      content: 'You post it. '
           'Your thumb actually shakes a little when you hit send.\n\n'
           'The replies come in mixed. '
           'Some cruel. Some kind. Some just nothing.\n\n'
@@ -5391,11 +5075,9 @@ const questScreenshotSpreading = LifeQuestScenario(
           'That\'s a thing worth being.',
       isEnding: true,
     ),
-
     'ss_end_tell_someone': QuestSegment(
       id: 'ss_end_tell_someone',
-      content:
-          'You say it out loud for the first time.\n\n'
+      content: 'You say it out loud for the first time.\n\n'
           'They listen. They don\'t flinch. '
           'They don\'t tell you it\'s fine. '
           'They also don\'t tell you it\'s the end of the world.\n\n'
@@ -5409,11 +5091,9 @@ const questScreenshotSpreading = LifeQuestScenario(
           'But you\'re not alone with it anymore.',
       isEnding: true,
     ),
-
     'ss_end_ride_it': QuestSegment(
       id: 'ss_end_ride_it',
-      content:
-          'You ride it out. '
+      content: 'You ride it out. '
           'Days pass. It does fade. '
           'Something else replaces it in the feed.\n\n'
           'You were right: it passes.\n\n'
@@ -5460,8 +5140,7 @@ const questBurningOut = LifeQuestScenario(
   segments: {
     'bo_start': QuestSegment(
       id: 'bo_start',
-      content:
-          'It\'s 11 PM on a Tuesday.\n\n'
+      content: 'It\'s 11 PM on a Tuesday.\n\n'
           'You have two essays due, a test Friday, '
           'practice tomorrow, '
           'and an hour of the reading you haven\'t started.\n\n'
@@ -5483,11 +5162,9 @@ const questBurningOut = LifeQuestScenario(
         ),
       ],
     ),
-
     'bo_push_through': QuestSegment(
       id: 'bo_push_through',
-      content:
-          'You open another tab. Pour another drink. '
+      content: 'You open another tab. Pour another drink. '
           'Put your headphones in.\n\n'
           'You get maybe 40% of it done. '
           'The essay is held together with hope.\n\n'
@@ -5510,11 +5187,9 @@ const questBurningOut = LifeQuestScenario(
         ),
       ],
     ),
-
     'bo_stop': QuestSegment(
       id: 'bo_stop',
-      content:
-          'You close the laptop.\n\n'
+      content: 'You close the laptop.\n\n'
           'The room is suddenly very quiet. '
           'You realise you don\'t actually know '
           'what you\'d be doing right now if you weren\'t doing this.\n\n'
@@ -5534,11 +5209,9 @@ const questBurningOut = LifeQuestScenario(
         ),
       ],
     ),
-
     'bo_end_drop_something': QuestSegment(
       id: 'bo_end_drop_something',
-      content:
-          'You pick the thing. It\'s not the biggest thing. '
+      content: 'You pick the thing. It\'s not the biggest thing. '
           'But it\'s one real thing.\n\n'
           'You tell the person.\n\n'
           'They react how they react. '
@@ -5554,11 +5227,9 @@ const questBurningOut = LifeQuestScenario(
           'Most of them learned it the hard way.',
       isEnding: true,
     ),
-
     'bo_end_keep_running': QuestSegment(
       id: 'bo_end_keep_running',
-      content:
-          'You keep all of it.\n\n'
+      content: 'You keep all of it.\n\n'
           'Some weeks it works. '
           'Some weeks it really doesn\'t.\n\n'
           'The cost gets paid somewhere — '
@@ -5573,11 +5244,9 @@ const questBurningOut = LifeQuestScenario(
           'It\'s fuel. You need it to finish.',
       isEnding: true,
     ),
-
     'bo_end_ask_for_help': QuestSegment(
       id: 'bo_end_ask_for_help',
-      content:
-          'You find the person. '
+      content: 'You find the person. '
           'You say something close to: '
           '"I\'m not okay. I\'m doing too much and I can\'t tell what to drop."\n\n'
           'The first time is the hardest.\n\n'
@@ -5592,11 +5261,9 @@ const questBurningOut = LifeQuestScenario(
           'You just practised it.',
       isEnding: true,
     ),
-
     'bo_end_rest': QuestSegment(
       id: 'bo_end_rest',
-      content:
-          'You sleep.\n\n'
+      content: 'You sleep.\n\n'
           'Real sleep. Not phone-in-bed scroll-sleep. '
           'The kind where your body actually lands.\n\n'
           'In the morning the problems are still there. '
@@ -5629,8 +5296,7 @@ const questWhoAmIBecoming = LifeQuestScenario(
   segments: {
     'wb_start': QuestSegment(
       id: 'wb_start',
-      content:
-          'Something about you is shifting.\n\n'
+      content: 'Something about you is shifting.\n\n'
           'It might be who you\'re drawn to. '
           'What you believe. '
           'What you want your life to actually look like — '
@@ -5647,16 +5313,15 @@ const questWhoAmIBecoming = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'wb_keep_quiet',
-          text: 'Keep it quiet. It\'s yours. You don\'t owe anyone the whole map.',
+          text:
+              'Keep it quiet. It\'s yours. You don\'t owe anyone the whole map.',
           nextSegmentId: 'wb_keep_quiet',
         ),
       ],
     ),
-
     'wb_tell_someone': QuestSegment(
       id: 'wb_tell_someone',
-      content:
-          'You pick the person.\n\n'
+      content: 'You pick the person.\n\n'
           'You plan the sentence in your head ten times. '
           'When you actually say it, it comes out smaller and stranger '
           'than you practised.\n\n'
@@ -5677,11 +5342,9 @@ const questWhoAmIBecoming = LifeQuestScenario(
         ),
       ],
     ),
-
     'wb_keep_quiet': QuestSegment(
       id: 'wb_keep_quiet',
-      content:
-          'You don\'t say it.\n\n'
+      content: 'You don\'t say it.\n\n'
           'Not tonight. Not this week. '
           'You\'re still figuring it out for yourself, '
           'and other people\'s reactions would get in the way.\n\n'
@@ -5704,11 +5367,9 @@ const questWhoAmIBecoming = LifeQuestScenario(
         ),
       ],
     ),
-
     'wb_end_hope_accept': QuestSegment(
       id: 'wb_end_hope_accept',
-      content:
-          'They do. Or they don\'t.\n\n'
+      content: 'They do. Or they don\'t.\n\n'
           'If they do — you\'ll feel like the room got warmer. '
           'A small piece of yourself comes unclenched.\n\n'
           'If they don\'t — it\'ll hurt. '
@@ -5722,11 +5383,9 @@ const questWhoAmIBecoming = LifeQuestScenario(
           'You\'re practising a muscle you\'ll use again.',
       isEnding: true,
     ),
-
     'wb_end_hope_honest': QuestSegment(
       id: 'wb_end_hope_honest',
-      content:
-          'They take a long breath.\n\n'
+      content: 'They take a long breath.\n\n'
           'What comes back is honest. '
           'Not polished. Maybe a bit messy. '
           'Some of it is supportive. '
@@ -5742,11 +5401,9 @@ const questWhoAmIBecoming = LifeQuestScenario(
           'Give yourself a little time too.',
       isEnding: true,
     ),
-
     'wb_end_private_for_now': QuestSegment(
       id: 'wb_end_private_for_now',
-      content:
-          'You keep it.\n\n'
+      content: 'You keep it.\n\n'
           'You figure it out on your own terms. '
           'You read. You think. '
           'You find one corner of the internet or one quiet journal '
@@ -5759,11 +5416,9 @@ const questWhoAmIBecoming = LifeQuestScenario(
           'That is allowed. That\'s actually how it\'s supposed to work.',
       isEnding: true,
     ),
-
     'wb_end_tired_of_hiding': QuestSegment(
       id: 'wb_end_tired_of_hiding',
-      content:
-          'You notice it — the cost.\n\n'
+      content: 'You notice it — the cost.\n\n'
           'Shape-shifting between rooms is exhausting. '
           'Eventually it starts feeling like you\'re renting out '
           'the most honest parts of yourself '
@@ -5795,8 +5450,7 @@ const questFirstPaycheck = LifeQuestScenario(
   segments: {
     'fp_start': QuestSegment(
       id: 'fp_start',
-      content:
-          'Your first real paycheck landed today.\n\n'
+      content: 'Your first real paycheck landed today.\n\n'
           'Not birthday money. Not pocket money. '
           'Money you traded hours of your actual life for.\n\n'
           'It\'s smaller than you expected — '
@@ -5812,16 +5466,15 @@ const questFirstPaycheck = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'fp_save_it',
-          text: 'Save most of it. Be the sensible one. Future you will thank you.',
+          text:
+              'Save most of it. Be the sensible one. Future you will thank you.',
           nextSegmentId: 'fp_save_it',
         ),
       ],
     ),
-
     'fp_spend_it': QuestSegment(
       id: 'fp_spend_it',
-      content:
-          'You buy it.\n\n'
+      content: 'You buy it.\n\n'
           'The thing you\'ve been wanting for months. '
           'You take the box home. You open it. '
           'The box is somehow the best part.\n\n'
@@ -5838,16 +5491,15 @@ const questFirstPaycheck = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'fp_learn',
-          text: 'Next time: decide the thing *before* the paycheck lands, not after.',
+          text:
+              'Next time: decide the thing *before* the paycheck lands, not after.',
           nextSegmentId: 'fp_end_learn',
         ),
       ],
     ),
-
     'fp_save_it': QuestSegment(
       id: 'fp_save_it',
-      content:
-          'You move most of it into savings. '
+      content: 'You move most of it into savings. '
           'You keep a small buffer for the week.\n\n'
           'It feels responsible. '
           'It also feels, strangely, a little flat.\n\n'
@@ -5859,21 +5511,21 @@ const questFirstPaycheck = LifeQuestScenario(
       choices: [
         QuestChoice(
           id: 'fp_all_in_save',
-          text: 'All in. Every dollar. I\'ll spend less and build a real cushion.',
+          text:
+              'All in. Every dollar. I\'ll spend less and build a real cushion.',
           nextSegmentId: 'fp_end_all_in_save',
         ),
         QuestChoice(
           id: 'fp_balance',
-          text: 'Balance. A slice for future. A slice for now. A slice for people.',
+          text:
+              'Balance. A slice for future. A slice for now. A slice for people.',
           nextSegmentId: 'fp_end_balance',
         ),
       ],
     ),
-
     'fp_end_no_regret': QuestSegment(
       id: 'fp_end_no_regret',
-      content:
-          'Next paycheck, you do it again. '
+      content: 'Next paycheck, you do it again. '
           'And the next one.\n\n'
           'You enjoy your money. You never save.\n\n'
           'When the first surprise bill hits — '
@@ -5888,11 +5540,9 @@ const questFirstPaycheck = LifeQuestScenario(
           'Even a small cushion changes which problems can knock you over.',
       isEnding: true,
     ),
-
     'fp_end_learn': QuestSegment(
       id: 'fp_end_learn',
-      content:
-          'Before the next paycheck lands, '
+      content: 'Before the next paycheck lands, '
           'you actually think about what you want.\n\n'
           'Not what would feel good in the moment. '
           'What future-you, two weeks from now, '
@@ -5906,11 +5556,9 @@ const questFirstPaycheck = LifeQuestScenario(
           'That\'s the thing most people never actually learn.',
       isEnding: true,
     ),
-
     'fp_end_all_in_save': QuestSegment(
       id: 'fp_end_all_in_save',
-      content:
-          'You save hard for months.\n\n'
+      content: 'You save hard for months.\n\n'
           'The number in the account grows. '
           'It\'s satisfying. '
           'It\'s also, after a while, a little lonely.\n\n'
@@ -5927,11 +5575,9 @@ const questFirstPaycheck = LifeQuestScenario(
           'Relationships you underfed are harder to rebuild.',
       isEnding: true,
     ),
-
     'fp_end_balance': QuestSegment(
       id: 'fp_end_balance',
-      content:
-          'You split it.\n\n'
+      content: 'You split it.\n\n'
           'Some of it goes to future you — '
           'the version who will be glad there\'s a cushion.\n\n'
           'Some goes to right-now you — '
@@ -5967,8 +5613,7 @@ const questBigBearHug = LifeQuestScenario(
   segments: {
     'bbh_start': QuestSegment(
       id: 'bbh_start',
-      content:
-          'It is bedtime.\n\n'
+      content: 'It is bedtime.\n\n'
           'You look on your pillow. '
           'No teddy.\n\n'
           'You look under the blanket. '
@@ -5988,11 +5633,9 @@ const questBigBearHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'bbh_call': QuestSegment(
       id: 'bbh_call',
-      content:
-          '"I can\'t find Teddy!"\n\n'
+      content: '"I can\'t find Teddy!"\n\n'
           'Big footsteps. A warm hand on your back.\n\n'
           '"Let\'s look together."\n\n'
           'It is so much easier with two.',
@@ -6009,11 +5652,9 @@ const questBigBearHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'bbh_look': QuestSegment(
       id: 'bbh_look',
-      content:
-          'You dig — blocks, books, a sock.\n\n'
+      content: 'You dig — blocks, books, a sock.\n\n'
           'No teddy in the toy box.\n\n'
           '«{companion} nudges your leg. »Your eyes feel hot.\n\n'
           'A small tear slips out. That\'s okay. '
@@ -6032,11 +5673,9 @@ const questBigBearHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'bbh_couch': QuestSegment(
       id: 'bbh_couch',
-      content:
-          'You both kneel by the couch.\n\n'
+      content: 'You both kneel by the couch.\n\n'
           'A furry ear pokes out between the cushions.\n\n'
           'TEDDY!\n\n'
           'You squeeze him tight. '
@@ -6045,11 +5684,9 @@ const questBigBearHug = LifeQuestScenario(
           'And grown-ups love helping.',
       isEnding: true,
     ),
-
     'bbh_car': QuestSegment(
       id: 'bbh_car',
-      content:
-          'Out to the car, pajamas and all.\n\n'
+      content: 'Out to the car, pajamas and all.\n\n'
           'You open the door — and there he is! '
           'Sitting in your car seat, waiting.\n\n'
           'You hug him so hard his nose squishes.\n\n'
@@ -6057,11 +5694,9 @@ const questBigBearHug = LifeQuestScenario(
           'They just have little adventures.',
       isEnding: true,
     ),
-
     'bbh_breath': QuestSegment(
       id: 'bbh_breath',
-      content:
-          'You take one big breath in... '
+      content: 'You take one big breath in... '
           'and let it out slow.\n\n'
           'Your shoulders go down.\n\n'
           'You peek behind the big chair — '
@@ -6086,14 +5721,14 @@ const questBigLoud = LifeQuestScenario(
   emoji: '\u{26C8}',
   emotions: ['worried', 'frustrated'],
   friend: SproutFriend.mouse,
-  grownupTip: "Ask: 'What loud sounds make YOUR heart jump? What helps you feel braver?'",
+  grownupTip:
+      "Ask: 'What loud sounds make YOUR heart jump? What helps you feel braver?'",
   recommendedBands: [AgeBand.sprout],
   startSegmentId: 'bl_start',
   segments: {
     'bl_start': QuestSegment(
       id: 'bl_start',
-      content:
-          'You are building a tall tower.\n\n'
+      content: 'You are building a tall tower.\n\n'
           'BOOM!\n\n'
           'A big loud sound outside. '
           'Rain is tapping on the window.\n\n'
@@ -6113,11 +5748,9 @@ const questBigLoud = LifeQuestScenario(
         ),
       ],
     ),
-
     'bl_run': QuestSegment(
       id: 'bl_run',
-      content:
-          'You run fast. Little feet, big heart.\n\n'
+      content: 'You run fast. Little feet, big heart.\n\n'
           'A grown-up scoops you up.\n\n'
           '"That was thunder," they say. '
           '"Loud, but safe."\n\n'
@@ -6136,11 +5769,9 @@ const questBigLoud = LifeQuestScenario(
         ),
       ],
     ),
-
     'bl_hide': QuestSegment(
       id: 'bl_hide',
-      content:
-          'Under the blanket it is dark and soft.\n\n'
+      content: 'Under the blanket it is dark and soft.\n\n'
           '«{companion} crawls in too. »You breathe in and out. '
           'In and out.\n\n'
           'The rain keeps tapping. '
@@ -6158,11 +5789,9 @@ const questBigLoud = LifeQuestScenario(
         ),
       ],
     ),
-
     'bl_peek': QuestSegment(
       id: 'bl_peek',
-      content:
-          'You peek out.\n\n'
+      content: 'You peek out.\n\n'
           'The sky flashes white — so bright! — '
           'and then BOOM again.\n\n'
           'But this time you count: '
@@ -6172,11 +5801,9 @@ const questBigLoud = LifeQuestScenario(
           'Safe and dry and brave.',
       isEnding: true,
     ),
-
     'bl_snuggle': QuestSegment(
       id: 'bl_snuggle',
-      content:
-          'You stay snuggled in.\n\n'
+      content: 'You stay snuggled in.\n\n'
           'The rain keeps singing its pitter-patter song.\n\n'
           'Soon the loud part is gone. '
           'Only soft rain is left.\n\n'
@@ -6184,11 +5811,9 @@ const questBigLoud = LifeQuestScenario(
           'hugs make them small again.',
       isEnding: true,
     ),
-
     'bl_hum': QuestSegment(
       id: 'bl_hum',
-      content:
-          'You hum. The humming tickles your lips.\n\n'
+      content: 'You hum. The humming tickles your lips.\n\n'
           'The rain hums too, on the roof.\n\n'
           'You and the rain make a little song together.\n\n'
           'Loud things are less scary '
@@ -6211,13 +5836,13 @@ const questMyTurnYourTurn = LifeQuestScenario(
   emotions: ['angry', 'frustrated', 'sad'],
   recommendedBands: [AgeBand.sprout],
   friend: SproutFriend.lion,
-  grownupTip: "Ask: 'When was the last time it was hard to wait? What did we do together?'",
+  grownupTip:
+      "Ask: 'When was the last time it was hard to wait? What did we do together?'",
   startSegmentId: 'mt_start',
   segments: {
     'mt_start': QuestSegment(
       id: 'mt_start',
-      content:
-          'The red truck is your favorite.\n\n'
+      content: 'The red truck is your favorite.\n\n'
           'But another kid has it right now. '
           'Vroom, vroom.\n\n'
           'Your hands squeeze into tight little fists. '
@@ -6237,11 +5862,9 @@ const questMyTurnYourTurn = LifeQuestScenario(
         ),
       ],
     ),
-
     'mt_grab': QuestSegment(
       id: 'mt_grab',
-      content:
-          'You reach out fast.\n\n'
+      content: 'You reach out fast.\n\n'
           'The other kid holds on tight. "MINE!"\n\n'
           'Oh no. Your tummy feels wobbly.\n\n'
           'A grown-up kneels down. '
@@ -6260,11 +5883,9 @@ const questMyTurnYourTurn = LifeQuestScenario(
         ),
       ],
     ),
-
     'mt_ask': QuestSegment(
       id: 'mt_ask',
-      content:
-          'You walk over. Slow and kind.\n\n'
+      content: 'You walk over. Slow and kind.\n\n'
           '"Can I have a turn, please?"\n\n'
           'The other kid looks at you. '
           'Thinks for a second.\n\n'
@@ -6284,11 +5905,9 @@ const questMyTurnYourTurn = LifeQuestScenario(
         ),
       ],
     ),
-
     'mt_breath': QuestSegment(
       id: 'mt_breath',
-      content:
-          'You take a big breath in. '
+      content: 'You take a big breath in. '
           'Then a big breath out.\n\n'
           'Your fists open up like little flowers.\n\n'
           'Your face feels cool again.\n\n'
@@ -6298,11 +5917,9 @@ const questMyTurnYourTurn = LifeQuestScenario(
           'Big feelings, then kind words. That\'s the magic.',
       isEnding: true,
     ),
-
     'mt_count': QuestSegment(
       id: 'mt_count',
-      content:
-          'You count on your fingers. '
+      content: 'You count on your fingers. '
           'One, two, three...\n\n'
           'The truck comes rolling over to your hand.\n\n'
           '"Your turn!"\n\n'
@@ -6311,11 +5928,9 @@ const questMyTurnYourTurn = LifeQuestScenario(
           'But the truck is still just as red.',
       isEnding: true,
     ),
-
     'mt_different': QuestSegment(
       id: 'mt_different',
-      content:
-          'You pick up the blue airplane.\n\n'
+      content: 'You pick up the blue airplane.\n\n'
           'Whoooosh! It swoops over your head.\n\n'
           'Before long, a little hand taps your shoulder.\n\n'
           '"Truck?"\n\n'
@@ -6348,8 +5963,7 @@ const questBigHello = LifeQuestScenario(
   segments: {
     'bh_start': QuestSegment(
       id: 'bh_start',
-      content:
-          'You are on the rug, building a tall block tower.\n\n'
+      content: 'You are on the rug, building a tall block tower.\n\n'
           'DING DONG!\n\n'
           'A grown-up smiles a HUGE smile.\n\n'
           '"Guess who is here to see you?"\n\n'
@@ -6368,11 +5982,9 @@ const questBigHello = LifeQuestScenario(
         ),
       ],
     ),
-
     'bh_run': QuestSegment(
       id: 'bh_run',
-      content:
-          'You zoom! Little feet, fast as a bunny.\n\n'
+      content: 'You zoom! Little feet, fast as a bunny.\n\n'
           'The door opens — and there they are!\n\n'
           'Their arms open BIG and wide.\n\n'
           '"There you are, my love!"',
@@ -6389,11 +6001,9 @@ const questBigHello = LifeQuestScenario(
         ),
       ],
     ),
-
     'bh_peek': QuestSegment(
       id: 'bh_peek',
-      content:
-          'You peek one eye around the wall.\n\n'
+      content: 'You peek one eye around the wall.\n\n'
           'It IS them! The one you love so much.\n\n'
           'You feel SO excited you wiggle. '
           'Your toes wiggle. Your fingers wiggle.\n\n'
@@ -6412,11 +6022,9 @@ const questBigHello = LifeQuestScenario(
         ),
       ],
     ),
-
     'bh_hug': QuestSegment(
       id: 'bh_hug',
-      content:
-          'You squish right in. '
+      content: 'You squish right in. '
           'They smell just like you remember.\n\n'
           'Their hug is warm. Soft. Safe.\n\n'
           '"I missed you so much, {name}."\n\n'
@@ -6425,11 +6033,9 @@ const questBigHello = LifeQuestScenario(
           'And sunny feels GOOD.',
       isEnding: true,
     ),
-
     'bh_show': QuestSegment(
       id: 'bh_show',
-      content:
-          '"Come see! Come see!"\n\n'
+      content: '"Come see! Come see!"\n\n'
           'You take their hand and pull. They follow.\n\n'
           '"Whoa! Look at THAT tower!"\n\n'
           'You stack one more block on top together. '
@@ -6437,11 +6043,9 @@ const questBigHello = LifeQuestScenario(
           'Sharing happy makes happy bigger.',
       isEnding: true,
     ),
-
     'bh_breath': QuestSegment(
       id: 'bh_breath',
-      content:
-          'You take one big breath in...\n\n'
+      content: 'You take one big breath in...\n\n'
           'and let it out with a giggle.\n\n'
           'Your wiggles slow down — '
           'just enough to walk to the door.\n\n'
@@ -6475,8 +6079,7 @@ const questGoodbyeHug = LifeQuestScenario(
   segments: {
     'gb_start': QuestSegment(
       id: 'gb_start',
-      content:
-          'It is morning. You are eating toast.\n\n'
+      content: 'It is morning. You are eating toast.\n\n'
           '{Grownup} puts on their shoes.\n\n'
           '"I have to go to work, sweet pea. '
           'I will be back at snack time."\n\n'
@@ -6496,11 +6099,9 @@ const questGoodbyeHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'gb_hold': QuestSegment(
       id: 'gb_hold',
-      content:
-          'Your arms wrap tight around their leg.\n\n'
+      content: 'Your arms wrap tight around their leg.\n\n'
           '"Don\'t go. Don\'t go."\n\n'
           'They kneel down to your level.\n\n'
           '"I see your big sad, {name}. '
@@ -6519,11 +6120,9 @@ const questGoodbyeHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'gb_words': QuestSegment(
       id: 'gb_words',
-      content:
-          'You take a wobbly breath in.\n\n'
+      content: 'You take a wobbly breath in.\n\n'
           '"I don\'t want you to go. '
           'My tummy feels sad."\n\n'
           'They put their hand on your heart.\n\n'
@@ -6543,11 +6142,9 @@ const questGoodbyeHug = LifeQuestScenario(
         ),
       ],
     ),
-
     'gb_hug': QuestSegment(
       id: 'gb_hug',
-      content:
-          'You squeeze them with your biggest squeeze.\n\n'
+      content: 'You squeeze them with your biggest squeeze.\n\n'
           'They squeeze back. Squish, squish.\n\n'
           '"That is a snack-time hug. '
           'It will keep us both warm until I get home."\n\n'
@@ -6555,11 +6152,9 @@ const questGoodbyeHug = LifeQuestScenario(
           'But your heart feels held.',
       isEnding: true,
     ),
-
     'gb_breath': QuestSegment(
       id: 'gb_breath',
-      content:
-          'You put one hand on your tummy.\n\n'
+      content: 'You put one hand on your tummy.\n\n'
           'In through your nose... '
           'out through your mouth.\n\n'
           'The tight in your chest gets a little softer.\n\n'
@@ -6569,11 +6164,9 @@ const questGoodbyeHug = LifeQuestScenario(
           'It is just here for now.',
       isEnding: true,
     ),
-
     'gb_kiss': QuestSegment(
       id: 'gb_kiss',
-      content:
-          'Smooch! On the cheek.\n\n'
+      content: 'Smooch! On the cheek.\n\n'
           'Smooch! On their cheek.\n\n'
           '"One for the morning, '
           'one for snack time."\n\n'
@@ -6582,11 +6175,9 @@ const questGoodbyeHug = LifeQuestScenario(
           'And missing means love is real.',
       isEnding: true,
     ),
-
     'gb_wave': QuestSegment(
       id: 'gb_wave',
-      content:
-          'You stand at the window.\n\n'
+      content: 'You stand at the window.\n\n'
           'They turn back and wave. Big wave. '
           'You wave bigger.\n\n'
           'They blow a kiss. You catch it. '
@@ -6619,8 +6210,7 @@ const questBigNo = LifeQuestScenario(
   segments: {
     'bn_start': QuestSegment(
       id: 'bn_start',
-      content:
-          'You see the cookies on the counter.\n\n'
+      content: 'You see the cookies on the counter.\n\n'
           '"Cookie, please?"\n\n'
           '{Grownup} shakes their head.\n\n'
           '"Not before lunch, love."\n\n'
@@ -6642,11 +6232,9 @@ const questBigNo = LifeQuestScenario(
         ),
       ],
     ),
-
     'bn_stomp': QuestSegment(
       id: 'bn_stomp',
-      content:
-          'STOMP STOMP STOMP!\n\n'
+      content: 'STOMP STOMP STOMP!\n\n'
           'Your feet go thump on the floor.\n\n'
           '{Grownup} sits down on the rug.\n\n'
           '"I see your big mad. '
@@ -6665,11 +6253,9 @@ const questBigNo = LifeQuestScenario(
         ),
       ],
     ),
-
     'bn_roar': QuestSegment(
       id: 'bn_roar',
-      content:
-          'You take a big lion breath in.\n\n'
+      content: 'You take a big lion breath in.\n\n'
           'ROOOOAAAARRR!\n\n'
           'The hot in your face starts to come out '
           'with the sound.\n\n'
@@ -6692,11 +6278,9 @@ const questBigNo = LifeQuestScenario(
         ),
       ],
     ),
-
     'bn_smaller': QuestSegment(
       id: 'bn_smaller',
-      content:
-          'Stomp. Stomp. Stomp.\n\n'
+      content: 'Stomp. Stomp. Stomp.\n\n'
           'Each stomp is a little softer.\n\n'
           'Soon your feet just want to walk.\n\n'
           'You sit down next to {grownup}.\n\n'
@@ -6705,11 +6289,9 @@ const questBigNo = LifeQuestScenario(
           'Mad lions get tired too.',
       isEnding: true,
     ),
-
     'bn_when': QuestSegment(
       id: 'bn_when',
-      content:
-          '"When CAN I have a cookie?"\n\n'
+      content: '"When CAN I have a cookie?"\n\n'
           '"After lunch. So in a little bit."\n\n'
           '"Pinky promise?"\n\n'
           '"Pinky promise."\n\n'
@@ -6718,11 +6300,9 @@ const questBigNo = LifeQuestScenario(
           'And mad turned into a question.',
       isEnding: true,
     ),
-
     'bn_pick': QuestSegment(
       id: 'bn_pick',
-      content:
-          'You look in the snack bowl.\n\n'
+      content: 'You look in the snack bowl.\n\n'
           'Apple? Cracker? Cheese?\n\n'
           'You pick the cheese. '
           'Crunch, crunch.\n\n'
@@ -6757,8 +6337,7 @@ const questFirstHi = LifeQuestScenario(
   segments: {
     'fh_start': QuestSegment(
       id: 'fh_start',
-      content:
-          'It is your cousin\'s birthday party.\n\n'
+      content: 'It is your cousin\'s birthday party.\n\n'
           'You walk in. So many people!\n\n'
           'Big people you don\'t know. '
           'Little people you don\'t know.\n\n'
@@ -6778,11 +6357,9 @@ const questFirstHi = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_close': QuestSegment(
       id: 'fh_close',
-      content:
-          'Your hand fits inside theirs.\n\n'
+      content: 'Your hand fits inside theirs.\n\n'
           'They squeeze. You squeeze back.\n\n'
           '"You can stay right here as long as you need to," '
           'they whisper.\n\n'
@@ -6802,11 +6379,9 @@ const questFirstHi = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_peek': QuestSegment(
       id: 'fh_peek',
-      content:
-          'One eye. Then two eyes.\n\n'
+      content: 'One eye. Then two eyes.\n\n'
           'You see a kid with a juice box. '
           'A kid with a balloon. '
           'A kid in a bunny shirt.\n\n'
@@ -6827,11 +6402,9 @@ const questFirstHi = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_wave': QuestSegment(
       id: 'fh_wave',
-      content:
-          'Your fingers wiggle. The tiniest wave.\n\n'
+      content: 'Your fingers wiggle. The tiniest wave.\n\n'
           'A kid waves back. With their whole hand.\n\n'
           '"I have a balloon!"\n\n'
           'You take one step closer. '
@@ -6840,11 +6413,9 @@ const questFirstHi = LifeQuestScenario(
           'Brave is one little step at a time.',
       isEnding: true,
     ),
-
     'fh_tuck': QuestSegment(
       id: 'fh_tuck',
-      content:
-          'You tuck in close. '
+      content: 'You tuck in close. '
           'Your grown-up holds you steady.\n\n'
           '"Watching is okay too. '
           'You don\'t have to play yet."\n\n'
@@ -6853,11 +6424,9 @@ const questFirstHi = LifeQuestScenario(
           'And until then — being here is enough.',
       isEnding: true,
     ),
-
     'fh_smile': QuestSegment(
       id: 'fh_smile',
-      content:
-          'Your mouth tips up at the corners. '
+      content: 'Your mouth tips up at the corners. '
           'A small smile.\n\n'
           'The bunny-shirt kid smiles bigger. '
           'They walk over.\n\n'
@@ -6867,11 +6436,9 @@ const questFirstHi = LifeQuestScenario(
           'Sometimes one smile is the whole hi.',
       isEnding: true,
     ),
-
     'fh_star': QuestSegment(
       id: 'fh_star',
-      content:
-          'You trace a star on your palm. '
+      content: 'You trace a star on your palm. '
           'Up. Across. Down. Across. Up.\n\n'
           'In through your nose, out through your mouth.\n\n'
           'Your mouse heart goes from fast to soft.\n\n'
@@ -6908,8 +6475,7 @@ const questWarmHeart = LifeQuestScenario(
   segments: {
     'wh_start': QuestSegment(
       id: 'wh_start',
-      content:
-          'DING DONG.\n\n'
+      content: 'DING DONG.\n\n'
           'The mail brought a package!\n\n'
           '{Grownup} reads the tag.\n\n'
           '"Look — it has YOUR name on it. '
@@ -6934,11 +6500,9 @@ const questWarmHeart = LifeQuestScenario(
         ),
       ],
     ),
-
     'wh_call': QuestSegment(
       id: 'wh_call',
-      content:
-          '{Grownup} holds the phone for you.\n\n'
+      content: '{Grownup} holds the phone for you.\n\n'
           'RING. RING.\n\n'
           '"Hi sweet pea!"\n\n'
           'Your voice gets a little wobbly with happy.\n\n'
@@ -6957,11 +6521,9 @@ const questWarmHeart = LifeQuestScenario(
         ),
       ],
     ),
-
     'wh_draw': QuestSegment(
       id: 'wh_draw',
-      content:
-          'You get the crayons.\n\n'
+      content: 'You get the crayons.\n\n'
           'Red. Yellow. Pink.\n\n'
           'You draw a heart. '
           'You draw the sun. '
@@ -6982,11 +6544,9 @@ const questWarmHeart = LifeQuestScenario(
         ),
       ],
     ),
-
     'wh_specific': QuestSegment(
       id: 'wh_specific',
-      content:
-          '"I love the fluffy puff on top. '
+      content: '"I love the fluffy puff on top. '
           'And it smells like home."\n\n'
           'They go quiet for a moment. '
           'You can hear them breathe in soft.\n\n'
@@ -6996,11 +6556,9 @@ const questWarmHeart = LifeQuestScenario(
           'It tells someone you really saw their love.',
       isEnding: true,
     ),
-
     'wh_breath': QuestSegment(
       id: 'wh_breath',
-      content:
-          '"Want to take a hot cocoa breath with me?"\n\n'
+      content: '"Want to take a hot cocoa breath with me?"\n\n'
           'Smell the cocoa... '
           'cool it down...\n\n'
           'Smell the cocoa... '
@@ -7011,11 +6569,9 @@ const questWarmHeart = LifeQuestScenario(
           'That is the magic of a thank-you breath.',
       isEnding: true,
     ),
-
     'wh_sign': QuestSegment(
       id: 'wh_sign',
-      content:
-          'You hold the crayon tight.\n\n'
+      content: 'You hold the crayon tight.\n\n'
           'You write your name. '
           'The letters wobble like jelly.\n\n'
           'But it is YOUR name. '
@@ -7026,11 +6582,9 @@ const questWarmHeart = LifeQuestScenario(
           'and their chest will get warm too, {name}.',
       isEnding: true,
     ),
-
     'wh_sparkle': QuestSegment(
       id: 'wh_sparkle',
-      content:
-          'Sparkle, sparkle, sparkle!\n\n'
+      content: 'Sparkle, sparkle, sparkle!\n\n'
           'Glitter goes everywhere. '
           'On the paper. On your fingers. '
           'A tiny bit on the floor.\n\n'
@@ -7064,8 +6618,7 @@ const questSiblingShine = LifeQuestScenario(
   segments: {
     'ss_start': QuestSegment(
       id: 'ss_start',
-      content:
-          'Your little sister just learned to ride her bike.\n\n'
+      content: 'Your little sister just learned to ride her bike.\n\n'
           'One grown-up is clapping. Another is filming on a phone. Grandma calls and '
           'wants to hear the story three times.\n\n'
           'You learned to ride your bike a long time ago. You learned to ride '
@@ -7087,11 +6640,9 @@ const questSiblingShine = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_storm': QuestSegment(
       id: 'ss_storm',
-      content:
-          'You stomp inside. The door makes a big noise behind you.\n\n'
+      content: 'You stomp inside. The door makes a big noise behind you.\n\n'
           'You sit on your bed. Your eyes are hot.\n\n'
           'After a few minutes, your grown-up knocks.\n\n'
           '"Hey, kiddo. Can I come in?"\n\n'
@@ -7112,11 +6663,9 @@ const questSiblingShine = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_say': QuestSegment(
       id: 'ss_say',
-      content:
-          'You take a big breath.\n\n'
+      content: 'You take a big breath.\n\n'
           '"Hey?" you say. "I feel kind of left out."\n\n'
           'Your grown-up looks up. Right at you. Like the whole bike thing got paused.\n\n'
           '"Oh, honey. Tell me more."\n\n'
@@ -7134,11 +6683,9 @@ const questSiblingShine = LifeQuestScenario(
         ),
       ],
     ),
-
     'ss_hug': QuestSegment(
       id: 'ss_hug',
-      content:
-          'You nod. Your grown-up wraps their arms around you.\n\n'
+      content: 'You nod. Your grown-up wraps their arms around you.\n\n'
           'You don\'t say anything for a while. You don\'t have to.\n\n'
           'Then they say, "You know what? You learned to ride with no hands. '
           'Want to show me again? Just us?"\n\n'
@@ -7146,11 +6693,9 @@ const questSiblingShine = LifeQuestScenario(
           'For now, the hug is enough.',
       isEnding: true,
     ),
-
     'ss_words': QuestSegment(
       id: 'ss_words',
-      content:
-          '"Why is everyone only excited about her?" you ask.\n\n'
+      content: '"Why is everyone only excited about her?" you ask.\n\n'
           'Your grown-up is quiet for a moment.\n\n'
           '"Today is her big day," they say. "Tomorrow could be yours. '
           'And last summer was yours, when you went no hands. Remember? '
@@ -7159,11 +6704,9 @@ const questSiblingShine = LifeQuestScenario(
           'There\'s enough room. You just couldn\'t see it for a minute.',
       isEnding: true,
     ),
-
     'ss_seen': QuestSegment(
       id: 'ss_seen',
-      content:
-          '"I wanted you to see me too," you say.\n\n'
+      content: '"I wanted you to see me too," you say.\n\n'
           'Your voice wobbles a little. That\'s okay.\n\n'
           'Your grown-up nods slowly. "I see you. I always see you. Sometimes the noise '
           'gets loud and you can\'t tell — but I do."\n\n'
@@ -7172,11 +6715,9 @@ const questSiblingShine = LifeQuestScenario(
           'Especially the wobbly ones.',
       isEnding: true,
     ),
-
     'ss_shrug': QuestSegment(
       id: 'ss_shrug',
-      content:
-          'You shrug. You\'re not sure what else to say.\n\n'
+      content: 'You shrug. You\'re not sure what else to say.\n\n'
           'Your grown-up waits. Then they just sit with you.\n\n'
           '"Thanks for telling me," they say. "That took courage."\n\n'
           'You didn\'t fix anything. You didn\'t say much.\n\n'
@@ -7205,8 +6746,7 @@ const questLostPet = LifeQuestScenario(
   segments: {
     'lp_start': QuestSegment(
       id: 'lp_start',
-      content:
-          'You whistle the special whistle.\n\n'
+      content: 'You whistle the special whistle.\n\n'
           'The one that always makes Pepper come running.\n\n'
           'Nothing.\n\n'
           'You whistle again. Louder.\n\n'
@@ -7228,7 +6768,6 @@ const questLostPet = LifeQuestScenario(
         ),
       ],
     ),
-
     'lp_tell': QuestSegment(
       id: 'lp_tell',
       content:
@@ -7249,7 +6788,6 @@ const questLostPet = LifeQuestScenario(
         ),
       ],
     ),
-
     'lp_hunt': QuestSegment(
       id: 'lp_hunt',
       content:
@@ -7272,11 +6810,9 @@ const questLostPet = LifeQuestScenario(
         ),
       ],
     ),
-
     'lp_clue': QuestSegment(
       id: 'lp_clue',
-      content:
-          'You take a slow breath. "I think... right after breakfast. '
+      content: 'You take a slow breath. "I think... right after breakfast. '
           'When the gate was open for the trash."\n\n'
           'Your grown-up nods. "Good remembering."\n\n'
           'Together you walk down the sidewalk, calling Pepper\'s name.\n\n'
@@ -7286,11 +6822,9 @@ const questLostPet = LifeQuestScenario(
           'Asking for help made everything okay again.',
       isEnding: true,
     ),
-
     'lp_cry': QuestSegment(
       id: 'lp_cry',
-      content:
-          'Tears spill over. "I — I — I can\'t remember!"\n\n'
+      content: 'Tears spill over. "I — I — I can\'t remember!"\n\n'
           'Your grown-up kneels down. "Hey. Hey. It\'s okay to cry. We\'re going to find '
           'Pepper. You don\'t have to be perfect to help."\n\n'
           'They hand you a tissue. You both walk outside together.\n\n'
@@ -7300,11 +6834,9 @@ const questLostPet = LifeQuestScenario(
           'You just had to tell someone.',
       isEnding: true,
     ),
-
     'lp_help': QuestSegment(
       id: 'lp_help',
-      content:
-          'You stop. You wipe your eyes.\n\n'
+      content: 'You stop. You wipe your eyes.\n\n'
           '"HELP!" you call. "Come help!"\n\n'
           'Your grown-up is there in seconds. "What\'s wrong?"\n\n'
           '"Pepper. I can\'t find Pepper."\n\n'
@@ -7314,11 +6846,9 @@ const questLostPet = LifeQuestScenario(
           'Your bravest move was knowing when to ask.',
       isEnding: true,
     ),
-
     'lp_front': QuestSegment(
       id: 'lp_front',
-      content:
-          'You jog around to the front yard.\n\n'
+      content: 'You jog around to the front yard.\n\n'
           'Pepper is on the front step.\n\n'
           'Just sitting there. Like, "Where have YOU been?"\n\n'
           'You drop down and bury your face in Pepper\'s fur.\n\n'
@@ -7338,19 +6868,18 @@ const questLostPet = LifeQuestScenario(
 const questMissingGrownup = LifeQuestScenario(
   id: 'missing_grownup',
   title: 'Three Sleeps Until',
-  hook: 'One of your grown-ups is away for a few days. The house feels different.',
+  hook:
+      'One of your grown-ups is away for a few days. The house feels different.',
   emoji: '🏠',
   emotions: ['sad', 'lonely', 'worried'],
   recommendedBands: [AgeBand.explorer],
   startSegmentId: 'mg_start',
-  grownupTip:
-      "Ask: 'Who do you miss the most when they\\'re far away? "
+  grownupTip: "Ask: 'Who do you miss the most when they\\'re far away? "
       "What helps the missing feeling get smaller?'",
   segments: {
     'mg_start': QuestSegment(
       id: 'mg_start',
-      content:
-          'One of your grown-ups is away for work. Three more sleeps.\n\n'
+      content: 'One of your grown-ups is away for work. Three more sleeps.\n\n'
           'You knew it was happening. You helped them pack. You waved at the '
           'window when the taxi pulled away.\n\n'
           'But now it\'s the second night. And the house sounds different. '
@@ -7372,7 +6901,6 @@ const questMissingGrownup = LifeQuestScenario(
         ),
       ],
     ),
-
     'mg_hide': QuestSegment(
       id: 'mg_hide',
       content:
@@ -7396,11 +6924,9 @@ const questMissingGrownup = LifeQuestScenario(
         ),
       ],
     ),
-
     'mg_share': QuestSegment(
       id: 'mg_share',
-      content:
-          'You pad into the living room. Your grown-up looks up.\n\n'
+      content: 'You pad into the living room. Your grown-up looks up.\n\n'
           '"I miss them," you say. Your voice is small.\n\n'
           'They pat the spot next to them. "Yeah. Me too."\n\n'
           'You didn\'t know grown-ups missed people like that. You thought maybe '
@@ -7409,7 +6935,8 @@ const questMissingGrownup = LifeQuestScenario(
       choices: [
         QuestChoice(
           id: 'mg_c3a',
-          text: "Ask for a story about your other grown-up when they were little",
+          text:
+              "Ask for a story about your other grown-up when they were little",
           nextSegmentId: 'mg_story',
         ),
         QuestChoice(
@@ -7419,11 +6946,9 @@ const questMissingGrownup = LifeQuestScenario(
         ),
       ],
     ),
-
     'mg_couch': QuestSegment(
       id: 'mg_couch',
-      content:
-          'You shuffle out and flop on the couch.\n\n'
+      content: 'You shuffle out and flop on the couch.\n\n'
           'Your grown-up doesn\'t make you talk. They just share their blanket.\n\n'
           'After a while, you say, "I miss them."\n\n'
           'Your grown-up nods. "I know, kiddo. Me too. Two more sleeps."\n\n'
@@ -7431,7 +6956,6 @@ const questMissingGrownup = LifeQuestScenario(
           'Two isn\'t very many. Two is doable.',
       isEnding: true,
     ),
-
     'mg_call': QuestSegment(
       id: 'mg_call',
       content:
@@ -7445,11 +6969,9 @@ const questMissingGrownup = LifeQuestScenario(
           'And their voice helps a lot.',
       isEnding: true,
     ),
-
     'mg_story': QuestSegment(
       id: 'mg_story',
-      content:
-          '"Tell me a story about when they were little," you say.\n\n'
+      content: '"Tell me a story about when they were little," you say.\n\n'
           'Your grown-up lights up. "Ohhh, I have GOOD ones."\n\n'
           'They tell you about the time the other grown-up climbed a tree and got stuck. '
           'About their first dog. About the song they used to make up about '
@@ -7459,7 +6981,6 @@ const questMissingGrownup = LifeQuestScenario(
           'Stories are a kind of magic for missing.',
       isEnding: true,
     ),
-
     'mg_quiet': QuestSegment(
       id: 'mg_quiet',
       content:
@@ -7488,14 +7009,12 @@ const questFirstHardThing = LifeQuestScenario(
   emotions: ['frustrated', 'embarrassed', 'angry', 'sad'],
   recommendedBands: [AgeBand.explorer],
   startSegmentId: 'fh_start',
-  grownupTip:
-      "Ask: 'Tell me about a time something was hard at first. "
+  grownupTip: "Ask: 'Tell me about a time something was hard at first. "
       "What made you keep trying — or what helped you take a break?'",
   segments: {
     'fh_start': QuestSegment(
       id: 'fh_start',
-      content:
-          'You\'re trying to ride a skateboard for the first time.\n\n'
+      content: 'You\'re trying to ride a skateboard for the first time.\n\n'
           'You step on. You tip. You fall.\n\n'
           'You step on. You tip. You fall.\n\n'
           'Your knee stings. Your hands are red. There\'s a tiny crowd of kids '
@@ -7518,11 +7037,9 @@ const questFirstHardThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_quit': QuestSegment(
       id: 'fh_quit',
-      content:
-          'You shove the skateboard. It clatters across the pavement.\n\n'
+      content: 'You shove the skateboard. It clatters across the pavement.\n\n'
           'You walk away with your fists tight.\n\n'
           'Half a block later, you stop. Your chest feels heavy.\n\n'
           'You\'re not less mad. You\'re just farther from your skateboard.\n\n'
@@ -7542,11 +7059,9 @@ const questFirstHardThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_pause': QuestSegment(
       id: 'fh_pause',
-      content:
-          'You sit on the curb. Your skateboard sits next to you.\n\n'
+      content: 'You sit on the curb. Your skateboard sits next to you.\n\n'
           'You take a big breath in. A long breath out.\n\n'
           'Another one.\n\n'
           'You watch a leaf skitter across the parking lot.\n\n'
@@ -7566,11 +7081,9 @@ const questFirstHardThing = LifeQuestScenario(
         ),
       ],
     ),
-
     'fh_back': QuestSegment(
       id: 'fh_back',
-      content:
-          'You turn around and walk back.\n\n'
+      content: 'You turn around and walk back.\n\n'
           'The skateboard is right where you threw it. Nobody is laughing. '
           'Nobody actually noticed.\n\n'
           'You pick it up. You don\'t step on it. You just hold it.\n\n'
@@ -7578,7 +7091,6 @@ const questFirstHardThing = LifeQuestScenario(
           'And that counts. Coming back to pick it up — that\'s the brave part.',
       isEnding: true,
     ),
-
     'fh_tomorrow': QuestSegment(
       id: 'fh_tomorrow',
       content:
@@ -7591,11 +7103,9 @@ const questFirstHardThing = LifeQuestScenario(
           'Tomorrow is a new try.',
       isEnding: true,
     ),
-
     'fh_one_more': QuestSegment(
       id: 'fh_one_more',
-      content:
-          'You stand up. You step on the skateboard.\n\n'
+      content: 'You stand up. You step on the skateboard.\n\n'
           'You push — just one push. You wobble.\n\n'
           'You DON\'T fall.\n\n'
           'You roll about three feet and step off.\n\n'
@@ -7605,11 +7115,9 @@ const questFirstHardThing = LifeQuestScenario(
           'is one breath and one more try.',
       isEnding: true,
     ),
-
     'fh_enough': QuestSegment(
       id: 'fh_enough',
-      content:
-          'You stand up. You tuck the skateboard under your arm.\n\n'
+      content: 'You stand up. You tuck the skateboard under your arm.\n\n'
           '"Today was a try," you say to yourself.\n\n'
           'You walk home. You don\'t feel great. You don\'t feel bad either. '
           'You feel like a kid who tried something hard and stopped before '
@@ -7646,8 +7154,7 @@ const questPickASide = LifeQuestScenario(
     'pas_start': QuestSegment(
       id: 'pas_start',
       copingBreakId: 'belly_breath',
-      content:
-          'Maya and Jordan have been your two best friends since forever. '
+      content: 'Maya and Jordan have been your two best friends since forever. '
           'Yesterday they had a huge fight — nobody will say exactly about '
           'what — and today the whole group feels like a tightrope.\n\n'
           'At your locker, Maya leans in. "You\'re on my side, right? Don\'t '
@@ -7679,8 +7186,7 @@ const questPickASide = LifeQuestScenario(
     ),
     'pas_picked': QuestSegment(
       id: 'pas_picked',
-      content:
-          'You nod at Maya. "Okay. I\'m with you."\n\n'
+      content: 'You nod at Maya. "Okay. I\'m with you."\n\n'
           'It buys you about ten seconds of feeling safe. Then you see '
           'Jordan\'s face when you walk past their table without stopping. '
           'You did that. Not because you decided Jordan was wrong — you '
@@ -7705,8 +7211,7 @@ const questPickASide = LifeQuestScenario(
     ),
     'pas_pause': QuestSegment(
       id: 'pas_pause',
-      content:
-          '"I need a minute," you say. "I\'m not going to decide who I am '
+      content: '"I need a minute," you say. "I\'m not going to decide who I am '
           'in the hallway."\n\n'
           'Maya blinks — she wasn\'t expecting that. But the tightness in '
           'your chest loosens a notch, because you just did the thing that\'s '
@@ -7723,15 +7228,15 @@ const questPickASide = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'pas_c3b',
-          text: 'Ask a teacher or older sibling how to handle being in the middle',
+          text:
+              'Ask a teacher or older sibling how to handle being in the middle',
           nextSegmentId: 'pas_reach',
         ),
       ],
     ),
     'pas_neither': QuestSegment(
       id: 'pas_neither',
-      content:
-          '"I\'m not going to freeze anybody out," you say. "I\'m friends '
+      content: '"I\'m not going to freeze anybody out," you say. "I\'m friends '
           'with both of you. If that\'s not allowed, that\'s not on me."\n\n'
           'It is genuinely scary to say. For a second Maya looks like she '
           'might be mad. Then — maybe not today, maybe not all the way — '
@@ -7745,8 +7250,7 @@ const questPickASide = LifeQuestScenario(
     ),
     'pas_reach': QuestSegment(
       id: 'pas_reach',
-      content:
-          'You catch your older cousin after school and lay it out. They '
+      content: 'You catch your older cousin after school and lay it out. They '
           'don\'t laugh at you. "Being the rope in a tug-of-war is the worst," '
           'they say. "You don\'t have to hold either end. Tell them both the '
           'same thing: you like them, you\'re not refereeing."\n\n'
@@ -7773,8 +7277,7 @@ const questPickASide = LifeQuestScenario(
     ),
     'pas_drift': QuestSegment(
       id: 'pas_drift',
-      content:
-          'You leave it. The group stays split for a while. Some days you '
+      content: 'You leave it. The group stays split for a while. Some days you '
           'catch yourself wishing you\'d said something when it mattered.\n\n'
           'Here\'s the thing to keep: when someone pressures you to decide '
           'who you are RIGHT NOW, you\'re allowed to pause. You\'re allowed '
@@ -7835,8 +7338,7 @@ const questTheDare = LifeQuestScenario(
     ),
     'dare_in': QuestSegment(
       id: 'dare_in',
-      content:
-          'You take one step toward the door. The hinge creaks. Down the '
+      content: 'You take one step toward the door. The hinge creaks. Down the '
           'hall, a custodian\'s cart rattles — getting closer.\n\n'
           'Suddenly the dare isn\'t a game; it\'s a choice with a price tag, '
           'and the price is yours alone. Tyler dared you, but Tyler won\'t '
@@ -7882,8 +7384,7 @@ const questTheDare = LifeQuestScenario(
     ),
     'dare_walk': QuestSegment(
       id: 'dare_walk',
-      content:
-          '"Nah, I\'m good," you say, and you start walking before the '
+      content: '"Nah, I\'m good," you say, and you start walking before the '
           'argument can start.\n\n'
           'Someone calls you boring. It stings for about a block. Then it '
           'doesn\'t, because boring fades and getting hauled into the office '
@@ -7896,8 +7397,7 @@ const questTheDare = LifeQuestScenario(
     ),
     'dare_lead': QuestSegment(
       id: 'dare_lead',
-      content:
-          '"I gotta go," you say, easy, like it\'s no big thing. "You '
+      content: '"I gotta go," you say, easy, like it\'s no big thing. "You '
           'coming?" You hold the exit open instead of making a speech.\n\n'
           'Two of them peel off with you — turns out they didn\'t want to '
           'either; they were just waiting for someone to go first. That\'s '
@@ -7938,7 +7438,8 @@ const questTheDare = LifeQuestScenario(
 const questTheOffer = LifeQuestScenario(
   id: 'the_offer',
   title: 'The Offer',
-  hook: 'An older kid offers you something. Everyone\'s watching to see what you do.',
+  hook:
+      'An older kid offers you something. Everyone\'s watching to see what you do.',
   emoji: '\u{1F6D1}',
   emotions: ['worried', 'embarrassed', 'frustrated'],
   recommendedBands: [AgeBand.adventurer, AgeBand.creator],
@@ -7988,8 +7489,7 @@ const questTheOffer = LifeQuestScenario(
     ),
     'off_pause': QuestSegment(
       id: 'off_pause',
-      content:
-          'You don\'t say yes and you don\'t say no yet. You just don\'t '
+      content: 'You don\'t say yes and you don\'t say no yet. You just don\'t '
           'reach for it. A pause is a real move — it takes the speed away '
           'from the pressure.\n\n'
           'In that breath you check the only questions that matter: Is this '
@@ -8135,8 +7635,7 @@ const questRideHome = LifeQuestScenario(
     ),
     'ride_getin': QuestSegment(
       id: 'ride_getin',
-      content:
-          'Your hand goes to the door because you don\'t want to make it '
+      content: 'Your hand goes to the door because you don\'t want to make it '
           'weird. Then you stop.\n\n'
           'Not making it weird is not worth being unsafe. You are allowed to '
           'say no to a ride — even with a grown-up, even one you love. That '
@@ -8157,8 +7656,7 @@ const questRideHome = LifeQuestScenario(
     ),
     'ride_pause': QuestSegment(
       id: 'ride_pause',
-      content:
-          'You keep your feet on the pavement and your hand off the door. '
+      content: 'You keep your feet on the pavement and your hand off the door. '
           '"I, um — I forgot something inside," you say. It buys you a '
           'minute, and a minute is enough.\n\n'
           'You run the check: Is this safe? No. Is this mine to fix? No. '
@@ -8180,8 +7678,7 @@ const questRideHome = LifeQuestScenario(
     ),
     'ride_reach': QuestSegment(
       id: 'ride_reach',
-      content:
-          'You get to a trusted grown-up — a coach, a teacher, or another '
+      content: 'You get to a trusted grown-up — a coach, a teacher, or another '
           'family member on the phone — and you say it plainly: "My ride '
           'isn\'t safe to drive right now. I need help getting home."\n\n'
           'Nobody is angry at you. They help. That\'s what trusted grown-ups '
@@ -8217,8 +7714,7 @@ const questSecretWeight = LifeQuestScenario(
     'sec_start': QuestSegment(
       id: 'sec_start',
       copingBreakId: 'star_breath',
-      content:
-          'A grown-up you know leaned in close and said it quiet: "Don\'t '
+      content: 'A grown-up you know leaned in close and said it quiet: "Don\'t '
           'tell anyone about this. Especially not your parents. It\'s our '
           'secret, okay?"\n\n'
           'You can\'t even say exactly what\'s wrong. You just know the '
@@ -8244,8 +7740,7 @@ const questSecretWeight = LifeQuestScenario(
     ),
     'sec_keep': QuestSegment(
       id: 'sec_keep',
-      content:
-          'You try to just carry it. But heavy secrets don\'t get lighter '
+      content: 'You try to just carry it. But heavy secrets don\'t get lighter '
           'when you hold them alone — they get heavier. You\'re quieter at '
           'dinner. You can\'t sleep right.\n\n'
           'Here\'s the rule grown-ups don\'t always tell you: you are '
@@ -8281,8 +7776,7 @@ const questSecretWeight = LifeQuestScenario(
     ),
     'sec_reach': QuestSegment(
       id: 'sec_reach',
-      content:
-          'You find a grown-up you trust — a parent, a teacher, a school '
+      content: 'You find a grown-up you trust — a parent, a teacher, a school '
           'counselor — and you start with the hardest sentence: "Someone '
           'told me to keep a secret, and it doesn\'t feel okay."\n\n'
           'They don\'t get mad. They\'re glad you told them. The stone in '
@@ -8353,7 +7847,8 @@ const questOuchThatHurt = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'oth_c1b',
-          text: 'Breathe, then say "Ouch! That really hurt — please be more careful."',
+          text:
+              'Breathe, then say "Ouch! That really hurt — please be more careful."',
           nextSegmentId: 'oth_words',
         ),
         QuestChoice(
@@ -8363,7 +7858,6 @@ const questOuchThatHurt = LifeQuestScenario(
         ),
       ],
     ),
-
     'oth_push': QuestSegment(
       id: 'oth_push',
       content:
@@ -8393,7 +7887,6 @@ const questOuchThatHurt = LifeQuestScenario(
         ),
       ],
     ),
-
     'oth_words': QuestSegment(
       id: 'oth_words',
       content:
@@ -8414,7 +7907,6 @@ const questOuchThatHurt = LifeQuestScenario(
           'inside. Just two kids, back to kicking a ball around.',
       isEnding: true,
     ),
-
     'oth_silent': QuestSegment(
       id: 'oth_silent',
       content:
@@ -8434,11 +7926,9 @@ const questOuchThatHurt = LifeQuestScenario(
           '— because nobody ever said what actually happened.',
       isEnding: true,
     ),
-
     'oth_repair': QuestSegment(
       id: 'oth_repair',
-      content:
-          'At the end of recess, you find your friend by the fence. Your '
+      content: 'At the end of recess, you find your friend by the fence. Your '
           'face is still a little hot, but the shove-mad has burned off.\n\n'
           '"Hey," you say. "I shouldn\'t have pushed you. But that kick '
           'really hurt, and it scared me for a second."\n\n'
@@ -8453,11 +7943,9 @@ const questOuchThatHurt = LifeQuestScenario(
           'sorted.',
       isEnding: true,
     ),
-
     'oth_stay_mad': QuestSegment(
       id: 'oth_stay_mad',
-      content:
-          'You cross your arms and stare at the ground. Your friend tries '
+      content: 'You cross your arms and stare at the ground. Your friend tries '
           'once more — "Come on, it was an accident" — and when you don\'t '
           'answer, they give up and walk off.\n\n'
           'For the rest of the day, you replay it: the sting of the ball, '
@@ -8496,8 +7984,7 @@ const questLastCookie = LifeQuestScenario(
     'lc_start': QuestSegment(
       id: 'lc_start',
       copingBreakId: 'star_breath',
-      content:
-          'Dinner\'s over, dishes are drying, and there\'s exactly one '
+      content: 'Dinner\'s over, dishes are drying, and there\'s exactly one '
           'cookie left on the plate. Chocolate chip. The good kind, still a '
           'little warm.\n\n'
           'You spot it at the same second your little brother does. Both of '
@@ -8528,11 +8015,9 @@ const questLastCookie = LifeQuestScenario(
         ),
       ],
     ),
-
     'lc_grab': QuestSegment(
       id: 'lc_grab',
-      content:
-          'You turn away and take a giant bite before he can say another '
+      content: 'You turn away and take a giant bite before he can say another '
           'word.\n\n'
           'His face crumples instantly. "That\'s not FAIR!" he wails, loud '
           'enough that footsteps start coming from the kitchen. You still '
@@ -8553,7 +8038,6 @@ const questLastCookie = LifeQuestScenario(
         ),
       ],
     ),
-
     'lc_split': QuestSegment(
       id: 'lc_split',
       content:
@@ -8570,11 +8054,9 @@ const questLastCookie = LifeQuestScenario(
           'smiles.',
       isEnding: true,
     ),
-
     'lc_mom': QuestSegment(
       id: 'lc_mom',
-      content:
-          '"MOOOM! He\'s trying to take the cookie!" you shout toward the '
+      content: '"MOOOM! He\'s trying to take the cookie!" you shout toward the '
           'kitchen.\n\n'
           'Mom comes in, tired in the specific way of someone who has '
           'refereed this exact fight before. She looks at the cookie, looks '
@@ -8588,11 +8070,9 @@ const questLastCookie = LifeQuestScenario(
           'didn\'t get to be the one who thought of it.',
       isEnding: true,
     ),
-
     'lc_makeup': QuestSegment(
       id: 'lc_makeup',
-      content:
-          '"Hey," you say, crouching down. "I shouldn\'t have grabbed it '
+      content: '"Hey," you say, crouching down. "I shouldn\'t have grabbed it '
           'all. Tomorrow you get first pick of snack, promise."\n\n'
           'He sniffles, considers it. "...The good granola bars?"\n\n'
           '"The good granola bars," you agree.\n\n'
@@ -8605,11 +8085,9 @@ const questLastCookie = LifeQuestScenario(
           'goes back to the dishes.',
       isEnding: true,
     ),
-
     'lc_dismiss': QuestSegment(
       id: 'lc_dismiss',
-      content:
-          '"He\'s just being a baby," you mutter, licking chocolate off '
+      content: '"He\'s just being a baby," you mutter, licking chocolate off '
           'your fingers.\n\n'
           'Mom\'s eyebrows go up. "He wanted a cookie too. That\'s not '
           'being a baby, that\'s wanting a cookie." She doesn\'t make you '
@@ -8646,8 +8124,7 @@ const questMarbleRun = LifeQuestScenario(
     'mr_start': QuestSegment(
       id: 'mr_start',
       copingBreakId: 'belly_breath',
-      content:
-          'For the science fair, you and your partner Sam are building a '
+      content: 'For the science fair, you and your partner Sam are building a '
           'marble run — the marble has to travel from a chair-top all the '
           'way to the floor, and the judges want to see it do something '
           'interesting on the way down.\n\n'
@@ -8671,7 +8148,8 @@ const questMarbleRun = LifeQuestScenario(
         ),
         QuestChoice(
           id: 'mr_c1b',
-          text: 'Try the steps your teacher taught: listen, find common ground, combine ideas',
+          text:
+              'Try the steps your teacher taught: listen, find common ground, combine ideas',
           nextSegmentId: 'mr_steps',
         ),
         QuestChoice(
@@ -8681,11 +8159,9 @@ const questMarbleRun = LifeQuestScenario(
         ),
       ],
     ),
-
     'mr_ignore': QuestSegment(
       id: 'mr_ignore',
-      content:
-          'You grab the tubes and start taping loops together without '
+      content: 'You grab the tubes and start taping loops together without '
           'waiting for Sam to agree.\n\n'
           'Sam watches for a minute, arms crossed, then wanders off to sit '
           'on the other side of the table, doing nothing. By the time '
@@ -8710,11 +8186,9 @@ const questMarbleRun = LifeQuestScenario(
         ),
       ],
     ),
-
     'mr_steps': QuestSegment(
       id: 'mr_steps',
-      content:
-          '"Wait," you say. "Let\'s do the steps. First we each say our '
+      content: '"Wait," you say. "Let\'s do the steps. First we each say our '
           'idea, no interrupting."\n\n'
           'Sam nods, surprised you suggested it. You go first: loops, '
           'because they look impressive rolling across the table at the '
@@ -8734,11 +8208,9 @@ const questMarbleRun = LifeQuestScenario(
         ),
       ],
     ),
-
     'mr_combine': QuestSegment(
       id: 'mr_combine',
-      content:
-          '"What if," Sam says slowly, "we do ONE loop — just one, so it '
+      content: '"What if," Sam says slowly, "we do ONE loop — just one, so it '
           'doesn\'t jam — and then the marble drops into your fast ramp '
           'for the ending?"\n\n'
           'You think about it. One loop is less impressive than three, but '
@@ -8757,11 +8229,9 @@ const questMarbleRun = LifeQuestScenario(
           'original ideas would have been alone.',
       isEnding: true,
     ),
-
     'mr_giveup': QuestSegment(
       id: 'mr_giveup',
-      content:
-          '"I don\'t think we can agree on anything," you tell the '
+      content: '"I don\'t think we can agree on anything," you tell the '
           'teacher. "Can I just work alone, or with someone else?"\n\n'
           'The teacher raises an eyebrow. "You\'ve got one afternoon. New '
           'partners means starting from zero. Are you sure?"\n\n'
@@ -8776,11 +8246,9 @@ const questMarbleRun = LifeQuestScenario(
           'stuck with.',
       isEnding: true,
     ),
-
     'mr_late_listen': QuestSegment(
       id: 'mr_late_listen',
-      content:
-          'You put down the tape. "Okay — what were you thinking? For '
+      content: 'You put down the tape. "Okay — what were you thinking? For '
           'real, tell me."\n\n'
           'Sam blinks, like they weren\'t expecting to actually be asked. '
           'Then they explain the fast-ramp idea properly — how it avoids '
@@ -8795,11 +8263,9 @@ const questMarbleRun = LifeQuestScenario(
           'before the bell.',
       isEnding: true,
     ),
-
     'mr_solo_mess': QuestSegment(
       id: 'mr_solo_mess',
-      content:
-          'You keep building with what you\'ve got, taping and re-taping, '
+      content: 'You keep building with what you\'ve got, taping and re-taping, '
           'trying to make three loops out of tube pieces meant for two. It '
           'kind of works. Kind of.\n\n'
           'At the fair, the marble makes it through the first loop fine, '
@@ -8839,8 +8305,7 @@ const questLoudMusic = LifeQuestScenario(
     'lm_start': QuestSegment(
       id: 'lm_start',
       copingBreakId: 'volcano_breath',
-      content:
-          'You\'re halfway through your homework when the music starts — '
+      content: 'You\'re halfway through your homework when the music starts — '
           'loud, thumping, coming right through the wall from your '
           'sibling\'s room.\n\n'
           'You read the same math problem four times without it going in. '
@@ -8854,12 +8319,14 @@ const questLoudMusic = LifeQuestScenario(
       choices: [
         QuestChoice(
           id: 'lm_c1a',
-          text: 'Bang on the wall and yell "TURN IT DOWN, YOU\'RE SO ANNOYING!"',
+          text:
+              'Bang on the wall and yell "TURN IT DOWN, YOU\'RE SO ANNOYING!"',
           nextSegmentId: 'lm_yell',
         ),
         QuestChoice(
           id: 'lm_c1b',
-          text: 'Go say "I feel frustrated when the music\'s this loud, because I can\'t focus on my homework."',
+          text:
+              'Go say "I feel frustrated when the music\'s this loud, because I can\'t focus on my homework."',
           nextSegmentId: 'lm_istatement',
         ),
         QuestChoice(
@@ -8869,11 +8336,9 @@ const questLoudMusic = LifeQuestScenario(
         ),
       ],
     ),
-
     'lm_yell': QuestSegment(
       id: 'lm_yell',
-      content:
-          'You pound the wall. "TURN IT DOWN! YOU\'RE SO ANNOYING!"\n\n'
+      content: 'You pound the wall. "TURN IT DOWN! YOU\'RE SO ANNOYING!"\n\n'
           'The music doesn\'t stop — it gets louder, and now there\'s '
           'yelling back through the wall too. "YOU\'RE annoying! Stop '
           'banging!"\n\n'
@@ -8896,11 +8361,9 @@ const questLoudMusic = LifeQuestScenario(
         ),
       ],
     ),
-
     'lm_istatement': QuestSegment(
       id: 'lm_istatement',
-      content:
-          'You get up, knock on the door, and wait for the music to dip '
+      content: 'You get up, knock on the door, and wait for the music to dip '
           'enough to be heard.\n\n'
           '"I feel frustrated when the music is this loud," you say, '
           '"because I can\'t concentrate on my homework."\n\n'
@@ -8915,7 +8378,6 @@ const questLoudMusic = LifeQuestScenario(
           'You finish the math problem on the first try this time.',
       isEnding: true,
     ),
-
     'lm_stew': QuestSegment(
       id: 'lm_stew',
       content:
@@ -8934,11 +8396,9 @@ const questLoudMusic = LifeQuestScenario(
           'say something out loud.',
       isEnding: true,
     ),
-
     'lm_recover': QuestSegment(
       id: 'lm_recover',
-      content:
-          'Once your mom sends everyone to separate corners for a minute, '
+      content: 'Once your mom sends everyone to separate corners for a minute, '
           'you knock on your sibling\'s door again — quieter this time.\n\n'
           '"Sorry I yelled," you say. "The real thing is, I feel really '
           'frustrated when it\'s that loud, because I can\'t focus on my '
@@ -8952,11 +8412,9 @@ const questLoudMusic = LifeQuestScenario(
           'comes down, and so does everything else.',
       isEnding: true,
     ),
-
     'lm_shutdown': QuestSegment(
       id: 'lm_shutdown',
-      content:
-          'You slam your door and shove your homework into your backpack, '
+      content: 'You slam your door and shove your homework into your backpack, '
           'unfinished. Let it be a problem for tomorrow-you.\n\n'
           'The music is still going, muffled now behind two closed doors. '
           'You lie on your bed, still annoyed, and the homework sits there '

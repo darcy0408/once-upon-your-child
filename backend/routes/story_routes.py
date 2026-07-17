@@ -16,7 +16,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from ..celery_config import celery
 from ..database import db
-from ..gemini_image_generator import GeminiImageGenerator
 from ..middleware.auth import require_auth, require_parental_consent
 from ..models import Character, ParentHiddenContext
 from ..models.story import Story
@@ -787,11 +786,6 @@ def create_story_blueprint(
     logger,
 ):
     story_bp = Blueprint("story", __name__)
-    disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-    )
     sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "120"))
 
     @story_bp.route("/generate-story", methods=["POST"])
@@ -2388,8 +2382,6 @@ def create_story_blueprint(
             therapeutic_focus = (
                 sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             )
-            user_api_key = data.get("user_api_key")  # BYOK support
-
             # MT-107: Optional power_id triggers per-power visual signature in
             # the prompt (e.g., feeling_sense → empathy halo, invisibility →
             # wisp-edged silhouette). Frontend may send either key.
@@ -2427,7 +2419,6 @@ def create_story_blueprint(
                     "meadow with friendly animals"
                 )
 
-            # Use user's API key if provided, otherwise use the hybrid pipeline.
             # Per-page illustration routing (cost reduction, 2026-05-17):
             #   - All ages (incl. Sprout <=5): Flux Schnell primary, Gemini-
             #     via-OpenRouter fallback when Flux returns empty — so a child
@@ -2436,13 +2427,10 @@ def create_story_blueprint(
             # MT-131: "Flux" = Cloudflare Workers AI flux-1-schnell first ($0
             # at current scale), Replicate Flux Schnell second — see
             # _generate_flux_illustration.
-            # BYOK users always use their own Gemini key regardless of age.
-            # Every non-BYOK page is metered against the monthly illustration
-            # quota (Sprout uses a separate, generous cap — see ai_quota.py);
-            # a cache hit on a re-read serves the stored image and does NOT
+            # Every page is metered against the monthly illustration quota
+            # (Sprout uses a separate, generous cap — see ai_quota.py); a
+            # cache hit on a re-read serves the stored image and does NOT
             # consume quota.
-            generator = None
-            using_user_key = False
             using_flux_schnell = False
             served_from_cache = False
             current_user = getattr(request, "current_user", None)
@@ -2452,25 +2440,17 @@ def create_story_blueprint(
             # Sprout band (age <=5) uses the generous Sprout illustration cap.
             is_sprout = age <= 5
 
-            if user_api_key and not disable_gemini_image:
-                generator = GeminiImageGenerator(api_key=user_api_key)
-                using_user_key = True
-            elif user_api_key and disable_gemini_image:
-                logger.info(
-                    "DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations."
-                )
-
             illustrations = []
             quota_exhausted = False
             quota_used = 0
             quota_limit = 0
 
-            # Persistent cache lookup (non-BYOK only). A story re-read produces
-            # identical inputs → identical key → a hit returns the stored image
+            # Persistent cache lookup. A story re-read produces identical
+            # inputs → identical key → a hit returns the stored image
             # without billing a provider and without consuming quota. The cache
             # layer degrades open: any DB fault behaves as a miss.
             cache_key = None
-            if generator is None and num_images == 1:
+            if num_images == 1:
                 compute_cache_key = load_first_available(
                     [
                         (
@@ -2536,20 +2516,6 @@ def create_story_blueprint(
 
             if served_from_cache:
                 pass  # cache supplied `illustrations`; skip provider + quota.
-            elif generator is not None:
-                # BYOK path — direct Gemini with the user's key.
-                # BYOK is not server-cost-metered (user pays Google).
-                illustrations = generator.generate_story_illustration(
-                    scene_description=scene_description,
-                    character_name=safe_name,
-                    style=style,
-                    num_images=num_images,
-                    age=age,
-                    therapeutic_focus=therapeutic_focus,
-                    character_appearance=character_appearance,
-                    companions=companions,
-                    power_id=power_id,
-                )
             else:
                 # 2026-07-07 pricing decision: free tier gets exactly ONE
                 # fully-illustrated story (the "wow" story) — everything
@@ -2558,9 +2524,7 @@ def create_story_blueprint(
                 # cannot bypass it. Runs BEFORE the monthly illustration
                 # quota check below, which still applies as a backstop (e.g.
                 # if a tier downgrade or admin action leaves stale state).
-                # Premium/family/BYOK are unaffected — BYOK never reaches
-                # this branch at all (see the `generator is not None` arm
-                # above); premium/family are excluded by the tier check.
+                # Premium/family are unaffected — excluded by the tier check.
                 if current_user_id:
                     user_tier_for_gate = (
                         (getattr(current_user, "subscription_tier", "free") or "free")
@@ -2729,7 +2693,7 @@ def create_story_blueprint(
                         {
                             "illustrations": [],
                             "count": 0,
-                            "used_user_key": using_user_key,
+                            "used_user_key": False,
                             "message": "Illustration generation is temporarily unavailable due to API quota limits. Your story is ready, but illustrations couldn't be generated at this time.",
                             "hint": "Try again later or contact support to increase your quota.",
                         }
@@ -2852,13 +2816,12 @@ def create_story_blueprint(
                 transformed_illustrations = illustrations  # Fallback to original
 
             # Persist a freshly generated image so a re-read is free. Skipped
-            # for BYOK (user pays Google) and for a cache hit (already stored).
-            # Only single-image requests are cached — the key identifies one
-            # image. The cache layer never raises.
+            # for a cache hit (already stored). Only single-image requests are
+            # cached — the key identifies one image. The cache layer never
+            # raises.
             if (
                 cache_key
                 and not served_from_cache
-                and not using_user_key
                 and len(transformed_illustrations) == 1
             ):
                 first = transformed_illustrations[0]
@@ -2892,12 +2855,10 @@ def create_story_blueprint(
                         user_id=current_user_id,
                     )
 
-            # Increment monthly quota for ALL non-BYOK ages (Sprout included).
+            # Increment monthly quota for ALL ages (Sprout included).
             # A cache hit (served_from_cache) is excluded — a re-read is free.
-            # BYOK is excluded — the user pays Google directly.
             if (
                 len(transformed_illustrations) > 0
-                and not using_user_key
                 and not served_from_cache
                 and current_user_id
             ):
@@ -2920,20 +2881,18 @@ def create_story_blueprint(
                     len(transformed_illustrations),
                 )
 
-            _meter_in_response = not using_user_key and not served_from_cache
+            _meter_in_response = not served_from_cache
             return (
                 jsonify(
                     {
                         "illustrations": transformed_illustrations,
                         "count": len(transformed_illustrations),
-                        "used_user_key": using_user_key,
+                        "used_user_key": False,
                         "cached": served_from_cache,
                         "provider": (
                             "flux_schnell"
                             if using_flux_schnell
-                            else (
-                                "gemini_byok" if using_user_key else "gemini_openrouter"
-                            )
+                            else "gemini_openrouter"
                         ),
                         "quota_used": (
                             quota_used + len(transformed_illustrations)
@@ -3026,8 +2985,6 @@ def create_story_blueprint(
             therapeutic_focus = (
                 sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             )
-            user_api_key = data.get("user_api_key")
-
             # Get character appearance/avatar details
             character_appearance = data.get("character_appearance") or data.get(
                 "appearance"
@@ -3036,28 +2993,8 @@ def create_story_blueprint(
             # Get companions (could be magical companions, pets, or friends)
             companions = data.get("companions") or data.get("companion_pets") or []
 
-            generator = None
-            if user_api_key and not disable_gemini_image:
-                try:
-                    generator = GeminiImageGenerator(api_key=user_api_key)
-                except Exception as e:
-                    logger.exception("Failed to init user-provided image generator")
-                    return (
-                        jsonify(
-                            {
-                                "error": "Invalid or unavailable image API key",
-                                "hint": str(e),
-                            }
-                        ),
-                        400,
-                    )
-            elif user_api_key and disable_gemini_image:
-                logger.info(
-                    "DISABLE_GEMINI_IMAGE active; ignoring user_api_key for coloring pages."
-                )
-            elif image_generator is not None:
-                generator = image_generator
-            else:
+            generator = image_generator
+            if generator is None:
                 return (
                     jsonify(
                         {

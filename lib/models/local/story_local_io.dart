@@ -38,9 +38,10 @@ class StoryLocal {
   String? length; // short, medium, long
 
   // Persisted illustrations so a re-opened story shows its pictures without
-  // regenerating them (regeneration needs a BYOK key and costs money/time).
+  // regenerating them (regeneration costs server money/time).
   String? coverImageBase64; // base64 of the cover illustration bytes
-  String? pageIllustrationsJson; // JSON array of base64 strings, indexed by page
+  String?
+      pageIllustrationsJson; // JSON array of base64 strings, indexed by page
 
   // PDF export (premium keepsake feature): the true page-by-page split used
   // when this story was displayed/saved. Without this a re-opened story only
@@ -68,15 +69,16 @@ class StoryLocal {
           : DateTime.now()
       ..isInteractive = json['isInteractive'] ?? json['is_interactive'] ?? false
       ..isRhyming = json['isRhyming'] ?? json['is_rhyming'] ?? false
-      ..isLearningToRead = json['isLearningToRead'] ?? json['is_learning_to_read'] ?? false
+      ..isLearningToRead =
+          json['isLearningToRead'] ?? json['is_learning_to_read'] ?? false
       ..wisdomGem = json['wisdomGem'] ?? json['wisdom_gem']
       ..charactersJson = _encodeCharactersFromJson(json['characters'])
-      ..coverImageBase64 = json['coverImageBase64'] ?? json['cover_image_base64']
+      ..coverImageBase64 =
+          json['coverImageBase64'] ?? json['cover_image_base64']
       ..pageIllustrationsJson =
           json['pageIllustrationsJson'] ?? json['page_illustrations_json']
-      ..pagesJson = _encodePagesFromJson(json['pagesJson'] ??
-          json['pages_json'] ??
-          json['pages'])
+      ..pagesJson = _encodePagesFromJson(
+          json['pagesJson'] ?? json['pages_json'] ?? json['pages'])
       ..practiced = json['practiced'] ?? json['practiced_focus']
       ..isSyncedToServer = true;
   }
@@ -153,7 +155,9 @@ class StoryLocal {
     try {
       if (raw is String) return raw.isEmpty ? null : raw;
       if (raw is List) {
-        return raw.isEmpty ? null : jsonEncode(raw.map((e) => e.toString()).toList());
+        return raw.isEmpty
+            ? null
+            : jsonEncode(raw.map((e) => e.toString()).toList());
       }
     } catch (_) {
       return null;

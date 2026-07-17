@@ -1,6 +1,6 @@
 # Story Weaver App - Project Status
 
-**Last Updated:** 2026-07-13
+**Last Updated:** 2026-07-15
 
 > Customer-facing brand is **"Once Upon YOUR Child, powered by Story Weaver"** — "Story Weaver" is the technical/platform name. The business now operates through an **LLC** (formed 2026-06-21).
 
@@ -27,7 +27,7 @@ Backlog: ~**80 open / 180+ done** manual tasks (`docs/MANUAL_TASKS.md`) — the 
 | Backups | External `pg_dump` → Cloudflare R2 (verified restorable, RTO ~2s) + `restore-drill.yml` |
 | TTS | **Azure AI Speech** (primary, real-time/no-retention) → Edge → on-device flutter_tts; ElevenLabs 13+ only; child-voice STT deleted |
 | Monitoring | Sentry crash reporting (Developer plan; `beforeSend` PII scrub) |
-| Payments | Stripe — single Premium $9.99/mo / $59.99/yr (pricing decision 2026-07-07, PRs #395/#398); free = 5 stories/mo + 1 illustrated; Family + BYOK tiers dormant/hidden (BYOK direction = MT-358) |
+| Payments | Stripe — single Premium $9.99/mo / $59.99/yr (pricing decision 2026-07-07, PRs #395/#398); free = 5 stories/mo + 1 illustrated; Family tier dormant/hidden; BYOK sunset 2026-07-15 (MT-358 decision (a)) |
 
 ## Completed Features
 
@@ -84,16 +84,16 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 - Sprout scene-tile taps auto-advance the wizard (was leaving kids stuck on the picker)
 - Auto-save on story-result landing for ages ≤ 5 (no manual heart tap)
 - Chronicles "Your Stories" section at top for Sprout characters; age-aware empty-state copy
-- Cover-image height bumped 55 % → 68 %; BoxFit.cover; BYOK users bypass illustration paywall
+- Cover-image height bumped 55 % → 68 %; BoxFit.cover
 - Pick-a-Path AppBar progress bar hidden during session-break screen
 - TTS warm-up queue reordered to cache Sprout avatar prompts and colour names first (was failing to robotic flutter_tts fallback when child outran the prewarm)
 - Wizard back-nav: tapping prior progress dots from MagicReviewStep now animates back to HeroCreatorStep at the correct sub-step
 
 ### Monetization & Tiers (Phase 6)
 - Stripe checkout + webhooks wired (Phase 1 monetization); customer-portal redirect (Stripe-hosted until frontend has portal routes)
-- Tiers: Free / Adventurer / **Family** (6 slots, adult relatives, rotating hero) / BYOK
-- Free-tier illustration cap with upsell UI; BYOK users bypass the illustration paywall
-- Image-gen cost routing: Flux Schnell for non-BYOK; OpenRouter Gemini Image priced per-image (~$0.0375/img)
+- Tiers: Free / Premium (Family — 6 slots, adult relatives, rotating hero — dormant; BYOK sunset 2026-07-15, MT-358)
+- Free-tier illustration cap with upsell UI
+- Image-gen cost routing: Flux Schnell primary; OpenRouter Gemini Image fallback priced per-image (~$0.0375/img)
 - AI quota circuit breaker + fail-closed illustration-quota cost breaker on Redis outage
 
 ### Reader & Reading Experience (Phase 6)
@@ -111,10 +111,7 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 - **MT-158 parent sensitivity interstitial** — per-quest sensitivity metadata + a parent-facing interstitial before sensitive Life Quests (F-08/F-16)
 
 ### Infrastructure
-- BYOK (Bring Your Own Key) setup wizard with secure storage, "free" copy lead-in
-  - Validation no longer crashes on empty-candidate Gemini responses (`models.list()` health check instead of `generate_content`)
-  - Text field readability fix (dark text on cream card)
-  - StoryResultScreen converted to ConsumerStatefulWidget so `useOwnApiKey` is reactive (was frozen at construction)
+- ~~BYOK (Bring Your Own Key) setup wizard~~ — **removed 2026-07-15** (MT-358 sunset: no OpenAI free tier to ride, competed with the single Premium tier, and was the last user-facing Gemini child-data path)
 - Offline caching via Isar (web: `SharedPreferences`-backed stub of the same query API)
 - Story-generation Gemini key rotation: `GOOGLE_API_KEY_2/3/4` rotate on `ResourceExhausted`
 - Image-generation key rotation in `GeminiImageGenerator` (pet avatars + future paths)

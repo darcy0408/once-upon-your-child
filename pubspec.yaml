@@ -47,7 +47,6 @@ dependencies:
   camera: ^0.12.0            # Snapshot photos for custom avatars
   image_picker: ^1.1.2       # Pick images from gallery
   riverpod_annotation: ^2.6.1
-  google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
   firebase_core: ^4.6.0
   firebase_analytics: ^12.2.0
   sentry_flutter: ^9.16.0    # Crash reporting and error monitoring

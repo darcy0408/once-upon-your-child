@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:story_weaver_app/services/secure_storage_service.dart';
 import 'package:story_weaver_app/settings_screen.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
@@ -104,7 +103,8 @@ class _MockHttpClientResponse extends Fake implements HttpClientResponse {
 
   bool get _isAnthropicApi {
     final host = url?.host ?? '';
-    return host.contains('anthropic.com') || (url?.path ?? '').contains('/messages');
+    return host.contains('anthropic.com') ||
+        (url?.path ?? '').contains('/messages');
   }
 
   @override
@@ -139,7 +139,9 @@ class _MockHttpClientResponse extends Fake implements HttpClientResponse {
   StreamSubscription<List<int>> listen(void Function(List<int> event)? onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
     final body = _isAnthropicApi
-        ? jsonEncode({'error': {'message': 'Malformed key'}})
+        ? jsonEncode({
+            'error': {'message': 'Malformed key'}
+          })
         : '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>';
     return Stream.value(utf8.encode(body)).listen(onData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
@@ -181,12 +183,12 @@ void main() {
     await pumpSettingsScreen(tester);
 
     expect(find.text('Dark Mode'), findsOneWidget);
-    final darkModeTile = tester
-        .widget<SwitchListTile>(find.widgetWithText(SwitchListTile, 'Dark Mode'));
+    final darkModeTile = tester.widget<SwitchListTile>(
+        find.widgetWithText(SwitchListTile, 'Dark Mode'));
     darkModeTile.onChanged?.call(true);
     await tester.pump(const Duration(milliseconds: 500));
-    final secondDarkModeTile = tester
-        .widget<SwitchListTile>(find.widgetWithText(SwitchListTile, 'Dark Mode'));
+    final secondDarkModeTile = tester.widget<SwitchListTile>(
+        find.widgetWithText(SwitchListTile, 'Dark Mode'));
     secondDarkModeTile.onChanged?.call(true);
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -194,18 +196,12 @@ void main() {
     expect(prefs.getString('theme_mode'), 'dark');
   });
 
-  testWidgets('enabling own key reveals reading and validation controls',
-      (tester) async {
+  testWidgets('premium subscription card is shown', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     await pumpSettingsScreen(tester);
 
-    await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Gemini API Key'), findsOneWidget);
-    expect(find.text('Validate & Save'), findsOneWidget);
-    expect(find.text('How do I get an API key?'), findsOneWidget);
+    expect(find.text('Premium Subscription'), findsOneWidget);
   });
 
   testWidgets('account/legal settings open privacy policy screen',
@@ -219,54 +215,5 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Privacy Policy'), findsWidgets);
-  });
-
-  testWidgets('subscription-style benefits are shown for BYOK users',
-      (tester) async {
-    setLargeScreen(tester);
-    addTearDown(tester.view.resetPhysicalSize);
-    await pumpSettingsScreen(tester);
-
-    await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Benefits'), findsOneWidget);
-    expect(find.textContaining('No subscription needed'), findsOneWidget);
-  });
-
-  testWidgets('clear API key flow removes stored key', (tester) async {
-    setLargeScreen(tester);
-    addTearDown(tester.view.resetPhysicalSize);
-    SharedPreferences.setMockInitialValues({'use_own_api_key': true});
-    await SecureStorageService.saveApiKey('gemini', 'AIza-test-key');
-
-    await pumpSettingsScreen(tester);
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Gemini API Key'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.clear));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    await tester.tap(find.text('Clear'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    final saved = await SecureStorageService.getApiKey('gemini');
-    expect(saved, isNull);
-    expect(find.text('API key cleared'), findsOneWidget);
-  });
-
-  testWidgets('validates empty API key', (tester) async {
-    setLargeScreen(tester);
-    addTearDown(tester.view.resetPhysicalSize);
-    await pumpSettingsScreen(tester);
-
-    await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    await tester.enterText(find.byType(TextField), '   ');
-    await tester.tap(find.text('Validate & Save'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('Please enter an API key'), findsOneWidget);
   });
 }
