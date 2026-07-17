@@ -1,5 +1,6 @@
 # Railway Multi-Service Configuration for Story Weaver App
-# This configuration deploys both backend (Flask/Python) and frontend (Flutter/nginx)
+# Deploys the backend (Flask/Python), Celery worker, and Celery beat scheduler.
+# The frontend runs on Cloudflare Pages, not Railway (see note at bottom).
 
 # Default deployment settings (don't set global healthcheck - only for web services)
 [deploy]
@@ -74,18 +75,9 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 # beat needs the broker URL to enqueue scheduled tasks
 # CELERY_BROKER_URL = "${{Redis.REDIS_URL}}"
 # CELERY_RESULT_BACKEND = "${{Redis.REDIS_URL}}"
-
-# Frontend Service (Flutter Web + nginx)
-[[services]]
-name = "frontend"
-dockerfile = "Dockerfile.frontend"
-buildCommand = "flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
-
-[services.healthcheck]
-path = "/"
-interval = 30
-timeout = 10
-
-[services.env]
-# Frontend will communicate with backend via internal Railway networking
-BACKEND_URL = "${{backend.RAILWAY_PRIVATE_DOMAIN}}"
+# Frontend is NOT a Railway service. The Flutter web app is built in CI and
+# deployed to Cloudflare Pages (project `once-upon-your-child`, custom domains
+# onceuponyourchild.app + www). The old Railway `frontend`/grand-light service
+# and its Dockerfile.frontend/nginx.conf were decommissioned 2026-07-16 after
+# the DNS cutover soaked. CSP/headers now live in web/_headers (see cicd.yml
+# deploy-production). MT-205.

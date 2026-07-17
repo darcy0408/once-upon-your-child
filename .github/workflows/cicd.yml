@@ -175,7 +175,8 @@ jobs:
         # FLAVOR=production is REQUIRED: without it FlavorConfig defaults to the
         # development flavor whose backend is http://127.0.0.1:5000, so every
         # backend call (incl. story generation) hits the user's localhost and
-        # fails. Mirror the Railway Dockerfile.frontend defines. (MT-204)
+        # fails. This is now the sole authoritative frontend build (the Railway
+        # Dockerfile.frontend it used to mirror was removed with grand-light). (MT-204)
         run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
 
       - name: Upload build artifacts
@@ -201,9 +202,9 @@ jobs:
   #        CLOUDFLARE_ACCOUNT_ID — your Cloudflare account ID
   #   3. In the Pages project, add the custom domain onceuponyourchild.app and
   #      cut DNS over once a deploy is verified.
-  # The web/_headers file (ported from nginx.conf) and web/_redirects SPA
-  # fallback are copied into build/web by `flutter build web`, so the CSP and
-  # routing carry over automatically.
+  # The web/_headers file (the canonical CSP/security-header source) and
+  # web/_redirects SPA fallback are copied into build/web by `flutter build
+  # web`, so the CSP and routing carry over automatically.
   deploy-production:
     runs-on: ubuntu-latest
     needs: [build-frontend, backend-test]
