@@ -65,7 +65,7 @@ python -m backend.app
 
 **Command:**
 ```bash
-celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
+celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4
 ```
 
 **Configuration:**
@@ -86,7 +86,7 @@ celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
 
    **Service 2: Worker**
    - Build command: `pip install -r requirements.txt`
-   - Start command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=solo`
+   - Start command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4`
    - Share same environment variables (or reference from web service)
 
 2. **Add Redis** plugin/service to your project
@@ -104,7 +104,7 @@ celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
 2. **Create Background Worker**:
    - Environment: Python 3
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=solo`
+   - Start Command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4`
    - Share environment variables with web service
 
 3. **Add Redis** from Render's add-ons or use external Redis provider
@@ -126,7 +126,7 @@ celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
 3. **Configure Procfile**:
    ```
    web: python -m backend.app
-   worker: celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
+   worker: celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4
    ```
 
 4. **Scale worker dyno**:
