@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from backend.services.prompt_service import PromptService
 from backend.services.word_ranges import get_word_range
 from backend.tasks.story_tasks import (
@@ -1001,3 +1003,31 @@ class TestAdolescentSuperheroPromptLengthVillainSecretHardening:
         )
         assert "THE VILLAIN ON-PAGE" not in adventurer_prompt
         assert "SECRET ON-PAGE" not in adventurer_prompt
+
+
+class TestAgeGuidelinesAlignedToWordRanges:
+    """Chunk-7b: the generic age-guidelines length line derives from the
+    canonical word_ranges contract instead of its own drifted table (which
+    had inverted: 9-12 was told 900-1800 words while 13-15 got 'MAX 600')."""
+
+    @pytest.mark.parametrize("age", [4, 7, 10, 14, 17, 30])
+    def test_length_line_matches_canonical_medium_range(self, age):
+        spec = get_word_range(age, mode="standard", story_length="medium")
+        guidelines = PromptService._get_age_guidelines(age)
+        assert f"{spec.target_min}-{spec.target_max} words" in guidelines
+        assert str(spec.cap) in guidelines
+
+    def test_length_targets_increase_with_age(self):
+        import re
+
+        def target_min(age):
+            g = PromptService._get_age_guidelines(age)
+            m = re.search(r"aim for (\d+)-(\d+) words", g)
+            assert m, f"no length line in guidelines for age {age}"
+            return int(m.group(1))
+
+        mins = [target_min(a) for a in (4, 7, 10, 14, 17)]
+        assert mins == sorted(mins), f"length targets not monotonic: {mins}"
+        # The specific historical inversion: teens must not be told to write
+        # LESS than 9-12 readers get.
+        assert target_min(14) > target_min(10)

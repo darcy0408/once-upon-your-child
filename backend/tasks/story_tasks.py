@@ -920,6 +920,44 @@ def _post_process_sprout_pages(
 # be persisted as the child's story; the moderation stage below routes it into
 # the safe-fallback regeneration instead.
 _REFUSAL_SENTINEL = "wasn't able to create that story"
+
+# Chunk-7b: cap on how much of a failing draft the revision retry feeds back.
+# ~6k tokens of draft; anything longer only fails validation on grounds
+# (meta-leak / missing names) where the head of the draft carries the fix
+# context anyway. Prevents a pathological draft from doubling prompt cost.
+_REVISION_DRAFT_MAX_CHARS = 24_000
+
+
+def _build_revision_block(title: str | None, pages: list[str]) -> str:
+    """Frame the failing draft for a revision-style retry.
+
+    The validation loop used to retry with base_prompt + feedback only — a
+    from-scratch regeneration that discarded everything the draft already got
+    right and re-rolled the dice on every OTHER constraint. Feeding the draft
+    back and asking for a targeted fix keeps the passing 95% stable, converges
+    faster on the one failed check, and costs fewer output tokens than a
+    full rewrite (the model reuses its own prose).
+
+    Returns "" when there is no usable draft (extraction produced no pages) —
+    the caller falls back to the legacy from-scratch retry.
+    """
+    body = "\n\n".join(p for p in pages if p and p.strip()) if pages else ""
+    if not body.strip():
+        return ""
+    draft = (f"{title}\n\n" if title else "") + body
+    if len(draft) > _REVISION_DRAFT_MAX_CHARS:
+        draft = draft[:_REVISION_DRAFT_MAX_CHARS] + "\n[draft truncated]"
+    return (
+        "\n\nREVISION MODE (fix, don't restart): your previous draft is below. "
+        "Revise THAT draft to fix ONLY the problems listed after it, changing "
+        "as little else as possible — keep the plot, scenes, names, and voice "
+        "that already satisfy the rules above. Return the COMPLETE revised "
+        "story in the exact JSON format specified above, never a diff or "
+        "commentary.\n\n"
+        "PREVIOUS DRAFT (revise this):\n---\n" + draft + "\n---"
+    )
+
+
 # Detect existing cheer-beat ending so we don't double-append.
 _CHEER_BEAT_RE = re.compile(
     r"Everyone\s+cheered\.\s*[A-Z][\w'\- ]*?\s+saved\s+the\s+day!?",
@@ -1750,6 +1788,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             prompt_build_start = time.perf_counter()
 
+            # Chunk-7b: prior-adventures recall. None = not yet looked up; the
+            # STANDARD branch resolves it and hands it to the template (which
+            # renders it under the persona line); every other branch leaves it
+            # None so the legacy prepend below still applies.
+            prior_block: str | None = None
+            prior_block_prepend = ""
+
             # Superhero Mode (ages 3-5) short-circuit. Picks a sensible
             # (villain, problem) pair from the compatibility matrix, then
             # hands the 6-beat prompt to the same model pipeline. The
@@ -1917,7 +1962,15 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # Snippet") once the scrub has run.
                 logger.debug("Rhyme time prompt built (length: %d)", len(prompt))
             else:
-                # Standard enhanced prompt
+                # Standard enhanced prompt.
+                # Recall loop, chunk-7b placement: this character's prior
+                # themes / supporting cast render inside the template directly
+                # after the band-persona line (the register anchor) — the old
+                # post-hoc `prior_block + prompt` prepend put a data block in
+                # the highest-attention slot of the prompt, ahead of the
+                # persona. Anonymous + first-time characters get an empty
+                # block and the prompt is unchanged.
+                prior_block = _build_prior_adventures_block(character_id)
                 logger.info(
                     f"Using standard enhanced prompt (length: {story_length}, duration: {story_duration})"
                 )
@@ -1940,14 +1993,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_length=story_length,  # Legacy: Story length option
                     story_duration=story_duration,  # NEW: Duration-based generation
                     age=age,  # NEW: Pass age for calibration
+                    prior_adventures_block=prior_block,
                 )
-            # Recall loop: inject this character's prior themes / supporting cast so
-            # the model varies or builds on past adventures instead of looping the
-            # same plot. Anonymous + first-time characters get an empty block and
-            # the prompt is untouched. See _build_prior_adventures_block.
-            prior_block = _build_prior_adventures_block(character_id)
+                prior_block_prepend = ""
+            if prior_block is None:
+                # Specialised branches (superhero/bedtime/rhyme/LTR): their
+                # builders don't take the recall block, so it keeps the legacy
+                # prepend placement there.
+                prior_block = _build_prior_adventures_block(character_id)
+                prior_block_prepend = prior_block
+            if prior_block_prepend:
+                prompt = prior_block_prepend + prompt
             if prior_block:
-                prompt = prior_block + prompt
                 # WARNING level intentionally: prod root logger runs at WARNING
                 # (backend/app.py), so an INFO line here is invisible — leaving
                 # themes-recall with no production-observable signal.
@@ -2335,7 +2392,23 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 f"Return EXACTLY 8-12 pages. Split any dense page into two shorter ones. "
                                 f"Traditional picture-book pacing: one short scene per page, never more than 25 words per page."
                             )
-                        prompt = base_prompt + "".join(retry_notes)
+                        # Chunk-7b: revision-style retry — feed the failing
+                        # draft back and ask for a targeted fix instead of a
+                        # from-scratch regeneration (which discarded everything
+                        # the draft got right and re-rolled every other
+                        # constraint). Feedback still REPLACES rather than
+                        # accumulates: each retry is base + THIS attempt's
+                        # draft + THIS attempt's notes. Falls back to the
+                        # legacy from-scratch retry when extraction yielded no
+                        # usable pages to revise.
+                        revision_block = _build_revision_block(title, pages)
+                        prompt = base_prompt + revision_block + "".join(retry_notes)
+                        if revision_block:
+                            logger.info(
+                                "Retry %d will run as revision (draft_len=%d)",
+                                attempt + 1,
+                                len(revision_block),
+                            )
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
             validation_loop_ms = (time.perf_counter() - validation_loop_start) * 1000.0

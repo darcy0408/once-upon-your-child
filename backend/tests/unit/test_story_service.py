@@ -1588,3 +1588,74 @@ class TestTitleCasing:
         )
         assert "Use title case" in prompt
         assert "never render it in all lowercase" in prompt
+
+
+class TestPronounGuessGuard:
+    """Chunk-7b: with no gender/pronouns on file, the standard prompt must
+    forbid guessing gendered pronouns from the name."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    def test_guard_present_when_gender_absent(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Riley", theme="adventure", age=8
+        )
+        assert "gender was NOT provided" in prompt
+        assert "Never guess it from the name" in prompt
+        assert "they/them" in prompt
+
+    def test_guard_absent_when_gender_provided(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Riley",
+            theme="adventure",
+            age=8,
+            character_details={"gender": "Girl"},
+        )
+        assert "gender was NOT provided" not in prompt
+        assert "(Gender: Girl)" in prompt
+
+    def test_guard_absent_when_only_pronouns_provided(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Riley",
+            theme="adventure",
+            age=8,
+            character_details={"gender": "", "pronouns": "they/them"},
+        )
+        assert "gender was NOT provided" not in prompt
+
+
+class TestPriorAdventuresPlacement:
+    """Chunk-7b: the recall block renders directly under the band persona
+    line, never ahead of it (the old prepend put a data block in the
+    prompt's highest-attention slot)."""
+
+    @pytest.fixture
+    def engine(self):
+        return AdvancedStoryEngine()
+
+    def test_block_renders_after_persona_line(self, engine):
+        block = (
+            "\nPRIOR ADVENTURES (for this character): explored themes — "
+            "[dragons, courage].\n"
+        )
+        prompt = engine.generate_enhanced_prompt(
+            character="Ana",
+            theme="mystery",
+            age=10,
+            prior_adventures_block=block,
+        )
+        from backend.services.story_service import _get_band_persona
+
+        persona = _get_band_persona(10)
+        assert "PRIOR ADVENTURES" in prompt
+        assert prompt.index(persona) < prompt.index("PRIOR ADVENTURES")
+        assert prompt.index("PRIOR ADVENTURES") < prompt.index("You are creating")
+
+    def test_empty_block_leaves_prompt_shape_intact(self, engine):
+        prompt = engine.generate_enhanced_prompt(
+            character="Ana", theme="mystery", age=10
+        )
+        assert "PRIOR ADVENTURES" not in prompt
+        assert "You are creating" in prompt

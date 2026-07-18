@@ -507,3 +507,39 @@ class TestUnifiedValidationScenarios:
         # new one. It must carry exactly one, rebuilt on the base prompt.
         assert prompts[2].count("RETRY INSTRUCTION") == 1
         assert prompts[2].startswith(prompts[0])
+
+
+class TestRevisionRetryBlock:
+    """Chunk-7b: validation retries feed the failing draft back for a
+    targeted revision instead of a from-scratch regeneration."""
+
+    def test_block_contains_draft_and_revision_framing(self):
+        from backend.tasks.story_tasks import _build_revision_block
+
+        block = _build_revision_block(
+            "The Lost Star", ["Mira looked up.", "The star blinked twice."]
+        )
+        assert "REVISION MODE" in block
+        assert "PREVIOUS DRAFT" in block
+        assert "The Lost Star" in block
+        assert "The star blinked twice." in block
+        # Must demand the full story back, not a delta.
+        assert "COMPLETE revised story" in block
+
+    def test_no_pages_returns_empty_for_legacy_fallback(self):
+        from backend.tasks.story_tasks import _build_revision_block
+
+        assert _build_revision_block("Title", []) == ""
+        assert _build_revision_block(None, ["", "   "]) == ""
+
+    def test_oversized_draft_is_truncated(self):
+        from backend.tasks.story_tasks import (
+            _REVISION_DRAFT_MAX_CHARS,
+            _build_revision_block,
+        )
+
+        huge = ["x" * 10_000 for _ in range(5)]  # 50k chars of draft
+        block = _build_revision_block(None, huge)
+        assert "[draft truncated]" in block
+        # Framing text + capped draft only — nowhere near the raw 50k.
+        assert len(block) < _REVISION_DRAFT_MAX_CHARS + 1_000

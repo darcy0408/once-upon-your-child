@@ -1197,6 +1197,7 @@ class AdvancedStoryEngine:
         story_length: str = "standard",  # 'short', 'medium', 'long'
         story_duration: str | None = None,
         age: int = 5,
+        prior_adventures_block: str = "",
     ):
         # Validation
         age = validate_age(age)
@@ -1235,6 +1236,21 @@ class AdvancedStoryEngine:
         pronouns = char_details.get("pronouns", "")
         gender_text = (
             f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
+        )
+        # Chunk-7b: with no gender/pronouns on file the model infers them from
+        # the NAME ("Alex" -> he, "Riley" -> she) — a coin-flip that misgenders
+        # the child in their own story. Only fires when both fields are absent;
+        # a provided gender or pronouns wins unchanged.
+        _gender_known = bool(char_details.get("gender")) or bool(pronouns)
+        pronoun_guard = (
+            ""
+            if _gender_known
+            else (
+                f"\n- **PRONOUNS**: {character}'s gender was NOT provided. Never "
+                f"guess it from the name: refer to {character} by name, and where "
+                f"a pronoun is unavoidable use they/them for {character} — "
+                f"consistently, never he/him or she/her."
+            )
         )
 
         # Build companion context
@@ -1643,9 +1659,12 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
         opening_rule = _get_opening_rule(age)
         sensory_palette = sensory_palette or _pick_sensory_palette(age)
 
+        # Chunk-7b: the recall block renders directly under the persona line —
+        # story_tasks used to PREPEND it to the finished prompt, putting a data
+        # block ahead of the register anchor the persona is designed to be.
         return f"""
 {persona}
-
+{prior_adventures_block or ''}
 You are creating a {story_length} story for {character}{gender_text} (age {age}).
 
 **STORY SPECS**:
@@ -1667,7 +1686,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 {feelings_instruction}
 {virtue_instruction}{emotional_spine}{real_life_echo}
 **WRITING GUIDELINES**:
-{pov_rule}
+{pov_rule}{pronoun_guard}
 {opening_rule}
 {craft_rules}
 - **Tone**: {config['notes']}

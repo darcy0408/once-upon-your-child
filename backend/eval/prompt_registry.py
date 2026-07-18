@@ -89,7 +89,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="a1f09c9dde5bd974",
+        content_hash="7d1c1e0ed75fedca",
         source_file="backend/services/story_service.py",
         line_start=1268,
         line_end=1306,
@@ -109,7 +109,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="74c11e8b2eac9424",
+        content_hash="71974ff9585603cc",
         source_file="backend/services/story_service.py",
         line_start=1308,
         line_end=1354,
@@ -132,7 +132,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="c89a4b8b81d937a0",
+        content_hash="944200a4214f4825",
         source_file="backend/services/story_service.py",
         line_start=1510,
         line_end=1542,
@@ -162,7 +162,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="d7fb35f9ec3f135e",
+        content_hash="647c36b1ba7f0e5c",
         source_file="backend/services/story_service.py",
         line_start=1691,
         line_end=1753,
@@ -185,7 +185,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="57c35b19e372a2fc",
+        content_hash="7b0c2e1966233c4a",
         source_file="backend/services/prompt_service.py",
         line_start=284,
         line_end=417,
@@ -209,7 +209,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="0dde5f0dbf0742f3",
+        content_hash="35ef0deb4ddcb115",
         source_file="backend/services/prompt_service.py",
         line_start=418,
         line_end=577,
@@ -234,7 +234,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T8_SUPERHERO_ADVENTURER",
-        content_hash="85b72800fc7c86ea",
+        content_hash="d08f40d85f412ca1",
         source_file="backend/services/prompt_service.py",
         line_start=610,
         line_end=782,

@@ -7,6 +7,7 @@ try:
     from ..utils.confidant_screen import is_risky_confidant as _is_risky_confidant
     from .emotion_service import EmotionService
     from .story_service import _get_opening_rule
+    from .word_ranges import get_word_range as _get_word_range
 except ImportError:
     from data.superhero_matrix import POWERS as _SH_POWERS
     from data.superhero_matrix import PROBLEMS as _SH_PROBLEMS
@@ -16,6 +17,9 @@ except ImportError:
     from services.emotion_service import EmotionService
     from services.story_service import (  # type: ignore[no-redef]
         _get_opening_rule,
+    )
+    from services.word_ranges import (  # type: ignore[no-redef]
+        get_word_range as _get_word_range,
     )
     from utils.confidant_screen import (  # type: ignore[no-redef]
         is_risky_confidant as _is_risky_confidant,
@@ -369,12 +373,25 @@ class PromptService:
 
     @staticmethod
     def _get_age_guidelines(age: int) -> str:
-        """Return age-appropriate content guidelines"""
+        """Return age-appropriate content guidelines.
+
+        Chunk-7b: the word-length line derives from the canonical
+        ``word_ranges.get_word_range`` contract (standard mode, medium length)
+        — this function used to carry its own hardcoded table, which had
+        drifted into an outright inversion (it told 9-12 "900-1800 words" but
+        13-15 "MAX 600" and 16+ "MAX 800"; the canonical medium targets are
+        2400-3400 and 3000-5200 there). One source of truth, like the
+        validator and the post-gen caps (PR #459).
+        """
+        _spec = _get_word_range(age, mode="standard", story_length="medium")
+        _length_line = (
+            f"⚠️ LENGTH: aim for {_spec.target_min}-{_spec.target_max} words "
+            f"TOTAL. Do NOT pad, and do not exceed {_spec.cap} words."
+        )
         if age <= 5:
-            return """
+            return f"""
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 3-5):
-            ⚠️ MAXIMUM LENGTH: 100-150 words TOTAL. DO NOT EXCEED 150 WORDS.
-            - Count your words carefully and STOP at 150 words maximum
+            {_length_line} Deliver it as 8-12 short pages of 10-25 words each.
             - Vocabulary: ONLY very simple words a 3-5 year old already says out loud.
               ALLOWED verbs/adjectives (use these, or words just as simple): run, jump,
               hop, look, see, hear, smell, touch, hug, laugh, cry, happy, sad, big,
@@ -395,36 +412,33 @@ class PromptService:
               matching action next to it.
             """
         elif age <= 8:
-            return """
+            return f"""
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 6-8):
-            ⚠️ MAXIMUM LENGTH: 150-250 words TOTAL. DO NOT EXCEED 250 WORDS.
-            - Count your words carefully and STOP at 250 words maximum
+            {_length_line}
             - Vocabulary: Sight words + basic phonics (simple words young readers know)
             - Sentences: Short and clear (under 10 words per sentence)
             - Concepts: Simple cause and effect (what happens and why)
             """
         elif age <= 12:
-            return """
+            return f"""
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 9-12):
-            - LENGTH: a full, substantial story of roughly 900-1800 words (up to ~2400 for a long story). Do NOT pad, but do NOT cut it short — these readers expect a real story, not a picture-book summary.
+            {_length_line} These readers expect a real story, not a picture-book summary — do not cut it short.
             - Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; a few stretch words are welcome, each earning a quick context clue
             - Sentences: 12-20 words on average; compound and complex sentences are encouraged
             - Concepts: Multiple plot layers and a two-step challenge; character growth; show competing feelings the hero works through (the hero can be wrong and correct themselves)
             """
         elif age <= 15:
-            return """
+            return f"""
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 13-15):
-            ⚠️ MAXIMUM LENGTH: 400-600 words TOTAL. DO NOT EXCEED 600 WORDS.
-            - Count your words carefully and STOP at 600 words maximum
+            {_length_line}
             - Vocabulary: Advanced but not overly academic
             - Sentences: Sophisticated structure and varied rhythm
             - Concepts: Complex themes, moral dilemmas, identity exploration
             """
         else:
-            return """
+            return f"""
             CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 16+):
-            ⚠️ MAXIMUM LENGTH: 600-800 words TOTAL. DO NOT EXCEED 800 WORDS.
-            - Count your words carefully and STOP at 800 words maximum
+            {_length_line}
             - Vocabulary: Adult vocabulary allowed
             - Sentences: Complex and literary style
             - Concepts: Mature themes, philosophical questions, nuanced emotions
