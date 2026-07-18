@@ -48,6 +48,8 @@ or an external human sign-off. The code these gates depend on is already
 merged to `main` (all 8 safety-audit PRs — see
 `docs/SAFETY_AUDIT_REMEDIATION.md`).
 
+> **Owner decision (2026-07-17): COPPA enforcement is intentionally OFF during testing.** In prod today `COPPA_REQUIRE_VERIFIED_CONSENT` = `false` and `ENFORCE_RESOLVED_AGE` = `false` **on purpose** — the under-13 Resend consent round-trip is too much friction to repeat on every test. Rows 1 and 3 below stay OPEN *by choice*, not because they're blocked. **Do NOT flip them until launch / before any untrusted tester gets an invite link** — the flip is verified-safe when the time comes. (`COPPA_REQUIRE_CURRENT_POLICY_VERSION` is currently `true`.)
+
 | # | Gate | Type | Status | Action |
 |---|---|---|---|---|
 | 1 | `COPPA_REQUIRE_VERIFIED_CONSENT=true` on Railway | env flip | OPEN | Flip after #2 below is verified live. Tracked as MT-166 + `docs/SOFT_LAUNCH_CHECKLIST.md` §A row 1. |
