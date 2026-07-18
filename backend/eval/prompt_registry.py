@@ -53,7 +53,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="edbc7f73da540582",
+        content_hash="6ddfb0340182a9c2",
         source_file="backend/services/story_service.py",
         line_start=770,
         line_end=816,
@@ -89,7 +89,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="45c2624430e4198b",
+        content_hash="a1f09c9dde5bd974",
         source_file="backend/services/story_service.py",
         line_start=1268,
         line_end=1306,
@@ -109,7 +109,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="152074623ade0edc",
+        content_hash="74c11e8b2eac9424",
         source_file="backend/services/story_service.py",
         line_start=1308,
         line_end=1354,
@@ -132,7 +132,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="d46c377851990055",
+        content_hash="c89a4b8b81d937a0",
         source_file="backend/services/story_service.py",
         line_start=1510,
         line_end=1542,
@@ -162,7 +162,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="2c92352f90281607",
+        content_hash="d7fb35f9ec3f135e",
         source_file="backend/services/story_service.py",
         line_start=1691,
         line_end=1753,
@@ -267,7 +267,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     # template_ids; the numbering is a label, not a namespace.)
     PromptTemplate(
         template_id="T8_SAFETY_GUARDRAILS",
-        content_hash="052b57833e0c6007",
+        content_hash="4b57b655ab8487f7",
         source_file="backend/services/story_service.py",
         line_start=149,
         line_end=155,
@@ -280,7 +280,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T9_STRICT_OUTPUT",
-        content_hash="e4f5a19068b973b1",
+        content_hash="25471fa7abc6a5ba",
         source_file="backend/services/story_service.py",
         line_start=126,
         line_end=137,
@@ -293,7 +293,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T11_VIRTUE",
-        content_hash="08777825c7defaaa",
+        content_hash="85580df317cf67ea",
         source_file="backend/services/story_service.py",
         line_start=159,
         line_end=214,
@@ -306,7 +306,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T12_FEELINGS",
-        content_hash="2f1250242ca18c07",
+        content_hash="38683b1cdacc0ac5",
         source_file="backend/services/story_service.py",
         line_start=217,
         line_end=259,
@@ -319,7 +319,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T13_PRIOR_ADVENTURES",
-        content_hash="1efd0b89d13b6147",
+        content_hash="fe6b4b3c3ad46849",
         source_file="backend/services/story_service.py",
         line_start=405,
         line_end=504,
