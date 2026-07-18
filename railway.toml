@@ -15,7 +15,12 @@ restartPolicyMaxRetries = 3
 name = "backend"
 dockerfile = "Dockerfile"
 buildCommand = "pip install --no-cache-dir -r backend/requirements.txt"
-startCommand = "sh -c 'gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2'"
+# gthread: /generate-story can hold a request open for the full sync wait
+# (~100s, see SYNC_STORY_TIMEOUT_CEILING_SECONDS) — with the old 2 sync
+# workers, two concurrent generations stalled ALL other traffic (task-status
+# polls, TTS, illustrations) behind them. These endpoints are pure I/O waits,
+# so threads are the right worker class.
+startCommand = "sh -c 'gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2 --worker-class gthread --threads 8'"
 
 [services.healthcheck]
 path = "/health"
@@ -33,12 +38,17 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 [[services]]
 name = "lovely-perfection"
 dockerfile = "Dockerfile.worker"
-# --pool=solo is required: the prefork pool's fork() breaks the worker's
-# gRPC-based Gemini calls. Beat is intentionally NOT embedded here (-B is
-# incompatible with --pool=solo) — the Celery beat scheduler must run as a
-# separate dedicated service so scheduled jobs (the data-retention purge,
-# CMP-5) fire. See MT-148.
-startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=solo"
+# --pool=threads: story generation is pure I/O (HTTPS to OpenAI/OpenRouter),
+# so a thread pool gives real concurrency — with the old --pool=solo the
+# whole app generated ONE story at a time and user B's request queued behind
+# the entirety of user A's generation (MT-338 latency math: N concurrent
+# users ≈ N × single-story wall time). solo existed only because the prefork
+# pool's fork() broke gRPC-based Gemini calls; threads never fork, so that
+# hazard is gone too. Note task_time_limit is not enforced by the threads
+# pool — neither did solo — per-call HTTP timeouts on the OpenAI clients
+# bound runaway tasks instead. Beat stays a separate dedicated service so
+# scheduled jobs (the data-retention purge, CMP-5) fire. See MT-148.
+startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4"
 
 # No healthcheck needed for worker (it's not a web service)
 # No public networking needed (worker connects to Redis privately)
@@ -56,8 +66,8 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 
 # Celery Beat Service (Scheduler)
 # Runs the celery-beat scheduler as its own dedicated service. Beat is NOT
-# embedded in the worker (-B is incompatible with the worker's --pool=solo),
-# so this service is what actually fires the scheduled jobs — notably the
+# embedded in the worker (embedded -B is a dev-only convenience that dies
+# with the worker), so this service is what fires the scheduled jobs — notably the
 # daily data-retention purge (CMP-5 / PP-13) at 03:30 UTC. See MT-148.
 [[services]]
 name = "celery-beat"

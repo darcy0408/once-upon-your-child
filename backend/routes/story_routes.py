@@ -584,14 +584,23 @@ def _sync_timeout_for(task_kwargs: dict, base_timeout: int) -> int:
     generation completing in the sync path. The grant is capped so a request
     with many companions cannot hold a worker indefinitely. This widens a
     timeout only — it never gates or rejects a request.
+
+    A hard ceiling keeps the total wait comfortably under gunicorn's
+    ``--timeout`` (120s in railway.toml). Without it, base+extra could reach
+    195s and gunicorn SIGKILLed the worker mid-wait: the client saw a dropped
+    connection and its retry launched a DUPLICATE generation while the first
+    was still running on Celery. Falling to the 202+poll path at the ceiling
+    is strictly better — the original task keeps running and is recovered by
+    task_id.
     """
+    ceiling = int(os.getenv("SYNC_STORY_TIMEOUT_CEILING_SECONDS", "100"))
     companions = _companion_count(task_kwargs)
     if companions <= 0:
-        return base_timeout
+        return min(base_timeout, ceiling)
     per_companion = int(os.getenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", "30"))
     max_extra = int(os.getenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", "120"))
     extra = min(companions * per_companion, max_extra)
-    return base_timeout + extra
+    return min(base_timeout + extra, ceiling)
 
 
 def _celery_runs_eagerly() -> bool:

@@ -93,8 +93,8 @@ celery.conf.update(
     # daily at 03:30 UTC (low-traffic window). The actual inactivity window is
     # configured separately via DATA_RETENTION_INACTIVE_DAYS (default 730).
     # Beat must be running for this to fire. Beat is NOT embedded in the worker
-    # (the worker runs `--pool=solo`, which is incompatible with `-B`) — it runs
-    # as its own dedicated `celery-beat` Railway service declared in railway.toml.
+    # (embedded `-B` is a dev-only convenience and dies with the worker) — it
+    # runs as its own dedicated `celery-beat` Railway service in railway.toml.
     beat_schedule={
         "data-retention-purge-inactive-accounts": {
             "task": "backend.tasks.retention_tasks.purge_inactive_accounts_task",
