@@ -14,10 +14,38 @@ logger = logging.getLogger(__name__)
 _NARRATION_WPM = 130
 
 
-def _duration_minutes_to_word_range(minutes: int) -> tuple[int, int]:
+def _duration_minutes_to_word_range(
+    minutes: int, wpm: int = _NARRATION_WPM
+) -> tuple[int, int]:
     """Convert a desired runtime in minutes to a target word-count range."""
-    target = minutes * _NARRATION_WPM
+    target = minutes * wpm
     return (int(target * 0.85), int(target * 1.15))
+
+
+def _narration_wpm_for_age(age: int) -> int:
+    """Age-appropriate narration/reading pace for duration-based targets.
+
+    Younger listeners get slower read-aloud pacing; older readers consume
+    text faster. Bedtime keeps the flat default (``_NARRATION_WPM``) — its
+    duration override predates this helper and its pacing is deliberately
+    slow regardless of age.
+    """
+    if age <= 5:
+        return 110
+    if age <= 8:
+        return 120
+    if age <= 12:
+        return 140
+    return 150
+
+
+def _story_duration_to_minutes(story_duration) -> int | None:
+    """Parse the API's story_duration string ('5_minutes', '10_minutes')
+    into whole minutes. Returns None for absent/unrecognized values."""
+    if not story_duration:
+        return None
+    match = re.match(r"^(\d+)_minutes?$", str(story_duration).strip())
+    return int(match.group(1)) if match else None
 
 
 # Master constraint table from Story Weaver Coverage v2
@@ -1164,6 +1192,19 @@ class AdvancedStoryEngine:
         else:
             length_key = "medium"
         word_range = config["regular"][length_key]
+
+        # Duration-based generation: story_duration was accepted by this
+        # function's signature and silently ignored for years, while the
+        # post-generation validator RAISED its floor for '10_minutes' — so a
+        # duration story was validated against a length the prompt never
+        # asked for. Honor it here at an age-appropriate narration pace.
+        # Sprout (<=5) is exempt: its page-based override below (8-12 pages x
+        # 10-25 words) is the band's format contract and always wins.
+        _duration_min = _story_duration_to_minutes(story_duration)
+        if _duration_min and age > 5:
+            word_range = _duration_minutes_to_word_range(
+                _duration_min, wpm=_narration_wpm_for_age(age)
+            )
 
         # Build character context (Gender/Strengths)
         char_details = character_details or {}
