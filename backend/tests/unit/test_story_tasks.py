@@ -336,6 +336,35 @@ class TestSproutBeltRegression:
         regen_fn.assert_not_called()
 
 
+class TestRefusalSentinel:
+    """The refusal sentinel must keep matching every provider's fallback string.
+
+    story_tasks routes a story body containing ``_REFUSAL_SENTINEL`` into the
+    safe-fallback regeneration (a provider safety refusal must never persist
+    as the child's story). If a provider's ``_SAFETY_FALLBACK`` wording drifts
+    away from the sentinel, that protection silently dies -- this test pins
+    them together.
+    """
+
+    def test_sentinel_matches_all_provider_fallbacks(self):
+        from backend.services import (
+            anthropic_story_generator,
+            openai_story_generator,
+            openrouter_story_generator,
+            story_generation_service,
+        )
+        from backend.tasks.story_tasks import _REFUSAL_SENTINEL
+
+        for mod in (
+            anthropic_story_generator,
+            openai_story_generator,
+            openrouter_story_generator,
+            story_generation_service,
+        ):
+            fallback = mod._SAFETY_FALLBACK
+            assert _REFUSAL_SENTINEL in fallback[:160], mod.__name__
+
+
 # ---------------------------------------------------------------------------
 # Full-task scenarios for the unified word ranges. Mirrors the mock recipe of
 # tests/unit/test_superhero_meta_validation.py (no LLM, no external services).

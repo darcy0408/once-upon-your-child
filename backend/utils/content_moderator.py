@@ -172,7 +172,11 @@ def _make_moderation_client(api_key: str):
     """
     import openai  # lazy: see module docstring
 
-    return openai.OpenAI(api_key=api_key)
+    # Bound every HTTP call: the SDK defaults (600s per-attempt timeout,
+    # 2 retries) would let one hung moderation call pin the Celery worker far
+    # longer than the story generation it is checking. A verdict is a small
+    # completion — 30s is generous.
+    return openai.OpenAI(api_key=api_key, timeout=30.0, max_retries=1)
 
 
 def _get_client():

@@ -60,7 +60,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         mode="standard",
         age_bands=AGE_BANDS,
         builder_function="AdvancedStoryEngine.generate_enhanced_prompt",
-        output_format="json: title, themes, characters_featured, emotional_arc, pages[].text, pages[].image_prompt",
+        output_format="json: title, themes, characters_featured, emotional_arc, pages[].text",
         interpolated_vars=(
             "character",
             "age",
