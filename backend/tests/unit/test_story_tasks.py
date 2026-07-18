@@ -272,10 +272,12 @@ class TestRefusalSentinel:
     """
 
     def test_sentinel_matches_all_provider_fallbacks(self):
-        from backend.services import anthropic_story_generator
-        from backend.services import openai_story_generator
-        from backend.services import openrouter_story_generator
-        from backend.services import story_generation_service
+        from backend.services import (
+            anthropic_story_generator,
+            openai_story_generator,
+            openrouter_story_generator,
+            story_generation_service,
+        )
         from backend.tasks.story_tasks import _REFUSAL_SENTINEL
 
         for mod in (
