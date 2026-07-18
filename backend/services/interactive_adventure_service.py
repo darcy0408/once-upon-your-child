@@ -25,6 +25,7 @@ from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
 from backend.services.story_service import (
+    _strip_companion_beat_labels,
     _strip_lesson_endings,
     _strip_meta_leakage,
     pseudonymize_hero_name,
@@ -674,11 +675,14 @@ class InteractiveAdventureService:
     @staticmethod
     def _apply_content_hygiene(segment_data: Dict[str, Any]) -> Dict[str, Any]:
         """Run the standard story path's meta-leakage stripper on segment prose
-        (audit E — reused from story_service, not duplicated). Lesson-summary
-        endings are additionally stripped on ending segments, mirroring how the
-        main path only checks the final page."""
+        (audit E — reused from story_service, not duplicated). Also excises
+        leaked companion_beats JSON-schema labels ("Action:"/"Dialogue:"/
+        "Bond:" — observed on prod 2026-07-18). Lesson-summary endings are
+        additionally stripped on ending segments, mirroring how the main path
+        only checks the final page."""
         content = segment_data.get("content")
         if isinstance(content, str) and content.strip():
+            content = _strip_companion_beat_labels(content)
             pages = _strip_meta_leakage([content])
             if segment_data.get("is_ending"):
                 pages = _strip_lesson_endings(pages)

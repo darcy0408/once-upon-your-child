@@ -965,6 +965,27 @@ def test_lesson_ending_stripped_on_ending_segment():
     assert cleaned["content"] == "The dragon waved goodbye from the cliff."
 
 
+def test_companion_beat_labels_stripped_via_content_hygiene():
+    """The companion_beats JSON-schema enum ("Action:"/"Dialogue:"/"Bond:")
+    leaking into prose is stripped via _apply_content_hygiene (prod 2026-07-18:
+    "Action: Twiggle taps the pebble... Dialogue: ... Bond: ...")."""
+    data = {
+        "content": (
+            "Action: Twiggle taps the pebble; its bell-notes answer the echoes. "
+            'Dialogue: "Match them," Twiggle chirps. '
+            "Bond: Twiggle wraps a damp frond around your wrist."
+        ),
+        "is_ending": False,
+        "choices": [],
+    }
+    cleaned = InteractiveAdventureService._apply_content_hygiene(data)
+    assert cleaned["content"] == (
+        "Twiggle taps the pebble; its bell-notes answer the echoes. "
+        '"Match them," Twiggle chirps. '
+        "Twiggle wraps a damp frond around your wrist."
+    )
+
+
 def test_generate_segment_illustration_persists_data_uri(
     app, test_user, test_character
 ):

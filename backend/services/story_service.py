@@ -1810,6 +1810,33 @@ def _strip_attempt_labels(pages: list) -> list:
     return cleaned
 
 
+# "Action: Twiggle taps the pebble..." / "Dialogue: ..." / "Bond: ..." — the
+# interactive engine's JSON schema asks for a structured
+# companion_beats: [{"type": "dialogue|action|bond", ...}] field separate
+# from prose, and the model sometimes echoes that enum as inline captions
+# inside `content` itself. Observed live on prod 2026-07-18 (a Pick-a-Path
+# Adventurer segment: "Action: Twiggle taps the pebble... Dialogue: 'Match
+# them,' Twiggle chirps... Bond: Twiggle wraps a damp frond..."). Requiring
+# the colon/dash immediately after the label word (mirroring
+# _ATTEMPT_LABEL_PATTERN) keeps ordinary sentences that happen to start with
+# "Bond" or "Help" untouched.
+_COMPANION_BEAT_LABEL_PATTERN = re.compile(
+    r"(?:^|(?<=[.!?]\s))(?:[Aa]ction|[Dd]ialogue|[Bb]ond|[Hh]elp)\s*[:—–-]\s*"
+)
+
+
+def _strip_companion_beat_labels(content: str) -> str:
+    """Excise leaked companion_beats JSON-schema labels from segment prose.
+
+    Unlike ``_strip_meta_leakage`` (which drops whole sentences), the label
+    prefix is excised so the real content of the sentence survives:
+    "Action: Twiggle taps the pebble." -> "Twiggle taps the pebble."
+    """
+    if not content:
+        return content
+    return _COMPANION_BEAT_LABEL_PATTERN.sub("", content)
+
+
 # Regex patterns for lesson-summary endings that break story immersion.
 # Applied only to the last sentence of the last non-empty page.
 _LESSON_ENDING_PATTERNS = re.compile(
