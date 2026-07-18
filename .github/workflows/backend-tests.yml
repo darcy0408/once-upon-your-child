@@ -61,6 +61,11 @@ jobs:
           # dummy so the checkout-contract route gets past its env-presence guard.
           echo "JWT_SECRET_KEY=ci-test-only-jwt-secret-not-a-real-credential-0123456789abcdef" >> $GITHUB_ENV
           echo "STRIPE_PRICE_ID_PREMIUM=price_test_dummy_ci" >> $GITHUB_ENV
+          # Whether the prod COPPA age-gate smoke probe should expect the
+          # enforcement flags to be live. Repo Actions variable; "off" while
+          # the flags are deliberately disabled pre-launch, flip to "on" (or
+          # delete the variable) at launch.
+          echo "SMOKE_EXPECT_COPPA_GATE=${{ vars.SMOKE_EXPECT_COPPA_GATE || 'on' }}" >> $GITHUB_ENV
 
       - name: Run tests with coverage
         run: |
