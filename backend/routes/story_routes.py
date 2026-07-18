@@ -9,7 +9,7 @@ import uuid
 
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_limiter.util import get_remote_address
 from PIL import Image
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,7 +20,10 @@ from ..middleware.auth import require_auth, require_parental_consent
 from ..models import Character, ParentHiddenContext
 from ..models.story import Story
 from ..routes.subscription_routes import require_premium
-from ..services.interactive_adventure_service import InteractiveAdventureService
+from ..services.interactive_adventure_service import (
+    InteractiveAdventureService,
+    schedule_segment_illustration,
+)
 from ..services.story_service import transform_parent_context_to_story_guidance
 from ..tasks.story_tasks import (
     AntiheroGenerationError,
@@ -1993,6 +1996,22 @@ def create_story_blueprint(
 
             _scrub_segment_links(result["segment"])
 
+            # Latency audit fix A: the response above is text-only
+            # (image_url null). Illustration generation happens out-of-band
+            # on the shared Cloudflare-first Flux chain; the client fetches
+            # it via the segment-illustration endpoint once ready. Never
+            # scheduled for a flagged (safe-fallback) segment or when the
+            # client opted out of images.
+            if (
+                include_images
+                and not flagged
+                and result["segment"].get("id")
+                and result["segment"].get("image_description")
+            ):
+                schedule_segment_illustration(
+                    current_app._get_current_object(), result["segment"]["id"]
+                )
+
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
 
@@ -2209,6 +2228,18 @@ def create_story_blueprint(
 
             _scrub_segment_links(result["segment"])
 
+            # Latency audit fix A: illustration generation happens
+            # out-of-band (see generate_interactive_story_endpoint).
+            if (
+                include_images
+                and not flagged
+                and result["segment"].get("id")
+                and result["segment"].get("image_description")
+            ):
+                schedule_segment_illustration(
+                    current_app._get_current_object(), result["segment"]["id"]
+                )
+
             logger.info(
                 f"Story {story_id} continued to segment {result['segment']['segment_number']}"
             )
@@ -2330,6 +2361,70 @@ def create_story_blueprint(
 
         except Exception as e:
             logger.exception("Resuming interactive story failed")
+            return jsonify({"error": str(e)}), 500
+
+    @story_bp.route(
+        "/interactive-story/<story_id>/segments/<segment_id>/illustration",
+        methods=["GET"],
+    )
+    @require_auth
+    # Lightweight poll while the background illustration finishes — like
+    # /task-status above, this must not burn the app-wide default limits
+    # (200/day, 50/hour) on status checks; decorator limits REPLACE the
+    # defaults (flask-limiter override_defaults=True).
+    @limiter.limit("120 per minute", key_func=get_remote_address)
+    def get_interactive_segment_illustration(story_id, segment_id):
+        """Fetch the asynchronously generated illustration for one segment.
+
+        Latency audit fix A: /generate-interactive-story and
+        /continue-interactive-story return text-only; the Flutter client
+        renders the segment immediately and polls this endpoint for the image.
+
+        Response: {"segment_id", "image_url", "status"} where status is
+          - "ready":   image_url is populated (data URI)
+          - "pending": generation was scheduled but hasn't finished — poll again
+          - "none":    the segment has no image_description; stop polling
+        """
+        try:
+            from backend.models import InteractiveStory, StorySegment
+
+            story = db.session.get(InteractiveStory, story_id)
+            if not story:
+                return jsonify({"error": f"Story {story_id} not found"}), 404
+
+            if str(story.user_id) != str(request.current_user.id):
+                logger.warning(
+                    f"IDOR attempt: User {request.current_user.id} tried to "
+                    f"read illustration for story {story_id}"
+                )
+                return jsonify({"error": "Access denied"}), 403
+
+            segment = StorySegment.query.filter_by(
+                id=segment_id, story_id=story_id
+            ).first()
+            if not segment:
+                return jsonify({"error": "Segment not found"}), 404
+
+            if segment.image_url:
+                status = "ready"
+            elif segment.image_description:
+                status = "pending"
+            else:
+                status = "none"
+
+            return (
+                jsonify(
+                    {
+                        "segment_id": segment.id,
+                        "image_url": segment.image_url,
+                        "status": status,
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            logger.exception("Fetching segment illustration failed")
             return jsonify({"error": str(e)}), 500
 
     @story_bp.route("/report-story", methods=["POST"])

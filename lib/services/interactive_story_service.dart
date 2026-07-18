@@ -73,6 +73,30 @@ class ContinueStoryResponse {
   }
 }
 
+/// Response from the segment illustration poll endpoint
+class SegmentIllustrationResponse {
+  final String segmentId;
+  final String? imageUrl;
+
+  /// 'ready' (imageUrl populated), 'pending' (poll again), or
+  /// 'none' (segment has no illustration — stop polling).
+  final String status;
+
+  SegmentIllustrationResponse({
+    required this.segmentId,
+    this.imageUrl,
+    required this.status,
+  });
+
+  factory SegmentIllustrationResponse.fromJson(Map<String, dynamic> json) {
+    return SegmentIllustrationResponse(
+      segmentId: json['segment_id'] ?? '',
+      imageUrl: json['image_url'],
+      status: json['status'] ?? 'pending',
+    );
+  }
+}
+
 /// Client for interactive adventure story API
 class InteractiveStoryService {
   const InteractiveStoryService();
@@ -199,6 +223,35 @@ class InteractiveStoryService {
       throw CrisisDisclosureException(data['message'] as String?);
     }
     return ContinueStoryResponse.fromJson(data);
+  }
+
+  /// Fetch the asynchronously generated illustration for a segment.
+  ///
+  /// The backend returns story text immediately (image_url null) and
+  /// generates the illustration in the background; the screen polls this
+  /// until status is 'ready' (image available) or 'none' (segment has no
+  /// illustration), or until it gives up.
+  Future<SegmentIllustrationResponse> fetchSegmentIllustration({
+    required String storyId,
+    required String segmentId,
+  }) async {
+    final headers = await ApiServiceManager.authHeaders();
+    final uri = Uri.parse(
+        '$_baseUrl/interactive-story/$storyId/segments/$segmentId/illustration');
+    final response = await _httpClient
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      final error = _parseError(response);
+      throw InteractiveStoryException(
+        'Unable to fetch illustration (code ${response.statusCode}): $error',
+      );
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+    return SegmentIllustrationResponse.fromJson(data);
   }
 
   /// Get full story with all segments
