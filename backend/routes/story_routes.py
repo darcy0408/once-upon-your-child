@@ -598,16 +598,19 @@ def _celery_runs_eagerly() -> bool:
         return False
 
 
-def _read_partial_story(task_id: str | None) -> str | None:
-    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+# PERF-01: reuse one Redis client per web process for partial-story reads.
+# /task-status polls arrive every ~2s per waiting client; the previous code
+# dialed a brand-new Redis connection on every poll. redis-py's pool
+# transparently reconnects; a read error drops the cache so the next poll
+# re-dials.
+_partial_story_redis_client = None
 
-    Returns the partial text the Gemini stream consumer wrote (see
-    `_emit_partial_story` in story_tasks.py), or None if nothing is
-    available. Best-effort: any Redis hiccup returns None so /task-status
-    degrades to the same response shape it had pre-PERF-01.
-    """
-    if not task_id:
-        return None
+
+def _get_partial_story_redis():
+    """Lazily create (and cache) the Redis client for partial-story reads."""
+    global _partial_story_redis_client
+    if _partial_story_redis_client is not None:
+        return _partial_story_redis_client
     redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
@@ -615,6 +618,28 @@ def _read_partial_story(task_id: str | None) -> str | None:
         import redis as redis_lib
 
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        _partial_story_redis_client = client
+        return client
+    except Exception:
+        return None
+
+
+def _read_partial_story(task_id: str | None) -> str | None:
+    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+
+    Returns the partial prose the provider stream consumer wrote (see
+    `_emit_partial_story` in story_tasks.py — a readable-prose view of the
+    in-flight story, not the raw JSON payload), or None if nothing is
+    available. Best-effort: any Redis hiccup returns None so /task-status
+    degrades to the same response shape it had pre-PERF-01.
+    """
+    global _partial_story_redis_client
+    if not task_id:
+        return None
+    client = _get_partial_story_redis()
+    if client is None:
+        return None
+    try:
         value = client.get(f"partial_story:{task_id}")
         if value is None:
             return None
@@ -622,6 +647,8 @@ def _read_partial_story(task_id: str | None) -> str | None:
             value = value.decode("utf-8", errors="replace")
         return value or None
     except Exception:
+        # Drop the cached client so the next poll re-dials a fresh connection.
+        _partial_story_redis_client = None
         return None
 
 

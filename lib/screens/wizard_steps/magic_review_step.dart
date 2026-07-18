@@ -82,10 +82,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
 
   // PERF-01 "honest progress": the largest accumulated streamed partial-story
   // length seen so far (characters), and the story-length tier used to scale it
-  // into a 0..1 progress fraction. The streamed text itself is PRE-MODERATION
-  // and is NEVER rendered — only its length drives the loading dot indicator.
+  // into a 0..1 progress fraction.
   int _partialChars = 0;
   String _storyLengthTier = 'standard';
+
+  // PERF-01 streaming preview: the latest readable-prose snapshot of the
+  // in-flight story (the backend emits a cleaned title+pages prose view, not
+  // raw JSON). Rendered inside MagicalLoadingView so the child starts reading
+  // their story's opening within seconds. NOTE: this is pre-moderation model
+  // output — kill-switch: FeatureFlags.partialStoryPreviewEnabled.
+  String _partialProse = '';
 
   // PERF-04: the backend Celery task id for the in-flight generation, captured
   // via generateStory(onTaskId:). Lets the Cancel button abandon the task so
@@ -131,6 +137,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     final expected = expectedChars[_storyLengthTier] ?? 2600;
     return (_partialChars / expected).clamp(0.0, 0.95);
   }
+
+  /// PERF-01 streaming preview: the prose snapshot for [MagicalLoadingView],
+  /// or null (hides the panel) before the first partial arrives / when the
+  /// preview flag is off (in which case [_partialProse] stays empty).
+  String? get _partialTextForLoadingView =>
+      _partialProse.isEmpty ? null : _partialProse;
 
   /// PERF-04: the user tapped Cancel during generation. Tell the backend to
   /// abandon the in-flight task (best-effort, fire-and-forget) and drop the
@@ -384,6 +396,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       _launchInProgress = false;
       // PERF-01: reset the honest-progress signal at the start of each run.
       _partialChars = 0;
+      _partialProse = '';
       // PERF-04: clear any stale task id from a previous run.
       _activeTaskId = null;
     });
@@ -661,16 +674,23 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 setState(() => _loadingStatus = status);
               }
             },
-            // PERF-01: each call delivers the FULL accumulated story text so
-            // far (a fresh snapshot, not a delta). We use only its LENGTH as a
-            // progress signal — the text is pre-moderation and is never shown.
-            // Take max() so the dot indicator stays monotonic if a snapshot
-            // ever arrives shorter than a prior one.
+            // PERF-01: each call delivers the FULL accumulated story prose so
+            // far (a fresh snapshot, not a delta — the backend emits a cleaned
+            // readable-prose view). Its LENGTH drives the honest progress
+            // fraction (max() keeps the dot indicator monotonic even if a
+            // snapshot arrives shorter, e.g. after a backend regeneration),
+            // and the text itself feeds the streaming story preview when the
+            // flag is on.
             onPartial: (partialText) {
               if (!mounted) return;
               final chars = partialText.length;
-              if (chars > _partialChars) {
-                setState(() => _partialChars = chars);
+              final showProse = FeatureFlags.partialStoryPreviewEnabled &&
+                  partialText != _partialProse;
+              if (chars > _partialChars || showProse) {
+                setState(() {
+                  if (chars > _partialChars) _partialChars = chars;
+                  if (showProse) _partialProse = partialText;
+                });
               }
             },
             // PERF-04: remember the task id so Cancel can abandon it.
@@ -1350,6 +1370,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         isSproutBand: true,
         companionImagePath: companionImg,
         progress: _honestProgress,
+        partialText: _partialTextForLoadingView,
       );
     }
 
@@ -1604,6 +1625,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         onCancel: _cancelGeneration,
         isSproutBand: false,
         progress: _honestProgress,
+        partialText: _partialTextForLoadingView,
       );
     }
 
@@ -1744,6 +1766,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         onCancel: _cancelGeneration,
         isSproutBand: false,
         progress: _honestProgress,
+        partialText: _partialTextForLoadingView,
       );
     }
 
@@ -2010,6 +2033,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         onCancel: _cancelGeneration,
         isSproutBand: false,
         progress: _honestProgress,
+        partialText: _partialTextForLoadingView,
       );
     }
 
@@ -2705,6 +2729,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                                 ? _companionImage
                                 : null,
                             progress: _honestProgress,
+                            partialText: _partialTextForLoadingView,
                           )
                         : _PulsingCastSpellFrame(
                             isReady: !_isGenerating && data.isComplete,
