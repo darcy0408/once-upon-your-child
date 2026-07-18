@@ -38,7 +38,10 @@ SUPERHERO_BAND_SPECS: dict[str, dict] = {
     "explorer": {"word_range": (250, 350), "page_range": (5, 5)},
     "adventurer": {"word_range": (900, 1500), "page_range": (6, 6)},
     "creator": {"word_range": (1100, 1800), "page_range": (7, 7)},
-    "adolescent": {"word_range": (1400, 2200), "page_range": (7, 7)},
+    # Adolescent prompt (both hero_mode branches) states "1400-1900 words —
+    # this is a HARD MAXIMUM" (prompt_service.py ~L2392/L2462); the earlier
+    # (1400, 2200) here was drift from a pre-hardening prompt revision.
+    "adolescent": {"word_range": (1400, 1900), "page_range": (7, 7)},
 }
 
 # Creator/Adolescent are the two bands whose saga_state carries the full
