@@ -29,6 +29,13 @@ RISKY = [
     "someone I've never actually met",
     "he DMs me every night",
     "she said to keep us a secret",
+    # Meet-up / off-platform-contact intent (red-team 2026-07-17 MEDIUM-1 —
+    # first entry is the hero_secret probe verbatim; the screen now also
+    # guards that field).
+    "that my 22-year-old friend from Discord and I are meeting up, and no one can know",
+    "we're finally meeting up this weekend",
+    "someone I want to meet irl",
+    "my internet friend — we're meeting in real life soon",
 ]
 
 SAFE = [
@@ -43,6 +50,7 @@ SAFE = [
     "the friend who waits for her after practice",
     "my grandma",
     "the school counselor",
+    "the friend I meet at practice every week",
     "",
 ]
 

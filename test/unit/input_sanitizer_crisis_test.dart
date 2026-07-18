@@ -19,6 +19,14 @@ void main() {
       'I want to end my life',
       'I might take my own life',
       "I'd be better off dead",
+      // Youth euphemisms (red-team 2026-07-17 MEDIUM-2) — mirror the server.
+      'I want to unalive myself',
+      'kms',
+      'kys',
+      'sewerslide',
+      'I want to off myself',
+      'I dont want to wake up tomorrow',
+      'I should just delete myself',
     ];
 
     const nonCrisisTexts = [
@@ -30,6 +38,10 @@ void main() {
       'I cut the rope to free the prince',
       "let's explore the haunted castle",
       'I want to build a treehouse with my friend',
+      // Euphemism near-misses stay unflagged.
+      'the hero jumped off my roof and flew',
+      'I turned off my flashlight in the cave',
+      '5 kms from the castle',
     ];
 
     for (final text in crisisTexts) {

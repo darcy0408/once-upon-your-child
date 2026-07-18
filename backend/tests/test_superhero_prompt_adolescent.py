@@ -507,6 +507,57 @@ def test_adolescent_seen_by_routes_through_build_story_prompt():
     assert seen_by in prompt
 
 
+# --- hero_secret confidant screen (red-team 2026-07-17 MEDIUM-1) -------------
+# The grooming-shaped probe: passes the sanitizer and the crisis guard, but the
+# old prompt would quote it AND compel it to be voiced verbatim on the page.
+_RISKY_SECRET = (
+    "that my 22-year-old friend from Discord and I are meeting up, "
+    "and no one can know"
+)
+
+
+def test_risky_secret_never_quoted_and_never_compelled_single_shot():
+    prompt = _build(hero_secret=_RISKY_SECRET)
+    # The secret text itself must not reach the prompt in any form.
+    assert "22-year-old" not in prompt
+    assert "Discord" not in prompt
+    assert "meeting up" not in prompt
+    # The verbatim compulsion must be dropped with it.
+    assert "SECRET ON-PAGE" not in prompt
+    # Silent fallback: generic concealment prose keeps the double-life spine.
+    assert "hides something from the people closest to" in prompt
+    assert "crack toward being known, never toward deeper hiding" in prompt
+    # The care mandate stays but must not quote the screened-out secret.
+    assert "THIS secret specifically" not in prompt
+    assert "being SEEN by" in prompt
+
+
+def test_safe_secret_keeps_quote_and_on_page_compulsion():
+    secret = "they failed the exam they pretend they aced"
+    prompt = _build(hero_secret=secret)
+    assert secret in prompt
+    assert "SECRET ON-PAGE" in prompt
+    assert "THIS secret specifically" in prompt
+
+
+def test_risky_secret_screened_in_crux_part1():
+    # Drift guard: the crux path builds its secret bullet in _antihero_brief —
+    # the screen must hold there too.
+    prompt = PromptService._build_antihero_prompt_part1(
+        character="Maya",
+        age=16,
+        hero_costume_color="charcoal",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="the_double",
+        problem_id="expose_the_setup",
+        hero_secret=_RISKY_SECRET,
+    )
+    assert "22-year-old" not in prompt
+    assert "Discord" not in prompt
+    assert "hides something from the people closest to" in prompt
+
+
 def test_adolescent_identity_fields_route_through_build_story_prompt():
     secret = "they are the one who leaked the photos"
     tell = "they overcorrect and become too helpful"

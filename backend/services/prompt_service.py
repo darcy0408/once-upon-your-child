@@ -1727,12 +1727,25 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
         # secret may be a distress disclosure ("That I'm not okay"), so the
         # pressure must crack toward being KNOWN, never toward deeper hiding —
         # the chapter never romanticizes vanishing or concealment as a solution.
+        # Red-team 2026-07-17 MEDIUM-1: the child-entered secret gets the same
+        # deterministic unsafe-confidant screen as hero_seen_by — a secret that
+        # trips it (online adult, meet-up intent, demanded secrecy) is never
+        # quoted into the prompt; the bullet silently falls back to generic
+        # concealment prose, same no-child-facing-rejection contract as the
+        # seen-by anchor.
+        secret_is_safe = bool(secret) and not _is_risky_confidant(secret)
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
             f'"{secret}". The concealment is the wound — let the pressure crack '
             f"toward being known, never toward deeper hiding."
-            if secret
-            else ""
+            if secret_is_safe
+            else (
+                f"\n- {character} hides something from the people closest to "
+                f"them. The concealment is the wound — let the pressure crack "
+                f"toward being known, never toward deeper hiding."
+                if secret
+                else ""
+            )
         )
 
         # hero_tell: folded into the concealment engine line when set, else omitted.
@@ -2209,6 +2222,13 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         # secret may be a distress disclosure ("That I'm not okay"), so the
         # pressure must crack toward being KNOWN, never toward deeper hiding —
         # the chapter never romanticizes vanishing or concealment as a solution.
+        # Red-team 2026-07-17 MEDIUM-1: a secret that trips the unsafe-confidant
+        # screen (online adult, meet-up intent, demanded secrecy) is never
+        # quoted into the prompt and never gets the SECRET ON-PAGE compulsion —
+        # the compulsion would force grooming-shaped content to be voiced
+        # verbatim by the teen on the page. Silent fallback to generic
+        # concealment prose, same contract as the seen-by anchor.
+        secret_is_safe = bool(secret) and not _is_risky_confidant(secret)
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
             f'"{secret}". The concealment is the wound — let the pressure crack '
@@ -2216,8 +2236,14 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
             f"(non-negotiable): this exact secret — verbatim or in a tight "
             f"paraphrase, not a substitute — must be spoken aloud or explicitly "
             f"thought by {character} at least once in the chapter."
-            if secret
-            else ""
+            if secret_is_safe
+            else (
+                f"\n- {character} hides something from the people closest to "
+                f"them. The concealment is the wound — let the pressure crack "
+                f"toward being known, never toward deeper hiding."
+                if secret
+                else ""
+            )
         )
 
         # hero_tell: folded into the concealment engine line when set, else omitted.
@@ -2335,15 +2361,24 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         # Editorial audit (2026-07-07): the being-seen beat must engage the
         # ACTUAL secret, not a substitute the model invented instead (e.g. the
         # nemesis's scheme standing in for the teen's own disclosed struggle).
+        # MEDIUM-1: the engage-THIS-secret clause quotes the secret back — only
+        # safe when the screen passed; a screened-out secret keeps the generic
+        # being-seen mandate without the quote.
         secret_care_mandate = (
             f"\n- If {character}'s secret is about their own wellbeing or struggle, "
             f"the chapter must move them at least one step toward being SEEN by "
             f"someone who responds with care (not pity, not fixing), and the "
             f"AFTERMATH must leave a thread of connection or hope alongside the "
             f"unresolved case. Distress is never aesthetic; isolation is never the "
-            f"resolution. The being-seen beat must engage THIS secret specifically "
-            f'— "{secret}" — not a substitute concern; do not let the case or the '
-            f"villain's scheme stand in for it." + _serious_risk_clause(character)
+            f"resolution."
+            + (
+                f" The being-seen beat must engage THIS secret specifically "
+                f'— "{secret}" — not a substitute concern; do not let the case or '
+                f"the villain's scheme stand in for it."
+                if secret_is_safe
+                else ""
+            )
+            + _serious_risk_clause(character)
             if secret
             else ""
         )

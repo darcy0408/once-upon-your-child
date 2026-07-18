@@ -48,6 +48,16 @@ _RISK_PATTERNS = [
         # --- stranger / never actually met ----------------------------------
         r"\bstranger\b",
         r"\b(never|haven'?t)\s+(actually\s+)?met\b",
+        # --- meet-up / off-platform-contact intent (red-team 2026-07-17
+        # MEDIUM-1). The canonical grooming escalation — moving the contact
+        # offline — can appear with no channel or age marker at all ("we're
+        # finally meeting up and no one can know" carries both halves, but
+        # "we're finally meeting up" alone carried neither). Recall-leaning
+        # like everything above: a false positive only swaps in the generic
+        # anchor / generic concealment prose.
+        r"\bmeet(ing)?\s*up\b",
+        r"\bmeet(ing)?\s+(irl|in\s+person|in\s+real\s+life)\b",
+        r"\birl\b",
     )
 ]
 

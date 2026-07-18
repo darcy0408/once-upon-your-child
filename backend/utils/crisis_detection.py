@@ -47,6 +47,21 @@ _CRISIS_PATTERNS = [
         r"\bno\s+reason\s+to\s+live\b",
         r"\bend\s+it\s+all\b",
         r"\bwant\s+to\s+disappear\s+forever\b",
+        # --- Youth euphemisms (red-team 2026-07-17 MEDIUM-2). The vernacular a
+        # teen actually types — algospeak coined to dodge platform filters, so
+        # a literal-phrase net misses it by construction. All six were verified
+        # false negatives before this block. "kms"/"kys" are standalone
+        # abbreviation tokens; the module favours recall, so the third-person
+        # collision risk ("unalive" in story prose) is the acceptable side.
+        r"\bunaliv(e|ed|ing)\b",
+        # "kms" the abbreviation, not "5 kms" the metric distance.
+        r"(?<!\d)(?<!\d\s)\bkms\b",
+        r"\bkys\b",
+        r"\bsewer\s*slide\b",
+        r"\boff(ing)?\s+my\s?self\b",
+        r"\b(do\s*n'?t|do\s+not)\s+want\s+to\s+wake\s+up\b",
+        r"\bdelete\s+my\s?self\b",
+        r"\bend\s+my\s?self\b",
         # --- Behavioral warning signs (red-team F-6). The most serious
         # clinical indicators are often not phrased as ideation: giving
         # possessions away, final-goodbye framing, burden talk. Probe C1
@@ -102,6 +117,16 @@ CRISIS_RESOURCES = [
         "description": "If someone is hurting you, trained counselors can help, 24/7.",
         "action": "Call or text 1-800-422-4453",
         "url": "tel:18004224453",
+    },
+    # Red-team 2026-07-17 MEDIUM-3: the four lines above are US-only but the
+    # app ships general-audience on both stores with no geo-restriction, and
+    # no country signal reaches the backend (CF-IPCountry is not proxied). A
+    # non-US child in crisis needs one entry that works everywhere.
+    {
+        "name": "Outside the US? Find a helpline",
+        "description": "Free, confidential helplines in your country, worldwide.",
+        "action": "Visit findahelpline.com",
+        "url": "https://findahelpline.com",
     },
 ]
 

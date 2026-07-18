@@ -2793,6 +2793,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # emotional_arc is free model text returned to the client on every
             # theme — strip any injected link from it too, not just page prose.
             _arc = scrub_external_links_deep(_arc)
+            # Red-team 2026-07-17 MEDIUM-4: themes/characters_featured are also
+            # model-authored strings that reach the client, and they bypass the
+            # moderator (which sees only title+body) — a coaxed URL/handle in a
+            # theme tag or "character name" was the one unscrubbed egress left.
+            _themes = scrub_external_links_deep(_themes)
+            _characters = scrub_external_links_deep(_characters)
 
             # M-7: substitute the real hero name back into every output surface
             # locally — the child sees their own name even though every provider

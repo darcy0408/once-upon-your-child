@@ -137,6 +137,18 @@ class InputSanitizer {
     RegExp(r'\bno\s+reason\s+to\s+live\b', caseSensitive: false),
     RegExp(r'\bend\s+it\s+all\b', caseSensitive: false),
     RegExp(r'\bwant\s+to\s+disappear\s+forever\b', caseSensitive: false),
+    // Youth euphemisms (red-team 2026-07-17 MEDIUM-2) — mirrors the server
+    // block so the panel surfaces instantly, without the round-trip.
+    RegExp(r'\bunaliv(e|ed|ing)\b', caseSensitive: false),
+    // "kms" the abbreviation, not "5 kms" the metric distance.
+    RegExp(r'(?<!\d)(?<!\d\s)\bkms\b', caseSensitive: false),
+    RegExp(r'\bkys\b', caseSensitive: false),
+    RegExp(r'\bsewer\s*slide\b', caseSensitive: false),
+    RegExp(r'\boff(ing)?\s+my\s?self\b', caseSensitive: false),
+    RegExp(r"\b(do\s*n'?t|do\s+not)\s+want\s+to\s+wake\s+up\b",
+        caseSensitive: false),
+    RegExp(r'\bdelete\s+my\s?self\b', caseSensitive: false),
+    RegExp(r'\bend\s+my\s?self\b', caseSensitive: false),
   ];
 
   /// Detects a self-harm / suicide disclosure in child free-text.

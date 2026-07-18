@@ -92,6 +92,17 @@ final List<CrisisResource> _usCrisisResources = [
     url: 'https://www.childhelphotline.org',
     actionUri: Uri(scheme: 'tel', path: '18004224453'),
   ),
+  // Red-team 2026-07-17 MEDIUM-3: every line above is US-only, but the app
+  // ships general-audience worldwide with no country signal to branch on —
+  // a non-US reader needs one entry that works everywhere. Keep in sync with
+  // backend/utils/crisis_detection.py CRISIS_RESOURCES.
+  CrisisResource(
+    name: 'Outside the US? Find a helpline',
+    description: 'Free, confidential helplines in your country — findahelpline.com',
+    action: 'findahelpline.com',
+    url: 'https://findahelpline.com',
+    actionUri: Uri(scheme: 'https', host: 'findahelpline.com'),
+  ),
 ];
 
 /// Calm, supportive panel listing the US crisis lines. Earthy/warm tones,

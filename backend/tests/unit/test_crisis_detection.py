@@ -46,6 +46,17 @@ CRISIS_TEXTS = [
     "dad hits me when he's angry",
     "I'm afraid to go home",
     "i am scared to go home after school",
+    # Youth euphemisms (red-team 2026-07-17 MEDIUM-2 — probes verbatim, all
+    # were false negatives before the euphemism block landed).
+    "I want to unalive myself",
+    "kms",
+    "kys",
+    "sewerslide",
+    "sewer slide",
+    "I want to off myself",
+    "I dont want to wake up tomorrow",
+    "I should just delete myself",
+    "I'm gonna end myself",
 ]
 
 # Ordinary story / gameplay text that must NOT be flagged.
@@ -67,6 +78,12 @@ NON_CRISIS_TEXTS = [
     "I gave my toy to my little sister",
     "we said goodbye at the airport",
     "the monster won't be around after the hero wins",
+    # Near-misses for the euphemism block: "off"/"wake up"/"kms"-adjacent
+    # strings in ordinary story text stay unflagged.
+    "the hero jumped off my roof and flew",
+    "I turned off my flashlight in the cave",
+    "the bear didn't want to wake up from hibernation",  # third-person, no "I"
+    "5 kms from the castle",
 ]
 
 
@@ -103,3 +120,9 @@ def test_resources_include_abuse_hotline():
     # payload must carry an abuse-specific line, not only suicide/crisis ones.
     assert any("Childhelp" in r["name"] for r in CRISIS_RESOURCES)
     assert any("1-800-422-4453" in r["action"] for r in CRISIS_RESOURCES)
+
+
+def test_resources_include_international_fallback():
+    # Red-team 2026-07-17 MEDIUM-3: the app ships general-audience worldwide;
+    # a non-US child must always get one resource that works in their country.
+    assert any("findahelpline.com" in r["url"] for r in CRISIS_RESOURCES)
