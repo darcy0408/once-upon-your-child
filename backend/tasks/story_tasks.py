@@ -804,6 +804,12 @@ def _post_process_sprout_pages(
 # every other Sprout story path.
 
 SPROUT_WORD_CAP = 150
+# Providers surface a safety block as this user-facing refusal line and it
+# deliberately counts as a provider "success" (a blocked prompt must not
+# cascade to the next provider — they would refuse too). It must still never
+# be persisted as the child's story; the moderation stage below routes it into
+# the safe-fallback regeneration instead.
+_REFUSAL_SENTINEL = "wasn't able to create that story"
 # MT-108: Explorer (6-8) Superhero stories target 250-350 words. The post-gen
 # cap (upper bound) is enforced via the same regen+truncate helper as Sprout;
 # the lower bound is already covered by the existing length-validation loop.
@@ -2327,9 +2333,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             _, _keyword_flagged_title = _filter_fn(title or "", age)
             keyword_flagged = _keyword_flagged_body or _keyword_flagged_title
 
+            # A provider safety refusal that survived every validation attempt
+            # would otherwise ship as a one-page "story". Flag it here so it
+            # takes the same safe-fallback regeneration as moderated content —
+            # the fallback prompt strips the custom elements that most likely
+            # triggered the block.
+            refusal_flagged = _REFUSAL_SENTINEL in (story_body or "")[:160]
+
             llm_flagged = False
             llm_flag_reason = ""
-            if not keyword_flagged:
+            if not keyword_flagged and not refusal_flagged:
                 # F-04/F-06: fail closed for every minor (age <= 17) so a
                 # classifier outage routes a child's OR teen's story into the
                 # safe-fallback regeneration below instead of serving it
@@ -2350,11 +2363,15 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 )
                 llm_flagged = not llm_safe
 
-            if keyword_flagged or llm_flagged:
+            if keyword_flagged or llm_flagged or refusal_flagged:
                 flag_source = (
                     "keyword filter"
                     if keyword_flagged
-                    else f"LLM classifier ({llm_flag_reason})"
+                    else (
+                        "provider safety refusal"
+                        if refusal_flagged
+                        else f"LLM classifier ({llm_flag_reason})"
+                    )
                 )
                 logger.warning(
                     f"Story flagged by {flag_source} for age {age} — "
@@ -2394,6 +2411,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     fallback_post,
                     fallback_metadata,
                 ) = _safe_extract_title_and_gem(fallback_text, theme)
+                if fallback_body and _REFUSAL_SENTINEL in fallback_body[:160]:
+                    # Even the stripped-down fallback prompt was refused —
+                    # providers are hard-blocking. Alertable: a spike means
+                    # something systemic (key, quota, upstream filter change).
+                    logger.error(
+                        "story_generation_fallback_refused flag_source=%s", flag_source
+                    )
+                    fallback_body = ""
                 if fallback_body:
                     title = fallback_title
                     story_body = fallback_body

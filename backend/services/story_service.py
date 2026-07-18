@@ -1614,8 +1614,7 @@ Strictly return valid JSON with this structure:
   "emotional_arc": "<starting feeling> → <ending feeling> (e.g. 'scared → brave', 'lonely → connected')",
   "pages": [
     {{
-      "text": "Page text ({per_page_words})...",
-      "image_prompt": "Visual description for illustration..."
+      "text": "Page text ({per_page_words})..."
     }}
   ]
 }}

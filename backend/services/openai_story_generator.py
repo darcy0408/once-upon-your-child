@@ -77,6 +77,15 @@ _SAFETY_FALLBACK = (
 
 _NO_REASONING_SENTINELS = frozenset({"", "none", "off", "default"})
 
+# Bound every HTTP call. The SDK defaults are a 600s per-attempt timeout with
+# 2 retries — one hung connection can pin the (solo-pool) Celery worker for
+# many minutes, the exact failure mode behind the avatar 504 (see
+# openai_image_generator, which sets timeout=100/max_retries=0). 120s covers
+# the longest legitimate band (13+ "long" prose at 8k output tokens) with
+# margin while converting a hang into a fast provider-classified failure that
+# _try_openai already handles. Override via OPENAI_TIMEOUT_SECONDS.
+_DEFAULT_TIMEOUT_SECONDS = 120.0
+
 
 def _resolve_text_model(user_tier: str | None) -> str:
     """Pick the OpenAI model for a subscription tier.
@@ -109,6 +118,23 @@ def _resolve_max_tokens() -> int:
             _DEFAULT_MAX_TOKENS,
         )
         return _DEFAULT_MAX_TOKENS
+
+
+def _resolve_timeout_seconds() -> float:
+    """Per-attempt HTTP timeout, overridable via OPENAI_TIMEOUT_SECONDS."""
+    raw = os.getenv("OPENAI_TIMEOUT_SECONDS")
+    if not raw:
+        return _DEFAULT_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+        return value if value > 0 else _DEFAULT_TIMEOUT_SECONDS
+    except (TypeError, ValueError):
+        logger.warning(
+            "OPENAI_TIMEOUT_SECONDS=%r is not a valid number; using %s.",
+            raw,
+            _DEFAULT_TIMEOUT_SECONDS,
+        )
+        return _DEFAULT_TIMEOUT_SECONDS
 
 
 def _resolve_reasoning_effort() -> str | None:
@@ -178,7 +204,11 @@ def _make_openai_client(api_key: str):
     """
     import openai  # lazy: see module docstring
 
-    return openai.OpenAI(api_key=api_key)
+    return openai.OpenAI(
+        api_key=api_key,
+        timeout=_resolve_timeout_seconds(),
+        max_retries=1,
+    )
 
 
 class OpenAIStoryGenerator:
@@ -221,8 +251,8 @@ class OpenAIStoryGenerator:
 
         ``model`` overrides the tier-resolved default for this call only (tests
         / ad-hoc experiments). The OpenAI SDK already retries 429 / 5xx with
-        exponential backoff (default max_retries=2), so no hand-rolled retry
-        loop is needed here.
+        exponential backoff (client is built with max_retries=1), so no
+        hand-rolled retry loop is needed here.
         """
         chosen_model = model or self._model_name or OPENAI_FALLBACK_MODEL
         # GPT-5 reasoning models require max_completion_tokens, not max_tokens.
