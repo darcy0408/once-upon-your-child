@@ -173,8 +173,8 @@ STRICT_OUTPUT_CONSTRAINTS = """
 ⚠️ CRITICAL IMMERSION RULES — these override all other instructions:
 1. The story must read as a seamless in-world narrative. Characters have ZERO awareness they are in a generated story or therapeutic exercise.
 2. NEVER include AI-style preambles ("Here we go!", "Sure!", "Here is your story:") or sign-offs in the response.
-3. NEVER expose internal storytelling mechanics inside the prose. Characters must not speak or think using craft/therapy terminology. Any sentence that sounds like a story-writing rubric, lesson summary, or process description has broken this rule. The most common failure is transcribing the structural instructions below into the story — ALL of these are banned from story text: labeling tries or plans ("Attempt one:", "the first/second attempt", "their first plan failed", "It failed."); narrating structure ("the first escalation", "the tension rose", "this was the turning point", "the climax turned on...", "the cost was...", "the stakes rose"); describing anyone in writer's vocabulary ("her want", "his flaw", "their arc", "the companion arc"). Structure is a skeleton — the reader must feel it, never see it. If a sentence could double as a line from a writing rubric, delete it and show the event instead.
-4. NEVER end with an explicit moral recap or lesson announcement — theme and growth must emerge through action and feeling, not stated conclusions.
+3. NEVER expose internal storytelling mechanics inside the prose. Characters must not speak or think using craft/therapy terminology. Any sentence that sounds like a story-writing rubric, lesson summary, or process description has broken this rule. The most common failure is transcribing the structural instructions below into the story — ALL of these are banned from story text: labeling tries or plans ("Attempt one:", "the first/second attempt", "their first plan failed", "They had failed.", "It failed."); narrating structure ("the first escalation", "the tension rose", "this was the turning point", "the climax turned on...", "the cost was...", "the stakes rose"); describing anyone in writer's vocabulary ("her want", "his flaw", "their arc", "the companion arc"); captioning a change or trade the story already showed ("That was the change:", "That was the trade:", "She had shifted", "His actions had been the hinge") — once behavior shows a change, STOP; the demonstration is the statement. Structure is a skeleton — the reader must feel it, never see it. If a sentence could double as a line from a writing rubric, delete it and show the event instead. The prose must also carry no self-editing traces: never a mid-sentence correction, retraction, or aside that references a rule ("—no, stop, no [x]—", "erase that"). If a draft sentence breaks a rule, silently rewrite it.
+4. NEVER state a moral or lesson — not at the end, and not in a reflective paragraph anywhere else. Sentences built on "learned that", "we both learned", "I realized that what mattered was..." are banned wherever they appear; theme and growth must emerge through action and feeling, not stated conclusions.
 5. Do NOT repeat or closely paraphrase the opening paragraph at the end.
 6. Return ONLY the JSON requested below — nothing before the opening brace, nothing after the closing brace.
 7. CLEAN ENDING — the very last sentence of the entire story must be a sensory detail, an image, an action, or a feeling — NOT a lesson summary. Forbidden last-sentence patterns: "And so [name] learned...", "From that day on...", "And [name] knew that...", "[Name] had discovered the true meaning of...", "It taught [name] that...", "The moral was...", "And that is how [name] understood...". End on the world, not the lesson.
@@ -225,6 +225,12 @@ _META_LEAK_TERMS = [
     "seed idea",
     "thinking beat",
     "personal edge",
+    # Change/trade captions (2026-07-17 craft pass): the model shows a change
+    # and then labels it ("That was the trade: privacy in exchange for help.").
+    # Multi-word, high-precision — safe for the single-term short-declarative
+    # branch of _strip_meta_leakage.
+    "that was the change",
+    "that was the trade",
 ]
 
 SAFETY_GUARDRAILS = """
@@ -784,8 +790,11 @@ This story quietly gives {character} one moment of real-kid practice: {situation
    walking together). The child should feel "that's like me" without the story ever
    leaving its world.
 2. FEELING FIRST, BODY FIRST: When the moment lands, {character} feels it in the body
-   before acting — {situation['body_cue']}. Name the feeling simply, by name. Invent fresh wording
-   for THIS story; never reuse a stock line.
+   before acting — {situation['body_cue']}. The feeling word itself shows up inside
+   {character}'s own spoken or thought words, kid-simple and invented fresh for THIS
+   story — but NEVER narrate the act of labeling: "she named it", "she named the
+   feeling", "she told herself the feeling by name" are all FAILS. The reader hears
+   the feeling word from the character; the narrator never mentions naming.
 3. THE SMALL ACTION IS THE KEY: What turns the moment is a small, copyable action a real
    6-8 year old could do tomorrow: {situation['copyable_action']}. {character} (or the companion) DOES
    it on the page — and the plot visibly improves BECAUSE of it. Not magic, not luck, not
@@ -859,7 +868,7 @@ def _build_emotional_spine(age: int, theme: str, character: str) -> str:
     if age <= 5:
         return f"""
 **EMOTIONAL SPINE** (what makes the story land):
-1. Put the story's feeling on the page early — {character} feels it in their body, named simply.
+1. Show the story's feeling early through something {character} DOES with their body — invent the action fresh for THIS story — then name the feeling simply a page or two in. Do NOT bolt the feeling onto the opening line — "Once upon a time, {character} felt curious." is a FAIL; open with something happening.
 2. Let the feeling get big in the middle. Don't fix it right away — {character}'s first tries don't work, and that's okay to feel.
 3. Things get better because of something {character} DOES. End on a warm, safe picture that shows the feeling has changed.
 """
@@ -867,14 +876,14 @@ def _build_emotional_spine(age: int, theme: str, character: str) -> str:
         return f"""
 **EMOTIONAL SPINE** (what makes the story land — follow closely):
 1. THEME AS SPINE: Let the feeling at the heart of "{theme}" be the emotional through-line, not a label. Plant the feeling early, let it be genuinely hard in the middle — {character} can get it wrong first — and resolve it only through {character}'s own choices.
-2. THE MIDDLE MUST COST SOMETHING: Before the turn, let the difficulty be real on the page — a failed try, a hard trade, a feeling that won't be shooed away. Do not rush past it.
+2. THE MIDDLE MUST COST SOMETHING: Before the turn, let the difficulty be real on the page — a try that goes wrong, something given up, a feeling that won't be shooed away. Do not rush past it.
 3. EARNED CLOSING IMAGE: The final page shows the change through one concrete image, action, or line of dialogue. If the last page would still be true with the theme swapped out, it hasn't landed — tie it to what happened in THIS story.
 """
     if age <= 14:
         return f"""
 **EMOTIONAL SPINE** (what makes the story land — follow closely):
 1. THEME AS SPINE: Let the feeling at the heart of "{theme}" be the emotional through-line, not a label. Ambivalence is welcome — {character} can be right and still feel bad about it.
-2. THE MIDDLE MUST COST SOMETHING: A real trade, a setback with consequences, a feeling that resists tidy naming. Do not rush past the hard part — it is the story.
+2. THE MIDDLE MUST COST SOMETHING: Something real given up or lost, a setback with consequences, a feeling that resists tidy naming. Do not rush past the hard part — it is the story.
 3. EARNED TURN: The shift comes from {character} — a choice, a realization, a risk — shown in action, never announced. The closing image belongs to THIS story; if it would survive the theme being swapped out, it hasn't landed.
 """
     return f"""
@@ -1453,24 +1462,32 @@ class AdvancedStoryEngine:
         if age >= 9 and age <= 10:
             hard_complexity_constraints = (
                 "Include at least one moment where the hero must choose between two "
-                "imperfect options; the cost of that choice must be visible in what "
+                "imperfect options; the price of that choice must be visible in what "
                 "happens next — never summarized in a sentence like 'the cost was ...'. "
                 "Include at least one short internal reflection (2-3 sentences) where "
-                "the hero weighs what to do. "
+                "the hero weighs what to do. The weighing happens ONCE, inside the "
+                "scene — never as a repeated tidy catalogue ('He could do X. Or he "
+                "could do Y.') deployed at every decision. "
                 "Build a two-step problem: solving the first part reveals or creates "
                 "the harder second part."
             )
         elif age >= 11 and age <= 13:
             hard_complexity_constraints = (
                 "At least 30% of sentences should be compound or complex. "
-                "Include at least one situation where every available option has a downside, "
-                "shown through the situation itself — never stated ('each choice had a downside'). "
-                "Include at least one short internal reflection paragraph by the hero."
+                "Include at least one situation where no available choice is clean — "
+                "each path forward would spoil something the hero cares about, and the "
+                "situation itself makes that clear; never summarize it in a sentence. "
+                "Include at least one short internal reflection paragraph by the hero. "
+                "Deliberation reads as lived thought inside the scene — at most one "
+                "explicit 'this or that' weighing passage in the whole story, never a "
+                "recurring menu of options."
             )
         elif age >= 14 and age <= 18:
             hard_complexity_constraints = (
                 "At least 35% of sentences should be compound or complex. "
-                "Include at least two internal reflection moments (motivation, doubt, or reframing). "
+                "Include at least two internal reflection moments (motivation, doubt, or reframing) — "
+                "rendered as lived thought in the scene, never as a tidy catalogue of options "
+                "('I could do X. Or I could do Y.') repeated at each decision point. "
                 "Show how an early decision ripples forward to reshape the outcome — without labeling it."
             )
         elif age > 18:
@@ -1528,14 +1545,15 @@ class AdvancedStoryEngine:
 BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule below at once. The story beat always comes first; spread these across the book.
 1. SOUND WORDS: Include ALL-CAPS onomatopoeia words (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING) on MOST pages — aim for 6-10 across the story, with two on the big action pages. The narrator voice reads these with natural vocal stress.
 2. RULE OF THREE: {character} tries to solve the main problem THREE times before it works. The first two tries go wrong in surprising, slightly funny ways; the third works because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere. The three tries must read as plain story events: NEVER number or label them in the text ("Attempt one", "first try", "plan A" are all bans), and NEVER announce a failure ("It failed.", "It didn't work.") — show the try going wrong through what happens on the page.
-3. COMPANION VOICE AND ARC: The companion speaks in their own distinct voice (use dialogue, not narration) at least FOUR times across the story, spread out — not on every page. Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real. Dialogue must sound like real talk read aloud — contractions are natural and welcome ("I'm scared!", "Let's look!"); stiff full forms ("I am not sure.") sound robotic at bedtime.
+3. COMPANION VOICE AND ARC: The companion speaks in their own distinct voice (use dialogue, not narration) at least FOUR times across the story, spread out — not on every page. Early in the story, the companion expresses hesitation or worry **in their own fresh words** — invent wording that fits THIS companion and moment; do NOT reuse a stock line — before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real. Dialogue must sound like real talk read aloud — contractions are natural and welcome ("I'm scared!", "Let's look!"); stiff full forms ("I am not sure.") sound robotic at bedtime. Every companion line must be something a small child could say out loud in play ("Wait for me!", "Look up there!") — never a body-status report ("My paws jump.", "My ears warm." are FAILS; if the body matters, show it: "Pip's ears went warm.").
 4. PAGE-ENDING HOOK (MANDATORY): Every page except the last MUST end on a micro-surprise, a question left open, or a mid-action moment that demands the next page (e.g. "But then — something moved.", "The door creaked open... all by itself.", "And that's when [companion] pointed up at the sky."). Never end a non-final page with a resolved, calm beat — always leave the listener leaning forward. The hook must be a complete, natural sentence: NEVER a bare sound word with dots or a question mark bolted on ("CRUNCH...?" and "ZING...?" are FAILS — write "Then came a big CRUNCH from the closet!" instead), and at most TWO pages in the whole book may end with a question mark. Vary the hook form page to page.
 5. KID-COMPREHENSIBLE VOCABULARY (HARD CHECK — re-read every page before finalizing): Every concept must be understandable to a 3-year-old on first listen. Before writing each page, scan it for ANY noun or concept a toddler wouldn't use in everyday speech (examples: "dragon breath", "cousin", "archery", "archeologist", "cape", "echo", "compass", "ancient", "lantern", "festival"). For EACH such term you find, you MUST do one of two things in the SAME sentence or the very next one: (a) replace it with a simpler everyday word, OR (b) explain it inline using only words a toddler already knows. Example: "Dragon breath — that's the warm, smoky air a dragon blows out, like when you puff air on a cold morning." A bare mention with no inline explanation is a FAIL — rewrite the page. This rule overrides poetic flow.
+6. STORY LOGIC (HARD CHECK — this outranks every rule above except safety): The story must make simple sense to a 3-year-old. Every page follows from the page before — after each page, a grown-up must be able to answer "why did that happen?" with something already on an earlier page. The story must keep the theme's simple promise (a trip to the moon means {character} really goes to the moon and comes home). How they get there, what goes wrong, and how it gets fixed each need a cause the child can see — nothing happens "just because". If a page only exists to hold a sound word or a hook, cut it and let the story breathe.
 """
         elif age <= 7:
             young_delight_rules = f"""
 **YOUNG READER DELIGHT RULES** (mandatory for this age):
-1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — keep them sprinkled, not constant. Never restate the same sound in both prose and caps ("a soggy splash—SPLASH" is a FAIL) — the caps word IS the sound.
+1. SOUND WORDS: Include at least one or two onomatopoeia words per page written in ALL CAPS (e.g. SPLASH, WHOOSH, CRUNCH, BOING, RUMBLE, THUMP, ZING). The narrator voice reads these with natural vocal stress — keep them sprinkled, not constant. Never restate the same sound in both prose and caps ("a soggy splash—SPLASH" is a FAIL) — the caps word IS the sound. Every sound word must be the sound OF something happening in that sentence or the one beside it — a bare ALL-CAPS word parked at the end of a page as its own sentence ("CLACK." with nothing making the clack) is a FAIL; weave it into the action ("The latch went CLACK and the door swung wide.").
 2. RULE OF THREE: {character} tries to solve the main problem THREE times before it works. The first two tries go wrong in surprising, slightly funny ways; the third works because of something {character} or the companion already had or knew — not a new tool dropped in from nowhere. The three tries must read as plain story events: NEVER number or label them in the text ("Attempt one", "first try", "plan A" are all bans), and NEVER announce a failure ("It failed.", "It didn't work.") — show the try going wrong through what happens on the page.
 3. COMPANION VOICE AND ARC: The companion must speak in their own distinct voice (use dialogue, not narration) across multiple pages. Early in the story, the companion expresses hesitation or worry in their own fresh words (do NOT reuse a stock phrase) before finding courage alongside {character}. This arc — doubt then bravery together — is what makes the friendship feel real.
 4. PAGE-ENDING HOOK: Most non-final pages should end on a small forward pull — a question, a discovery, a sound from off-page, an unfinished action — so the listener wants the next page. A calm reflective beat is fine in 1-2 places, but the spine of the story should keep leaning forward. Vary the hook form — no more than two pages in the whole story may end with a question.
@@ -1550,15 +1568,15 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
             young_delight_rules = f"""
 **SUPPORTING-CAST DEPTH RULES** (mandatory for this age):
 1. COMPANION DEPTH: Each named companion wants ONE concrete thing of their own — distinct from {character}'s goal — and has ONE habit or blind spot that gets in the way. Reveal what they're after through what they DO and choose, never by stating it ("X wanted ..." is banned); let the blind spot cost something at least once. "Want", "flaw", and "arc" are writer's words: they must never appear in the story as descriptions of a character ("her flaw was...", "his want showed...") — if such a sentence appears, delete it and let behavior carry it.
-2. COMPANION ARC: At least one companion changes across the story. A belief they hold at the start is tested and shifts by the end. Do NOT announce it — show it in what they choose differently later on.
+2. COMPANION ARC: At least one companion changes across the story. A belief they hold at the start is tested and moves by the end. Do NOT announce it — show it in what they choose differently later on, and then STOP: never follow the changed behavior with a sentence that explains it ("That was the change.", "She had shifted." are FAILS). The new choice is the whole statement.
 3. COMPANION DRIVES A BEAT: The resolution must depend on at least one companion doing something only they would do — their power, their knowledge, or their nerve. {character} cannot solve the climax alone.
 4. DISTINCT VOICE: Give each companion a verbal rhythm of their own, so two lines of their dialogue with the names removed are still tellable apart.
 
 **MOMENTUM RULES** (mandatory for this age):
 5. MOUNTING PRESSURE: The central problem must get harder at least twice before it is solved. Each time, make what raised the stakes concrete on the page — less time, a higher cost, or a complication the previous fix caused. Never count or announce these turns for the reader ("the tension rose", "the second escalation") — the reader should feel the squeeze, never be told about it.
-6. TRY / FAIL: {character}'s first serious try at the central problem must go wrong or backfire, and the setback must visibly make things worse or cost something before the next try. Show it on the page — never cut straight from plan to success. What finally works must use something established earlier in the story, never a power, object, or ally introduced at the climax. Never label or count the tries in the story text ("first attempt", "second try", "the plan failed") — the reader watches the setback happen; they are never told the story's structure.
+6. TRY / FAIL: {character}'s first serious try at the central problem must go wrong or backfire, and the setback must visibly make things worse or cost something before the next try. Show it on the page — never cut straight from plan to success. What finally works must use something established earlier in the story, never a power, object, or ally introduced at the climax. Never label or count the tries in the story text ("first attempt", "second try", "their first plan", "Plan A") and never hand down a verdict sentence ("the plan failed", "They had failed.", "It hadn't worked.") — the reader watches the setback happen; they are never told the story's structure.
 7. FORWARD PULL: End most non-final pages on an open question, a discovery, or an action mid-motion, so the reader wants to turn the page. Keep it curiosity, not fear — no peril cliffhangers and no threats aimed at the hero.
-8. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite any sentence containing "attempt", "escalation", "turning point", "the cost", "flaw", "arc", or "want" used as a noun about a person. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
+8. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite (a) any sentence containing "attempt", "escalation", "turning point", "the cost", "downside", "flaw", "arc", "the trade", a numbered plan or try ("first plan", "second try"), or "want"/"shift" used as a noun about a person; and (b) any sentence that captions a change, choice, or trade the story already showed ("That was the change:", "That was the trade:", "Her actions had been the hinge.") — delete the caption and let the shown moment stand. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
 """
         elif age <= 18:
             # Teen (13-18). Same companion-depth + momentum gap as 8-12, but
@@ -1567,15 +1585,16 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
             young_delight_rules = f"""
 **SUPPORTING-CAST DEPTH RULES** (mandatory):
 1. COMPANION DEPTH: Each named companion is after something of their own, and carries a habit or blind spot that complicates it — distinct from {character}'s goal. Reveal both through action and choice — never state them outright. "Want", "flaw", and "arc" are writer's words: they must never appear in the prose as descriptions of a character ("her flaw—an avoidance of...", "that was her arc").
-2. COMPANION ARC: At least one companion is meaningfully changed by events — a belief or stance they start with is tested and shifts. Show the change in what they do differently; do not announce it.
+2. COMPANION ARC: At least one companion is meaningfully changed by events — a belief or stance they start with is tested and moves. Show the change in what they do differently, then STOP — never follow the changed behavior with a sentence that interprets or sums it up ("That was the change." is a FAIL, and so is any sentence whose only job is to tell the reader that a character is different now). Trust the reader: the new choice IS the statement.
 3. COMPANION MATTERS TO THE RESOLUTION: The climax must turn on something at least one companion does, knows, or risks. {character} does not resolve it single-handed.
 4. DISTINCT VOICE: Each companion has a distinct verbal register — their lines should be tellable apart with the names removed.
 
 **MOMENTUM RULES** (mandatory):
 5. MOUNTING PRESSURE: The central tension must intensify at least twice before the turn, each step raising what it could cost in a way the reader can feel. Never announce or number these steps in the prose ("the first escalation", "the tension rose", "this was the turning point", "the climax turned on...") — sensation and consequence, not commentary.
-6. TRY / FAIL: Early on, {character} tries something that goes wrong or falls short, with a visible consequence, before the resolution. What eventually works must draw on something established earlier, not introduced at the climax. Never label or count the tries in the prose ("their first attempt", "the plan failed") — render setbacks as scene, not summary.
+6. TRY / FAIL: Early on, {character} tries something that goes wrong or falls short, with a visible consequence, before the resolution. What eventually works must draw on something established earlier, not introduced at the climax. Never label or count the tries in the prose ("their first attempt", "their first plan", "the plan failed", "My first plan was not brave.") — render setbacks as scene, not summary.
 7. FORWARD PULL: End most non-final pages on an unresolved beat — a question, a reversal, or a decision left pending — that compels the next page.
-8. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite any sentence containing "attempt", "escalation", "turning point", "the cost", "flaw", "arc", or "want" used as a noun about a person. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
+7b. ONE AFTERMATH SCENE: After the story's turn resolves, allow at most ONE scene of aftermath — a single scene, a single time-skip. Do not chain epilogues (a talk, then weeks later, then months later); choose the one scene that carries the change best and end inside it, on an image. Reflection lives inside that scene's action and dialogue — never in a retrospective essay paragraph.
+8. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite (a) any sentence containing "attempt", "escalation", "turning point", "the cost", "downside", "flaw", "arc", "the trade", a numbered plan or try ("first plan", "second try"), or "want"/"shift" used as a noun about a person; and (b) any sentence that captions a change, choice, or trade the story already showed ("That was the change:", "That was the trade:", "Her actions had been the hinge.") — delete the caption and let the shown moment stand. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
 """
         else:
             # Adult (18+). Companion depth applies, but momentum/page-hook rules
@@ -1584,10 +1603,11 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
             young_delight_rules = f"""
 **SUPPORTING-CAST DEPTH RULES** (mandatory):
 1. COMPANION DEPTH: Each named companion is after something of their own, and carries a habit or blind spot that complicates it — distinct from {character}'s goal. Let both surface through behaviour and choice rather than statement. "Want", "flaw", and "arc" are craft vocabulary — they never appear in the prose as descriptions of a character ("his flaw—he could be brisk", "the companion arc completed" are the failure modes).
-2. COMPANION ARC: At least one companion is genuinely altered by the story — a conviction they hold is tested and moves. Render the shift through action, never exposition.
+2. COMPANION ARC: At least one companion is genuinely altered by the story — a conviction they hold is tested and moves. Render the movement through action, never exposition — and never caption it afterwards ("Sam changed in ways that were not dramatized", "The sentence itself was the change" are the failure modes). The altered behavior appears on the page and is left uninterpreted.
 3. COMPANION MATTERS TO THE RESOLUTION: The turn must hinge on something a companion does, knows, or risks; the protagonist does not arrive there alone.
 4. DISTINCT VOICE: Each companion speaks in a register distinct enough to identify with the names stripped out.
-5. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite any sentence containing "attempt", "escalation", "turning point", "the cost", "flaw", "arc", or "want" used as a noun about a person. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
+4b. ONE AFTERMATH MOVEMENT: After the turn, at most ONE closing movement — a single scene or a single quiet time-skip, not both, never a chain of endings. Choose the image that holds the whole story and stop there. Any reflection is carried by what characters do and say inside that final scene, not by summary paragraphs about how things had settled.
+5. SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the whole draft and rewrite (a) any sentence containing "attempt", "escalation", "turning point", "the cost", "downside", "flaw", "arc", "the trade", a numbered plan or try ("first plan", "second try"), or "want"/"shift" used as a noun about a person; and (b) any sentence that captions a change, choice, or trade the story already showed ("That was the change:", "That was the trade:", "Her actions had been the hinge.") — delete the caption and let the shown moment stand. Those are this instruction sheet's words — a sentence carrying one is narrating the skeleton instead of telling the story.
 """
 
         persona = _get_band_persona(age)
@@ -1630,7 +1650,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 
 **STORY SPECS**:
 - **THEME**: {theme}
-- **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
+- **CONFLICT**: {conflict_hook or ('A tension at the heart of the theme comes to a head and must be faced — as grounded or as strange as the theme calls for.' if age >= 13 else 'A magical mystery needs solving.')}
 - **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with it, but it must never drive the plot, and its wording must never be copied into the story text verbatim — reimagine the images in your own words): {sensory_palette}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
@@ -1731,8 +1751,17 @@ _ATTEMPT_LABEL_PATTERN = re.compile(
     r"\b[Aa]ttempts?\s+(?:one|two|three|\d+)\s*[:—–-]\s*"
 )
 _FAILURE_ANNOUNCEMENT_PATTERN = re.compile(
-    r"^(?:it|that|the (?:plan|try|attempt))\s+(?:failed|didn'?t work)[.!]*$",
+    r"^(?:it|that|they|we|the (?:plan|try|attempt))\s+(?:had\s+)?(?:failed|didn'?t work)[.!]*$",
     re.IGNORECASE,
+)
+# "The first/second/third escalation came when..." — the MOUNTING PRESSURE rule
+# transcribed with ordinals (observed again 2026-07-17 despite the prompt ban;
+# these sentences are long, so _strip_meta_leakage's short-declarative branch
+# can't catch them). The ordinal label is excised in place, keeping the event:
+# "The second escalation arrived with a call..." -> "More pressure arrived with
+# a call..."
+_ESCALATION_LABEL_PATTERN = re.compile(
+    r"(^|(?<=[.!?]\s))The (?:first|second|third|next|final|latest) escalation\b",
 )
 
 
@@ -1747,6 +1776,7 @@ def _strip_attempt_labels(pages: list) -> list:
     cleaned = []
     for page in pages:
         text = _ATTEMPT_LABEL_PATTERN.sub("", page)
+        text = _ESCALATION_LABEL_PATTERN.sub(r"\1More pressure", text)
         sentences = re.split(r"(?<=[.!?])\s+", text.strip())
         kept = []
         for sent in sentences:

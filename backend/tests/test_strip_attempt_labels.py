@@ -62,3 +62,24 @@ def test_multiple_labels_one_page():
     assert _strip_attempt_labels(pages) == [
         "Mia climbed. Mia listened. Mia used kind hands."
     ]
+
+
+def test_they_had_failed_variant_dropped():
+    pages = ["They had failed. The paper was gone."]
+    assert _strip_attempt_labels(pages) == ["The paper was gone."]
+
+
+def test_ordinal_escalation_label_rewritten():
+    pages = [
+        "The first escalation came the next afternoon when Jamal jogged past.",
+        "Her hand tightened. The second escalation arrived with a call to the parents.",
+    ]
+    assert _strip_attempt_labels(pages) == [
+        "More pressure came the next afternoon when Jamal jogged past.",
+        "Her hand tightened. More pressure arrived with a call to the parents.",
+    ]
+
+
+def test_unlabeled_escalation_prose_untouched():
+    pages = ["The pressure kept building until the whistle blew."]
+    assert _strip_attempt_labels(pages) == pages
