@@ -119,7 +119,7 @@ Each band has dedicated visual assets, typography, color palettes, age-appropria
 - Backend `_fallback_story()` now returns valid JSON (was bracket-tagged plain text rendering raw in UI)
 - `_safe_extract_title_and_gem` uses `JSONDecoder.raw_decode` so trailing Gemini content is silently ignored (no more 7,707-word "Extra data" raw-text fallback)
 - Adult band word-ceiling note ("HARD LIMIT: do not exceed N words total") + per-page word scaling by age
-- Quality-audit script (`backend/tests/quality/run_story_quality.py`) — 7–9 checks across all 6 bands; 49/49 green on 2026-05-03 production verification
+- Quality-audit script (`backend/tests/quality/run_story_quality.py`) — 7–9 checks across all 6 bands; 49/49 green on 2026-05-03 production verification (Gemini-era). Since 2026-07-17 the harness drives the prod provider chain (`STORY_GEN_PROVIDER`; local recipe = `openrouter` + `OPENROUTER_API_KEY` in backend/.env) and stamps results with the prompt (template_id, revision_hash) for `--compare` before/after runs
 - Test suite: 294/294 green (+ new life-quest sensitivity flow/widget/unit tests from MT-158)
 - Postgres on Railway (since 2026-05-14), shared by Flask + Celery worker
 - External `pg_dump` → Cloudflare R2 backup workflow (Railway native backups are Pro-only)
