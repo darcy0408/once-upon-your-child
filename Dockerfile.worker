@@ -1,4 +1,12 @@
 # Dockerfile for Celery Worker (no HTTP exposure needed)
+#
+# CURRENTLY UNUSED (verified in prod 2026-07-18): the `lovely-perfection`
+# worker service and the `celery-beat` service both build via Railway's
+# Railpack, not this Dockerfile — despite railway.toml's `dockerfile =
+# "Dockerfile.worker"` lines, Railway ignores railway.toml's [[services]]
+# blocks entirely. The real start commands for both services come from the
+# Railway dashboard. Kept here (not deleted) as a reference/fallback in case
+# a future service is switched to a Docker build.
 
 # ---- Stage 1: builder ----
 # Compiles wheels with the full build toolchain. Nothing from this stage's

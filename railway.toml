@@ -1,6 +1,25 @@
 # Railway Multi-Service Configuration for Story Weaver App
 # Deploys the backend (Flask/Python), Celery worker, and Celery beat scheduler.
 # The frontend runs on Cloudflare Pages, not Railway (see note at bottom).
+#
+# TRUTH (verified in prod 2026-07-18): Railway IGNORES the [[services]] blocks
+# below entirely — they are decorative/documentation only, not live config.
+# Only the top-level [deploy] restartPolicy* keys actually map through to
+# Railway. Every service's real startCommand/build settings live in the
+# Railway dashboard and must be kept in sync with this file BY HAND; nothing
+# here pushes to Railway automatically. Concretely: the worker service
+# (lovely-perfection) builds via Railpack, NOT Dockerfile.worker (that file is
+# currently unused — see its header comment) — the dashboard startCommand is
+# the only thing that determined its actual boot command. Evidence: the
+# worker booted with --pool=solo (the old default) until the dashboard
+# startCommand was explicitly set to match the value below; deployment
+# 4b06e053 then confirmed --pool=threads took effect. DO NOT null out a
+# dashboard startCommand expecting it to "fall back" to this file — there is
+# no fallback, the service will revert to its build tool's default command
+# (e.g. worker reverting to --pool=solo) and silently degrade. The `backend`
+# web service has no dashboard startCommand override, so for now its behavior
+# does track the Dockerfile CMD — but that is a property of that service's
+# current dashboard state, not of this file being authoritative.
 
 # Default deployment settings (don't set global healthcheck - only for web services)
 [deploy]
@@ -8,8 +27,10 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 # Backend Service (Python Flask API)
-# startCommand is the canonical boot path (it overrides the Dockerfile CMD at
-# runtime). The Dockerfile CMD is kept identical as a local-dev fallback.
+# startCommand below is NOT read by Railway (see TRUTH note at top of file) —
+# it exists purely as documentation of what the Dockerfile CMD does today.
+# The Dockerfile CMD is the actual runtime boot path for this service since
+# there is no dashboard startCommand override for `backend`.
 # nixpacks.toml was removed (L-9) — the Docker build is authoritative.
 [[services]]
 name = "backend"
@@ -35,6 +56,14 @@ GEMINI_REQUEST_TIMEOUT_SECONDS = "45"
 GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 
 # Celery Worker Service (Background task processor)
+# startCommand below is NOT read by Railway (see TRUTH note at top of file),
+# and neither is `dockerfile = "Dockerfile.worker"` — this service actually
+# builds via Railpack, and Dockerfile.worker is currently unused (see its
+# header comment). The dashboard startCommand is the ONLY thing controlling
+# this service's real boot command, and it is kept matching the value below
+# by hand. Never null the dashboard startCommand expecting a toml fallback —
+# the service will revert to Railpack's default (which regressed the worker
+# to --pool=solo before the dashboard override existed).
 [[services]]
 name = "lovely-perfection"
 dockerfile = "Dockerfile.worker"
@@ -69,6 +98,9 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 # embedded in the worker (embedded -B is a dev-only convenience that dies
 # with the worker), so this service is what fires the scheduled jobs — notably the
 # daily data-retention purge (CMP-5 / PP-13) at 03:30 UTC. See MT-148.
+# Same caveat as the worker above: startCommand/dockerfile here are ignored
+# by Railway — the dashboard startCommand is authoritative and kept in sync
+# with the value below by hand.
 [[services]]
 name = "celery-beat"
 dockerfile = "Dockerfile.worker"

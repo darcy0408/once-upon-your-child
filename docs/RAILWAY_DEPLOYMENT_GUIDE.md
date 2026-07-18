@@ -45,7 +45,7 @@ Add these environment variables in the Railway dashboard for the **backend servi
 
 #### Backend Service Settings
 - **Build Command:** Automatically handled by Dockerfile
-- **Start Command:** `gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app --timeout 120` (set in railway.toml)
+- **Start Command:** actually set in the Railway dashboard, not railway.toml — Railway ignores railway.toml's `[[services]]` blocks entirely (verified in prod 2026-07-18); the toml's `startCommand` line is documentation only
 - **Healthcheck Path:** `/health`
 - **Port:** Railway will assign dynamically via `$PORT` environment variable
 
@@ -165,7 +165,7 @@ RAILWAY_FRONTEND_URL=https://frontend-production-xxxx.up.railway.app
 
 ## Important Files Reference
 
-- `railway.toml` - Railway configuration for both services
+- `railway.toml` - documents intended per-service settings, but Railway ignores its `[[services]]` blocks entirely; the Railway dashboard startCommand per service is what's actually authoritative (kept in sync with this file by hand)
 - `Dockerfile` - Backend container definition
 - `Dockerfile.frontend` - Frontend container definition
 - `nginx.conf` - Frontend nginx server configuration
