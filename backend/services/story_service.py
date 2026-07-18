@@ -186,6 +186,17 @@ _META_LEAK_TERMS = [
     "first attempt",
     "second attempt",
     "companion arc",
+    # Superhero-builder rule nouns (2026-07-17 audit): the Explorer/Adventurer
+    # builders instruct with their own craft vocabulary; models transcribe rule
+    # nouns into prose (PR #454 lesson). The builders now carry their own
+    # SILENT SKELETON CHECK; these net the stragglers.
+    "refrain",
+    "wow word",
+    "context clue",
+    "identity tag",
+    "seed idea",
+    "thinking beat",
+    "personal edge",
 ]
 
 SAFETY_GUARDRAILS = """
