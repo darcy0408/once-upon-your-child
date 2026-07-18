@@ -16,6 +16,7 @@ from .interactive_story import (
 from .parent_hidden_context import ParentHiddenContext
 from .story import Story
 from .stripe_event import StripeSubscriptionCursor, StripeWebhookEvent
+from .tts_audio_cache import TtsAudioCache
 from .user import User
 
 __all__ = [
@@ -37,5 +38,6 @@ __all__ = [
     "Story",
     "StripeSubscriptionCursor",
     "StripeWebhookEvent",
+    "TtsAudioCache",
     "User",
 ]
