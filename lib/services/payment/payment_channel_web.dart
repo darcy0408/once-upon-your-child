@@ -20,6 +20,10 @@ import '../stripe_service.dart';
 import 'payment_channel_interface.dart';
 import 'payment_models.dart';
 
+/// Compile-time marker: web payments are Stripe, not a device store — the
+/// paywall may offer billing periods Stripe supports (monthly + annual).
+const bool kStoreBillingPlatform = false;
+
 /// Stripe-backed [PaymentChannel] for the web build.
 class PaymentChannelWeb implements PaymentChannel {
   PaymentChannelWeb({StripeService? stripeService})

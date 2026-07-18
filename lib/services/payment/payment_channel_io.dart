@@ -15,6 +15,12 @@ import 'iap_service.dart';
 import 'payment_channel_interface.dart';
 import 'payment_models.dart';
 
+/// Compile-time marker: this build's payments go through a device store
+/// (StoreKit / Play Billing). Surfaced through `payment_channel.dart` so UI
+/// can adapt (e.g. hide billing options the store products don't cover)
+/// without instantiating a channel.
+const bool kStoreBillingPlatform = true;
+
 /// In-app-purchase-backed [PaymentChannel] for the iOS/Android store builds.
 class PaymentChannelIap implements PaymentChannel {
   PaymentChannelIap({IapService? iapService})
@@ -48,6 +54,11 @@ class PaymentChannelIap implements PaymentChannel {
     // TODO(STORE-1 / owner): annual store products (`premium_annual`) don't
     // exist in App Store Connect / the Play Console yet, so billingPeriod is
     // accepted but ignored here — every IAP purchase is monthly for now.
+    // App Store review sim 2026-07-17 Finding 2 (Guideline 3.1.2): the paywall
+    // hides the Yearly toggle on store builds (kStoreBillingPlatform) so the
+    // UI can no longer sell "Yearly (Save 50%)" against this monthly charge.
+    // When premium_annual exists, honor billingPeriod here AND un-hide the
+    // toggle.
     return _iap.purchase(
       tier: tier,
       userId: userId,

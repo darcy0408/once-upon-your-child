@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'subscription_models.dart';
 import 'services/analytics_service.dart';
-import 'services/payment/payment_models.dart';
+import 'services/payment/payment_channel.dart';
 import 'widgets/subscribe_button.dart';
 
 class PremiumUpgradeScreen extends StatefulWidget {
@@ -22,7 +22,11 @@ class PremiumUpgradeScreen extends StatefulWidget {
 
 class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
   SubscriptionTier? _selectedTier;
-  bool _isYearly = true;
+  // App Store review sim 2026-07-17 Finding 2 (Guideline 3.1.2): the store
+  // builds have no annual product yet — every IAP purchase charges monthly —
+  // so they must neither default to nor offer "Yearly (Save 50%)". Web keeps
+  // the Stripe annual price and its yearly-first default.
+  bool _isYearly = !isStoreBillingPlatform;
 
   @override
   void initState() {
@@ -102,7 +106,11 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                 ),
               ),
 
-              // Billing toggle
+              // Billing toggle — web (Stripe) only. Store builds have no
+              // annual product (see PaymentChannelIap.purchase), so offering
+              // "Yearly (Save 50%)" there would sell a plan the store charges
+              // monthly for (review sim Finding 2, Guideline 3.1.2).
+              if (!isStoreBillingPlatform)
               Container(
                 margin:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -157,16 +165,13 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                                 _selectedTier == SubscriptionTier.premium
                             ? BillingPeriod.annual
                             : BillingPeriod.monthly,
-                        onSuccess: () {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Redirecting to checkout for ${_selectedTier!.displayName}',
-                              ),
-                            ),
-                          );
-                        },
+                        // No onSuccess snackbar here: SubscribeButton already
+                        // shows the channel-correct message ("Redirected to
+                        // checkout…" on web, "Subscription active…" on store
+                        // builds). The old duplicate said "Redirecting to
+                        // checkout" even on the IAP path — external-checkout
+                        // wording a store reviewer screenshots (review sim
+                        // item 10, Guideline 3.1.1).
                       ),
                       const SizedBox(height: 12),
                       const Text(

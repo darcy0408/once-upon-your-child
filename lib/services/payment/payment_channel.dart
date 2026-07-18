@@ -26,3 +26,9 @@ import 'payment_channel_web.dart'
 /// Web  -> Stripe Checkout.
 /// iOS/Android -> in-app purchase (StoreKit / Play Billing).
 PaymentChannel createPaymentChannel() => createPlatformPaymentChannel();
+
+/// True when this build sells through a device store (StoreKit / Play
+/// Billing) rather than Stripe. Compile-time constant from the platform
+/// split above — lets UI adapt (e.g. hide the annual toggle while the
+/// stores only have monthly products) without instantiating a channel.
+const bool isStoreBillingPlatform = kStoreBillingPlatform;
