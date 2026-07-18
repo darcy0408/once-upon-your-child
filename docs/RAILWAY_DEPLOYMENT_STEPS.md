@@ -94,7 +94,7 @@ CELERY_TASK_STORE_EAGER_RESULT=false
 
    **Start Command**:
    ```
-   celery -A backend.celery_config.celery worker --loglevel=info --pool=solo
+   celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4
    ```
 
 4. Click **"Save"**
@@ -186,7 +186,7 @@ Railway auto-deploys on config changes, but to be sure:
 - `Error connecting to Redis` → Check CELERY_BROKER_URL variable
 
 **Solution**:
-1. Verify start command is exact: `celery -A backend.celery_config.celery worker --loglevel=info --pool=solo`
+1. Verify start command is exact: `celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4`
 2. Ensure all environment variables are set
 3. Check Redis is active and accessible
 
@@ -233,7 +233,7 @@ Railway auto-redeploys on variable changes, but sometimes you need to force it:
 - [ ] Web service `CELERY_BROKER_URL` references Redis
 - [ ] Web service `CELERY_RESULT_BACKEND` references Redis
 - [ ] Worker service created and linked to repo
-- [ ] Worker start command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=solo`
+- [ ] Worker start command: `celery -A backend.celery_config.celery worker --loglevel=info --pool=threads --concurrency=4`
 - [ ] Worker has same env vars as web (or references them)
 - [ ] All three services show "Active" status
 - [ ] Worker logs show "celery@... ready"

@@ -277,13 +277,15 @@ def test_companion_count_sums_pets_characters_and_legacy():
 
 
 def test_sync_timeout_unchanged_with_no_companions():
-    assert story_routes._sync_timeout_for({}, 120) == 120
+    # Base below the 100s default ceiling passes through untouched.
+    assert story_routes._sync_timeout_for({}, 75) == 75
 
 
 def test_sync_timeout_extends_per_companion(monkeypatch):
     monkeypatch.delenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", raising=False)
     monkeypatch.delenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", raising=False)
-    # Two companions -> base 120 + 2*30 = 180.
+    monkeypatch.setenv("SYNC_STORY_TIMEOUT_CEILING_SECONDS", "600")
+    # Two companions -> base 120 + 2*30 = 180 (ceiling lifted out of the way).
     kwargs = {
         "companion_pets": [{"name": "Rex"}],
         "companion_characters": [{"name": "Mia"}],
@@ -294,6 +296,21 @@ def test_sync_timeout_extends_per_companion(monkeypatch):
 def test_sync_timeout_extension_is_capped(monkeypatch):
     monkeypatch.delenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", raising=False)
     monkeypatch.delenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", raising=False)
+    monkeypatch.setenv("SYNC_STORY_TIMEOUT_CEILING_SECONDS", "600")
     # Ten companions would add 300s uncapped; the cap holds it to +120 -> 240.
     kwargs = {"companion_pets": [{"name": f"P{i}"} for i in range(10)]}
     assert story_routes._sync_timeout_for(kwargs, 120) == 240
+
+
+def test_sync_timeout_ceiling_keeps_wait_under_gunicorn_kill(monkeypatch):
+    """base+extra must never exceed the ceiling — gunicorn (--timeout 120)
+    would SIGKILL the web worker mid-wait and the client retry would launch a
+    duplicate generation."""
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", raising=False)
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", raising=False)
+    monkeypatch.delenv("SYNC_STORY_TIMEOUT_CEILING_SECONDS", raising=False)
+    kwargs = {"companion_pets": [{"name": f"P{i}"} for i in range(10)]}
+    # 75 + 120 capped extra = 195 uncapped -> ceiling 100.
+    assert story_routes._sync_timeout_for(kwargs, 75) == 100
+    # An oversized base is capped too.
+    assert story_routes._sync_timeout_for({}, 300) == 100

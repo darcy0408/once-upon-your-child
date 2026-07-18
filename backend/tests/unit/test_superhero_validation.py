@@ -44,8 +44,9 @@ class TestValidateWordCount:
         assert issue["severity"] == "retry"
 
     def test_adolescent_matches_observed_prod_bug(self):
-        # 3044/3045 words vs the stated 1400-2200 spec (~38% over), observed
-        # twice in prod on 2026-07-07.
+        # 3044/3045 words vs the prompt's stated ceiling (now 1400-1900 after
+        # the T10 hardening; was 1400-2200), observed twice in prod on
+        # 2026-07-07 — still comfortably "retry" severity either way.
         issue = validate_word_count(3044, "adolescent")
         assert issue["severity"] == "retry"
         assert issue["over_ratio"] > 0.25

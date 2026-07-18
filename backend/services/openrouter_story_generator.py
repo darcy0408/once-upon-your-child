@@ -6,6 +6,7 @@ tier-aware OpenRouter chain that does NOT subject child users to Gemini's
 prohibited-use ToS for child-directed apps.
 """
 
+import json
 import logging
 import os
 import time
@@ -150,6 +151,82 @@ def _extract_text(response_json: dict) -> str | None:
     return content
 
 
+def _finalize_streamed_text(content: str, finish_reason: str | None) -> str | None:
+    """
+    PERF-01: validate text accumulated from a streamed (SSE) chat-completions
+    response. Mirrors ``_extract_text``'s finish-reason policy, minus the
+    message-shape unwrapping (streamed deltas are already plain strings):
+    ``content_filter`` and empty content -> None (caller substitutes
+    ``_SAFETY_FALLBACK``); ``max_tokens``/``length`` -> warn, keep partial.
+    """
+    if finish_reason == "content_filter":
+        logger.warning(
+            "OpenRouter blocked streamed response. finish_reason=%s", finish_reason
+        )
+        return None
+    if not content or not content.strip():
+        logger.warning(
+            "OpenRouter streamed response had empty content. finish_reason=%s",
+            finish_reason,
+        )
+        return None
+    if finish_reason in ("max_tokens", "length"):
+        logger.warning(
+            "OpenRouter streamed response truncated by output budget. "
+            "finish_reason=%s len=%s",
+            finish_reason,
+            len(content),
+        )
+    return content
+
+
+def _consume_openrouter_stream(response, on_chunk) -> tuple[str, str | None, bool]:
+    """Drain an OpenRouter SSE stream, calling ``on_chunk(accumulated_text)``
+    per content delta. Returns ``(content, finish_reason, got_events)``;
+    ``got_events=False`` means the body carried no SSE data events (e.g. the
+    server ignored ``stream`` or a test double returned a plain JSON body), so
+    the caller should parse ``response.json()`` the non-streaming way.
+    """
+    parts: list[str] = []
+    finish_reason: str | None = None
+    got_events = False
+    for raw_line in response.iter_lines(decode_unicode=True):
+        if not raw_line:
+            continue
+        line = raw_line if isinstance(raw_line, str) else raw_line.decode("utf-8")
+        if not line.startswith("data:"):
+            continue
+        payload = line[len("data:") :].strip()
+        if payload == "[DONE]":
+            break
+        try:
+            event = json.loads(payload)
+        except ValueError:
+            continue  # OpenRouter interleaves SSE comments / keep-alives
+        got_events = True
+        choices = event.get("choices") or []
+        if not choices:
+            continue
+        first = choices[0] or {}
+        reason = first.get("finish_reason") or first.get("native_finish_reason")
+        if reason:
+            finish_reason = reason
+        delta = first.get("delta") or {}
+        piece = delta.get("content")
+        if piece:
+            parts.append(piece)
+            if on_chunk is not None:
+                try:
+                    on_chunk("".join(parts))
+                except Exception:
+                    # A partial-text consumer must never abort generation.
+                    logger.debug(
+                        "on_chunk consumer failed; streaming continues.",
+                        exc_info=True,
+                    )
+    return "".join(parts), finish_reason, got_events
+
+
 class OpenRouterStoryGenerator:
     def __init__(self, api_key=None, user_tier: str | None = None):
         """Initialize with OpenRouter API key and optional subscription tier.
@@ -183,15 +260,26 @@ class OpenRouterStoryGenerator:
             user_tier or "unknown",
         )
 
-    def generate_story(self, prompt: str, model: str | None = None) -> str:
+    def generate_story(
+        self, prompt: str, model: str | None = None, on_chunk=None
+    ) -> str:
         """Generate story from prompt using an OpenRouter model.
 
         ``model`` overrides the tier-resolved default for the duration of this
         call only (used in tests and ad-hoc experiments).
+
+        ``on_chunk`` (PERF-01): optional callable receiving the FULL
+        accumulated story text after each streamed content delta. When
+        provided, the request asks OpenRouter for an SSE stream so callers can
+        publish in-flight partial text; when omitted the original blocking
+        request/response is unchanged. If the response body turns out not to
+        be a stream (server ignored the flag, or a test double), the code
+        falls back to parsing it as a plain JSON completion.
         """
         max_retries = 3
         base_delay = 2  # seconds
         chosen_model = model or self._model_name or OPENROUTER_FALLBACK_MODEL
+        want_stream = on_chunk is not None
 
         for attempt in range(max_retries):
             try:
@@ -200,6 +288,21 @@ class OpenRouterStoryGenerator:
                     attempt + 1,
                     chosen_model,
                 )
+                request_body = {
+                    "model": chosen_model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": self._system_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        },
+                    ],
+                }
+                if want_stream:
+                    request_body["stream"] = True
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers={
@@ -208,23 +311,36 @@ class OpenRouterStoryGenerator:
                         "X-Title": "Story Weaver App",  # Recommended by OpenRouter
                         "Content-Type": "application/json",
                     },
-                    json={
-                        "model": chosen_model,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": self._system_prompt,
-                            },
-                            {
-                                "role": "user",
-                                "content": prompt,
-                            },
-                        ],
-                    },
+                    json=request_body,
                     timeout=90,
+                    stream=want_stream,
                 )
 
                 response.raise_for_status()  # Will raise an HTTPError for bad responses (4xx or 5xx)
+
+                if want_stream:
+                    got_events = False
+                    try:
+                        content, finish_reason, got_events = _consume_openrouter_stream(
+                            response, on_chunk
+                        )
+                    except Exception as exc:
+                        # A body that can't be iterated as SSE (e.g. a plain
+                        # JSON completion) falls through to the blocking
+                        # parse below; got_events stays False.
+                        logger.warning(
+                            "OpenRouter stream consumption failed (%s); "
+                            "falling back to body parse.",
+                            exc,
+                        )
+                    if got_events:
+                        story_text = _finalize_streamed_text(content, finish_reason)
+                        if story_text:
+                            logger.info("OpenRouter: Story streamed successfully.")
+                            return story_text
+                        # Safety block / empty stream — don't retry (mirrors
+                        # the blocking path's no-retry policy).
+                        return _SAFETY_FALLBACK
 
                 data = response.json()
                 story_text = _extract_text(data)

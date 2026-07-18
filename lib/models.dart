@@ -588,6 +588,24 @@ class StorySegmentData {
     this.createdAt,
   });
 
+  /// Copy with an updated illustration — used when the async-generated
+  /// segment image arrives after the text has already been rendered.
+  StorySegmentData copyWith({String? imageUrl}) {
+    return StorySegmentData(
+      id: id,
+      segmentNumber: segmentNumber,
+      title: title,
+      stageLabel: stageLabel,
+      outputType: outputType,
+      wordCount: wordCount,
+      content: content,
+      imageDescription: imageDescription,
+      imageUrl: imageUrl ?? this.imageUrl,
+      choices: choices,
+      createdAt: createdAt,
+    );
+  }
+
   /// Check if this segment requires a choice (vs just Continue button)
   bool get requiresChoice => outputType == 'CHOICE' && choices.isNotEmpty;
 

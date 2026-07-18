@@ -80,6 +80,7 @@ def purge_inactive_accounts_task():
     from backend.services.data_retention import (
         purge_inactive_accounts,
         purge_stale_illustration_cache,
+        purge_stale_tts_audio_cache,
         purge_unconsented_parent_contact,
     )
 
@@ -99,6 +100,9 @@ def purge_inactive_accounts_task():
         # Each degrades safely and is folded into the run summary so the
         # heartbeat/monitoring sees them.
         summary["illustration_cache"] = purge_stale_illustration_cache()
+        # Bound the narration-audio cache the same way (R-6 retention limit +
+        # a hard row cap so multi-MB audio rows can't grow unbounded).
+        summary["tts_audio_cache"] = purge_stale_tts_audio_cache()
         summary["unconsented_parent_contact"] = purge_unconsented_parent_contact()
         _write_retention_heartbeat(summary)
         return summary

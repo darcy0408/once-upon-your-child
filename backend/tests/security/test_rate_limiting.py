@@ -403,7 +403,13 @@ def test_tts_rate_limit(ratelimit_client, ratelimit_app):
 
     token = _get_token("tts_rate_test_user")
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    payload = {"text": "Once upon a time", "voice_id": "en-US-Standard-A"}
+
+    # Each request uses distinct text: the server-side TTS audio cache
+    # deliberately serves repeated text from cache WITHOUT consuming the daily
+    # quota (see tts_routes docstring), so identical payloads would never
+    # reach the quota check this test exercises.
+    def _payload(i):
+        return {"text": f"Once upon a time {i}", "voice_id": "en-US-Standard-A"}
 
     # Mock the TTS service with the real method signature: synthesize() calls
     # generate_speech_with_timestamps() and unpacks an (audio, timestamps) tuple.
@@ -439,13 +445,24 @@ def test_tts_rate_limit(ratelimit_client, ratelimit_app):
     ):
         for i in range(20):
             resp = ratelimit_client.post(
-                "/tts/synthesize", data=json.dumps(payload), headers=headers
+                "/tts/synthesize", data=json.dumps(_payload(i)), headers=headers
             )
             assert (
                 resp.status_code != 429
             ), f"Request {i+1} unexpectedly rate-limited (status {resp.status_code})"
         resp = ratelimit_client.post(
-            "/tts/synthesize", data=json.dumps(payload), headers=headers
+            "/tts/synthesize", data=json.dumps(_payload(20)), headers=headers
         )
         assert resp.status_code == 429
         assert resp.get_json().get("code") == "TTS_QUOTA_EXCEEDED"
+
+        # Cache-hit replay is quota-exempt by design: text 0 was synthesized
+        # and cached above, so re-requesting it succeeds even though the
+        # user's daily synthesis quota is now exhausted.
+        resp = ratelimit_client.post(
+            "/tts/synthesize", data=json.dumps(_payload(0)), headers=headers
+        )
+        assert resp.status_code == 200, (
+            f"Cached re-read should bypass the spent quota, got "
+            f"status {resp.status_code}"
+        )

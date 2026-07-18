@@ -26,11 +26,19 @@ class MagicalLoadingView extends StatefulWidget {
   /// to mirror *actual* generation progress instead of a blind timer; the dot
   /// timer is disabled. When null (non-streaming callers), the dot indicator
   /// keeps its original timer-driven behaviour so those screens are unaffected.
-  ///
-  /// IMPORTANT: this is only a numeric progress *signal*. The streamed text it
-  /// is derived from is PRE-MODERATION raw model output and is never rendered
-  /// here — no story words ever reach this widget.
   final double? progress;
+
+  /// PERF-01 streaming preview: the readable-prose view of the in-flight
+  /// story (backend `_partial_prose_view` — title + page text so far). When
+  /// non-null and non-empty, a "story begins" panel renders the growing text
+  /// under the status area so the child starts reading within seconds instead
+  /// of watching a spinner. Null/empty hides the panel entirely (identical to
+  /// pre-streaming behaviour). Never shown for the Sprout band (pre-readers).
+  ///
+  /// NOTE: this text is PRE-moderation model output (the post-generation
+  /// moderation pass hasn't run yet); the kill-switch is
+  /// FeatureFlags.partialStoryPreviewEnabled at the call site.
+  final String? partialText;
 
   const MagicalLoadingView({
     super.key,
@@ -39,6 +47,7 @@ class MagicalLoadingView extends StatefulWidget {
     this.companionImagePath,
     this.isSproutBand = false,
     this.progress,
+    this.partialText,
   });
 
   @override
@@ -176,6 +185,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   Timer? _stepTimer;
   int _messageIndex = 0;
   int _stepIndex = 0;
+
+  // PERF-01 streaming preview: keeps the growing partial-story panel pinned
+  // to its newest line as snapshots arrive.
+  final ScrollController _previewScrollController = ScrollController();
 
   /// Maps an honest progress fraction (0..1) to a dot index in
   /// [_adventureSteps]. The first dot is lit immediately (progress 0 => "we've
@@ -336,6 +349,16 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   @override
   void didUpdateWidget(covariant MagicalLoadingView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // PERF-01 streaming preview: as a new partial-text snapshot lands, keep
+    // the panel scrolled to the newest words (post-frame, once laid out).
+    if (widget.partialText != oldWidget.partialText &&
+        (widget.partialText?.isNotEmpty ?? false)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_previewScrollController.hasClients) return;
+        _previewScrollController
+            .jumpTo(_previewScrollController.position.maxScrollExtent);
+      });
+    }
     // PERF-01: keep the dot indicator in step with the latest honest progress.
     final progress = widget.progress;
     if (progress != null) {
@@ -366,11 +389,66 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     _targetSpawnTimer?.cancel();
     _constellationTimer?.cancel();
     _elapsedTimer?.cancel();
+    _previewScrollController.dispose();
     _pulseController.dispose();
     _rotationController.dispose();
     _weaveController.dispose();
     _bounceController?.dispose();
     super.dispose();
+  }
+
+  /// PERF-01 streaming preview: the growing "your story begins" panel.
+  /// Rendered only when partial prose has arrived (and never for Sprout —
+  /// pre-readers get the star-catcher, not text).
+  Widget _buildPartialStoryPreview(String text) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 150),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: 0.45),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.menu_book_rounded,
+                  size: 14, color: AppColors.gold),
+              const SizedBox(width: 6),
+              Text(
+                'Your story begins...',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.4,
+                  color: AppColors.gold.withValues(alpha: 0.9),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Flexible(
+            child: SingleChildScrollView(
+              controller: _previewScrollController,
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      height: 1.45,
+                    ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -741,6 +819,12 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 ),
               ),
             ),
+            // ── Streaming story preview (PERF-01) ─────────────────────────
+            if (!widget.isSproutBand &&
+                (widget.partialText?.trim().isNotEmpty ?? false)) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _buildPartialStoryPreview(widget.partialText!.trim()),
+            ],
             // ── Adventure progress steps ──────────────────────────────────
             const SizedBox(height: 12),
             Wrap(

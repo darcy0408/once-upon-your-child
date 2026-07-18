@@ -7,6 +7,7 @@ with inventory, state tracking, and illustrations.
 import json
 import logging
 import re
+import threading
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -20,13 +21,27 @@ from backend.models import (
     StorySegment,
     StoryState,
 )
-from backend.replicate_image_generator import ReplicateImageGenerator
 from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
-from backend.services.story_service import pseudonymize_hero_name, restore_hero_name
+from backend.services.story_service import (
+    _strip_lesson_endings,
+    _strip_meta_leakage,
+    pseudonymize_hero_name,
+    restore_hero_name,
+)
 
 logger = logging.getLogger(__name__)
+
+# Template placeholder text the model sometimes echoes back verbatim from the
+# generic choice templates in the prompt (e.g. "First choice option
+# (Action-oriented)"). A segment whose choices still contain any of these is
+# regenerated once; on a second failure the offending choices are dropped so a
+# child never sees scaffold text on a button.
+_PLACEHOLDER_CHOICE_RE = re.compile(
+    r"choice\s+option|action-oriented|\b(first|second|third|fourth)\s+choice\b",
+    re.IGNORECASE,
+)
 
 
 class InteractiveAdventureService:
@@ -44,12 +59,15 @@ class InteractiveAdventureService:
         (STORY_GEN_PROVIDER, default 'openai'); 'gemini'/'auto' are coerced to
         'openai' so a child's segment is never routed to Gemini. The legacy
         ``gemini_api_key`` parameter is kept for call-site compatibility but is
-        no longer used for text generation. Illustrations still use Replicate
-        (not Gemini).
+        no longer used for text generation.
+
+        Illustrations (latency audit fix A/B): this service no longer performs
+        ANY image work in the request path. Segment illustrations are generated
+        out-of-band via ``schedule_segment_illustration`` (module-level, spawned
+        by the route after moderation passes) on the same Cloudflare-first Flux
+        Schnell chain the main story reader uses.
         """
         self._user_tier = user_tier
-        # Image generator (Replicate — Gemini can't generate images anyway).
-        self.image_generator = ReplicateImageGenerator()
 
     def create_story(
         self,
@@ -90,14 +108,14 @@ class InteractiveAdventureService:
             fears_or_sensitivities: Things to handle carefully
             life_challenge: Optional therapeutic challenge (e.g. "Making Friends")
             personality_sliders: Optional personality traits (0-100)
-            include_images: When False, skip illustration generation entirely for
+            include_images: Signals whether the caller wants an illustration for
                 this story (audio-only / no-screen clients never render
-                segment.image_url, so generating it is wasted work and response
-                weight). Default True preserves existing behavior. This is a
-                per-request flag, not persisted on the story record — the caller
-                is responsible for passing it consistently on every
-                continue_story call for the same story (see continue_story's
-                docstring for why we chose not to persist it).
+                segment.image_url). The service itself performs no image work
+                either way (latency audit fix A) — the ROUTE uses this flag to
+                decide whether to schedule background illustration generation.
+                Kept on the service signature for call-site compatibility. Not
+                persisted — pass it consistently on every continue_story call
+                (see continue_story's docstring for why it isn't persisted).
 
         Returns:
             Dict with story_id, segment data, inventory, and state
@@ -190,6 +208,8 @@ class InteractiveAdventureService:
         segment_data = self._restore_hero_name_in_segment(
             segment_data, child_name, hero_token
         )
+        # Hygiene (audit E): reuse the standard story path's strippers.
+        segment_data = self._apply_content_hygiene(segment_data)
 
         # Create database records
         story = InteractiveStory(
@@ -271,16 +291,10 @@ class InteractiveAdventureService:
 
         db.session.commit()
 
-        # Generate illustration for first segment
-        # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
-        # Set MOCK_TESTING_MODE=false in .env to enable real image generation
-        # include_images=False (audio-only clients) skips this entirely — no
-        # illustration call, segment.image_url stays None.
-        if include_images and segment_data.get("image_description"):
-            self._generate_segment_illustration(
-                segment, character_dict, companions, character_age
-            )
-            db.session.commit()
+        # Latency audit fix A: NO illustration work happens here. The response
+        # returns text-only (segment.image_url is None); the route schedules
+        # background generation (schedule_segment_illustration) after
+        # moderation passes, and the client fetches the image asynchronously.
 
         logger.info(f"Created interactive story {story.id} with first segment")
 
@@ -310,8 +324,10 @@ class InteractiveAdventureService:
                 MUST pass this already sanitized and [USER_INPUT]-wrapped (see
                 continue_interactive_story_endpoint) — it is injected directly
                 into the continuation prompt.
-            include_images: When False, skip illustration generation for the new
-                segment. Default True preserves existing behavior.
+            include_images: Signals whether the caller wants an illustration for
+                the new segment. The service performs no image work either way
+                (latency audit fix A) — the ROUTE uses this flag to decide
+                whether to schedule background illustration generation.
 
                 Design note: this is intentionally a per-request flag, not a
                 preference persisted on the InteractiveStory record. The
@@ -419,6 +435,32 @@ class InteractiveAdventureService:
 
         next_segment_number = story.current_segment_number + 1
 
+        # Audit fix D (server-side ending backstop): the per-segment word
+        # budget divides the total word count by path_depth, so an adventure
+        # that overruns its planned depth breaks pacing — and the model's
+        # own `is_ending` is unreliable (the JSON template used to hardcode
+        # false). At/beyond path_depth the story completes regardless of
+        # what the model returned.
+        path_depth = InteractiveAdventurePromptBuilder.get_path_depth(
+            story.age or 7, story.length
+        )
+        if next_segment_number >= path_depth and not segment_data.get(
+            "is_ending", False
+        ):
+            logger.warning(
+                "Story %s reached path depth %d without model-declared ending; "
+                "forcing completion",
+                story_id,
+                path_depth,
+            )
+            segment_data["is_ending"] = True
+            segment_data["choices"] = []
+
+        # Hygiene (audit E): reuse the standard story path's strippers. Runs
+        # after the ending backstop so lesson-ending stripping applies to
+        # forced finales too.
+        segment_data = self._apply_content_hygiene(segment_data)
+
         # Create new segment.
         # MT-195: `parent_choice_id` is the FK to story_choice.id (nullable).
         # We pass the *computed* `parent_choice_id` — which is None for the
@@ -469,18 +511,9 @@ class InteractiveAdventureService:
 
         db.session.commit()
 
-        # Generate illustration for new segment
-        # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
-        # Set MOCK_TESTING_MODE=false in .env to enable real image generation
-        # include_images=False (audio-only clients) skips this entirely — no
-        # illustration call, new_segment.image_url stays None.
-        if include_images and segment_data.get("image_description"):
-            character_dict = self._get_character_dict(story)
-            companions = self._get_companions(story)
-            self._generate_segment_illustration(
-                new_segment, character_dict, companions, story.age
-            )
-            db.session.commit()
+        # Latency audit fix A: NO illustration work happens here — the route
+        # schedules background generation after moderation passes and the
+        # client fetches the image asynchronously.
 
         logger.info(f"Story {story_id} continued to segment {next_segment_number}")
 
@@ -605,16 +638,69 @@ class InteractiveAdventureService:
 
         return gen.generate_story(prompt)
 
+    @staticmethod
+    def _has_placeholder_choices(segment_data: Dict[str, Any]) -> bool:
+        """True if any returned choice still contains template placeholder text
+        (e.g. "First choice option (Action-oriented)") the model was supposed
+        to replace."""
+        for choice in segment_data.get("choices") or []:
+            if isinstance(choice, dict) and _PLACEHOLDER_CHOICE_RE.search(
+                str(choice.get("text") or "")
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _drop_placeholder_choices(segment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove choices that still contain template placeholder text. If none
+        survive, the segment degrades to a continue-style beat (the client
+        renders a Continue button for choiceless, non-ending segments)."""
+        choices = segment_data.get("choices") or []
+        kept = [
+            c
+            for c in choices
+            if not (
+                isinstance(c, dict)
+                and _PLACEHOLDER_CHOICE_RE.search(str(c.get("text") or ""))
+            )
+        ]
+        if len(kept) != len(choices):
+            logger.warning(
+                "Dropped %d placeholder choice(s) after retry", len(choices) - len(kept)
+            )
+        segment_data["choices"] = kept
+        return segment_data
+
+    @staticmethod
+    def _apply_content_hygiene(segment_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Run the standard story path's meta-leakage stripper on segment prose
+        (audit E — reused from story_service, not duplicated). Lesson-summary
+        endings are additionally stripped on ending segments, mirroring how the
+        main path only checks the final page."""
+        content = segment_data.get("content")
+        if isinstance(content, str) and content.strip():
+            pages = _strip_meta_leakage([content])
+            if segment_data.get("is_ending"):
+                pages = _strip_lesson_endings(pages)
+            if pages and pages[0].strip():
+                segment_data["content"] = pages[0]
+        return segment_data
+
     def _generate_segment_with_retry(
         self, prompt: str, max_retries: int = 3
     ) -> Dict[str, Any]:
         """Generate a segment with retry + JSON parsing via the ToS-safe
         provider chain (never Gemini — MT-137). The underlying generators run
         their own 429/backoff internally and return a sentinel string on
-        failure, which fails JSON parsing here and triggers a retry."""
+        failure, which fails JSON parsing here and triggers a retry.
+
+        Audit fix E: a parsed segment whose choices still contain template
+        placeholder text is regenerated once; if the retry still contains
+        placeholders they are dropped rather than shown to the child."""
         import time
 
         base_delay = 2
+        placeholder_retried = False
 
         for attempt in range(max_retries):
             try:
@@ -622,6 +708,15 @@ class InteractiveAdventureService:
                 text = self._generate_text(prompt)
                 if text and text.strip():
                     segment_data = self._parse_segment_response(text)
+                    if self._has_placeholder_choices(segment_data):
+                        if not placeholder_retried and attempt < max_retries - 1:
+                            placeholder_retried = True
+                            logger.warning(
+                                "Segment choices contain template placeholder "
+                                "text; regenerating (one retry max)"
+                            )
+                            continue
+                        segment_data = self._drop_placeholder_choices(segment_data)
                     logger.info("Segment generated successfully")
                     return segment_data
 
@@ -806,67 +901,194 @@ class InteractiveAdventureService:
 
         return companions
 
+    # Word budget for the story-so-far block fed to the continuation prompt
+    # (latency/continuity audit, fix C — roughly 1500-2000 words). The full
+    # text of the immediately previous segment is always kept; older-segment
+    # summaries are dropped OLDEST-first when the budget would overflow.
+    MAX_CONTEXT_WORDS = 1800
+
     def _build_story_summary(self, story: InteractiveStory) -> str:
-        """Build summary of story so far"""
+        """Build the story-so-far context for the continuation prompt.
+
+        Audit fix C: the old implementation truncated every segment to its
+        first 200 chars, so anything introduced later in a segment — names,
+        objects, the cliffhanger the child just read — was invisible to the
+        model. Now:
+          * the immediately previous segment is included IN FULL, verbatim,
+          * older segments get compact structured summaries (first + last
+            sentence, mid-sentence proper nouns, and the choice taken),
+          * the whole block is capped at MAX_CONTEXT_WORDS, dropping the
+            oldest summaries first.
+
+        Deliberately heuristic — ChroniclePromptService.summarize_chapter is a
+        real LLM summarizer, but calling it here would add a second model
+        round-trip to every choice tap, which is exactly the latency this
+        change removes.
+        """
         segments = story.segments.order_by(StorySegment.segment_number).all()
+        if not segments:
+            return ""
 
-        summary_parts = []
-        for seg in segments:
-            summary_parts.append(
-                f"Segment {seg.segment_number}: {seg.content[:200]}..."
+        previous = segments[-1]
+        prev_choice = next((c for c in previous.choices if c.is_selected), None)
+        prev_parts = [
+            f"PREVIOUS SCENE (segment {previous.segment_number}, VERBATIM — "
+            "the next segment continues directly from here):",
+            (previous.content or "").strip(),
+        ]
+        if prev_choice:
+            prev_parts.append(f"→ The reader just chose: {prev_choice.text}")
+        prev_block = "\n".join(prev_parts)
+
+        budget = self.MAX_CONTEXT_WORDS - len(prev_block.split())
+        newest_first: List[str] = []
+        for seg in reversed(segments[:-1]):
+            line = self._summarize_segment_for_context(seg)
+            cost = len(line.split())
+            if cost > budget:
+                break  # this summary and everything older is dropped
+            newest_first.append(line)
+            budget -= cost
+
+        if newest_first:
+            older_block = "\n\n".join(reversed(newest_first))
+            return (
+                "EARLIER IN THE ADVENTURE (oldest first):\n"
+                f"{older_block}\n\n{prev_block}"
             )
+        return prev_block
 
-            # Include selected choice if available
-            selected_choice = next((c for c in seg.choices if c.is_selected), None)
-            if selected_choice:
-                summary_parts.append(f"  → Chose: {selected_choice.text}")
+    @staticmethod
+    def _summarize_segment_for_context(seg: StorySegment) -> str:
+        """Compact single-segment summary: first + last sentence plus proper
+        nouns found mid-sentence, so names/objects introduced late in a
+        segment survive compression."""
+        content = (seg.content or "").strip()
+        sentences = [s for s in re.split(r"(?<=[.!?])\s+", content) if s.strip()]
+        first = sentences[0] if sentences else ""
+        last = sentences[-1] if len(sentences) > 1 else ""
+        summary = f"Segment {seg.segment_number}: {first}"
+        if last:
+            summary += f" [...] {last}"
 
-        return "\n\n".join(summary_parts)
+        # Capitalized words that are NOT sentence-initial are very likely
+        # proper nouns (characters, places, named objects).
+        nouns: List[str] = []
+        seen: set = set()
+        for sentence in sentences:
+            for word in sentence.split()[1:]:
+                match = re.match(r"^[\"'(\[]*([A-Z][a-zA-Z'-]{2,})", word)
+                if not match:
+                    continue
+                name = match.group(1)
+                key = name.lower()
+                if key not in seen:
+                    seen.add(key)
+                    nouns.append(name)
+        if nouns:
+            summary += f" (Names/objects: {', '.join(nouns[:8])})"
 
-    def _generate_segment_illustration(
-        self,
-        segment: StorySegment,
-        character_dict: Optional[Dict],
-        companions: List[Dict],
-        age: int,
-    ):
-        """Generate illustration for segment asynchronously"""
-        try:
-            if not segment.image_description:
-                return
+        selected_choice = next((c for c in seg.choices if c.is_selected), None)
+        if selected_choice:
+            summary += f"\n  → Chose: {selected_choice.text}"
+        return summary
 
-            # MT-311#16: pseudonymize before the image vendor call.  The text
-            # path already pseudonymizes at :147; mirror that here so the
-            # child's real name never reaches the image generator either.
-            safe_name = "the hero"
 
-            # Build character appearance from dict
-            character_appearance = None
-            if character_dict:
-                # This would need to be expanded based on Character model fields
-                character_appearance = {
-                    "name": character_dict.get("name"),
-                    "age": character_dict.get("age"),
-                }
+# ---------------------------------------------------------------------------
+# Out-of-band segment illustration (latency audit fixes A + B)
+#
+# The request path returns text-only; these helpers generate the illustration
+# in a background thread on the SAME Cloudflare-first Flux Schnell chain the
+# main story reader uses (_generate_flux_illustration: Cloudflare Workers AI
+# at $0, Replicate Flux Schnell fallback, per-provider kill switches) instead
+# of the old synchronous ReplicateImageGenerator poll loop. The client fetches
+# the finished image via
+# GET /interactive-story/<story_id>/segments/<segment_id>/illustration.
+# ---------------------------------------------------------------------------
 
-            images = self.image_generator.generate_story_illustration(
-                scene_description=segment.image_description,
-                character_name=safe_name,
-                style="whimsical children's book illustration",
-                num_images=1,
-                age=age,
-                character_appearance=character_appearance,
-                companions=companions,
-            )
 
-            if images and len(images) > 0:
-                image_data = images[0].get("image_data")
-                if image_data:
-                    segment.image_url = f"data:image/png;base64,{image_data}"
-                    logger.info(f"Generated illustration for segment {segment.id}")
+def generate_segment_illustration(segment_id: str) -> bool:
+    """Generate and persist the illustration for one segment (blocking).
 
-        except Exception as e:
-            logger.error(
-                f"Failed to generate illustration for segment {segment.id}: {e}"
-            )
-            # Don't fail the whole operation if illustration fails
+    Returns True when an image was generated and stored. Safe to call twice —
+    a segment that already has an image (or has no image_description) is a
+    no-op. Never raises past its own boundary except for programming errors;
+    provider failures return False and leave image_url None so the client's
+    poll simply times out gracefully.
+    """
+    # Lazy import: story_routes imports this module at import time, so a
+    # top-level import here would be circular.
+    from backend.routes.story_routes import _generate_flux_illustration
+
+    segment = db.session.get(StorySegment, segment_id)
+    if segment is None:
+        logger.warning("Segment %s not found for illustration", segment_id)
+        return False
+    if segment.image_url or not segment.image_description:
+        return False
+
+    story = segment.story
+    service = InteractiveAdventureService()
+    character_dict = service._get_character_dict(story) if story else None
+    companions = service._get_companions(story) if story else []
+
+    # MT-311#16: the child's real name never reaches the image vendor — the
+    # picture doesn't render text, so the name is cosmetic.
+    character_appearance = None
+    if character_dict:
+        character_appearance = {
+            "name": "the hero",
+            "age": character_dict.get("age"),
+        }
+
+    images = _generate_flux_illustration(
+        scene_description=segment.image_description,
+        character_name="the hero",
+        style="whimsical children's book illustration",
+        num_images=1,
+        age=(story.age if story else 7) or 7,
+        character_appearance=character_appearance,
+        companions=companions,
+    )
+
+    if images and images[0].get("image_data"):
+        image_format = images[0].get("format") or "png"
+        segment.image_url = (
+            f"data:image/{image_format};base64,{images[0]['image_data']}"
+        )
+        db.session.commit()
+        logger.info("Generated illustration for segment %s", segment_id)
+        return True
+
+    logger.warning("Illustration providers returned no image for %s", segment_id)
+    return False
+
+
+def schedule_segment_illustration(app, segment_id: str) -> threading.Thread:
+    """Kick off background illustration generation for a segment.
+
+    ``app`` must be the real Flask app object (``current_app._get_current_object()``
+    from a request context) — the worker thread pushes its own app context.
+    Daemon thread: an in-flight illustration never blocks process shutdown;
+    the poll endpoint simply reports pending until the client gives up.
+    """
+
+    def _run() -> None:
+        with app.app_context():
+            try:
+                generate_segment_illustration(segment_id)
+            except Exception:
+                logger.exception(
+                    "Background illustration failed for segment %s", segment_id
+                )
+                db.session.rollback()
+            finally:
+                db.session.remove()
+
+    thread = threading.Thread(
+        target=_run,
+        name=f"segment-illustration-{segment_id[:8]}",
+        daemon=True,
+    )
+    thread.start()
+    return thread

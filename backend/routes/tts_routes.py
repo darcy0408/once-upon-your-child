@@ -25,6 +25,13 @@ POST /tts/synthesize
   Returns 503 only if all three providers fail — clients then fall back to
   on-device flutter_tts.
 
+Server-side audio cache: identical (text, voice, speed, provider-chain)
+requests are served from the ``tts_audio_cache`` table without touching any
+provider — and without consuming the daily TTS quota, so re-reads are free
+and start instantly (see backend/services/tts_audio_cache_service.py). The
+auth + parental-consent + rate-limit decorators still run on every request,
+cache hit or miss.
+
 GET /tts/voices
   Returns: { "voices": [...] }  — curated voice list for the picker UI.
 """
@@ -270,14 +277,20 @@ def create_tts_blueprint(limiter, require_auth):
                 503,
             )
 
-        # ElevenLabs is now an OPT-IN premium voice rather than the paid
-        # default (F-01: it costs ~3.3x Gemini Flash TTS). It is initialised
-        # and attempted only when the client explicitly opts in below; the
-        # default paid path is Gemini Flash TTS, then the free Edge tier.
-        service = None
-        elevenlabs_ok = False
+        # Parse the request BEFORE any quota work: the server-side audio
+        # cache (below) must be servable even when the user's daily synthesis
+        # quota is spent — replaying already-synthesized audio costs no
+        # provider call, so a re-read is free (mirrors the illustration
+        # cache's hit-skips-quota rule).
+        data = request.get_json(force=True, silent=True) or {}
+        text = (data.get("text") or "").strip()
+        if not text:
+            return jsonify({"error": "text is required"}), 400
+        # The ElevenLabs monthly char budget is checked against the raw
+        # (pre-clean) length, matching the pre-cache behavior of this route.
+        raw_text_len = len(text)
 
-        # Per-user daily TTS quota check (applies to all providers)
+        # Per-user daily TTS quota helpers (applies to all providers)
         try:
             from backend.utils.ai_quota import (
                 check_tts_chars_quota,
@@ -323,75 +336,8 @@ def create_tts_blueprint(limiter, require_auth):
             )
         except (TypeError, ValueError):
             is_under_18 = is_under_13
-        if user_id:
-            allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
-            if not allowed:
-                audit_log(
-                    "tts_quota_exceeded",
-                    user_id=user_id,
-                    data={"tier": user_tier, "count": tts_count, "limit": tts_limit},
-                )
-                return (
-                    jsonify(
-                        {
-                            "error": "Daily narration limit reached",
-                            "code": "TTS_QUOTA_EXCEEDED",
-                            "daily_limit": tts_limit,
-                            "syntheses_used": tts_count,
-                        }
-                    ),
-                    429,
-                )
-
-        data = request.get_json(force=True, silent=True) or {}
-        text = (data.get("text") or "").strip()
-        if not text:
-            return jsonify({"error": "text is required"}), 400
-
-        # Opt-in gate for the premium ElevenLabs voice. Dialogue-differentiated
-        # narration (character_voice_id) also requires ElevenLabs, since it is
-        # the only provider that supports multi-voice synthesis. Without an
-        # explicit opt-in the request is served by the default Gemini -> Edge
-        # chain below.
         premium_voice = bool(data.get("premium_voice"))
         wants_dialogue = bool((data.get("character_voice_id") or "").strip())
-        if (premium_voice or wants_dialogue) and is_under_18:
-            # Opted into a premium/dialogue ElevenLabs voice, but the user is a
-            # minor — ElevenLabs' ToS bar ALL under-18s, not just under-13s
-            # (MT-365; the is_under_18 flag already gates the legacy Gemini
-            # chain below for the same reason). Refuse ElevenLabs and let the
-            # default fallback serve the narration: Gemini is also under-18-
-            # barred, so teens land on Edge while under-13s 503 to on-device.
-            audit_log(
-                "tts_elevenlabs_minor_blocked",
-                user_id=user_id,
-                data={"premium_voice": premium_voice, "wants_dialogue": wants_dialogue},
-            )
-        elif premium_voice or wants_dialogue:
-            service = _get_tts_service()
-            elevenlabs_ok = service is not None
-
-        # Monthly ElevenLabs character-budget check (per-user + global). When
-        # the premium budget is depleted we don't fail the request — we fall
-        # through to the free Edge TTS voice so narration still sounds natural.
-        if user_id and elevenlabs_ok:
-            chars_req = len(text)
-            ok, cap_reason, used, limit = check_tts_chars_quota(
-                user_id, user_tier, chars_req
-            )
-            if not ok:
-                audit_log(
-                    "tts_chars_cap_exceeded",
-                    user_id=user_id,
-                    data={
-                        "tier": user_tier,
-                        "reason": cap_reason,
-                        "used": used,
-                        "limit": limit,
-                        "requested": chars_req,
-                    },
-                )
-                elevenlabs_ok = False
 
         # Strip markdown/formatting before sending so we don't waste
         # the per-chunk budget on asterisks and pound signs.
@@ -413,6 +359,148 @@ def create_tts_blueprint(limiter, require_auth):
         except (ValueError, TypeError):
             speed = 1.0
 
+        # ── Server-side audio cache: cache-first ─────────────────────────
+        # Identical (text, voice, speed, provider-chain) requests replay the
+        # stored MP3 instead of re-synthesizing — the second read of any
+        # story page starts instantly, costs no provider spend, and does NOT
+        # consume the daily TTS quota (mirrors the illustration cache).
+        #
+        # Azure availability is resolved here (rather than at synthesis time
+        # below) because the provider chain is part of the cache key: audio
+        # cached under one chain must never be replayed to an audience the
+        # other chain's licensing gates exclude (e.g. legacy Gemini audio is
+        # adult-only; under-13s on the legacy chain 503 to on-device).
+        azure_enabled = _get_azure_service() is not None
+        try:
+            from backend.services.tts_audio_cache_service import (
+                compute_cache_key,
+                get_cached_tts_audio,
+                store_tts_audio,
+            )
+        except ImportError:
+            try:
+                from services.tts_audio_cache_service import (
+                    compute_cache_key,
+                    get_cached_tts_audio,
+                    store_tts_audio,
+                )
+            except ImportError:
+                compute_cache_key = None
+                get_cached_tts_audio = None
+                store_tts_audio = None
+
+        cache_key = None
+        if compute_cache_key is not None:
+            if azure_enabled:
+                # Azure serves everyone identically; premium/dialogue opt-ins
+                # are bypassed, so they must not fragment the key.
+                chain = "azure"
+                key_premium = False
+                key_dialogue = None
+            else:
+                # Legacy chain outcomes differ by audience (adult -> Gemini,
+                # teen -> Edge, under-13 -> 503) and by the (adult-only)
+                # ElevenLabs opt-in flags.
+                audience = (
+                    "u13" if is_under_13 else ("teen" if is_under_18 else "adult")
+                )
+                chain = f"legacy-{audience}"
+                key_premium = premium_voice and not is_under_18
+                key_dialogue = (
+                    character_voice_id if (wants_dialogue and not is_under_18) else None
+                )
+            cache_key = compute_cache_key(
+                text=text,
+                voice_id=voice_id,
+                speed=speed,
+                chain=chain,
+                premium_voice=key_premium,
+                character_voice_id=key_dialogue,
+            )
+            cached = get_cached_tts_audio(cache_key)
+            if cached is not None and cached.get("audio_base64"):
+                return jsonify(
+                    {
+                        "audio_base64": cached["audio_base64"],
+                        "format": cached.get("format") or "mp3",
+                        "voice_id": voice_id,
+                        "provider": cached.get("provider"),
+                        "word_timestamps": cached.get("word_timestamps") or [],
+                        "cached": True,
+                    }
+                )
+
+        # ── Cache miss: quota gate + full provider chain ─────────────────
+        if user_id:
+            allowed, tts_count, tts_limit = check_tts_quota(user_id, user_tier)
+            if not allowed:
+                audit_log(
+                    "tts_quota_exceeded",
+                    user_id=user_id,
+                    data={"tier": user_tier, "count": tts_count, "limit": tts_limit},
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "Daily narration limit reached",
+                            "code": "TTS_QUOTA_EXCEEDED",
+                            "daily_limit": tts_limit,
+                            "syntheses_used": tts_count,
+                        }
+                    ),
+                    429,
+                )
+
+        # ElevenLabs is an OPT-IN premium voice rather than the paid default
+        # (F-01: it costs ~3.3x Gemini Flash TTS). It is initialised and
+        # attempted only when the client explicitly opts in below; the
+        # default paid path is Gemini Flash TTS, then the free Edge tier.
+        service = None
+        elevenlabs_ok = False
+
+        # Opt-in gate for the premium ElevenLabs voice. Dialogue-differentiated
+        # narration (character_voice_id) also requires ElevenLabs, since it is
+        # the only provider that supports multi-voice synthesis. Without an
+        # explicit opt-in the request is served by the default Gemini -> Edge
+        # chain below.
+        if (premium_voice or wants_dialogue) and is_under_18:
+            # Opted into a premium/dialogue ElevenLabs voice, but the user is a
+            # minor — ElevenLabs' ToS bar ALL under-18s, not just under-13s
+            # (MT-365; the is_under_18 flag already gates the legacy Gemini
+            # chain below for the same reason). Refuse ElevenLabs and let the
+            # default fallback serve the narration: Gemini is also under-18-
+            # barred, so teens land on Edge while under-13s 503 to on-device.
+            audit_log(
+                "tts_elevenlabs_minor_blocked",
+                user_id=user_id,
+                data={"premium_voice": premium_voice, "wants_dialogue": wants_dialogue},
+            )
+        elif premium_voice or wants_dialogue:
+            service = _get_tts_service()
+            elevenlabs_ok = service is not None
+
+        # Monthly ElevenLabs character-budget check (per-user + global). When
+        # the premium budget is depleted we don't fail the request — we fall
+        # through to the free Edge TTS voice so narration still sounds natural.
+        if user_id and elevenlabs_ok:
+            chars_req = raw_text_len
+            ok, cap_reason, used, limit = check_tts_chars_quota(
+                user_id, user_tier, chars_req
+            )
+            if not ok:
+                audit_log(
+                    "tts_chars_cap_exceeded",
+                    user_id=user_id,
+                    data={
+                        "tier": user_tier,
+                        "reason": cap_reason,
+                        "used": used,
+                        "limit": limit,
+                        "requested": chars_req,
+                    },
+                )
+                elevenlabs_ok = False
+
         audio_bytes = None
         word_timestamps = []
         provider = None
@@ -421,7 +509,7 @@ def create_tts_blueprint(limiter, require_auth):
         # configured it serves FIRST and the prohibited/unlicensed providers
         # (ElevenLabs, Gemini Flash TTS, Edge) are bypassed entirely; an Azure
         # failure falls straight through to the client's on-device voice.
-        azure_enabled = _get_azure_service() is not None
+        # (azure_enabled was resolved above, as part of the cache key.)
         if azure_enabled:
             elevenlabs_ok = False  # never use the prohibited premium path
             azure_result = _azure_synthesize(text, voice_id, speed)
@@ -564,13 +652,30 @@ def create_tts_blueprint(limiter, require_auth):
                 except Exception:
                     logger.debug("cost_tracker logging failed", exc_info=True)
 
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+
+        # Persist the freshly synthesized audio so the next identical request
+        # (a re-read, a replay, or another child hearing the same page) is a
+        # cache hit. Best-effort — a store failure never breaks the response.
+        if cache_key and store_tts_audio is not None:
+            store_tts_audio(
+                cache_key,
+                audio_b64,
+                audio_format="mp3",
+                provider=provider,
+                word_timestamps=word_timestamps,
+                user_id=user_id,
+                text_chars=len(text),
+            )
+
         return jsonify(
             {
-                "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
+                "audio_base64": audio_b64,
                 "format": "mp3",
                 "voice_id": voice_id,
-                "provider": provider,  # 'gemini' (default), 'elevenlabs' (opt-in), or 'edge'
+                "provider": provider,  # 'azure', 'gemini', 'elevenlabs' (opt-in), or 'edge'
                 "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
+                "cached": False,
             }
         )
 

@@ -12,6 +12,7 @@ import 'package:story_weaver_app/providers/age_band_provider.dart';
 import 'package:story_weaver_app/providers/highlight_color_provider.dart';
 import 'package:story_weaver_app/providers/voice_preference_provider.dart';
 import 'package:story_weaver_app/services/audio_ambience_service.dart';
+import 'package:story_weaver_app/services/narration_chunker.dart';
 import 'package:story_weaver_app/services/tts_api_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
@@ -59,6 +60,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   DateTime? _lastSaveTime;
   bool _resumeBannerVisible = false;
   Duration _resumePosition = Duration.zero;
+  Duration _resumeChunkPosition = Duration.zero;
   Duration? _pendingResumePosition;
 
   // Ambient sound
@@ -74,8 +76,32 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   Duration _audioDuration = Duration.zero;
   final List<StreamSubscription<dynamic>> _audioSubs = [];
 
-  // Exact word timestamps from ElevenLabs alignment (empty = use char-weighted estimation)
+  // Exact word timestamps from ElevenLabs alignment (empty = use char-weighted
+  // estimation). With chunked narration these are the CURRENT CHUNK's
+  // timestamps; word indices are offset by the chunk's wordOffset.
   List<({int startMs, int endMs})> _wordTimestamps = [];
+
+  // ── Chunked narration (perf: time-to-first-audio) ──────────────────────
+  // The story is split into narration chunks; chunk 0 is small so playback
+  // starts after ~1 chunk of synthesis instead of the whole story. Later
+  // chunks are prefetched sequentially while earlier ones play. Fetched
+  // audio is kept for the session so replay/start-over is instant (the
+  // backend additionally caches synthesized audio server-side).
+  late final List<NarrationChunk> _chunks;
+  late final List<TtsSynthesisResult?> _chunkAudio;
+  late final List<Object?> _chunkFetchError;
+  late final List<Future<TtsSynthesisResult?>?> _chunkInflight;
+  String? _chunkVoiceId;
+  int _currentChunk = 0;
+  // Sum of completed previous chunks' durations in this playback — used to
+  // persist a whole-story bookmark position.
+  int _elapsedBeforeChunkMs = 0;
+  // Invalidates in-flight async playback continuations on stop/restart.
+  int _playSession = 0;
+  bool _prefetchingChunks = false;
+  int _resumeChunk = 0;
+  int? _pendingResumeChunk;
+  int? _pendingResumeElapsedMs;
 
   // Animation for the "active" reading state
   late AnimationController _pulseController;
@@ -152,7 +178,23 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     // 4. Check for bookmark
     await _checkForResume();
 
-    // 5. Auto-play only for young bands (sprout/explorer).
+    // 5. Warm start: kick off synthesis of the opening chunk NOW, so by the
+    // time the user taps Read (or autoplay fires below) the first audio is
+    // already in flight or in hand instead of starting from zero. The saved
+    // voice preference is read from prefs directly — the provider loads it
+    // asynchronously and may still hold the band default at this point,
+    // which would warm the wrong voice.
+    if (_chunks.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(ElevenLabsVoice.prefsKey);
+      final voiceId = (saved != null && ElevenLabsVoice.byId(saved) != null)
+          ? saved
+          : ref.read(voicePreferenceNotifierProvider);
+      _resetChunkCacheIfVoiceChanged(voiceId);
+      unawaited(_fetchChunkAudio(0));
+    }
+
+    // 6. Auto-play only for young bands (sprout/explorer).
     // Creator+ bands must tap play — unexpected audio is embarrassing for older users.
     if (!_autoPlayTriggered && !_isPlaying) {
       if (band.isYoung) {
@@ -171,20 +213,36 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   }
 
   Future<void> _checkForResume() async {
-    if (_storyKey == null) return;
+    if (_storyKey == null || _chunks.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
+    // 'playback_pos' holds the whole-story position (for the banner label and
+    // the 30s threshold); 'playback_chunk'/'playback_chunkpos' locate the
+    // narration chunk to restart from. Legacy bookmarks (chunk keys absent)
+    // fall back to chunk 0.
     final savedMs = prefs.getInt('playback_pos_$_storyKey');
     if (savedMs == null || savedMs < 30000) return; // < 30s not worth resuming
+    final savedChunk = prefs.getInt('playback_chunk_$_storyKey') ?? 0;
+    final savedChunkPos = prefs.getInt('playback_chunkpos_$_storyKey');
     if (!mounted) return;
     setState(() {
+      // The banner label shows the whole-story position; seeking happens
+      // with the chunk-local position below.
       _resumePosition = Duration(milliseconds: savedMs);
+      _resumeChunkPosition = Duration(milliseconds: savedChunkPos ?? savedMs);
+      _resumeChunk = savedChunk.clamp(0, _chunks.length - 1);
       _resumeBannerVisible = true;
     });
   }
 
   Future<void> _doResume() async {
     setState(() => _resumeBannerVisible = false);
-    _pendingResumePosition = _resumePosition;
+    _pendingResumePosition = _resumeChunkPosition;
+    _pendingResumeChunk = _resumeChunk;
+    // Keep the persisted whole-story position accurate after a mid-story
+    // resume: previous chunks' durations = saved global - saved in-chunk.
+    final elapsed =
+        (_resumePosition - _resumeChunkPosition).inMilliseconds;
+    _pendingResumeElapsedMs = elapsed > 0 ? elapsed : 0;
     if (!_isPlaying && !_isLoadingAudio) {
       await _startReading();
     }
@@ -194,7 +252,15 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   Future<void> _persistPosition(Duration pos) async {
     if (_storyKey == null) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('playback_pos_$_storyKey', pos.inMilliseconds);
+    // Whole-story position (previous chunks' durations + in-chunk position)
+    // keeps the resume banner label meaningful; the chunk pair is what the
+    // resume path actually seeks with.
+    await prefs.setInt(
+      'playback_pos_$_storyKey',
+      _elapsedBeforeChunkMs + pos.inMilliseconds,
+    );
+    await prefs.setInt('playback_chunk_$_storyKey', _currentChunk);
+    await prefs.setInt('playback_chunkpos_$_storyKey', pos.inMilliseconds);
   }
 
   String _formatDuration(Duration d) =>
@@ -238,29 +304,44 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
           return;
         }
 
+        // Word position within the CURRENT chunk, offset onto the global
+        // token list. Timestamps (when present) are chunk-local; the
+        // char-weighted fallback maps chunk progress onto the chunk's own
+        // character range.
+        final chunk = (_currentChunk >= 0 && _currentChunk < _chunks.length)
+            ? _chunks[_currentChunk]
+            : null;
+        final chunkWordOffset = chunk?.wordOffset ?? 0;
+        final chunkWordCount = chunk?.wordCount ?? _wordTokenIndices.length;
+        final maxChunkWord = (chunkWordOffset + chunkWordCount - 1)
+            .clamp(0, _wordTokenIndices.length - 1);
+
         int wordIndex;
         if (_wordTimestamps.isNotEmpty) {
-          // Exact path: binary search on ElevenLabs alignment timestamps.
+          // Exact path: binary search on the chunk's alignment timestamps.
           final posMs = position.inMilliseconds;
           var lo = 0;
           var hi = _wordTimestamps.length - 1;
-          wordIndex = 0;
+          var local = 0;
           while (lo <= hi) {
             final mid = (lo + hi) ~/ 2;
             if (_wordTimestamps[mid].startMs <= posMs) {
-              wordIndex = mid;
+              local = mid;
               lo = mid + 1;
             } else {
               hi = mid - 1;
             }
           }
-          wordIndex = wordIndex.clamp(0, _wordTokenIndices.length - 1);
+          wordIndex = (chunkWordOffset + local).clamp(0, maxChunkWord);
         } else {
-          // Fallback: character-weighted estimation from audio progress.
+          // Fallback: character-weighted estimation from chunk progress.
           final progress =
               position.inMilliseconds / _audioDuration.inMilliseconds;
-          if (_totalStoryChars > 0) {
-            final targetChars = (progress * _totalStoryChars).round();
+          final chunkChars =
+              chunk != null ? _chunkWordChars(chunk) : _totalStoryChars;
+          if (chunkChars > 0) {
+            final charsBefore = chunk != null ? _chunkCharsBefore(chunk) : 0;
+            final targetChars = charsBefore + (progress * chunkChars).round();
             var lo = 0;
             var hi = _wordCharOffsets.length - 1;
             wordIndex = 0;
@@ -273,11 +354,11 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                 hi = mid - 1;
               }
             }
-            wordIndex = wordIndex.clamp(0, _wordTokenIndices.length - 1);
+            wordIndex = wordIndex.clamp(chunkWordOffset, maxChunkWord);
           } else {
-            wordIndex = (progress * _wordTokenIndices.length)
+            wordIndex = (chunkWordOffset + progress * chunkWordCount)
                 .floor()
-                .clamp(0, _wordTokenIndices.length - 1);
+                .clamp(chunkWordOffset, maxChunkWord);
           }
         }
 
@@ -295,24 +376,49 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       }),
     );
 
-    // Playback complete
+    // Playback complete — chain into the next narration chunk, or finish.
     _audioSubs.add(
       _audioPlayer.onPlayerComplete.listen((_) {
-        if (!mounted) return;
-        setState(() {
-          _isPlaying = false;
-          _usingNeural2 = false;
-          _currentWordIndex = -1;
-          _wordTimestamps = [];
-          _pulseController.stop();
-        });
-        // Clear saved bookmark now that the story is finished
-        if (_storyKey != null) {
-          SharedPreferences.getInstance()
-              .then((p) => p.remove('playback_pos_$_storyKey'));
+        if (!mounted || !_usingNeural2) return;
+        final session = _playSession;
+        final next = _currentChunk + 1;
+        if (next < _chunks.length) {
+          _elapsedBeforeChunkMs += _audioDuration.inMilliseconds;
+          // Brief gap while the next chunk finishes fetching is acceptable;
+          // usually it is already prefetched and the transition is seamless.
+          if (_chunkAudio[next] == null) {
+            setState(() => _isLoadingAudio = true);
+          }
+          unawaited(_playChunk(next, session));
+        } else {
+          _finishNeuralPlayback(completedStory: true);
         }
       }),
     );
+  }
+
+  /// Reset playback state after the last chunk (or an unrecoverable
+  /// mid-story fetch failure). Clears the bookmark only when the story
+  /// actually finished.
+  void _finishNeuralPlayback({required bool completedStory}) {
+    if (!mounted) return;
+    setState(() {
+      _isPlaying = false;
+      _usingNeural2 = false;
+      _isLoadingAudio = false;
+      _currentWordIndex = -1;
+      _wordTimestamps = [];
+      _pulseController.stop();
+    });
+    _currentChunk = 0;
+    _elapsedBeforeChunkMs = 0;
+    if (completedStory && _storyKey != null) {
+      SharedPreferences.getInstance().then((p) {
+        p.remove('playback_pos_$_storyKey');
+        p.remove('playback_chunk_$_storyKey');
+        p.remove('playback_chunkpos_$_storyKey');
+      });
+    }
   }
 
   void _prepareTokens() {
@@ -333,6 +439,30 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       cumulative += _tokens[wi].text.length;
     }
     _totalStoryChars = cumulative;
+
+    // Narration chunks share the tokenizer's whitespace-run word semantics,
+    // so chunk word offsets index directly into _wordTokenIndices.
+    _chunks = NarrationChunker.split(widget.storyText);
+    _chunkAudio = List<TtsSynthesisResult?>.filled(_chunks.length, null);
+    _chunkFetchError = List<Object?>.filled(_chunks.length, null);
+    _chunkInflight =
+        List<Future<TtsSynthesisResult?>?>.filled(_chunks.length, null);
+  }
+
+  /// Story-word chars before the first word of [chunk] (for the
+  /// character-weighted highlight fallback).
+  int _chunkCharsBefore(NarrationChunk chunk) {
+    if (chunk.wordOffset <= 0) return 0;
+    if (chunk.wordOffset >= _wordCharOffsets.length) return _totalStoryChars;
+    return _wordCharOffsets[chunk.wordOffset];
+  }
+
+  /// Total story-word chars inside [chunk].
+  int _chunkWordChars(NarrationChunk chunk) {
+    final end = chunk.wordOffset + chunk.wordCount;
+    final endChars =
+        end >= _wordCharOffsets.length ? _totalStoryChars : _wordCharOffsets[end];
+    return endChars - _chunkCharsBefore(chunk);
   }
 
   Future<void> _configureTts() async {
@@ -403,6 +533,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
 
   @override
   void dispose() {
+    _playSession++; // invalidate pending chunk-playback continuations
     AudioAmbienceService().stopAmbience();
     _tts.stop();
     _audioPlayer.dispose();
@@ -413,54 +544,163 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     super.dispose();
   }
 
-  Future<void> _startReading() async {
-    AudioAmbienceService().startAmbience(_effectiveTheme);
-    // Try ElevenLabs via backend first
-    final voiceId = ref.read(voicePreferenceNotifierProvider);
+  /// Drop the in-memory chunk audio when the narration voice changes so a
+  /// replay with a new voice re-fetches (the server caches per voice, so an
+  /// old voice's audio stays a fast hit server-side).
+  void _resetChunkCacheIfVoiceChanged(String voiceId) {
+    if (_chunkVoiceId == voiceId) return;
+    _chunkVoiceId = voiceId;
+    for (var i = 0; i < _chunks.length; i++) {
+      _chunkAudio[i] = null;
+      _chunkFetchError[i] = null;
+      _chunkInflight[i] = null;
+    }
+  }
+
+  /// True for the typed TTS failures that must stay SILENT (never the
+  /// robotic on-device fallback): COPPA gate, spent daily quota, transient
+  /// rate limit. Mirrors the pre-chunking catch blocks in _startReading.
+  static bool _isSilentTtsError(Object? error) =>
+      error is TtsConsentGateException ||
+      error is TtsQuotaExceededException ||
+      error is TtsRateLimitException;
+
+  /// Fetch (and memoize) synthesized audio for chunk [index]. Typed TTS
+  /// exceptions are captured into [_chunkFetchError] rather than thrown so
+  /// background prefetches never surface an unhandled error; callers decide
+  /// silence vs fallback from the recorded error.
+  Future<TtsSynthesisResult?> _fetchChunkAudio(int index) {
+    if (index < 0 || index >= _chunks.length) {
+      return Future<TtsSynthesisResult?>.value(null);
+    }
+    final ready = _chunkAudio[index];
+    if (ready != null) return Future<TtsSynthesisResult?>.value(ready);
+    final inflight = _chunkInflight[index];
+    if (inflight != null) return inflight;
+
+    final String voiceId =
+        _chunkVoiceId ?? ref.read(voicePreferenceNotifierProvider);
     final characterVoiceId = ElevenLabsVoice.characterVoiceForNarrator(voiceId);
-    setState(() => _isLoadingAudio = true);
-    final TtsSynthesisResult? result;
+    late final Future<TtsSynthesisResult?> future;
+    future = () async {
+      try {
+        final result = await TtsApiService.synthesize(
+          _chunks[index].text,
+          voiceId: voiceId,
+          characterVoiceId: characterVoiceId,
+        );
+        // Don't memoize a stale-voice result if the voice changed mid-fetch.
+        if (_chunkVoiceId == voiceId) {
+          _chunkAudio[index] = result;
+          if (result != null) _chunkFetchError[index] = null;
+        }
+        return result;
+      } on TtsConsentGateException catch (e) {
+        _chunkFetchError[index] = e;
+        return null;
+      } on TtsQuotaExceededException catch (e) {
+        _chunkFetchError[index] = e;
+        return null;
+      } on TtsRateLimitException catch (e) {
+        _chunkFetchError[index] = e;
+        return null;
+      } on TtsCapExceededException catch (e) {
+        // Monthly char budget spent — documented behavior is the on-device
+        // fallback, which the null return below triggers for chunk 0.
+        _chunkFetchError[index] = e;
+        return null;
+      } finally {
+        // Only clear our own registration — a voice change may have
+        // replaced it with a newer fetch's future.
+        if (identical(_chunkInflight[index], future)) {
+          _chunkInflight[index] = null;
+        }
+      }
+    }();
+    _chunkInflight[index] = future;
+    return future;
+  }
+
+  /// Sequentially prefetch every not-yet-fetched chunk after the one
+  /// currently playing (serial, like the illustration prefetcher — synthesis
+  /// is much faster than narration so it stays comfortably ahead).
+  Future<void> _prefetchRemainingChunks(int session) async {
+    if (_prefetchingChunks) return;
+    _prefetchingChunks = true;
     try {
-      result = await TtsApiService.synthesize(
-        widget.storyText,
-        voiceId: voiceId,
-        characterVoiceId: characterVoiceId,
-      );
-    } on TtsConsentGateException {
-      // COPPA gate — no resolved age/consent server-side. Unreachable in
-      // practice (a story can't be generated behind the same gate), but a
-      // gated user must never get the robotic fallback: stay silent.
-      if (mounted) setState(() => _isLoadingAudio = false);
-      return;
-    } on TtsQuotaExceededException {
-      // Daily synthesis quota spent — silence, never robotic.
-      if (mounted) setState(() => _isLoadingAudio = false);
-      return;
-    } on TtsRateLimitException {
-      // Transient rate limit — stop loading; the user can tap play again.
-      if (mounted) setState(() => _isLoadingAudio = false);
+      for (var i = _currentChunk + 1; i < _chunks.length; i++) {
+        if (!mounted || session != _playSession) return;
+        if (_chunkAudio[i] != null || _chunkFetchError[i] != null) continue;
+        await _fetchChunkAudio(i);
+      }
+    } finally {
+      _prefetchingChunks = false;
+    }
+  }
+
+  /// Start (or continue into) narration chunk [index]. Waits on the chunk's
+  /// fetch if it is still in flight; ends playback gracefully (silently) if
+  /// the chunk cannot be synthesized mid-story.
+  Future<void> _playChunk(int index, int session) async {
+    final audio = await _fetchChunkAudio(index);
+    if (!mounted || session != _playSession) return;
+    if (audio == null) {
+      // Mid-story failure/quota — never switch voices mid-narration; end
+      // playback quietly. (Chunk-0 failures are handled in _startReading,
+      // which still owns the robotic-fallback decision.)
+      _finishNeuralPlayback(completedStory: false);
       return;
     }
-    if (!mounted) return;
+    setState(() {
+      _isLoadingAudio = false;
+      _isPlaying = true;
+      _usingNeural2 = true;
+      _currentChunk = index;
+      _wordTimestamps = audio.wordTimestamps;
+      _audioDuration = Duration.zero;
+      if (index == 0) _currentWordIndex = -1;
+      _startPlayPulse();
+    });
+    await _audioPlayer.play(BytesSource(audio.audioBytes));
+    await _audioPlayer.setPlaybackRate(_playbackRate);
+    unawaited(_prefetchRemainingChunks(session));
+  }
+
+  Future<void> _startReading() async {
+    AudioAmbienceService().startAmbience(_effectiveTheme);
+    // Narration is synthesized per chunk via the backend: chunk 0 is small so
+    // audio starts in a couple of seconds; the rest prefetches while it plays.
+    final voiceId = ref.read(voicePreferenceNotifierProvider);
+    _resetChunkCacheIfVoiceChanged(voiceId);
+    final session = ++_playSession;
+    final startChunk = _chunks.isEmpty
+        ? 0
+        : (_pendingResumeChunk ?? 0).clamp(0, _chunks.length - 1);
+    _pendingResumeChunk = null;
+    setState(() => _isLoadingAudio = true);
+
+    final result = _chunks.isEmpty ? null : await _fetchChunkAudio(startChunk);
+    if (!mounted || session != _playSession) return;
+
+    final fetchError =
+        _chunks.isEmpty ? null : _chunkFetchError[startChunk];
+    if (result == null && _isSilentTtsError(fetchError)) {
+      // COPPA gate / spent daily quota / transient rate limit — a gated or
+      // quota-capped user must never get the robotic fallback: stay silent.
+      setState(() => _isLoadingAudio = false);
+      return;
+    }
 
     if (result != null) {
-      // ── Neural2 path ────────────────────────────────────────────────
-      // Non-null local: the try-assigned `result` can't promote inside the
-      // setState closure below.
-      final synthesis = result;
+      // ── Neural2 path (chunked) ──────────────────────────────────────
       await _tts.stop();
-      setState(() {
-        _isLoadingAudio = false;
-        _isPlaying = true;
-        _usingNeural2 = true;
-        _currentWordIndex = -1;
-        _wordTimestamps = synthesis.wordTimestamps;
-        _startPlayPulse();
-      });
-      await _audioPlayer.play(BytesSource(synthesis.audioBytes));
-      await _audioPlayer.setPlaybackRate(_playbackRate);
+      if (!mounted || session != _playSession) return;
+      _elapsedBeforeChunkMs = _pendingResumeElapsedMs ?? 0;
+      _pendingResumeElapsedMs = null;
+      _currentChunk = startChunk;
+      await _playChunk(startChunk, session);
     } else {
-      // ── flutter_tts fallback ────────────────────────────────────────
+      // ── flutter_tts fallback (whole story, unchanged) ───────────────
       await _tts.stop();
       await _tts.setSpeechRate(_toFlutterTtsRate(_playbackRate));
       setState(() {
@@ -616,6 +856,11 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
 
   Future<void> _stopReading() async {
     AudioAmbienceService().stopAmbience();
+    // Invalidate any in-flight chunk playback continuations (fetched audio
+    // stays memoized, so a restart is instant).
+    _playSession++;
+    _currentChunk = 0;
+    _elapsedBeforeChunkMs = 0;
     await _audioPlayer.stop();
     await _tts.stop();
     if (!mounted) return;
@@ -624,6 +869,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       _usingNeural2 = false;
       _isLoadingAudio = false;
       _currentWordIndex = -1;
+      _wordTimestamps = [];
       _pulseController.stop();
     });
   }

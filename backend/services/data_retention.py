@@ -22,6 +22,10 @@ is retained indefinitely; amended-COPPA R-6).
 ``UNCONSENTED_CONTACT_MAX_DAYS`` — integer, default 30. A parental-consent
 round-trip that captured a parent email but was never verified within this
 window has that contact info deleted (amended-COPPA R-2).
+``TTS_AUDIO_CACHE_RETENTION_DAYS`` / ``TTS_AUDIO_CACHE_MAX_ROWS`` — integers,
+default 90 / 20000. Cached narration audio not served within the window is
+evicted, and the table is additionally capped at the row limit (least-
+recently-served evicted first) so it can never grow unbounded.
 """
 
 import logging
@@ -46,6 +50,14 @@ DEFAULT_ILLUSTRATION_CACHE_RETENTION_DAYS = 365
 # parent email is deleted. Comfortably beyond the 15-minute code expiry and any
 # realistic retry, so an in-progress flow is never disturbed.
 DEFAULT_UNCONSENTED_CONTACT_MAX_DAYS = 30
+
+# Default TTS-audio-cache eviction window (days) and hard row cap. Narration
+# audio rows are large (a base64 MP3 chunk is ~0.5-2 MB) and speak the child's
+# name aloud, so this cache is bounded much more aggressively than the
+# illustration cache: a shorter TTL plus an absolute row cap that evicts
+# least-recently-served rows first.
+DEFAULT_TTS_AUDIO_CACHE_RETENTION_DAYS = 90
+DEFAULT_TTS_AUDIO_CACHE_MAX_ROWS = 20_000
 
 # Accounts that must never be auto-purged regardless of inactivity. The shared
 # 'anonymous' user backs anonymous story generation; deleting it would break
@@ -227,6 +239,15 @@ def purge_user_data(user: User, *, commit: bool = True) -> None:
     # generated to disappear. Rows written before the user_id column existed
     # have no attributable owner and are left for the TTL to age out.
     IllustrationCache.query.filter_by(user_id=user_id).delete()
+
+    # --- Delete this account's cached narration audio (F-4 / G-5) ---
+    # Same rationale as the illustration cache above: the TTS audio cache is a
+    # shared, content-addressed cost/latency optimisation, but its rows speak
+    # the child's name aloud — an account deletion must not wait on the TTL
+    # for audio that account caused to be synthesized to disappear.
+    from backend.models.tts_audio_cache import TtsAudioCache
+
+    TtsAudioCache.query.filter_by(user_id=user_id).delete()
 
     # --- Anonymize user record ---
     # Capture the Stripe customer id before nulling it so erasure can be
@@ -429,6 +450,94 @@ def purge_stale_illustration_cache(stale_days: int | None = None) -> dict:
             "window_days": stale_days,
             "cutoff": cutoff.isoformat(),
             "evicted": 0,
+            "error": True,
+        }
+
+
+def purge_stale_tts_audio_cache(
+    stale_days: int | None = None, max_rows: int | None = None
+) -> dict:
+    """Bound the shared TTS narration-audio cache (size + retention guard).
+
+    The ``tts_audio_cache`` table caches synthesized narration MP3s so a
+    re-read starts instantly and costs no quota. Rows are large (a base64 MP3
+    is ~0.5-2 MB) and the audio speaks the child's name aloud, so under the
+    amended COPPA Rule's retention-limit requirement (R-6) it must not be
+    retained indefinitely — and the table must not grow unbounded either.
+
+    Two guards, both configurable:
+      * TTL — every row whose ``last_accessed_at`` is older than
+        ``TTS_AUDIO_CACHE_RETENTION_DAYS`` (default 90) is evicted, so a
+        story re-read within the window stays instant while abandoned audio
+        ages out.
+      * Row cap — if more than ``TTS_AUDIO_CACHE_MAX_ROWS`` (default 20000)
+        rows remain, the least-recently-served overflow is evicted.
+
+    ``purge_user_data`` separately evicts a deleted account's rows
+    immediately; this eviction is the backstop for everything else. Degrades
+    safely — any DB error is logged and reported, never raised.
+    """
+    if stale_days is None:
+        stale_days = _resolve_positive_int_env(
+            "TTS_AUDIO_CACHE_RETENTION_DAYS",
+            DEFAULT_TTS_AUDIO_CACHE_RETENTION_DAYS,
+        )
+    if max_rows is None:
+        max_rows = _resolve_positive_int_env(
+            "TTS_AUDIO_CACHE_MAX_ROWS",
+            DEFAULT_TTS_AUDIO_CACHE_MAX_ROWS,
+        )
+
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    cutoff = now - timedelta(days=stale_days)
+
+    try:
+        from backend.models.tts_audio_cache import TtsAudioCache
+
+        deleted = (
+            db.session.query(TtsAudioCache)
+            .filter(TtsAudioCache.last_accessed_at < cutoff)
+            .delete(synchronize_session=False)
+        )
+
+        # Row-cap guard: evict least-recently-served rows beyond the cap.
+        evicted_over_cap = 0
+        remaining = db.session.query(TtsAudioCache).count()
+        overflow = remaining - max_rows
+        if overflow > 0:
+            overflow_ids = [
+                row_id
+                for (row_id,) in db.session.query(TtsAudioCache.id)
+                .order_by(TtsAudioCache.last_accessed_at.asc())
+                .limit(overflow)
+                .all()
+            ]
+            if overflow_ids:
+                evicted_over_cap = (
+                    db.session.query(TtsAudioCache)
+                    .filter(TtsAudioCache.id.in_(overflow_ids))
+                    .delete(synchronize_session=False)
+                )
+
+        db.session.commit()
+        summary = {
+            "window_days": stale_days,
+            "cutoff": cutoff.isoformat(),
+            "max_rows": max_rows,
+            "evicted": deleted,
+            "evicted_over_cap": evicted_over_cap,
+        }
+        logger.info("TTS-audio-cache eviction complete: %s", summary)
+        return summary
+    except Exception:
+        db.session.rollback()
+        logger.exception("TTS-audio-cache eviction failed; rolled back")
+        return {
+            "window_days": stale_days,
+            "cutoff": cutoff.isoformat(),
+            "max_rows": max_rows,
+            "evicted": 0,
+            "evicted_over_cap": 0,
             "error": True,
         }
 

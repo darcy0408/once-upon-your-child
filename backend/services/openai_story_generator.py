@@ -196,6 +196,44 @@ def _extract_text(choice) -> str | None:
     return content
 
 
+def _finalize_streamed_text(
+    content: str, finish_reason: str | None, refusal: str | None = None
+) -> str | None:
+    """
+    PERF-01: validate text accumulated from a streamed Chat Completions
+    response. Mirrors ``_extract_text`` exactly, except the inputs arrive
+    pre-flattened (streamed responses expose ``finish_reason`` on the last
+    chunk and refusals as ``delta.refusal`` fragments, so there is no single
+    ``choice`` object to inspect):
+
+      * ``"content_filter"`` — hard safety block -> None.
+      * a non-empty accumulated ``refusal`` -> None.
+      * ``"length"`` — truncated by the token budget but valid -> partial text.
+      * empty / whitespace-only accumulated content -> None.
+    """
+    if finish_reason == "content_filter":
+        logger.warning("OpenAI blocked the request (finish_reason=content_filter).")
+        return None
+
+    if refusal:
+        logger.warning("OpenAI returned a structured refusal: %s", refusal)
+        return None
+
+    if not content or not content.strip():
+        logger.warning(
+            "OpenAI streamed response had empty content. finish_reason=%s",
+            finish_reason,
+        )
+        return None
+
+    if finish_reason == "length":
+        logger.warning(
+            "OpenAI response truncated by output budget. len=%s", len(content)
+        )
+
+    return content
+
+
 def _make_openai_client(api_key: str):
     """Lazily import the SDK and build a client. Patched in tests.
 
@@ -246,13 +284,105 @@ class OpenAIStoryGenerator:
             user_tier or "unknown",
         )
 
-    def generate_story(self, prompt: str, model: str | None = None) -> str:
+    def _try_streamed_story(self, kwargs: dict, on_chunk) -> str | None:
+        """PERF-01: attempt the generation with ``stream=True``, invoking
+        ``on_chunk(accumulated_text)`` as each content delta arrives so the
+        caller can surface in-flight story text (e.g. to Redis for
+        /task-status polling).
+
+        Returns:
+          * the finalized story text (or ``_SAFETY_FALLBACK`` for a
+            refusal / filter / empty stream — same outcomes as the blocking
+            path) when the stream ran to completion, or
+          * ``None`` when streaming could not start / broke before ANY content
+            arrived, so ``generate_story`` retries with the plain blocking
+            call (cheap: nothing was generated yet). This also keeps
+            test doubles that stub a non-iterable response working unchanged.
+
+        A failure MID-stream (after real content arrived) is re-raised so it
+        classifies through the same exception handler as a blocking-call
+        failure — retrying from scratch there would silently double latency
+        and cost after most of a story was already generated.
+        """
+        parts: list[str] = []
+        refusal_parts: list[str] = []
+        finish_reason: str | None = None
+        try:
+            stream = self._client.chat.completions.create(stream=True, **kwargs)
+            iterator = iter(stream)
+        except Exception as exc:
+            logger.warning(
+                "OpenAI streaming unavailable (%s); falling back to a blocking call.",
+                exc,
+            )
+            return None
+        while True:
+            try:
+                chunk = next(iterator)
+            except StopIteration:
+                break
+            except Exception as exc:
+                if not parts:
+                    logger.warning(
+                        "OpenAI stream failed before any content (%s); "
+                        "falling back to a blocking call.",
+                        exc,
+                    )
+                    return None
+                # Mid-stream break after real content: classify like the
+                # blocking path (outer except in generate_story).
+                raise
+            choices = getattr(chunk, "choices", None) or []
+            if not choices:
+                continue  # e.g. a usage-only trailer chunk
+            choice = choices[0]
+            reason = getattr(choice, "finish_reason", None)
+            if reason:
+                finish_reason = reason
+            delta = getattr(choice, "delta", None)
+            refusal = getattr(delta, "refusal", None)
+            if refusal:
+                refusal_parts.append(str(refusal))
+            piece = getattr(delta, "content", None)
+            if piece:
+                parts.append(piece)
+                try:
+                    on_chunk("".join(parts))
+                except Exception:
+                    # A partial-text consumer must never abort generation.
+                    logger.debug(
+                        "on_chunk consumer failed; streaming continues.",
+                        exc_info=True,
+                    )
+        story_text = _finalize_streamed_text(
+            "".join(parts), finish_reason, "".join(refusal_parts)
+        )
+        if story_text:
+            logger.info("OpenAI (direct): story streamed successfully.")
+            return story_text
+        logger.warning(
+            "OpenAI streamed response did not contain valid story content "
+            "(may be refused). finish_reason=%s",
+            finish_reason,
+        )
+        return _SAFETY_FALLBACK
+
+    def generate_story(
+        self, prompt: str, model: str | None = None, on_chunk=None
+    ) -> str:
         """Generate story text from ``prompt`` using an OpenAI model.
 
         ``model`` overrides the tier-resolved default for this call only (tests
         / ad-hoc experiments). The OpenAI SDK already retries 429 / 5xx with
         exponential backoff (client is built with max_retries=1), so no
         hand-rolled retry loop is needed here.
+
+        ``on_chunk`` (PERF-01): optional callable receiving the FULL
+        accumulated story text after each streamed content delta. When
+        provided, the request is made with ``stream=True`` so callers (the
+        Celery task) can publish in-flight partial text; when omitted the
+        original single blocking call is byte-for-byte unchanged. The
+        callback keeps this generator decoupled from Redis/task plumbing.
         """
         chosen_model = model or self._model_name or OPENAI_FALLBACK_MODEL
         # GPT-5 reasoning models require max_completion_tokens, not max_tokens.
@@ -268,6 +398,11 @@ class OpenAIStoryGenerator:
             kwargs["reasoning_effort"] = self._reasoning_effort
         try:
             logger.info("OpenAI (direct): generating story... (model=%s)", chosen_model)
+            if on_chunk is not None:
+                streamed = self._try_streamed_story(kwargs, on_chunk)
+                if streamed is not None:
+                    return streamed
+                # Streaming never started — fall through to the blocking call.
             response = self._client.chat.completions.create(**kwargs)
             choice = (getattr(response, "choices", None) or [None])[0]
             story_text = _extract_text(choice)

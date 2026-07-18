@@ -1,12 +1,14 @@
 """Tests for Sprout (ages 3-5) post-generation word-cap enforcement.
 
-The Sprout prompt instructs Gemini to stop at 130 words, but the model
-overshoots. These tests cover the two-stage safety belt in
+The Sprout Superhero prompt instructs the model to stop at 130 words, but the
+model overshoots. These tests cover the two-stage safety belt in
 ``backend.tasks.story_tasks._enforce_sprout_word_cap``:
 
   1. Regenerate once with a stricter prompt prefix.
-  2. If regen is still over, truncate at the last sentence boundary that
-     fits under 150 words, always preserving the cheer beat.
+  2. If regen is still over, drop trailing pages/sentences until the story
+     fits under the canonical cap (word_ranges.get_word_range(...).cap —
+     156 for Sprout Superhero), re-appending the cheer beat for superhero
+     stories only.
 
 We mock the regen function so no real LLM calls are made.
 """
@@ -17,13 +19,16 @@ import json
 from unittest.mock import MagicMock
 
 from backend.services.prompt_service import PromptService
+from backend.services.word_ranges import get_word_range
 from backend.tasks.story_tasks import (
-    SPROUT_WORD_CAP,
     _count_words,
     _enforce_sprout_word_cap,
     _has_cheer_beat,
-    _truncate_to_word_cap,
+    _truncate_pages_to_word_cap,
 )
+
+# Canonical Sprout Superhero cap (prompt targets 100-130; +20% headroom).
+SPROUT_SH_CAP = get_word_range(age=4, mode="superhero").cap
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +65,7 @@ class TestSproutUnderCap:
             character_name="Mia",
             base_prompt="ORIGINAL PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         assert out_body == body
@@ -93,6 +99,7 @@ class TestSproutRegen:
             character_name="Mia",
             base_prompt="ORIGINAL PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         # Regen was invoked exactly once.
@@ -100,7 +107,7 @@ class TestSproutRegen:
         regen_prompt = regen_fn.call_args[0][0]
         assert "STRICT CONSTRAINT" in regen_prompt
         assert "200 words" in regen_prompt
-        assert f"MAXIMUM is {SPROUT_WORD_CAP}" in regen_prompt
+        assert f"MAXIMUM is {SPROUT_SH_CAP}" in regen_prompt
         assert "ORIGINAL PROMPT" in regen_prompt
 
         # Output reflects the regen result, not truncation.
@@ -133,13 +140,14 @@ class TestSproutRegen:
             character_name="Mia",
             base_prompt="ORIGINAL PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         regen_fn.assert_called_once()
         assert info["regen_used"] is True
         assert info["truncated"] is True
-        assert info["final_words"] <= SPROUT_WORD_CAP
-        # Cheer beat must remain after truncation.
+        assert info["final_words"] <= SPROUT_SH_CAP
+        # Cheer beat must remain after truncation (superhero theme).
         assert _has_cheer_beat(out_body)
 
     def test_sprout_cheer_beat_appended_if_cut(self):
@@ -163,6 +171,7 @@ class TestSproutRegen:
             character_name="Mia",
             base_prompt="ORIGINAL PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         assert info["truncated"] is True
@@ -170,7 +179,7 @@ class TestSproutRegen:
         assert "Mia saved the day!" in out_body
         # Even with the appended cheer suffix, we should be at or under cap.
         # (Truncation reserves words for the cheer beat in advance.)
-        assert _count_words(out_body) <= SPROUT_WORD_CAP
+        assert _count_words(out_body) <= SPROUT_SH_CAP
 
 
 # ---------------------------------------------------------------------------
@@ -193,6 +202,7 @@ class TestNonSprout:
             character_name="Leo",
             base_prompt="ORIGINAL PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         assert out_body == body
@@ -223,6 +233,7 @@ class TestSuperheroThemeEnforced:
             character_name="Mia",
             base_prompt="ORIGINAL SUPERHERO PROMPT",
             regen_fn=regen_fn,
+            cap=SPROUT_SH_CAP,
         )
 
         regen_fn.assert_called_once()
@@ -232,27 +243,51 @@ class TestSuperheroThemeEnforced:
 
 
 # ---------------------------------------------------------------------------
-# Direct truncate-helper coverage
+# Direct truncate-helper coverage (page-preserving truncation)
 # ---------------------------------------------------------------------------
 class TestTruncateHelper:
     def test_truncate_keeps_under_cap(self):
         body = ". ".join(["a b c d e f"] * 30) + "."  # 180 words
-        out = _truncate_to_word_cap(body, 150, "Mia")
-        assert _count_words(out) <= 150
+        out_body, out_pages = _truncate_pages_to_word_cap([body], 150, "Mia")
+        assert _count_words(out_body) <= 150
+        assert out_pages
 
-    def test_truncate_preserves_cheer_when_present(self):
+    def test_truncate_preserves_multiple_pages(self):
+        """Regression: the old helper collapsed the whole story into ONE
+        page. Trailing pages are dropped instead."""
+        page = ". ".join(["a b c d e f g h i j"] * 4) + "."  # 40 words/page
+        pages = [page] * 6  # 240 words
+        out_body, out_pages = _truncate_pages_to_word_cap(pages, 150, "Mia")
+        assert 1 < len(out_pages) <= 4
+        assert sum(_count_words(p) for p in out_pages) <= 150
+        assert out_body == "\n\n".join(out_pages)
+
+    def test_truncate_preserves_cheer_for_superhero(self):
         body = (
             ". ".join(["a b c d e f"] * 30) + ". Everyone cheered. Mia saved the day!"
         )
-        out = _truncate_to_word_cap(body, 150, "Mia")
-        assert _has_cheer_beat(out)
-        assert _count_words(out) <= 150
+        out_body, _pages = _truncate_pages_to_word_cap(
+            [body], 150, "Mia", superhero=True
+        )
+        assert _has_cheer_beat(out_body)
+        assert _count_words(out_body) <= 150
+
+    def test_truncate_does_not_append_cheer_for_non_superhero(self):
+        """Even when the original text happens to contain a cheer-beat-shaped
+        ending, a NON-superhero story never gets the suffix re-appended."""
+        body = (
+            ". ".join(["a b c d e f"] * 30) + ". Everyone cheered. Mia saved the day!"
+        )
+        out_body, _pages = _truncate_pages_to_word_cap([body], 150, "Mia")
+        assert not _has_cheer_beat(out_body)
 
     def test_truncate_does_not_append_cheer_if_original_lacked_one(self):
         body = ". ".join(["a b c d e f"] * 30) + "."  # no cheer beat
-        out = _truncate_to_word_cap(body, 150, "Mia")
+        out_body, _pages = _truncate_pages_to_word_cap(
+            [body], 150, "Mia", superhero=True
+        )
         # We never invent a cheer beat for stories that didn't have one.
-        assert not _has_cheer_beat(out)
+        assert not _has_cheer_beat(out_body)
 
 
 # ---------------------------------------------------------------------------

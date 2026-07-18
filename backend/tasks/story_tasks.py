@@ -48,53 +48,19 @@ from backend.services.superhero_validation import (
     validate_word_count,
 )
 
+# Band mapping moved to word_ranges (the canonical word-range module needs it
+# too); re-exported under the old name for existing callers/tests.
+from backend.services.word_ranges import (
+    get_word_range,
+)
+from backend.services.word_ranges import (  # noqa: F401 — re-export
+    superhero_band_for_age as _superhero_band_for_age,
+)
+
 
 def _is_superhero_theme(theme: str | None) -> bool:
     """True when the request is for the ages-3-5 Superhero Mode chain."""
     return isinstance(theme, str) and theme.strip().lower() == "superhero"
-
-
-def _superhero_band_for_age(age) -> str:
-    """Map a hero's age to the Superhero Mode villain/problem band.
-
-    3-5 -> sprout, 6-8 -> explorer, 9-12 -> adventurer, 13-14 -> creator,
-    15-17 -> adolescent, 18+ -> creator. Anything else (invalid/negative/
-    unparseable age) defaults to sprout so legacy callers keep working.
-
-    MUST mirror ``PromptService.build_story_prompt``'s age-band routing
-    (backend/services/prompt_service.py ~L96-197) EXACTLY, same thresholds.
-    That function computes its OWN band from `age` and re-derives the
-    villain/problem pairing whenever the id it's handed isn't valid for ITS
-    band — so if this derivation drifts from prompt_service's (as it did
-    before this fix: Creator/Adolescent ages fell through to "sprout" here,
-    handing the prompt builder Sprout ids like cranky_crab/cheer_up that
-    don't exist in the Creator/Adolescent tables), the prompt builder
-    silently re-picks a DIFFERENT pairing than the one reported back in
-    `superhero_meta` — the response then lies about which villain/problem/
-    band actually shaped the story, which also breaks saga continuity and
-    analytics that key off these ids.
-    """
-    try:
-        age_int = int(age) if age is not None else 5
-    except (TypeError, ValueError):
-        age_int = 5
-    if age_int >= 6 and age_int <= 8:
-        return "explorer"
-    if age_int >= 9 and age_int <= 12:
-        # Adventurer (9-12) has its own villain/problem tables. Without this
-        # branch the pairing was drawn from the Sprout table, so the
-        # Adventurer prompt builder silently re-rolled the villain (and the
-        # C4 nemesis override never stuck — see _superhero_apply_nemesis).
-        return "adventurer"
-    if age_int >= 13 and age_int <= 14:
-        return "creator"
-    if age_int >= 18:
-        # No dedicated Adult superhero template; prompt_service routes 18+
-        # to the Creator "Hero Saga" builder too.
-        return "creator"
-    if age_int >= 15 and age_int <= 17:
-        return "adolescent"
-    return "sprout"
 
 
 logger = get_task_logger(__name__)
@@ -236,16 +202,31 @@ def _resolve_story_provider() -> str:
 
 
 # PERF-01 slice 2: per-story partial-state emission for /task-status polling.
-# As Gemini's stream API yields chunks, the accumulated story text is written
-# to Redis under `partial_story:<task_id>`. Slice 3 will surface it through
-# /task-status so clients see story progress within ~5s of the model starting
-# to respond instead of waiting for the full ~55-110s generation.
+# As a provider's stream API yields chunks (Gemini, OpenAI, OpenRouter), the
+# accumulated story text is converted to a readable-prose view and written to
+# Redis under `partial_story:<task_id>`; /task-status surfaces it so clients
+# can render story progress within ~3-5s of the model starting to respond
+# instead of waiting for the full generation.
 # Best-effort: a Redis hiccup never aborts generation.
 _PARTIAL_STORY_TTL_SECONDS = 600  # outlives the longest plausible generation
 
+# PERF-01 streaming: reuse one Redis client for the whole worker process
+# instead of dialing (and PINGing) a fresh connection on every streamed chunk.
+# redis-py's connection pool transparently reconnects, and any write error
+# resets this cache so the next emit re-dials.
+_partial_story_redis_client = None
+
 
 def _get_partial_story_redis():
-    """Connect to Redis using the same env-var pattern as ai_quota._get_redis."""
+    """Connect to Redis using the same env-var pattern as ai_quota._get_redis.
+
+    Lazily creates ONE module-level client and reuses it across calls; the
+    per-chunk emit path previously built (and health-checked) a brand-new
+    connection per chunk and per /task-status poll.
+    """
+    global _partial_story_redis_client
+    if _partial_story_redis_client is not None:
+        return _partial_story_redis_client
     redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
@@ -254,6 +235,7 @@ def _get_partial_story_redis():
 
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
+        _partial_story_redis_client = client
         return client
     except Exception as exc:
         logger.warning(
@@ -262,19 +244,92 @@ def _get_partial_story_redis():
         return None
 
 
+def _reset_partial_story_redis() -> None:
+    """Drop the cached client so the next call re-dials (used on write errors)."""
+    global _partial_story_redis_client
+    _partial_story_redis_client = None
+
+
+# PERF-01 prose view: the streamed model output is the RAW story payload — a
+# growing JSON blob like `{"title": "...", "pages": [{"text": "..."}, ...]}`
+# (or a fenced variant), NOT readable prose. Emitting it verbatim would make
+# clients render braces and escape sequences. These helpers extract a clean,
+# kid-readable prose view (title + page texts joined by blank lines) from the
+# accumulating, usually-incomplete JSON fragment. The client's progress
+# fraction only consumes the emitted text's LENGTH, so swapping raw JSON for
+# slightly-shorter prose keeps that heuristic working (its per-tier expected
+# lengths are deliberately generous).
+_PARTIAL_TITLE_RE = re.compile(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)')
+_PARTIAL_PAGE_TEXT_RE = re.compile(r'"text"\s*:\s*"((?:[^"\\]|\\.)*)')
+
+
+def _unescape_partial_json_string(fragment: str) -> str:
+    """Decode JSON string escapes in a possibly-truncated string fragment."""
+    # A chunk boundary can split an escape sequence; drop a dangling backslash
+    # so the json decoder doesn't reject the whole fragment.
+    trailing = len(fragment) - len(fragment.rstrip("\\"))
+    if trailing % 2 == 1:
+        fragment = fragment[:-1]
+    try:
+        return json.loads(f'"{fragment}"')
+    except ValueError:
+        # e.g. a split \uXXXX escape — best-effort manual pass; the next
+        # snapshot (with more chunks) will decode cleanly.
+        return (
+            fragment.replace('\\"', '"')
+            .replace("\\n", "\n")
+            .replace("\\t", " ")
+            .replace("\\\\", "\\")
+        )
+
+
+def _partial_prose_view(raw_text: str) -> str:
+    """Readable-prose view of a (possibly incomplete) streamed story payload.
+
+    JSON-shaped payloads yield `title\\n\\npage text...` built from every
+    complete-or-growing `"text"` field; non-JSON payloads (a provider that
+    streams plain prose) pass through untouched. Returns "" while the
+    fragment is too short to contain any readable text yet.
+    """
+    if not raw_text:
+        return ""
+    stripped = raw_text.lstrip("\ufeff \t\r\n")
+    if stripped.startswith("```"):
+        stripped = stripped[3:].lstrip()
+        if stripped[:4].lower() == "json":
+            stripped = stripped[4:]
+    if not stripped.lstrip().startswith("{"):
+        return raw_text.strip()  # plain-prose stream — nothing to unwrap
+    parts: list[str] = []
+    title_match = _PARTIAL_TITLE_RE.search(stripped)
+    if title_match:
+        title = _unescape_partial_json_string(title_match.group(1)).strip()
+        if title:
+            parts.append(title)
+    for page_match in _PARTIAL_PAGE_TEXT_RE.finditer(stripped):
+        text = _unescape_partial_json_string(page_match.group(1)).strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
 def _emit_partial_story(task_id: str | None, accumulated_text: str) -> None:
-    """Write accumulated streamed text for `task_id` to Redis. Best-effort."""
+    """Write the prose view of accumulated streamed text for `task_id` to
+    Redis. Best-effort. Skips the write while the fragment has no readable
+    prose yet (e.g. only `{"ti` has arrived)."""
     if not task_id:
+        return
+    prose = _partial_prose_view(accumulated_text)
+    if not prose:
         return
     client = _get_partial_story_redis()
     if client is None:
         return
     try:
-        client.setex(
-            f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, accumulated_text
-        )
+        client.setex(f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, prose)
     except Exception as exc:
         logger.debug("partial-story write skipped (%s)", exc)
+        _reset_partial_story_redis()
 
 
 def _clear_partial_story(task_id: str | None) -> None:
@@ -288,6 +343,7 @@ def _clear_partial_story(task_id: str | None) -> None:
         client.delete(f"partial_story:{task_id}")
     except Exception as exc:
         logger.debug("partial-story clear skipped (%s)", exc)
+        _reset_partial_story_redis()
 
 
 def _try_gemini(
@@ -341,11 +397,31 @@ def _try_gemini(
     return None
 
 
+def _partial_story_emitter(task_id: str | None):
+    """Build the per-chunk ``on_chunk`` callback for a streaming generator, or
+    None when there is no task context (legacy/regeneration call sites) so the
+    generator makes its original blocking call (PERF-01)."""
+    if not task_id:
+        return None
+
+    def _on_chunk(accumulated_text: str, _task_id: str = task_id) -> None:
+        _emit_partial_story(_task_id, accumulated_text)
+
+    return _on_chunk
+
+
 def _try_openrouter(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt OpenRouter story generation. Returns text on success, None on
-    failure (any failure mode appends a tagged entry to provider_sequence)."""
+    failure (any failure mode appends a tagged entry to provider_sequence).
+
+    When `task_id` is provided, requests an SSE stream and emits accumulated
+    text to Redis as each chunk arrives (PERF-01), mirroring `_try_gemini`.
+    """
     if not os.getenv("OPENROUTER_API_KEY"):
         logger.warning("OPENROUTER_API_KEY not set. Skipping OpenRouter.")
         provider_sequence.append("openrouter(fail:no_key)")
@@ -354,7 +430,9 @@ def _try_openrouter(
     try:
         logger.info("Attempting story generation with OpenRouter...")
         openrouter_generator = OpenRouterStoryGenerator(user_tier=user_tier)
-        story_text = openrouter_generator.generate_story(prompt)
+        story_text = openrouter_generator.generate_story(
+            prompt, on_chunk=_partial_story_emitter(task_id)
+        )
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with OpenRouter.")
             provider_sequence.append("openrouter(success)")
@@ -364,20 +442,32 @@ def _try_openrouter(
         provider_sequence.append(
             f"openrouter(fail:{_classify_provider_failure(message=story_text)})"
         )
+        # Drop any partial prose from the failed streamed attempt so a
+        # fallback provider's (or the static) story can't sit behind stale
+        # partial text from this one.
+        _clear_partial_story(task_id)
     except Exception as exc:
         logger.exception("OpenRouter failed.")
         provider_sequence.append(
             f"openrouter(fail:{_classify_provider_failure(exc=exc)})"
         )
+        _clear_partial_story(task_id)
     return None
 
 
 def _try_claude(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt direct-Anthropic (Claude) story generation. Returns text on
     success, None on failure (any failure mode appends a tagged entry to
-    provider_sequence). MT-248: Claude's terms permit child-directed apps."""
+    provider_sequence). MT-248: Claude's terms permit child-directed apps.
+
+    `task_id` is accepted for call-site uniformity with the streaming-capable
+    providers but is currently unused — the Claude generator does not stream
+    (PERF-01 follow-up if the paid Claude tier ever ships)."""
     if not os.getenv("ANTHROPIC_API_KEY"):
         logger.warning("ANTHROPIC_API_KEY not set. Skipping Claude (direct).")
         provider_sequence.append("claude(fail:no_key)")
@@ -403,12 +493,21 @@ def _try_claude(
 
 
 def _try_openai(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt direct-OpenAI (GPT-5 mini) story generation. Returns text on
     success, None on failure (any failure mode appends a tagged entry to
     provider_sequence). MT-248: OpenAI's terms permit child-directed apps with
-    COPPA safeguards — the same eligibility class as Claude, unlike Gemini."""
+    COPPA safeguards — the same eligibility class as Claude, unlike Gemini.
+
+    When `task_id` is provided, the generator streams and accumulated text is
+    emitted to Redis as each chunk arrives — clients polling /task-status see
+    (and can render) partial story prose within seconds (PERF-01). Without
+    `task_id`, the original single blocking call is used.
+    """
     if not os.getenv("OPENAI_API_KEY"):
         logger.warning("OPENAI_API_KEY not set. Skipping OpenAI (direct).")
         provider_sequence.append("openai(fail:no_key)")
@@ -417,7 +516,9 @@ def _try_openai(
     try:
         logger.info("Attempting story generation with OpenAI (direct)...")
         openai_generator = OpenAIStoryGenerator(user_tier=user_tier)
-        story_text = openai_generator.generate_story(prompt)
+        story_text = openai_generator.generate_story(
+            prompt, on_chunk=_partial_story_emitter(task_id)
+        )
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with OpenAI (direct).")
             provider_sequence.append("openai(success)")
@@ -427,9 +528,14 @@ def _try_openai(
         provider_sequence.append(
             f"openai(fail:{_classify_provider_failure(message=story_text)})"
         )
+        # Drop any partial prose from the failed streamed attempt so a
+        # fallback provider's (or the static) story can't sit behind stale
+        # partial text from this one.
+        _clear_partial_story(task_id)
     except Exception as exc:
         logger.exception("OpenAI (direct) failed.")
         provider_sequence.append(f"openai(fail:{_classify_provider_failure(exc=exc)})")
+        _clear_partial_story(task_id)
     return None
 
 
@@ -452,9 +558,11 @@ def _generate_story_text_with_metadata(
                        (the MT-248 cost/quality split; never touches Gemini)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
 
-    `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
-    Gemini uses its streaming API and writes partial story text to Redis.
-    OpenRouter generation is not streamed (slice 2 scope).
+    `task_id` forwards to the provider helpers for PERF-01 streaming. When
+    provided, Gemini, OpenAI, and OpenRouter all use their streaming APIs and
+    write a readable-prose view of the partial story text to Redis
+    (`partial_story:<task_id>`) so /task-status polls can surface it. Claude
+    is the only non-streamed provider (dormant until a paid tier ships).
 
     The returned ``provider_sequence`` list traces every attempt for observability
     (success/fail reasons surface in the audit_log + Sentry breadcrumbs).
@@ -465,14 +573,14 @@ def _generate_story_text_with_metadata(
     if provider_choice == "openrouter":
         # OpenRouter only — do NOT fall back to Gemini (Phase 1 target order;
         # Gemini's child-directed-app ToS is the whole reason for the flag).
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
     elif provider_choice == "claude":
         # Direct Anthropic only — do NOT fall back to Gemini (MT-248 launch-gate;
         # Claude's terms permit minors with safeguards, Gemini's prohibit them).
-        text = _try_claude(prompt, user_tier, provider_sequence)
+        text = _try_claude(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "claude", provider_sequence
 
@@ -480,7 +588,7 @@ def _generate_story_text_with_metadata(
         # Direct OpenAI only — do NOT fall back to Gemini (MT-248 launch-gate;
         # OpenAI's terms permit minors with COPPA safeguards, Gemini's prohibit
         # child-directed apps). GPT-5 mini is the taste-test value winner.
-        text = _try_openai(prompt, user_tier, provider_sequence)
+        text = _try_openai(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openai", provider_sequence
 
@@ -498,7 +606,7 @@ def _generate_story_text_with_metadata(
             else ((_try_claude, "claude"), (_try_openai, "openai"))
         )
         for try_fn, provider_name in order:
-            text = try_fn(prompt, user_tier, provider_sequence)
+            text = try_fn(prompt, user_tier, provider_sequence, task_id=task_id)
             if text is not None:
                 return text, provider_name, provider_sequence
 
@@ -506,7 +614,7 @@ def _generate_story_text_with_metadata(
         # Rollback-safe: try OpenRouter first; if it fails for any reason, fall
         # back to Gemini so a flipped flag never produces a static fallback
         # when Gemini would have worked. Use during migration validation only.
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
@@ -520,7 +628,7 @@ def _generate_story_text_with_metadata(
         if text is not None:
             return text, "gemini", provider_sequence
 
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
@@ -795,25 +903,23 @@ def _post_process_sprout_pages(
     return new_pages or pages
 
 
-# --- Sprout word-cap enforcement (post-generation safety belt) ----------------
-# The Sprout prompt (ages 3-5) tells Gemini to stop at 130 words (lowered from
-# 150 to leave headroom). Models still overshoot. This safety belt counts words
-# AFTER generation and, if a Sprout story exceeds 150 words, tries one stricter
-# regeneration, then falls back to a sentence-boundary truncation that always
-# preserves the cheer-beat ending. Applies to BOTH the superhero theme path AND
-# every other Sprout story path.
+# --- Word-cap enforcement (post-generation safety belt) -----------------------
+# Models overshoot their prompt's stated length. This safety belt counts words
+# AFTER generation and, when a story exceeds its canonical cap (see
+# backend/services/word_ranges.py — derived from the same range the prompt
+# stated), tries one stricter regeneration, then falls back to truncation that
+# drops trailing PAGES at a sentence boundary (never collapsing the book to a
+# single page). The old hardcoded caps (SPROUT_WORD_CAP=150,
+# EXPLORER_SUPERHERO_WORD_CAP=350) were deleted: 150 contradicted the live
+# Sprout standard prompt's own 300-word ceiling and bedtime's 260-380 targets,
+# so callers now pass the canonical `word_spec.cap` for the actual mode.
 
-SPROUT_WORD_CAP = 150
 # Providers surface a safety block as this user-facing refusal line and it
 # deliberately counts as a provider "success" (a blocked prompt must not
 # cascade to the next provider — they would refuse too). It must still never
 # be persisted as the child's story; the moderation stage below routes it into
 # the safe-fallback regeneration instead.
 _REFUSAL_SENTINEL = "wasn't able to create that story"
-# MT-108: Explorer (6-8) Superhero stories target 250-350 words. The post-gen
-# cap (upper bound) is enforced via the same regen+truncate helper as Sprout;
-# the lower bound is already covered by the existing length-validation loop.
-EXPLORER_SUPERHERO_WORD_CAP = 350
 # Detect existing cheer-beat ending so we don't double-append.
 _CHEER_BEAT_RE = re.compile(
     r"Everyone\s+cheered\.\s*[A-Z][\w'\- ]*?\s+saved\s+the\s+day!?",
@@ -834,49 +940,87 @@ def _has_cheer_beat(text: str) -> bool:
     return bool(_CHEER_BEAT_RE.search(text))
 
 
-def _truncate_to_word_cap(text: str, cap: int, hero_name: str) -> str:
-    """Truncate `text` at the last sentence boundary that keeps the body at or
-    under `cap` words. Always preserves a cheer-beat ending — if truncation
-    drops the original cheer, append a generic "Everyone cheered. {hero_name}
-    saved the day!" so the story still resolves.
-    """
-    if cap <= 0:
+def _truncate_text_to_words(text: str, budget: int) -> str:
+    """Trim `text` at the last sentence boundary that fits inside `budget`
+    words. Returns "" when not even the first sentence fits."""
+    if budget <= 0:
         return ""
     body = (text or "").strip()
     if not body:
-        return body
-
-    original_had_cheer = _has_cheer_beat(body)
+        return ""
 
     # Split into sentences while preserving the terminators.
     sentence_parts = re.findall(r"[^.!?]+[.!?]+|\S[^.!?]*$", body, flags=re.DOTALL)
     sentences = [s.strip() for s in sentence_parts if s and s.strip()]
 
-    cheer_suffix = f"Everyone cheered. {hero_name} saved the day!"
-    # Reserve words for the cheer beat if we need to re-append it.
-    reserved_for_cheer = _count_words(cheer_suffix) if original_had_cheer else 0
-    effective_cap = max(0, cap - reserved_for_cheer)
-
     kept: list[str] = []
     running = 0
     for sent in sentences:
         sw = _count_words(sent)
-        if running + sw > effective_cap:
+        if running + sw > budget:
             break
         kept.append(sent)
         running += sw
+    return " ".join(kept).strip()
 
-    truncated = " ".join(kept).strip()
-    if not truncated:
-        # Fallback: hard word slice + period if no sentence fits at all.
-        words = body.split()[: max(1, effective_cap)]
-        truncated = " ".join(words).rstrip(",;:") + "."
 
-    # Re-append cheer beat if the original had one and it was cut off.
-    if original_had_cheer and not _has_cheer_beat(truncated):
-        truncated = (truncated + " " + cheer_suffix).strip()
+def _truncate_pages_to_word_cap(
+    pages: list[str],
+    cap: int,
+    hero_name: str,
+    *,
+    superhero: bool = False,
+) -> tuple[str, list[str]]:
+    """Truncate a paginated story to at most `cap` words by dropping trailing
+    PAGES, then trailing sentences within the last kept page.
 
-    return truncated
+    This replaces an earlier helper that collapsed the whole story into ONE
+    page (``truncated_pages = [truncated_body]``) — turning an 8-12-page
+    picture book into a single wall of text — and that appended a superhero
+    cheer-beat suffix ("Everyone cheered. {hero} saved the day!") to
+    NON-superhero stories too. Pagination is now preserved, and the cheer
+    beat is only re-appended for superhero-theme stories whose original
+    ending had one and lost it to truncation.
+
+    Returns ``(story_body, pages)`` where story_body joins the kept pages
+    with blank lines (matching the extractor's page join).
+    """
+    pages = [p for p in (pages or []) if p and p.strip()]
+    if cap <= 0 or not pages:
+        return "", []
+
+    full_body = "\n\n".join(pages)
+    original_had_cheer = superhero and _has_cheer_beat(full_body)
+    cheer_suffix = f"Everyone cheered. {hero_name} saved the day!"
+    reserved_for_cheer = _count_words(cheer_suffix) if original_had_cheer else 0
+    effective_cap = max(0, cap - reserved_for_cheer)
+
+    kept_pages: list[str] = []
+    running = 0
+    for page in pages:
+        pw = _count_words(page)
+        if running + pw <= effective_cap:
+            kept_pages.append(page)
+            running += pw
+            continue
+        # This page overflows the budget: keep its leading sentences that
+        # still fit, then stop (drop all later pages).
+        partial = _truncate_text_to_words(page, effective_cap - running)
+        if partial:
+            kept_pages.append(partial)
+        break
+
+    if not kept_pages:
+        # Fallback: hard word slice of the first page + period if not even
+        # one sentence fits.
+        words = pages[0].split()[: max(1, effective_cap)]
+        kept_pages = [" ".join(words).rstrip(",;:") + "."]
+
+    # Re-append the cheer beat (superhero only) if it was cut off.
+    if original_had_cheer and not _has_cheer_beat("\n\n".join(kept_pages)):
+        kept_pages[-1] = (kept_pages[-1] + " " + cheer_suffix).strip()
+
+    return "\n\n".join(kept_pages), kept_pages
 
 
 def _enforce_sprout_word_cap(
@@ -890,19 +1034,21 @@ def _enforce_sprout_word_cap(
     character_name: str,
     base_prompt: str,
     regen_fn,
-    cap: int = SPROUT_WORD_CAP,
+    cap: int,
     band_label: str = "Sprout",
     age_max: int = 5,
 ) -> tuple[str, list[str], dict]:
-    """Two-stage word-cap safety belt (default = Sprout, ages 3-5, cap 150).
+    """Two-stage word-cap safety belt (Sprout ages 3-5 and Explorer Superhero).
+
+    `cap` is the canonical post-generation cap for the story's actual
+    mode/length — callers derive it via
+    ``backend.services.word_ranges.get_word_range(...).cap`` so the belt can
+    never contradict what the prompt asked for (the old flat 150-word Sprout
+    cap fought the standard Sprout prompt's own 300-word ceiling).
 
     Stage 1: if word_count > cap, regenerate ONCE with a stricter prompt prefix.
-    Stage 2: if regen still > cap, truncate at last sentence boundary that fits,
-             preserving the cheer beat (when present in the original).
-
-    Reused by Explorer Superhero (MT-108) with cap=350 and band_label="Explorer";
-    the sentence splitter and truncation helper are shared, only the cap and
-    log labels differ.
+    Stage 2: if regen still > cap, drop trailing pages at a sentence boundary
+             (pagination preserved; cheer beat re-appended for superhero only).
 
     Returns the (possibly updated) (story_body, pages, info_dict). `info_dict`
     is logged by the caller; it carries `original_words`, `regen_used`,
@@ -972,11 +1118,17 @@ def _enforce_sprout_word_cap(
             post_story = r_post or post_story
             total_words = regen_words
 
-    # --- Stage 2: truncate at sentence boundary ---
-    truncated_body = _truncate_to_word_cap(story_body, cap, character_name)
-    truncated_pages = [truncated_body] if truncated_body else pages
+    # --- Stage 2: drop trailing pages at a sentence boundary ---
+    truncated_body, truncated_pages = _truncate_pages_to_word_cap(
+        pages,
+        cap,
+        character_name,
+        superhero=_is_superhero_theme(theme),
+    )
+    if not truncated_pages:
+        truncated_body, truncated_pages = story_body, pages
     info["truncated"] = True
-    info["final_words"] = _count_words(truncated_body)
+    info["final_words"] = sum(_count_words(p) for p in truncated_pages)
     logger.warning(
         "%s word-cap truncation applied: theme=%s original=%s regen_used=%s final=%s words.",
         band_label,
@@ -1884,6 +2036,57 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         logger.debug("could not resolve user tier", exc_info=True)
                 user_tier = resolved_tier
             max_attempts = 2 if user_tier == "free" else 3
+
+            # Canonical word-range contract for this request. ONE source (see
+            # backend/services/word_ranges.py) now feeds the prompt target,
+            # the validation floor below, AND the post-generation caps — the
+            # three used to be independent tables that contradicted each
+            # other (e.g. Explorer Superhero: prompt said 250-350 while the
+            # validator demanded 500+, so every story failed every attempt).
+            # Bedtime wins over superhero for a bedtime saga chapter because
+            # the bedtime overlay explicitly overrides the base prompt's
+            # length rules; the overlay always targets the band's "medium"
+            # range, hence the forced story_length there.
+            if bedtime_mode:
+                _wr_mode = "bedtime"
+            elif superhero_meta is not None:
+                _wr_mode = "superhero"
+            elif learning_to_read_mode:
+                _wr_mode = "ltr"
+            elif rhyme_time_mode:
+                _wr_mode = "rhyme"
+            else:
+                _wr_mode = "standard"
+            word_spec = get_word_range(
+                age=age,
+                mode=_wr_mode,
+                story_length=(
+                    "standard"
+                    if (bedtime_mode and superhero_meta is not None)
+                    else story_length
+                ),
+                story_duration=story_duration,
+                duration_minutes=(
+                    kwargs.get("bedtime_duration_minutes") if bedtime_mode else None
+                ),
+                superhero_band=(superhero_meta or {}).get("band"),
+            )
+            logger.info(
+                "word_range source=%s target=%s-%s floor=%s cap=%s",
+                word_spec.source,
+                word_spec.target_min,
+                word_spec.target_max,
+                word_spec.floor,
+                word_spec.cap,
+            )
+
+            # Snapshot the pristine prompt: retry feedback below is rebuilt
+            # from this base every attempt (REPLACING the previous attempt's
+            # feedback), never appended cumulatively — accumulated suffixes
+            # used to make the prompt self-contradictory (e.g. "STOP at 350"
+            # followed by "reach at least 500").
+            base_prompt = prompt
+
             attempt = 0
             validation_loop_start = time.perf_counter()
             while attempt < max_attempts:
@@ -2047,37 +2250,19 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                             "Rhyme Time story did not meet rhyme quality checks"
                         )
 
-                # Length Validation with dynamic thresholds
+                # Length Validation — the floor derives from the SAME
+                # canonical range the prompt stated (word_spec, computed
+                # above): ~75% of the prompt's target_min. Tolerant on
+                # purpose — this catches pathologically short output, not
+                # near-misses. The old hardcoded per-age table demanded
+                # lengths some prompts explicitly forbade (Explorer
+                # Superhero 250-350 vs a 500-word floor; 9+ bedtime 650-900
+                # vs an 1100-word floor), making those stories unsatisfiable.
                 # LTR mode is measured in pages (not words), so skip word-count check.
                 is_long_enough = True
                 if not learning_to_read_mode:
                     total_words = sum(len(p.split()) for p in pages)
-
-                    # Determine minimum words based on age and mode
-                    min_words_threshold = 0
-                    is_long_mode = (
-                        story_duration == "10_minutes" or story_length == "epic"
-                    )
-                    is_standard_mode = story_length == "standard"
-
-                    if age <= 5:
-                        # Sprout (age<=5) word count is capped by the live prompt's
-                        # page-based override (story_service.py ~824-873), which sets
-                        # word_range to (_sprout_pages*12, _sprout_pages*25) — e.g.
-                        # (120, 250) for standard/medium — with a HARD LIMIT of 300
-                        # words. A 250-word floor for standard mode left almost no
-                        # room to pass, causing silent retries. Use the same 100-word
-                        # floor across quick/standard/epic since they all share the
-                        # sprout page-based cap.
-                        min_words_threshold = 100
-                    elif age <= 7:
-                        min_words_threshold = 500 if is_standard_mode else 300
-                    elif age == 8:
-                        min_words_threshold = 1300 if is_long_mode else 700
-                    elif age <= 12:
-                        min_words_threshold = 1700 if is_long_mode else 1100
-                    else:  # 13+
-                        min_words_threshold = 2400 if is_long_mode else 1700
+                    min_words_threshold = word_spec.floor
 
                     if total_words < min_words_threshold:
                         is_long_enough = False
@@ -2097,23 +2282,38 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         f"Validation failed on attempt {attempt}: {validation_error}"
                     )
                     if attempt < max_attempts:
-                        # Append feedback to prompt for next attempt
+                        # Rebuild the prompt for the next attempt as
+                        # base_prompt + THIS attempt's feedback. Feedback
+                        # REPLACES the previous attempt's feedback (it never
+                        # accumulates): stacked suffixes used to leave the
+                        # prompt telling the model both "STOP at 350" and
+                        # "reach at least 500" at once.
+                        retry_notes: list[str] = []
                         if not is_clean:
-                            prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
+                            retry_notes.append(
+                                "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
+                            )
                             if missing_names:
-                                prompt += (
+                                retry_notes.append(
                                     "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: "
                                     + ", ".join(missing_names)
                                 )
                         if not is_long_enough:
-                            prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
+                            # Ask for the prompt's own target_min (not the
+                            # tolerant floor) so this instruction can never
+                            # contradict the base prompt's stated range.
+                            retry_notes.append(
+                                f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). "
+                                f"Please expand descriptions, dialogue, and scenes to reach at least "
+                                f"{word_spec.target_min} words (stay within the length rules above)."
+                            )
                         if not is_rhyme_quality_ok:
                             _rhyme_mode_label = (
                                 "LEARNING TO READ"
                                 if learning_to_read_mode
                                 else "RHYME TIME"
                             )
-                            prompt += (
+                            retry_notes.append(
                                 f"\n\nRETRY INSTRUCTION: This is {_rhyme_mode_label} mode and MUST rhyme. "
                                 "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
                                 "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top. "
@@ -2121,20 +2321,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 "grammar to force a rhyme — every line must be natural, correct English."
                             )
                         if not is_ltr_format_ok:
-                            prompt += (
+                            retry_notes.append(
                                 f"\n\nRETRY INSTRUCTION: Your previous response had {ltr_pages_count} pages "
                                 f"with {len(ltr_over_word_pages)} pages exceeding 25 words. "
                                 f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page 25 words or fewer. "
                                 f"Split any long page into two shorter pages. Do not compress the story into a few dense pages."
                             )
                         if not is_sprout_format_ok:
-                            prompt += (
+                            retry_notes.append(
                                 f"\n\nRETRY INSTRUCTION: This is a Sprout (3-4 year old) story and MUST be between 8 and 12 short pages "
                                 f"(10-25 words each). Your previous response had {sprout_pages_count} pages "
                                 f"with {len(sprout_over_word_pages)} pages exceeding 25 words. "
                                 f"Return EXACTLY 8-12 pages. Split any dense page into two shorter ones. "
                                 f"Traditional picture-book pacing: one short scene per page, never more than 25 words per page."
                             )
+                        prompt = base_prompt + "".join(retry_notes)
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
             validation_loop_ms = (time.perf_counter() - validation_loop_start) * 1000.0
@@ -2199,16 +2400,25 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     post_split,
                 )
 
-            # --- Sprout (ages 3-5) 150-word post-generation cap ---
-            # Two-stage safety belt: one stricter regen attempt, then sentence-
-            # boundary truncation that preserves the cheer beat. Applies to
-            # superhero theme AND every other Sprout story path.
+            # --- Sprout (ages 3-5) post-generation word-cap belt ---
+            # Two-stage safety belt: one stricter regen attempt, then page-
+            # preserving sentence-boundary truncation. The cap is the
+            # CANONICAL cap for the story's actual mode/length (word_spec.cap
+            # — e.g. 300 for a standard/medium Sprout, 156 for Sprout
+            # Superhero), not the old flat 150 that contradicted the standard
+            # Sprout prompt's own 300-word ceiling. Bedtime and explicit-
+            # duration stories are EXEMPT: bedtime Sprout targets 260-380+
+            # words by design and an explicit duration overrides band caps
+            # (that override is the feature, not a bug) — the old
+            # unconditional belt forced a contradictory regen + truncation
+            # on every one of them.
             try:
                 _sprout_age = int(age) if age is not None else 5
             except (TypeError, ValueError):
                 _sprout_age = 5
+            _has_explicit_duration = bool(kwargs.get("bedtime_duration_minutes"))
             _superhero_validation_issues: list[dict] = []
-            if _sprout_age <= 5:
+            if _sprout_age <= 5 and not bedtime_mode and not _has_explicit_duration:
                 story_body, pages, _sprout_info = _enforce_sprout_word_cap(
                     age=_sprout_age,
                     theme=theme,
@@ -2217,28 +2427,37 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     title=title,
                     post_story=post_story,
                     character_name=character_name,
-                    base_prompt=prompt,
+                    base_prompt=base_prompt,
                     regen_fn=lambda p: _generate_story_text(
                         p, theme, character_name, companion, user_tier=user_tier
                     ),
+                    cap=word_spec.cap,
                 )
-                if _sprout_info.get("original_words", 0) > SPROUT_WORD_CAP:
+                if _sprout_info.get("original_words", 0) > word_spec.cap:
                     logger.info(
-                        "sprout_word_cap event=enforced theme=%s original=%s regen=%s "
-                        "truncated=%s final=%s",
+                        "sprout_word_cap event=enforced theme=%s cap=%s original=%s "
+                        "regen=%s truncated=%s final=%s",
                         _sprout_info.get("theme"),
+                        word_spec.cap,
                         _sprout_info.get("original_words"),
                         _sprout_info.get("regen_used"),
                         _sprout_info.get("truncated"),
                         _sprout_info.get("final_words"),
                     )
 
-            # --- MT-108: Explorer (ages 6-8) Superhero 350-word post-gen cap ---
-            # Mirrors the Sprout safety belt above, reusing the same retry+truncate
-            # helper with cap=350. Only fires for the Superhero theme on Explorer
-            # ages, where the prompt targets 250-350 words and the model still
-            # occasionally overshoots.
-            elif _sprout_age >= 6 and _sprout_age <= 8 and _is_superhero_theme(theme):
+            # --- MT-108: Explorer (ages 6-8) Superhero post-gen cap ---
+            # Mirrors the Sprout safety belt above, reusing the same
+            # retry+truncate helper with the canonical Explorer Superhero cap
+            # (word_spec.cap — 20% headroom above the prompt's 350-word
+            # target). Bedtime saga chapters are exempt: the bedtime overlay
+            # overrides the superhero length rules with the (longer) bedtime
+            # band target.
+            elif (
+                _sprout_age >= 6
+                and _sprout_age <= 8
+                and _is_superhero_theme(theme)
+                and not bedtime_mode
+            ):
                 story_body, pages, _explorer_info = _enforce_sprout_word_cap(
                     age=_sprout_age,
                     theme=theme,
@@ -2247,22 +2466,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     title=title,
                     post_story=post_story,
                     character_name=character_name,
-                    base_prompt=prompt,
+                    base_prompt=base_prompt,
                     regen_fn=lambda p: _generate_story_text(
                         p, theme, character_name, companion, user_tier=user_tier
                     ),
-                    cap=EXPLORER_SUPERHERO_WORD_CAP,
+                    cap=word_spec.cap,
                     band_label="Explorer",
                     age_max=8,
                 )
-                if (
-                    _explorer_info.get("original_words", 0)
-                    > EXPLORER_SUPERHERO_WORD_CAP
-                ):
+                if _explorer_info.get("original_words", 0) > word_spec.cap:
                     logger.info(
-                        "explorer_superhero_word_cap event=enforced theme=%s original=%s regen=%s "
-                        "truncated=%s final=%s",
+                        "explorer_superhero_word_cap event=enforced theme=%s cap=%s "
+                        "original=%s regen=%s truncated=%s final=%s",
                         _explorer_info.get("theme"),
+                        word_spec.cap,
                         _explorer_info.get("original_words"),
                         _explorer_info.get("regen_used"),
                         _explorer_info.get("truncated"),
@@ -2292,7 +2509,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     pages=pages,
                     post_story=post_story,
                     story_metadata=story_metadata,
-                    base_prompt=prompt,
+                    base_prompt=base_prompt,
                     regen_fn=lambda p: _generate_story_text(
                         p, theme, character_name, companion, user_tier=user_tier
                     ),

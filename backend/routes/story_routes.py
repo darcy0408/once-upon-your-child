@@ -9,7 +9,7 @@ import uuid
 
 import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, g, jsonify, request
 from flask_limiter.util import get_remote_address
 from PIL import Image
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,7 +20,10 @@ from ..middleware.auth import require_auth, require_parental_consent
 from ..models import Character, ParentHiddenContext
 from ..models.story import Story
 from ..routes.subscription_routes import require_premium
-from ..services.interactive_adventure_service import InteractiveAdventureService
+from ..services.interactive_adventure_service import (
+    InteractiveAdventureService,
+    schedule_segment_illustration,
+)
 from ..services.story_service import transform_parent_context_to_story_guidance
 from ..tasks.story_tasks import (
     AntiheroGenerationError,
@@ -581,14 +584,23 @@ def _sync_timeout_for(task_kwargs: dict, base_timeout: int) -> int:
     generation completing in the sync path. The grant is capped so a request
     with many companions cannot hold a worker indefinitely. This widens a
     timeout only — it never gates or rejects a request.
+
+    A hard ceiling keeps the total wait comfortably under gunicorn's
+    ``--timeout`` (120s in railway.toml). Without it, base+extra could reach
+    195s and gunicorn SIGKILLed the worker mid-wait: the client saw a dropped
+    connection and its retry launched a DUPLICATE generation while the first
+    was still running on Celery. Falling to the 202+poll path at the ceiling
+    is strictly better — the original task keeps running and is recovered by
+    task_id.
     """
+    ceiling = int(os.getenv("SYNC_STORY_TIMEOUT_CEILING_SECONDS", "100"))
     companions = _companion_count(task_kwargs)
     if companions <= 0:
-        return base_timeout
+        return min(base_timeout, ceiling)
     per_companion = int(os.getenv("SYNC_STORY_TIMEOUT_PER_COMPANION_SECONDS", "30"))
     max_extra = int(os.getenv("SYNC_STORY_TIMEOUT_MAX_EXTRA_SECONDS", "120"))
     extra = min(companions * per_companion, max_extra)
-    return base_timeout + extra
+    return min(base_timeout + extra, ceiling)
 
 
 def _celery_runs_eagerly() -> bool:
@@ -598,16 +610,19 @@ def _celery_runs_eagerly() -> bool:
         return False
 
 
-def _read_partial_story(task_id: str | None) -> str | None:
-    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+# PERF-01: reuse one Redis client per web process for partial-story reads.
+# /task-status polls arrive every ~2s per waiting client; the previous code
+# dialed a brand-new Redis connection on every poll. redis-py's pool
+# transparently reconnects; a read error drops the cache so the next poll
+# re-dials.
+_partial_story_redis_client = None
 
-    Returns the partial text the Gemini stream consumer wrote (see
-    `_emit_partial_story` in story_tasks.py), or None if nothing is
-    available. Best-effort: any Redis hiccup returns None so /task-status
-    degrades to the same response shape it had pre-PERF-01.
-    """
-    if not task_id:
-        return None
+
+def _get_partial_story_redis():
+    """Lazily create (and cache) the Redis client for partial-story reads."""
+    global _partial_story_redis_client
+    if _partial_story_redis_client is not None:
+        return _partial_story_redis_client
     redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
@@ -615,6 +630,28 @@ def _read_partial_story(task_id: str | None) -> str | None:
         import redis as redis_lib
 
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
+        _partial_story_redis_client = client
+        return client
+    except Exception:
+        return None
+
+
+def _read_partial_story(task_id: str | None) -> str | None:
+    """PERF-01 slice 3: read accumulated streamed story text from Redis.
+
+    Returns the partial prose the provider stream consumer wrote (see
+    `_emit_partial_story` in story_tasks.py — a readable-prose view of the
+    in-flight story, not the raw JSON payload), or None if nothing is
+    available. Best-effort: any Redis hiccup returns None so /task-status
+    degrades to the same response shape it had pre-PERF-01.
+    """
+    global _partial_story_redis_client
+    if not task_id:
+        return None
+    client = _get_partial_story_redis()
+    if client is None:
+        return None
+    try:
         value = client.get(f"partial_story:{task_id}")
         if value is None:
             return None
@@ -622,6 +659,8 @@ def _read_partial_story(task_id: str | None) -> str | None:
             value = value.decode("utf-8", errors="replace")
         return value or None
     except Exception:
+        # Drop the cached client so the next poll re-dials a fresh connection.
+        _partial_story_redis_client = None
         return None
 
 
@@ -1993,6 +2032,22 @@ def create_story_blueprint(
 
             _scrub_segment_links(result["segment"])
 
+            # Latency audit fix A: the response above is text-only
+            # (image_url null). Illustration generation happens out-of-band
+            # on the shared Cloudflare-first Flux chain; the client fetches
+            # it via the segment-illustration endpoint once ready. Never
+            # scheduled for a flagged (safe-fallback) segment or when the
+            # client opted out of images.
+            if (
+                include_images
+                and not flagged
+                and result["segment"].get("id")
+                and result["segment"].get("image_description")
+            ):
+                schedule_segment_illustration(
+                    current_app._get_current_object(), result["segment"]["id"]
+                )
+
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
 
@@ -2209,6 +2264,18 @@ def create_story_blueprint(
 
             _scrub_segment_links(result["segment"])
 
+            # Latency audit fix A: illustration generation happens
+            # out-of-band (see generate_interactive_story_endpoint).
+            if (
+                include_images
+                and not flagged
+                and result["segment"].get("id")
+                and result["segment"].get("image_description")
+            ):
+                schedule_segment_illustration(
+                    current_app._get_current_object(), result["segment"]["id"]
+                )
+
             logger.info(
                 f"Story {story_id} continued to segment {result['segment']['segment_number']}"
             )
@@ -2330,6 +2397,70 @@ def create_story_blueprint(
 
         except Exception as e:
             logger.exception("Resuming interactive story failed")
+            return jsonify({"error": str(e)}), 500
+
+    @story_bp.route(
+        "/interactive-story/<story_id>/segments/<segment_id>/illustration",
+        methods=["GET"],
+    )
+    @require_auth
+    # Lightweight poll while the background illustration finishes — like
+    # /task-status above, this must not burn the app-wide default limits
+    # (200/day, 50/hour) on status checks; decorator limits REPLACE the
+    # defaults (flask-limiter override_defaults=True).
+    @limiter.limit("120 per minute", key_func=get_remote_address)
+    def get_interactive_segment_illustration(story_id, segment_id):
+        """Fetch the asynchronously generated illustration for one segment.
+
+        Latency audit fix A: /generate-interactive-story and
+        /continue-interactive-story return text-only; the Flutter client
+        renders the segment immediately and polls this endpoint for the image.
+
+        Response: {"segment_id", "image_url", "status"} where status is
+          - "ready":   image_url is populated (data URI)
+          - "pending": generation was scheduled but hasn't finished — poll again
+          - "none":    the segment has no image_description; stop polling
+        """
+        try:
+            from backend.models import InteractiveStory, StorySegment
+
+            story = db.session.get(InteractiveStory, story_id)
+            if not story:
+                return jsonify({"error": f"Story {story_id} not found"}), 404
+
+            if str(story.user_id) != str(request.current_user.id):
+                logger.warning(
+                    f"IDOR attempt: User {request.current_user.id} tried to "
+                    f"read illustration for story {story_id}"
+                )
+                return jsonify({"error": "Access denied"}), 403
+
+            segment = StorySegment.query.filter_by(
+                id=segment_id, story_id=story_id
+            ).first()
+            if not segment:
+                return jsonify({"error": "Segment not found"}), 404
+
+            if segment.image_url:
+                status = "ready"
+            elif segment.image_description:
+                status = "pending"
+            else:
+                status = "none"
+
+            return (
+                jsonify(
+                    {
+                        "segment_id": segment.id,
+                        "image_url": segment.image_url,
+                        "status": status,
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            logger.exception("Fetching segment illustration failed")
             return jsonify({"error": str(e)}), 500
 
     @story_bp.route("/report-story", methods=["POST"])
