@@ -65,6 +65,33 @@ def _fake_client_returning(response) -> MagicMock:
     return client
 
 
+# --- PERF-01 streaming fakes -----------------------------------------------
+def _stream_chunk(content=None, finish_reason=None, refusal=None):
+    """One streamed Chat Completions chunk (delta shape)."""
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                delta=SimpleNamespace(content=content, refusal=refusal),
+                finish_reason=finish_reason,
+            )
+        ]
+    )
+
+
+def _fake_streaming_client(chunks, blocking_response=None) -> MagicMock:
+    """Client whose ``create(stream=True)`` yields ``chunks``; a non-stream
+    call returns ``blocking_response`` (for fallback-path assertions)."""
+    client = MagicMock()
+
+    def _create(**kwargs):
+        if kwargs.get("stream"):
+            return iter(list(chunks))
+        return blocking_response
+
+    client.chat.completions.create = MagicMock(side_effect=_create)
+    return client
+
+
 # Anthropic fake (for the tiered cross-provider tests) — matches acg shapes.
 def _claude_response(content: str = _OK_STORY, stop_reason: str = "end_turn"):
     return SimpleNamespace(
@@ -242,6 +269,220 @@ class TestOpenAIServiceModel:
         with patch.object(ocg, "_make_openai_client", lambda api_key: client):
             out = OpenAIStoryGenerator().generate_story("hi")
         assert out.startswith("Sorry")
+
+
+# ---------------------------------------------------------------------------
+# PERF-01 — streamed generation (on_chunk) path
+# ---------------------------------------------------------------------------
+class TestOpenAIStreaming:
+    @pytest.fixture(autouse=True)
+    def _service_env(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        monkeypatch.delenv("OPENAI_PAID_MODEL", raising=False)
+        monkeypatch.delenv("OPENAI_FREE_MODEL", raising=False)
+        monkeypatch.delenv("OPENAI_REASONING_EFFORT", raising=False)
+        yield
+
+    def _generator(self, monkeypatch, client):
+        monkeypatch.setattr(ocg, "_make_openai_client", lambda api_key: client)
+        return OpenAIStoryGenerator(user_tier="free")
+
+    def test_streaming_accumulates_and_returns_full_text(self, monkeypatch):
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(content='{"title": "T", "pages": '),
+                _stream_chunk(content='[{"text": "Once upon a time."}]}'),
+                _stream_chunk(finish_reason="stop"),
+            ]
+        )
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert out == '{"title": "T", "pages": [{"text": "Once upon a time."}]}'
+        # Streamed on the first (and only) call.
+        assert client.chat.completions.create.call_count == 1
+        assert client.chat.completions.create.call_args.kwargs["stream"] is True
+
+    def test_on_chunk_receives_growing_snapshots(self, monkeypatch):
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(content="Once "),
+                _stream_chunk(content="upon "),
+                _stream_chunk(content="a time.", finish_reason="stop"),
+            ]
+        )
+        snapshots: list[str] = []
+        self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=snapshots.append
+        )
+        assert snapshots == ["Once ", "Once upon ", "Once upon a time."]
+
+    def test_on_chunk_errors_never_abort_generation(self, monkeypatch):
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(content="Once upon a time."),
+                _stream_chunk(finish_reason="stop"),
+            ]
+        )
+
+        def _boom(_text):
+            raise RuntimeError("consumer exploded")
+
+        out = self._generator(monkeypatch, client).generate_story("hi", on_chunk=_boom)
+        assert out == "Once upon a time."
+
+    def test_content_filter_mid_stream_returns_safety_fallback(self, monkeypatch):
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(content="Something started "),
+                _stream_chunk(finish_reason="content_filter"),
+            ]
+        )
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert "different adventure" in out  # _SAFETY_FALLBACK marker
+
+    def test_streamed_refusal_returns_safety_fallback(self, monkeypatch):
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(refusal="I can't "),
+                _stream_chunk(refusal="help with that", finish_reason="stop"),
+            ]
+        )
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert "different adventure" in out
+
+    def test_empty_stream_returns_safety_fallback(self, monkeypatch):
+        client = _fake_streaming_client([_stream_chunk(finish_reason="stop")])
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert "different adventure" in out
+
+    def test_length_finish_reason_returns_partial_text(self, monkeypatch):
+        client = _fake_streaming_client(
+            [_stream_chunk(content="Once upon a tim", finish_reason="length")]
+        )
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert out == "Once upon a tim"
+
+    def test_stream_unavailable_falls_back_to_blocking(self, monkeypatch):
+        client = MagicMock()
+
+        def _create(**kwargs):
+            if kwargs.get("stream"):
+                raise RuntimeError("streaming not enabled for org")
+            return _openai_response()
+
+        client.chat.completions.create = MagicMock(side_effect=_create)
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        assert out == _OK_STORY
+        # First call streamed (and failed), second was the blocking retry.
+        assert client.chat.completions.create.call_count == 2
+        assert "stream" not in client.chat.completions.create.call_args.kwargs
+
+    def test_mid_stream_failure_after_content_returns_sorry(self, monkeypatch):
+        def _broken_stream():
+            yield _stream_chunk(content="Once upon")
+            raise RuntimeError("connection reset")
+
+        client = MagicMock()
+
+        def _create(**kwargs):
+            if kwargs.get("stream"):
+                return _broken_stream()
+            raise AssertionError("must not retry blocking after mid-stream loss")
+
+        client.chat.completions.create = MagicMock(side_effect=_create)
+        out = self._generator(monkeypatch, client).generate_story(
+            "hi", on_chunk=lambda text: None
+        )
+        # Classified exactly like a blocking-call failure — no silent retry.
+        assert out.startswith("Sorry")
+        assert client.chat.completions.create.call_count == 1
+
+    def test_no_on_chunk_never_streams(self, monkeypatch):
+        client = _fake_client_returning(_openai_response())
+        out = self._generator(monkeypatch, client).generate_story("hi")
+        assert out == _OK_STORY
+        assert "stream" not in client.chat.completions.create.call_args.kwargs
+
+
+# ---------------------------------------------------------------------------
+# PERF-01 — _try_openai partial-story emission (task_id wiring)
+# ---------------------------------------------------------------------------
+class TestTryOpenAIPartialEmission:
+    @pytest.fixture(autouse=True)
+    def _env(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+        yield
+
+    def test_task_id_streams_and_emits_partials(self, monkeypatch):
+        first = '{"title": "T", "pages": [{"text": "Once upon a time, '
+        second = 'a brave hero set out."}]}'
+        client = _fake_streaming_client(
+            [
+                _stream_chunk(content=first),
+                _stream_chunk(content=second, finish_reason="stop"),
+            ]
+        )
+        monkeypatch.setattr(ocg, "_make_openai_client", lambda api_key: client)
+        emitted: list[tuple[str, str]] = []
+        monkeypatch.setattr(
+            story_tasks,
+            "_emit_partial_story",
+            lambda tid, text: emitted.append((tid, text)),
+        )
+
+        seq: list[str] = []
+        text = story_tasks._try_openai("prompt", "free", seq, task_id="task-123")
+
+        assert text == first + second == _OK_STORY
+        assert seq == ["openai(success)"]
+        assert emitted == [
+            ("task-123", first),
+            ("task-123", first + second),
+        ]
+
+    def test_no_task_id_uses_blocking_call(self, monkeypatch):
+        client = _fake_client_returning(_openai_response())
+        monkeypatch.setattr(ocg, "_make_openai_client", lambda api_key: client)
+        emitted: list[tuple[str, str]] = []
+        monkeypatch.setattr(
+            story_tasks,
+            "_emit_partial_story",
+            lambda tid, text: emitted.append((tid, text)),
+        )
+
+        seq: list[str] = []
+        text = story_tasks._try_openai("prompt", "free", seq)
+
+        assert text == _OK_STORY
+        assert emitted == []
+        assert "stream" not in client.chat.completions.create.call_args.kwargs
+
+    def test_hard_failure_clears_partial_key(self, monkeypatch):
+        client = MagicMock()
+        client.chat.completions.create.side_effect = RuntimeError("kaboom")
+        monkeypatch.setattr(ocg, "_make_openai_client", lambda api_key: client)
+        cleared: list[str] = []
+        monkeypatch.setattr(
+            story_tasks, "_clear_partial_story", lambda tid: cleared.append(tid)
+        )
+
+        seq: list[str] = []
+        text = story_tasks._try_openai("prompt", "free", seq, task_id="task-9")
+
+        assert text is None
+        assert any(s.startswith("openai(fail") for s in seq)
+        assert cleared == ["task-9"]
 
 
 # ---------------------------------------------------------------------------

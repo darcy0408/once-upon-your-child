@@ -202,16 +202,31 @@ def _resolve_story_provider() -> str:
 
 
 # PERF-01 slice 2: per-story partial-state emission for /task-status polling.
-# As Gemini's stream API yields chunks, the accumulated story text is written
-# to Redis under `partial_story:<task_id>`. Slice 3 will surface it through
-# /task-status so clients see story progress within ~5s of the model starting
-# to respond instead of waiting for the full ~55-110s generation.
+# As a provider's stream API yields chunks (Gemini, OpenAI, OpenRouter), the
+# accumulated story text is converted to a readable-prose view and written to
+# Redis under `partial_story:<task_id>`; /task-status surfaces it so clients
+# can render story progress within ~3-5s of the model starting to respond
+# instead of waiting for the full generation.
 # Best-effort: a Redis hiccup never aborts generation.
 _PARTIAL_STORY_TTL_SECONDS = 600  # outlives the longest plausible generation
 
+# PERF-01 streaming: reuse one Redis client for the whole worker process
+# instead of dialing (and PINGing) a fresh connection on every streamed chunk.
+# redis-py's connection pool transparently reconnects, and any write error
+# resets this cache so the next emit re-dials.
+_partial_story_redis_client = None
+
 
 def _get_partial_story_redis():
-    """Connect to Redis using the same env-var pattern as ai_quota._get_redis."""
+    """Connect to Redis using the same env-var pattern as ai_quota._get_redis.
+
+    Lazily creates ONE module-level client and reuses it across calls; the
+    per-chunk emit path previously built (and health-checked) a brand-new
+    connection per chunk and per /task-status poll.
+    """
+    global _partial_story_redis_client
+    if _partial_story_redis_client is not None:
+        return _partial_story_redis_client
     redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
     if not redis_url:
         return None
@@ -220,6 +235,7 @@ def _get_partial_story_redis():
 
         client = redis_lib.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
+        _partial_story_redis_client = client
         return client
     except Exception as exc:
         logger.warning(
@@ -228,19 +244,92 @@ def _get_partial_story_redis():
         return None
 
 
+def _reset_partial_story_redis() -> None:
+    """Drop the cached client so the next call re-dials (used on write errors)."""
+    global _partial_story_redis_client
+    _partial_story_redis_client = None
+
+
+# PERF-01 prose view: the streamed model output is the RAW story payload — a
+# growing JSON blob like `{"title": "...", "pages": [{"text": "..."}, ...]}`
+# (or a fenced variant), NOT readable prose. Emitting it verbatim would make
+# clients render braces and escape sequences. These helpers extract a clean,
+# kid-readable prose view (title + page texts joined by blank lines) from the
+# accumulating, usually-incomplete JSON fragment. The client's progress
+# fraction only consumes the emitted text's LENGTH, so swapping raw JSON for
+# slightly-shorter prose keeps that heuristic working (its per-tier expected
+# lengths are deliberately generous).
+_PARTIAL_TITLE_RE = re.compile(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)')
+_PARTIAL_PAGE_TEXT_RE = re.compile(r'"text"\s*:\s*"((?:[^"\\]|\\.)*)')
+
+
+def _unescape_partial_json_string(fragment: str) -> str:
+    """Decode JSON string escapes in a possibly-truncated string fragment."""
+    # A chunk boundary can split an escape sequence; drop a dangling backslash
+    # so the json decoder doesn't reject the whole fragment.
+    trailing = len(fragment) - len(fragment.rstrip("\\"))
+    if trailing % 2 == 1:
+        fragment = fragment[:-1]
+    try:
+        return json.loads(f'"{fragment}"')
+    except ValueError:
+        # e.g. a split \uXXXX escape — best-effort manual pass; the next
+        # snapshot (with more chunks) will decode cleanly.
+        return (
+            fragment.replace('\\"', '"')
+            .replace("\\n", "\n")
+            .replace("\\t", " ")
+            .replace("\\\\", "\\")
+        )
+
+
+def _partial_prose_view(raw_text: str) -> str:
+    """Readable-prose view of a (possibly incomplete) streamed story payload.
+
+    JSON-shaped payloads yield `title\\n\\npage text...` built from every
+    complete-or-growing `"text"` field; non-JSON payloads (a provider that
+    streams plain prose) pass through untouched. Returns "" while the
+    fragment is too short to contain any readable text yet.
+    """
+    if not raw_text:
+        return ""
+    stripped = raw_text.lstrip("\ufeff \t\r\n")
+    if stripped.startswith("```"):
+        stripped = stripped[3:].lstrip()
+        if stripped[:4].lower() == "json":
+            stripped = stripped[4:]
+    if not stripped.lstrip().startswith("{"):
+        return raw_text.strip()  # plain-prose stream — nothing to unwrap
+    parts: list[str] = []
+    title_match = _PARTIAL_TITLE_RE.search(stripped)
+    if title_match:
+        title = _unescape_partial_json_string(title_match.group(1)).strip()
+        if title:
+            parts.append(title)
+    for page_match in _PARTIAL_PAGE_TEXT_RE.finditer(stripped):
+        text = _unescape_partial_json_string(page_match.group(1)).strip()
+        if text:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
 def _emit_partial_story(task_id: str | None, accumulated_text: str) -> None:
-    """Write accumulated streamed text for `task_id` to Redis. Best-effort."""
+    """Write the prose view of accumulated streamed text for `task_id` to
+    Redis. Best-effort. Skips the write while the fragment has no readable
+    prose yet (e.g. only `{"ti` has arrived)."""
     if not task_id:
+        return
+    prose = _partial_prose_view(accumulated_text)
+    if not prose:
         return
     client = _get_partial_story_redis()
     if client is None:
         return
     try:
-        client.setex(
-            f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, accumulated_text
-        )
+        client.setex(f"partial_story:{task_id}", _PARTIAL_STORY_TTL_SECONDS, prose)
     except Exception as exc:
         logger.debug("partial-story write skipped (%s)", exc)
+        _reset_partial_story_redis()
 
 
 def _clear_partial_story(task_id: str | None) -> None:
@@ -254,6 +343,7 @@ def _clear_partial_story(task_id: str | None) -> None:
         client.delete(f"partial_story:{task_id}")
     except Exception as exc:
         logger.debug("partial-story clear skipped (%s)", exc)
+        _reset_partial_story_redis()
 
 
 def _try_gemini(
@@ -307,11 +397,31 @@ def _try_gemini(
     return None
 
 
+def _partial_story_emitter(task_id: str | None):
+    """Build the per-chunk ``on_chunk`` callback for a streaming generator, or
+    None when there is no task context (legacy/regeneration call sites) so the
+    generator makes its original blocking call (PERF-01)."""
+    if not task_id:
+        return None
+
+    def _on_chunk(accumulated_text: str, _task_id: str = task_id) -> None:
+        _emit_partial_story(_task_id, accumulated_text)
+
+    return _on_chunk
+
+
 def _try_openrouter(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt OpenRouter story generation. Returns text on success, None on
-    failure (any failure mode appends a tagged entry to provider_sequence)."""
+    failure (any failure mode appends a tagged entry to provider_sequence).
+
+    When `task_id` is provided, requests an SSE stream and emits accumulated
+    text to Redis as each chunk arrives (PERF-01), mirroring `_try_gemini`.
+    """
     if not os.getenv("OPENROUTER_API_KEY"):
         logger.warning("OPENROUTER_API_KEY not set. Skipping OpenRouter.")
         provider_sequence.append("openrouter(fail:no_key)")
@@ -320,7 +430,9 @@ def _try_openrouter(
     try:
         logger.info("Attempting story generation with OpenRouter...")
         openrouter_generator = OpenRouterStoryGenerator(user_tier=user_tier)
-        story_text = openrouter_generator.generate_story(prompt)
+        story_text = openrouter_generator.generate_story(
+            prompt, on_chunk=_partial_story_emitter(task_id)
+        )
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with OpenRouter.")
             provider_sequence.append("openrouter(success)")
@@ -330,20 +442,32 @@ def _try_openrouter(
         provider_sequence.append(
             f"openrouter(fail:{_classify_provider_failure(message=story_text)})"
         )
+        # Drop any partial prose from the failed streamed attempt so a
+        # fallback provider's (or the static) story can't sit behind stale
+        # partial text from this one.
+        _clear_partial_story(task_id)
     except Exception as exc:
         logger.exception("OpenRouter failed.")
         provider_sequence.append(
             f"openrouter(fail:{_classify_provider_failure(exc=exc)})"
         )
+        _clear_partial_story(task_id)
     return None
 
 
 def _try_claude(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt direct-Anthropic (Claude) story generation. Returns text on
     success, None on failure (any failure mode appends a tagged entry to
-    provider_sequence). MT-248: Claude's terms permit child-directed apps."""
+    provider_sequence). MT-248: Claude's terms permit child-directed apps.
+
+    `task_id` is accepted for call-site uniformity with the streaming-capable
+    providers but is currently unused — the Claude generator does not stream
+    (PERF-01 follow-up if the paid Claude tier ever ships)."""
     if not os.getenv("ANTHROPIC_API_KEY"):
         logger.warning("ANTHROPIC_API_KEY not set. Skipping Claude (direct).")
         provider_sequence.append("claude(fail:no_key)")
@@ -369,12 +493,21 @@ def _try_claude(
 
 
 def _try_openai(
-    prompt: str, user_tier: str | None, provider_sequence: list[str]
+    prompt: str,
+    user_tier: str | None,
+    provider_sequence: list[str],
+    task_id: str | None = None,
 ) -> str | None:
     """Attempt direct-OpenAI (GPT-5 mini) story generation. Returns text on
     success, None on failure (any failure mode appends a tagged entry to
     provider_sequence). MT-248: OpenAI's terms permit child-directed apps with
-    COPPA safeguards — the same eligibility class as Claude, unlike Gemini."""
+    COPPA safeguards — the same eligibility class as Claude, unlike Gemini.
+
+    When `task_id` is provided, the generator streams and accumulated text is
+    emitted to Redis as each chunk arrives — clients polling /task-status see
+    (and can render) partial story prose within seconds (PERF-01). Without
+    `task_id`, the original single blocking call is used.
+    """
     if not os.getenv("OPENAI_API_KEY"):
         logger.warning("OPENAI_API_KEY not set. Skipping OpenAI (direct).")
         provider_sequence.append("openai(fail:no_key)")
@@ -383,7 +516,9 @@ def _try_openai(
     try:
         logger.info("Attempting story generation with OpenAI (direct)...")
         openai_generator = OpenAIStoryGenerator(user_tier=user_tier)
-        story_text = openai_generator.generate_story(prompt)
+        story_text = openai_generator.generate_story(
+            prompt, on_chunk=_partial_story_emitter(task_id)
+        )
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with OpenAI (direct).")
             provider_sequence.append("openai(success)")
@@ -393,9 +528,14 @@ def _try_openai(
         provider_sequence.append(
             f"openai(fail:{_classify_provider_failure(message=story_text)})"
         )
+        # Drop any partial prose from the failed streamed attempt so a
+        # fallback provider's (or the static) story can't sit behind stale
+        # partial text from this one.
+        _clear_partial_story(task_id)
     except Exception as exc:
         logger.exception("OpenAI (direct) failed.")
         provider_sequence.append(f"openai(fail:{_classify_provider_failure(exc=exc)})")
+        _clear_partial_story(task_id)
     return None
 
 
@@ -418,9 +558,11 @@ def _generate_story_text_with_metadata(
                        (the MT-248 cost/quality split; never touches Gemini)
         'auto'       — OpenRouter -> Gemini -> static  (rollback-safe migration)
 
-    `task_id` forwards to `_try_gemini` for PERF-01 streaming. When provided,
-    Gemini uses its streaming API and writes partial story text to Redis.
-    OpenRouter generation is not streamed (slice 2 scope).
+    `task_id` forwards to the provider helpers for PERF-01 streaming. When
+    provided, Gemini, OpenAI, and OpenRouter all use their streaming APIs and
+    write a readable-prose view of the partial story text to Redis
+    (`partial_story:<task_id>`) so /task-status polls can surface it. Claude
+    is the only non-streamed provider (dormant until a paid tier ships).
 
     The returned ``provider_sequence`` list traces every attempt for observability
     (success/fail reasons surface in the audit_log + Sentry breadcrumbs).
@@ -431,14 +573,14 @@ def _generate_story_text_with_metadata(
     if provider_choice == "openrouter":
         # OpenRouter only — do NOT fall back to Gemini (Phase 1 target order;
         # Gemini's child-directed-app ToS is the whole reason for the flag).
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
     elif provider_choice == "claude":
         # Direct Anthropic only — do NOT fall back to Gemini (MT-248 launch-gate;
         # Claude's terms permit minors with safeguards, Gemini's prohibit them).
-        text = _try_claude(prompt, user_tier, provider_sequence)
+        text = _try_claude(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "claude", provider_sequence
 
@@ -446,7 +588,7 @@ def _generate_story_text_with_metadata(
         # Direct OpenAI only — do NOT fall back to Gemini (MT-248 launch-gate;
         # OpenAI's terms permit minors with COPPA safeguards, Gemini's prohibit
         # child-directed apps). GPT-5 mini is the taste-test value winner.
-        text = _try_openai(prompt, user_tier, provider_sequence)
+        text = _try_openai(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openai", provider_sequence
 
@@ -464,7 +606,7 @@ def _generate_story_text_with_metadata(
             else ((_try_claude, "claude"), (_try_openai, "openai"))
         )
         for try_fn, provider_name in order:
-            text = try_fn(prompt, user_tier, provider_sequence)
+            text = try_fn(prompt, user_tier, provider_sequence, task_id=task_id)
             if text is not None:
                 return text, provider_name, provider_sequence
 
@@ -472,7 +614,7 @@ def _generate_story_text_with_metadata(
         # Rollback-safe: try OpenRouter first; if it fails for any reason, fall
         # back to Gemini so a flipped flag never produces a static fallback
         # when Gemini would have worked. Use during migration validation only.
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
@@ -486,7 +628,7 @@ def _generate_story_text_with_metadata(
         if text is not None:
             return text, "gemini", provider_sequence
 
-        text = _try_openrouter(prompt, user_tier, provider_sequence)
+        text = _try_openrouter(prompt, user_tier, provider_sequence, task_id=task_id)
         if text is not None:
             return text, "openrouter", provider_sequence
 
