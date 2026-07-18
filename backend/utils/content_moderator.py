@@ -29,6 +29,7 @@ Design principles:
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -391,10 +392,25 @@ def moderate_story_content(
     age_label = _age_band_label(age)
 
     chunks = _split_into_chunks(story_text)
-    for index, chunk in enumerate(chunks):
-        is_safe, reason = _classify_chunk(
-            chunk, age, age_label, client, fail_closed, _unverified
+    if len(chunks) == 1:
+        return _classify_chunk(
+            chunks[0], age, age_label, client, fail_closed, _unverified
         )
+
+    # Chunks are judged independently ("judge it on its own content"), so
+    # classify them concurrently: a multi-chunk (teen "long") story pays one
+    # call's latency instead of N serial calls. The OpenAI client is
+    # thread-safe, and _MAX_CHUNKS bounds the fan-out at 5 threads.
+    with ThreadPoolExecutor(max_workers=len(chunks)) as pool:
+        results = list(
+            pool.map(
+                lambda chunk: _classify_chunk(
+                    chunk, age, age_label, client, fail_closed, _unverified
+                ),
+                chunks,
+            )
+        )
+    for index, (is_safe, reason) in enumerate(results):
         if not is_safe:
             if reason and reason != "moderation unavailable":
                 logger.warning(

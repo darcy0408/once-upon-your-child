@@ -53,7 +53,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="ce70d726ed719611",
+        content_hash="edbc7f73da540582",
         source_file="backend/services/story_service.py",
         line_start=770,
         line_end=816,
@@ -89,7 +89,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="6a4b96ff8f8f7524",
+        content_hash="45c2624430e4198b",
         source_file="backend/services/story_service.py",
         line_start=1268,
         line_end=1306,
@@ -109,7 +109,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="d4ba272131ad2c96",
+        content_hash="152074623ade0edc",
         source_file="backend/services/story_service.py",
         line_start=1308,
         line_end=1354,
@@ -132,7 +132,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="37cc3b56bb45df06",
+        content_hash="d46c377851990055",
         source_file="backend/services/story_service.py",
         line_start=1510,
         line_end=1542,
@@ -162,7 +162,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="fe32ba8552105d92",
+        content_hash="2c92352f90281607",
         source_file="backend/services/story_service.py",
         line_start=1691,
         line_end=1753,
@@ -185,7 +185,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="e48d43634e296c1e",
+        content_hash="57c35b19e372a2fc",
         source_file="backend/services/prompt_service.py",
         line_start=284,
         line_end=417,
@@ -209,7 +209,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="2f31c61caeea1258",
+        content_hash="0dde5f0dbf0742f3",
         source_file="backend/services/prompt_service.py",
         line_start=418,
         line_end=577,
@@ -234,7 +234,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T8_SUPERHERO_ADVENTURER",
-        content_hash="e2d630d216a57a70",
+        content_hash="85b72800fc7c86ea",
         source_file="backend/services/prompt_service.py",
         line_start=610,
         line_end=782,
@@ -293,7 +293,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T11_VIRTUE",
-        content_hash="b67f758684259db6",
+        content_hash="08777825c7defaaa",
         source_file="backend/services/story_service.py",
         line_start=159,
         line_end=214,
@@ -306,7 +306,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T12_FEELINGS",
-        content_hash="faac3d74bc377cb9",
+        content_hash="2f1250242ca18c07",
         source_file="backend/services/story_service.py",
         line_start=217,
         line_end=259,
@@ -319,7 +319,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T13_PRIOR_ADVENTURES",
-        content_hash="999a2ba4f1a4bc42",
+        content_hash="1efd0b89d13b6147",
         source_file="backend/services/story_service.py",
         line_start=405,
         line_end=504,

@@ -964,6 +964,7 @@ HARD RULES — these are non-negotiable:
 - The hero MUST speak ONE line of dialogue at the resolution.{catchphrase_rule}
 - The villain is mischievous, lonely, or misunderstood — NEVER evil, NEVER frightening.
 - The antagonist MUST be the named villain {villain['name']} — do NOT substitute an abstract place, weather, riddle, puzzle, or mountain for the villain. The villain must appear AS A CHARACTER in the story.
+- SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the draft and rewrite any sentence containing "refrain", "wow word", "context clue", "identity tag", or "seed idea". Those are this instruction sheet's words — a sentence carrying one is narrating the rules instead of telling the story. (Saying the tag itself, "{identity_tag}", is required; the PHRASE "identity tag" is what must never appear.)
 - NO weapons. NO fighting. NO scary or dark content. NO chasing, biting, or threats.
 - Resolution must come through empathy, cleverness, sharing, listening, or noticing — NEVER through force or punishment.{custom_request_block}
 
@@ -1330,6 +1331,7 @@ HARD RULES — these are non-negotiable:
 - POWER MUST BE LOAD-BEARING: the CLEVER POWER MOMENT's plan must work BECAUSE of {power_name} ({power_verb}) specifically, through a mechanism unique to that power — not a generic clever idea (like "ask a kind question") that any power could have pulled off. If the plan would still work unchanged with a different power swapped in, it is not specific enough — rewrite it.
 - PERSONAL STAKES: the trouble {villain['name']} causes must carry a PERSONAL edge for {character} or someone {character} cares about (reputation, a friendship, a promise at risk, a ticking clock) — felt urgency, not physical danger. This is in ADDITION to, not instead of, the no-violence/no-fear rules below.
 - The antagonist MUST be the named villain {villain['name']} — never an abstract place, weather, riddle, or puzzle.
+- SILENT SKELETON CHECK (do this LAST, before returning the JSON): re-read the draft and rewrite any sentence containing "seed idea", "identity tag", "context clue", "personal edge", "thinking beat", or "the moral". Those are this instruction sheet's words — a sentence carrying one is narrating the rules instead of telling the story. (Saying the tag itself, "{identity_tag}", is required; the PHRASE "identity tag" is what must never appear.)
 - NO weapons. NO fighting. NO violence, gore, or threats of harm. NO killing or defeating the villain by force. NO scary or graphic content.
 - Resolution MUST come through cleverness, courage, empathy, and understanding the villain's real need — NEVER through force, punishment, or fear.
 - OUTPUT CONTRACT: return EXACTLY 6 entries in "pages" — one per scene above, in the same order. NEVER split a single scene (especially RESOLUTION + GROWTH) across two page entries, and never merge two scenes into one entry — if a scene runs long, write more words within that ONE page entry instead of adding a 7th page.{custom_request_block}
