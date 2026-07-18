@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -89,6 +90,13 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
   String? _errorMessage;
   Future<void> Function()? _retryAction;
+
+  // Async segment illustration: the backend returns text immediately and
+  // generates the image in the background; the screen polls for it so the
+  // child reads without waiting on any image work. The generation counter
+  // invalidates stale polls when the reader advances to a new segment.
+  int _illustrationPollGeneration = 0;
+  bool _illustrationPending = false;
 
   // Accumulated text for the current chapter (used for Chronicle summarization)
   final StringBuffer _chapterTextBuffer = StringBuffer();
@@ -251,6 +259,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isCompleted = response.isCompleted;
         _isLoading = false;
       });
+      _beginIllustrationPolling();
       if (_ttsEnabled && _currentSegment != null) {
         _speakSegmentWithChoices();
       }
@@ -305,6 +314,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isCompleted = response.isCompleted;
         _isLoading = false;
       });
+      _beginIllustrationPolling();
       if (_ttsEnabled && _currentSegment != null) {
         _speakSegmentWithChoices();
       }
@@ -343,6 +353,60 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     }
   }
 
+  /// Starts (or restarts) polling for the current segment's async-generated
+  /// illustration. The segment text is already on screen; when the image
+  /// arrives it slots in above the text. No-op when the segment already has
+  /// an image or will never get one (no image_description).
+  void _beginIllustrationPolling() {
+    final generation = ++_illustrationPollGeneration; // invalidate stale polls
+    final segment = _currentSegment;
+    final storyId = _storyId;
+    if (segment == null || storyId == null) return;
+    if (segment.imageUrl != null || segment.imageDescription == null) {
+      if (_illustrationPending) {
+        setState(() => _illustrationPending = false);
+      }
+      return;
+    }
+    setState(() => _illustrationPending = true);
+    unawaited(_pollSegmentIllustration(storyId, segment.id, generation));
+  }
+
+  Future<void> _pollSegmentIllustration(
+      String storyId, String segmentId, int generation) async {
+    // ~30s total: the backend's Flux call usually completes in a few seconds.
+    for (var attempt = 0; attempt < 12; attempt++) {
+      await Future.delayed(
+          Duration(milliseconds: attempt == 0 ? 1200 : 2500));
+      if (!mounted || generation != _illustrationPollGeneration) return;
+      try {
+        final result = await _storyService.fetchSegmentIllustration(
+          storyId: storyId,
+          segmentId: segmentId,
+        );
+        if (!mounted || generation != _illustrationPollGeneration) return;
+        if (result.status == 'none') break; // no illustration coming
+        final imageUrl = result.imageUrl;
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          setState(() {
+            _illustrationPending = false;
+            final current = _currentSegment;
+            if (current != null && current.id == segmentId) {
+              _currentSegment = current.copyWith(imageUrl: imageUrl);
+            }
+          });
+          return;
+        }
+      } catch (_) {
+        // Transient failure — keep polling until attempts run out. The image
+        // is decorative; the reader already has the text.
+      }
+    }
+    if (mounted && generation == _illustrationPollGeneration) {
+      setState(() => _illustrationPending = false);
+    }
+  }
+
   Future<void> _handleChoiceSelected(StoryChoiceData choice) async {
     if (_isContinuing || _isCompleted || _storyId == null) return;
 
@@ -375,6 +439,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      _beginIllustrationPolling();
       if (_ttsEnabled && _currentSegment != null) {
         _speakSegmentWithChoices();
       }
@@ -460,6 +525,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      _beginIllustrationPolling();
       if (_ttsEnabled && _currentSegment != null) {
         _speakSegmentWithChoices();
       }
@@ -573,6 +639,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      _beginIllustrationPolling();
       if (_ttsEnabled && _currentSegment != null) {
         _speakSegmentWithChoices();
       }
@@ -909,32 +976,46 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                 onPressed: () => AppTtsService.instance.stop(),
               ),
             ),
-          // Illustration
+          // Illustration — arrives asynchronously after the text renders.
           if (_currentSegment!.imageUrl != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                _currentSegment!.imageUrl!,
+              child: _buildSegmentImage(_currentSegment!.imageUrl!, band),
+            ),
+            const SizedBox(height: 16),
+          ] else if (_illustrationPending) ...[
+            // Gentle placeholder while the background illustration finishes.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
                 width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: LinearGradient(
-                      colors: [
-                        band.primary.withValues(alpha: 0.3),
-                        band.gradientMid.withValues(alpha: 0.5),
-                      ],
-                    ),
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      band.primary.withValues(alpha: 0.25),
+                      band.gradientMid.withValues(alpha: 0.4),
+                    ],
                   ),
-                  child: Center(
-                    child: Text(
-                      _isSprout ? '✨' : _isYoung ? '🌟' : '📖',
-                      style: const TextStyle(fontSize: 48),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _isSprout ? '🎨' : '✨',
+                      style: const TextStyle(fontSize: 32),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 90,
+                      child: LinearProgressIndicator(
+                        minHeight: 3,
+                        backgroundColor:
+                            Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -953,6 +1034,53 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Renders a segment illustration from either a base64 data URI (how the
+  /// backend delivers Flux images) or a plain network URL.
+  Widget _buildSegmentImage(String imageUrl, AgeBandThemeData band) {
+    Widget fallback(BuildContext context, Object error, StackTrace? stack) =>
+        Container(
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                band.primary.withValues(alpha: 0.3),
+                band.gradientMid.withValues(alpha: 0.5),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Text(
+              _isSprout ? '✨' : _isYoung ? '🌟' : '📖',
+              style: const TextStyle(fontSize: 48),
+            ),
+          ),
+        );
+
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        final base64Part = imageUrl.substring(imageUrl.indexOf(',') + 1);
+        return Image.memory(
+          base64Decode(base64Part),
+          width: double.infinity,
+          height: 200,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: fallback,
+        );
+      } catch (_) {
+        return fallback(context, 'invalid data uri', null);
+      }
+    }
+    return Image.network(
+      imageUrl,
+      width: double.infinity,
+      height: 200,
+      fit: BoxFit.cover,
+      errorBuilder: fallback,
     );
   }
 

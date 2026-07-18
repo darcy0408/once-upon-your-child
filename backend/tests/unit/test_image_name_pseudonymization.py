@@ -111,44 +111,48 @@ class TestInteractiveAdventureImagePseudonymization:
     """Interactive adventure illustration path must not leak the real name."""
 
     def test_illustration_uses_safe_name(self):
-        """_generate_segment_illustration should pass 'the hero' to the image
-        generator, not the child's real name."""
-        from unittest.mock import MagicMock
+        """generate_segment_illustration (the out-of-band illustration path
+        that replaced the old synchronous _generate_segment_illustration)
+        should pass 'the hero' to the image provider chain — the child's real
+        name must appear neither as character_name nor inside
+        character_appearance."""
+        from unittest.mock import MagicMock, patch
 
-        from backend.services.interactive_adventure_service import (
-            InteractiveAdventureService,
-        )
+        import backend.services.interactive_adventure_service as ias
 
-        mock_generator = MagicMock()
-        mock_generator.generate_story_illustration.return_value = [
-            {"image_data": "fake_base64", "image_url": ""}
-        ]
-
-        service = InteractiveAdventureService.__new__(InteractiveAdventureService)
-        service.image_generator = mock_generator
-        service.logger = MagicMock()
-
-        # Create a minimal segment
+        # Minimal fake segment + story graph, no DB needed.
         segment = MagicMock()
-        segment.image_description = "A castle on a hill"
         segment.id = "seg-1"
+        segment.image_url = None
+        segment.image_description = "A castle on a hill"
+        story = segment.story
+        story.age = 7
+        story.character.name = "Emma"
+        story.character.age = 7
+        story.character.personality_traits = []
+        story.character.strengths = []
+        story.character.fears = []
+        story.character.pets = []
 
-        character_dict = {"name": "Emma", "age": 7}
+        mock_db = MagicMock()
+        mock_db.session.get.return_value = segment
 
-        service._generate_segment_illustration(
-            segment=segment,
-            character_dict=character_dict,
-            companions=[],
-            age=7,
-        )
+        with (
+            patch.object(ias, "db", mock_db),
+            patch(
+                "backend.routes.story_routes._generate_flux_illustration",
+                return_value=[{"image_data": "fake_base64", "format": "png"}],
+            ) as mock_flux,
+        ):
+            assert ias.generate_segment_illustration("seg-1") is True
 
-        # The image generator should have been called with "the hero", not "Emma".
-        call_kwargs = mock_generator.generate_story_illustration.call_args
-        assert call_kwargs is not None, "Image generator was not called"
-        passed_name = call_kwargs.kwargs.get("character_name") or call_kwargs[1].get(
-            "character_name"
+        call = mock_flux.call_args
+        assert call is not None, "Image provider chain was not called"
+        assert call.kwargs.get("character_name") == "the hero", (
+            f"Expected 'the hero' but got {call.kwargs.get('character_name')!r} "
+            "— child's real name leaked to image vendor"
         )
-        assert passed_name == "the hero", (
-            f"Expected 'the hero' but got '{passed_name}' — "
-            "child's real name leaked to image vendor"
-        )
+        appearance = call.kwargs.get("character_appearance") or {}
+        assert "Emma" not in str(
+            appearance
+        ), "child's real name leaked to image vendor via character_appearance"

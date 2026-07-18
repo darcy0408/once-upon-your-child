@@ -791,4 +791,71 @@ void main() {
       expect(find.textContaining('ethereal'), findsOneWidget);
     });
   });
+
+  group('PickAPathAdventureScreen - Async Segment Illustration', () {
+    // 1x1 transparent PNG.
+    const tinyPngB64 =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQ'
+        'DwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+    testLargeWidgets(
+        'renders text immediately, then loads the illustration async',
+        (tester) async {
+      var illustrationCalls = 0;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        if (request.url.path.contains('/illustration')) {
+          illustrationCalls++;
+          return http.Response(
+            jsonEncode({
+              'segment_id': 'segment_001',
+              'image_url': 'data:image/png;base64,$tinyPngB64',
+              'status': 'ready',
+            }),
+            200,
+          );
+        }
+        final json = PickAPathTestHelpers.createStartStoryResponseJson();
+        // Segment has an image_description but no image yet — the backend
+        // returns text-only and generates the illustration in the background.
+        (json['segment'] as Map<String, dynamic>)['image_description'] =
+            'A shimmering forest';
+        return http.Response(jsonEncode(json), 200);
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      final character = PickAPathTestHelpers.createTestCharacter();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: character,
+            theme: 'Magic',
+          ),
+        ),
+      );
+
+      // Story text renders without waiting on any image work.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(find.textContaining('Enchanted Forest'), findsWidgets);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget,
+          reason: 'placeholder shown while the illustration is pending');
+      expect(illustrationCalls, 0);
+
+      // First poll fires after ~1.2s and finds the image ready.
+      await tester.pump(const Duration(milliseconds: 1300));
+      await tester.pump();
+      await tester.pump();
+
+      expect(illustrationCalls, 1);
+      expect(find.byType(Image), findsOneWidget,
+          reason: 'async illustration should render once fetched');
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+  });
 }

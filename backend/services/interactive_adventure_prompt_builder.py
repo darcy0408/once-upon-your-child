@@ -304,6 +304,17 @@ SAFETY RULES:
             return "adult"
 
     @classmethod
+    def get_path_depth(cls, age: int, length: str) -> int:
+        """Planned number of segments for one play-through.
+
+        Shared by the prompt templates AND the server-side ending backstop in
+        InteractiveAdventureService.continue_story, so the per-segment word
+        budget (total words / depth) and the forced-completion point always
+        agree.
+        """
+        return cls.PATH_DEPTHS[cls.get_age_band(age)].get(length, 6)
+
+    @classmethod
     def _calculate_per_segment_word_count(cls, age_band: str, length: str) -> tuple:
         """Calculate per-segment word count based on age band and total word count range."""
         age_config = cls.AGE_BANDS[age_band]
@@ -667,11 +678,40 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 
         next_segment_number = current_segment_number + 1
 
-        # Decide if this should be an ending
-        is_near_end = next_segment_number >= (path_depth - 1)
+        # Ending control (latency/continuity audit, fix D):
+        #   * At/beyond path_depth this segment IS the finale — the JSON
+        #     template flips to `"is_ending": true`, the choices array is
+        #     emptied, and the choice instructions are replaced with an
+        #     explicit resolution block. (The service additionally forces
+        #     is_completed server-side as a backstop.)
+        #   * One segment before path_depth the model MAY conclude early —
+        #     the pre-existing "MAY conclude" language stays.
+        is_final = next_segment_number >= path_depth
+        is_near_end = (not is_final) and next_segment_number >= (path_depth - 1)
         ending_instruction = ""
         if is_near_end:
             ending_instruction = f"\n**ENDING LOGIC**: You are at segment {next_segment_number}/{path_depth}. If appropriate for the plot, you MAY conclude the story in this segment by setting `is_ending: true`. If not, ensure the story concludes by segment {path_depth}."
+
+        if is_final:
+            choices_rule = (
+                f"- **FINAL SEGMENT — WRITE THE RESOLUTION**: This is segment "
+                f"{next_segment_number}/{path_depth}, the LAST segment of the "
+                "adventure. Resolve the story: pay off the goal, close every "
+                "open thread, and show the immediate consequence of the "
+                "selected choice carrying the hero to a satisfying finish. Do "
+                "NOT introduce new characters, locations, or cliffhangers. End "
+                "on a warm sensory image, action, or feeling. Do NOT present "
+                'any choices — the "choices" array MUST be empty and '
+                '"is_ending" MUST be true.'
+            )
+            choices_json = ""
+            is_ending_literal = "true"
+        else:
+            choices_rule = (
+                f"- **Choices**: {choice_count} concrete options. NO passive "
+                f"options. Start with vivid verbs.{ending_instruction}"
+            )
+            is_ending_literal = "false"
 
         # ARC ESCALATION — scale tension to the actual path depth so each segment
         # is genuine progress toward a climax, not a loop of similar scenes.
@@ -720,7 +760,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 {continuation_virtue}
 {continuation_feelings}
 
-**STORY SO FAR (summary)**:
+**STORY SO FAR** (the PREVIOUS SCENE below is verbatim — continue seamlessly from where it leaves off, keeping every name, object, and promise it introduces consistent):
 {story_so_far or "No summary available."}
 
 **WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
@@ -731,7 +771,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
-- **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
+{choices_rule}
 {arc_escalation}
 {empathy_moment}
 - **Safety**: No violence/harm. Keep the tone warm and age-appropriate. NEVER use craft/therapy terminology in the prose (no "coping action/skill", "arc", "story beat", "regulate", "lesson") — characters live the moment, they do not narrate the technique.
@@ -762,7 +802,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
   "choices": [
 {choices_json}
   ],
-  "is_ending": false
+  "is_ending": {is_ending_literal}
 }}
 ```
 {cls.IMMERSION_RULES}"""
