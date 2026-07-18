@@ -26,5 +26,9 @@ class FeatureFlags {
   /// progress bar — driven only by the text's LENGTH — keeps working either
   /// way). Skipped for the Sprout (3-5) band regardless: pre-readers get the
   /// star-catcher stage, not text.
-  static const bool partialStoryPreviewEnabled = true;
+  ///
+  /// Launching OFF (owner decision 2026-07-17): pre-launch, a kids' app
+  /// should not surface any pre-moderation text, even transiently. Enable
+  /// after real prod outputs have been observed for a while.
+  static const bool partialStoryPreviewEnabled = false;
 }
