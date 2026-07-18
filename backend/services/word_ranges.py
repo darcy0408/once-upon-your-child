@@ -38,8 +38,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .story_service import (
-    AGE_CONSTRAINTS,
     _BEDTIME_WORD_RANGES,
+    AGE_CONSTRAINTS,
     _duration_minutes_to_word_range,
     _get_age_band,
     _narration_wpm_for_age,

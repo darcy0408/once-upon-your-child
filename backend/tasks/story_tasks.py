@@ -47,10 +47,12 @@ from backend.services.superhero_validation import (
     validate_page_count,
     validate_word_count,
 )
-from backend.services.word_ranges import get_word_range
 
 # Band mapping moved to word_ranges (the canonical word-range module needs it
 # too); re-exported under the old name for existing callers/tests.
+from backend.services.word_ranges import (
+    get_word_range,
+)
 from backend.services.word_ranges import (  # noqa: F401 — re-export
     superhero_band_for_age as _superhero_band_for_age,
 )
