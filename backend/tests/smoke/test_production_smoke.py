@@ -17,6 +17,18 @@ BASE_URL = os.environ.get(
 ).rstrip("/")
 REQUEST_TIMEOUT = int(os.environ.get("SMOKE_TEST_TIMEOUT", "30"))
 
+# The COPPA enforcement flags (ENFORCE_RESOLVED_AGE et al.) are deliberately
+# OFF in prod pre-launch (owner decision 2026-07-15, launch blocker #449).
+# While they are off, the age-gate probe below fails by design — and generates
+# a real story on prod on every CI run. The expectation is config-driven:
+# CI feeds this from the repo Actions variable SMOKE_EXPECT_COPPA_GATE
+# (currently "off"). Flip that variable back to "on" at launch, when the
+# flags are re-enabled on Railway — the default here stays "on" so a bare
+# local run remains fail-loud.
+COPPA_GATE_EXPECTED = (
+    os.environ.get("SMOKE_EXPECT_COPPA_GATE", "on").strip().lower() != "off"
+)
+
 
 def _assert_json_response(response: requests.Response) -> dict:
     content_type = response.headers.get("Content-Type", "")
@@ -211,6 +223,14 @@ class TestAPIContractSmoke:
 
 
 class TestCoppaAgeGateSmoke:
+    @pytest.mark.skipif(
+        not COPPA_GATE_EXPECTED,
+        reason=(
+            "COPPA enforcement flags are deliberately OFF in prod "
+            "(owner decision 2026-07-15, launch blocker #449). Flip the "
+            "SMOKE_EXPECT_COPPA_GATE repo Actions variable to 'on' at launch."
+        ),
+    )
     def test_no_age_session_blocked_with_age_required(
         self, session_client: requests.Session
     ):
