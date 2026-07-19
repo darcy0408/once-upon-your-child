@@ -76,7 +76,93 @@ void main() {
       expect(find.text('Normal Story'), findsNothing);
       expect(find.text('Favorite Story'), findsOneWidget);
     });
+
+    testWidgets('swipe-delete asks for confirmation and Keep it cancels',
+        (tester) async {
+      final story = StoryLocal()
+        ..storyId = 's1'
+        ..title = 'Keeper Story'
+        ..theme = 'Adventure'
+        ..storyText = 'T'
+        ..createdAt = DateTime.now();
+      final mock = DeleteTrackingStoryList([story]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            storyListProvider.overrideWith(() => mock),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(extensions: [explorerTheme]),
+            home: const SavedStoriesScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Swipe left = delete gesture on the card.
+      await tester.drag(find.text('Keeper Story'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete this story?'), findsOneWidget);
+
+      await tester.tap(find.text('Keep it'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Keeper Story'), findsOneWidget);
+      expect(mock.deleteCalls, 0);
+    });
+
+    testWidgets('confirming Delete removes the story', (tester) async {
+      final story = StoryLocal()
+        ..storyId = 's1'
+        ..title = 'Doomed Story'
+        ..theme = 'Adventure'
+        ..storyText = 'T'
+        ..createdAt = DateTime.now();
+      final mock = DeleteTrackingStoryList([story]);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            storyListProvider.overrideWith(() => mock),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(extensions: [explorerTheme]),
+            home: const SavedStoriesScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Doomed Story'), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(mock.deleteCalls, 1);
+    });
   });
+}
+
+/// Tracks deleteStory calls without touching Isar.
+class DeleteTrackingStoryList extends MockStoryList {
+  DeleteTrackingStoryList(super.initialStories);
+
+  int deleteCalls = 0;
+
+  @override
+  Future<void> deleteStory(String storyId) async {
+    deleteCalls++;
+    state = AsyncData(
+      (state.valueOrNull ?? [])
+          .where((s) => s.storyId != storyId)
+          .toList(),
+    );
+  }
+
+  @override
+  Future<void> refresh() async {}
 }
 
 class MockStoryList extends StoryList {

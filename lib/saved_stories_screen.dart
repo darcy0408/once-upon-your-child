@@ -59,9 +59,13 @@ class SavedStoriesScreen extends ConsumerWidget {
     // TierLimits.exportStories gate (cosmetic — PDF generation is purely
     // local): free users still see the "Save as PDF" action, just locked.
     final canExportPdf = ref.watch(subscriptionProvider).canExportStories;
-    // Sprout always uses large cards; Creator can toggle compact list
-    final showCompactToggle =
-        band.band == AgeBand.creator || band.band == AgeBand.adventurer;
+    // Sprout/Explorer always use large cards; older bands can toggle the
+    // compact list (adolescent/adult were missing — audit 2026-07-18: the
+    // fastest readers with the biggest libraries were locked to big cards).
+    final showCompactToggle = band.band == AgeBand.adventurer ||
+        band.band == AgeBand.creator ||
+        band.band == AgeBand.adolescent ||
+        band.band == AgeBand.adult;
     final useCompact = showCompactToggle && isCompact;
 
     return Scaffold(
@@ -298,6 +302,36 @@ class SavedStoriesScreen extends ConsumerWidget {
 
   Future<void> _deleteStory(
       BuildContext context, WidgetRef ref, StoryLocal story) async {
+    // Confirm before permanent local deletion. All three delete paths
+    // (swipe-dismiss, card menu, compact-tile menu) funnel through this
+    // method, so one dialog guards them all — previously a single stray
+    // swipe destroyed a story with no confirmation and no undo
+    // (persona audit 2026-07-18, MT-390 item).
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this story?'),
+        content: Text(
+          band.band.isMature
+              ? '"${story.title}" will be deleted. This can\'t be undone.'
+              : '"${story.title}" will be gone forever. Keep it instead?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
     await ref.read(storyListProvider.notifier).deleteStory(story.identifier);
     await _refreshStories(ref);
     if (!context.mounted) return;

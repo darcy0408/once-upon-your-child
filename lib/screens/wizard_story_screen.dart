@@ -18,6 +18,7 @@ import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
 import '../services/isar_service.dart';
+import '../saved_stories_screen.dart';
 import '../widgets/bedtime_launch_sheet.dart';
 import 'chronicles_list_screen.dart';
 import 'parent_controls_screen.dart';
@@ -513,6 +514,42 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                               _loadSavedCharacters();
                             },
                             tooltip: 'My Characters',
+                          ),
+                        // My Stories library — restores the saved-stories
+                        // entry that was stranded on the legacy StoryScreen
+                        // home (MT-377, persona audit 2026-07-18). Without
+                        // this, no band had any way to re-read a saved story
+                        // beyond the per-hero Continue chip.
+                        if (!band.band.isMature)
+                          _LabeledNavButton(
+                            icon: Icons.auto_stories_rounded,
+                            label: band.band == AgeBand.sprout
+                                ? 'My Books'
+                                : 'Stories',
+                            onPressed: () async {
+                              if (!await _confirmLeaveWizard('My Stories')) {
+                                return;
+                              }
+                              if (!context.mounted) return;
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const SavedStoriesScreen(),
+                                ),
+                              );
+                            },
+                          )
+                        else
+                          IconButton(
+                            icon: const Icon(Icons.auto_stories_rounded,
+                                color: Colors.white),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const SavedStoriesScreen(),
+                                ),
+                              );
+                            },
+                            tooltip: 'My Stories',
                           ),
                         // Chronicles button — only when a character is selected
                         if (_wizardData.characterId != null)
