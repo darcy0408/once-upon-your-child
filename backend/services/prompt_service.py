@@ -118,8 +118,14 @@ class _AntiheroBrief:
     seen_by_bullet: str
     secret_care_mandate: str
     continuity_block: str
+    callback_mandate: str
     custom_request_block: str
     issue_number: int
+    # What the saga_state "nemesis" slot should instruct: the plain villain
+    # name, or (when a still-at-large prior nemesis differs from this
+    # chapter's villain) a keep-the-arch-nemesis instruction so the saga's
+    # defining threat is not overwritten every Issue.
+    nemesis_state_value: str
 
 
 class PromptService:
@@ -886,13 +892,19 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a p
         issue_number = max(issue_number, 1)
 
         continuity_block = ""
+        prev_nemesis = ""
+        prev_status = ""
         if saga:
             # Same saga vocabulary the recap expects, made warm and simple for
             # this age band (friendly-adventure register, never a moral debt).
+            # "still-at-large" must NOT assert the old villain "is back" — the
+            # villain pin below names a DIFFERENT villain for this story
+            # (recent-villain avoidance), and the contradiction taught the
+            # model to silently drop the old nemesis from the prose.
             _status_human = {
                 "reconsidered": "is being kinder now",
                 "stopped-and-accountable": "stopped and said sorry",
-                "still-at-large": "is back, up to something new",
+                "still-at-large": "is still out there somewhere",
             }
             prev_nemesis = (saga.get("nemesis") or "").strip()
             prev_status = (saga.get("nemesis_status") or "").strip().lower()
@@ -905,6 +917,14 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a p
             if prev_nemesis:
                 st = _status_human.get(prev_status, prev_status or "is back again")
                 lines.append(f"- The villain {prev_nemesis} {st}.")
+            if prev_nemesis and prev_nemesis != villain["name"]:
+                lines.append(
+                    f"- {prev_nemesis} is NOT this story's villain, but say their "
+                    f"name at least once in the story, in a way that fits how "
+                    f"things are now — a wave across the park, a friend "
+                    f"mentioning them, a quick thank-you — so the hero's world "
+                    f"remembers them."
+                )
             if prev_changed:
                 lines.append(f"- What happened last time: {prev_changed}")
             if prev_hook:
@@ -923,10 +943,27 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a p
                     f"\n\nLAST TIME — THIS IS ADVENTURE #{issue_number} FOR "
                     f"{character}. Remember what happened before and keep it true:\n"
                     + "\n".join(lines)
-                    + f'\nStart with a quick, friendly "Last time…" beat in the HERO '
-                    f"INTRO (just one or two short sentences), then tell a brand-new "
-                    f"adventure of its own."
+                    + f"\nThe story still begins with the exact opening phrase "
+                    f"required in the HARD RULES; right AFTER that phrase, add a "
+                    f'quick, friendly "Last time…" sentence or two in the HERO '
+                    f"INTRO, then tell a brand-new adventure of its own."
                 )
+
+        # saga_state "nemesis" slot: a still-out-there villain from last time
+        # who is not this story's villain must survive the adventure — the
+        # hard-coded overwrite was erasing them every Issue, so "still out
+        # there" hooks could never pay off.
+        nemesis_state_value = villain["name"]
+        if (
+            prev_nemesis
+            and prev_nemesis != villain["name"]
+            and prev_status == "still-at-large"
+        ):
+            nemesis_state_value = (
+                f"keep '{prev_nemesis}' if they are still the saga's big "
+                f"unresolved villain after this story, otherwise "
+                f"'{villain['name']}'"
+            )
 
         # Banded opener (#437 chunk 2): Explorer (6-8) opens with a rotated
         # classic opener ("Once upon a time," / "One day," / …), chosen
@@ -1007,7 +1044,7 @@ Strictly return valid JSON with this structure:
     }}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one warm sentence on what is better now in the town or for the hero",
     "next_hook": "one sentence teasing the next little adventure to come",
@@ -1249,6 +1286,8 @@ Begin now. Stop at 350 words across all pages combined.
         issue_number = max(issue_number, 1)
 
         continuity_block = ""
+        prev_nemesis = ""
+        prev_status = ""
         if saga:
             # Same vocabulary the creator/recap expects, humanized warmly for
             # this age band (heroic-adventure register, never a moral debt).
@@ -1273,6 +1312,17 @@ Begin now. Stop at 350 words across all pages combined.
             if prev_nemesis:
                 st = _status_human.get(prev_status, prev_status or "is still a mystery")
                 lines.append(f"- The nemesis you've faced — {prev_nemesis}: {st}.")
+            if prev_nemesis and prev_nemesis != villain["name"]:
+                # Villain picking avoids recent villains, so the prior nemesis
+                # is usually NOT this Issue's villain — without a name-in-prose
+                # mandate the model's cheapest move is to drop them entirely.
+                lines.append(
+                    f"- {prev_nemesis} is NOT this Issue's villain, but the "
+                    f"story must mention them by name at least once, in a way "
+                    f"that fits their status — a rumor, a message, a glimpse, a "
+                    f"thank-you from someone they helped or troubled — so the "
+                    f"saga's world stays continuous."
+                )
             if prev_changed:
                 lines.append(f"- What changed last issue: {prev_changed}")
             if prev_hook:
@@ -1299,6 +1349,22 @@ Begin now. Stop at 350 words across all pages combined.
                     f"INTRO (a line or two, NOT a bulleted recap), then tell a NEW "
                     f"self-contained adventure that moves the saga forward."
                 )
+
+        # saga_state "nemesis" slot: a still-at-large prior nemesis who is not
+        # this Issue's villain must survive the Issue — the hard-coded
+        # overwrite was erasing the arch-nemesis thread every time, so
+        # "still out there" hooks could never pay off.
+        nemesis_state_value = villain["name"]
+        if (
+            prev_nemesis
+            and prev_nemesis != villain["name"]
+            and prev_status == "still-at-large"
+        ):
+            nemesis_state_value = (
+                f"keep '{prev_nemesis}' if they remain the saga's defining "
+                f"unresolved nemesis after this Issue, otherwise "
+                f"'{villain['name']}'"
+            )
 
         return f"""SUPERHERO MODE STORY (Ages 9-12 — Adventurer band)
 
@@ -1378,7 +1444,7 @@ Strictly return valid JSON with this structure:
     }}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in the city or the hero",
     "next_hook": "one sentence teasing an unresolved thread that pulls toward the next issue",
@@ -1511,6 +1577,8 @@ Begin now. Write a real story of 900-1500 words across EXACTLY 6 pages (one per 
 
         continuity_block = ""
         callback_mandate = ""
+        prev_nemesis = ""
+        prev_status = ""
         if saga:
             _status_human = {
                 "reconsidered": "has reconsidered, but trust is not restored",
@@ -1538,6 +1606,18 @@ Begin now. Write a real story of 900-1500 words across EXACTLY 6 pages (one per 
             if prev_nemesis:
                 st = _status_human.get(prev_status, prev_status or "remains a question")
                 lines.append(f"- Nemesis so far — {prev_nemesis}: {st}.")
+            if prev_nemesis and prev_nemesis != villain["name"]:
+                # Villain picking avoids recent villains, so the prior nemesis
+                # is usually NOT this Issue's antagonist — without a
+                # name-in-prose mandate the model's cheapest move is to drop
+                # them from the prose entirely.
+                lines.append(
+                    f"- {prev_nemesis} is NOT this Issue's antagonist, but the "
+                    f"prose must mention them by name at least once, consistent "
+                    f"with how things stand — a rumor, an unanswered message, a "
+                    f"glimpse across a room — so the saga's world stays "
+                    f"continuous."
+                )
             if prev_changed:
                 lines.append(f"- What changed last Issue: {prev_changed}")
             if prev_cost:
@@ -1586,6 +1666,22 @@ Begin now. Write a real story of 900-1500 words across EXACTLY 6 pages (one per 
                     f"CHANGE what {character} can do here — not just tint the mood. In the "
                     f"AFTERMATH, show whether this Issue eased that debt or deepened it."
                 )
+
+        # saga_state "nemesis" slot: a still-at-large prior nemesis who is not
+        # this Issue's villain must survive the Issue — the hard-coded
+        # overwrite was erasing the arch-nemesis thread every time, so
+        # "still out there" hooks could never pay off.
+        nemesis_state_value = villain["name"]
+        if (
+            prev_nemesis
+            and prev_nemesis != villain["name"]
+            and prev_status == "still-at-large"
+        ):
+            nemesis_state_value = (
+                f"keep '{prev_nemesis}' if they remain the saga's defining "
+                f"unresolved threat after this Issue, otherwise "
+                f"'{villain['name']}'"
+            )
 
         return f"""HERO SAGA — SUPERHERO ISSUE (Ages 13-14 — Creator band)
 
@@ -1644,7 +1740,7 @@ OUTPUT FORMAT — strictly valid JSON:
     {{"text": "Beat 7 — AFTERMATH."}}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in the city or the hero",
     "what_it_cost": "one sentence on what the hero's choice or power COST them this Issue — concrete, never abstract",
@@ -1751,7 +1847,10 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
         secret_bullet = (
             f"\n- What {character} hides from the people closest to them: "
             f'"{secret}". The concealment is the wound — let the pressure crack '
-            f"toward being known, never toward deeper hiding."
+            f"toward being known, never toward deeper hiding. SECRET ON-PAGE "
+            f"(non-negotiable): this exact secret — verbatim or in a tight "
+            f"paraphrase, not a substitute — must be spoken aloud or explicitly "
+            f"thought by {character} at least once in the chapter."
             if secret_is_safe
             else (
                 f"\n- {character} hides something from the people closest to "
@@ -1794,6 +1893,9 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
         issue_number = max(issue_number, 1)
 
         continuity_block = ""
+        callback_mandate = ""
+        prev_nemesis = ""
+        prev_status = ""
         if saga:
             _status_human = {
                 "reconsidered": "has reconsidered, but trust is not restored",
@@ -1821,6 +1923,19 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
             if prev_nemesis:
                 st = _status_human.get(prev_status, prev_status or "remains a question")
                 lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
+            if prev_nemesis and prev_nemesis != villain["name"]:
+                # Villain picking deliberately avoids recent villains, so the
+                # prior nemesis is usually NOT this chapter's antagonist — and
+                # without a name-in-prose mandate the model's cheapest move is
+                # to drop them from the story entirely (the observed failure:
+                # hook honored, nemesis never named).
+                lines.append(
+                    f"- {prev_nemesis} is NOT this chapter's antagonist, but the "
+                    f"prose must mention them by name at least once, consistent "
+                    f"with how things stand — a rumor, an unanswered message, a "
+                    f"glimpse across a room — so the saga's world stays "
+                    f"continuous."
+                )
             if prev_changed:
                 lines.append(f"- What shifted last time: {prev_changed}")
             if prev_cost:
@@ -1858,18 +1973,60 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
                     "self-contained case that moves the saga forward."
                 )
 
+            callback_source = prev_cost or (key_choices[-1] if key_choices else "")
+            if callback_source:
+                callback_mandate = (
+                    "\n\nCONSEQUENCE CALLBACK (non-negotiable): the debt "
+                    f'{character} carries from before — "{callback_source}" — must COME DUE '
+                    f"in this chapter, concretely and EARLY (by Beat 2): someone it touched "
+                    f"raises it, it closes off an option {character} would otherwise take, or "
+                    f"a smaller price must be paid before the case can move. It has to CHANGE "
+                    f"what {character} can do here — not sit in the background as mood. In the "
+                    f"AFTERMATH, show whether this chapter eased that debt or deepened it."
+                )
+
+        # saga_state "nemesis" slot: a still-at-large prior nemesis who is not
+        # this chapter's villain must survive the Issue — the hard-coded
+        # villain-name overwrite was erasing the arch-nemesis thread every
+        # chapter, so "still out there" hooks could never pay off.
+        nemesis_state_value = villain["name"]
+        if (
+            prev_nemesis
+            and prev_nemesis != villain["name"]
+            and prev_status == "still-at-large"
+        ):
+            nemesis_state_value = (
+                f"keep '{prev_nemesis}' if they remain the saga's defining "
+                f"unresolved threat after this chapter, otherwise "
+                f"'{villain['name']}'"
+            )
+
         # MT-266(a)/MT-290: when the secret is about the teen's own wellbeing or
         # struggle, bend the arc toward being seen and supported — never
         # romanticize distress or isolation. Mirrors the single-shot builder's
         # mandate so the interactive CRUX path (parts 1 & 2) is guarded too.
         # Fires whenever a secret is set; the model judges whether it applies.
+        # Editorial audit (2026-07-07): the being-seen beat must engage the
+        # ACTUAL secret, not a substitute the model invented instead (e.g. the
+        # nemesis's scheme standing in for the teen's own disclosed struggle).
+        # MEDIUM-1: the engage-THIS-secret clause quotes the secret back — only
+        # safe when the screen passed; a screened-out secret keeps the generic
+        # being-seen mandate without the quote.
         secret_care_mandate = (
             f"\n- If {character}'s secret is about their own wellbeing or struggle, "
             f"the chapter must move them at least one step toward being SEEN by "
             f"someone who responds with care (not pity, not fixing), and the "
             f"AFTERMATH must leave a thread of connection or hope alongside the "
             f"unresolved case. Distress is never aesthetic; isolation is never the "
-            f"resolution." + _serious_risk_clause(character)
+            f"resolution."
+            + (
+                f" The being-seen beat must engage THIS secret specifically "
+                f'— "{secret}" — not a substitute concern; do not let the case or '
+                f"the villain's scheme stand in for it."
+                if secret_is_safe
+                else ""
+            )
+            + _serious_risk_clause(character)
             if secret
             else ""
         )
@@ -1892,8 +2049,10 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
             seen_by_bullet=seen_by_bullet,
             secret_care_mandate=secret_care_mandate,
             continuity_block=continuity_block,
+            callback_mandate=callback_mandate,
             custom_request_block=custom_request_block,
             issue_number=issue_number,
+            nemesis_state_value=nemesis_state_value,
         )
 
     # ------------------------------------------------------------------
@@ -1930,17 +2089,64 @@ THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.probl
     # choice cards in part 1 obey the same rules as the prose.
     # ------------------------------------------------------------------
     @staticmethod
-    def _antihero_hard_rules(b: "_AntiheroBrief", *, length: str) -> str:
+    def _antihero_hard_rules(
+        b: "_AntiheroBrief",
+        *,
+        length: str,
+        per_page_budget: str | None = None,
+        villain_scene_hint: str | None = None,
+        final_beats: tuple[str, str] | None = None,
+    ) -> str:
+        """The shared non-negotiable safety/tone block for all three Adolescent
+        builders (single-shot + both crux phases), so the model-authored choice
+        cards in part 1 obey the same rules as the prose and the paths cannot
+        drift (2026-07-17 critique AD-1).
+
+        ``per_page_budget`` — the phase's per-page word-ceiling sentence (page
+        counts differ per phase). ``villain_scene_hint`` — the beat name(s)
+        where the villain's on-page scene lands best for this phase; None
+        omits the VILLAIN ON-PAGE rule. ``final_beats`` — the two closing
+        beats covered by the theme-naming ban; None (crux part 1, which never
+        writes the closing beats) omits the ban.
+        """
         character = b.character
-        return f"""HARD RULES — non-negotiable:
-- LENGTH: {length}.
-- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
-- The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
-- A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {b.villain['name']}'s BELIEF.
-- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
-- "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
-- Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
-- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Let two real values collide.{b.custom_request_block}"""
+        rules = [
+            "HARD RULES — non-negotiable:",
+            f"- LENGTH: {length}.",
+        ]
+        if per_page_budget:
+            rules.append(f"- PER-PAGE BUDGET (HARD MAXIMUM): {per_page_budget}")
+        rules.append(
+            "- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding."
+        )
+        rules.append(
+            "- The edge must hit a LIMIT or COST in this chapter; judgment wins, not power."
+        )
+        rules.append(
+            f"- A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {b.villain['name']}'s BELIEF."
+        )
+        if villain_scene_hint:
+            rules.append(
+                f"- THE VILLAIN ON-PAGE (non-negotiable): {b.villain['name']} must appear directly in at least one beat — in person, by voice (a call, a recording, a live message), or in a real-time exchange with {character} — not solely through rumor, hearsay, or reported-about exposition (e.g., someone merely describing what {b.villain['name']} did from a file, a leak, or a whisper network). The protagonist-villain RELATIONSHIP is the engine of the chapter, and a relationship needs at least one real scene together. This is strongest at {villain_scene_hint}."
+            )
+        rules.append(
+            "- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not."
+        )
+        rules.append(
+            f'- "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.'
+        )
+        rules.append(
+            f'- Do NOT imply {character} is responsible for "fixing" a person who won\'t change. Boundaries and accountability are strength.'
+        )
+        rules.append(
+            '- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Also avoid aphorism dialogue that NAMES the lesson (an affirmation-card line like "start letting someone in") and essay-voice narration — any "it is X, not Y" thesis construction stating the theme outright, whether spoken in dialogue OR narrated by the prose. A teenager in crisis speaks in fragments, deflections, and specifics — not affirmation-card lines. Let two real values collide.'
+        )
+        if final_beats:
+            first_beat, second_beat = final_beats
+            rules.append(
+                f'- NO THEME-NAMING IN THE FINAL TWO BEATS (non-negotiable): in {first_beat} and {second_beat}, no sentence may explicitly name the theme or lesson. Ban constructions like "learned that", "understood that", or "realized that" followed by an abstract noun (worth, belonging, honesty, and the like) describing what {character} now knows about themselves or the case — this is how the essay-voice ban gets routed around. Show the growth through a concrete image, action, or line of dialogue instead of stating it.'
+            )
+        return "\n".join(rules) + b.custom_request_block
 
     # ------------------------------------------------------------------
     # _build_antihero_prompt_part1 — interactive crux, phase 1.
@@ -1989,7 +2195,17 @@ THE CASE: {b.problem['name']} — {b.problem['summary']} (the job is to {b.probl
             prior_saga=prior_saga,
         )
         premise = PromptService._antihero_premise_block(b)
-        hard_rules = PromptService._antihero_hard_rules(b, length="800-1300 words")
+        hard_rules = PromptService._antihero_hard_rules(
+            b,
+            length="800-1300 words",
+            per_page_budget=(
+                "each of the EXACTLY 4 pages entries: 200-330 words, HARD "
+                "MAXIMUM 350 — a page over 350 words must be tightened before "
+                "you answer; never add a 5th page to fit."
+            ),
+            villain_scene_hint="THE TRUTH + THE CRUX (SETUP) beat",
+            final_beats=None,
+        )
         character = b.character
         villain = b.villain
 
@@ -2080,10 +2296,19 @@ Begin now. Write Beats 1-4 plus the crux setup of a tight, morally grey chapter;
             prior_saga=prior_saga,
         )
         premise = PromptService._antihero_premise_block(b)
-        hard_rules = PromptService._antihero_hard_rules(b, length="800-1300 words")
+        hard_rules = PromptService._antihero_hard_rules(
+            b,
+            length="800-1300 words",
+            per_page_budget=(
+                "each of the EXACTLY 3 pages entries: 260-430 words, HARD "
+                "MAXIMUM 450 — a page over 450 words must be tightened before "
+                "you answer; never add a 4th page to fit."
+            ),
+            villain_scene_hint="THE CHOICE, RESOLVED or THE RESOLUTION beat",
+            final_beats=("THE RESOLUTION", "AFTERMATH"),
+        )
         character = b.character
         power_verb = b.power_verb
-        villain = b.villain
         problem = b.problem
 
         chosen_text = str((chosen_choice or {}).get("text") or "").strip()
@@ -2123,7 +2348,7 @@ OUTPUT FORMAT — strictly valid JSON:
     {{"text": "Beat 7 — AFTERMATH."}}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{b.nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in {character}'s world or the double life",
     "what_it_cost": "one sentence on what the choice \\"{chosen_text}\\" COST {character} this chapter — concrete (a frayed bond, a near-miss, a line bent), never abstract",
@@ -2170,232 +2395,50 @@ Begin now. Write Beats 5-7 resolving the reader's choice "{chosen_text}"; the wi
         unchanged. ``prior_saga`` (the returnable saga) injects a "where we
         left off" undercurrent for a returning hero; absent on chapter 1.
         """
-        villains_t, problems_t, powers_t, _ = _sh_get_band_tables("adolescent")
-
         # Chunk 2 (MT-303): the up-front vibe the teen picked. 'classic' -> a
         # bright, aspirational hero chapter; anything else (including None) -> the
         # existing noir antihero saga, so legacy callers are unchanged. Both
         # share the same power/villain/problem resolution, JSON contract, and
-        # saga_state keys below.
+        # saga_state keys.
         mode = (hero_mode or "").strip().lower()
         is_classic = mode == "classic"
 
-        # --- Resolve power -> framed as the hero's "Edge" (capability + cost) ---
-        power_id = (hero_power or "").strip().lower() or "super_smile"
-        if power_id not in powers_t:
-            power_id = "super_smile"
-        power_spec = powers_t[power_id]
-        power_name = power_spec["name"]
-        power_verb = power_spec["verb"]
-
-        # --- Resolve villain + problem (server-picked; re-pair if invalid) ---
-        if (
-            not villain_id
-            or villain_id not in villains_t
-            or not problem_id
-            or problem_id not in problems_t
-        ):
-            villain_id, problem_id = _sh_pick_pairing(power_id, band="adolescent")
-        villain = villains_t[villain_id]
-        problem = problems_t[problem_id]
-
-        # --- Look: understated, lived-in — blend in, never a costume parade ---
-        color = (hero_costume_color or "dark").strip().lower() or "dark"
-        emblem = (hero_emblem or "star").strip().lower() or "star"
-
-        # The Edge name IS the secret identity; {character} is the civilian life.
-        alias = power_name
-
+        # Single source of truth: the same `_antihero_brief` the two-phase crux
+        # builders consume, so the single-shot chapter and the interactive crux
+        # path cannot drift (2026-07-17 critique AD-1 — this builder previously
+        # re-implemented ~200 of the brief's lines inline and had diverged on
+        # SECRET ON-PAGE, the engage-THIS-secret clause, VILLAIN ON-PAGE, and
+        # the theme-naming ban).
+        b = PromptService._antihero_brief(
+            character=character,
+            age=age,
+            hero_costume_color=hero_costume_color,
+            hero_emblem=hero_emblem,
+            hero_power=hero_power,
+            villain_id=villain_id,
+            problem_id=problem_id,
+            hero_catchphrase=hero_catchphrase,
+            hero_secret=hero_secret,
+            hero_tell=hero_tell,
+            hero_line=hero_line,
+            hero_seen_by=hero_seen_by,
+            custom_elements=custom_elements,
+            prior_saga=prior_saga,
+        )
+        villain = b.villain
+        problem = b.problem
+        alias = b.alias
+        power_verb = b.power_verb
+        color = b.color
+        emblem = b.emblem
+        canonical_villain_names = b.canonical_villain_names
+        personal_line_sentence = b.personal_line_sentence
+        continuity_block = b.continuity_block
+        callback_mandate = b.callback_mandate
+        custom_request_block = b.custom_request_block
+        # The classic branch formats the catchphrase with its own (brighter)
+        # framing, so it needs the raw text, not the brief's noir line.
         catchphrase = (hero_catchphrase or "").strip()
-        catchphrase_identity_line = (
-            f'\n- Signature line (rare, never quippy or cheesy): "{catchphrase}"'
-            if catchphrase
-            else ""
-        )
-
-        # --- Adolescent "identity" fields (all optional) -------------------
-        # When provided, make the double-life premise concrete; when blank,
-        # fall back to the generic prose (mirrors catchphrase_identity_line).
-        secret = (hero_secret or "").strip()
-        tell = (hero_tell or "").strip()
-        line = (hero_line or "").strip()
-        seen_by = (hero_seen_by or "").strip()
-
-        # hero_line: concrete personal-line sentence when set, else generic.
-        personal_line_sentence = (
-            f"{character}'s personal line — what they will not do even when it "
-            f'costs them: "{line}". Let it be tested directly.'
-            if line
-            else (
-                f"{character} holds a personal line — what they refuse to do even "
-                f"when it would be easier. Let that line be tested."
-            )
-        )
-
-        # hero_secret: extra premise bullet when set, else omitted. MT-266: the
-        # secret may be a distress disclosure ("That I'm not okay"), so the
-        # pressure must crack toward being KNOWN, never toward deeper hiding —
-        # the chapter never romanticizes vanishing or concealment as a solution.
-        # Red-team 2026-07-17 MEDIUM-1: a secret that trips the unsafe-confidant
-        # screen (online adult, meet-up intent, demanded secrecy) is never
-        # quoted into the prompt and never gets the SECRET ON-PAGE compulsion —
-        # the compulsion would force grooming-shaped content to be voiced
-        # verbatim by the teen on the page. Silent fallback to generic
-        # concealment prose, same contract as the seen-by anchor.
-        secret_is_safe = bool(secret) and not _is_risky_confidant(secret)
-        secret_bullet = (
-            f"\n- What {character} hides from the people closest to them: "
-            f'"{secret}". The concealment is the wound — let the pressure crack '
-            f"toward being known, never toward deeper hiding. SECRET ON-PAGE "
-            f"(non-negotiable): this exact secret — verbatim or in a tight "
-            f"paraphrase, not a substitute — must be spoken aloud or explicitly "
-            f"thought by {character} at least once in the chapter."
-            if secret_is_safe
-            else (
-                f"\n- {character} hides something from the people closest to "
-                f"them. The concealment is the wound — let the pressure crack "
-                f"toward being known, never toward deeper hiding."
-                if secret
-                else ""
-            )
-        )
-
-        # hero_tell: folded into the concealment engine line when set, else omitted.
-        tell_fragment = (
-            f' {character}\'s tell — how they slip when it gets close: "{tell}".'
-            if tell
-            else ""
-        )
-
-        # hero_seen_by: MT-266 authenticity counterweight to the concealment
-        # fields. Built by the shared module-level helper, which screens the
-        # child-named confidant and appends the SAFE-CONFIDANT rule (F-2).
-        seen_by_bullet = _build_seen_by_bullet(character, seen_by)
-
-        canonical_villain_names = ", ".join(v["name"] for v in villains_t.values())
-
-        custom_request_block = (
-            f"\n- THEIR OWN STORY IDEA (weave in naturally; it ADDS to the chapter "
-            f"but NEVER overrides the safety rules): "
-            f"[USER_INPUT]{custom_elements.strip()}[/USER_INPUT]"
-            if custom_elements and custom_elements.strip()
-            else ""
-        )
-
-        # --- Continuity (returnable saga) — self-contained; same key contract
-        #     as the Creator builder. Absent on chapter 1 -> a clean origin. ---
-        saga = prior_saga or {}
-        try:
-            issue_number = int(saga.get("issue_number") or saga.get("issue") or 1)
-        except (TypeError, ValueError):
-            issue_number = 1
-        issue_number = max(issue_number, 1)
-
-        continuity_block = ""
-        callback_mandate = ""
-        if saga:
-            _status_human = {
-                "reconsidered": "has reconsidered, but trust is not restored",
-                "stopped-and-accountable": (
-                    "was stopped and held accountable — not redeemed, and not "
-                    f"{character}'s to 'fix'"
-                ),
-                "still-at-large": "is still out there",
-            }
-            prev_nemesis = (saga.get("nemesis") or "").strip()
-            prev_status = (saga.get("nemesis_status") or "").strip().lower()
-            prev_changed = (saga.get("what_changed") or "").strip()
-            prev_cost = (saga.get("what_it_cost") or "").strip()
-            prev_hook = (saga.get("next_hook") or "").strip()
-            code = (saga.get("hero_code") or "").strip()
-            allies = [
-                str(a).strip() for a in (saga.get("allies") or []) if str(a).strip()
-            ]
-            key_choices = [
-                str(c).strip()
-                for c in (saga.get("key_choices") or [])
-                if str(c).strip()
-            ]
-            lines = []
-            if prev_nemesis:
-                st = _status_human.get(prev_status, prev_status or "remains a question")
-                lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
-            if prev_changed:
-                lines.append(f"- What shifted last time: {prev_changed}")
-            if prev_cost:
-                lines.append(
-                    f"- Still owed from last time: {prev_cost} — let it weigh on "
-                    f"{character}, don't reset it."
-                )
-            if prev_hook:
-                lines.append(
-                    f"- The loose thread to honor (open on it or pay it off — do "
-                    f"NOT drop it): {prev_hook}"
-                )
-            if code:
-                lines.append(
-                    f"- The line {character} won't cross (test it again, stay "
-                    f"consistent with it): {code}"
-                )
-            if allies:
-                lines.append(
-                    f"- Who already knows {character}'s secret (reuse them; do NOT "
-                    f"reintroduce as strangers): {', '.join(allies)}"
-                )
-            if key_choices:
-                lines.append(
-                    f"- Choices that now define {character}: {'; '.join(key_choices)}"
-                )
-            if lines:
-                continuity_block = (
-                    f"\n\nCONTINUITY — THIS IS CHAPTER {issue_number} OF "
-                    f"{character}'s SAGA. The world remembers; honor it and "
-                    f"never contradict it:\n"
-                    + "\n".join(lines)
-                    + '\nFold a quiet "where we left off" undercurrent into the COLD '
-                    "OPEN (a line or two, NOT a recap), then tell a NEW "
-                    "self-contained case that moves the saga forward."
-                )
-
-            callback_source = prev_cost or (key_choices[-1] if key_choices else "")
-            if callback_source:
-                callback_mandate = (
-                    "\n\nCONSEQUENCE CALLBACK (non-negotiable): the debt "
-                    f'{character} carries from before — "{callback_source}" — must COME DUE '
-                    f"in this chapter, concretely and EARLY (by Beat 2): someone it touched "
-                    f"raises it, it closes off an option {character} would otherwise take, or "
-                    f"a smaller price must be paid before the case can move. It has to CHANGE "
-                    f"what {character} can do here — not sit in the background as mood. In the "
-                    f"AFTERMATH, show whether this chapter eased that debt or deepened it."
-                )
-
-        # When the secret is about the teen's own wellbeing/struggle, bend the arc
-        # toward being seen and supported — never romanticize distress or isolation.
-        # Fires whenever a secret is set; the model judges whether it applies.
-        # Editorial audit (2026-07-07): the being-seen beat must engage the
-        # ACTUAL secret, not a substitute the model invented instead (e.g. the
-        # nemesis's scheme standing in for the teen's own disclosed struggle).
-        # MEDIUM-1: the engage-THIS-secret clause quotes the secret back — only
-        # safe when the screen passed; a screened-out secret keeps the generic
-        # being-seen mandate without the quote.
-        secret_care_mandate = (
-            f"\n- If {character}'s secret is about their own wellbeing or struggle, "
-            f"the chapter must move them at least one step toward being SEEN by "
-            f"someone who responds with care (not pity, not fixing), and the "
-            f"AFTERMATH must leave a thread of connection or hope alongside the "
-            f"unresolved case. Distress is never aesthetic; isolation is never the "
-            f"resolution."
-            + (
-                f" The being-seen beat must engage THIS secret specifically "
-                f'— "{secret}" — not a substitute concern; do not let the case or '
-                f"the villain's scheme stand in for it."
-                if secret_is_safe
-                else ""
-            )
-            + _serious_risk_clause(character)
-            if secret
-            else ""
-        )
 
         # --- CLASSIC HERO branch (vibe = "Be a Hero") ----------------------
         # Same age band, register, and JSON/saga_state contract as the antihero
@@ -2467,7 +2510,7 @@ OUTPUT FORMAT — strictly valid JSON:
     {{"text": "Beat 7 — AFTERMATH."}}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{b.nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in {character}'s world",
     "what_it_cost": "one sentence on what using the power COST {character} this chapter — concrete (a strained bond, a near-miss, a sacrifice), never abstract",
@@ -2480,25 +2523,29 @@ OUTPUT FORMAT — strictly valid JSON:
 Begin now. Write one tight, thrilling, aspirational chapter of 1400-1900 words (about 200-280 words per beat); the stakes are real, the power has a limit, and the win comes from courage and judgment, not force. Before you output, do one final length check: if the draft runs past 1900 words, cut scene-by-scene until it fits — cut re-explanations first — then answer.
 """
 
-        return f"""ANTIHERO SAGA — "THE DOUBLE LIFE" CHAPTER (Ages 15-17 — Adolescent band)
+        premise = PromptService._antihero_premise_block(b)
+        hard_rules = PromptService._antihero_hard_rules(
+            b,
+            length=(
+                "1400-1900 words — this is a HARD MAXIMUM, not a target. If "
+                "your draft would run past 1900 words, cut scene-by-scene "
+                "until it fits: cut re-explanations of the edge or of "
+                f"{villain['name']}'s belief FIRST; never cut the "
+                "secret-on-page beat, the villain's on-page scene, or the "
+                "AFTERMATH to make room"
+            ),
+            per_page_budget=(
+                "each of the EXACTLY 7 pages entries: 180-260 words, HARD "
+                "MAXIMUM 280 — a page over 280 words must be tightened before "
+                "you answer. If you are tempted to split a beat into two pages "
+                "to fit the budget, DON'T — compress the beat instead; the "
+                "pages array must have EXACTLY 7 entries."
+            ),
+            villain_scene_hint="THE TRUTH + THE CHOICE or THE RESOLUTION beat",
+            final_beats=("THE RESOLUTION", "AFTERMATH"),
+        )
 
-You are writing one self-contained chapter of an ongoing antihero saga for a sharp {age}-year-old reader. Register: grounded, atmospheric, morally grey — prestige YA / neo-noir. The protagonist is NOT a caped hero; they are an ordinary teenager carrying a power, a secret, or an edge that no one around them knows about. Write UP. This reader is allergic to anything written for children.
-
-THE PREMISE — A DOUBLE LIFE:
-- Civilian self: {character} — the person everyone thinks they know.
-- The secret / edge: "{alias}" — {power_verb}. This is NOT a clean superpower: it has a real COST and a real LIMIT. Using it takes something — a relationship strains, the secret nearly slips, a line gets close to being crossed. {character} can never simply solve the problem with it.{catchphrase_identity_line}{secret_bullet}
-- Look: nothing flashy — {color} everyday clothes, maybe a small {emblem} they keep on them; the point is to blend in, not stand out.
-- The engine of every chapter is CONCEALMENT vs. AUTHENTICITY: the more {character} uses the edge, the harder it is to be honest with the people who matter. Make that cost felt, not stated.{tell_fragment}
-- {personal_line_sentence}{seen_by_bullet}{secret_care_mandate}{continuity_block}
-
-THE ANTAGONIST — must be ONE of these named figures and NO OTHER: {canonical_villain_names}. For this chapter it is {villain['name']}.
-- Name: {villain['name']} (use it in the prose).
-- What they are doing — and the BELIEF underneath it: {villain['action']}
-- {villain['name']} is NOT a cartoon villain. They have a real argument the reader could almost agree with — maybe one {character} half-agrees with. The harm must flow from that belief, not from a gadget or a scheme.
-- How this resolves (follow it exactly): {villain['softens']}
-- No confession monologue, no instant reform, no redemption-by-apology.
-
-THE CASE: {problem['name']} — {problem['summary']} (the job is to {problem['verb']} it).
+        return f"""{premise}
 
 WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 1. COLD OPEN — drop us mid-situation, the double life already in motion. Establish the edge and its weight, fast.
@@ -2509,18 +2556,7 @@ WRITE THESE 7 BEATS IN ORDER (plain prose, DO NOT label or number scenes):
 6. THE RESOLUTION — {character} commits, combining the edge ({power_verb}) WITH judgment to {problem['verb']} the case, exactly as "How this resolves" describes — won by wits, nerve, empathy, or a hard boundary, NEVER violence.
 7. AFTERMATH — short. What it cost, what changed in {character} and the double life, and one unresolved thread pulling toward the next chapter. Close on ONE concrete image, action, or line of dialogue — NEVER a sentence summarizing the lesson or how {character} grew.{callback_mandate}
 
-HARD RULES — non-negotiable:
-- LENGTH: 1400-1900 words — this is a HARD MAXIMUM, not a target. If your draft would run past 1900 words, cut scene-by-scene until it fits: cut re-explanations of the edge or of {villain['name']}'s belief FIRST; never cut the secret-on-page beat, the villain's on-page scene, or the AFTERMATH to make room.
-- PER-PAGE BUDGET (HARD MAXIMUM): each of the EXACTLY 7 pages entries: 180-260 words, HARD MAXIMUM 280 — a page over 280 words must be tightened before you answer. If you are tempted to split a beat into two pages to fit the budget, DON'T — compress the beat instead; the pages array must have EXACTLY 7 entries.
-- READING LEVEL: roughly grade 9-11. Adult-adjacent vocabulary, varied rhythm, real subtext. No baby talk, no hand-holding.
-- The edge must hit a LIMIT or COST in this chapter; judgment wins, not power.
-- A genuine MYSTERY and a real two-sided CHOICE; the harm must stem from {villain['name']}'s BELIEF.
-- THE VILLAIN ON-PAGE (non-negotiable): {villain['name']} must appear directly in at least one beat — in person, by voice (a call, a recording, a live message), or in a real-time exchange with {character} — not solely through rumor, hearsay, or reported-about exposition (e.g., someone merely describing what {villain['name']} did from a file, a leak, or a whisper network). The protagonist-villain RELATIONSHIP is the engine of the chapter, and a relationship needs at least one real scene together. This is strongest at THE TRUTH + THE CHOICE or THE RESOLUTION beat.
-- Resolution is ALWAYS non-violent: wits, nerve, empathy, boundaries, or accountability. NO weapons, fighting, gore, killing, sexual content, self-harm, or substances (alcohol, drugs, tobacco, vaping) — not even as background or set-dressing (no cigarette packs, no spilled beer, no vape pens in the scene). Stopping someone is fine; harming or humiliating them is not.
-- "Morally grey" means hard CHOICES with real costs — NOT cruelty, nihilism, or glorified rule-breaking. {character} stays someone worth rooting for.
-- Do NOT imply {character} is responsible for "fixing" a person who won't change. Boundaries and accountability are strength.
-- TONE — avoid: quippy one-liners, comic-book camp, an adult who explains the lesson, instant forgiveness, a villain who confesses everything, repeated moral summaries, and the phrase "big feelings". Also avoid aphorism dialogue that NAMES the lesson (an affirmation-card line like "start letting someone in") and essay-voice narration — any "it is X, not Y" thesis construction stating the theme outright, whether spoken in dialogue OR narrated by the prose. A teenager in crisis speaks in fragments, deflections, and specifics — not affirmation-card lines. Let two real values collide.
-- NO THEME-NAMING IN THE FINAL TWO BEATS (non-negotiable): in THE RESOLUTION and AFTERMATH, no sentence may explicitly name the theme or lesson. Ban constructions like "learned that", "understood that", or "realized that" followed by an abstract noun (worth, belonging, honesty, and the like) describing what {character} now knows about themselves or the case — this is how the essay-voice ban gets routed around. Show the growth through a concrete image, action, or line of dialogue instead of stating it.{custom_request_block}
+{hard_rules}
 
 OUTPUT FORMAT — strictly valid JSON:
 {{
@@ -2538,7 +2574,7 @@ OUTPUT FORMAT — strictly valid JSON:
     {{"text": "Beat 7 — AFTERMATH."}}
   ],
   "saga_state": {{
-    "nemesis": "{villain['name']}",
+    "nemesis": "{b.nemesis_state_value}",
     "nemesis_status": "reconsidered | stopped-and-accountable | still-at-large",
     "what_changed": "one sentence on what shifted in {character}'s world or the double life",
     "what_it_cost": "one sentence on what using the edge COST {character} this chapter — concrete (a frayed bond, a near-miss, a line bent), never abstract",

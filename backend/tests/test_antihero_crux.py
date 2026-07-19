@@ -255,3 +255,79 @@ def test_single_shot_builder_still_emits_full_7_beat_saga_contract():
     # Single-shot does NOT carry the part-1 crux/choices contract.
     assert '"crux"' not in prompt
     assert '"choices"' not in prompt
+
+
+# --- AD-1 de-drift locks (2026-07-17 critique): the single-shot builder now
+# consumes _antihero_brief, and the four previously-diverged rules live in the
+# shared blocks so all three paths render them identically. -------------------
+def _single_shot(**overrides):
+    return PromptService._build_superhero_prompt_adolescent(**dict(_BASE, **overrides))
+
+
+def test_secret_on_page_mandate_shared_across_all_paths():
+    for prompt in (
+        _part1(hero_secret=_SECRET),
+        _part2(hero_secret=_SECRET),
+        _single_shot(hero_secret=_SECRET),
+    ):
+        assert "SECRET ON-PAGE" in prompt
+        assert _SECRET in prompt
+
+
+def test_engage_this_secret_clause_shared_across_all_paths():
+    for prompt in (
+        _part1(hero_secret=_SECRET),
+        _part2(hero_secret=_SECRET),
+        _single_shot(hero_secret=_SECRET),
+    ):
+        assert "must engage THIS secret specifically" in prompt
+
+
+def test_villain_on_page_rule_on_both_crux_phases():
+    assert "THE VILLAIN ON-PAGE" in _part1()
+    assert "THE VILLAIN ON-PAGE" in _part2()
+    assert "THE VILLAIN ON-PAGE" in _single_shot()
+
+
+def test_theme_naming_ban_on_part2_and_single_shot_but_not_part1():
+    """Part 2 writes the two closing beats, so it carries the ban; part 1
+    never writes them, so the ban would be noise there."""
+    assert "NO THEME-NAMING" in _part2()
+    assert "NO THEME-NAMING" in _single_shot()
+    assert "NO THEME-NAMING" not in _part1()
+
+
+def test_shared_hard_rule_sentences_render_identically():
+    """Anchor sentences from the ported rules must be byte-identical between
+    the single-shot chapter and crux part 2 — the drift-guard the old inline
+    duplication defeated."""
+    single = _single_shot()
+    p2 = _part2()
+    for anchor in (
+        "must appear directly in at least one beat",
+        "not affirmation-card lines",
+        "this is how the essay-voice ban gets routed around",
+    ):
+        assert anchor in single
+        assert anchor in p2
+
+
+# --- Nemesis continuity on the Adolescent paths (critique AD-2/P0) ----------
+def test_adolescent_saga_state_preserves_still_at_large_arch_nemesis():
+    prior = {
+        "issue_number": 2,
+        "nemesis": "The Archivist",
+        "nemesis_status": "still-at-large",
+    }
+    for prompt in (
+        _single_shot(prior_saga=prior),
+        _part2(prior_saga=prior),
+    ):
+        assert "The Archivist is NOT this chapter's antagonist" in prompt
+        assert "keep 'The Archivist'" in prompt
+
+
+def test_adolescent_saga_state_overwrites_resolved_nemesis():
+    prior = {"nemesis": "The Archivist", "nemesis_status": "reconsidered"}
+    prompt = _single_shot(prior_saga=prior)
+    assert "keep 'The Archivist'" not in prompt

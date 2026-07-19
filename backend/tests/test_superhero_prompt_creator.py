@@ -575,3 +575,44 @@ def test_adult_18plus_prior_saga_threads_continuity_and_callback():
     # The Creator tier's consequence-callback mandate must fire for adults too.
     assert "CONSEQUENCE CALLBACK" in prompt
     assert "Burned her source at the records office" in prompt
+
+
+# --- Nemesis continuity (2026-07-17 critique C-2/P0) ------------------------
+def test_creator_preserves_still_at_large_arch_nemesis():
+    """A still-at-large prior nemesis who is NOT this Issue's antagonist must
+    be named in the prose and kept in saga_state instead of overwritten."""
+    prior = {
+        "issue_number": 2,
+        "nemesis": "the Optimizer",
+        "nemesis_status": "still-at-large",
+    }
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="cipher_zero",
+        problem_id="expose_the_conspiracy",
+        prior_saga=prior,
+    )
+    assert "the Optimizer is NOT this Issue's antagonist" in prompt
+    assert "mention them by name at least once" in prompt
+    assert "keep 'the Optimizer'" in prompt
+
+
+def test_creator_saga_state_overwrites_resolved_nemesis():
+    prior = {"nemesis": "the Optimizer", "nemesis_status": "stopped-and-accountable"}
+    prompt = PromptService._build_superhero_prompt_creator(
+        character="Maya",
+        age=13,
+        hero_costume_color="charcoal",
+        hero_cape_style="none",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id="cipher_zero",
+        problem_id="expose_the_conspiracy",
+        prior_saga=prior,
+    )
+    assert "keep 'the Optimizer'" not in prompt

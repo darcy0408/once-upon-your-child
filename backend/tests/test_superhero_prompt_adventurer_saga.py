@@ -218,3 +218,52 @@ def test_adventurer_continuity_routes_through_build_story_prompt():
     assert "PREVIOUSLY IN YOUR SAGA" in prompt
     assert "ISSUE #2" in prompt
     assert "the old pier still hums at night" in prompt
+
+
+# --- Nemesis continuity (2026-07-17 critique A-1/P0) ------------------------
+def _adventurer_prompt(villain_id, prior):
+    return PromptService._build_superhero_prompt_adventurer(
+        character="Maya",
+        age=10,
+        hero_costume_color="violet",
+        hero_cape_style="matching",
+        hero_emblem="star",
+        hero_power="strategist",
+        villain_id=villain_id,
+        problem_id="uncover_the_truth",
+        prior_saga=prior,
+    )
+
+
+def test_adventurer_nemesis_memory_when_prior_nemesis_differs():
+    """A still-at-large prior nemesis who is NOT this Issue's villain must be
+    named in the prose and preserved in saga_state instead of overwritten."""
+    prior = {
+        "issue_number": 3,
+        "nemesis": "Gigawatt",
+        "nemesis_status": "still-at-large",
+    }
+    prompt = _adventurer_prompt("lord_loading_screen", prior)
+    assert "Gigawatt is NOT this Issue's villain" in prompt
+    assert "mention them by name at least once" in prompt
+    # saga_state keeps the arch-nemesis rather than hard-overwriting it.
+    assert "keep 'Gigawatt'" in prompt
+
+
+def test_adventurer_saga_state_overwrites_resolved_nemesis():
+    """A reconsidered/stopped nemesis is a closed arc — saga_state takes this
+    Issue's villain normally."""
+    prior = {"nemesis": "Gigawatt", "nemesis_status": "reconsidered"}
+    prompt = _adventurer_prompt("lord_loading_screen", prior)
+    assert "keep 'Gigawatt'" not in prompt
+    # The memory line still fires (the world remembers a reformed villain too).
+    assert "Gigawatt is NOT this Issue's villain" in prompt
+
+
+def test_adventurer_same_villain_return_has_no_memory_line():
+    """When the prior nemesis IS this Issue's villain, no memory line and no
+    keep-instruction — the normal villain pin already covers them."""
+    prior = {"nemesis": "Gigawatt", "nemesis_status": "still-at-large"}
+    prompt = _adventurer_prompt("gigawatt", prior)
+    assert "is NOT this Issue's villain" not in prompt
+    assert "keep 'Gigawatt'" not in prompt

@@ -108,10 +108,20 @@ def test_explorer_weaves_prior_saga_continuity():
     assert "Grumble" in prompt
     assert "the playground swings work again now" in prompt
     assert "a funny new noise came from the slide" in prompt
-    # Humanized nemesis_status (warm, not noir).
-    assert "is back, up to something new" in prompt
-    # Gentle "Last time…" momentum instruction.
+    # Humanized nemesis_status (warm, not noir) — must NOT assert the old
+    # villain "is back": this story pins a different villain, and the
+    # contradiction taught the model to drop the old nemesis from the prose.
+    assert "is still out there somewhere" in prompt
+    assert "is back" not in prompt
+    # Gentle "Last time…" momentum instruction, ordered AFTER the mandatory
+    # opening phrase so the two first-sentence claims can't collide.
     assert "Last time" in prompt
+    assert "exact opening phrase" in prompt
+    # Nemesis memory: the prior nemesis is not this story's villain, so the
+    # prose must still name them once.
+    assert "is NOT this story's villain" in prompt
+    # saga_state keeps a still-at-large arch-nemesis instead of overwriting.
+    assert "keep 'Grumble'" in prompt
 
 
 def test_explorer_continuity_reuses_allies_as_returning_friends():
