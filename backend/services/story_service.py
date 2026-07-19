@@ -1972,6 +1972,24 @@ def _normalize_emotional_arc(value) -> str | None:
     return arc[:_EMOTIONAL_ARC_MAX_LEN]
 
 
+_NEMESIS_NAME_MAX_LEN = 64
+_NEMESIS_INSTRUCTION_MARKERS = (
+    "keep '",
+    " otherwise ",
+    "if they remain",
+    "if they are still",
+)
+
+
+def _looks_like_unresolved_nemesis_instruction(name: str) -> bool:
+    """True when ``name`` is the prompt's own conditional copied verbatim
+    rather than a resolved nemesis name. See ``_normalize_saga_state``."""
+    lowered = name.lower()
+    return len(name) > _NEMESIS_NAME_MAX_LEN or any(
+        marker in lowered for marker in _NEMESIS_INSTRUCTION_MARKERS
+    )
+
+
 def _normalize_saga_state(value):
     """Sanitize the ``saga_state`` block the superhero prompts emit (MT-235
     Phase 2 — the returnable saga). Returns a dict with only the known keys,
@@ -1986,6 +2004,19 @@ def _normalize_saga_state(value):
     ``what_it_cost`` specifically. Now preserves the full key set every band's
     prompt promises; ``what_it_cost`` is only present for bands whose prompt
     asks for it (Creator/Adolescent), so it's simply absent for the rest.
+
+    Guard (PR #473 review, finding 1): when the previous Issue left an
+    unresolved nemesis, the saga builders put a *conditional* in the
+    ``saga_state.nemesis`` JSON value slot ("keep 'X' if they remain the
+    saga's defining unresolved nemesis after this Issue, otherwise 'Y'")
+    rather than a literal name. The model is expected to resolve it and emit
+    one name. If it ever copies the instruction verbatim instead, that string
+    would be stored as the nemesis, rendered to the child on the Saga Record
+    screen, and folded back into the next Issue's prompt as ``prev_nemesis``
+    inside a mandate to name it in prose — compounding across the saga. A
+    nemesis name is never this long and never contains the instruction
+    markers, so drop the key rather than persist the leak; the next Issue
+    simply starts that thread fresh.
     """
     if not isinstance(value, dict):
         return None
@@ -2001,6 +2032,14 @@ def _normalize_saga_state(value):
         raw = value.get(key)
         if isinstance(raw, str) and raw.strip():
             out[key] = raw.strip()
+    nemesis = out.get("nemesis")
+    if nemesis and _looks_like_unresolved_nemesis_instruction(nemesis):
+        logger.warning(
+            "Dropped unresolved saga_state.nemesis instruction (model copied "
+            "the conditional instead of resolving it): %.120s",
+            nemesis,
+        )
+        out.pop("nemesis")
     allies_raw = value.get("allies")
     if isinstance(allies_raw, list):
         allies = [str(a).strip() for a in allies_raw if str(a).strip()]

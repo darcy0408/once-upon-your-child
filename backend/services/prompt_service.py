@@ -915,7 +915,10 @@ Begin now. Distribution is key: 8-12 pages, 5-25 words per page. Never begin a p
             ]
             lines = []
             if prev_nemesis:
-                st = _status_human.get(prev_status, prev_status or "is back again")
+                # Unknown/empty status falls back to the neutral wording, never
+                # to a raw model string and never to "is back" — see the
+                # different-villain pin above.
+                st = _status_human.get(prev_status) or "is still out there somewhere"
                 lines.append(f"- The villain {prev_nemesis} {st}.")
             if prev_nemesis and prev_nemesis != villain["name"]:
                 lines.append(
@@ -1310,7 +1313,7 @@ Begin now. Stop at 350 words across all pages combined.
             ]
             lines = []
             if prev_nemesis:
-                st = _status_human.get(prev_status, prev_status or "is still a mystery")
+                st = _status_human.get(prev_status) or "is still a mystery"
                 lines.append(f"- The nemesis you've faced — {prev_nemesis}: {st}.")
             if prev_nemesis and prev_nemesis != villain["name"]:
                 # Villain picking avoids recent villains, so the prior nemesis
@@ -1604,7 +1607,7 @@ Begin now. Write a real story of 900-1500 words across EXACTLY 6 pages (one per 
             ]
             lines = []
             if prev_nemesis:
-                st = _status_human.get(prev_status, prev_status or "remains a question")
+                st = _status_human.get(prev_status) or "remains a question"
                 lines.append(f"- Nemesis so far — {prev_nemesis}: {st}.")
             if prev_nemesis and prev_nemesis != villain["name"]:
                 # Villain picking avoids recent villains, so the prior nemesis
@@ -1921,7 +1924,7 @@ Begin now. Write one tight, intelligent Issue of 1100-1800 words across EXACTLY 
             ]
             lines = []
             if prev_nemesis:
-                st = _status_human.get(prev_status, prev_status or "remains a question")
+                st = _status_human.get(prev_status) or "remains a question"
                 lines.append(f"- The thread you left open — {prev_nemesis}: {st}.")
             if prev_nemesis and prev_nemesis != villain["name"]:
                 # Villain picking deliberately avoids recent villains, so the
