@@ -2,9 +2,11 @@
 
 *powered by Story Weaver*
 
-**Therapeutic AI storytelling for kids and families.** Once Upon YOUR Child (technical platform name: Story Weaver) is a Flutter-based mobile and web application that generates personalized, age-appropriate stories. The app focuses on emotional awareness and therapeutic storytelling to help children process feelings, build confidence, and develop social-emotional skills through engaging narratives.
+**AI-powered social-emotional storytelling for kids and families.** Once Upon YOUR Child (technical platform name: Story Weaver) is a Flutter-based mobile and web application that generates personalized, age-appropriate stories. The app focuses on emotional awareness and feelings vocabulary to help children recognize and talk about their emotions, build confidence, and practice social-emotional skills through engaging narratives.
 
-> Built by a solo developer on a mission to make therapeutic tools accessible to every family. See [`BUSINESS_PLAN.md`](./BUSINESS_PLAN.md) for the full monetization strategy.
+> An independent project making social-emotional learning tools accessible to every family. See [`BUSINESS_PLAN.md`](./BUSINESS_PLAN.md) for the full monetization strategy.
+
+> **Note:** This app supports social-emotional learning. It is not therapy, counseling, or medical treatment, and makes no clinical claims.
 
 **Live app:** `https://onceuponyourchild.app` · **Production backend:** `https://story-weaver-app-production.up.railway.app`
 
