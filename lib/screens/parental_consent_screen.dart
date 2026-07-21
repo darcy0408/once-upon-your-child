@@ -81,6 +81,10 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   // ── Email round-trip verification state (under-13 only) ──────────────────
   _ConsentPhase _phase = _ConsentPhase.notice;
   final _codeController = TextEditingController();
+  // The email field moves between the scroll body (13+, optional) and the
+  // sticky footer (below the consent age, required) once the consent age
+  // resolves, so its text lives in a controller rather than the element tree.
+  final _emailController = TextEditingController();
   bool _verifying = false;
   String? _verifyError;
 
@@ -162,6 +166,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _codeController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -470,56 +475,15 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
-                                TextField(
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: _requiresEmailVerification
-                                        ? 'Parent/Guardian Email (required)'
-                                        : 'Your Email (optional)',
-                                    labelStyle:
-                                        const TextStyle(color: Colors.white70),
-                                    hintText: 'parent@example.com',
-                                    hintStyle: TextStyle(
-                                        color: Colors.white.withAlpha(120)),
-                                    helperText: _requiresEmailVerification
-                                        ? 'Required — we email a code to confirm you are the parent (COPPA verifiable consent).'
-                                        : 'Recommended — allows us to send you account confirmations.',
-                                    helperStyle: const TextStyle(
-                                        color: Colors.white54, fontSize: 12),
-                                    helperMaxLines: 3,
-                                    errorText: (_parentEmail != null &&
-                                            (_parentEmail!.trim().isNotEmpty ||
-                                                _requiresEmailVerification) &&
-                                            !_emailValid)
-                                        ? 'Enter a valid email address'
-                                        : null,
-                                    errorStyle: const TextStyle(
-                                        color: Color(0xFFFF8A80), fontSize: 12),
-                                    prefixIcon: const Icon(Icons.email_outlined,
-                                        color: Colors.white70),
-                                    filled: true,
-                                    fillColor: Colors.white.withAlpha(25),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white54),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Colors.white54),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                          color: Color(0xFFFFD700), width: 2),
-                                    ),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  onChanged: (value) =>
-                                      setState(() => _parentEmail = value),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
+                                // When the email is REQUIRED (below the consent
+                                // age) the field lives in the sticky footer,
+                                // right above the button that sends the code —
+                                // buried up here it read as optional and people
+                                // could not tell why the button stayed disabled.
+                                if (!_requiresEmailVerification) ...[
+                                  _buildParentEmailField(),
+                                  const SizedBox(height: AppSpacing.sm),
+                                ],
                                 // ── Photo avatar opt-out ───────────────────────────────────
                                 Container(
                                   decoration: BoxDecoration(
@@ -788,10 +752,74 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     );
   }
 
+  /// The parent/guardian email field. Rendered in the scroll body when the
+  /// email is optional (13+), and in the sticky footer when it is required —
+  /// see the call sites. [emphasized] draws the resting border in the accent
+  /// gold so the required field is obviously an input that needs filling in.
+  Widget _buildParentEmailField({bool emphasized = false}) {
+    final required = _requiresEmailVerification;
+    final showError = _parentEmail != null &&
+        (_parentEmail!.trim().isNotEmpty || required) &&
+        !_emailValid;
+    final restingBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: emphasized
+          ? const BorderSide(color: Color(0xFFFFD700), width: 2)
+          : const BorderSide(color: Colors.white54),
+    );
+
+    return TextField(
+      controller: _emailController,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: required
+            ? 'Parent/Guardian Email (required)'
+            : 'Your Email (optional)',
+        labelStyle: TextStyle(
+            color: emphasized ? const Color(0xFFFFD700) : Colors.white70),
+        floatingLabelStyle: TextStyle(
+            color: emphasized ? const Color(0xFFFFD700) : Colors.white70),
+        hintText: 'parent@example.com',
+        hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
+        helperText: required
+            ? 'We email a code here to confirm you are the parent.'
+            : 'Recommended — allows us to send you account confirmations.',
+        helperStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+        helperMaxLines: 3,
+        errorText: showError ? 'Enter a valid email address' : null,
+        errorStyle: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
+        prefixIcon: Icon(Icons.email_outlined,
+            color: emphasized ? const Color(0xFFFFD700) : Colors.white70),
+        filled: true,
+        fillColor: Colors.white.withAlpha(25),
+        isDense: emphasized,
+        border: restingBorder,
+        enabledBorder: restingBorder,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+        ),
+      ),
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.done,
+      autofillHints: const [AutofillHints.email],
+      onChanged: (value) => setState(() => _parentEmail = value),
+    );
+  }
+
   Widget _buildStickyFooter() {
     final bool readEnough = _scrollProgress >= 0.95;
     final bool canSubmit =
         _consentGiven && _emailValid && !_submitting && readEnough;
+    // A disabled button with no explanation reads as "broken". Once everything
+    // else is satisfied, say plainly that the empty email is what is left. A
+    // malformed address is not covered here — the field's own errorText
+    // ("Enter a valid email address") already answers that case.
+    final bool emailIsTheBlocker = _requiresEmailVerification &&
+        readEnough &&
+        _consentGiven &&
+        !_submitting &&
+        (_parentEmail?.trim().isEmpty ?? true);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -833,6 +861,12 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                 ],
               ),
             ),
+          // Required email sits with the action it feeds, not buried in the
+          // notice above.
+          if (_requiresEmailVerification) ...[
+            _buildParentEmailField(emphasized: true),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Container(
             decoration: BoxDecoration(
               color: _consentGiven
@@ -868,6 +902,28 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
+          if (emailIsTheBlocker)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.arrow_upward_rounded,
+                      color: Color(0xFFFFD700), size: 16),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      'Enter your email above to continue',
+                      style: GoogleFonts.fredoka(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
