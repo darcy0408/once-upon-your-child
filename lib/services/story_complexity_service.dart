@@ -165,7 +165,7 @@ AGE-APPROPRIATE GUIDELINES FOR $age-YEAR-OLD:
     final ageGroup = getAgeGroup(age);
 
     return '''
-Create a therapeutic story for a ${ageGroup.name} child (age $age) experiencing the emotion: $emotionName.
+Create a supportive coping-skills story for a ${ageGroup.name} child (age $age) experiencing the emotion: $emotionName.
 
 STORY REQUIREMENTS:
 - Word count: ${guidelines['min_words']}-${guidelines['max_words']} words (target: ${guidelines['target_word_count']})
@@ -187,7 +187,7 @@ STORY STRUCTURE:
 EMOTIONAL FOCUS:
 $emotionDescription
 
-Make the story engaging, age-appropriate, and therapeutically valuable.
+Make the story engaging, age-appropriate, and rich in social-emotional value.
 ''';
   }
 

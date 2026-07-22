@@ -632,7 +632,7 @@ class TherapeuticStoryCustomization {
     final parts = <String>[];
 
     if (primaryGoal != null) {
-      parts.add('THERAPEUTIC GOAL: ${primaryGoal!.displayName}');
+      parts.add('COPING-SKILL GOAL: ${primaryGoal!.displayName}');
     }
 
     if (specificSituation != null && specificSituation!.isNotEmpty) {
@@ -654,7 +654,7 @@ class TherapeuticStoryCustomization {
       parts.add('LESSON TO LEARN: $desiredLesson');
     }
 
-    parts.add('\nIMPORTANT: The story should be therapeutic and supportive, validating feelings while showing positive coping strategies and a hopeful, empowering outcome.');
+    parts.add('\nIMPORTANT: The story should be supportive and skill-building, validating feelings while showing positive coping strategies and a hopeful, empowering outcome.');
 
     return parts.join('\n');
   }

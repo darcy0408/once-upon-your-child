@@ -276,7 +276,7 @@ class GeminiImageGenerator:
         power_id: str | None = None,
     ) -> list:
         """
-        Generate therapeutic story illustrations using Gemini 1.5 Pro.
+        Generate supportive story illustrations using Gemini 1.5 Pro.
         """
         if not self._client:
             logger.warning(
@@ -297,10 +297,10 @@ class GeminiImageGenerator:
             detail_level = "sophisticated, nuanced artwork with depth and symbolism, suitable for adult reflection"
             age_descriptor = "adults (18+)"
 
-        # Build therapeutic context
+        # Build coping-skill context
         therapeutic_context = ""
         if therapeutic_focus:
-            therapeutic_context = f"\nTherapeutic focus: Emphasize {therapeutic_focus} through positive, empowering imagery"
+            therapeutic_context = f"\nCoping-skill focus: Emphasize {therapeutic_focus} through positive, empowering imagery"
 
         # Build character appearance description
         character_description = f"Main character: {character_name}"
@@ -401,7 +401,7 @@ Visual requirements:
 - Dynamic composition with balanced elements
 - Professional illustration quality
 - No text or words in the image
-- Therapeutic value: promote emotional expression, growth, and positivity
+- Emotional value: promote emotional expression, growth, and positivity
 - Respectful, safe, and appropriate for the intended age group
 - MATCH THE CHARACTER APPEARANCE EXACTLY as described above
 
@@ -520,7 +520,7 @@ Style: {style}, optimized for {age_descriptor}
         companions: list | None = None,
     ) -> list:
         """
-        Generate therapeutic coloring book pages with black and white line art.
+        Generate calming coloring book pages with black and white line art.
         """
         if not self._client:
             logger.warning(
@@ -545,10 +545,10 @@ Style: {style}, optimized for {age_descriptor}
             line_thickness = "varied line weights with intricate detail work"
             age_descriptor = "adults (18+)"
 
-        # Build therapeutic context
+        # Build coping-skill context
         therapeutic_context = ""
         if therapeutic_focus:
-            therapeutic_context = f"\nTherapeutic purpose: Design promotes {therapeutic_focus} through calming, positive imagery"
+            therapeutic_context = f"\nSupportive purpose: Design promotes {therapeutic_focus} through calming, positive imagery"
 
         # Build character appearance description
         character_description = f"Main character: {character_name}"
@@ -602,7 +602,7 @@ Style: {style}, optimized for {age_descriptor}
                 companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
 
         prompt = f"""
-Create {num_images} whimsical, high-quality therapeutic coloring book page(s) featuring elements from a personalized story.
+Create {num_images} whimsical, high-quality calming coloring book page(s) featuring elements from a personalized story.
 
 Story context: {scene_description}
 {character_description}
@@ -632,7 +632,7 @@ DELIGHTFUL DETAILS FOR CHILDREN:
 - Ensure the scene feels full of wonder and discovery
 - Use clear, closed shapes so that coloring stays within the lines easily
 
-Design style: Clean line art coloring page, therapeutic and story-based, full of whimsical details for {age_descriptor}
+Design style: Clean line art coloring page, calming and story-based, full of whimsical details for {age_descriptor}
         Output: Pure black lines on white background only
 """
 
