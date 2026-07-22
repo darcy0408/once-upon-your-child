@@ -224,7 +224,7 @@ class SuperheroNameGenerator {
   static final List<String> _quirkyBoosters = [
     'cape stitched from shimmering motivational posters',
     'gadget belt filled with glitter glue and grounding cards',
-    'sidekick therapy llama named “Hugbug”',
+    'sidekick comfort llama named “Hugbug”',
     'pocket full of glow-stick medals for bravery',
     'hoverboard powered by belly laughs',
     'utility pouch stocked with talking stress balls',

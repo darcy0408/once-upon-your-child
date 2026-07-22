@@ -5542,7 +5542,7 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
             ),
             const SizedBox(height: 20),
             const Text(
-              'Therapeutic focus (optional):',
+              'Coping-skill focus (optional):',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),

@@ -387,13 +387,13 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
           const SizedBox(height: 16),
           _buildFeatureHighlight(
             Icons.psychology_alt,
-            'Therapeutic Superhero Missions',
+            'Coping-Skill Superhero Missions',
             'Unlock playful heroes that model brave, kind responses for tough moments.',
           ),
           _buildFeatureHighlight(
             Icons.self_improvement,
             'Guided Growth Quests',
-            'Access expanded therapeutic prompts and coping tools for each story session.',
+            'Access expanded social-emotional prompts and coping tools for each story session.',
           ),
           _buildFeatureHighlight(
             Icons.people,

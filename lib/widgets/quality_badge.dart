@@ -93,7 +93,7 @@ class QualityBadge extends StatelessWidget {
               _buildScoreRow('Overall Score', qualityData['overall_score'], '/100'),
               const SizedBox(height: 8),
               _buildScoreRow('Length Score', qualityData['length_score'], '/100'),
-              _buildScoreRow('Therapeutic Score', qualityData['therapeutic_score'], '/100'),
+              _buildScoreRow('Social-Emotional Score', qualityData['therapeutic_score'], '/100'),
               _buildScoreRow('Readability Score', qualityData['readability_score'], '/100'),
               _buildScoreRow('Age Appropriateness', qualityData['age_appropriateness_score'], '/100'),
               const SizedBox(height: 16),
