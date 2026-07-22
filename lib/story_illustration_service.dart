@@ -273,7 +273,7 @@ The image should be:
 - Colorful and engaging
 - Non-scary and positive
 - Clear and easy to understand
-${therapeuticFocus != null ? '- Support the therapeutic focus: $therapeuticFocus' : ''}
+${therapeuticFocus != null ? '- Support the coping-skill focus: $therapeuticFocus' : ''}
 '''
         .trim();
   }

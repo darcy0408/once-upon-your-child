@@ -94,8 +94,8 @@ pretend otherwise):
   al., 2011, *Child Development* — 213 programs, 270,000+ students) found significant gains in
   social-emotional skills, behavior, and even academics; a 2023 update at nearly twice the scale
   (Cipriano et al., *Child Development* — 424 studies, 53 countries) confirmed the findings hold.
-- **Stories are a real delivery vehicle.** Research on bibliotherapy — using stories
-  therapeutically — shows meaningful benefits for children and adolescents (Yuan et al., 2018,
+- **Stories are a real delivery vehicle.** Research on bibliotherapy — using stories to support
+  emotional wellbeing — shows meaningful benefits for children and adolescents (Yuan et al., 2018,
   meta-analysis of 8 randomized trials), working through exactly the mechanism our app is built
   on: identifying with a character facing a relatable situation, at a safe narrative distance.
 

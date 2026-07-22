@@ -151,7 +151,7 @@ class InteractiveAdventurePromptBuilder:
         "adult": {"short": (18, 26), "medium": (26, 34), "long": (34, 44)},
     }
 
-    # Structured Life Challenges for therapeutic integration
+    # Structured Life Challenges for coping-skills integration
     # Maps challenge name to (metaphor, coping_strategy, growth_outcome, virtue)
     # virtue = (name, how_to_show_it) — NEVER name the virtue in story prose.
     LIFE_CHALLENGES = {
@@ -402,7 +402,7 @@ SAFETY RULES:
                     traits.append(trait)
             personality_profile = f"- **PERSONALITY PROFILE**: {', '.join(traits)}"
 
-        # Life Challenge (Therapeutic Integration) + virtue anchoring
+        # Life Challenge (Coping-Skills Integration) + virtue anchoring
         challenge_instruction = ""
         virtue_instruction = ""
         if life_challenge:

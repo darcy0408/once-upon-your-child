@@ -12,17 +12,17 @@
 
 ## What This App Does
 
-Once Upon YOUR Child creates magical, personalized stories that help children ages 2 through adult understand and process their emotions. Parents and children work together to create custom heroes, select feelings, and generate therapeutic narratives that are both entertaining and emotionally supportive.
+Once Upon YOUR Child creates magical, personalized stories that help children ages 2 through adult understand and process their emotions. Parents and children work together to create custom heroes, select feelings, and generate coping-skills narratives that are both entertaining and emotionally supportive.
 
 ### Core Concept
 
 The app combines:
 - **Emotional intelligence** — Mood Magic picker and optional 3-level feelings wheel help children identify and express emotions
-- **AI-powered storytelling** — OpenAI GPT-5 mini generates age-calibrated narratives with rich therapeutic themes (provider is configurable; Gemini was retired from the served kids' app for terms-of-service reasons)
+- **AI-powered storytelling** — OpenAI GPT-5 mini generates age-calibrated narratives with rich social-emotional themes (provider is configurable; Gemini was retired from the served kids' app for terms-of-service reasons)
 - **Deep personalization** — Custom characters with avatars, archetypes, companions, goals, and personality sliders that persist across sessions
 - **Age-specific visuals** — Dedicated character and UI asset sets for all 6 age bands (Sprout through Adult)
 - **Visual engagement** — AI-generated illustrations and printable coloring pages
-- **Flexible modes** — Wizard-guided creation, interactive choose-your-own-path, rhyme time, learn-to-read, multi-character adventures, Life Quests (formerly Big Feelings) therapeutic theme, and conflict scenarios
+- **Flexible modes** — Wizard-guided creation, interactive choose-your-own-path, rhyme time, learn-to-read, multi-character adventures, Life Quests (formerly Big Feelings) coping-skills theme, and conflict scenarios
 
 ## Complete User Journey
 
@@ -54,9 +54,9 @@ Two modes:
 - Level 3: Most granular tertiary feelings
 - Intensity slider (1–10)
 
-**Life Quests Mode** (formerly Big Feelings, therapeutic theme):
+**Life Quests Mode** (formerly Big Feelings, coping-skills theme):
 - Age-specific feeling vocabulary across Sprout / Explorer / Adventurer / Creator / Adolescent bands
-- Routes to therapeutic interactive stories with social-emotional repair arcs
+- Routes to social-emotional interactive stories with repair arcs
 
 Feeling data influences story theme, hero challenge, coping strategy modeled, and the closing "Wisdom Gem."
 
@@ -85,9 +85,9 @@ Summary card → tap **"Create My Story"** to start generation.
 
 2. **Rich tone directives** — Each age band has a 6-part directive covering POV, sentence length, vocabulary level, emotional depth, structural expectations, and an explicit AVOID list.
 
-3. **Therapeutic integration** — Feeling + intensity → plot arc, coping model, Wisdom Gem
+3. **Coping-skills integration** — Feeling + intensity → plot arc, coping model, Wisdom Gem
 
-4. **Life Quests system** (formerly Big Feelings) — Per-age-band therapeutic prompt variants with believable social pressure, repair arcs, and hidden parent guidance layer
+4. **Life Quests system** (formerly Big Feelings) — Per-age-band coping-skills prompt variants with believable social pressure, repair arcs, and hidden parent guidance layer
 
 5. **Safety guardrails** — No violence, weapons, bullying; age-appropriate language enforced
 
@@ -230,14 +230,14 @@ Always maintain both paths when adding new modules.
 
 ## Core Features
 
-### 1. Age-Aware Therapeutic Prompts
+### 1. Age-Aware Coping-Skills Prompts
 Six age bands with hard-coded developmental constraints. Each band has a 6-part tone directive covering POV guidance, sentence length, vocabulary complexity, emotional depth, structural expectations, and explicit AVOID lists. **Do not change the word count constraints without explicit approval.**
 
 ### 2. Feelings-First Storytelling
 Mood Magic + optional 3-level feelings wheel (based on Plutchik / Geneva Emotion Wheel research). Feeling data shapes the entire story arc — challenge type, coping model, Wisdom Gem at the end.
 
-### 3. Life Quests Therapeutic Theme (formerly Big Feelings)
-Dedicated therapeutic story mode with age-specific prompt variants across Sprout / Explorer / Adventurer / Creator / Adolescent bands. Stories model believable social pressure, emotional regulation, and repair without moralizing. Parents can privately configure hidden guidance (feeling, trigger, body signal, coping tool, repair goal) in Parent Controls — this shapes stories without the child ever seeing the parent's notes.
+### 3. Life Quests Coping-Skills Theme (formerly Big Feelings)
+Dedicated coping-skills story mode with age-specific prompt variants across Sprout / Explorer / Adventurer / Creator / Adolescent bands. Stories model believable social pressure, emotional regulation, and repair without moralizing. Parents can privately configure hidden guidance (feeling, trigger, body signal, coping tool, repair goal) in Parent Controls — this shapes stories without the child ever seeing the parent's notes.
 
 ### 4. Age-Band Visual Assets
 Each of the 6 age bands has a dedicated set of character and UI assets:
@@ -272,7 +272,7 @@ Upload a photo of your pet → the image model transforms it into a magical stor
 Stories cached in Isar (NoSQL, platform-conditional: `_io.dart` for native, `_stub.dart` for web). Read previously generated stories without internet.
 
 ### 10. Achievement System
-XP, levels, story streaks, therapeutic milestones tracked via `ProgressionService` + `AchievementService`.
+XP, levels, story streaks, coping-skills milestones tracked via `ProgressionService` + `AchievementService`.
 
 ## Environment Configuration
 
@@ -397,7 +397,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 
 **Completed ✅:**
 - Core story generation (OpenAI GPT-5 mini in production)
-- 6-band age calibration with therapeutic tone directives
+- 6-band age calibration with coping-skills tone directives
 - Mood Magic + 3-level feelings wheel
 - Wizard UI with moon phase progress
 - Hero Creator with archetype cards
@@ -409,7 +409,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 - ElevenLabs TTS narration + voice picker
 - Illustration generation + coloring pages
 - Interactive Pick-a-Path (per-segment word sizing)
-- Life Quests therapeutic theme (formerly Big Feelings; per-band variants across Sprout / Explorer / Adventurer / Creator / Adolescent)
+- Life Quests coping-skills theme (formerly Big Feelings; per-band variants across Sprout / Explorer / Adventurer / Creator / Adolescent)
 - Hidden Parent Layer (private per-profile story guidance)
 - Stripe payment integration (Free / Premium / Family tiers + 14-day trial; checkout + webhooks live)
 - COPPA compliance: Notice to Parents, consent backend sync, Delete All My Data
@@ -437,7 +437,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 5. Push notifications ("Time for tonight's bedtime story! 🌙")
 6. Referral system ("give a friend 1 week free")
 7. Shareable story links / social sharing
-8. Therapist collaboration portal
+8. Clinician collaboration portal
 9. Seasonal theme packs
 
 ## Additional Documentation
@@ -464,7 +464,7 @@ MIT License — see LICENSE file for details.
 - **ElevenLabs** for text-to-speech narration
 - **Flutter** team for the amazing cross-platform framework
 - **Plutchik** and the **Geneva Emotion Wheel** for feelings wheel design
-- **Child development and therapeutic research** informing age-appropriate content guidelines
+- **Child development and social-emotional research** informing age-appropriate content guidelines
 
 ---
 

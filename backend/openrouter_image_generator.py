@@ -182,7 +182,7 @@ class OpenRouterImageGenerator:
         """
         audience = f"ages {age}" if age else "children"
         therapy = (
-            f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+            f"\nCoping-skill focus: {therapeutic_focus}" if therapeutic_focus else ""
         )
         companion_line = ""
         if companions:
@@ -354,7 +354,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
         """
         audience = f"ages {age}" if age else "children"
         therapy = (
-            f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+            f"\nCoping-skill focus: {therapeutic_focus}" if therapeutic_focus else ""
         )
         companion_line = ""
         if companions:
