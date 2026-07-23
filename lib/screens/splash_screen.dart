@@ -62,7 +62,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF3A1078), // deep purple from the logo
+      // Matches the averaged corner color of the logo art's starfield, so the
+      // square image dissolves into the page instead of sitting in a box.
+      backgroundColor: const Color(0xFF05020F),
       body: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -73,10 +75,12 @@ class _SplashScreenState extends State<SplashScreen>
             child: child,
           );
         },
-        child: Center(
+        // Fill the screen: on a portrait phone the square art spans the full
+        // width, centered vertically, with the letterbox bands blending into
+        // the matching background color above.
+        child: SizedBox.expand(
           child: SafeAssetImage(
             'assets/images/splash_logo.webp',
-            width: 320,
             fit: BoxFit.contain,
           ),
         ),
