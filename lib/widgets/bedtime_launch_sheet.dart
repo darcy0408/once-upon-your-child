@@ -21,6 +21,15 @@ void showBedtimeLaunchSheet(
   BuildContext context, {
   required String childName,
   required int childAge,
+  // MT-361(e): answers the visual wizard already collected, forwarded to
+  // BedtimeWizardScreen so it skips those questions instead of re-asking
+  // them by voice. All optional — the home-screen entry passes none and the
+  // full Q&A runs exactly as before.
+  String? seedHeroName,
+  String? seedCompanion,
+  String? seedSetting,
+  String? seedFeeling,
+  int? seedDurationMinutes,
 }) async {
   bool isInteractive = false;
   double timerMinutes = 0; // 0 means off
@@ -147,6 +156,11 @@ void showBedtimeLaunchSheet(
                         childAge: childAge,
                         isInteractive: isInteractive,
                         timerMinutes: timerMinutes.round(),
+                        seedHeroName: seedHeroName,
+                        seedCompanion: seedCompanion,
+                        seedSetting: seedSetting,
+                        seedFeeling: seedFeeling,
+                        seedDurationMinutes: seedDurationMinutes,
                       ),
                     ),
                   );

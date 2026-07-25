@@ -35,6 +35,17 @@ class BedtimeWizardScreen extends ConsumerStatefulWidget {
   final String? replayTitle;
   final String? replayStoryText;
 
+  // MT-361(e): answers already collected by the VISUAL wizard, handed over so
+  // bedtime mode does not re-ask by voice what the user just typed. Any seed
+  // left null is still asked for; a fully-seeded launch lands straight on the
+  // confirm recap. Mirrors the replay* pattern above: the caller decides how
+  // much of the Q&A to pre-fill.
+  final String? seedHeroName;
+  final String? seedCompanion;
+  final String? seedSetting;
+  final String? seedFeeling;
+  final int? seedDurationMinutes;
+
   const BedtimeWizardScreen({
     super.key,
     required this.childName,
@@ -43,6 +54,11 @@ class BedtimeWizardScreen extends ConsumerStatefulWidget {
     this.timerMinutes = 0,
     this.replayTitle,
     this.replayStoryText,
+    this.seedHeroName,
+    this.seedCompanion,
+    this.seedSetting,
+    this.seedFeeling,
+    this.seedDurationMinutes,
   });
 
   @override
@@ -64,6 +80,44 @@ enum BedtimeStep {
   generating, // "Making your story now... close your eyes..."
   reading, // Reading the story aloud
   done, // "The end. Goodnight!"
+}
+
+/// MT-361(e): the step that follows [step] when it is SKIPPED because the
+/// visual wizard already supplied that answer.
+///
+/// This must mirror, case for case, the `_advance(...)` target each spoken
+/// case in `_runStep` chooses — a seeded hand-off has to walk the same route
+/// a voice run would. It is a top-level pure function (rather than a method)
+/// purely so that correspondence can be unit-tested without standing up the
+/// whole voice wizard, which pulls in speech recognition, TTS, Riverpod
+/// providers and the network.
+///
+/// Note it does NOT carry the spoken companion case's Sprout side effects
+/// (`_feelingChoice`/`_storyDurationMinutes`); `_advance` applies those before
+/// calling this, since they mutate state rather than routing.
+@visibleForTesting
+BedtimeStep bedtimeStepAfterSkipping(
+  BedtimeStep step, {
+  required bool isSprout,
+  required bool continueSaga,
+}) {
+  switch (step) {
+    case BedtimeStep.heroName:
+      return BedtimeStep.companion;
+    case BedtimeStep.companion:
+      // Sprout never hears the listeners question.
+      return isSprout ? BedtimeStep.setting : BedtimeStep.listeners;
+    case BedtimeStep.setting:
+      return isSprout ? BedtimeStep.generating : BedtimeStep.feeling;
+    case BedtimeStep.feeling:
+      return BedtimeStep.duration;
+    case BedtimeStep.duration:
+      // A saga continuation was confirmed at the offer step — no recipe to
+      // read back, so confirm is skipped entirely.
+      return continueSaga ? BedtimeStep.generating : BedtimeStep.confirm;
+    default:
+      return step;
+  }
 }
 
 class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
@@ -225,6 +279,18 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   Future<void> _initAndStart() async {
     _speechAvailable = await _speech.initialize();
     _resolvedAge = widget.childAge > 0 ? widget.childAge : 0;
+
+    // MT-361(e): adopt whatever the visual wizard already collected. Blank
+    // seeds are ignored so a partially-filled hand-off still asks for the
+    // rest — _isAnswered() below decides which steps to skip.
+    _heroName = _seed(widget.seedHeroName);
+    _companionChoice = _seed(widget.seedCompanion);
+    _settingChoice = _seed(widget.seedSetting);
+    _feelingChoice = _seed(widget.seedFeeling);
+    final seededDuration = widget.seedDurationMinutes;
+    if (seededDuration != null && seededDuration > 0) {
+      _storyDurationMinutes = seededDuration;
+    }
 
     // MT-361(b): "Play last night's story again" — a saved story takes
     // priority over the wizard. No generation, no saga lookup, just narrate
@@ -468,9 +534,58 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     }
   }
 
+  /// Normalises a hand-off seed: blank/whitespace counts as "not provided".
+  static String? _seed(String? value) {
+    final trimmed = value?.trim();
+    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  }
+
+  /// MT-361(e): true when [step] asks for something we were already handed by
+  /// the visual wizard, so it can be skipped instead of re-asked by voice.
+  /// Only ever true for the five Q&A steps — greeting, confirm and everything
+  /// downstream of it always run.
+  bool _isAnswered(BedtimeStep step) {
+    switch (step) {
+      case BedtimeStep.heroName:
+        return _seed(widget.seedHeroName) != null;
+      case BedtimeStep.companion:
+        return _seed(widget.seedCompanion) != null;
+      case BedtimeStep.setting:
+        return _seed(widget.seedSetting) != null;
+      case BedtimeStep.feeling:
+        return _seed(widget.seedFeeling) != null;
+      case BedtimeStep.duration:
+        final seeded = widget.seedDurationMinutes;
+        return seeded != null && seeded > 0;
+      default:
+        return false;
+    }
+  }
+
   void _advance(BedtimeStep next) {
     if (!mounted) return;
-    setState(() => _step = next);
+    // Walk past any step the visual wizard already answered for us. Loop
+    // rather than single-step: a fully-seeded hand-off skips five in a row
+    // and should land on the confirm recap, not on the second seeded step.
+    var target = next;
+    while (_isAnswered(target)) {
+      if (target == BedtimeStep.companion && _isSprout) {
+        // Mirror the side effects the spoken companion case applies for
+        // Sprout. Duration 0 is load-bearing: an explicit duration OVERRIDES
+        // the backend's band word caps, so leaving a seeded 15 here would
+        // hand a 3-5yo a full-length story.
+        _feelingChoice = 'calming';
+        _storyDurationMinutes = 0;
+      }
+      final after = bedtimeStepAfterSkipping(
+        target,
+        isSprout: _isSprout,
+        continueSaga: _continueSaga,
+      );
+      if (after == target) break; // defensive: never spin
+      target = after;
+    }
+    setState(() => _step = target);
     _runStep();
   }
 

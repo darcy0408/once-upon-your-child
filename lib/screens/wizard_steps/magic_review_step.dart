@@ -43,7 +43,7 @@ import '../../widgets/adventurer_character_sheet.dart';
 import '../../widgets/mission_ready_button.dart';
 import '../../utils/motion_utils.dart';
 import '../../services/onboarding_service.dart';
-import '../bedtime_wizard_screen.dart';
+import '../../widgets/bedtime_launch_sheet.dart';
 import '../../widgets/safe_asset_image.dart';
 import '../../utils/distress_detector.dart';
 import '../../widgets/crisis_resources_panel.dart';
@@ -1112,15 +1112,40 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BedtimeWizardScreen(
-          childName: widget.wizardData.characterName,
-          childAge: widget.wizardData.characterAge,
-          isInteractive: true,
-        ),
-      ),
+    // MT-361(e): hand over everything the user just entered so bedtime mode
+    // skips those questions instead of re-asking them by voice (the old
+    // behaviour discarded the whole wizard and started the Q&A from scratch).
+    // Routing through the shared launch sheet rather than pushing the screen
+    // directly also gives this entry the sleep timer + interactive toggle it
+    // previously lacked — isInteractive is no longer hardcoded here.
+    final data = widget.wizardData;
+    showBedtimeLaunchSheet(
+      context,
+      childName: data.characterName,
+      childAge: data.characterAge,
+      seedHeroName: data.characterName,
+      seedCompanion:
+          data.selectedCompanions.isNotEmpty ? data.selectedCompanions.first : null,
+      seedSetting: data.selectedScenario,
+      seedFeeling: data.selectedFeeling,
+      seedDurationMinutes: _bedtimeMinutesForLength(data.storyLength),
     );
+  }
+
+  /// Maps the wizard's story-length choice onto the bedtime wizard's spoken
+  /// duration options (10/15/20). Returns null for anything unrecognised so
+  /// bedtime still asks rather than guessing.
+  int? _bedtimeMinutesForLength(String storyLength) {
+    switch (storyLength) {
+      case 'quick':
+        return 10;
+      case 'standard':
+        return 15;
+      case 'epic':
+        return 20;
+      default:
+        return null;
+    }
   }
 
   Future<List<Map<String, dynamic>>> _generateInlineIllustrations(
