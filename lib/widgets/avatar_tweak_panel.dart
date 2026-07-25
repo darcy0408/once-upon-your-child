@@ -260,13 +260,18 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
         children: [
           const Text('✨', style: TextStyle(fontSize: 22)),
           const SizedBox(width: 10),
-          const Expanded(
-            child: Text(
-              'Customise Your Look',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3B2363),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Customise Your Look',
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF3B2363),
+                ),
               ),
             ),
           ),
@@ -291,41 +296,58 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
     return Column(
       children: [
         // Avatar preview + "Use as-is" button
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildOriginalAvatar(),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 480) {
+              // Narrow screens: stack the preview above a full-width button
+              // instead of squeezing them into a Row (the button would be
+              // crushed to a sliver and its label would wrap vertically).
+              return Column(
                 children: [
+                  _buildOriginalAvatar(),
+                  const SizedBox(height: 14),
                   const Text(
                     'Love it already?',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => widget.onConfirm(widget.assetPath),
-                    icon: const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('Use this look'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4CAF50),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20)),
-                    ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildUseThisLookButton(),
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildOriginalAvatar(),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Love it already?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildUseThisLookButton(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
 
         const SizedBox(height: 20),
@@ -335,15 +357,18 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
           children: [
             const Text('✨', style: TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
-            Text(
-              'Customise it',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _isPremium
-                    ? const Color(0xFFFFE082)
-                    : const Color(0xFFFFE082).withAlpha(130),
-                letterSpacing: 0.5,
+            Flexible(
+              child: Text(
+                'Customise it',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _isPremium
+                      ? const Color(0xFFFFE082)
+                      : const Color(0xFFFFE082).withAlpha(130),
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
             if (!_isPremium) ...[
@@ -459,6 +484,20 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
               : _buildGenerateButton(disabled: !_hasChanges),
         ],
       ],
+    );
+  }
+
+  Widget _buildUseThisLookButton() {
+    return ElevatedButton.icon(
+      onPressed: () => widget.onConfirm(widget.assetPath),
+      icon: const Icon(Icons.check_circle_outline, size: 18),
+      label: const Text('Use this look'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF4CAF50),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
     );
   }
 
