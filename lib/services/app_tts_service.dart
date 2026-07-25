@@ -463,12 +463,24 @@ class AppTtsService {
     await _fallback.stop();
   }
 
+  /// Test seam for [_savedVoiceId] — voice resolution is otherwise only
+  /// observable through a live synthesis call.
+  @visibleForTesting
+  Future<String> resolveVoiceId() => _savedVoiceId();
+
   /// Returns the saved voice ID, or the age-band-appropriate default if none saved.
   Future<String> _savedVoiceId() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(ElevenLabsVoice.prefsKey);
     if (saved != null && ElevenLabsVoice.byId(saved) != null) return saved;
-    final age = prefs.getInt('user_age') ?? 7;
+    final age = prefs.getInt('user_age');
+    // Before an age has been declared, don't assume one. A hard-coded age-7
+    // default meant every first-launch utterance — the welcome teaser and the
+    // name prompt, both spoken before the age picker — resolved to the explorer
+    // band's Gigi, which Azure synthesizes as en-US-AnaNeural, a child voice.
+    // The person completing setup is often the parent. Use the neutral adult
+    // storyteller until the user actually picks an age.
+    if (age == null) return ElevenLabsVoice.defaultVoiceId;
     return ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(age));
   }
 }

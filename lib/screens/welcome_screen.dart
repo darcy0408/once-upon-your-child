@@ -164,7 +164,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await prefs.setBool(_kTeaserSeenKey, true);
     if (!mounted) return;
     setState(() => _step = 0);
-    unawaited(_speak("What's your name?", rateScale: 0.72));
     unawaited(_promptNameAndListen());
   }
 
@@ -215,7 +214,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _promptNameAndListen() async {
-    if (_isCreator) await _speak("What should we call you?");
+    // Speak the prompt to completion BEFORE opening the mic. _listen() calls
+    // AppTtsService.stop(), which bumps the generation counter; an utterance
+    // still parked on the auth-token await then fails its generation check and
+    // returns without ever playing. Firing these two concurrently silently
+    // dropped the question on first launch — the mic opened, the child heard
+    // nothing, and only the greeting that followed was audible.
+    await _speak(
+      _isCreator ? "What should we call you?" : "What's your name?",
+      awaitCompletion: true,
+      rateScale: _isCreator ? 0.85 : 0.72,
+    );
+    if (!mounted) return;
     // Don't auto-open the mic on web — browser requires a user gesture first.
     if (kIsWeb) return;
     if (!_speechEnabled || _isListening || !mounted) return;
