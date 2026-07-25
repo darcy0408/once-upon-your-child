@@ -52,24 +52,68 @@ class WizardStoryScreen extends ConsumerStatefulWidget {
   // SEL Story Packs: optional seed data to pre-fill wizard fields
   final WizardData? initialWizardData;
 
+  /// Injectable wall-clock, overridable in widget tests so the time-aware
+  /// bedtime-CTA promotion (see [_WizardStoryScreenState._bedtimeIsPromoted])
+  /// can be locked to a fixed instant instead of racing real-world time.
+  @visibleForTesting
+  final DateTime Function() clock;
+
   const WizardStoryScreen({
     super.key,
     this.initialCharacter,
     this.availableCharacters = const [],
     this.initialStep = 0,
     this.initialWizardData,
+    this.clock = DateTime.now,
   });
 
   @override
   ConsumerState<WizardStoryScreen> createState() => _WizardStoryScreenState();
 }
 
+/// Relative prominence of a home-screen CTA button. `peer` and `primary` both
+/// render as filled/high-emphasis buttons (never a ghost) — `peer` is used
+/// when Create Story and Bedtime are equally weighted; `primary` adds the
+/// moon-glow treatment when bedtime is promoted; `secondary` is the outlined
+/// low-emphasis treatment Create Story gets once demoted.
 class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   late final PageController _pageController; // Late init
   int _currentStep = 0;
   int _progressStep = 0;
   int? _requestedSubStep;
   int _subStepRequestNonce = 0;
+
+  /// Dismisses the evening bedtime banner for the rest of this screen's life
+  /// once the parent taps it away — a parent who has decided they're making a
+  /// normal story shouldn't have to keep looking at it.
+  bool _bedtimeBannerDismissed = false;
+
+  /// Local cutoff (24h) after which the screen-free Bedtime entry is surfaced
+  /// as a banner over the wizard's landing state. Outside these hours the
+  /// only entry is the always-present Bedtime item in the top nav — bedtime
+  /// mode is the one feature whose value is time-bound, so a parent opening
+  /// the app at 7:40pm is overwhelmingly likely to want exactly this, while a
+  /// parent opening it at 10am is not.
+  static const int _bedtimePromotionHour = 18;
+  static const int _bedtimePromotionMinute = 30;
+
+  /// True once local time (via the injectable [WizardStoryScreen.clock], so
+  /// this is unit-testable without waiting for real evening hours) has passed
+  /// the bedtime-promotion cutoff.
+  bool get _bedtimeIsPromoted {
+    final now = widget.clock();
+    return (now.hour * 60 + now.minute) >=
+        (_bedtimePromotionHour * 60 + _bedtimePromotionMinute);
+  }
+
+  /// The banner shows only in the evening AND only on the wizard's fresh
+  /// landing state — never once the parent is part-way through building a
+  /// hero, where it would be an interruption rather than an offer.
+  bool get _showBedtimeBanner =>
+      _bedtimeIsPromoted &&
+      _currentStep == 0 &&
+      _progressStep == 0 &&
+      !_bedtimeBannerDismissed;
 
   // Wizard data collected across steps
   late final WizardData _wizardData;
@@ -395,6 +439,111 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     );
   }
 
+  /// Evening-only banner offering the screen-free Bedtime/Voice mode.
+  ///
+  /// Bedtime mode is the product's strongest PARENT-facing pitch ("your child
+  /// isn't staring at a screen"), but it's also the one feature whose value is
+  /// time-bound. Rather than competing with Create Story all day, it surfaces
+  /// as a single banner after 18:30 — the moment a parent is most likely to
+  /// want it. Outside those hours the always-present Bedtime item in the top
+  /// nav remains the entry point, so nothing is hidden, just un-shouted.
+  ///
+  /// Deliberately NOT a second primary CTA: the wizard's own Continue/Make
+  /// Magic action owns the primary slot, and stacking two big buttons above
+  /// the hero creator made the landing state read as three competing layers.
+  Widget _buildBedtimeBanner(BuildContext context, AgeBandThemeData band) {
+    final isMature = band.band.isMature;
+    final radius = BorderRadius.circular(band.radiusLg);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: band.space(8),
+      ),
+      child: Semantics(
+        button: true,
+        label: isMature
+            ? 'Voice story, audio only'
+            : 'Bedtime story, no screen, just listening',
+        child: Material(
+          key: const Key('bedtimeEveningBanner'),
+          // Deep purple ties to bedtime_launch_sheet.dart's own palette so the
+          // "night mode" identity reads consistently across both surfaces.
+          color: const Color(0xFF2A1B4E),
+          borderRadius: radius,
+          elevation: 6,
+          child: InkWell(
+            borderRadius: radius,
+            // Works with no character selected — BedtimeWizardScreen asks the
+            // child's age by voice when childAge is 0.
+            onTap: () => showBedtimeLaunchSheet(
+              context,
+              childName: _wizardData.characterName,
+              childAge: _wizardData.characterAge,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: band.space(14),
+                horizontal: band.space(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isMature
+                        ? Icons.mic_none_rounded
+                        : Icons.bedtime_outlined,
+                    color: const Color(0xFFFFD700),
+                    size: 26,
+                  ),
+                  SizedBox(width: band.space(12)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isMature ? 'Voice Story' : 'Bedtime Story',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16 * band.bodyScale,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: band.space(2)),
+                        Text(
+                          isMature
+                              ? 'Audio only — no screen needed'
+                              : 'No screen, just listening',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 13 * band.bodyScale,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Dismissal is per-screen only (see _bedtimeBannerDismissed)
+                  // — it returns tomorrow evening rather than being gone for
+                  // good, since this is an offer, not a notification.
+                  IconButton(
+                    key: const Key('bedtimeEveningBannerDismiss'),
+                    tooltip: 'Not tonight',
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _bedtimeBannerDismissed = true),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final band =
@@ -686,6 +835,10 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                   ],
                 ),
               ),
+
+              // Evening-only screen-free Bedtime offer — see
+              // _showBedtimeBanner for the time + landing-state conditions.
+              if (_showBedtimeBanner) _buildBedtimeBanner(context, band),
 
               // Wizard steps (PageView)
               Expanded(

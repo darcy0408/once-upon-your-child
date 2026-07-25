@@ -36,7 +36,15 @@ class ElevenLabsVoice {
     switch (band) {
       case AgeBand.sprout:
       case AgeBand.explorer:
-        return 'jBpfuIE2acCO8z3wKNLl'; // Gigi — playful, childlike
+        // Owner decision 2026-07-18, from a device playthrough: the youngest
+        // bands get a NARRATOR, not a peer. This previously returned Gigi
+        // ('jBpfuIE2acCO8z3wKNLl'), which the backend maps to Azure's
+        // en-US-AnaNeural — Microsoft's actual child voice (see
+        // backend/azure_tts_service.py). A synthetic child reading a story to
+        // a child is uncanny, and it undercuts the parent-facing pitch that
+        // something trustworthy is reading to their kid. Users who prefer the
+        // childlike voice can still pick Gigi; this only changes the default.
+        return 'XrExE9yKIg1WjnnlVkGX'; // Matilda — warm storyteller
       case AgeBand.adventurer:
       case AgeBand.creator:
         return 'XrExE9yKIg1WjnnlVkGX'; // Matilda — warm storyteller
