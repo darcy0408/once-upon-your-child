@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +12,7 @@ import 'avatar_models.dart';
 import 'config/environment.dart';
 import 'services/api_service_manager.dart';
 import 'services/app_tts_service.dart';
+import 'services/image_normalizer.dart';
 import 'services/parental_consent_service.dart';
 import 'theme/age_band_theme.dart';
 import 'widgets/avatar_generating_view.dart';
@@ -74,6 +74,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // Photo & generation
   Uint8List? _imageBytes;
+  // Container of _imageBytes, set alongside it by _ingestPickedPhoto so the
+  // multipart upload can be labelled truthfully (was hardcoded 'photo.jpg').
+  String _imageMimeType = 'image/jpeg';
   bool _isGenerating = false;
   String? _generatedImageBase64;
 
@@ -414,49 +417,77 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     if (_photoAvatarAllowed != true) return;
     final picker = ImagePicker();
     XFile? picked;
-    if (kIsWeb) {
-      // Camera capture is not available on web via image_picker.
-      // Fall back to gallery/file picker so the button is never a dead end.
+    try {
+      // image_picker_for_web sets the HTML `capture` attribute for
+      // ImageSource.camera, which opens the camera directly on mobile browsers
+      // (including the installed PWA) and harmlessly falls back to a file
+      // chooser on desktop — so there's no reason to special-case web here.
+      picked = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        // Native (iOS/Android) re-encodes HEIC -> JPEG and downscales at the
+        // picker level here; web ignores these but the normalizer below does
+        // the equivalent via canvas.
+        maxWidth: 1024,
+        imageQuality: 85,
+      );
+    } catch (_) {
+      // Camera permission denied or unavailable — fall back to gallery.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-              "Camera isn't available here — opening your photos instead!"),
+          content: Text("Can't open camera. Let's pick a photo instead!"),
           duration: Duration(seconds: 2),
         ));
       }
-      picked = await picker.pickImage(source: ImageSource.gallery);
-    } else {
-      try {
-        picked = await picker.pickImage(
-          source: ImageSource.camera,
-          preferredCameraDevice: CameraDevice.front,
-        );
-      } catch (_) {
-        // Camera permission denied or unavailable — fall back to gallery.
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Can't open camera. Let's pick a photo instead!"),
-            duration: Duration(seconds: 2),
-          ));
-        }
-        picked = await picker.pickImage(source: ImageSource.gallery);
-      }
+      picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 85,
+      );
     }
-    if (picked != null) {
-      final bytes = await picked.readAsBytes();
-      if (mounted) setState(() => _imageBytes = bytes);
-    }
+    await _ingestPickedPhoto(picked);
   }
 
   Future<void> _pickFromGallery() async {
     // M-11: defence-in-depth — see _takePhoto.
     if (_photoAvatarAllowed != true) return;
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      final bytes = await picked.readAsBytes();
-      if (mounted) setState(() => _imageBytes = bytes);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 85,
+    );
+    await _ingestPickedPhoto(picked);
+  }
+
+  /// Reads a freshly-picked photo, converts it to resized JPEG bytes the
+  /// backend and the preview can both handle (see [normalizeImageBytes]), and
+  /// either shows it in the circle or surfaces a real error. This is what
+  /// makes an iPhone's default HEIC photo work: without it, HEIC bytes render
+  /// as a grey circle here and are rejected downstream as "must be png, jpeg
+  /// or webp".
+  Future<void> _ingestPickedPhoto(XFile? picked) async {
+    if (picked == null) return; // user cancelled the picker
+    final rawBytes = await picked.readAsBytes();
+    final normalized = await normalizeImageBytes(rawBytes);
+    if (!mounted) return;
+    if (normalized == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          _isSprout
+              ? "That picture didn't work — ask a grown-up to try another photo."
+              : "We couldn't read that photo. Please try a different one — a "
+                  'regular photo from your camera or gallery works best.',
+        ),
+        backgroundColor: const Color(0xFFFF6B6B),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
     }
+    setState(() {
+      _imageBytes = normalized.bytes;
+      _imageMimeType = normalized.mimeType;
+    });
   }
 
   /// Dev-only: synthesize a simple valid face image so the generation flow can
@@ -480,7 +511,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     final img = await recorder.endRecording().toImage(s.toInt(), s.toInt());
     final bd = await img.toByteData(format: ui.ImageByteFormat.png);
     if (bd == null || !mounted) return;
-    setState(() => _imageBytes = bd.buffer.asUint8List());
+    setState(() {
+      _imageBytes = bd.buffer.asUint8List();
+      _imageMimeType = 'image/png';
+    });
   }
 
   // ── Avatar generation (API call unchanged) ──────────────────────────────────
@@ -537,7 +571,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           http.MultipartFile.fromBytes(
             'photo',
             _imageBytes!,
-            filename: 'photo.jpg',
+            // Truthful extension for whatever _ingestPickedPhoto produced
+            // (JPEG for picked photos, PNG for the dev sample). The bytes are
+            // always a format OpenAI accepts by this point.
+            filename: _imageMimeType == 'image/png' ? 'photo.png' : 'photo.jpg',
           ),
         );
         request.fields['character_name'] = widget.initialName ?? '';

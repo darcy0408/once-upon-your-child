@@ -1,11 +1,11 @@
 {
-    "name": "story_weaver_app",
-    "short_name": "story_weaver_app",
+    "name": "Once Upon YOUR Child",
+    "short_name": "Once Upon",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2A1B4E",
+    "theme_color": "#4A148C",
+    "description": "Personalized, therapeutic bedtime and adventure stories that put your child at the heart of every tale.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
