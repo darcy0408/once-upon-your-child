@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/age_band_theme.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
@@ -17,11 +18,12 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final card = Container(
       decoration: BoxDecoration(
-        color: color ?? AppColors.cream.withValues(alpha: 0.7),
+        color: color ?? band.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: band.primary.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.08),
@@ -39,7 +41,13 @@ class AppCard extends StatelessWidget {
         padding: padding,
         child: Material(
           type: MaterialType.transparency,
-          child: child,
+          child: DefaultTextStyle.merge(
+            style: TextStyle(color: band.onCard),
+            child: IconTheme.merge(
+              data: IconThemeData(color: band.onCard),
+              child: child,
+            ),
+          ),
         ),
       ),
     );

@@ -1029,7 +1029,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
               fontFamily: band.uiFontFamily,
               fontSize: fontSize,
               height: 1.7,
-              color: Colors.white.withValues(alpha: 0.92),
+              color: band.onCard,
             ),
           ),
         ],
@@ -1255,6 +1255,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   }
 
   Widget _buildYoungChoicesSection() {
+    final band = _bandTheme;
     final isSprout = widget.character.age <= 5;
     final isExplorer = widget.character.age <= 8 && !isSprout;
     return Column(
@@ -1272,6 +1273,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                 style: TextStyle(
                   fontSize: isSprout ? 20 : 17,
                   fontWeight: FontWeight.bold,
+                  color: band.textOnDark,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1531,17 +1533,19 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       );
     }
 
+    final band = _bandTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'What do you do next?',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: band.textOnDark,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1672,6 +1676,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   }
 
   Widget _buildCompletionSection() {
+    final band = _bandTheme;
     final age = widget.character.age;
     final isChronicle = _isChronicleMode && widget.chronicleId != null;
     final isSprout = age <= 5;
@@ -1717,7 +1722,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         Text(
           title,
           style: TextStyle(
-              fontSize: isSprout ? 28 : 24, fontWeight: FontWeight.bold),
+              fontSize: isSprout ? 28 : 24,
+              fontWeight: FontWeight.bold,
+              color: band.textOnDark),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -1751,6 +1758,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   }
 
   Widget _buildSessionBreakSection() {
+    final band = _bandTheme;
     final age = widget.character.age;
     final isSprout = age <= 5;
     return Column(
@@ -1771,6 +1779,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           style: TextStyle(
             fontSize: isSprout ? 22 : 18,
             fontWeight: FontWeight.bold,
+            color: band.textOnDark,
           ),
           textAlign: TextAlign.center,
         ),
@@ -1779,8 +1788,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           isSprout
               ? 'Your story will be waiting for you!'
               : 'Continue whenever you\'re ready.',
-          style:
-              TextStyle(fontSize: isSprout ? 18 : 14, color: Colors.grey[600]),
+          style: TextStyle(
+              fontSize: isSprout ? 18 : 14,
+              color: band.textOnDark.withValues(alpha: 0.7)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),

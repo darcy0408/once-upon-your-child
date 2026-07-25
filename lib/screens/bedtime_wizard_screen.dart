@@ -1288,13 +1288,13 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
                             (option) => ActionChip(
                               label: Text(option),
                               onPressed: () => _onChipTap(option),
-                              labelStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.85),
+                              labelStyle: const TextStyle(
+                                color: Color(0xFFE6E1FF),
                               ),
-                              backgroundColor:
-                                  Colors.white.withValues(alpha: 0.08),
-                              side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.18),
+                              backgroundColor: const Color(0xFF2A2450),
+                              side: const BorderSide(
+                                color: Color(0xFF7C6FD9),
+                                width: 1,
                               ),
                             ),
                           )
@@ -1309,7 +1309,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
                     child: Text(
                       'Exit Bedtime Mode',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 12,
                       ),
                     ),

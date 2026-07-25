@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../services/app_tts_service.dart';
@@ -12,6 +13,7 @@ import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
 import '../../utils/motion_utils.dart';
+import '../../providers/age_band_provider.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -747,6 +749,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         'character_role': character.role,
         'character_age': character.age,
       });
+      // A saved hero carries a gender pick — re-apply its palette flavor so
+      // switching heroes also switches the boy/girl hues. The 'Girl' fallback
+      // below is a data default, not a choice, so it must not set a flavor.
+      if (character.gender != null) {
+        _applyPaletteFlavor(character.gender!);
+      }
       setState(() {
         _isCreatingNew = false;
         _selectedExistingCharacter = character;
@@ -3339,8 +3347,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     AppTtsService.instance.speak(name, rateScale: 0.8);
   }
 
+  /// Re-colors the whole app to the band's boy/girl palette flavor.
+  /// HeroCreatorStep is a plain StatefulWidget, so reach the Riverpod
+  /// container through the ProviderScope ancestor. Widget tests pump this
+  /// step without a ProviderScope — the flavor is cosmetic, so silently
+  /// skip rather than force every harness to add one.
+  void _applyPaletteFlavor(String gender) {
+    try {
+      ProviderScope.containerOf(context, listen: false)
+          .read(ageBandNotifierProvider.notifier)
+          .setFlavor(paletteFlavorFromGender(gender));
+    } on StateError {
+      // No ProviderScope (bare test harness) — skip the re-color.
+    }
+  }
+
   void _handleGenderSelection(String gender) {
     setState(() => widget.wizardData.characterGender = gender);
+    _applyPaletteFlavor(gender);
     Future.delayed(const Duration(milliseconds: 400), () {
       if (!mounted) return;
       // Only auto-advance from Page 1 (name + gender). Without a name the

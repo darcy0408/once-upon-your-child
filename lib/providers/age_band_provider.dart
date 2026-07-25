@@ -10,6 +10,9 @@ const _kUserAgeKey = 'user_age';
 /// Key used to persist a parent's manual band override (optional).
 const _kBandOverrideKey = 'age_band_override';
 
+/// Key used to persist the palette flavor (from the hero's gender pick).
+const _kPaletteFlavorKey = 'palette_flavor';
+
 /// Riverpod notifier that manages the current age band.
 ///
 /// On startup it reads the user's age (set at the age gate) from
@@ -26,6 +29,16 @@ class AgeBandNotifier extends _$AgeBandNotifier {
 
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Restore the palette flavor BEFORE resolving any theme so the first
+    // resolved state already carries the boy/girl hues.
+    final flavorName = prefs.getString(_kPaletteFlavorKey);
+    if (flavorName != null) {
+      currentPaletteFlavor = PaletteFlavor.values.firstWhere(
+        (f) => f.name == flavorName,
+        orElse: () => PaletteFlavor.neutral,
+      );
+    }
 
     // Check for a manual band override first.
     final overrideName = prefs.getString(_kBandOverrideKey);
@@ -68,6 +81,19 @@ class AgeBandNotifier extends _$AgeBandNotifier {
     await prefs.remove(_kBandOverrideKey);
     final age = prefs.getInt(_kUserAgeKey);
     state = age != null ? themeForAge(age) : explorerTheme;
+  }
+
+  /// Sets the palette flavor (from the hero's Boy/Girl pick) and re-resolves
+  /// the current band's theme so the whole app re-colors immediately.
+  ///
+  /// The global [currentPaletteFlavor] is updated too, because many widgets
+  /// resolve palettes via the static themeForBand/themeForAge helpers.
+  Future<void> setFlavor(PaletteFlavor flavor) async {
+    if (flavor == currentPaletteFlavor) return;
+    currentPaletteFlavor = flavor;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPaletteFlavorKey, flavor.name);
+    state = themeForBand(state.band, flavor: flavor);
   }
 
   /// The current band enum for quick checks (e.g. `if (band == AgeBand.sprout)`).

@@ -37,6 +37,31 @@ AgeBand ageBandFromAge(int age) {
   return AgeBand.adult;
 }
 
+/// Color flavor within an age band, derived from the hero's gender pick.
+///
+/// Each band keeps its personality (Sprout = warm sunset, Explorer = magical
+/// purple, ...) — a flavor only shifts the hues toward what that group tends
+/// to love. [neutral] is the base palette, shown until a gender is chosen.
+enum PaletteFlavor { neutral, boy, girl }
+
+/// Maps the wizard's gender strings ('Boy' / 'Girl', any case) to a flavor.
+PaletteFlavor paletteFlavorFromGender(String? gender) {
+  switch (gender?.toLowerCase()) {
+    case 'boy':
+      return PaletteFlavor.boy;
+    case 'girl':
+      return PaletteFlavor.girl;
+    default:
+      return PaletteFlavor.neutral;
+  }
+}
+
+/// The flavor currently in effect, kept here (not only in the Riverpod
+/// notifier) because many widgets resolve palettes through the static
+/// [themeForBand]/[themeForAge] helpers without provider access. The
+/// AgeBandNotifier is the single writer; everyone else only reads.
+PaletteFlavor currentPaletteFlavor = PaletteFlavor.neutral;
+
 /// All visual parameters that vary per age band.
 ///
 /// Every screen reads from this instead of hard-coded constants, so
@@ -61,6 +86,15 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
   final Color surface;
   final Color textOnDark;
   final Color textOnLight;
+
+  /// Background for content cards (AppCard, story text panels). Never plain
+  /// white/cream — young bands get warm tinted lights, mature bands rich
+  /// darks, so cards feel like part of the world instead of a form.
+  final Color cardColor;
+
+  /// Text/icon color guaranteed to contrast with [cardColor] (>= 4.5:1).
+  /// Always use this pair together; never white text on an unknown card.
+  final Color onCard;
 
   // --- Typography ---
   final String uiFontFamily;
@@ -120,6 +154,8 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
     required this.surface,
     required this.textOnDark,
     required this.textOnLight,
+    required this.cardColor,
+    required this.onCard,
     required this.uiFontFamily,
     required this.storyFontFamily,
     required this.headingScale,
@@ -260,6 +296,68 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
     if (t < 0.5) return this;
     return other ?? this;
   }
+
+  /// A copy of this band with only color fields swapped — used to build the
+  /// boy/girl flavor variants without duplicating typography, layout, and
+  /// label fields (which never vary by flavor).
+  AgeBandThemeData recolored({
+    Color? primary,
+    Color? primaryLight,
+    Color? primaryDark,
+    Color? gradientStart,
+    Color? gradientMid,
+    Color? gradientEnd,
+    Color? accent,
+    Color? accentLight,
+    Color? surface,
+    Color? textOnDark,
+    Color? textOnLight,
+    Color? cardColor,
+    Color? onCard,
+  }) {
+    return AgeBandThemeData(
+      band: band,
+      primary: primary ?? this.primary,
+      primaryLight: primaryLight ?? this.primaryLight,
+      primaryDark: primaryDark ?? this.primaryDark,
+      gradientStart: gradientStart ?? this.gradientStart,
+      gradientMid: gradientMid ?? this.gradientMid,
+      gradientEnd: gradientEnd ?? this.gradientEnd,
+      accent: accent ?? this.accent,
+      accentLight: accentLight ?? this.accentLight,
+      surface: surface ?? this.surface,
+      textOnDark: textOnDark ?? this.textOnDark,
+      textOnLight: textOnLight ?? this.textOnLight,
+      cardColor: cardColor ?? this.cardColor,
+      onCard: onCard ?? this.onCard,
+      uiFontFamily: uiFontFamily,
+      storyFontFamily: storyFontFamily,
+      headingScale: headingScale,
+      bodyScale: bodyScale,
+      buttonRadiusBase: buttonRadiusBase,
+      cardRadiusBase: cardRadiusBase,
+      touchTargetMin: touchTargetMin,
+      spacingScale: spacingScale,
+      sparkleIntensity: sparkleIntensity,
+      showParticles: showParticles,
+      preferDarkMode: preferDarkMode,
+      createCharacterLabel: createCharacterLabel,
+      feelingsLabel: feelingsLabel,
+      feelingsNavLabel: feelingsNavLabel,
+      newStoryLabel: newStoryLabel,
+      quickStoryLabel: quickStoryLabel,
+      companionLabel: companionLabel,
+      heroLabel: heroLabel,
+      feelingsPrompt: feelingsPrompt,
+      launchStoryLabel: launchStoryLabel,
+      companionCTALabel: companionCTALabel,
+      scenarioPageTitle: scenarioPageTitle,
+      scenarioPageSubtitle: scenarioPageSubtitle,
+      scenarioCategoryFantasyLabel: scenarioCategoryFantasyLabel,
+      scenarioCategoryRealLabel: scenarioCategoryRealLabel,
+      wizardNextHint: wizardNextHint,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -279,9 +377,11 @@ const sproutTheme = AgeBandThemeData(
   gradientEnd: Color(0xFF8B3A6B), // Dusty rose — sunset warmth
   accent: Color(0xFFFFD54F), // Gold (shared)
   accentLight: Color(0xFFFFE082),
-  surface: Color(0xFFFFF3E0), // Warm cream
+  surface: Color(0xFFFFE3C2), // Warm apricot — tinted, never white
   textOnDark: Color(0xFFFFFFFF),
   textOnLight: Color(0xFF3E2723), // Dark brown for readability
+  cardColor: Color(0xFFFFE3C2), // Warm apricot card
+  onCard: Color(0xFF4E342E), // Cocoa ink (11:1 on apricot)
   // Rounded, bubbly font
   uiFontFamily: 'Nunito',
   storyFontFamily: 'Merriweather',
@@ -329,9 +429,11 @@ const explorerTheme = AgeBandThemeData(
   gradientEnd: Color(0xFF3B1078), // Rich indigo-purple base
   accent: Color(0xFFFFD54F),
   accentLight: Color(0xFFFFE082),
-  surface: Color(0xFFB2DFDB),
+  surface: Color(0xFFEBD9F7), // Soft lilac (replaces the stray teal)
   textOnDark: Color(0xFFFFFFFF),
-  textOnLight: Color(0xFF333333),
+  textOnLight: Color(0xFF38115C),
+  cardColor: Color(0xFFEBD9F7), // Lilac card
+  onCard: Color(0xFF38115C), // Deep violet ink (10:1 on lilac)
   // Current Quicksand font
   uiFontFamily: 'Quicksand',
   storyFontFamily: 'Merriweather',
@@ -380,6 +482,8 @@ const adventurerTheme = AgeBandThemeData(
   surface: Color(0xFFE8EAF6), // Cool light indigo
   textOnDark: Color(0xFFE8EAF6), // Soft white-blue
   textOnLight: Color(0xFF1A237E), // Dark indigo
+  cardColor: Color(0xFF1B2450), // Deep cosmic card — "cool", not a form
+  onCard: Color(0xFFE8EAF6), // Soft white-blue ink (12:1)
   // Slab serif for a "book" feel
   uiFontFamily: 'Bitter',
   storyFontFamily: 'Merriweather',
@@ -428,6 +532,8 @@ const creatorTheme = AgeBandThemeData(
   surface: Color(0xFF1E1E2E), // Dark surface
   textOnDark: Color(0xFFE0E0E0), // Light gray
   textOnLight: Color(0xFF212121), // Near-black
+  cardColor: Color(0xFF1E1E2E), // Editorial dark card
+  onCard: Color(0xFFE2E2EE), // Soft lavender-gray ink
   // Clean sans-serif
   uiFontFamily: 'SourceSansPro',
   storyFontFamily: 'Merriweather',
@@ -476,6 +582,8 @@ const adolescentTheme = AgeBandThemeData(
   surface: Color(0xFF121E2B), // Dark blue-gray
   textOnDark: Color(0xFFE0F7FA), // Light cyan-white
   textOnLight: Color(0xFF1A2332),
+  cardColor: Color(0xFF121E2B), // Cinematic dark card
+  onCard: Color(0xFFE0F7FA), // Light cyan-white ink
   uiFontFamily: 'SourceSansPro',
   storyFontFamily: 'Merriweather',
   headingScale: 0.88,
@@ -508,21 +616,23 @@ const adolescentTheme = AgeBandThemeData(
 /// adult-appropriate vocabulary. The most editorial and understated band.
 const adultTheme = AgeBandThemeData(
   band: AgeBand.adult,
-  // Deep slate with warm amber-gold.
-  // A11Y-001: `primary` darkened to #806A38 so white button text reaches
-  // WCAG AA (5.2:1) — the prior #BFA45A measured 2.44:1. The brand
-  // amber-gold is preserved in `accent` and `primaryLight`.
-  primary: Color(0xFF806A38), // Deep amber — AA-contrast CTA background
-  primaryLight: Color(0xFFBFA45A), // Brand amber-gold (hover / glow)
-  primaryDark: Color(0xFF5E4F2A), // Deepest amber
-  gradientStart: Color(0xFF08080E), // Near-black
-  gradientMid: Color(0xFF100E18), // Very dark purple-black
-  gradientEnd: Color(0xFF0A0A12), // Near-black
-  accent: Color(0xFFBFA45A), // Amber gold
-  accentLight: Color(0xFFD4B97A),
-  surface: Color(0xFF1A1A24), // Dark surface
-  textOnDark: Color(0xFFEEEAE0), // Warm off-white
-  textOnLight: Color(0xFF1A1A1A),
+  // Refined midnight sapphire with a warm copper highlight.
+  // `primary` (CTA background) holds WCAG AA against white button text (5.4:1);
+  // copper lives in `accent` for glints and links, echoing the navy+copper
+  // pairing without warming the whole palette.
+  primary: Color(0xFF2C5D8F), // Sapphire steel — AA-contrast CTA background
+  primaryLight: Color(0xFF5B8CBD), // Lit steel blue (hover / glow)
+  primaryDark: Color(0xFF1B3E60), // Deep navy
+  gradientStart: Color(0xFF060A12), // Near-black navy
+  gradientMid: Color(0xFF0C1524), // Deep midnight navy
+  gradientEnd: Color(0xFF080D17), // Near-black navy
+  accent: Color(0xFFC77B47), // Copper highlight
+  accentLight: Color(0xFFE0A277), // Lit copper
+  surface: Color(0xFF142130), // Dark navy surface
+  textOnDark: Color(0xFFE6EDF5), // Cool off-white
+  textOnLight: Color(0xFF142130),
+  cardColor: Color(0xFF142130), // Midnight navy card
+  onCard: Color(0xFFE6EDF5), // Cool off-white ink
   uiFontFamily: 'SourceSansPro',
   storyFontFamily: 'Merriweather',
   headingScale: 0.85,
@@ -551,8 +661,179 @@ const adultTheme = AgeBandThemeData(
   wizardNextHint: 'Next: Review',
 );
 
+// ---------------------------------------------------------------------------
+// Flavor variants — hue shifts of each band's base mood, per gender pick.
+// Every `primary` keeps >= 4.5:1 contrast with white button text; every
+// cardColor/onCard pair keeps >= 7:1. Adult has no variants (adults pick for
+// themselves); Adolescent boy deliberately IS the base cinematic teal.
+// ---------------------------------------------------------------------------
+
+/// Sprout girl — "Rosy Sunset": raspberry + gold on a rose-plum dusk.
+final _sproutGirl = sproutTheme.recolored(
+  primary: const Color(0xFFC2185B), // Raspberry (5.9:1 w/ white)
+  primaryLight: const Color(0xFFF06292),
+  primaryDark: const Color(0xFF880E4F),
+  gradientStart: const Color(0xFF3A1545),
+  gradientMid: const Color(0xFF7A2B68),
+  gradientEnd: const Color(0xFFA34877),
+  surface: const Color(0xFFFFDCE8),
+  textOnLight: const Color(0xFF4A2233),
+  cardColor: const Color(0xFFFFDCE8), // Blush card
+  onCard: const Color(0xFF4A2233), // Plum-brown ink
+);
+
+/// Sprout boy — "Campfire Glow": the ember orange leans warmer, sunset
+/// gradient ends in glowing sienna instead of dusty rose.
+final _sproutBoy = sproutTheme.recolored(
+  gradientStart: const Color(0xFF2B1B3D),
+  gradientMid: const Color(0xFF6B2D4F),
+  gradientEnd: const Color(0xFFA34A2A),
+  surface: const Color(0xFFFFE2B8),
+  cardColor: const Color(0xFFFFE2B8), // Butter card
+  onCard: const Color(0xFF3E2723),
+);
+
+/// Explorer girl — "Orchid Magic": brighter orchid purple, same gold magic.
+final _explorerGirl = explorerTheme.recolored(
+  primary: const Color(0xFF9C27B0), // Orchid (6.3:1 w/ white)
+  primaryLight: const Color(0xFFCE93D8),
+  primaryDark: const Color(0xFF6A1B9A),
+  gradientStart: const Color(0xFF3D0A5E),
+  gradientMid: const Color(0xFF7B2CBF),
+  gradientEnd: const Color(0xFF53107E),
+  surface: const Color(0xFFF6D9F0),
+  textOnLight: const Color(0xFF511254),
+  cardColor: const Color(0xFFF6D9F0), // Pink-lilac card
+  onCard: const Color(0xFF511254),
+);
+
+/// Explorer boy — "Royal Wizard": deeper violet-indigo, same gold magic.
+final _explorerBoy = explorerTheme.recolored(
+  primary: const Color(0xFF5E35B1), // Deep violet (8.0:1 w/ white)
+  primaryLight: const Color(0xFF9575CD),
+  primaryDark: const Color(0xFF4527A0),
+  gradientStart: const Color(0xFF1D0B54),
+  gradientMid: const Color(0xFF4A27A8),
+  gradientEnd: const Color(0xFF2B1370),
+  surface: const Color(0xFFDEDAF8),
+  textOnLight: const Color(0xFF201461),
+  cardColor: const Color(0xFFDEDAF8), // Periwinkle card
+  onCard: const Color(0xFF201461),
+);
+
+/// Adventurer boy — "Midnight Voyager": dark navy + copper. Treasure-map
+/// cards in warm parchment ink.
+final _adventurerBoy = adventurerTheme.recolored(
+  primary: const Color(0xFF1565C0), // Voyager blue (5.7:1 w/ white)
+  primaryLight: const Color(0xFF5E92F3),
+  primaryDark: const Color(0xFF0D47A1),
+  gradientStart: const Color(0xFF070D24),
+  gradientMid: const Color(0xFF12224E),
+  gradientEnd: const Color(0xFF0A1638),
+  accent: const Color(0xFFE5975A), // Copper
+  accentLight: const Color(0xFFF2BE93),
+  surface: const Color(0xFFE3ECFA),
+  textOnLight: const Color(0xFF12315E),
+  cardColor: const Color(0xFF142347), // Midnight navy card
+  onCard: const Color(0xFFF2E7D8), // Warm parchment ink
+);
+
+/// Adventurer girl — "Aurora Quest": cosmic violet + aurora mint.
+final _adventurerGirl = adventurerTheme.recolored(
+  primary: const Color(0xFF6A2FBF), // Cosmic violet (7.6:1 w/ white)
+  primaryLight: const Color(0xFF9E6FE8),
+  primaryDark: const Color(0xFF4A1F8F),
+  gradientStart: const Color(0xFF120B2E),
+  gradientMid: const Color(0xFF2E1560),
+  gradientEnd: const Color(0xFF1A0F42),
+  accent: const Color(0xFF5CD6C0), // Aurora mint
+  accentLight: const Color(0xFFA8F0E0),
+  surface: const Color(0xFFEDE7FB),
+  textOnLight: const Color(0xFF2C1157),
+  cardColor: const Color(0xFF251349), // Deep violet card
+  onCard: const Color(0xFFEFE9FB),
+);
+
+/// Creator boy — "Neon Circuit": near-black + electric blue/cyan.
+final _creatorBoy = creatorTheme.recolored(
+  primary: const Color(0xFF3D5AFE), // Electric blue (5.1:1 w/ white)
+  primaryLight: const Color(0xFF8187FF),
+  primaryDark: const Color(0xFF304FFE),
+  gradientStart: const Color(0xFF06080F),
+  gradientMid: const Color(0xFF0C1224),
+  gradientEnd: const Color(0xFF080C18),
+  accent: const Color(0xFF00E5FF),
+  accentLight: const Color(0xFF84FFFF),
+  surface: const Color(0xFF141B33),
+  cardColor: const Color(0xFF141B33),
+  onCard: const Color(0xFFDDE6FA),
+);
+
+/// Creator girl — "Midnight Bloom": near-black + orchid and rose neon.
+final _creatorGirl = creatorTheme.recolored(
+  primary: const Color(0xFF8E24AA), // Deep orchid (7.1:1 w/ white)
+  primaryLight: const Color(0xFFCE93D8),
+  primaryDark: const Color(0xFF6A1B9A),
+  gradientStart: const Color(0xFF0F0714),
+  gradientMid: const Color(0xFF1E0F28),
+  gradientEnd: const Color(0xFF140A1C),
+  accent: const Color(0xFFFF80AB),
+  accentLight: const Color(0xFFFFB2DD),
+  surface: const Color(0xFF251427),
+  cardColor: const Color(0xFF251427),
+  onCard: const Color(0xFFF4DFEF),
+);
+
+/// Adolescent girl — "Dusk Rose": the same cinematic dark, lit rose instead
+/// of teal. (Adolescent boy stays on the base electric-teal palette.)
+final _adolescentGirl = adolescentTheme.recolored(
+  primary: const Color(0xFFAD1457), // Deep rose (7.0:1 w/ white)
+  primaryLight: const Color(0xFFEC6A9C),
+  primaryDark: const Color(0xFF780E3F),
+  gradientStart: const Color(0xFF10060C),
+  gradientMid: const Color(0xFF1E0C18),
+  gradientEnd: const Color(0xFF150812),
+  accent: const Color(0xFFFF6090),
+  accentLight: const Color(0xFFFFA8C4),
+  surface: const Color(0xFF201018),
+  cardColor: const Color(0xFF201018),
+  onCard: const Color(0xFFFAE3EC),
+);
+
+final Map<AgeBand, Map<PaletteFlavor, AgeBandThemeData>> _flavorVariants = {
+  AgeBand.sprout: {
+    PaletteFlavor.boy: _sproutBoy,
+    PaletteFlavor.girl: _sproutGirl,
+  },
+  AgeBand.explorer: {
+    PaletteFlavor.boy: _explorerBoy,
+    PaletteFlavor.girl: _explorerGirl,
+  },
+  AgeBand.adventurer: {
+    PaletteFlavor.boy: _adventurerBoy,
+    PaletteFlavor.girl: _adventurerGirl,
+  },
+  AgeBand.creator: {
+    PaletteFlavor.boy: _creatorBoy,
+    PaletteFlavor.girl: _creatorGirl,
+  },
+  AgeBand.adolescent: {
+    // boy: falls through to the base cinematic teal on purpose.
+    PaletteFlavor.girl: _adolescentGirl,
+  },
+  // AgeBand.adult: no flavor variants.
+};
+
 /// Look up the theme data for a given band.
-AgeBandThemeData themeForBand(AgeBand band) {
+///
+/// [flavor] defaults to the app-wide [currentPaletteFlavor] so the dozens of
+/// existing static call sites pick up the gender flavor automatically.
+AgeBandThemeData themeForBand(AgeBand band, {PaletteFlavor? flavor}) {
+  final resolved = flavor ?? currentPaletteFlavor;
+  if (resolved != PaletteFlavor.neutral) {
+    final variant = _flavorVariants[band]?[resolved];
+    if (variant != null) return variant;
+  }
   switch (band) {
     case AgeBand.sprout:
       return sproutTheme;
@@ -570,7 +851,8 @@ AgeBandThemeData themeForBand(AgeBand band) {
 }
 
 /// Look up the theme data for a given age.
-AgeBandThemeData themeForAge(int age) => themeForBand(ageBandFromAge(age));
+AgeBandThemeData themeForAge(int age, {PaletteFlavor? flavor}) =>
+    themeForBand(ageBandFromAge(age), flavor: flavor);
 
 /// Convenience helpers for common band groupings used across the app.
 extension AgeBandGroups on AgeBand {

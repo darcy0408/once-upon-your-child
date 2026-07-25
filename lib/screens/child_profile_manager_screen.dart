@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/child_profile_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/age_band_theme.dart';
 import '../widgets/app_card.dart';
 
 class ChildProfileManagerScreen extends StatefulWidget {
@@ -294,6 +295,7 @@ class _ChildProfileManagerScreenState
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Scaffold(
       backgroundColor: const Color(0xFF120226),
       appBar: AppBar(
@@ -367,7 +369,7 @@ class _ChildProfileManagerScreenState
                               fontWeight: FontWeight.w600,
                               color: isActive
                                   ? const Color(0xFFFFD700)
-                                  : Colors.white,
+                                  : band.onCard,
                             ),
                           ),
                           subtitle: Text(
@@ -375,15 +377,15 @@ class _ChildProfileManagerScreenState
                             style: TextStyle(
                               color: isActive
                                   ? const Color(0xFFFFD700).withValues(alpha: 0.8)
-                                  : Colors.white54,
+                                  : band.onCard.withValues(alpha: 0.7),
                             ),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit_rounded,
-                                    color: Colors.white54),
+                                icon: Icon(Icons.edit_rounded,
+                                    color: band.onCard.withValues(alpha: 0.7)),
                                 tooltip: 'Edit profile',
                                 onPressed: () =>
                                     _showProfileDialog(existing: profile),
