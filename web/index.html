@@ -38,6 +38,58 @@
 
   <script src="flutter_bootstrap.js" async></script>
 
+  <!--
+    The Flutter web engine injects its own <meta name="viewport"> tag at
+    startup with user-scalable=no, which blocks pinch-zoom — a problem for
+    users with low vision or large system fonts (Flutter web doesn't read
+    the OS font-size setting either, see settings_screen.dart Text Size).
+    This rewrites that tag to allow zooming, and re-applies the fix via a
+    MutationObserver in case the engine re-injects it after this script runs.
+  -->
+  <script>
+    (function () {
+      var desired =
+        'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+
+      function fixViewport() {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('name', 'viewport');
+          document.head.appendChild(meta);
+        }
+        if (meta.getAttribute('content') !== desired) {
+          meta.setAttribute('content', desired);
+        }
+      }
+
+      function start() {
+        fixViewport();
+        // The engine may (re)inject its own viewport tag after this script
+        // runs, so keep correcting it for a short window after load.
+        var observer = new MutationObserver(fixViewport);
+        observer.observe(document.head, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['content'],
+        });
+        // Also poll briefly as a belt-and-suspenders fallback.
+        var interval = setInterval(fixViewport, 200);
+        setTimeout(function () {
+          observer.disconnect();
+          clearInterval(interval);
+        }, 10000);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+      } else {
+        start();
+      }
+    })();
+  </script>
+
   <!-- ElevenLabs Impact Program partnership badge -->
   <noscript>
     <a href="https://elevenlabs.io/impact-program">

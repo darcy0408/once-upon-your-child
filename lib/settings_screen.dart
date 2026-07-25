@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'config/environment.dart';
 import 'models/subscription_status.dart';
 import 'providers/subscription_provider.dart';
+import 'providers/text_scale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'subscription_screen.dart';
 import 'theme/age_band_theme.dart';
@@ -154,6 +155,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            _buildTextSizeCard(context),
+            const SizedBox(height: AppSpacing.lg),
             if (isChildBand && !_parentUnlocked) ...[
               AppCard(
                 child: ListTile(
@@ -238,6 +241,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: AppSpacing.lg),
               _buildDevToolsCard(context),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "Text Size" section — an app-wide, persisted text scale independent of
+  /// the age-band theme. Flutter web doesn't read the OS/browser font-size
+  /// setting, so this is the only way a parent with large system fonts can
+  /// make in-app text bigger.
+  Widget _buildTextSizeCard(BuildContext context) {
+    final textScale = ref.watch(textScaleNotifierProvider);
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Text Size', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            const Text(
+              'Make in-app text bigger or smaller',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            Row(
+              children: [
+                const Text('A', style: TextStyle(fontSize: 14)),
+                Expanded(
+                  child: Slider(
+                    value: textScale,
+                    min: kMinTextScale,
+                    max: kMaxTextScale,
+                    divisions: 5,
+                    label: '${(textScale * 100).round()}%',
+                    onChanged: (value) {
+                      ref.read(textScaleNotifierProvider.notifier).setScale(value);
+                    },
+                  ),
+                ),
+                const Text('A', style: TextStyle(fontSize: 28)),
+              ],
+            ),
+            Center(
+              child: Text(
+                'The quick brown fox jumps over the lazy dog.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16 * textScale),
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
         ),
       ),

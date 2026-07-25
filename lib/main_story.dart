@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/config/environment.dart';
 import 'package:story_weaver_app/providers/age_band_provider.dart';
+import 'package:story_weaver_app/providers/text_scale_provider.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
@@ -65,6 +66,9 @@ class StoryCreatorApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Read the current age band — drives the entire visual theme.
     final ageBandTheme = ref.watch(ageBandNotifierProvider);
+    // User-controlled text size (Settings > Text Size) — independent of the
+    // OS font-size setting, which Flutter web does not read.
+    final userTextScale = ref.watch(textScaleNotifierProvider);
 
     return MaterialApp(
       title: Environment.appName,
@@ -84,7 +88,19 @@ class StoryCreatorApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // Flavor banner disabled — not useful for daily development
-        return child ?? const SizedBox.shrink();
+        //
+        // Compose the user preference with whatever scaler is already in
+        // effect (e.g. a platform/browser scaler): read the inherited
+        // scaler's effective factor, multiply by the user's setting, then
+        // clamp the total so layouts can never blow past 2x.
+        final inheritedFactor = MediaQuery.textScalerOf(context).scale(1.0);
+        final combinedFactor =
+            (inheritedFactor * userTextScale).clamp(0.0, 2.0);
+        return MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(combinedFactor)),
+          child: child ?? const SizedBox.shrink(),
+        );
       },
     );
   }
