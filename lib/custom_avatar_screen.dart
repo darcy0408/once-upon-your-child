@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -431,8 +432,29 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         maxWidth: 1024,
         imageQuality: 85,
       );
+    } on PlatformException catch (e) {
+      // Distinguish "camera access is off" (don't silently swap the user into
+      // the photo library — that reads as the button being broken) from any
+      // other camera failure, where degrading to the gallery is better than a
+      // dead end.
+      final denied = e.code == 'camera_access_denied';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(denied
+              ? 'Camera access is off. Turn it on in Settings to take a photo — or tap Album to pick one.'
+              : "Couldn't open the camera. Let's pick a photo instead!"),
+          duration: const Duration(seconds: 4),
+        ));
+      }
+      if (denied) return;
+      picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 85,
+      );
     } catch (_) {
-      // Camera permission denied or unavailable — fall back to gallery.
+      // Non-PlatformException failure (e.g. the web picker) — degrade to
+      // gallery so the button is never a dead end.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Can't open camera. Let's pick a photo instead!"),
