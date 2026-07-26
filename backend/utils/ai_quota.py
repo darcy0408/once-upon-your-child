@@ -1012,3 +1012,127 @@ def increment_illustration_quota(
         pipe.execute()
     except Exception as exc:
         logger.warning("illustration_quota: Redis error during increment (%s)", exc)
+
+
+# ---------------------------------------------------------------------------
+# Global daily generation circuit breaker (DEFCON audit 2026-07-25, Finding #1)
+#
+# Per-user quotas above are keyed to self-mintable anonymous identities, so
+# they bound per-identity spend, not total spend. This breaker mirrors the
+# TTS global budget (`_tts_chars_global_key`) for the other paid providers:
+# one shared Redis counter per generation kind per UTC day, checked before
+# every provider call, incremented after every successful one.
+#
+# Kinds:
+#   'story'  — story-text LLM calls (sync, Celery, interactive, antihero)
+#   'image'  — story illustrations + coloring pages (Flux / fallback)
+#   'avatar' — photo-based avatar pipeline (gpt-image; the priciest call)
+#
+# Cap semantics: >0 enforces, 0 blocks everything (emergency stop), <0
+# disables the breaker for that kind. Redis unavailable → allow, matching
+# the TTS breaker: the per-user quotas' DB fallbacks still bound abuse, and
+# a Redis outage must not take story generation down with it.
+# ---------------------------------------------------------------------------
+
+
+class GlobalCapExceeded(RuntimeError):
+    """Raised by call sites with no cheaper fallback (interactive turns,
+    avatars) when the global daily cap for their generation kind is hit.
+    Routes map it to HTTP 503 / error_code GLOBAL_CAP_EXCEEDED."""
+
+    def __init__(self, kind: str, used: int, cap: int):
+        super().__init__(f"global {kind} generation cap exceeded ({used}/{cap})")
+        self.kind = kind
+        self.used = used
+        self.cap = cap
+
+
+_GLOBAL_GEN_CAP_ENV = {
+    "story": "GLOBAL_STORY_DAILY_CAP",
+    "image": "GLOBAL_IMAGE_DAILY_CAP",
+    "avatar": "GLOBAL_AVATAR_DAILY_CAP",
+}
+
+_GLOBAL_GEN_CAP_DEFAULTS = {
+    "story": 500,
+    "image": 500,
+    "avatar": 100,
+}
+
+
+def _get_global_gen_cap(kind: str) -> int:
+    raw = os.getenv(_GLOBAL_GEN_CAP_ENV[kind])
+    if raw is not None and raw.strip() != "":
+        try:
+            return int(raw)
+        except ValueError:
+            logger.warning(
+                "global_gen: bad %s value %r — using default",
+                _GLOBAL_GEN_CAP_ENV[kind],
+                raw,
+            )
+    return _GLOBAL_GEN_CAP_DEFAULTS[kind]
+
+
+def _global_gen_key(kind: str) -> str:
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"gen:global:{kind}:{day}"
+
+
+def check_global_gen_budget(kind: str) -> tuple[bool, int, int]:
+    """
+    Check the global daily budget for *kind* ('story' | 'image' | 'avatar').
+
+    Returns (allowed, used, cap). Call it immediately before a paid provider
+    call; on a block, surface `GLOBAL_CAP_EXCEEDED` to the caller. Never
+    raises; allows on Redis errors (see section comment for why fail-open
+    here is the right trade — per-user caps stay enforced via their DB
+    fallbacks).
+    """
+    cap = _get_global_gen_cap(kind)
+    if cap < 0:
+        return True, 0, cap
+    if cap == 0:
+        logger.warning("global_gen: %s breaker set to 0 — emergency stop", kind)
+        return False, 0, 0
+
+    r = _get_redis()
+    if r is None:
+        return True, 0, cap
+
+    try:
+        used = int(r.get(_global_gen_key(kind)) or 0)
+    except Exception as exc:
+        logger.warning("global_gen: Redis error during %s check (%s)", kind, exc)
+        return True, 0, cap
+
+    if used >= cap:
+        logger.error(
+            "global_gen: GLOBAL %s cap hit — used=%d cap=%d; blocking until UTC "
+            "midnight (raise %s to lift)",
+            kind,
+            used,
+            cap,
+            _GLOBAL_GEN_CAP_ENV[kind],
+        )
+        return False, used, cap
+    return True, used, cap
+
+
+def increment_global_gen(kind: str, n: int = 1) -> None:
+    """Bump the global daily counter for *kind* after a successful provider
+    call. 48h TTL rides out the day boundary. No-op if n <= 0 or Redis is
+    unavailable; never raises."""
+    if n <= 0:
+        return
+    r = _get_redis()
+    if r is None:
+        return
+    try:
+        key = _global_gen_key(kind)
+        pipe = r.pipeline()
+        pipe.incrby(key, n)
+        pipe.expire(key, 60 * 60 * 48)
+        pipe.execute()
+    except Exception as exc:
+        logger.warning("global_gen: Redis error during %s increment (%s)", kind, exc)

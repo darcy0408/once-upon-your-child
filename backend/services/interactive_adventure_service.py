@@ -31,6 +31,11 @@ from backend.services.story_service import (
     pseudonymize_hero_name,
     restore_hero_name,
 )
+from backend.utils.ai_quota import (
+    GlobalCapExceeded,
+    check_global_gen_budget,
+    increment_global_gen,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -598,8 +603,16 @@ class InteractiveAdventureService:
         'gemini'/'auto'/unset are coerced to 'openai'. The interactive prompt
         already instructs raw-JSON output, so the chat response is parsed by
         _parse_segment_response exactly as before.
+
+        Raises GlobalCapExceeded when the global daily story budget is spent
+        (audit Finding #1) — interactive turns have no static fallback, so
+        the routes surface it as 503 GLOBAL_CAP_EXCEEDED.
         """
         import os
+
+        allowed, used, cap = check_global_gen_budget("story")
+        if not allowed:
+            raise GlobalCapExceeded("story", used, cap)
 
         provider = (os.getenv("STORY_GEN_PROVIDER") or "openai").strip().lower()
         if provider in ("gemini", "auto", ""):
@@ -637,7 +650,9 @@ class InteractiveAdventureService:
 
             gen = OpenAIStoryGenerator(user_tier=self._user_tier)
 
-        return gen.generate_story(prompt)
+        text = gen.generate_story(prompt)
+        increment_global_gen("story")
+        return text
 
     @staticmethod
     def _has_placeholder_choices(segment_data: Dict[str, Any]) -> bool:
@@ -733,6 +748,11 @@ class InteractiveAdventureService:
                 if attempt < max_retries - 1:
                     time.sleep(base_delay * (2**attempt))
                     continue
+
+            except GlobalCapExceeded:
+                # The cap won't reset mid-request — retrying just burns the
+                # client's patience. Surface it straight to the route.
+                raise
 
             except Exception as e:
                 logger.error(f"Segment generation failed: {e}", exc_info=True)
@@ -1045,6 +1065,16 @@ def generate_segment_illustration(segment_id: str) -> bool:
             "age": character_dict.get("age"),
         }
 
+    # Global daily image breaker (audit Finding #1). Segment art is a
+    # nice-to-have — when the budget is spent the poll just times out
+    # gracefully, same as a provider failure.
+    g_allowed, _g_used, _g_cap = check_global_gen_budget("image")
+    if not g_allowed:
+        logger.warning(
+            "Segment illustration skipped for %s — global image cap", segment_id
+        )
+        return False
+
     images = _generate_flux_illustration(
         scene_description=segment.image_description,
         character_name="the hero",
@@ -1056,6 +1086,7 @@ def generate_segment_illustration(segment_id: str) -> bool:
     )
 
     if images and images[0].get("image_data"):
+        increment_global_gen("image")
         image_format = images[0].get("format") or "png"
         segment.image_url = (
             f"data:image/{image_format};base64,{images[0]['image_data']}"

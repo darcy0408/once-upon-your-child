@@ -30,6 +30,7 @@ try:
         require_photo_avatar_consent,
     )
     from backend.routes.subscription_routes import _user_is_premium, require_premium
+    from backend.utils.ai_quota import check_global_gen_budget, increment_global_gen
     from backend.utils.app_helpers import get_user_tier
 except ImportError:
     from database import db
@@ -39,6 +40,7 @@ except ImportError:
         require_photo_avatar_consent,
     )
     from routes.subscription_routes import _user_is_premium, require_premium
+    from utils.ai_quota import check_global_gen_budget, increment_global_gen
     from utils.app_helpers import get_user_tier
 
 logger = logging.getLogger(__name__)
@@ -55,6 +57,32 @@ def get_avatar_service():
 
         _avatar_service = AvatarGenerationService()
     return _avatar_service
+
+
+def _avatar_global_cap_response():
+    """503 tuple when the global daily avatar budget is spent, else None.
+
+    The photo-avatar pipeline is the priciest per-call spend in the app
+    (audit Finding #1), so every paid avatar route checks this right before
+    invoking the service. DiceBear/description avatars cost nothing and are
+    deliberately not gated.
+    """
+    allowed, _used, _cap = check_global_gen_budget("avatar")
+    if allowed:
+        return None
+    return (
+        jsonify(
+            {
+                "status": "error",
+                "error_code": "GLOBAL_CAP_EXCEEDED",
+                "message": (
+                    "Our avatar workshop is extra busy today! "
+                    "Please try again a little later."
+                ),
+            }
+        ),
+        503,
+    )
 
 
 def _tier_limit(free, premium):
@@ -279,6 +307,10 @@ def create_avatar_blueprint(limiter):
                 f"Custom avatar request: name={character_name}, age={age}, gender={gender}"
             )
 
+            cap_response = _avatar_global_cap_response()
+            if cap_response is not None:
+                return cap_response
+
             service = get_avatar_service()
 
             try:
@@ -296,6 +328,8 @@ def create_avatar_blueprint(limiter):
                 logger.info(
                     f"Custom avatar generated successfully: {avatar_data['id']}"
                 )
+
+                increment_global_gen("avatar")
 
                 # Count this generation against the 1-free allowance. Only
                 # non-premium users are metered; premium/BYOK are unlimited.
@@ -431,6 +465,10 @@ def create_avatar_blueprint(limiter):
                 power,
             )
 
+            cap_response = _avatar_global_cap_response()
+            if cap_response is not None:
+                return cap_response
+
             service = get_avatar_service()
             try:
                 portrait = _run_with_timeout(
@@ -441,6 +479,7 @@ def create_avatar_blueprint(limiter):
                     emblem=emblem,
                     power=power,
                 )
+                increment_global_gen("avatar")
                 return jsonify({"status": "success", "avatar": portrait}), 200
 
             except concurrent.futures.TimeoutError:
@@ -573,6 +612,10 @@ def create_avatar_blueprint(limiter):
                 f"Companion avatar request: name={pet_name}, species={species}, type={companion_type}, owner_age={owner_age}"
             )
 
+            cap_response = _avatar_global_cap_response()
+            if cap_response is not None:
+                return cap_response
+
             service = get_avatar_service()
 
             try:
@@ -604,6 +647,11 @@ def create_avatar_blueprint(limiter):
                 provider_used = avatar_data.get("provider_used")
                 transformation_applied = avatar_data.get("transformation_applied", True)
                 status_code = 200 if transformation_applied else 206
+
+                # transformation_applied=False means every provider failed and
+                # the original photo came back unchanged — no paid call landed.
+                if transformation_applied:
+                    increment_global_gen("avatar")
 
                 return (
                     jsonify(
@@ -776,6 +824,10 @@ def create_avatar_blueprint(limiter):
                 f"Gallery avatar tweak: hair_length={hair_length}, eye_color={eye_color}"
             )
 
+            cap_response = _avatar_global_cap_response()
+            if cap_response is not None:
+                return cap_response
+
             # MT-327: this previously built a direct GeminiImageGenerator() on
             # the server key, bypassing the prod DISABLE_GEMINI_IMAGE=1 kill
             # switch (Gemini's ToS forbid child-directed apps). Route through
@@ -828,6 +880,8 @@ def create_avatar_blueprint(limiter):
                     ),
                     500,
                 )
+
+            increment_global_gen("avatar")
 
             return (
                 jsonify(
