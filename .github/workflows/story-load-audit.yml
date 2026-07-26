@@ -1,8 +1,8 @@
 name: Story Load Audit
 
 on:
-  schedule:
-    - cron: "30 6 * * *"
+  # Schedule disabled in this repo: the daily audit runs from the private ops
+  # repo. Manual runs remain available.
   workflow_dispatch:
 
 permissions:

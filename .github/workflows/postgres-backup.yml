@@ -18,8 +18,8 @@ name: Postgres Backup
 # Smoke check: each dump is verified to be a parseable pg_dump archive before
 # upload (FMEA finding P2 — untested backups are not backups).
 on:
-  schedule:
-    - cron: '0 9 * * *'   # 09:00 UTC daily (03:00 Mountain)
+  # Schedule disabled in this repo: the daily backup runs from the private ops
+  # repo, which holds the DATABASE/R2 secrets. Manual runs remain available.
   workflow_dispatch: {}    # manual run — also available on demand
 
 permissions:
