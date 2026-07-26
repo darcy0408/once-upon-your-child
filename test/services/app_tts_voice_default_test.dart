@@ -31,12 +31,16 @@ void main() {
 
     final resolved = await tts.resolveVoiceId();
 
+    // Gigi is the one curated voice the backend maps to Azure's
+    // en-US-AnaNeural child voice (see backend/azure_tts_service.py). The
+    // band defaults can't serve as the "child voice" reference here: since
+    // #476 the sprout/explorer default IS the neutral narrator (Matilda), on
+    // purpose, so comparing against them just compares Matilda to herself.
     expect(
       resolved,
-      isNot(ElevenLabsVoice.defaultVoiceIdForBand(AgeBand.sprout)),
-      reason: 'sprout/explorer share Gigi, which maps to Azure en-US-AnaNeural',
+      isNot('jBpfuIE2acCO8z3wKNLl'),
+      reason: 'Gigi maps to Azure en-US-AnaNeural, a child voice',
     );
-    expect(resolved, isNot(ElevenLabsVoice.defaultVoiceIdForBand(AgeBand.explorer)));
   });
 
   test('once an age is declared, the band voice takes over', () async {
