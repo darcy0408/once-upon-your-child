@@ -39,7 +39,7 @@ MarkupSafe==3.0.3
 click==8.4.2
 Werkzeug==3.1.8
 Pillow
-cryptography==48.0.1  # 48.0.1: GHSA cryptography wheels bundled vulnerable OpenSSL (MT-293); 46.0.5: CVE-2026-34073 (DNS name constraint bypass), CVE-2026-39892 (Hash.update buffer overflow)
+cryptography==49.0.0  # 48.0.1: GHSA cryptography wheels bundled vulnerable OpenSSL (MT-293); 46.0.5: CVE-2026-34073 (DNS name constraint bypass), CVE-2026-39892 (Hash.update buffer overflow)
 urllib3>=2.7.0  # 2.6.3: CVE-2026-44431 (cross-origin redirect header leak), CVE-2026-44432 (streaming API)
 idna>=3.18  # <3.15: CVE-2026-45409 (idna.encode() DoS, incomplete fix for CVE-2024-3651)
 bcrypt==5.0.0
