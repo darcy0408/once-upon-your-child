@@ -547,6 +547,47 @@ def _generate_story_text_with_metadata(
     user_tier: str | None = None,
     task_id: str | None = None,
 ) -> tuple[str, str, list[str]]:
+    """Global-spend-breaker wrapper around the provider chain (audit Finding #1).
+
+    Every story-text LLM call in the Celery layer — the main task, both
+    antihero phases, and superhero regeneration — funnels through here, so
+    this is the one place the global daily cap can bound total story spend.
+    When the cap is hit we degrade to the static fallback (zero provider
+    cost, the user still gets a story) rather than erroring, mirroring how
+    the TTS breaker degrades to free TTS. `static(global_cap)` in the
+    provider sequence makes trips visible in audit_log/Sentry.
+    """
+    from backend.utils.ai_quota import check_global_gen_budget, increment_global_gen
+
+    allowed, _used, _cap = check_global_gen_budget("story")
+    if not allowed:
+        return (
+            _fallback_story(theme, character_name, companion),
+            "static",
+            ["static(global_cap)"],
+        )
+
+    text, provider, sequence = _attempt_story_providers(
+        prompt,
+        theme,
+        character_name,
+        companion,
+        user_tier=user_tier,
+        task_id=task_id,
+    )
+    if provider != "static":
+        increment_global_gen("story")
+    return text, provider, sequence
+
+
+def _attempt_story_providers(
+    prompt: str,
+    theme: str,
+    character_name: str,
+    companion: str = None,
+    user_tier: str | None = None,
+    task_id: str | None = None,
+) -> tuple[str, str, list[str]]:
     """Generate story text with tier-aware provider sequencing (MT-171 Phase 1).
 
     Sequencing is controlled by STORY_GEN_PROVIDER (app.config + env):

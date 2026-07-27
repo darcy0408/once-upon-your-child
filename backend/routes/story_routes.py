@@ -31,7 +31,13 @@ from ..tasks.story_tasks import (
     run_antihero_part1,
     run_antihero_part2,
 )
-from ..utils.ai_quota import check_daily_quota, increment_daily_quota
+from ..utils.ai_quota import (
+    GlobalCapExceeded,
+    check_daily_quota,
+    check_global_gen_budget,
+    increment_daily_quota,
+    increment_global_gen,
+)
 from ..utils.audit import audit_log
 from ..utils.lazy_import import load_first_available
 from ..utils.task_owner import cache_task_owner as _cache_task_owner
@@ -62,6 +68,28 @@ def _daily_quota_message(period: str) -> str:
             "more, or wait until next month."
         )
     return "You've reached your story limit for today. Come back tomorrow!"
+
+
+def _global_cap_response():
+    """503 response for a tripped global daily generation breaker.
+
+    Deliberately says nothing about budgets or caps — to the family it's
+    just a busy workshop; the operator sees the real reason in audit_log
+    and the GLOBAL cap ERROR log line.
+    """
+    return (
+        jsonify(
+            {
+                "error": "Story magic is recharging",
+                "code": "GLOBAL_CAP_EXCEEDED",
+                "message": (
+                    "Our story workshop is extra busy today! "
+                    "Please try again a little later."
+                ),
+            }
+        ),
+        503,
+    )
 
 
 def _resolve_age(raw_age, default: int = 5, verified_age=None) -> int:
@@ -893,6 +921,14 @@ def create_story_blueprint(
                 429,
             )
 
+        # Global daily spend breaker (audit Finding #1) — honest 503 up front.
+        # Anything already past enqueue still degrades to the static story
+        # inside the task funnel, so this never strands an in-flight request.
+        g_allowed, _g_used, _g_cap = check_global_gen_budget("story")
+        if not g_allowed:
+            audit_log("global_cap_exceeded", user_id=user_id, data={"kind": "story"})
+            return _global_cap_response()
+
         # Validate character ownership
         character_id = payload.get("character_id")
         owned_character = None
@@ -1286,6 +1322,15 @@ def create_story_blueprint(
                 ),
                 429,
             )
+
+        # Global daily spend breaker (audit Finding #1) — same early 503 as
+        # /generate-story. Part 2 (/generate-antihero-resolution) is quota-free
+        # by design, so its LLM call is bounded by the breaker inside the task
+        # funnel instead.
+        g_allowed, _g_used, _g_cap = check_global_gen_budget("story")
+        if not g_allowed:
+            audit_log("global_cap_exceeded", user_id=user_id, data={"kind": "story"})
+            return _global_cap_response()
 
         # Validate character ownership (IDOR guard, same as /generate-story).
         character_id = payload.get("character_id")
@@ -2051,6 +2096,12 @@ def create_story_blueprint(
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
 
+        except GlobalCapExceeded as cap_err:
+            audit_log(
+                "global_cap_exceeded", user_id=user_id, data={"kind": cap_err.kind}
+            )
+            return _global_cap_response()
+
         except Exception as e:
             log_error(
                 error_type="interactive_story_generation_failed",
@@ -2284,6 +2335,10 @@ def create_story_blueprint(
         except ValueError as e:
             logger.warning(f"Invalid request: {e}")
             return jsonify({"error": str(e)}), 404
+
+        except GlobalCapExceeded as cap_err:
+            audit_log("global_cap_exceeded", data={"kind": cap_err.kind})
+            return _global_cap_response()
 
         except Exception as e:
             logger.exception("Continuing interactive story failed")
@@ -2777,6 +2832,33 @@ def create_story_blueprint(
                         200,
                     )
 
+                # Global daily image breaker (audit Finding #1). Soft 200 like
+                # the per-user quota above — the story still reads fine without
+                # pictures — but a distinct code so support can tell a tripped
+                # breaker from an exhausted personal allowance.
+                g_allowed, _g_used, _g_cap = check_global_gen_budget("image")
+                if not g_allowed:
+                    audit_log(
+                        "global_cap_exceeded",
+                        user_id=current_user_id,
+                        data={"kind": "image"},
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "illustrations": [],
+                                "count": 0,
+                                "code": "GLOBAL_CAP_EXCEEDED",
+                                "message": (
+                                    "Our illustration workshop is extra busy "
+                                    "today! Your story is ready — pictures "
+                                    "will be back soon."
+                                ),
+                            }
+                        ),
+                        200,
+                    )
+
                 # Primary provider for ALL ages: Flux Schnell. Flux = Cloudflare
                 # first, then Replicate fallback (see _generate_flux_illustration);
                 # each provider has its own kill-switch env var.
@@ -3012,6 +3094,11 @@ def create_story_blueprint(
                     len(transformed_illustrations),
                 )
 
+            # Global daily image counter — cache hits excluded for the same
+            # reason: a re-read costs the providers nothing.
+            if len(transformed_illustrations) > 0 and not served_from_cache:
+                increment_global_gen("image", len(transformed_illustrations))
+
             _meter_in_response = not served_from_cache
             return (
                 jsonify(
@@ -3132,6 +3219,30 @@ def create_story_blueprint(
                             "coloring_pages": [],
                             "count": 0,
                             "warning": "Image generation unavailable",
+                        }
+                    ),
+                    200,
+                )
+
+            # Global daily image breaker (audit Finding #1) — coloring pages
+            # ride the same provider budget as story illustrations.
+            g_allowed, _g_used, _g_cap = check_global_gen_budget("image")
+            if not g_allowed:
+                audit_log(
+                    "global_cap_exceeded",
+                    user_id=getattr(request.current_user, "id", None),
+                    data={"kind": "image", "route": "coloring"},
+                )
+                return (
+                    jsonify(
+                        {
+                            "coloring_pages": [],
+                            "count": 0,
+                            "code": "GLOBAL_CAP_EXCEEDED",
+                            "message": (
+                                "Our art workshop is extra busy today! "
+                                "Please try coloring pages again later."
+                            ),
                         }
                     ),
                     200,
@@ -3260,6 +3371,8 @@ def create_story_blueprint(
                         continue
 
                     all_coloring_pages.append(page)
+
+            increment_global_gen("image", len(all_coloring_pages))
 
             return (
                 jsonify(

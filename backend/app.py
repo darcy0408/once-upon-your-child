@@ -10,6 +10,7 @@ if __name__ == "__main__" and __package__ is None:
 
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Configure logging. Containers (Railway) capture stdout, so the log file is
 # best-effort — an unwritable working directory must never crash startup.
@@ -193,6 +194,16 @@ def create_app(config_name):
     # Explicitly set static folder to ensure avatars are served correctly
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
     app = Flask(__name__, static_folder=static_folder, static_url_path="/static")
+
+    # Trust exactly one reverse-proxy hop (Railway's edge) for the client IP and
+    # scheme. Without this, werkzeug's request.remote_addr is the Railway edge's
+    # internal CGNAT address (100.64.0.x) for EVERY external request, which
+    # collapses all IP-keyed Flask-Limiter buckets — including /auth/anonymous —
+    # onto a single shared bucket: per-client throttling silently does nothing in
+    # prod and one script can exhaust the global bucket, locking new visitors out
+    # of obtaining a session token. x_for=1 makes get_remote_address() read the
+    # real client IP from the last X-Forwarded-For hop. (DEFCON audit, 2026-07)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # Normalize config name
     if config_name not in config_by_name:
