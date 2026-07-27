@@ -58,7 +58,7 @@ jobs:
         # Skip cleanly when Slack isn't configured, so the notify job doesn't
         # fail (empty webhook -> action error) during a real rollback. (MT-225)
         if: env.SLACK_WEBHOOK_URL != ''
-        uses: slackapi/slack-github-action@v3
+        uses: slackapi/slack-github-action@v4
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
