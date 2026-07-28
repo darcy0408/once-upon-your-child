@@ -43,9 +43,22 @@ class AppCard extends StatelessWidget {
           type: MaterialType.transparency,
           child: DefaultTextStyle.merge(
             style: TextStyle(color: band.onCard),
-            child: IconTheme.merge(
-              data: IconThemeData(color: band.onCard),
-              child: child,
+            // ListTile does NOT read the DefaultTextStyle above it: it resolves
+            // its title/subtitle from ListTileTheme, falling back to the global
+            // textTheme, whose ink is picked for a light surface. So every
+            // ListTile inside an AppCard rendered its title in near-black on
+            // the card's dark band color while sibling plain Text was correct —
+            // visible in Settings, where the Dashboard / Weekly Recap / Child
+            // Profiles / Subscription titles were unreadable but their
+            // subtitles were fine. Setting the ListTileTheme here fixes the
+            // whole class at once instead of per call site.
+            child: ListTileTheme.merge(
+              textColor: band.onCard,
+              iconColor: band.onCard,
+              child: IconTheme.merge(
+                data: IconThemeData(color: band.onCard),
+                child: child,
+              ),
             ),
           ),
         ),
