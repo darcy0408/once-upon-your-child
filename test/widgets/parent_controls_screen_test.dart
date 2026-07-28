@@ -84,4 +84,33 @@ void main() {
 
     expect(find.text('Not quite -- try again.'), findsOneWidget);
   });
+
+  // MT-377 regression guard.
+  //
+  // SettingsScreen's only other entry points are inside the legacy
+  // StoryScreen (main_story.dart:374 and :719), which is registered at
+  // '/story-home' and never pushed. When this tile is missing, Settings is
+  // unreachable in the shipped app — and with it the app-wide Text Size
+  // slider and the only post-onboarding ToS / Privacy links. That is exactly
+  // how the accessibility work in #484 shipped into a screen no user could
+  // open, so this asserts the route rather than trusting it.
+  testWidgets('offers a reachable route to Settings', (tester) async {
+    await tester.pumpWidget(buildSubject());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.textContaining('Text size'), findsOneWidget);
+
+    // Present is not enough — it has to actually be tappable.
+    final tile = tester.widget<ListTile>(
+      find.ancestor(of: find.text('Settings'), matching: find.byType(ListTile)),
+    );
+    expect(tile.onTap, isNotNull);
+
+    // The destination render is deliberately not asserted here: SettingsScreen
+    // draws the partner logo via flutter_svg, which the widget-test harness
+    // cannot decode, so pumping the pushed route always throws regardless of
+    // whether navigation worked. The push itself is exercised in the browser
+    // against a real web build instead.
+  });
 }

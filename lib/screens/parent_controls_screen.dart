@@ -24,6 +24,9 @@ import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import 'subscription_management_screen.dart';
 import 'wizard_story_screen.dart';
+// Deferred to match the loading strategy main_story.dart already used for this
+// screen, so restoring the entry point does not enlarge the initial bundle.
+import '../settings_screen.dart' deferred as settings_screen;
 
 class ParentControlsScreen extends StatefulWidget {
   /// Set [openBigFeelings] to open the Big Feelings section immediately
@@ -380,6 +383,39 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
+                  // ── App Settings ──────────────────────────────────────────
+                  // The only route back to SettingsScreen. Both of its former
+                  // entry points sit inside the legacy StoryScreen
+                  // (main_story.dart:374 and :719), which is registered at
+                  // '/story-home' and never pushed — so Settings, and the
+                  // whole subtree below it (parent dashboard, weekly recap,
+                  // child profile manager, and the only post-onboarding ToS /
+                  // Privacy links), has been unreachable in the shipped app.
+                  // Part of MT-377.
+                  //
+                  // Listed first, and led with text size, because the app-wide
+                  // Text Size slider added in #484 landed *inside* this
+                  // orphaned screen: the fix for "the writing is too small to
+                  // read" was itself unreachable. That slider sits above
+                  // SettingsScreen's own parental gate, so this path reaches
+                  // it without a second challenge.
+                  const _SectionHeader(title: '⚙️  App Settings'),
+                  _NavTile(
+                    icon: Icons.format_size_rounded,
+                    title: 'Settings',
+                    subtitle:
+                        'Text size, dark mode, account, privacy and legal',
+                    onTap: () async {
+                      await settings_screen.loadLibrary();
+                      if (!mounted || !context.mounted) return;
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => settings_screen.SettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   _SectionHeader(title: '🖼️  Avatar & Photos'),
                   _ControlTile(
                     title: 'Allow photo-based avatar creation',
@@ -1851,6 +1887,49 @@ class _ControlTile extends StatelessWidget {
           activeThumbColor: const Color(0xFFFFD700),
           value: value,
           onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tap-through tile that pushes another screen, styled to match the switch
+/// tiles around it. `_ControlTile` only models a toggle, so navigation rows
+/// had no shared shape before this.
+class _NavTile extends StatelessWidget {
+  const _NavTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      // Matches _ControlTile: a Material ancestor so ListTile ink splashes have
+      // somewhere to paint over the DecoratedBox background.
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          leading: Icon(icon, color: const Color(0xFFFFD700)),
+          title: Text(title,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+          subtitle: Text(subtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+          onTap: onTap,
         ),
       ),
     );
