@@ -9,7 +9,7 @@ Thank you for taking the time to look. Once Upon YOUR Child is a small independe
 Report privately using either of these:
 
 - **GitHub Security Advisories** — [open a private report](https://github.com/darcy0408/once-upon-your-child/security/advisories/new). This is preferred; the report stays private until a fix ships, and it keeps everything threaded in one place.
-- **Email** — darcy@onceuponyourchild.app
+- **Email** — security@onceuponyourchild.app
 
 Please include enough detail to reproduce the issue: affected endpoint or component, the steps you took, and what you observed. Proof-of-concept code is welcome.
 
