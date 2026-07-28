@@ -3418,7 +3418,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           decoration: InputDecoration(
             hintText: 'Character name',
-            hintStyle: const TextStyle(color: Colors.white30),
+            hintStyle: const TextStyle(color: AppColors.hintOnDark),
             filled: true,
             fillColor: Colors.white.withAlpha(10),
             enabledBorder: OutlineInputBorder(

@@ -22,6 +22,7 @@ import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/voice_mic_button.dart';
 import 'widgets/crisis_resources_panel.dart';
 import 'utils/input_sanitizer.dart';
+import 'theme/app_theme.dart';
 
 /// Pick-A-Path Adventures: Interactive stories with inventory, state tracking, and age-calibrated content
 class PickAPathAdventureScreen extends StatefulWidget {
@@ -1484,7 +1485,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'e.g. "Then a grown-up appeared with a magic map!"',
-                  hintStyle: const TextStyle(color: Colors.white38),
+                  hintStyle: const TextStyle(color: AppColors.hintOnDark),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Colors.purple),

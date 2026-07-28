@@ -5,6 +5,7 @@ import '../../theme/age_band_theme.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/hero_creator/genre_chip.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
+import '../../theme/app_theme.dart';
 
 /// Page 6 of the Hero Creator wizard — story type / mode selection.
 ///
@@ -358,7 +359,7 @@ class HeroStoryTypePage extends StatelessWidget {
                     maxLines: 2,
                     decoration: InputDecoration(
                       hintText: 'I want to ride a magic carpet…',
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle: const TextStyle(color: AppColors.hintOnDark),
                       filled: true,
                       fillColor: Colors.white.withAlpha(20),
                       border: OutlineInputBorder(

@@ -100,7 +100,7 @@ class _GiftCodeRedeemDialogState extends State<_GiftCodeRedeemDialog> {
             style: const TextStyle(color: Colors.white, letterSpacing: 1.5),
             decoration: InputDecoration(
               hintText: 'XXXX-XXXX-XXXX',
-              hintStyle: const TextStyle(color: Colors.white38),
+              hintStyle: const TextStyle(color: AppColors.hintOnDark),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: Colors.white24),

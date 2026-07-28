@@ -14,6 +14,19 @@ class AppColors {
   static const gradientMid = Color(0xFF2A0A4E); // Dark purple
   static const gradientEnd = Color(0xFF1A1040); // Deep indigo
 
+  /// Placeholder / hint text on the dark app background.
+  ///
+  /// Measured against [gradientStart] (#120226): `Colors.white24` is 2.03:1,
+  /// `white30` 2.55:1 and `white38` 3.44:1 — all below the 4.5:1 WCAG AA floor
+  /// for body text, and all three were in use for hint text a user has to read
+  /// in order to know what a field wants. `Colors.white70` measures 9.63:1
+  /// while still reading as clearly secondary next to the white input text.
+  ///
+  /// Use this for hints and captions on the dark background; use
+  /// `AgeBandThemeData.textOnDark` for primary copy and `onCard` inside an
+  /// AppCard.
+  static const hintOnDark = Colors.white70;
+
   // Accent colors
   static const gold = Color(0xFFFFD54F); // Gold for selections/highlights
   static const goldLight = Color(0xFFFFE082); // Light gold for glows
