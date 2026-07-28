@@ -1133,7 +1133,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           decoration: InputDecoration(
             labelText: 'Custom caregiver name',
             hintText: 'e.g. Tata, Abuela, Yia Yia',
-            hintStyle: GoogleFonts.fredoka(color: Colors.white38),
+            hintStyle: GoogleFonts.fredoka(color: AppColors.hintOnDark),
             enabledBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.white24),
             ),

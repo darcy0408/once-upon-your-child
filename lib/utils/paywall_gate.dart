@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/age_band_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Wraps paywall dialogs to protect minors from reaching a purchase flow.
 ///
@@ -129,7 +130,7 @@ class _AskGrownUpDialogState extends State<_AskGrownUpDialog> {
             decoration: InputDecoration(
               labelText: 'Answer',
               hintText: '?',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: const TextStyle(color: AppColors.hintOnDark),
               errorText: _error,
               errorStyle: const TextStyle(color: Colors.orangeAccent),
               filled: true,

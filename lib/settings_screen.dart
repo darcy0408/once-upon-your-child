@@ -77,7 +77,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   decoration: InputDecoration(
                     labelText: 'Answer',
                     hintText: '?',
-                    hintStyle: const TextStyle(color: Colors.white24),
+                    hintStyle: const TextStyle(color: AppColors.hintOnDark),
                     errorText: error,
                     errorStyle: const TextStyle(color: Colors.orangeAccent),
                     filled: true,
@@ -452,6 +452,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildLegalLinks(BuildContext context) {
+    // These headers sit directly on the dark scaffold background, outside any
+    // AppCard, so the unstyled titleSmall default renders near-black on dark
+    // and is effectively invisible. Same failure PR #482 fixed in Pick-a-Path;
+    // these two were missed. band.textOnDark is the contrast-safe ink.
+    final onDark = Theme.of(context).extension<AgeBandThemeData>()?.textOnDark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -460,7 +465,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           style: Theme.of(context)
               .textTheme
               .titleSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+              ?.copyWith(fontWeight: FontWeight.bold, color: onDark),
         ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
@@ -496,6 +501,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildPartnersSection(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onDark = Theme.of(context).extension<AgeBandThemeData>()?.textOnDark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -504,7 +510,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           style: Theme.of(context)
               .textTheme
               .titleSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+              ?.copyWith(fontWeight: FontWeight.bold, color: onDark),
         ),
         const SizedBox(height: AppSpacing.sm),
         InkWell(

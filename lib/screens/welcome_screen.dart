@@ -623,7 +623,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         : GoogleFonts.fredoka(
             color: Colors.white, fontSize: 26, fontWeight: FontWeight.w500);
     final hintStyle = fieldFontFamily == 'sourceSans3'
-        ? GoogleFonts.sourceSans3(color: Colors.white38, fontSize: 18)
+        ? GoogleFonts.sourceSans3(color: AppColors.hintOnDark, fontSize: 18)
         : GoogleFonts.fredoka(
             color: _goldColor.withAlpha(130),
             fontSize: 20,
