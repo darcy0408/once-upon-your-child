@@ -35,6 +35,7 @@ import 'services/user_identity_service.dart';
 import 'multi_character_screen.dart';
 import 'offline_stories_screen.dart';
 import 'utils/paywall_gate.dart';
+import 'utils/platform_text_scale.dart';
 import 'premium_upgrade_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
@@ -94,8 +95,13 @@ class StoryCreatorApp extends ConsumerWidget {
         // scaler's effective factor, multiply by the user's setting, then
         // clamp the total so layouts can never blow past 2x.
         final inheritedFactor = MediaQuery.textScalerOf(context).scale(1.0);
+        // On web the inherited factor is always 1.0 — CanvasKit never consults
+        // the browser's font-size setting — so read that preference out of the
+        // DOM and fold it in here. Returns 1.0 on native, where the OS scale
+        // already arrives through `inheritedFactor` above.
+        final platformFactor = readPlatformTextScale();
         final combinedFactor =
-            (inheritedFactor * userTextScale).clamp(0.0, 2.0);
+            (inheritedFactor * platformFactor * userTextScale).clamp(0.0, 2.0);
         return MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(combinedFactor)),
