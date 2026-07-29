@@ -306,3 +306,6 @@ scrolled-down.png
 # Stranded Railway MCP tooling files — not part of the app build (MT-228)
 /package.json
 /package-lock.json
+
+# Session notes live in the PRIVATE repo (C:\dev\money) — never commit them here
+SESSION_NOTES.md
