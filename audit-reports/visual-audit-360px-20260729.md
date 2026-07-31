@@ -54,3 +54,13 @@ Either a default rating is being persisted (data corruption for any rating analy
 - Adult band only; every finding needs a young-band recheck once consent is passable (F1's younger sibling path *wraps*, for instance).
 - Single generation per path — F2 and F7 are n=1 observations.
 - TTS/audio behavior not audited (no audio assertions in this harness).
+
+## Addendum (2026-07-29/30) — consent verify-code UX, found while attempting the young-band pass
+
+Discovered while actually completing the email round-trip (code sent to the owner's real inbox, pasted back ~1h later):
+
+- **F15 — every verify failure shows the same misleading catch-all.** Backend returns distinguishing statuses (400 bad code / 410 expired-or-missing / 429 attempt cap), but the client's `api.post` throws on any non-2xx, so `_submitVerificationCode`'s "That code did not match" branch (`parental_consent_screen.dart:1089`) is **unreachable** — expired code, wrong code, and attempt-cap all surface as "Could not verify right now. Please try again," which invites retrying a dead code.
+- **F16 — codes expire in 15 minutes** (`CONSENT_CODE_EXPIRY_MINUTES = 15`, `backend/routes/user_routes.py:29`) and expiry consumes the code. Nothing on screen states the window or suggests Resend on a 410. A parent who reads email on a different device cadence than their kid's tablet will routinely fall out of this window.
+- **F17 — Resend gives no confirmation and leaves the stale code in the input.** The screen is pixel-identical after a resend, and the old code stays in the field; submitting it burns one of the new code's 5 attempts (attempts are counted against the newest unconsumed code row).
+
+All three fold into **MT-397** (consent-flow feedback). Young-band audit remains blocked on a fresh code being entered within the 15-minute window.
