@@ -307,5 +307,8 @@ scrolled-down.png
 /package.json
 /package-lock.json
 
-# Session notes live in the PRIVATE repo (C:\dev\money) — never commit them here
+# Session notes live in the PRIVATE notes repo (path in .claude/notes-location.txt) — never commit them here
 SESSION_NOTES.md
+
+# Local pointer to the private session-notes directory (path stays off the public repo)
+.claude/notes-location.txt

@@ -1,10 +1,14 @@
 ---
-description: "Close out the current work session: commit pending changes, then write a per-session record file in docs/sessions/, append manual tasks to docs/MANUAL_TASKS.md with monotonic IDs, and add an index row to TEAM_COORDINATION.md. Use when stopping work."
+description: "Close out the current work session: commit pending changes, then write a per-session record file to the PRIVATE notes directory, append manual tasks to docs/MANUAL_TASKS.md with monotonic IDs, and add an index row to TEAM_COORDINATION.md. Use when stopping work."
 ---
 
 You are the **Session Close Agent**. Execute every step. Be thorough but fast — Darcy runs ~10 simultaneous instances and needs clean handoff notes.
 
-The system is **race-safe by design**: each session writes to its own file in `docs/sessions/`, so concurrent closes never collide. The shared `TEAM_COORDINATION.md` is only touched once per session (a single appended index row), and `docs/MANUAL_TASKS.md` is append-only.
+**This repo is PUBLIC. Session records are private.** They go to the private notes directory whose path is in `.claude/notes-location.txt` (untracked, in this repo's root — read it first; call it `<notes-dir>` below). If that file is missing, STOP and ask Darcy where session notes live — do not fall back to writing a record inside this repo. Records written before 2026-07-30 live read-only in `docs/sessions/`; never add new files there.
+
+The system is **race-safe by design**: each session writes to its own file in `<notes-dir>`, so concurrent closes never collide. The shared `TEAM_COORDINATION.md` is only touched once per session (a single appended index row), and `docs/MANUAL_TASKS.md` is append-only.
+
+**Because `TEAM_COORDINATION.md` and `docs/MANUAL_TASKS.md` are still public files**: keep what you write into them to sanitized one-liners — no security-posture detail (flag states, unverified vulnerabilities, auth gaps), no money figures, no personal context. That detail belongs in the private session record.
 
 ---
 
@@ -19,9 +23,10 @@ git diff --stat HEAD
 git branch --show-current
 date +"%Y-%m-%d %H:%M"
 openssl rand -hex 2   # 4-char session ID, e.g. "a7f3"
+cat .claude/notes-location.txt   # <notes-dir> — the PRIVATE home for the session record
 ```
 
-Capture the date, time, branch name, and the 4-char session ID — you need all four for the filename and heading.
+Capture the date, time, branch name, the 4-char session ID, and `<notes-dir>` — you need all five. If `.claude/notes-location.txt` is missing, stop and ask Darcy (see intro).
 
 ---
 
@@ -84,11 +89,11 @@ If two sessions race on the same number, the second one to write will see its `E
 
 ---
 
-## Step 5 — Write the per-session record file
+## Step 5 — Write the per-session record file (PRIVATE)
 
-Path: `docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md`
+Path: `<notes-dir>\{YYYY-MM-DD}-{HHMM}-{id}.md` — where `<notes-dir>` is the path read from `.claude/notes-location.txt` in Step 1. NOT inside this repo.
 
-Example: `docs/sessions/2026-04-22-1547-a7f3.md`
+Example: if the pointer file says `D:\example\notes`, write `D:\example\notes\2026-04-22-1547-a7f3.md`. (The real path lives only in the untracked pointer file — never write it into any tracked file.)
 
 This file is yours alone — no other session writes to it. Use a single `Write` call.
 
@@ -134,7 +139,12 @@ If nothing was accomplished (pure exploratory session), write a minimal record n
 Use this exact bash pattern — it splits the file at the comment marker that lives inside the table body, inserts your row, and reassembles atomically:
 
 ```bash
-ROW="| {YYYY-MM-DD} | {HH:MM} | {id} | {branch} | {topic ≤60 chars} | [link](docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md) |"
+ROW="| {YYYY-MM-DD} | {HH:MM} | {id} | {branch} | {topic ≤60 chars} | private |"
+```
+
+The last column is the literal word `private` — session records are no longer linkable from this public file. Keep the topic phrase sanitized (see the intro): it's fine to say *what area* was worked on, not fine to describe an open vulnerability or a business figure.
+
+```bash
 
 # Split on the marker comment that sits right under the table header.
 # The marker lives immediately after the |---|---|...| separator row, so we
@@ -156,14 +166,24 @@ The marker comment is on a stable single line and the awk approach above is sing
 
 ---
 
-## Step 7 — Commit the docs
+## Step 7 — Commit the docs (two repos)
 
-Stage and commit all three doc updates together:
+**In this (public) repo** — only the two shared index/backlog files; the session record must NOT appear here:
 
 ```bash
-git add docs/sessions/{YYYY-MM-DD}-{HHMM}-{id}.md docs/MANUAL_TASKS.md TEAM_COORDINATION.md
+git add docs/MANUAL_TASKS.md TEAM_COORDINATION.md
 git commit -m "docs(session): close {id} — {1-line topic}"
 ```
+
+**In the private notes repo** (`<notes-dir>` is inside it) — commit the session record by path and push. Use `git -C` from here; do not `cd` into it:
+
+```bash
+git -C "<notes-repo-root>" add "sessions/{YYYY-MM-DD}-{HHMM}-{id}.md"
+git -C "<notes-repo-root>" commit -m "notes(session): {id} — {1-line topic}"
+git -C "<notes-repo-root>" push
+```
+
+(`<notes-repo-root>` is `<notes-dir>`'s parent. If the private push fails, report it — the record still exists on disk either way.)
 
 ---
 
@@ -193,7 +213,7 @@ Output this summary (≤30 lines):
 SESSION CLOSED — {branch} — {YYYY-MM-DD} {HH:MM} [{id}]
 
 COMMITTED THIS SESSION: {commit SHA(s) or "nothing"}
-SESSION RECORD: docs/sessions/{file}.md
+SESSION RECORD: <notes-dir>\{file}.md (private)
 
 ACCOMPLISHED:
   • {item}
@@ -217,7 +237,8 @@ PICK UP NEXT TIME:
 - Never commit `.png` screenshots, `.env` files, scratch scripts, or credentials.
 - Never use `--no-verify` or `--force` on git commands.
 - Never delete files without explicit user confirmation.
-- Never modify or delete other sessions' record files in `docs/sessions/`.
+- Never write a session record inside this repo — it is PUBLIC. Records go to `<notes-dir>` only; `docs/sessions/` is frozen pre-2026-07-30 history.
+- Never modify or delete other sessions' record files (in `<notes-dir>` or the frozen `docs/sessions/`).
 - Never renumber `MT-NNN` IDs or rewrite history in `MANUAL_TASKS.md`.
 - Push after every session close (Step 7b). A dirty working tree from a parallel agent is NOT a reason to skip — push only sends commits.
 - The tone of session records should be a handoff note from one engineer to another, not a changelog.

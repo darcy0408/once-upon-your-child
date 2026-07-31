@@ -13,7 +13,7 @@ Read the following files in parallel, then synthesize a briefing:
 
 ### 1. Gather context (read all of these)
 
-- `docs/context/sessions/SESSION_HISTORY.md` — Read the **first entry only** (most recent session). Extract: what was done, what was left unfinished, any handoff notes.
+- **Most recent session records** — read the path in `.claude/notes-location.txt` (untracked, repo root; the PRIVATE notes directory — this repo is public, so session records live outside it). List that directory and read the 2–3 newest `{date}-{time}-{id}.md` files. Extract: what was done, what was left unfinished, any handoff notes. Fallbacks if the pointer file is missing or the directory is empty: the Recent Sessions table in `TEAM_COORDINATION.md` → `docs/sessions/` (frozen pre-2026-07-30 public history), then `docs/context/sessions/SESSION_HISTORY.md` (stale, stops 2026-04-20).
 - `docs/PROJECT_STATUS.md` — Current project status, in-progress items, planned features.
 - `TEAM_COORDINATION.md` — Scan for any items marked with `[ ]` (unchecked boxes) or "deferred". These are open action items.
 - `backend_errors.log` — Check if it exists and has recent content. If so, flag the errors.
