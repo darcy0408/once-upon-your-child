@@ -5,7 +5,7 @@
 #
 # Already satisfied on Darcy's machine (openai 2.40.x, python-dotenv 1.2.2).
 
-openai>=2.48.0        # GitHub Models judge — OpenAI-compatible client
+openai>=2.50.0        # GitHub Models judge — OpenAI-compatible client
 python-dotenv>=1.0     # loads backend/.env for GITHUB_MODELS_TOKEN
 
 # Used later, once a generation budget is authorized — already in

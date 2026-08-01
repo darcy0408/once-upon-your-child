@@ -30,7 +30,7 @@ anthropic>=0.120.0
 # than via a full pip-compile, to avoid the Python-3.13 audioop-lts lockfile
 # landmine; openai's other transitive deps (anyio/distro/httpx/jiter/pydantic/
 # sniffio/typing-extensions) were already pinned and satisfy its constraints.
-openai>=2.48.0
+openai>=2.50.0
 
 # Utilities
 requests==2.34.2
