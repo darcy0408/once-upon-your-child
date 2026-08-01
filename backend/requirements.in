@@ -21,7 +21,7 @@ google-auth==2.56.2
 # pip-compile, to avoid the Python-3.13 audioop-lts lockfile landmine; the other
 # transitive deps (anyio/distro/httpx/pydantic/sniffio/typing-extensions) were
 # already pinned and satisfy anthropic's constraints.
-anthropic>=0.120.0
+anthropic>=0.120.2
 
 # OpenAI (direct) — MT-248 launch-gate story-text provider for the free/volume
 # tier (GPT-5 mini). Activated only when STORY_GEN_PROVIDER=openai or =tiered;
