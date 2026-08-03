@@ -38,6 +38,13 @@ class AppButton extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
+            // Ellipsis without an explicit maxLines collapses to a SINGLE
+            // line, which made long labels unreadable — Pick-a-Path renders
+            // each branch choice through this button, so a child was picking
+            // between "Step into the library's doorway and ask the arc…"
+            // and two other truncated sentences (MT-393). The button's height
+            // is a minimum, so it grows to fit the wrapped label.
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
         ),

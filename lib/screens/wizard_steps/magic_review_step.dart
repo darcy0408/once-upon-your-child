@@ -1676,12 +1676,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     size: 32,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Review Your Adventure',
-                    style: GoogleFonts.bitter(
-                      color: band.accent,
-                      fontSize: band.heading(20),
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      'Review Your Adventure',
+                      style: GoogleFonts.bitter(
+                        color: band.accent,
+                        fontSize: band.heading(20),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -1843,12 +1845,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 size: 26,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Ready to begin?',
-                style: GoogleFonts.sourceSans3(
-                  color: band.textOnDark,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  'Ready to begin?',
+                  style: GoogleFonts.sourceSans3(
+                    color: band.textOnDark,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -2076,12 +2080,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 size: 28,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Your Story Pitch',
-                style: GoogleFonts.bitter(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+              Flexible(
+                child: Text(
+                  'Your Story Pitch',
+                  style: GoogleFonts.bitter(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],

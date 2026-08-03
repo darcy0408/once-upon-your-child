@@ -913,6 +913,11 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
+    // The reader is pushed from the result screen, so it inherits the app's
+    // band theme. Without this it rendered one fixed type size for every age.
+    final bandTheme =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isNarrow = MediaQuery.of(context).size.width < 360;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -945,7 +950,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                         widget.title,
                         style: GoogleFonts.merriweather(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: bandTheme.heading(20),
                           fontWeight: FontWeight.bold,
                           shadows: [
                             Shadow(
@@ -955,7 +960,9 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                             ),
                           ],
                         ),
-                        maxLines: 1,
+                        // One line truncated most generated titles at phone
+                        // width ("The Brave Little…"); two lines fit them.
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -970,12 +977,18 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                     children: [
                       const Icon(Icons.star, color: AppColors.gold, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        'A story for ${widget.characterName}',
-                        style: GoogleFonts.quicksand(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      // Unbounded, this Row overflowed once the hero's name
+                      // pushed past ~17 characters on a 320px phone.
+                      Expanded(
+                        child: Text(
+                          'A story for ${widget.characterName}',
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: bandTheme.body(16),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1196,12 +1209,18 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                                   // Text Content
                                   Expanded(
                                     child: SingleChildScrollView(
-                                      padding: const EdgeInsets.all(32),
+                                      // 32px a side eats a fifth of a 320px
+                                      // phone; tighten it there so the line
+                                      // length stays readable.
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: isNarrow ? 20 : 32,
+                                        vertical: 32,
+                                      ),
                                       child: RichText(
                                         textAlign: TextAlign.left,
                                         text: TextSpan(
                                           style: GoogleFonts.merriweather(
-                                            fontSize: 22,
+                                            fontSize: bandTheme.body(22),
                                             height: 1.8,
                                             color: const Color(0xFF2C3E50),
                                           ),

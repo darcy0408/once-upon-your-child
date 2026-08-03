@@ -1541,14 +1541,16 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'What do you do next?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: band.textOnDark,
+            Flexible(
+              child: Text(
+                'What do you do next?',
+                style: TextStyle(
+                  fontSize: band.body(18),
+                  fontWeight: FontWeight.bold,
+                  color: band.textOnDark,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(width: 8),
             VoiceMicButton(

@@ -323,20 +323,22 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // Wrap, not Row: beside the Shuffle button the count had barely
+          // 40px on a 320px phone and broke mid-word ("150 char/acters t…").
+          // It now sits on its own line when there isn't room alongside.
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Flexible(
-                child: Text(
-                  '${_pool.length} characters to discover',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(153),
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                '${_pool.length} characters to discover',
+                style: TextStyle(
+                  color: Colors.white.withAlpha(153),
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _nextBatch,
                 icon: const Text('🎲', style: TextStyle(fontSize: 18)),
@@ -393,6 +395,10 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
+                      // Wraps rather than ellipsising: on a 320-360px phone a
+                      // single line truncates to "Create a custom avatar
+                      // that…", hiding what the button actually does.
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

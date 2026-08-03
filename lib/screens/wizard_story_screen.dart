@@ -608,160 +608,174 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                               : _previousStep,
                           tooltip: _currentStep == 0 ? 'Close' : 'Back',
                         ),
-                        const Spacer(),
-                        // Life Quests button — labeled for Explorer/Adventurer,
-                        // icon-only for mature. Sprout intentionally has NO
-                        // top-bar Big Feelings entry: the scene-picker "Big
-                        // Feelings" tile is the single in-wizard entry (MT-288).
-                        // A duplicate top-bar cloud button bounced Sprout kids
-                        // out of the wizard mid-build.
-                        if (band.band != AgeBand.sprout)
-                          if (!band.band.isMature)
-                            _LabeledNavButton(
-                              icon: Icons.explore_rounded,
-                              label: 'Life Quests',
-                              onPressed: () async {
-                                if (await _confirmLeaveWizard('Life Quests')) {
-                                  await _openLifeQuests();
-                                }
-                              },
-                            )
-                          else
-                            IconButton(
-                              icon: const Icon(Icons.explore_rounded,
-                                  color: Colors.white),
-                              onPressed: _openLifeQuests,
-                              tooltip: 'Life Quests',
+                        // Right-aligned nav cluster. FittedBox replaces a plain
+                        // Spacer so the row shrinks instead of overflowing: at
+                        // 320px the four labeled buttons ran 5.5px past the
+                        // edge and pushed Parent controls off-screen.
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Life Quests button — labeled for Explorer/Adventurer,
+                                // icon-only for mature. Sprout intentionally has NO
+                                // top-bar Big Feelings entry: the scene-picker "Big
+                                // Feelings" tile is the single in-wizard entry (MT-288).
+                                // A duplicate top-bar cloud button bounced Sprout kids
+                                // out of the wizard mid-build.
+                                if (band.band != AgeBand.sprout)
+                                  if (!band.band.isMature)
+                                    _LabeledNavButton(
+                                      icon: Icons.explore_rounded,
+                                      label: 'Life Quests',
+                                      onPressed: () async {
+                                        if (await _confirmLeaveWizard('Life Quests')) {
+                                          await _openLifeQuests();
+                                        }
+                                      },
+                                    )
+                                  else
+                                    IconButton(
+                                      icon: const Icon(Icons.explore_rounded,
+                                          color: Colors.white),
+                                      onPressed: _openLifeQuests,
+                                      tooltip: 'Life Quests',
+                                    ),
+                                // Character Library button — labeled for young bands, icon-only for mature
+                                if (!band.band.isMature)
+                                  _LabeledNavButton(
+                                    icon: Icons.people,
+                                    label: 'Heroes',
+                                    onPressed: () async {
+                                      if (!await _confirmLeaveWizard('Heroes')) return;
+                                      if (!context.mounted) return;
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CharacterLibraryScreen(),
+                                        ),
+                                      );
+                                      _loadSavedCharacters();
+                                    },
+                                  )
+                                else
+                                  IconButton(
+                                    icon: const Icon(Icons.people, color: Colors.white),
+                                    onPressed: () async {
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const CharacterLibraryScreen(),
+                                        ),
+                                      );
+                                      _loadSavedCharacters();
+                                    },
+                                    tooltip: 'My Characters',
+                                  ),
+                                // My Stories library — restores the saved-stories
+                                // entry that was stranded on the legacy StoryScreen
+                                // home (MT-377, persona audit 2026-07-18). Without
+                                // this, no band had any way to re-read a saved story
+                                // beyond the per-hero Continue chip.
+                                if (!band.band.isMature)
+                                  _LabeledNavButton(
+                                    icon: Icons.auto_stories_rounded,
+                                    label: band.band == AgeBand.sprout
+                                        ? 'My Books'
+                                        : 'Stories',
+                                    onPressed: () async {
+                                      if (!await _confirmLeaveWizard('My Stories')) {
+                                        return;
+                                      }
+                                      if (!context.mounted) return;
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const SavedStoriesScreen(),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                else
+                                  IconButton(
+                                    icon: const Icon(Icons.auto_stories_rounded,
+                                        color: Colors.white),
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const SavedStoriesScreen(),
+                                        ),
+                                      );
+                                    },
+                                    tooltip: 'My Stories',
+                                  ),
+                                // Chronicles button — only when a character is selected
+                                if (_wizardData.characterId != null)
+                                  IconButton(
+                                    icon: const Icon(Icons.menu_book_rounded,
+                                        color: Colors.white),
+                                    onPressed: () {
+                                      final stub = Character(
+                                        id: _wizardData.characterId!,
+                                        name: _wizardData.characterName,
+                                        age: _wizardData.characterAge,
+                                        role: _wizardData.selectedArchetypeId ??
+                                            'Adventurer',
+                                      );
+                                      Navigator.of(context).push(MaterialPageRoute(
+                                        builder: (_) => ChroniclesListScreen(
+                                          character: stub,
+                                          userId: '',
+                                        ),
+                                      ));
+                                    },
+                                    tooltip: 'My Chronicles',
+                                  ),
+                                // Bedtime Mode button — labeled for young bands, icon-only for mature
+                                if (!band.band.isMature)
+                                  Semantics(
+                                    button: true,
+                                    label: 'Bedtime mode',
+                                    child: _LabeledNavButton(
+                                      icon: Icons.bedtime_outlined,
+                                      label: 'Bedtime',
+                                      onPressed: () =>
+                                          _showBedtimeSettingsDialog(context),
+                                    ),
+                                  )
+                                else
+                                  Semantics(
+                                    button: true,
+                                    label: 'Voice story mode',
+                                    child: IconButton(
+                                      icon: const Icon(Icons.mic_none_rounded,
+                                          color: Colors.white),
+                                      onPressed: () =>
+                                          _showBedtimeSettingsDialog(context),
+                                      tooltip: 'Voice Story Mode',
+                                    ),
+                                  ),
+                                // Parent settings — small icon-only button so kids ignore
+                                // it but parents can find it from anywhere in the wizard.
+                                Semantics(
+                                  button: true,
+                                  label: 'Parent controls',
+                                  child: IconButton(
+                                    icon: const Icon(Icons.shield_outlined,
+                                        color: Colors.white70, size: 22),
+                                    onPressed: () async {
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const ParentControlsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    tooltip: 'Parent',
+                                  ),
+                                ),
+                              ],
                             ),
-                        // Character Library button — labeled for young bands, icon-only for mature
-                        if (!band.band.isMature)
-                          _LabeledNavButton(
-                            icon: Icons.people,
-                            label: 'Heroes',
-                            onPressed: () async {
-                              if (!await _confirmLeaveWizard('Heroes')) return;
-                              if (!context.mounted) return;
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CharacterLibraryScreen(),
-                                ),
-                              );
-                              _loadSavedCharacters();
-                            },
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.people, color: Colors.white),
-                            onPressed: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CharacterLibraryScreen(),
-                                ),
-                              );
-                              _loadSavedCharacters();
-                            },
-                            tooltip: 'My Characters',
-                          ),
-                        // My Stories library — restores the saved-stories
-                        // entry that was stranded on the legacy StoryScreen
-                        // home (MT-377, persona audit 2026-07-18). Without
-                        // this, no band had any way to re-read a saved story
-                        // beyond the per-hero Continue chip.
-                        if (!band.band.isMature)
-                          _LabeledNavButton(
-                            icon: Icons.auto_stories_rounded,
-                            label: band.band == AgeBand.sprout
-                                ? 'My Books'
-                                : 'Stories',
-                            onPressed: () async {
-                              if (!await _confirmLeaveWizard('My Stories')) {
-                                return;
-                              }
-                              if (!context.mounted) return;
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SavedStoriesScreen(),
-                                ),
-                              );
-                            },
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.auto_stories_rounded,
-                                color: Colors.white),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SavedStoriesScreen(),
-                                ),
-                              );
-                            },
-                            tooltip: 'My Stories',
-                          ),
-                        // Chronicles button — only when a character is selected
-                        if (_wizardData.characterId != null)
-                          IconButton(
-                            icon: const Icon(Icons.menu_book_rounded,
-                                color: Colors.white),
-                            onPressed: () {
-                              final stub = Character(
-                                id: _wizardData.characterId!,
-                                name: _wizardData.characterName,
-                                age: _wizardData.characterAge,
-                                role: _wizardData.selectedArchetypeId ??
-                                    'Adventurer',
-                              );
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => ChroniclesListScreen(
-                                  character: stub,
-                                  userId: '',
-                                ),
-                              ));
-                            },
-                            tooltip: 'My Chronicles',
-                          ),
-                        // Bedtime Mode button — labeled for young bands, icon-only for mature
-                        if (!band.band.isMature)
-                          Semantics(
-                            button: true,
-                            label: 'Bedtime mode',
-                            child: _LabeledNavButton(
-                              icon: Icons.bedtime_outlined,
-                              label: 'Bedtime',
-                              onPressed: () =>
-                                  _showBedtimeSettingsDialog(context),
-                            ),
-                          )
-                        else
-                          Semantics(
-                            button: true,
-                            label: 'Voice story mode',
-                            child: IconButton(
-                              icon: const Icon(Icons.mic_none_rounded,
-                                  color: Colors.white),
-                              onPressed: () =>
-                                  _showBedtimeSettingsDialog(context),
-                              tooltip: 'Voice Story Mode',
-                            ),
-                          ),
-                        // Parent settings — small icon-only button so kids ignore
-                        // it but parents can find it from anywhere in the wizard.
-                        Semantics(
-                          button: true,
-                          label: 'Parent controls',
-                          child: IconButton(
-                            icon: const Icon(Icons.shield_outlined,
-                                color: Colors.white70, size: 22),
-                            onPressed: () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const ParentControlsScreen(),
-                                ),
-                              );
-                            },
-                            tooltip: 'Parent',
                           ),
                         ),
                       ],

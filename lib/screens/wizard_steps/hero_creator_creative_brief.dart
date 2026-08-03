@@ -155,15 +155,20 @@ class CreativeBriefWidget extends StatelessWidget {
         initiallyExpanded: initiallyExpanded,
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 16),
+        // The letter-spaced caps titles ("CAST & COMPANIONS" + "optional")
+        // ran past the tile at phone widths; Flexible lets the longer ones
+        // wrap instead of overflowing.
         title: Row(
           children: [
-            Text(
-              title.toUpperCase(),
-              style: GoogleFonts.sourceSans3(
-                color: accent.withAlpha(180),
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
+            Flexible(
+              child: Text(
+                title.toUpperCase(),
+                style: GoogleFonts.sourceSans3(
+                  color: accent.withAlpha(180),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
             if (optional) ...[
@@ -282,33 +287,48 @@ class CreativeBriefWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GenderImageButton(
-              gender: 'Boy',
-              assetPath: boyAsset,
-              isSelected: gender == 'Boy',
-              width: 130,
-              height: 170,
-              onTap: () {
-                wizardData.characterGender = 'Boy';
-                onChanged();
-              },
-            ),
-            const SizedBox(width: 28),
-            GenderImageButton(
-              gender: 'Girl',
-              assetPath: girlAsset,
-              isSelected: gender == 'Girl',
-              width: 130,
-              height: 170,
-              onTap: () {
-                wizardData.characterGender = 'Girl';
-                onChanged();
-              },
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = 28.0;
+            const maxCard = 130.0;
+            // Each card's selection border is drawn outside its fixed-size
+            // child, so reserve it here or the row overflows on narrow phones.
+            const borderAllowance = 2 * 2 * kGenderSelectedBorder;
+            final available = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : maxCard * 2 + gap + borderAllowance;
+            final cardWidth =
+                ((available - gap - borderAllowance) / 2).clamp(84.0, maxCard);
+            final cardHeight = cardWidth * (170 / 130);
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GenderImageButton(
+                  gender: 'Boy',
+                  assetPath: boyAsset,
+                  isSelected: gender == 'Boy',
+                  width: cardWidth,
+                  height: cardHeight,
+                  onTap: () {
+                    wizardData.characterGender = 'Boy';
+                    onChanged();
+                  },
+                ),
+                const SizedBox(width: gap),
+                GenderImageButton(
+                  gender: 'Girl',
+                  assetPath: girlAsset,
+                  isSelected: gender == 'Girl',
+                  width: cardWidth,
+                  height: cardHeight,
+                  onTap: () {
+                    wizardData.characterGender = 'Girl';
+                    onChanged();
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

@@ -1533,10 +1533,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       size: 32,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      band.createCharacterLabel,
-                      textAlign: TextAlign.center,
-                      style: _bandTitleStyle(band, baseFontSize: 24),
+                    // Unbounded, the band's title ("CREATE YOUR HERO" in the
+                    // explorer's wide Cinzel face) ran off a 320px screen.
+                    Flexible(
+                      child: Text(
+                        band.createCharacterLabel,
+                        textAlign: TextAlign.center,
+                        style: _bandTitleStyle(band, baseFontSize: 24),
+                      ),
                     ),
                   ],
                 ),
@@ -1773,9 +1777,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     size: 32,
                   ),
                   const SizedBox(width: 8),
-                  Text(title,
-                      textAlign: TextAlign.center,
-                      style: _bandTitleStyle(band, baseFontSize: 22)),
+                  Flexible(
+                    child: Text(title,
+                        textAlign: TextAlign.center,
+                        style: _bandTitleStyle(band, baseFontSize: 22)),
+                  ),
                 ],
               );
             },
@@ -3284,29 +3290,46 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final gender = widget.wizardData.characterGender;
     final isAdult = ageBand == AgeBand.adult;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GenderImageButton(
-          gender: 'Boy',
-          label: isAdult ? 'Man' : null,
-          assetPath: boyAsset,
-          isSelected: gender == 'Boy',
-          width: 140,
-          height: 180,
-          onTap: () => _handleGenderSelection('Boy'),
-        ),
-        SizedBox(width: band.space(32)),
-        GenderImageButton(
-          gender: 'Girl',
-          label: isAdult ? 'Woman' : null,
-          assetPath: girlAsset,
-          isSelected: gender == 'Girl',
-          width: 140,
-          height: 180,
-          onTap: () => _handleGenderSelection('Girl'),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gap = band.space(32);
+        // Each card draws a selection border OUTSIDE its fixed-size child, so
+        // a card occupies width + 2 * borderWidth. Reserve the selected border
+        // (3.5) for both cards: the reservation is constant, so the row does
+        // not reflow when the selection moves between them.
+        const borderAllowance = 2 * 2 * kGenderSelectedBorder;
+        final available = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : kGenderCardMaxWidth * 2 + gap + borderAllowance;
+        final cardWidth = ((available - gap - borderAllowance) / 2)
+            .clamp(88.0, kGenderCardMaxWidth);
+        // Keep the portrait aspect the art was authored at (140x180).
+        final cardHeight = cardWidth * (180 / 140);
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GenderImageButton(
+              gender: 'Boy',
+              label: isAdult ? 'Man' : null,
+              assetPath: boyAsset,
+              isSelected: gender == 'Boy',
+              width: cardWidth,
+              height: cardHeight,
+              onTap: () => _handleGenderSelection('Boy'),
+            ),
+            SizedBox(width: gap),
+            GenderImageButton(
+              gender: 'Girl',
+              label: isAdult ? 'Woman' : null,
+              assetPath: girlAsset,
+              isSelected: gender == 'Girl',
+              width: cardWidth,
+              height: cardHeight,
+              onTap: () => _handleGenderSelection('Girl'),
+            ),
+          ],
+        );
+      },
     );
   }
 
