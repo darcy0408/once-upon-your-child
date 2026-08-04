@@ -23,12 +23,13 @@ A budget cap, aggressiveness setting, and branch policy must be decided before a
 backend/eval/
 ├── README.md             this file
 ├── __init__.py
-├── prompt_registry.py    every template, source pointer, content hash
+├── prompt_registry.py    every template, symbol anchor, content hash
 ├── rubrics.py            5 rubrics + scoring schema per audit spec
 ├── test_set.py           30 fixed-seed prompts (common/edge/adversarial)
 ├── harness.py            runner: budget cap, resume, calibration mode
 ├── judge.py              LLM-judge ensemble skeleton
 ├── snapshot.py           re-hashes templates against current source; drift detector
+│                         (anchors are symbols resolved via ast — never line numbers)
 └── results/              gitignored — JSONL output, judge logs, failures
 ```
 
@@ -99,10 +100,14 @@ Code reality (not the audit spec's stylized 6 × 4):
 
 - 7 age-band keys: `3-4`, `5-7`, `8-10`, `11-13`, `13-15`, `15-18`, `adult`
 - 6 modes: `standard`, `ltr_limerick`, `ltr_seussian`, `rhyme_time`, `bedtime`, `superhero`
-- Superhero is only valid on `3-4` and `5-7`
-- **Total valid cells:** 36 (see `prompt_registry.VALID_CELLS`)
+- Superhero is valid on `3-4`, `5-7`, `8-10`, `13-15`, `15-18` and `adult`
+- **Total valid cells:** 38 (see `prompt_registry.VALID_CELLS`)
 
-At 30 samples/cell that's 1080 generations per run.
+At 30 samples/cell that's 1140 generations per run.
+
+The count was 35 until 2026-08-03, when the Creator (`T9_SUPERHERO_CREATOR`) and
+Adolescent antihero (`T10_ANTIHERO_ADOLESCENT`) builders were finally registered
+— they had shipped to production without ever entering the registry (MT-392).
 
 ## Safety
 

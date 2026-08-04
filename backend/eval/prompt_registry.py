@@ -1,10 +1,23 @@
 """Versioned snapshot of every prompt template in the story-generation pipeline.
 
-Snapshot date: 2026-05-21
-Snapshot git SHA: 390de0e5 (HEAD when this file was first written)
+Snapshot date: 2026-08-03
+Snapshot git SHA: 3e17a911 (HEAD when the anchors were re-baselined)
 
 This module does NOT import from backend.services. It records source-file
 pointers and content hashes so `snapshot.py --verify` can detect drift.
+
+Templates are pinned by ``anchors`` — dotted symbol paths (``Class.method``,
+``module_function``, ``MODULE_CONSTANT``) resolved against the current source
+with `ast`. They were pinned by absolute line number until 2026-08-03, by which
+point every window had slid off its builder and the detector had been reporting
+on unrelated code for months (MT-392). Never reintroduce line numbers here: an
+anchor must move when its builder is edited and stay put when anything above it
+is edited, and only a symbol does both.
+
+A template may list several anchors when its prompt text is split across a
+builder and the data it reads (e.g. T11 = ``_get_virtue_instruction`` plus
+``VIRTUE_MAP``, which holds the actual virtue prose). Spans are concatenated in
+listed order before hashing.
 
 To add or update a template: edit the entry, then run
 `python -m backend.eval.snapshot --refresh` to recompute content_hash.
@@ -15,11 +28,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-SNAPSHOT_GIT_SHA = "390de0e5"
-SNAPSHOT_DATE = "2026-05-21"
+SNAPSHOT_GIT_SHA = "3e17a911"
+SNAPSHOT_DATE = "2026-08-03"
 
 # Code-side age band keys. Note these differ from memory's customer-facing
 # names (Sprout 3-5, Explorer 6-8, Adventurer 9-12) — see findings F-04.
+# Each entry's age_bands is the nearest-overlapping key, with the real range
+# in a trailing comment; F-04 (realigning these keys) remains open.
 AGE_BANDS = ("3-4", "5-7", "8-10", "11-13", "13-15", "15-18", "adult")
 
 # Code-side mode names. Pick-a-Path / Interactive is a different endpoint
@@ -38,8 +53,7 @@ MODES = (
 class PromptTemplate:
     template_id: str
     source_file: str
-    line_start: int
-    line_end: int
+    anchors: Sequence[str]
     mode: str
     age_bands: Sequence[str]
     builder_function: str
@@ -53,10 +67,9 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="7aa42d4a271b83d1",
+        content_hash="33ef5b2089822340",
         source_file="backend/services/story_service.py",
-        line_start=770,
-        line_end=816,
+        anchors=("AdvancedStoryEngine.generate_enhanced_prompt",),
         mode="standard",
         age_bands=AGE_BANDS,
         builder_function="AdvancedStoryEngine.generate_enhanced_prompt",
@@ -87,12 +100,16 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         ),
         description="Master Storyteller persona; 3-act arc; hero-centric; emotion/virtue modeling.",
     ),
+    # T2 and T3 share one builder: LTR's CVC / Seuss / limerick / prose branches
+    # all live inside _build_learning_to_read_prompt, so both hash the whole
+    # function and an edit to either branch drifts both. Over-flagging is the
+    # safe direction; finer attribution needs the function split (see the same
+    # note in backend/services/prompt_versioning.py).
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="de2a3cafc051cf5f",
+        content_hash="cde8a82daaa09eb0",
         source_file="backend/services/story_service.py",
-        line_start=1268,
-        line_end=1306,
+        anchors=("_build_learning_to_read_prompt",),
         mode="ltr_limerick",
         age_bands=("5-7", "8-10", "11-13", "13-15"),  # 6+ per Explore map
         builder_function="_build_learning_to_read_prompt (limericks branch)",
@@ -109,10 +126,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="180779691f2a4823",
+        content_hash="cde8a82daaa09eb0",
         source_file="backend/services/story_service.py",
-        line_start=1308,
-        line_end=1354,
+        anchors=("_build_learning_to_read_prompt",),
         mode="ltr_seussian",
         age_bands=AGE_BANDS,
         builder_function="_build_learning_to_read_prompt (non-limerick branch)",
@@ -132,10 +148,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T4_RHYME_TIME",
-        content_hash="4163f88b19fd7960",
+        content_hash="7c8cbe11d09d7258",
         source_file="backend/services/story_service.py",
-        line_start=1510,
-        line_end=1542,
+        anchors=("_build_rhyme_time_prompt",),
         mode="rhyme_time",
         age_bands=AGE_BANDS,
         builder_function="_build_rhyme_time_prompt",
@@ -162,10 +177,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="458f9da5ff79309a",
+        content_hash="1616846927f93e82",
         source_file="backend/services/story_service.py",
-        line_start=1691,
-        line_end=1753,
+        anchors=("_build_bedtime_prompt",),
         mode="bedtime",
         age_bands=AGE_BANDS,
         builder_function="_build_bedtime_prompt",
@@ -185,13 +199,12 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="0441537f40dbb7d3",
+        content_hash="a25cc46433ddb955",
         source_file="backend/services/prompt_service.py",
-        line_start=284,
-        line_end=417,
+        anchors=("PromptService._build_superhero_prompt",),
         mode="superhero",
-        age_bands=("3-4",),
-        builder_function="_build_superhero_prompt",
+        age_bands=("3-4",),  # Sprout, ages 3-5
+        builder_function="PromptService._build_superhero_prompt",
         output_format="json: same shape as T1",
         interpolated_vars=(
             "character",
@@ -209,13 +222,12 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="95d8957d32ca2ab5",
+        content_hash="92f08e223ac8a999",
         source_file="backend/services/prompt_service.py",
-        line_start=418,
-        line_end=577,
+        anchors=("PromptService._build_superhero_prompt_explorer",),
         mode="superhero",
-        age_bands=("5-7",),
-        builder_function="_build_superhero_prompt_explorer",
+        age_bands=("5-7",),  # Explorer, ages 6-8
+        builder_function="PromptService._build_superhero_prompt_explorer",
         output_format="json: same shape as T1",
         interpolated_vars=(
             "character",
@@ -234,13 +246,12 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T8_SUPERHERO_ADVENTURER",
-        content_hash="73a753d7be69db9c",
+        content_hash="ef8790251753f0ca",
         source_file="backend/services/prompt_service.py",
-        line_start=610,
-        line_end=782,
+        anchors=("PromptService._build_superhero_prompt_adventurer",),
         mode="superhero",
-        age_bands=("8-10",),
-        builder_function="_build_superhero_prompt_adventurer",
+        age_bands=("8-10",),  # Adventurer, ages 9-12
+        builder_function="PromptService._build_superhero_prompt_adventurer",
         output_format="json: same shape as T1",
         interpolated_vars=(
             "character",
@@ -259,18 +270,82 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
             "900-1500 words; non-violent, understanding-based resolution."
         ),
     ),
-    # The remaining T8/T9/T11-T13 entries are injection fragments not directly
-    # sent to the LLM as a standalone prompt; the harness records whether they
-    # were active for a given generation in the metadata column, but does not
-    # score them as standalone templates. (T8_SAFETY_GUARDRAILS shares the "T8"
-    # label with the sendable T8_SUPERHERO_ADVENTURER above — they are distinct
-    # template_ids; the numbering is a label, not a namespace.)
+    PromptTemplate(
+        template_id="T9_SUPERHERO_CREATOR",
+        content_hash="743b11c0cea5195b",
+        source_file="backend/services/prompt_service.py",
+        anchors=("PromptService._build_superhero_prompt_creator",),
+        mode="superhero",
+        age_bands=("13-15", "adult"),  # Creator, ages 13-14 and 18+
+        builder_function="PromptService._build_superhero_prompt_creator",
+        output_format="json: same shape as T1, plus saga_state for continuity",
+        interpolated_vars=(
+            "character",
+            "age",
+            "hero_costume_color",
+            "hero_cape_style",
+            "hero_emblem",
+            "hero_power",
+            "villain_id",
+            "problem_id",
+            "hero_catchphrase",
+            "hero_alias",
+            "custom_elements",
+            "prior_saga",
+        ),
+        description=(
+            "Creator-band Hero Saga Issue; villain/problem pairing via "
+            "pick_pairing(band='creator'); emits saga_state so Phase 2 can "
+            "serialize continuity."
+        ),
+    ),
+    PromptTemplate(
+        template_id="T10_ANTIHERO_ADOLESCENT",
+        content_hash="92dd42ec74527076",
+        source_file="backend/services/prompt_service.py",
+        anchors=("PromptService._build_superhero_prompt_adolescent",),
+        mode="superhero",
+        age_bands=("15-18",),  # Adolescent, ages 15-17
+        builder_function="PromptService._build_superhero_prompt_adolescent",
+        output_format="json: same shape as T1, plus saga_state for continuity",
+        interpolated_vars=(
+            "character",
+            "age",
+            "hero_costume_color",
+            "hero_emblem",
+            "hero_power",
+            "hero_mode",
+            "villain_id",
+            "problem_id",
+            "hero_catchphrase",
+            "hero_secret",
+            "hero_tell",
+            "hero_line",
+            "hero_seen_by",
+            "custom_elements",
+            "prior_saga",
+        ),
+        description=(
+            "Adolescent antihero 'double life' Issue; Edge matrix "
+            "(social/identity-scale antagonists, powers with a built-in cost); "
+            "mirrors Creator's saga_state/JSON contract."
+        ),
+    ),
+    # The fragment entries below are injections, not standalone prompts: the
+    # harness records whether each was active for a given generation in the
+    # metadata column but does not score them as independent cells.
+    #
+    # Numbering caveat: the "T<n>" labels are display labels, not a namespace,
+    # and two pairs collide — T8_SAFETY_GUARDRAILS with T8_SUPERHERO_ADVENTURER,
+    # and T9_STRICT_OUTPUT with T9_SUPERHERO_CREATOR. Within each pair the
+    # template_ids are distinct, so lookups are unambiguous. The sendable ids
+    # are the ones that win a collision: prompt_versioning.py persists them on
+    # Story rows, so renaming those would orphan production attribution data.
     PromptTemplate(
         template_id="T8_SAFETY_GUARDRAILS",
-        content_hash="4b57b655ab8487f7",
+        content_hash="e6902fa9d691680c",
         source_file="backend/services/story_service.py",
-        line_start=149,
-        line_end=155,
+        anchors=("SAFETY_GUARDRAILS",),
         mode="*",
         age_bands=AGE_BANDS,
         builder_function="(static const, injected into all prompts)",
@@ -280,10 +355,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T9_STRICT_OUTPUT",
-        content_hash="25471fa7abc6a5ba",
+        content_hash="1fe0d2f5081e954b",
         source_file="backend/services/story_service.py",
-        line_start=126,
-        line_end=137,
+        anchors=("STRICT_OUTPUT_CONSTRAINTS",),
         mode="*",
         age_bands=AGE_BANDS,
         builder_function="(static const, injected into all prompts)",
@@ -293,10 +367,11 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T11_VIRTUE",
-        content_hash="c981da8c98fb003f",
+        content_hash="5757d83972e1e117",
         source_file="backend/services/story_service.py",
-        line_start=159,
-        line_end=214,
+        # VIRTUE_MAP holds the virtue prose itself, so it is part of the
+        # template — hashing the builder alone would miss every wording change.
+        anchors=("_get_virtue_instruction", "VIRTUE_MAP"),
         mode="standard",
         age_bands=AGE_BANDS,
         builder_function="_get_virtue_instruction",
@@ -306,10 +381,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T12_FEELINGS",
-        content_hash="dc85c941a9ca4c5f",
+        content_hash="353143dc59eff9ff",
         source_file="backend/services/story_service.py",
-        line_start=217,
-        line_end=259,
+        anchors=("_build_feelings_instruction",),
         mode="standard",
         age_bands=AGE_BANDS,
         builder_function="_build_feelings_instruction",
@@ -319,10 +393,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T13_PRIOR_ADVENTURES",
-        content_hash="7252495977a3cfc3",
+        content_hash="cba50a615cb027c1",
         source_file="backend/services/story_service.py",
-        line_start=405,
-        line_end=504,
+        anchors=("_build_prior_adventures_block",),
         mode="standard",
         age_bands=AGE_BANDS,
         builder_function="_build_prior_adventures_block",
@@ -334,8 +407,9 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
 
 
 # Templates that are directly sent to the LLM as a complete prompt.
-# T8/T9 (static injections) and T11/T12/T13 (conditional injections) are
-# fragments composed into T1 — they don't define independent cells.
+# T8_SAFETY_GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13
+# (conditional injections) are fragments composed into T1 — they don't define
+# independent cells.
 SENDABLE_TEMPLATE_IDS = frozenset(
     {
         "T1_STANDARD",
@@ -346,6 +420,8 @@ SENDABLE_TEMPLATE_IDS = frozenset(
         "T6_SUPERHERO_SPROUT",
         "T7_SUPERHERO_EXPLORER",
         "T8_SUPERHERO_ADVENTURER",
+        "T9_SUPERHERO_CREATOR",
+        "T10_ANTIHERO_ADOLESCENT",
     }
 )
 
