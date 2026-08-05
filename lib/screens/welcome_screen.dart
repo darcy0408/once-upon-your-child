@@ -168,8 +168,26 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   Future<void> _initVoice() async {
-    _speechEnabled = await _speech.initialize();
+    // Without these listeners the UI has no way to learn that speech failed.
+    // [_listen] flips the button to "Listening…" and ONLY a final result ever
+    // clears it, so anything that stops the engine early leaves a mic that
+    // spins forever and never accepts a word. iOS home-screen PWAs hit this
+    // every time: WebKit reports speech as available, so `initialize` returns
+    // true and the button renders, but standalone mode never delivers a result.
+    _speechEnabled = await _speech.initialize(
+      onError: (_) => _stopListeningUi(),
+      onStatus: (status) {
+        if (status == SpeechToText.listeningStatus) return;
+        _stopListeningUi();
+      },
+    );
     if (mounted) setState(() {});
+  }
+
+  /// Drops the listening UI back to idle. Safe to call when already idle.
+  void _stopListeningUi() {
+    if (!mounted || !_isListening) return;
+    setState(() => _isListening = false);
   }
 
   Future<void> _speak(String text,
@@ -247,16 +265,29 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await AppTtsService.instance.stop();
 
     setState(() => _isListening = true);
-    await _speech.listen(
-      onResult: (result) {
-        setState(() {
-          _nameController.text = _extractName(result.recognizedWords);
-          if (result.finalResult) {
-            _isListening = false;
-          }
-        });
-      },
-    );
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          setState(() {
+            _nameController.text = _extractName(result.recognizedWords);
+            if (result.finalResult) {
+              _isListening = false;
+            }
+          });
+        },
+        // Hard caps so a silent or unsupported engine can't hold the mic open.
+        // Typing stays available throughout; this only releases the UI.
+        listenOptions: SpeechListenOptions(
+          listenFor: const Duration(seconds: 20),
+          pauseFor: const Duration(seconds: 5),
+        ),
+      );
+    } catch (_) {
+      // listen() throws if the engine was torn down between initialize and
+      // here. Falling through with _isListening stuck true would strand the
+      // child on a dead mic with no way back.
+      _stopListeningUi();
+    }
   }
 
   @override
