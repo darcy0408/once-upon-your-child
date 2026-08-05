@@ -1,6 +1,6 @@
 # Privacy Policy - Once Upon YOUR Child, powered by Story Weaver
 
-**Effective Date:** May 19, 2026
+**Effective Date:** August 5, 2026
 
 ## Our Commitment to Privacy
 
@@ -27,6 +27,18 @@ Once Upon YOUR Child (powered by Story Weaver) is committed to protecting the pr
 ### Character & Avatar Data
 - Character names and avatar customization choices
 - Photos (optional): if a parent enables photo-based avatars, a photo used to create a child's character avatar. Photo-based avatars are off by default and require parental opt-in. The photo is not stored on our servers.
+
+### Voice Input (optional)
+Some screens offer a microphone button as an alternative to typing — for example, to say a hero's name or describe a story idea. Using it is always optional: every one of those screens also accepts typed input, and the microphone is never opened without the child or parent tapping it first.
+
+When the microphone is used, the spoken audio is converted to text by the **speech-recognition service built into the device's browser or operating system**, not by Once Upon YOUR Child. Depending on the device, that means:
+
+- **Google** — on Chrome and on Android devices, the browser or system sends the recorded audio to Google's speech-recognition service.
+- **Apple** — on Safari and iOS devices, the audio is processed by Apple's speech recognition, either on the device or on Apple's servers depending on the device and language.
+
+This processing is performed by the device platform under **its own privacy policy**, and it happens before the words reach us. We receive only the resulting **text**, never the audio recording. We do not record, store, transmit, or retain your child's voice, and we do not use voice to identify anyone or build a voice profile.
+
+If you would prefer that your child's voice never be sent to a platform speech service, simply type instead of using the microphone — every voice field has a text alternative, and no feature is lost by typing.
 
 ## How We Use Information
 
@@ -159,6 +171,8 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 | **Firebase / Google Analytics** | Anonymized app usage events (consent-gated, off by default, not enabled for children under 13) | App analytics |
 | **Sentry** | Crash and error diagnostics | Error monitoring and stability |
 | **Resend** | Parent/guardian email address | Sending COPPA parental-consent verification emails |
+
+**Voice input is handled by the device platform, not by a sub-processor we engage.** When a child uses a microphone button, the recorded audio is converted to text by the speech-recognition service built into their browser or operating system — Google's on Chrome and Android, Apple's on Safari and iOS. Because that conversion happens on the device platform before the words reach us, those platforms act under their own privacy policies rather than as our sub-processors. We receive only the resulting text and never the audio. See **Voice Input (optional)** above; typing is always available as an alternative.
 
 The exact AI image provider used may vary by build and availability: story-page illustrations use Cloudflare Workers AI (with Replicate, then Gemini, as fallbacks), and character avatars use OpenAI (with Replicate as fallback).
 
