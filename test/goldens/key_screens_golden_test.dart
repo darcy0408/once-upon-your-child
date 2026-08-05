@@ -9,10 +9,53 @@ import 'package:story_weaver_app/models/subscription_status.dart';
 import 'package:story_weaver_app/screens/subscription_management_screen.dart';
 import 'package:story_weaver_app/screens/subscription_success_screen.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
+import 'package:story_weaver_app/services/payment/payment_channel.dart';
 import 'package:story_weaver_app/services/stripe_service.dart';
 import 'package:story_weaver_app/services/subscription_sync_service.dart';
 
 import 'golden_test_harness.dart';
+
+/// Stands in for the real [PaymentChannel].
+///
+/// Without this the screen calls `createPaymentChannel()`, which on a non-web
+/// test host builds the Play Billing client and throws a channel-error
+/// PlatformException — and, worse, makes the captured layout depend on the host
+/// platform rather than on the branch under test. [isStore] selects which
+/// management UI is captured: the Stripe buttons (web) or the "manage it in
+/// your store settings" panel that Apple Guideline 3.1.1 requires.
+class _StubPaymentChannel implements PaymentChannel {
+  const _StubPaymentChannel({required this.isStore});
+
+  final bool isStore;
+
+  @override
+  PaymentChannelKind get kind =>
+      isStore ? PaymentChannelKind.googleIap : PaymentChannelKind.stripeWeb;
+
+  @override
+  bool get isStoreChannel => isStore;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<List<PaymentProduct>> loadProducts() async => const [];
+
+  @override
+  Future<PurchaseResult> purchase({
+    required SubscriptionTier tier,
+    required String userId,
+    BillingPeriod billingPeriod = BillingPeriod.monthly,
+  }) async =>
+      throw UnimplementedError('golden tests never start a purchase');
+
+  @override
+  Future<PurchaseResult> restorePurchases({required String userId}) async =>
+      throw UnimplementedError('golden tests never restore purchases');
+
+  @override
+  void dispose() {}
+}
 
 class _StubStripeService extends StripeService {
   _StubStripeService({this.shouldSucceed = true});
@@ -81,13 +124,14 @@ SubscriptionStatus _buildStatus() => SubscriptionStatus(
       cancelAtPeriodEnd: false,
     );
 
-Widget _buildSubscriptionManagementScreen() {
+Widget _buildSubscriptionManagementScreen({required bool isStore}) {
   return SubscriptionManagementScreen(
     httpClient: _buildClient(),
     subscriptionLoader: (_) async => _buildStatus(),
     subscriptionSyncer: (_) async {},
     userIdResolver: () async => 'user-123',
     stripeService: _StubStripeService(),
+    paymentChannel: _StubPaymentChannel(isStore: isStore),
   );
 }
 
@@ -104,12 +148,31 @@ void main() {
     SubscriptionSyncService.resetInstance();
   });
 
+  // The web build is what ships today, so it keeps the original golden name.
   testWidgets('Subscription management screen', (tester) async {
-    await pumpGoldenApp(tester, _buildSubscriptionManagementScreen());
+    await pumpGoldenApp(
+      tester,
+      _buildSubscriptionManagementScreen(isStore: false),
+    );
 
     await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('subscription_management_screen.png'),
+    );
+  });
+
+  // The store branch replaces the Stripe "Manage Billing"/"Cancel" buttons with
+  // a pointer to the store's own settings — required by Apple Guideline 3.1.1
+  // and Google Play Payments policy, and previously unpinned.
+  testWidgets('Subscription management screen (store build)', (tester) async {
+    await pumpGoldenApp(
+      tester,
+      _buildSubscriptionManagementScreen(isStore: true),
+    );
+
+    await expectLater(
+      find.byType(Scaffold),
+      matchesGoldenFile('subscription_management_screen_store.png'),
     );
   });
 
