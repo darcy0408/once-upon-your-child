@@ -3,6 +3,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/age_band_theme.dart';
 import '../../utils/motion_utils.dart';
 
+/// Border drawn around a selected [GenderImageButton]. The border sits OUTSIDE
+/// the card's fixed-size child, so a card occupies `width + 2 * border`.
+/// Callers laying these out in a row must reserve it or the row overflows.
+const double kGenderSelectedBorder = 3.5;
+
+/// Border drawn around an unselected [GenderImageButton].
+const double kGenderUnselectedBorder = 1.5;
+
+/// Width the gender card art was authored at; the largest size worth drawing.
+const double kGenderCardMaxWidth = 140.0;
+
 class GenderImageButton extends StatefulWidget {
   const GenderImageButton({
     super.key,
@@ -90,7 +101,9 @@ class _GenderImageButtonState extends State<GenderImageButton> {
                           : _hovered
                               ? accent.withAlpha(100)
                               : Colors.white30,
-                      width: widget.isSelected ? 3.5 : 1.5,
+                      width: widget.isSelected
+                          ? kGenderSelectedBorder
+                          : kGenderUnselectedBorder,
                     ),
                   ),
                   child: Container(

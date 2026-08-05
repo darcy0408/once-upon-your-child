@@ -218,6 +218,11 @@ class _EmotionCard extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
+                          // On a 320-360px phone the cell is narrow enough
+                          // that a two-line label pushed this Column past the
+                          // card's fixed height.
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
