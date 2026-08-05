@@ -850,6 +850,9 @@ class _LifeQuestScreenState extends State<LifeQuestScreen> {
                   textAlign: TextAlign.center,
                   style: _chromeStyle(band,
                       fontSize: 18, fontWeight: FontWeight.w500),
+                  // Ellipsis without maxLines collapses to a single line, which
+                  // left the quest title as "The …" between the chrome buttons.
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
