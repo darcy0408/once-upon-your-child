@@ -18,6 +18,7 @@ import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
 import 'widgets/magical_loading_view.dart';
+import 'widgets/pick_a_path_app_bar.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/voice_mic_button.dart';
 import 'widgets/crisis_resources_panel.dart';
@@ -824,6 +825,10 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   bool get _isYoung => widget.character.age <= 8;
   bool get _isMature => _bandTheme.band.isMature;
 
+  /// Whether the storybook progress row belongs under the app-bar title.
+  bool get _showProgressIndicator =>
+      !_isLoading && _currentSegment != null && !_showingSessionBreak;
+
   String get _continueLabel {
     if (_isSprout) return 'Keep going! ➡️';
     if (_isYoung) return 'What happens next? →';
@@ -836,33 +841,18 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     final band = _bandTheme;
     return Scaffold(
       backgroundColor: band.gradientStart,
-      appBar: AppBar(
-        backgroundColor: band.gradientStart,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          _storyTitle ?? 'Pick-A-Path Adventure',
-          style: TextStyle(
-            fontFamily: band.uiFontFamily,
-            fontSize: _isSprout ? 20 : 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        actions: [
-          if (!_isLoading && _currentSegment != null && !_showingSessionBreak)
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: StorybookProgressIndicator(
-                  currentPage: _currentSegment!.segmentNumber,
-                  totalPages: _targetSegmentCount,
-                  stageLabel: _currentSegment!.stageLabel,
-                  isCompleted: _isCompleted,
-                ),
-              ),
-            ),
-        ],
+      appBar: PickAPathAppBar(
+        title: _storyTitle ?? 'Pick-A-Path Adventure',
+        band: band,
+        isSprout: _isSprout,
+        progress: _showProgressIndicator
+            ? StorybookProgressIndicator(
+                currentPage: _currentSegment!.segmentNumber,
+                totalPages: _targetSegmentCount,
+                stageLabel: _currentSegment!.stageLabel,
+                isCompleted: _isCompleted,
+              )
+            : null,
       ),
       body: Container(
         decoration: BoxDecoration(
