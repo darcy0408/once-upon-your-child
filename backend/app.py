@@ -975,6 +975,18 @@ def create_app(config_name):
     tts_bp = create_tts_blueprint(limiter=limiter, require_auth=_require_auth)
     app.register_blueprint(tts_bp)
 
+    # Speech-to-text for the web build (native uses the on-device recognizer).
+    # Lazy like TTS — returns 503 when no key is configured.
+    try:
+        from backend.routes.transcription_routes import (
+            create_transcription_blueprint,
+        )
+    except ImportError:
+        from routes.transcription_routes import create_transcription_blueprint
+    app.register_blueprint(
+        create_transcription_blueprint(limiter=limiter, require_auth=_require_auth)
+    )
+
     @app.errorhandler(404)
     def not_found(e):
         return (
