@@ -446,6 +446,28 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                           style: textWhite70),
                                       const SizedBox(height: AppSpacing.sm),
                                       Text(
+                                        'Voice Input (optional)',
+                                        style: GoogleFonts.fredoka(
+                                          color: const Color(0xFFFFD700),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      const Text(
+                                          '• Some screens offer a microphone button instead of typing. It is always optional — every one of those screens also accepts typed input, and the microphone never opens unless it is tapped.',
+                                          style: textWhite70),
+                                      const Text(
+                                          "• When it is used, the speech is turned into text by the speech-recognition service built into your device's browser or operating system — Google's on Chrome and Android, Apple's on Safari and iOS — under that platform's own privacy policy.",
+                                          style: textWhite70),
+                                      const Text(
+                                          "• We receive only the resulting text, never the audio. We do not record, store, or transmit your child's voice, and we never use voice to identify anyone.",
+                                          style: textWhite70),
+                                      const Text(
+                                          '• If you would rather your child\'s voice never reach a platform speech service, just type instead — no feature is lost.',
+                                          style: textWhite70),
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
                                         'Who Operates This App',
                                         style: GoogleFonts.fredoka(
                                           color: const Color(0xFFFFD700),

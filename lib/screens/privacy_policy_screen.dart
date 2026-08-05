@@ -8,7 +8,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   /// Static effective date — keep in sync with PRIVACY_POLICY.md.
-  static const String effectiveDate = 'May 19, 2026';
+  static const String effectiveDate = 'August 5, 2026';
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +37,7 @@ Once Upon YOUR Child is committed to protecting the privacy and safety of childr
 - Usage data: story creation patterns, activity engagement, character progress, app usage statistics
 - Story & feelings data: story goals and themes, milestone achievements, and any "big feelings" your child chooses to share — a short, optional piece of text used only to personalize a single story. We treat this emotional-state text as transient story-personalization input, not as a health record or a retained emotional profile of your child.
 - Character & avatar data: character names and avatar choices. If a parent enables photo-based avatars, a photo used to create the child's character avatar (off by default, parental opt-in required; not stored on our servers)
+- Voice input (optional): some screens offer a microphone instead of typing. The speech is converted to text by the speech-recognition service built into your device's browser or operating system — Google's on Chrome and Android, Apple's on Safari and iOS — under that platform's own privacy policy. We receive only the resulting text, never the audio. We do not record, store, or transmit your child's voice. Typing is always available as an alternative.
 ''',
             ),
             _buildSection(
@@ -109,6 +110,8 @@ We share only the minimum data required for each service to function. Each provi
 The exact AI image provider used may vary by build and availability.
 
 Photo avatars (optional): if you choose to create an avatar from a photo, the photo is sent to our servers and then to the active AI image provider solely to generate the cartoon avatar. It is not stored on our servers and is used for nothing else.
+
+Voice input is handled by the device platform, not by a sub-processor we engage. When a microphone button is used, the audio is converted to text by the browser or operating system — Google's service on Chrome and Android, Apple's on Safari and iOS — before the words reach us. Those platforms act under their own privacy policies rather than as our sub-processors. We receive only text and never the audio.
 ''',
             ),
             _buildSection(
