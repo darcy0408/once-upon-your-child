@@ -1,10 +1,18 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Required for making network requests to backend API -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- STORE-1 (MT-143): Google Play Billing for in-app subscriptions. -->
     <uses-permission android:name="com.android.vending.BILLING"/>
+
+    <!-- MT-403: firebase_analytics merges advertising-ID permissions into the
+         APK by default. A children's app must not declare them (D2 hardening,
+         Play Data Safety cross-check MT-391). -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove"/>
 
     <application
         android:label="story_weaver_app"
@@ -38,6 +46,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- MT-403 / D2-H1 (Android twin of the Info.plist setting): child-directed
+             Analytics config — no ad-personalization signals, no Advertising ID
+             collection (covers pre-13 devices where the permission removal alone
+             wouldn't stop the SDK). -->
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
