@@ -1,0 +1,35 @@
+# Once Upon YOUR Child, powered by Story Weaver — security contact
+# https://onceuponyourchild.app
+#
+# This is a children's storytelling app. If you find something that could
+# expose a child's data — a name, an age, a photo, a story — please tell us
+# privately first and give us a chance to fix it before it is published.
+# We are a very small team and we will answer.
+#
+# IN SCOPE
+#   onceuponyourchild.app                            (Flutter web app)
+#   story-weaver-app-production.up.railway.app       (API)
+#
+# PLEASE DO
+#   Test against accounts you create yourself.
+#   Report anything that exposes another person's data, however small.
+#
+# PLEASE DON'T
+#   Run automated load, stress or denial-of-service testing. AI generation
+#   costs real money per request and there is no organisation behind this
+#   absorbing it.
+#   Access, modify or store data belonging to anyone but yourself.
+#   Publish generated content as representative of the product without
+#   telling us first — the story generator is steerable, and a screenshot
+#   out of context misleads parents about a product built for children.
+#
+# The source is public, so you do not need to guess at the implementation:
+#   https://github.com/darcy0408/once-upon-your-child
+#
+# We welcome good-faith security research and will not pursue action against
+# researchers who follow the guidance above.
+
+Contact: mailto:security@onceuponyourchild.app
+Expires: 2027-08-04T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://onceuponyourchild.app/.well-known/security.txt
