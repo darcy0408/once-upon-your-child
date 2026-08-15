@@ -73,7 +73,7 @@ Flask-Caching==2.4.1
 celery==5.6.3
 
 # ElevenLabs Text-to-Speech
-elevenlabs==2.55.0
+elevenlabs==2.59.0
 pydub>=0.25.1
 
 # Microsoft Edge TTS — free, no-API-key neural voice used as the narration
