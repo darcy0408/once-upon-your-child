@@ -27,6 +27,8 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          # Pinned — unpinned `stable` broke main 2026-08-14 (see main_tests.yml).
+          flutter-version: 3.41.9
           channel: stable
           cache: true
 
