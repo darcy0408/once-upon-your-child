@@ -263,11 +263,15 @@ class ParentalConsentService {
   /// [method] = 'email_pending' and verified = false). The child does NOT get
   /// full access until [verifyEmailConsent] completes.
   ///
-  /// Returns true if the backend accepted the request and an email was queued.
+  /// Returns [queued] = true if the backend accepted the request and an email
+  /// was sent, along with [expiresInMinutes] — how long the emailed code stays
+  /// valid. That window is read from the server response rather than mirrored
+  /// as a client constant, so the two cannot drift; it is null if the backend
+  /// omits it.
   ///
   /// REQUIRES BACKEND: `POST /api/user/<id>/consent/request-verification`
   /// (see report — endpoint must be built server-side).
-  Future<bool> requestEmailVerification({
+  Future<({bool queued, int? expiresInMinutes})> requestEmailVerification({
     required int age,
     required String parentEmail,
     bool allowPhotoAvatar = false,
@@ -306,7 +310,12 @@ class ParentalConsentService {
         'allow_photo_avatar': allowPhotoAvatar,
       },
     );
-    return resp['success'] == true;
+    final rawExpiry = resp['expires_in_minutes'];
+    return (
+      queued: resp['success'] == true,
+      expiresInMinutes:
+          rawExpiry is int ? rawExpiry : int.tryParse('${rawExpiry ?? ''}'),
+    );
   }
 
   /// Completes the COPPA email round-trip: submits the [code] the parent

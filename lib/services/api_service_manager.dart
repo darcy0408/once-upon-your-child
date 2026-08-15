@@ -1021,7 +1021,8 @@ class ApiServiceManager {
               (errorJson.containsKey('error_code') ||
                   errorJson.containsKey('error') ||
                   errorJson.containsKey('message'))) {
-            throw ApiError.fromJson(errorJson);
+            throw ApiError.fromJson(errorJson,
+                statusCode: response.statusCode);
           }
         } catch (e) {
           if (e is ApiError) rethrow;
@@ -1057,7 +1058,8 @@ class ApiServiceManager {
               (errorJson.containsKey('error_code') ||
                   errorJson.containsKey('error') ||
                   errorJson.containsKey('message'))) {
-            throw ApiError.fromJson(errorJson);
+            throw ApiError.fromJson(errorJson,
+                statusCode: response.statusCode);
           }
         } catch (e) {
           if (e is ApiError) rethrow;
