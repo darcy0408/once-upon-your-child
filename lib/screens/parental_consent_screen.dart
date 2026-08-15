@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../models/api_error.dart';
 import '../services/api_service_manager.dart';
 import '../services/app_tts_service.dart';
 import '../services/consent_age.dart';
@@ -38,6 +39,32 @@ const bool _kSkipEmailConsent = !kReleaseMode;
 /// removed entirely.
 const bool _kConsentTestBypass =
     bool.fromEnvironment('CONSENT_TEST_BYPASS', defaultValue: false);
+
+/// Shown when the submitted code was simply wrong — the one rejection a parent
+/// can fix by re-reading the email, rather than by requesting a new code.
+const String _kCodeMismatchMessage =
+    'That code did not match. Check your email and try again.';
+
+/// Maps a rejection from the consent-verify endpoint to what the parent should
+/// actually do next.
+///
+/// The endpoint returns one identical body for every rejection so it never
+/// reveals which check failed, leaving the HTTP status as the only signal. 410
+/// covers both an expired code and one that no longer exists; 429 means the
+/// per-code attempt cap killed it. Neither is recoverable by retyping, so both
+/// point at Resend. Anything else is treated as a transient fault.
+String consentVerifyErrorMessage(int? statusCode) {
+  switch (statusCode) {
+    case 400:
+      return _kCodeMismatchMessage;
+    case 410:
+      return 'That code has expired. Tap "Resend email" for a new one.';
+    case 429:
+      return 'Too many tries. Tap "Resend email" for a new code.';
+    default:
+      return 'Could not verify right now. Please try again.';
+  }
+}
 
 class ParentalConsentScreen extends StatefulWidget {
   const ParentalConsentScreen({
@@ -87,6 +114,11 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   final _emailController = TextEditingController();
   bool _verifying = false;
   String? _verifyError;
+
+  /// How long the emailed code stays valid, as reported by the backend when it
+  /// sent the code. Shown to the parent so an expired code is an explainable
+  /// event rather than a mystery. Null until a code has been requested.
+  int? _codeExpiryMinutes;
 
   /// The digital-consent age for this session, resolved from the caller's
   /// country (GDPR Art. 8). Defaults to the COPPA floor (13) and is updated by
@@ -1142,14 +1174,14 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     }
     setState(() => _submitting = true);
     try {
-      final queued = await widget.consentService.requestEmailVerification(
+      final result = await widget.consentService.requestEmailVerification(
         age: widget.declaredAge,
         parentEmail: email,
         allowPhotoAvatar: _allowPhotoAvatar,
         allowAnalytics: _allowAnalytics,
       );
       if (!mounted) return;
-      if (!queued) {
+      if (!result.queued) {
         setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1164,6 +1196,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         _submitting = false;
         _phase = _ConsentPhase.awaitingCode;
         _verifyError = null;
+        _codeExpiryMinutes = result.expiresInMinutes;
       });
       AppTtsService.instance.stop();
     } catch (_) {
@@ -1200,10 +1233,21 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       } else {
         setState(() {
           _verifying = false;
-          _verifyError =
-              'That code did not match. Check your email and try again.';
+          _verifyError = _kCodeMismatchMessage;
         });
       }
+    } on ApiError catch (error) {
+      // The verify endpoint deliberately returns one identical body for every
+      // rejection so it never reveals which check failed; the HTTP status is
+      // the only thing that separates them. Reading it costs no extra
+      // disclosure — the status is already visible to anyone calling the
+      // endpoint — but it is the difference between a parent retyping a dead
+      // code forever and being told to tap Resend.
+      if (!mounted) return;
+      setState(() {
+        _verifying = false;
+        _verifyError = consentVerifyErrorMessage(error.statusCode);
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -1212,6 +1256,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       });
     }
   }
+
 
   /// Re-sends the verification email to the same parent address.
   Future<void> _resendVerificationEmail() async {
@@ -1222,16 +1267,31 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       _verifyError = null;
     });
     try {
-      await widget.consentService.requestEmailVerification(
+      final result = await widget.consentService.requestEmailVerification(
         age: widget.declaredAge,
         parentEmail: email,
         allowPhotoAvatar: _allowPhotoAvatar,
         allowAnalytics: _allowAnalytics,
       );
       if (!mounted) return;
-      setState(() => _verifying = false);
+      setState(() {
+        _verifying = false;
+        _codeExpiryMinutes = result.expiresInMinutes;
+        // The old code is dead the moment a new one is issued. Leaving it in
+        // the field invites the parent to submit it again, which spends one of
+        // the new code's limited attempts on a code that cannot ever match.
+        _codeController.clear();
+        _verifyError = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification email sent again.')),
+        SnackBar(
+          content: Text(
+            _codeExpiryMinutes == null
+                ? 'New code sent. Enter the newest code from your email.'
+                : 'New code sent — it is good for $_codeExpiryMinutes minutes. '
+                    'Enter the newest code from your email.',
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -1271,6 +1331,18 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
             textAlign: TextAlign.center,
             style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 15),
           ),
+          if (_codeExpiryMinutes != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'The code expires $_codeExpiryMinutes minutes after it was sent. '
+              'If it stops working, tap "Resend email" for a new one.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.fredoka(
+                color: const Color(0xFFFFD700),
+                fontSize: 13,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           TextField(
             controller: _codeController,

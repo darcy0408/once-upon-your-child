@@ -13,16 +13,24 @@ class ApiError implements Exception {
   final String message;
   final String? hint;
 
+  /// HTTP status that carried this error, when it came from a response.
+  /// Some endpoints deliberately return one opaque body for several distinct
+  /// failures and separate them only by status (see the COPPA consent-verify
+  /// route), so callers that need to tell those apart read this.
+  final int? statusCode;
+
   ApiError({
     required this.errorCode,
     required this.message,
     this.hint,
+    this.statusCode,
   });
 
-  factory ApiError.fromJson(Map<String, dynamic> json) => ApiError(
+  factory ApiError.fromJson(Map<String, dynamic> json, {int? statusCode}) => ApiError(
         errorCode: (json['error_code'] ?? json['error'] ?? 'ERR_UNKNOWN').toString(),
         message: (json['message'] ?? json['error'] ?? 'Something went wrong.').toString(),
         hint: json['hint']?.toString(),
+        statusCode: statusCode,
       );
 
   /// Returns true if this is a mode combination error (e.g., Pick-a-Path + Rhymes).
