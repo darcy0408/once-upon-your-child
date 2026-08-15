@@ -1257,7 +1257,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
     }
   }
 
-
   /// Re-sends the verification email to the same parent address.
   Future<void> _resendVerificationEmail() async {
     final email = _parentEmail?.trim() ?? '';
@@ -1305,132 +1304,151 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   /// Code-entry phase shown to the parent after the verification email is sent.
   Widget _buildVerificationStep() {
     final email = _parentEmail?.trim() ?? '';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('✉️',
-              style: TextStyle(fontSize: 44), textAlign: TextAlign.center),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Check your email',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.fredoka(
-              color: const Color(0xFFFFD700),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'We sent a verification code to:\n$email\n\n'
-            'Enter the code below to confirm you are the parent or guardian. '
-            'Your child cannot start playing until this step is complete.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 15),
-          ),
-          if (_codeExpiryMinutes != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'The code expires $_codeExpiryMinutes minutes after it was sent. '
-              'If it stops working, tap "Resend email" for a new one.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.fredoka(
-                color: const Color(0xFFFFD700),
-                fontSize: 13,
+    // This step is the only one the parent cannot scroll past, and its content
+    // grows with the parent's email address, the expiry line and any error
+    // text — on a short screen or at a large text scale a plain Column would
+    // overflow and strand the Confirm button off-screen. LayoutBuilder +
+    // IntrinsicHeight keeps the footnote pinned to the bottom on tall screens
+    // while letting the whole step scroll once it no longer fits.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: IntrinsicHeight(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('✉️',
+                      style: TextStyle(fontSize: 44),
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Check your email',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.fredoka(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'We sent a verification code to:\n$email\n\n'
+                    'Enter the code below to confirm you are the parent or guardian. '
+                    'Your child cannot start playing until this step is complete.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.fredoka(
+                        color: Colors.white70, fontSize: 15),
+                  ),
+                  if (_codeExpiryMinutes != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'The code expires $_codeExpiryMinutes minutes after it was sent. '
+                      'If it stops working, tap "Resend email" for a new one.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.fredoka(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  TextField(
+                    controller: _codeController,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 22, letterSpacing: 4),
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.text,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'Verification code',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      hintText: 'e.g. 4F2A9C',
+                      hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
+                      errorText: _verifyError,
+                      errorStyle: const TextStyle(
+                          color: Color(0xFFFF8A80), fontSize: 12),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(25),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white54),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white54),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                            color: Color(0xFFFFD700), width: 2),
+                      ),
+                    ),
+                    onChanged: (_) {
+                      if (_verifyError != null) {
+                        setState(() => _verifyError = null);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _verifying ? null : _submitVerificationCode,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFD700),
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor: Colors.white.withAlpha(30),
+                        disabledForegroundColor: Colors.white54,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text(
+                        _verifying ? 'Verifying...' : 'Confirm Consent ✓',
+                        style: GoogleFonts.fredoka(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: _verifying
+                            ? null
+                            : () => setState(() {
+                                  _phase = _ConsentPhase.notice;
+                                  _verifyError = null;
+                                  _codeController.clear();
+                                }),
+                        child: const Text('Change email',
+                            style: TextStyle(color: Colors.white54)),
+                      ),
+                      TextButton(
+                        onPressed: _verifying ? null : _resendVerificationEmail,
+                        child: const Text('Resend email',
+                            style: TextStyle(color: Color(0xFFFFD700))),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Consent is recorded as pending until verification '
+                    'completes.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white.withAlpha(120), fontSize: 11),
+                  ),
+                ],
               ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          TextField(
-            controller: _codeController,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 22, letterSpacing: 4),
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.text,
-            textCapitalization: TextCapitalization.characters,
-            decoration: InputDecoration(
-              labelText: 'Verification code',
-              labelStyle: const TextStyle(color: Colors.white70),
-              hintText: 'e.g. 4F2A9C',
-              hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
-              errorText: _verifyError,
-              errorStyle:
-                  const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
-              filled: true,
-              fillColor: Colors.white.withAlpha(25),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white54),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white54),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFFFFD700), width: 2),
-              ),
-            ),
-            onChanged: (_) {
-              if (_verifyError != null) {
-                setState(() => _verifyError = null);
-              }
-            },
           ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _verifying ? null : _submitVerificationCode,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD700),
-                foregroundColor: Colors.black,
-                disabledBackgroundColor: Colors.white.withAlpha(30),
-                disabledForegroundColor: Colors.white54,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text(
-                _verifying ? 'Verifying...' : 'Confirm Consent ✓',
-                style: GoogleFonts.fredoka(
-                    fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: _verifying
-                    ? null
-                    : () => setState(() {
-                          _phase = _ConsentPhase.notice;
-                          _verifyError = null;
-                          _codeController.clear();
-                        }),
-                child: const Text('Change email',
-                    style: TextStyle(color: Colors.white54)),
-              ),
-              TextButton(
-                onPressed: _verifying ? null : _resendVerificationEmail,
-                child: const Text('Resend email',
-                    style: TextStyle(color: Color(0xFFFFD700))),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            'Consent is recorded as pending until verification completes.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 11),
-          ),
-        ],
+        ),
       ),
     );
   }
