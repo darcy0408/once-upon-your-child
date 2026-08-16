@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  App Store export options for Once Upon YOUR Child (team JPU8WX66BX).
+
+  NOT used by .github/workflows/ios-testflight.yml today. That workflow calls
+  `flutter build ipa` with an app-store export method, which generates its own
+  export options. This file is for a manual
+  `xcodebuild -exportArchive -exportOptionsPlist ios/ExportOptions.plist`, which
+  is how a first upload from a borrowed Mac would be done, and is the file to
+  point CI at if it ever switches to an explicit plist.
+
+  `method` below is the modern Xcode 15.3+ spelling; older Xcode wants
+  `app-store` instead.
+
+  (XML comments cannot contain a double hyphen, so command flags are described
+  in prose here rather than written out literally.)
+-->
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store-connect</string>
+
+    <key>teamID</key>
+    <string>JPU8WX66BX</string>
+
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <key>destination</key>
+    <string>export</string>
+
+    <!-- Upload dSYMs so Sentry can symbolicate release crashes. -->
+    <key>uploadSymbols</key>
+    <true/>
+
+    <!-- Let Apple thin the bundle per device. -->
+    <key>stripSwiftSymbols</key>
+    <true/>
+</dict>
+</plist>

@@ -73,15 +73,18 @@ jobs:
           rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
           rm -rf ios/.build
 
+      # The signing team comes from DEVELOPMENT_TEAM in Runner.xcodeproj, set on
+      # all three Runner configs (2026-08-16). It used to be passed here as
+      # --dart-define=IOS_DEVELOPMENT_TEAM, which only defines a Dart
+      # compile-time constant and never reached the Xcode build setting — so
+      # signing was never actually configured. Removed rather than left to imply
+      # otherwise. The IOS_DEVELOPMENT_TEAM repo secret is now unused.
       - name: Build signed IPA for App Store Connect
-        env:
-          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
         run: |
           flutter build ipa \
             --release \
             --build-number=${{ github.run_number }} \
-            --export-method=app-store \
-            --dart-define=IOS_DEVELOPMENT_TEAM=$IOS_DEVELOPMENT_TEAM
+            --export-method=app-store
 
       - name: Configure App Store Connect API key
         env:
