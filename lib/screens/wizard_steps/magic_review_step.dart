@@ -24,6 +24,7 @@ import 'package:story_weaver_app/screens/wizard_story_screen.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/services/chronicle_service.dart';
 import 'package:story_weaver_app/services/illustration_preference_service.dart';
+import 'package:story_weaver_app/data/band_story_defaults.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/breathing_avatar.dart';
@@ -465,16 +466,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 .map((p) => {...p, 'role': 'pet'}),
           ];
 
-          // Tone calibrated by age band
+          // Tone calibrated by age band. The map moved to
+          // data/band_story_defaults.dart so other entry points into story
+          // generation share it instead of guessing — ChronicleScreen was
+          // guessing 'whimsical' for every chapter at every age.
           final band = ageBandFromAge(wd.characterAge);
-          final tone = switch (band) {
-            AgeBand.sprout => 'whimsical',
-            AgeBand.explorer => 'whimsical',
-            AgeBand.adventurer => 'fantasy',
-            AgeBand.creator => 'mystery',
-            AgeBand.adolescent => 'atmospheric',
-            AgeBand.adult => 'literary',
-          };
+          final tone = storyToneForBand(band);
 
           // Living Story Chronicle auto-attach: for saved (non-anonymous)
           // characters starting a Pick-a-Path story, resolve a chronicle so

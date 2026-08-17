@@ -3,6 +3,44 @@ import '../models.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service_manager.dart';
 
+/// Ages 3-17, plus [current] when it falls outside that range.
+///
+/// This editor was built before the adult band existed and offered 3-17 only,
+/// so opening it on an 18+ character tripped the same dropdown assertion as
+/// [roleOptionsFor] below and threw instead of rendering. Including the real
+/// age keeps it selectable without silently re-aging the character.
+@visibleForTesting
+List<int> ageOptionsFor(int current) {
+  final ages = List.generate(15, (i) => i + 3);
+  if (ages.contains(current)) return ages;
+  return [...ages, current]..sort();
+}
+
+/// The six legacy roles, plus [current] when it isn't one of them.
+///
+/// Characters created through the modern wizard carry an archetype name
+/// ('Storm Rider', 'Animal Whisperer', …), not a legacy role. Feeding such a
+/// value to a dropdown whose items don't contain it trips DropdownButton's
+/// "exactly one matching item" assertion, so opening the editor on a
+/// wizard-made character threw instead of rendering.
+///
+/// Including the current value also stops a silent data change: previously the
+/// only way to make the widget legal was to reset the selection to a legacy
+/// role, and saving then overwrote the character's archetype with it.
+@visibleForTesting
+List<String> roleOptionsFor(String current) {
+  const legacy = [
+    'Adventurer',
+    'Thinker',
+    'Artist',
+    'Helper',
+    'Athlete',
+    'Shy Friend',
+  ];
+  if (current.isEmpty || legacy.contains(current)) return legacy;
+  return [current, ...legacy];
+}
+
 /// Character Editor Screen
 ///
 /// Allows editing an existing character's details
@@ -313,7 +351,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                             const SizedBox(height: AppSpacing.sm),
                             DropdownButtonFormField<int>(
                               initialValue: _age,
-                              items: List.generate(15, (i) => i + 3)
+                              items: ageOptionsFor(_age)
                                   .map((age) => DropdownMenuItem(
                                         value: age,
                                         child: Text('$age years'),
@@ -383,15 +421,10 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
-                        initialValue: _role,
-                        items: [
-                          'Adventurer',
-                          'Thinker',
-                          'Artist',
-                          'Helper',
-                          'Athlete',
-                          'Shy Friend',
-                        ]
+                        // Null rather than '' — an empty role is not one of the
+                        // items either, and would assert just the same.
+                        initialValue: _role.isEmpty ? null : _role,
+                        items: roleOptionsFor(_role)
                             .map((r) => DropdownMenuItem(
                                   value: r,
                                   child: Text(r),

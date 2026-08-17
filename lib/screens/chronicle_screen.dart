@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../data/band_story_defaults.dart';
 import '../models.dart';
 import '../models/local/chapter_memory_local.dart';
 import '../models/local/chronicle_local.dart';
@@ -85,7 +86,13 @@ class _ChronicleScreenState extends State<ChronicleScreen> {
           userId: widget.userId,
           character: widget.character,
           theme: _chronicle.genre,
-          tone: 'whimsical',
+          // Was hardcoded 'whimsical', so a 16-year-old's next chapter was
+          // generated in the same register as a 4-year-old's.
+          tone: storyToneForAge(widget.character.age),
+          // 'medium' stays a deliberate chapter default: unlike the wizard
+          // there is no user length choice here, and the backend already caps
+          // words per band, so this reads age-appropriately without a second
+          // band map.
           length: 'medium',
           chronicleId: _chronicle.chronicleId,
         ),
