@@ -177,23 +177,18 @@ void main() {
     HttpOverrides.global = null;
   });
 
-  testWidgets('theme toggle switches dark mode on', (tester) async {
+  testWidgets('no dark-mode toggle is offered', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     await pumpSettingsScreen(tester);
 
-    expect(find.text('Dark Mode'), findsOneWidget);
-    final darkModeTile = tester.widget<SwitchListTile>(
-        find.widgetWithText(SwitchListTile, 'Dark Mode'));
-    darkModeTile.onChanged?.call(true);
-    await tester.pump(const Duration(milliseconds: 500));
-    final secondDarkModeTile = tester.widget<SwitchListTile>(
-        find.widgetWithText(SwitchListTile, 'Dark Mode'));
-    secondDarkModeTile.onChanged?.call(true);
-    await tester.pump(const Duration(milliseconds: 500));
-
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('theme_mode'), 'dark');
+    // The old test here asserted the toggle existed and wrote 'dark' to
+    // SharedPreferences — which it genuinely did. What it never checked was
+    // whether anything rendered differently, and nothing did: MaterialApp was
+    // never given a themeMode, so the switch moved, the preference persisted,
+    // and the app looked identical. Palette is band-driven by design, so the
+    // control was removed rather than backfilled with a real dark theme.
+    expect(find.text('Dark Mode'), findsNothing);
   });
 
   testWidgets('premium subscription card is shown', (tester) async {
