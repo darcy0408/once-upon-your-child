@@ -43,6 +43,7 @@ import 'package:story_weaver_app/screens/wizard_steps/hero_creator_creative_brie
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
 import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
 import 'package:story_weaver_app/services/child_profile_service.dart';
+import 'package:story_weaver_app/theme/age_band_asset_resolver.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/adventurer_character_sheet.dart';
 import 'package:story_weaver_app/widgets/app_bottom_navigation.dart';
@@ -415,21 +416,10 @@ Future<void> sweep(
 // ---------------------------------------------------------------------------
 
 String _genderAsset(AgeBand band, {required bool boy}) {
-  final who = boy ? 'boy' : 'girl';
-  switch (band) {
-    case AgeBand.sprout:
-      return 'assets/images/ui/gender/gender_sprout_$who.webp';
-    case AgeBand.explorer:
-      return 'assets/images/ui/gender/gender_explorer_$who.webp';
-    case AgeBand.adventurer:
-      return 'assets/images/ui/gender/gender_adventurer_$who.jpg';
-    case AgeBand.creator:
-      return 'assets/images/ui/gender/gender_creator_$who.jpg';
-    case AgeBand.adolescent:
-      return 'assets/images/ui/gender/gender_adolescent_$who.webp';
-    case AgeBand.adult:
-      return 'assets/images/ui/gender/gender_adult_$who.webp';
-  }
+  // Delegates to the shared resolver rather than keeping a fourth copy of this
+  // mapping — the copies had drifted apart on file extensions, which is what
+  // blanked the 9-to-12 gender cards in the first place.
+  return AgeBandAssetResolver.genderPath(band, boy ? 'boy' : 'girl');
 }
 
 WizardData _filledWizardData(AgeBand band) {

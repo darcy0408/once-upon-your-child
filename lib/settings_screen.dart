@@ -11,7 +11,6 @@ import 'config/environment.dart';
 import 'models/subscription_status.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/text_scale_provider.dart';
-import 'providers/theme_provider.dart';
 import 'subscription_screen.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
@@ -126,7 +125,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeNotifierProvider);
     final band = Theme.of(context).extension<AgeBandThemeData>();
     // Gate parent-only settings behind an arithmetic puzzle for young bands
     // (sprout/explorer/adventurer). Mature bands (creator/adolescent/adult)
@@ -144,17 +142,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppCard(
-              child: SwitchListTile(
-                title: const Text('Dark Mode'),
-                subtitle: const Text('Toggle between light and dark themes'),
-                value: themeMode == ThemeMode.dark,
-                onChanged: (_) {
-                  ref.read(themeModeNotifierProvider.notifier).toggle();
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
             _buildTextSizeCard(context),
             const SizedBox(height: AppSpacing.lg),
             if (isChildBand && !_parentUnlocked) ...[

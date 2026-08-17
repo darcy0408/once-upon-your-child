@@ -8,6 +8,7 @@ import '../services/isar_service.dart';
 import '../services/offline_story_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
+import '../story_result_screen.dart';
 import 'chronicle_screen.dart';
 
 /// Lists all Living Story Chronicles for the current character and lets the
@@ -109,6 +110,32 @@ class _ChroniclesListScreenState extends State<ChroniclesListScreen> {
     await _navigateToChronicle(chronicle);
   }
 
+  /// Opens a saved story in the reader.
+  ///
+  /// Mirrors `SavedStoriesScreen._openStory` — same persisted-illustration and
+  /// practiced-age arguments — so a story opened from here looks identical to
+  /// one opened from the library, pictures included, with no regeneration.
+  void _openSavedStory(StoryLocal story) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StoryResultScreen(
+          title: story.title,
+          storyText: story.storyText,
+          characterName:
+              story.characters.isNotEmpty ? story.characters.first.name : null,
+          storyId: story.identifier,
+          persistedCoverImageBase64: story.coverImageBase64,
+          persistedPageIllustrationsJson: story.pageIllustrationsJson,
+          practicedFocus: story.practiced,
+          // Disclose at the band of the child the story was written for, even
+          // if a different profile is active now.
+          practicedAge:
+              story.characters.isNotEmpty ? story.characters.first.age : null,
+        ),
+      ),
+    );
+  }
+
   Future<void> _navigateToChronicle(ChronicleLocal chronicle) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -194,6 +221,14 @@ class _ChroniclesListScreenState extends State<ChroniclesListScreen> {
                             subtitle: Text(
                               _formatDate(s.createdAt),
                             ),
+                            // These rows listed a sprout's saved stories but had
+                            // no onTap, so tapping one did nothing — the only
+                            // dead rows on the screen (the Chronicles rows below
+                            // have always been tappable). The chevron matches
+                            // them so the row reads as openable.
+                            trailing:
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () => _openSavedStory(s),
                           ),
                         )),
                     if (hasChronicles) ...[

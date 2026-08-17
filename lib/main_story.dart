@@ -75,10 +75,13 @@ class StoryCreatorApp extends ConsumerWidget {
       title: Environment.appName,
       navigatorKey: rootNavigatorKey,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
+      // One theme, keyed to the reader's age band — the dark-looking bands
+      // (creator/adolescent/adult) get their darkness from the band palette
+      // itself, not from a Brightness switch. `darkTheme` used to be handed
+      // AppTheme.light(...) here, which made it look like a dark mode existed;
+      // it resolved to the same object as `theme`, so removing it changes
+      // nothing that renders.
       theme: AppTheme.light(ageBand: ageBandTheme),
-      darkTheme: ageBandTheme.preferDarkMode
-          ? AppTheme.light(ageBand: ageBandTheme)
-          : null,
       home: const _AppEntryPoint(),
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),

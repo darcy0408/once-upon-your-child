@@ -32,19 +32,39 @@ from pathlib import Path
 
 from PIL import Image
 
-_MAIN_ENV = Path(r"C:\dev\story-weaver-app\backend\.env")
 _THIS_REPO = Path(__file__).resolve().parent.parent
+# This repo's own backend/.env first. The hardcoded fallback is the pre-migration
+# checkout, where this script used to live; keeping it means an older clone still
+# works, but a fresh one no longer depends on that folder existing.
+_ENV_CANDIDATES = [
+    _THIS_REPO / "backend" / ".env",
+    Path(r"C:\dev\story-weaver-app\backend\.env"),
+]
+_MAIN_ENV = next((p for p in _ENV_CANDIDATES if p.exists()), _ENV_CANDIDATES[0])
 SCENARIOS_DIR = _THIS_REPO / "assets" / "images" / "scenarios"
 
-MODEL = "models/imagen-4.0-generate-001"
+# Imagen 4.0 was retired by Google (404 on every call as of 2026-08-17); the
+# API's own error text points at the Gemini image models as the replacement.
+# `models.list()` on a live key offers gemini-2.5-flash-image, gemini-3-pro-image
+# and the 3.1 flash family. Flash is the middle option: pro costs more per image
+# and lite trades away detail these full-bleed scene tiles need.
+MODEL = "models/gemini-3.1-flash-image"
 
 # Universal constraints appended to every prompt.
 _COMMON = (
     "Full-bleed landscape scene with a noticeably darker lower third so a "
     "caption stays legible over it. Absolutely no people, no faces, no "
     "characters. Absolutely no text, letters, words, numbers, signs or labels "
-    "anywhere in the image. Nothing cute, toddler-ish, or childish. 16:9 "
-    "landscape."
+    "anywhere in the image. Nothing cute, toddler-ish, or childish. "
+    # Added 2026-08-17: the first creator render of midnight_mystery put a lit
+    # cigarette and ashtray on the detective's desk — noir set-dressing the
+    # model supplies unprompted, in art for 13-14 year olds. This is the same
+    # substance-set-dressing leak MT-348 (F-7) tracks on the story side, and
+    # person_generation can no longer be enforced via the API, so every one of
+    # these guardrails now lives in the prompt text.
+    "No cigarettes, cigars, smoking, ashtrays, alcohol, bottles, glasses of "
+    "liquor, drugs, weapons, guns or gun turrets anywhere in the image. "
+    "16:9 landscape."
 )
 
 # Per-band visual identity (the "how it's rendered" layer).
@@ -220,19 +240,30 @@ def _generate_one(keys: list[str], prompt: str) -> bytes:
     for key in keys:
         client = genai.Client(api_key=key)
         try:
-            resp = client.models.generate_images(
+            # Imagen's generate_images() was retired (404: "models/
+            # imagen-4.0-generate-001 is no longer available"). The Gemini image
+            # models are reached through generate_content instead.
+            #
+            # person_generation does NOT survive the move: types.ImageConfig
+            # accepts the field, but the Gemini API rejects it at request time
+            # ("person_generation parameter is not supported in Gemini API") —
+            # it is Vertex-only. The no-people rule is therefore carried purely
+            # by the prompt text now (see _COMMON, "Absolutely no people, no
+            # faces, no characters"), which means it is a strong instruction
+            # rather than an enforced guarantee. Review renders for stray
+            # figures before committing them.
+            resp = client.models.generate_content(
                 model=MODEL,
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    aspect_ratio="16:9",
-                    safety_filter_level="block_low_and_above",
-                    person_generation="dont_allow",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                    image_config=types.ImageConfig(aspect_ratio="16:9"),
                 ),
             )
-            if not resp.generated_images:
-                raise RuntimeError("no images returned")
-            return resp.generated_images[0].image.image_bytes
+            data = _first_image_bytes(resp)
+            if not data:
+                raise RuntimeError("no image data in response")
+            return data
         except Exception as e:  # noqa: BLE001
             msg = str(e).lower()
             if "429" in str(e) or "quota" in msg or "exhausted" in msg or "resource_exhausted" in msg:
@@ -245,6 +276,21 @@ def _generate_one(keys: list[str], prompt: str) -> bytes:
                 continue
             raise
     raise last_exc or RuntimeError("all keys exhausted")
+
+
+def _first_image_bytes(resp) -> bytes | None:
+    """Pull the first inline image payload out of a generate_content response.
+
+    Image models return the picture as an inline_data part alongside any text
+    parts, so this walks the candidate parts rather than assuming position.
+    """
+    for cand in getattr(resp, "candidates", None) or []:
+        content = getattr(cand, "content", None)
+        for part in getattr(content, "parts", None) or []:
+            inline = getattr(part, "inline_data", None)
+            if inline is not None and getattr(inline, "data", None):
+                return inline.data
+    return None
 
 
 def run(args):

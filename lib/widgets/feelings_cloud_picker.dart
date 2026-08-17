@@ -703,7 +703,10 @@ class _FaceImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>()?.band;
-    final flatPath = 'assets/feelings_faces/$id.webp';
+    // Normalized for the same reason as the band path: ids are hyphenated,
+    // files are underscored, and this fallback library is underscored too.
+    final flatPath =
+        'assets/feelings_faces/${AgeBandAssetResolver.normalizeFeelingId(id)}.webp';
 
     // Try band-specific artwork first; fall back to global flat library; then emoji.
     if (band != null) {

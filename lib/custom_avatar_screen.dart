@@ -15,6 +15,7 @@ import 'services/api_service_manager.dart';
 import 'services/app_tts_service.dart';
 import 'services/image_normalizer.dart';
 import 'services/parental_consent_service.dart';
+import 'theme/age_band_asset_resolver.dart';
 import 'theme/age_band_theme.dart';
 import 'widgets/avatar_generating_view.dart';
 import 'widgets/safe_asset_image.dart';
@@ -1256,18 +1257,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     );
   }
 
-  String _genderAsset(String gender) {
-    final band = _ageBand;
-    final g = gender == 'boy' ? 'boy' : 'girl';
-    return switch (band) {
-      AgeBand.sprout => 'assets/images/ui/gender/gender_sprout_$g.webp',
-      AgeBand.explorer => 'assets/images/ui/gender/gender_explorer_$g.webp',
-      AgeBand.adventurer => 'assets/images/ui/gender/gender_adventurer_$g.webp',
-      AgeBand.creator => 'assets/images/ui/gender/gender_creator_$g.webp',
-      AgeBand.adolescent => 'assets/images/ui/gender/gender_adolescent_$g.webp',
-      AgeBand.adult => 'assets/images/ui/gender/gender_adult_$g.webp',
-    };
-  }
+  String _genderAsset(String gender) =>
+      AgeBandAssetResolver.genderPath(_ageBand, gender);
 
   Widget _buildGenderCard({
     required String value,
