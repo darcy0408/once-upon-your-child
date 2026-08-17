@@ -14,6 +14,7 @@ import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
 import '../../utils/motion_utils.dart';
 import '../../providers/age_band_provider.dart';
+import '../../data/scenario_data.dart';
 import '../../theme/age_band_asset_resolver.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
@@ -4127,12 +4128,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
-  String? _sceneLabel(String id) => switch (id) {
-        'safe_space' || 'imagine_it' => 'Make One Up!',
-        'vanishing_colors' => 'Rainbow World!',
-        'crystal_cavern' => 'Cave Full of Crystals!',
-        'volcano_dragons' => 'Friendly Dragons!',
-        'big_feelings_quest' => 'Big Feelings!',
-        _ => null,
-      };
+  /// What the app says aloud after a scene is tapped.
+  ///
+  /// This used to be a hardcoded map that had drifted from the tile captions:
+  /// `volcano_dragons` spoke "Friendly Dragons!" to every band, while a sprout
+  /// was looking at a tile reading "Stomp with the Dinosaurs!". The youngest
+  /// band relies on the narration most, and it was the band being contradicted.
+  ///
+  /// Reads the scenario's own age-appropriate title instead, so the voice
+  /// always matches the words on screen. `safe_space` / `imagine_it` keep an
+  /// explicit caption because they are not scenario entries.
+  String? _sceneLabel(String id) {
+    if (id == 'safe_space' || id == 'imagine_it') return 'Make One Up!';
+    final scenario = ScenarioData.getById(id);
+    if (scenario == null) return null;
+    return '${scenario.titleForAge(widget.wizardData.characterAge)}!';
+  }
 }
