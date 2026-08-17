@@ -4054,7 +4054,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           imageBase64.contains(',') ? imageBase64.split(',').last : imageBase64;
       return MemoryImage(base64Decode(normalized));
     } catch (_) {
-      return const AssetImage('assets/images/hero_placeholder.jpg');
+      return const AssetImage('assets/images/hero_placeholder.webp');
     }
   }
 

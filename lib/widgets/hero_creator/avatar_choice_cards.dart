@@ -252,7 +252,7 @@ class HeroCharacterChoiceCard extends StatelessWidget {
               backgroundColor: const Color(0xFF3A2363),
               backgroundImage: avatarData != null
                   ? getAvatarProvider(avatarData)
-                  : const AssetImage('assets/images/hero_placeholder.jpg')
+                  : const AssetImage('assets/images/hero_placeholder.webp')
                       as ImageProvider,
             ),
             const SizedBox(width: 16),
