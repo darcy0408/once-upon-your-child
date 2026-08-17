@@ -14,6 +14,7 @@ import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
 import '../../utils/motion_utils.dart';
 import '../../providers/age_band_provider.dart';
+import '../../theme/age_band_asset_resolver.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -3041,23 +3042,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// upgrade teaser below. Mirrors the asset map in [_buildGenderPicker] —
   /// deliberately reuses art already shipped with the app rather than a real
   /// (or fake) child photo.
-  String _teaserHeroAssetPath(AgeBand band, String gender) {
-    final g = gender == 'Girl' ? 'girl' : 'boy';
-    switch (band) {
-      case AgeBand.sprout:
-        return 'assets/images/ui/gender/gender_sprout_$g.webp';
-      case AgeBand.explorer:
-        return 'assets/images/ui/gender/gender_explorer_$g.webp';
-      case AgeBand.adventurer:
-        return 'assets/images/ui/gender/gender_adventurer_$g.jpg';
-      case AgeBand.creator:
-        return 'assets/images/ui/gender/gender_creator_$g.jpg';
-      case AgeBand.adolescent:
-        return 'assets/images/ui/gender/gender_adolescent_$g.webp';
-      case AgeBand.adult:
-        return 'assets/images/ui/gender/gender_adult_$g.webp';
-    }
-  }
+  String _teaserHeroAssetPath(AgeBand band, String gender) =>
+      AgeBandAssetResolver.genderPath(band, gender);
 
   /// One "before" or "after" panel in the avatar upgrade teaser.
   Widget _buildAvatarTeaserPanel(
@@ -3265,28 +3251,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final ageBand = band.band;
 
-    final String boyAsset;
-    final String girlAsset;
-    switch (ageBand) {
-      case AgeBand.sprout:
-        boyAsset = 'assets/images/ui/gender/gender_sprout_boy.webp';
-        girlAsset = 'assets/images/ui/gender/gender_sprout_girl.webp';
-      case AgeBand.explorer:
-        boyAsset = 'assets/images/ui/gender/gender_explorer_boy.webp';
-        girlAsset = 'assets/images/ui/gender/gender_explorer_girl.webp';
-      case AgeBand.adventurer:
-        boyAsset = 'assets/images/ui/gender/gender_adventurer_boy.jpg';
-        girlAsset = 'assets/images/ui/gender/gender_adventurer_girl.jpg';
-      case AgeBand.creator:
-        boyAsset = 'assets/images/ui/gender/gender_creator_boy.jpg';
-        girlAsset = 'assets/images/ui/gender/gender_creator_girl.jpg';
-      case AgeBand.adolescent:
-        boyAsset = 'assets/images/ui/gender/gender_adolescent_boy.webp';
-        girlAsset = 'assets/images/ui/gender/gender_adolescent_girl.webp';
-      case AgeBand.adult:
-        boyAsset = 'assets/images/ui/gender/gender_adult_boy.webp';
-        girlAsset = 'assets/images/ui/gender/gender_adult_girl.webp';
-    }
+    final String boyAsset = AgeBandAssetResolver.genderPath(ageBand, 'boy');
+    final String girlAsset = AgeBandAssetResolver.genderPath(ageBand, 'girl');
 
     final gender = widget.wizardData.characterGender;
     final isAdult = ageBand == AgeBand.adult;
