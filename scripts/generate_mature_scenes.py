@@ -32,8 +32,15 @@ from pathlib import Path
 
 from PIL import Image
 
-_MAIN_ENV = Path(r"C:\dev\story-weaver-app\backend\.env")
 _THIS_REPO = Path(__file__).resolve().parent.parent
+# This repo's own backend/.env first. The hardcoded fallback is the pre-migration
+# checkout, where this script used to live; keeping it means an older clone still
+# works, but a fresh one no longer depends on that folder existing.
+_ENV_CANDIDATES = [
+    _THIS_REPO / "backend" / ".env",
+    Path(r"C:\dev\story-weaver-app\backend\.env"),
+]
+_MAIN_ENV = next((p for p in _ENV_CANDIDATES if p.exists()), _ENV_CANDIDATES[0])
 SCENARIOS_DIR = _THIS_REPO / "assets" / "images" / "scenarios"
 
 MODEL = "models/imagen-4.0-generate-001"

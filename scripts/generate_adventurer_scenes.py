@@ -27,9 +27,15 @@ from pathlib import Path
 
 from PIL import Image
 
-# Worktree-safe: load the key from the canonical main checkout's backend/.env.
-_MAIN_ENV = Path(r"C:\dev\story-weaver-app\backend\.env")
+# Worktree-safe: load the key from a real checkout's backend/.env (worktrees do
+# not carry the gitignored file). This repo first; the hardcoded pre-migration
+# path stays as a fallback so an older clone still works.
 _THIS_REPO = Path(__file__).resolve().parent.parent
+_ENV_CANDIDATES = [
+    _THIS_REPO / "backend" / ".env",
+    Path(r"C:\dev\story-weaver-app\backend\.env"),
+]
+_MAIN_ENV = next((p for p in _ENV_CANDIDATES if p.exists()), _ENV_CANDIDATES[0])
 OUT_DIR = _THIS_REPO / "assets" / "images" / "scenarios" / "adventurer"
 
 MODEL = "models/imagen-4.0-generate-001"
