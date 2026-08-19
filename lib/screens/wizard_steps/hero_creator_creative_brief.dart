@@ -13,6 +13,31 @@ import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/scene_widgets.dart';
 import '../../widgets/safe_asset_image.dart';
 
+/// Scene ids that have bespoke per-band art under
+/// `assets/images/scenarios/<band>/` for every mature band
+/// (creator / adolescent / adult). Anything not listed renders as an
+/// accent-gradient tile instead (MT-269), so an id added here without the
+/// matching files shows a broken tile, and files added without the id show a
+/// gradient placeholder while the art sits unused on disk. The latter is what
+/// happened to creator between the art landing and this list being updated.
+///
+/// `test/widgets/scene_art_coverage_test.dart` asserts this set matches the
+/// files actually on disk for all three bands, in both directions.
+const matureSceneArtBackedIds = {
+  'vanishing_colors',
+  'crystal_cavern',
+  'volcano_dragons',
+  'big_feelings_quest',
+  'doorway_seasons',
+  'neon_jungle',
+  'storm_chaser_sky',
+  'brave_friend',
+  'standing_tall',
+  'change_is_coming',
+  'midnight_mystery',
+  'survival_island',
+};
+
 /// The Creative Brief form shown to mature-band users (creator / adolescent / adult)
 /// instead of the step-by-step wizard PageView.
 ///
@@ -687,33 +712,16 @@ class CreativeBriefWidget extends StatelessWidget {
             : null;
     // Worlds with bespoke per-band art get the real render; the rest fall back
     // to an accent-gradient tile (+ emoji + thematic question) so the grid is
-    // uniform and no world is dropped (MT-269). Keep in sync with the files
-    // under assets/images/scenarios/<band>/.
+    // uniform and no world is dropped (MT-269).
     //
-    // All three mature bands ship art for these four. Adolescent (MT-303) and
-    // Adult additionally have bespoke art for the rest of their settings, so
-    // those render real art while Creator keeps the accent-gradient fallback
-    // until its own art is authored.
-    const sharedArtBackedIds = {
-      'vanishing_colors',
-      'crystal_cavern',
-      'volcano_dragons',
-      'big_feelings_quest',
-    };
-    const extendedArtBackedIds = {
-      'doorway_seasons',
-      'neon_jungle',
-      'storm_chaser_sky',
-      'brave_friend',
-      'standing_tall',
-      'change_is_coming',
-      'midnight_mystery',
-      'survival_island',
-    };
-    final artBackedIds =
-        band.band == AgeBand.adolescent || band.band == AgeBand.adult
-            ? {...sharedArtBackedIds, ...extendedArtBackedIds}
-            : sharedArtBackedIds;
+    // Creator used to be excluded from the extended set because only adolescent
+    // and adult had art for those eight. Creator's art landed in #39 but this
+    // gate was never updated with it, so the files sat on disk while creator
+    // kept rendering gradient placeholders. Every mature band now ships all
+    // thirteen, so there is no band split left to make. The set lives at top
+    // level and is pinned against the asset directories by
+    // test/widgets/scene_art_coverage_test.dart so it cannot drift again.
+    const artBackedIds = matureSceneArtBackedIds;
 
     final sceneTiles = <Widget>[
       ...scenarios.map((s) {
