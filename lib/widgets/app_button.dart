@@ -59,6 +59,10 @@ class AppButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 52),
             foregroundColor: AppColors.primary,
+            // See the note on the primary button below: without an explicit
+            // disabled colour Flutter substitutes onSurface at 38%, which is
+            // unreadable here.
+            disabledForegroundColor: AppColors.primary.withValues(alpha: 0.55),
             side: const BorderSide(color: AppColors.primary, width: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -77,6 +81,22 @@ class AppButton extends StatelessWidget {
           minimumSize: const Size(double.infinity, 52),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          // styleFrom does NOT derive disabled colours from the enabled ones —
+          // omit these and Flutter falls back to the theme's onSurface at 12%
+          // background / 38% foreground. Measured on the dark band scaffold
+          // that lands at 1.14:1, i.e. effectively invisible.
+          //
+          // This is not cosmetic. Pick-a-Path renders every branch choice
+          // through this button and disables them all while the next segment
+          // generates. A reader reported not being able to tell what the
+          // buttons said; the request behind that tap took 32 seconds, so the
+          // choices sat unreadable for the whole wait.
+          //
+          // These values measure 7.7:1 over the same scaffold — clearly still
+          // "dimmed", but legible. Related measured table: the project's
+          // dark-background contrast notes (white38 fails, white54 passes).
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.45),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.75),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
