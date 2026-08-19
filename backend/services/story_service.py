@@ -2106,10 +2106,13 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 
     def _parse_story_data(json_str):
         try:
-            decoder = json.JSONDecoder()
+            # strict=False for the same reason as the interactive parser: the
+            # model writes story prose with real newlines inside JSON strings,
+            # which strict parsing rejects outright.
+            decoder = json.JSONDecoder(strict=False)
             data, _ = decoder.raw_decode(json_str.strip())
         except json.JSONDecodeError:
-            data = json.loads(json_str)
+            data = json.loads(json_str, strict=False)
         raw_title = data.get("title", f"A {theme} Adventure")
         # Strip double articles: "A The X" → "The X", "An A X" → "A X", etc.
         title = re.sub(

@@ -793,7 +793,14 @@ class InteractiveAdventureService:
         last_error: json.JSONDecodeError | None = None
         for candidate in candidates:
             try:
-                return json.loads(candidate)
+                # strict=False permits literal control characters inside string
+                # values. Story prose is written with real newlines between
+                # paragraphs, and models emit them unescaped often enough that
+                # strict parsing rejected an otherwise valid segment and failed
+                # the reader's first choice ("Invalid control character at:
+                # line 6 column 647", prod, 2026-08-19). Only control
+                # characters are relaxed; malformed JSON still raises.
+                return json.loads(candidate, strict=False)
             except json.JSONDecodeError as exc:
                 last_error = exc
 
