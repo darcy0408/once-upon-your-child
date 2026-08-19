@@ -103,7 +103,8 @@ class ChroniclePromptService:
                 line for line in lines if not line.startswith("```")
             ).strip()
 
-        return json.loads(text)
+        # strict=False: model-authored summaries carry literal newlines.
+        return json.loads(text, strict=False)
 
     def summarize_chapter(
         self,
