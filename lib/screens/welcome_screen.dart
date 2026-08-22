@@ -21,8 +21,15 @@ import 'parent_controls_screen.dart';
 const _kUserNameKey = 'user_name';
 const _kTeaserSeenKey = 'welcome_teaser_seen';
 
-/// Shown on first launch to collect the child's name and age.
-/// Steps: 0 = name input, 1 = age picker, 2 = title splash.
+/// Shown on first launch to collect the storyteller's age and name.
+///
+/// Steps: -1 = teaser, 0 = age picker, 1 = name input.
+///
+/// MT-387: age is asked FIRST so the app knows the band before it renders a
+/// name screen or speaks a word. Asking name first meant `_selectedAge` was
+/// null for the whole name step, so every first-run user — including adults —
+/// got the sprout speech-bubble UI, the star burst, and kid-rate TTS, and the
+/// mature name variant could only ever appear for a returning user.
 class WelcomeScreen extends ConsumerStatefulWidget {
   /// Called after onboarding is fully complete (consent granted if needed).
   final VoidCallback onComplete;
@@ -45,7 +52,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _speechEnabled = false;
   bool _isListening = false;
 
-  /// Current step: -1 = teaser, 0 = name input, 1 = age picker.
+  /// Current step: -1 = teaser, 0 = age picker, 1 = name input.
   int _step = 0;
 
   /// Drives the pulsing "Tap me!" hint on the teaser screen.
@@ -136,7 +143,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (_selectedAge != null) return;
       setState(() {
         _selectedAge = savedAge;
-        _step = 0; // Skip teaser and age picker; still need a name.
+        _step = 1; // Skip teaser and age picker; still need a name.
       });
       if (ageBandFromAge(savedAge) == AgeBand.creator) {
         unawaited(
@@ -152,9 +159,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           rateScale: 0.8));
       return;
     }
-    // Teaser seen, no age yet — go straight to name.
+    // Teaser seen, no age yet — go straight to the age picker.
+    // MT-387: deliberately silent. The age step is a neutral gate (M-10 /
+    // STORE-5) and the band is still unknown, so there is no correct voice or
+    // rate to greet the user in. The first spoken prompt comes after the age
+    // tap, from _onAgeSelected.
     setState(() => _step = 0);
-    unawaited(_speak("What's your name?", rateScale: 0.72));
   }
 
   Future<void> _dismissTeaser() async {
@@ -163,8 +173,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kTeaserSeenKey, true);
     if (!mounted) return;
+    // MT-387: the teaser now hands off to the AGE picker, not the name step.
+    // No spoken prompt here — see _resumeFromSavedAge.
     setState(() => _step = 0);
-    unawaited(_promptNameAndListen());
   }
 
   Future<void> _initVoice() async {
@@ -312,8 +323,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     // (`_selectedAge`) and is written to storage exclusively via
     // `recordConsent`, i.e. as an atomic part of the consent record, after
     // consent is granted.
-    setState(() => _selectedAge = age);
-    _handleContinue();
+    // MT-387: age is step 0, so advance to the name step rather than calling
+    // _handleContinue — it guards on `name.isEmpty || _selectedAge == null`
+    // and would early-return here, silently dead-ending onboarding. The flow
+    // is completed from _advanceFromName once a name exists.
+    setState(() {
+      _selectedAge = age;
+      _step = 1;
+    });
+    // Now that the band is known, the name step can greet in the right voice.
+    unawaited(_promptNameAndListen());
   }
 
   void _goBack() {
@@ -330,13 +349,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       );
       return;
     }
-    if (_step == 0 && !_celebratingName) {
+    if (_step == 1 && !_celebratingName) {
       AppTtsService.instance.stop();
       _speech.stop();
-      setState(() => _celebratingName = true);
-      unawaited(_burstController.trigger());
       final isMature =
           _selectedAge != null && ageBandFromAge(_selectedAge!).isMature;
+      setState(() => _celebratingName = true);
+      // MT-387: the star burst is a young-band celebration. Before the reorder
+      // the band was always unknown here, so it fired for everyone; now that
+      // age is known it is gated to the bands whose name step actually renders
+      // the burst layer (_buildDefaultNameStep).
+      if (!isMature) unawaited(_burstController.trigger());
       final greeting = isMature ? 'Hi, $name.' : 'Hi, $name! Nice to meet you!';
       AppTtsService.instance
           .speak(
@@ -346,13 +369,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       )
           .then((_) {
         if (mounted) {
-          setState(() {
-            _celebratingName = false;
-            _step = 1; // advance to age picker
-          });
-          // M-10 (COPPA): the age screen is intentionally neutral — no
-          // child-directed TTS prompt that gamifies the age question or
-          // invites a child to answer it themselves.
+          setState(() => _celebratingName = false);
+          // MT-387: name is the LAST step now, so completing it finishes
+          // onboarding. Age was captured at step 0, so _handleContinue's
+          // `name.isEmpty || _selectedAge == null` guard is satisfied.
+          _handleContinue();
         }
       });
     }
@@ -433,9 +454,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       case -1:
         return _buildTeaserStep();
       case 0:
-        return _buildNameStep();
-      case 1:
         return _buildAgeStep();
+      case 1:
+        return _buildNameStep();
       default:
         return _buildAgeStep();
     }
@@ -930,7 +951,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (mounted) {
         setState(() {
           _submitting = false;
-          _step = 0;
+          _step = 1; // back to the name step (MT-387 renumber)
         });
       }
       if (granted == true) {
@@ -1071,7 +1092,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _step = 1; // back to the age picker so the user can retry
+        _step = 0; // back to the age picker so the user can retry
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

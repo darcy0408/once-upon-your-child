@@ -76,31 +76,32 @@ Future<void> _pumpWelcomeScreen(WidgetTester tester,
   await tester.pump(const Duration(milliseconds: 500));
 }
 
-/// Drive the onboarding flow far enough to land on the age picker, then tap
-/// the `15 – 17` band (value 16) and advance through the title splash so
-/// `_handleContinue` fires (the path that surfaces the new dialog).
+/// Drive onboarding to completion for a 16-year-old, so `_handleContinue`
+/// fires and surfaces the "Just so you know" dialog.
+///
+/// MT-387 reordered the steps: age is now step 0 and name is step 1. The old
+/// version of this helper typed the name first and then tapped an age, which
+/// is no longer a reachable path.
 Future<void> _selectAge16(WidgetTester tester) async {
-  // Step 0: name input. Type a name then submit via TextInputAction.done,
-  // which calls `_advanceFromName` directly — independent of button styling.
+  // Step 0: age picker. Tap the `15 – 17` band.
+  final agePill = find.text('15 – 17');
+  expect(agePill, findsOneWidget,
+      reason: 'Age must be the FIRST step and expose the 15-17 band');
+  await tester.tap(agePill);
+  await tester.pump(const Duration(milliseconds: 300));
+
+  // Step 1: name input. Submit via TextInputAction.done, which calls
+  // `_advanceFromName` directly — independent of button styling. Completing
+  // the name is what now finishes onboarding.
   final nameField = find.byType(TextField);
-  expect(nameField, findsOneWidget);
+  expect(nameField, findsOneWidget,
+      reason: 'Tapping an age should advance to the name step');
   await tester.enterText(nameField, 'QA Tester');
   await tester.testTextInput.receiveAction(TextInputAction.done);
   await tester.pump(const Duration(milliseconds: 300));
 
-  // Step 1: age picker. Tap the `15 – 17` band.
-  final agePill = find.text('15 – 17');
-  expect(agePill, findsOneWidget,
-      reason: 'Age picker should expose the 15-17 band');
-  await tester.tap(agePill);
-  await tester.pump(const Duration(milliseconds: 300));
-
-  // Step 2: title splash. `_onAgeSelected` schedules a 7s timer that fires
-  // `_handleContinue`. Skip the timer by tapping the splash to invoke
-  // `_advanceFromTitle` directly. The splash root is a GestureDetector that
-  // fills the body — tap somewhere safe inside the screen bounds.
-  await tester.tapAt(const Offset(600, 1000));
-  // Pump enough frames for the showDialog future to surface.
+  // Let the greeting utterance resolve (it chains into `_handleContinue`) and
+  // the showDialog future surface.
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
 }
@@ -109,7 +110,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    // Mark the teaser as seen so the welcome screen lands on the name step.
+    // Mark the teaser as seen so the welcome screen lands on the age step.
     SharedPreferences.setMockInitialValues({
       'welcome_teaser_seen': true,
     });
