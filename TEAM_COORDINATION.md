@@ -2,7 +2,11 @@
 
 ## Recent Sessions
 
-New sessions are written as individual files in `docs/sessions/` (one file per close).
+Each close writes one session record. Because this repo is public, records since
+2026-07-30 are written to a private notes location and are marked `private` in
+the File column — they are not linkable from here. Rows linking into
+`docs/sessions/` are frozen pre-2026-07-30 history.
+
 This table indexes the last ~30. **Append new rows at the top of the table body.**
 Older session blocks below this table are kept for history but no longer added to.
 
