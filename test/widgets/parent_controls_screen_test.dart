@@ -113,4 +113,31 @@ void main() {
     // whether navigation worked. The push itself is exercised in the browser
     // against a real web build instead.
   });
+
+  testWidgets('build stamp renders at 360x740 without overflowing',
+      (tester) async {
+    // Pinned at a real phone width rather than the 800x600 test default:
+    // this stamp is read off a phone, and that is the width it has to survive.
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildSubject());
+    await tester.pumpAndSettle();
+
+    const stamp = ValueKey('parent-controls-build-stamp');
+    await tester.scrollUntilVisible(
+      find.byKey(stamp),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.byKey(stamp), findsOneWidget);
+    // Unstamped under test, so this is the local-build wording — and it must
+    // not read as "Build local build".
+    expect(find.text('Build local'), findsOneWidget);
+    // A RenderFlex overflow during layout surfaces here.
+    expect(tester.takeException(), isNull);
+  });
 }

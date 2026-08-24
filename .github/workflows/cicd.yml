@@ -181,7 +181,13 @@ jobs:
         # backend call (incl. story generation) hits the user's localhost and
         # fails. This is now the sole authoritative frontend build (the Railway
         # Dockerfile.frontend it used to mirror was removed with grand-light). (MT-204)
-        run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
+        #
+        # SENTRY_RELEASE stamps the commit into the bundle so a build can be
+        # identified both from a Sentry event and from the build stamp shown in
+        # Parent Controls. Sentry's fallback is the pubspec version, which has
+        # been 1.0.0+1 since the first build, so without this every deploy is
+        # indistinguishable.
+        run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app --dart-define=SENTRY_RELEASE=${{ github.sha }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7

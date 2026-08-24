@@ -21,6 +21,14 @@ Future<void> main() async {
     (options) {
       options.dsn = Environment.sentryDsn;
       options.environment = kReleaseMode ? 'production' : 'development';
+      // Stamp the deployed commit so an event names the build it came from.
+      // Left unset, Sentry derives the release from the pubspec version, which
+      // has been `1.0.0+1` since the first build — every deploy reported an
+      // identical release, so events could not be attributed to a build. CI
+      // supplies the SHA; local builds leave it empty and keep the fallback.
+      if (Environment.buildRelease.isNotEmpty) {
+        options.release = Environment.buildRelease;
+      }
       // Don't ship dev/test errors or traces to Sentry — local logs are richer
       // and a single bad headless run can flood the project (see STORY-WEAVER-1K).
       // STORE-2: keep the release sample rate well below 1.0 so a child's

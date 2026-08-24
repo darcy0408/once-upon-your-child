@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../config/environment.dart';
 import '../data/parent_focus_keys.dart';
 import '../models/story_notes.dart';
 import '../providers/highlight_color_provider.dart';
@@ -835,6 +836,24 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                         ),
                       ),
                     ),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Build stamp. Deliberately readable from the device with no
+                  // cable, no console and no error: iOS Safari cannot be
+                  // inspected from Windows, and Sentry reporting is
+                  // consent-gated and off by default, so this is the only way
+                  // to confirm which build a phone is actually running (the
+                  // app caches hard, so "deployed" and "on the device" have
+                  // diverged before).
+                  Center(
+                    child: SelectableText(
+                      'Build ${Environment.buildLabel}',
+                      key: const ValueKey('parent-controls-build-stamp'),
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               ),
