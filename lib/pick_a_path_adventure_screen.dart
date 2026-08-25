@@ -778,8 +778,19 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       // Get full story from API
       final fullStory = await _storyService.getStory(_storyId!);
 
-      // Use current segment content as story text
-      final completeText = _currentSegment!.content;
+      // MT-382(a): persist the WHOLE traversed adventure, not just the
+      // segment on screen. The server returns every generated segment in
+      // path order; fall back to the locally-accumulated chapter text
+      // (empty only on resume) and lastly to the segment on screen.
+      final String completeText;
+      if (fullStory.segments.isNotEmpty) {
+        completeText =
+            fullStory.segments.map((s) => s.content).join('\n\n');
+      } else if (_chapterTextBuffer.isNotEmpty) {
+        completeText = _chapterTextBuffer.toString();
+      } else {
+        completeText = _currentSegment!.content;
+      }
 
       final savedStory = SavedStory(
         id: _storyId!,

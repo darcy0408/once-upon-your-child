@@ -126,6 +126,39 @@ void main() {
       expect(story.inventory.first.name, 'Key');
       expect(story.state.currentLocation, 'Castle');
       expect(story.state.keyClues, contains('Clue 1'));
+      expect(story.segments, isEmpty);
+    });
+
+    test('Parses segments in path order (MT-382a)', () {
+      // Server orders by segment_number already, but the parse must not
+      // depend on it — deliver them shuffled.
+      final json = {
+        'id': 'story_1',
+        'title': 'Adventure 1',
+        'theme': 'Magic',
+        'segments': [
+          {
+            'id': 'seg_2',
+            'segment_number': 2,
+            'content': 'Second part.',
+            'choices': [],
+          },
+          {
+            'id': 'seg_1',
+            'segment_number': 1,
+            'content': 'First part.',
+            'choices': [],
+          },
+        ],
+      };
+
+      final story = InteractiveStoryData.fromJson(json);
+
+      expect(story.segments.length, 2);
+      expect(
+        story.segments.map((s) => s.content).toList(),
+        ['First part.', 'Second part.'],
+      );
     });
   });
 }

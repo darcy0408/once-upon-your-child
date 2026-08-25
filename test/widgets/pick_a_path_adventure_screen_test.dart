@@ -629,6 +629,85 @@ void main() {
       // Check for save button
       expect(find.textContaining('Save'), findsOneWidget);
     });
+
+    testLargeWidgets(
+        'G11: Save persists the whole traversed adventure, not just the '
+        'final segment (MT-382a)', (tester) async {
+      final startResponse = PickAPathTestHelpers.createStartStoryResponseJson(
+        content: 'Opening scene in the golden forest.',
+      );
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
+        content: 'Closing scene at the dragon den.',
+        isCompleted: true,
+      );
+      final fullStoryResponse = {
+        'id': 'story_001',
+        'title': 'The Enchanted Adventure',
+        'theme': 'Magic',
+        'is_completed': true,
+        'segments': [
+          {
+            'id': 'segment_001',
+            'segment_number': 1,
+            'content': 'Opening scene in the golden forest.',
+            'choices': [],
+          },
+          {
+            'id': 'segment_002',
+            'segment_number': 2,
+            'content': 'Closing scene at the dragon den.',
+            'choices': [],
+          },
+        ],
+      };
+
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        if (request.method == 'GET' &&
+            request.url.path.endsWith('/interactive-story/story_001')) {
+          return http.Response(jsonEncode(fullStoryResponse), 200);
+        }
+        if (request.url.path.contains('generate-interactive-story')) {
+          return http.Response(jsonEncode(startResponse), 200);
+        }
+        return http.Response(jsonEncode(continueResponse), 200);
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      final character = PickAPathTestHelpers.createTestCharacter();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: character,
+            theme: 'Magic',
+            length: 'short',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Choice 1').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Save').first);
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('saved_stories_v2');
+      expect(raw, isNotNull, reason: 'Save must write saved_stories_v2');
+      final saved = (jsonDecode(raw!) as List).cast<Map<String, dynamic>>();
+      expect(saved, hasLength(1));
+      final storyText = saved.first['story_text'] as String;
+      expect(storyText, contains('Opening scene in the golden forest.'));
+      expect(storyText, contains('Closing scene at the dragon den.'));
+    });
   });
 
   group('PickAPathAdventureScreen - Error Handling', () {

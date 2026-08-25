@@ -508,6 +508,10 @@ class InteractiveStoryData {
   final List<InventoryItemData> inventory;
   final StoryStateData state;
 
+  /// Every traversed segment in path order. Only generated segments exist
+  /// server-side, so this IS the adventure as the reader experienced it.
+  final List<StorySegmentData> segments;
+
   InteractiveStoryData({
     required this.id,
     required this.title,
@@ -520,9 +524,15 @@ class InteractiveStoryData {
     required this.createdAt,
     required this.inventory,
     required this.state,
+    this.segments = const [],
   });
 
   factory InteractiveStoryData.fromJson(Map<String, dynamic> json) {
+    final segments = (json['segments'] as List<dynamic>?)
+            ?.map((s) => StorySegmentData.fromJson(s as Map<String, dynamic>))
+            .toList() ??
+        <StorySegmentData>[];
+    segments.sort((a, b) => a.segmentNumber.compareTo(b.segmentNumber));
     return InteractiveStoryData(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
@@ -542,6 +552,7 @@ class InteractiveStoryData {
       state: json['state'] != null
           ? StoryStateData.fromJson(json['state'])
           : StoryStateData.empty(),
+      segments: segments,
     );
   }
 
