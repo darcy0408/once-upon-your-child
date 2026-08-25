@@ -214,6 +214,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
+  int? _prefUserAge; // Reader's own age from the age gate ('user_age' pref)
   Character? _character; // Stored character for saving
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
@@ -338,11 +339,16 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   }
 
   int get _effectiveAge {
-    final age = _characterAge;
-    if (age == null || age < 3 || age > 100) {
-      return 7;
+    // Prefer the fetched character record, then the age the caller passed,
+    // then the reader's own age from the age gate. The final 7 is a last
+    // resort — without the earlier candidates it used to hand teens and
+    // adults the kid flip-book whenever the character fetch was missing.
+    for (final age in [_characterAge, widget.characterAge, _prefUserAge]) {
+      if (age != null && age >= 3 && age <= 100) {
+        return age;
+      }
     }
-    return age;
+    return 7;
   }
 
   /// True when an illustration is actually rendered on the page (vs merely
@@ -652,6 +658,15 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     AudioAmbienceService().loadMutePreference().then((_) {
       _ambienceMuted = AudioAmbienceService().isMuted;
       if (mounted) setState(() {});
+    });
+
+    // Reader's own age — the last fallback for _effectiveAge when neither a
+    // character record nor a caller-passed age is available (saved stories).
+    SharedPreferences.getInstance().then((prefs) {
+      final prefAge = prefs.getInt('user_age');
+      if (prefAge != null && mounted) {
+        setState(() => _prefUserAge = prefAge);
+      }
     });
 
     final normalizedStoryText = _normalizeStoryText(widget.storyText);

@@ -6,6 +6,7 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/offline_story_service.dart';
 import 'package:story_weaver_app/models/local/story_local.dart';
+import 'package:story_weaver_app/widgets/open_book_frame.dart';
 
 class FakeOfflineStoryService extends Fake implements OfflineStoryService {
   @override
@@ -117,4 +118,54 @@ void main() {
     expect(find.textContaining('A tiny test story'), findsOneWidget);
     expect(find.byKey(const Key('wisdom_chip')), findsNothing);
     });
+
+  // MT-381(b): _effectiveAge must not collapse to the age-7 kid flip-book
+  // when the character fetch is unavailable. OpenBookFrame only exists in
+  // the flip-book branch, so its absence proves the >=11 reader rendered.
+  Future<void> pumpResultScreen(
+    WidgetTester tester, {
+    int? characterAge,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: StoryResultScreen(
+            title: 'Band Story',
+            storyText: 'A band-resolution test story.',
+            characterName: 'Ava',
+            storyId: 'story_band',
+            characterAge: characterAge,
+            trackStoryCreation: false,
+            trackAnalytics: false,
+            offlineService: FakeOfflineStoryService(),
+          ),
+        ),
+      ),
+    );
+    await pumpUntilFound(
+      tester,
+      finder: find.textContaining('A band-resolution test story'),
+      maxPumps: 40,
+      step: const Duration(milliseconds: 100),
+    );
+  }
+
+  testWidgets('caller-passed teen age gets the reader, not the flip-book',
+      (tester) async {
+    await pumpResultScreen(tester, characterAge: 15);
+    expect(find.byType(OpenBookFrame), findsNothing);
+  });
+
+  testWidgets('with no age anywhere the age-7 flip-book remains the default',
+      (tester) async {
+    await pumpResultScreen(tester);
+    expect(find.byType(OpenBookFrame), findsOneWidget);
+  });
+
+  testWidgets('user_age pref alone is enough to give a teen the reader',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_age': 15});
+    await pumpResultScreen(tester);
+    expect(find.byType(OpenBookFrame), findsNothing);
+  });
 }

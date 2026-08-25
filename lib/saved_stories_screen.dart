@@ -263,6 +263,10 @@ class SavedStoriesScreen extends ConsumerWidget {
           characterName:
               story.characters.isNotEmpty ? story.characters.first.name : null,
           storyId: story.identifier,
+          // Band the reader by the story's hero, not the age-7 default —
+          // otherwise teens reopen their saved stories into the kid flip-book.
+          characterAge:
+              story.characters.isNotEmpty ? story.characters.first.age : null,
           // Re-open the saved story with its persisted illustrations so the
           // pictures appear immediately without regenerating them.
           persistedCoverImageBase64: story.coverImageBase64,
