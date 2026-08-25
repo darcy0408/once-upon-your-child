@@ -535,6 +535,13 @@ def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout, task_id):
     return async_result.get(timeout=sync_story_timeout, interval=0.5)
 
 
+# MT-408: the Celery states from which a task can no longer change on its own.
+# Anything outside this set is still nominally in flight — which, crucially,
+# includes a state left behind in the result backend by a worker that has since
+# died. See the recovery block in /task-status for why that distinction matters.
+_TERMINAL_TASK_STATES = frozenset({"SUCCESS", "FAILURE", "REVOKED"})
+
+
 def _recover_story_from_db(task_id: str, current_user_id) -> tuple[dict, int] | None:
     """R2: reconstruct a completed-task response from the persisted Story row.
 
@@ -1757,7 +1764,30 @@ def create_story_blueprint(
         # This also covers a sync generation that overran its timeout (A3): the
         # Celery worker running that generation persists the Story row under
         # recovery_task_id.
-        if task.state == "PENDING":
+        #
+        # MT-408 (2026-08-25): this used to be gated on PENDING alone, which
+        # left the worst case uncovered. `update_state(state="PROCESSING")`
+        # writes that state into the result backend, where it survives for
+        # result_expires (1h) independently of the worker that wrote it. If that
+        # worker then dies mid-task — a rolling deploy of the Celery service is
+        # the routine way this happens — the stale PROCESSING entry outlives it.
+        # The task itself is redelivered (generate_story_task sets
+        # acks_late=True / reject_on_worker_lost=True precisely so it is), and
+        # the redelivered run can generate the story, pay the provider, and
+        # persist its Story row — while every subsequent poll still read
+        # PROCESSING off the stale entry and never once looked in the DB.
+        # Observed in production: a finished, paid-for story sitting in the
+        # database while the client polled "processing" indefinitely and the
+        # user sat on a loading screen.
+        #
+        # Recovering on any NON-TERMINAL state closes that window regardless of
+        # what killed the original worker, and is safe in both directions: the
+        # Story row is written immediately before the task returns, so its
+        # existence means generation genuinely finished, and when there is no
+        # row `_recover_story_from_db` returns None and the normal state mapping
+        # below still applies. The lookup is a single indexed hit on
+        # Story.task_id, so adding it to in-flight polls costs one cheap query.
+        if task.state not in _TERMINAL_TASK_STATES:
             recovered = _recover_story_from_db(task_id, request.current_user.id)
             if recovered is not None:
                 payload, status_code = recovered

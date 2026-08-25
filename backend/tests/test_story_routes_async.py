@@ -314,3 +314,91 @@ def test_sync_timeout_ceiling_keeps_wait_under_gunicorn_kill(monkeypatch):
     assert story_routes._sync_timeout_for(kwargs, 75) == 100
     # An oversized base is capped too.
     assert story_routes._sync_timeout_for({}, 300) == 100
+
+
+# --- MT-408: a finished story must not be trapped behind a stale task state ---
+# `update_state(state="PROCESSING")` writes into the Celery result backend and
+# lives there for result_expires (1h) whether or not the worker that wrote it is
+# still alive. A rolling deploy of the Celery service mid-generation therefore
+# leaves a PROCESSING entry that nothing will ever advance, while the task
+# itself is redelivered (acks_late=True) and the retry runs to completion and
+# persists its Story row. The DB fallback used to run only for PENDING, so those
+# polls never looked — the user sat on a loading screen while their finished,
+# already-paid-for story sat in the database.
+
+
+@pytest.fixture
+def persist_finished_story(app):
+    """Insert finished Story rows keyed by task_id, as the task does.
+
+    Rows are removed on teardown: a Story left behind outlives the `test_user`
+    fixture, whose own teardown then tries to NULL the story.user_id FK and
+    trips its NOT NULL constraint.
+    """
+    from backend.database import db
+    from backend.models import Story
+
+    created = []
+
+    def _create(task_id, user_id="test_user_123"):
+        with app.app_context():
+            db.session.add(
+                Story(
+                    id=f"story-for-{task_id}",
+                    user_id=user_id,
+                    title="Recovered Tale",
+                    content={
+                        "story_text": "Once upon a time",
+                        "title": "Recovered Tale",
+                    },
+                    task_id=task_id,
+                )
+            )
+            db.session.commit()
+            created.append(f"story-for-{task_id}")
+
+    yield _create
+
+    with app.app_context():
+        for story_id in created:
+            row = db.session.get(Story, story_id)
+            if row is not None:
+                db.session.delete(row)
+        db.session.commit()
+
+
+@pytest.mark.parametrize("stale_state", ["PROCESSING", "PENDING"])
+def test_task_status_recovers_finished_story_from_any_non_terminal_state(
+    client, auth_headers, persist_finished_story, monkeypatch, stale_state
+):
+    # PROCESSING is the MT-408 regression; PENDING pins the pre-existing R2
+    # (expired-result) behaviour, which had no test of its own.
+    persist_finished_story("mt408-task")
+    _install_fake_celery_state(
+        monkeypatch, stale_state, {"status": "Generating story..."}
+    )
+
+    response = client.get("/task-status/mt408-task", headers=auth_headers)
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "complete"
+    assert payload["result"]["story"]["story_text"] == "Once upon a time"
+
+
+def test_task_status_still_reports_processing_when_no_story_persisted_yet(
+    app, client, auth_headers, monkeypatch
+):
+    # The other half of the fix: recovering on non-terminal states must not
+    # invent a completion for a generation that is genuinely still running.
+    _install_fake_celery_state(
+        monkeypatch, "PROCESSING", {"status": "Generating story..."}
+    )
+    monkeypatch.setattr(
+        story_routes, "_resolve_task_owner", lambda task_id, task: "test_user_123"
+    )
+
+    response = client.get("/task-status/mt408-unfinished", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "processing"
