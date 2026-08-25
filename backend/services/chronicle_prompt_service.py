@@ -48,11 +48,12 @@ class ChroniclePromptService:
         "arc summary paragraph in strict JSON."
     )
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, user_id: Optional[str] = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not set")
         self._client = _make_openai_client(self.api_key)
+        self._user_id = user_id
         self._model_name = (
             os.getenv("OPENAI_CHRONICLE_MODEL") or _DEFAULT_CHRONICLE_MODEL
         )
@@ -80,6 +81,32 @@ class ChroniclePromptService:
             return None
         return effort
 
+    def _log_cost(self, usage) -> None:
+        """Attribute a chronicle summarization call's cost (MT-402).
+
+        Skips logging when the response carries no usage block. Never raises.
+        """
+        try:
+            from backend.services.cost_tracker import log_api_cost, openai_text_cost
+
+            input_tokens = getattr(usage, "prompt_tokens", None)
+            output_tokens = getattr(usage, "completion_tokens", None)
+            if not isinstance(input_tokens, int) or not isinstance(output_tokens, int):
+                return
+            log_api_cost(
+                provider="openai",
+                feature="chronicle",
+                cost_usd=openai_text_cost(
+                    input_tokens, output_tokens, self._model_name
+                ),
+                user_id=self._user_id,
+                units=input_tokens + output_tokens,
+                unit_kind="tokens",
+                extra={"model": self._model_name},
+            )
+        except Exception:
+            logger.debug("cost_tracker logging failed", exc_info=True)
+
     def _generate_json(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
         kwargs = {
             "model": self._model_name,
@@ -93,6 +120,7 @@ class ChroniclePromptService:
             kwargs["reasoning_effort"] = self._reasoning_effort
 
         response = self._client.chat.completions.create(**kwargs)
+        self._log_cost(getattr(response, "usage", None))
         choice = (getattr(response, "choices", None) or [None])[0]
         message = getattr(choice, "message", None)
         text = (getattr(message, "content", None) or "").strip()

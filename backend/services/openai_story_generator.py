@@ -234,6 +234,49 @@ def _finalize_streamed_text(
     return content
 
 
+def _log_story_cost(
+    model: str,
+    usage,
+    prompt_chars: int,
+    output_chars: int,
+    user_tier: str | None,
+    streamed: bool,
+) -> None:
+    """Attribute this call's dollar cost to the audit log (MT-402).
+
+    Uses the response's usage block when present; otherwise estimates tokens
+    as chars/4 and marks the row estimated. user_id is not in scope at this
+    layer, so rows log as system-level; the tier still travels in ``extra``.
+    Never raises — cost telemetry must not break story generation.
+    """
+    try:
+        from backend.services.cost_tracker import log_api_cost, openai_text_cost
+
+        input_tokens = getattr(usage, "prompt_tokens", None)
+        output_tokens = getattr(usage, "completion_tokens", None)
+        estimated = not isinstance(input_tokens, int) or not isinstance(
+            output_tokens, int
+        )
+        if estimated:
+            input_tokens = prompt_chars // 4
+            output_tokens = output_chars // 4
+        log_api_cost(
+            provider="openai",
+            feature="story_text",
+            cost_usd=openai_text_cost(input_tokens, output_tokens, model),
+            units=input_tokens + output_tokens,
+            unit_kind="tokens",
+            extra={
+                "model": model,
+                "tier": user_tier,
+                "streamed": streamed,
+                **({"estimated": True} if estimated else {}),
+            },
+        )
+    except Exception:
+        logger.debug("cost_tracker logging failed", exc_info=True)
+
+
 def _make_openai_client(api_key: str):
     """Lazily import the SDK and build a client. Patched in tests.
 
@@ -307,8 +350,14 @@ class OpenAIStoryGenerator:
         parts: list[str] = []
         refusal_parts: list[str] = []
         finish_reason: str | None = None
+        usage = None
         try:
-            stream = self._client.chat.completions.create(stream=True, **kwargs)
+            # include_usage: the stream's final trailer chunk then carries the
+            # billed token counts (MT-402). Passed here rather than in kwargs
+            # so the blocking fallback call never sees a streaming-only param.
+            stream = self._client.chat.completions.create(
+                stream=True, stream_options={"include_usage": True}, **kwargs
+            )
             iterator = iter(stream)
         except Exception as exc:
             logger.warning(
@@ -332,6 +381,9 @@ class OpenAIStoryGenerator:
                 # Mid-stream break after real content: classify like the
                 # blocking path (outer except in generate_story).
                 raise
+            chunk_usage = getattr(chunk, "usage", None)
+            if chunk_usage is not None:
+                usage = chunk_usage
             choices = getattr(chunk, "choices", None) or []
             if not choices:
                 continue  # e.g. a usage-only trailer chunk
@@ -356,6 +408,16 @@ class OpenAIStoryGenerator:
                     )
         story_text = _finalize_streamed_text(
             "".join(parts), finish_reason, "".join(refusal_parts)
+        )
+        # The stream ran to completion, so the tokens were billed whether or
+        # not the content survives finalization (refusals bill their prompt).
+        _log_story_cost(
+            kwargs.get("model", ""),
+            usage,
+            sum(len(m.get("content") or "") for m in kwargs.get("messages", [])),
+            len("".join(parts)),
+            self._user_tier,
+            streamed=True,
         )
         if story_text:
             logger.info("OpenAI (direct): story streamed successfully.")
@@ -406,6 +468,14 @@ class OpenAIStoryGenerator:
             response = self._client.chat.completions.create(**kwargs)
             choice = (getattr(response, "choices", None) or [None])[0]
             story_text = _extract_text(choice)
+            _log_story_cost(
+                chosen_model,
+                getattr(response, "usage", None),
+                len(self._system_prompt) + len(prompt),
+                len(story_text or ""),
+                self._user_tier,
+                streamed=False,
+            )
             if story_text:
                 logger.info("OpenAI (direct): story generated successfully.")
                 return story_text

@@ -605,8 +605,28 @@ def create_tts_blueprint(limiter, require_auth):
 
         if user_id:
             increment_tts_quota(user_id, user_tier)
-            # Character budget and cost tracking apply only to paid ElevenLabs use.
-            if provider == "elevenlabs":
+            # The ElevenLabs character budget applies only to ElevenLabs use;
+            # every paid provider (Azure, ElevenLabs, Gemini) logs its cost.
+            if provider == "azure":
+                try:
+                    from backend.services.cost_tracker import (
+                        azure_tts_cost,
+                        log_api_cost,
+                    )
+
+                    log_api_cost(
+                        provider="azure",
+                        feature="tts",
+                        cost_usd=azure_tts_cost(len(text)),
+                        user_id=user_id,
+                        units=len(text),
+                        unit_kind="chars",
+                        success=True,
+                        extra={"voice_id": voice_id, "tier": user_tier},
+                    )
+                except Exception:
+                    logger.debug("cost_tracker logging failed", exc_info=True)
+            elif provider == "elevenlabs":
                 increment_tts_chars(user_id, user_tier, len(text))
                 try:
                     from backend.services.cost_tracker import (

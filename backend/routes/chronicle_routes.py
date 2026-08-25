@@ -58,7 +58,7 @@ def create_chronicle_blueprint(limiter) -> Blueprint:
             return jsonify({"error": "chapter_text too long (max 50000 chars)"}), 400
 
         try:
-            service = ChroniclePromptService()
+            service = ChroniclePromptService(user_id=str(request.current_user.id))
             result = service.summarize_chapter(
                 chapter_number=int(chapter_number),
                 chapter_text=chapter_text,
@@ -112,7 +112,7 @@ def create_chronicle_blueprint(limiter) -> Blueprint:
             )
 
         try:
-            service = ChroniclePromptService()
+            service = ChroniclePromptService(user_id=str(request.current_user.id))
             result = service.compress_arc(
                 arc_number=int(arc_number),
                 chapter_start=int(chapter_start),

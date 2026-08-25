@@ -848,7 +848,6 @@ def create_story_blueprint(
     log_error,
     filter_story_content,
     get_tier_limits,
-    track_cost,
     is_production_fn,
     logger,
 ):

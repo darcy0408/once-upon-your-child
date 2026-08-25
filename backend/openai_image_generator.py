@@ -82,6 +82,75 @@ class OpenAIImageGenerator:
             return "webp"
         return "png"
 
+    def _log_image_cost(self, response, endpoint: str) -> None:
+        """Attribute this gpt-image call's dollar cost (MT-402). Never raises.
+
+        Uses the response's usage block when present (output tokens dominate:
+        ~$30/1M vs pennies of input); a flat per-image estimate otherwise.
+        user_id is not in scope at this layer, so rows log as system-level.
+        """
+        try:
+            from backend.services.cost_tracker import (
+                OPENAI_IMAGE_FLAT_ESTIMATE_USD,
+                log_api_cost,
+                openai_image_cost,
+            )
+
+            usage = getattr(response, "usage", None)
+            output_tokens = getattr(usage, "output_tokens", None)
+            details = getattr(usage, "input_tokens_details", None)
+            text_in = getattr(details, "text_tokens", None)
+            image_in = getattr(details, "image_tokens", None)
+            if isinstance(output_tokens, int):
+                cost = openai_image_cost(
+                    text_in if isinstance(text_in, int) else 0,
+                    image_in if isinstance(image_in, int) else 0,
+                    output_tokens,
+                )
+                estimated = {}
+            else:
+                cost = OPENAI_IMAGE_FLAT_ESTIMATE_USD
+                estimated = {"estimated": True}
+            log_api_cost(
+                provider="openai",
+                feature="avatar",
+                cost_usd=cost,
+                units=1,
+                unit_kind="images",
+                extra={
+                    "model": OPENAI_IMAGE_MODEL,
+                    "endpoint": endpoint,
+                    **estimated,
+                },
+            )
+        except Exception:
+            logger.debug("cost_tracker logging failed", exc_info=True)
+
+    def _log_vision_cost(self, model: str, usage) -> None:
+        """Attribute a photo-analysis vision call's cost (MT-402). Never raises.
+
+        Vision image input bills as ordinary prompt tokens, so the chat text
+        rates apply. Skips logging when the response has no usage block — a
+        char-based estimate is meaningless for an image payload.
+        """
+        try:
+            from backend.services.cost_tracker import log_api_cost, openai_text_cost
+
+            input_tokens = getattr(usage, "prompt_tokens", None)
+            output_tokens = getattr(usage, "completion_tokens", None)
+            if not isinstance(input_tokens, int) or not isinstance(output_tokens, int):
+                return
+            log_api_cost(
+                provider="openai",
+                feature="photo_analysis",
+                cost_usd=openai_text_cost(input_tokens, output_tokens, model),
+                units=input_tokens + output_tokens,
+                unit_kind="tokens",
+                extra={"model": model},
+            )
+        except Exception:
+            logger.debug("cost_tracker logging failed", exc_info=True)
+
     def _edit(self, image_bytes: bytes, prompt: str) -> List[Dict]:
         """Photo→avatar via the image EDIT endpoint (reference photo + prompt).
 
@@ -99,6 +168,7 @@ class OpenAIImageGenerator:
             prompt=prompt,
             size=OPENAI_IMAGE_SIZE,
         )
+        self._log_image_cost(response, endpoint="edit")
         b64 = self._b64_from_response(response)
         return [{"image_data": b64}] if b64 else []
 
@@ -110,6 +180,7 @@ class OpenAIImageGenerator:
             size=OPENAI_IMAGE_SIZE,
             moderation=OPENAI_IMAGE_MODERATION,
         )
+        self._log_image_cost(response, endpoint="generate")
         b64 = self._b64_from_response(response)
         return [{"image_data": b64}] if b64 else []
 
@@ -288,6 +359,7 @@ class OpenAIImageGenerator:
                     }
                 ],
             )
+            self._log_vision_cost(model, getattr(resp, "usage", None))
             text = (resp.choices[0].message.content or "").strip()
             if text.startswith("```"):
                 text = re.sub(r"^```(?:json)?\s*", "", text)

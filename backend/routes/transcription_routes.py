@@ -225,6 +225,28 @@ def create_transcription_blueprint(limiter, require_auth):
                 503,
             )
 
+        try:
+            from backend.services.cost_tracker import (
+                log_api_cost,
+                openai_transcription_cost,
+            )
+
+            # The default JSON response carries no duration, so estimate the
+            # audio length from the upload size (~4 KB/s for the Opus-family
+            # codecs browsers record) — estimate-grade is fine for a $ alarm.
+            estimated_seconds = len(audio_bytes) / 4000
+            log_api_cost(
+                provider="openai",
+                feature="transcription",
+                cost_usd=openai_transcription_cost(estimated_seconds, model),
+                user_id=str(request.current_user.id),
+                units=len(audio_bytes),
+                unit_kind="bytes",
+                extra={"model": model, "estimated": True},
+            )
+        except Exception:
+            logger.debug("cost_tracker logging failed", exc_info=True)
+
         text = (getattr(result, "text", "") or "").strip()
         return jsonify({"text": text})
 

@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 try:
     from backend.celery_config import celery
     from backend.config import config_by_name
-    from backend.cost_tracking import track_cost
     from backend.database import db
 
     # Import models in dependency order (Story and Character first, then User which references them)
@@ -57,7 +56,6 @@ except ImportError:
     from models.user import User
 
     from services.story_service import AdvancedStoryEngine
-    from cost_tracking import track_cost
     from utils.app_helpers import (
         get_user_identifier,
         get_user_tier,
@@ -939,7 +937,6 @@ def create_app(config_name):
         log_error=log_error,
         filter_story_content=filter_story_content,
         get_tier_limits=get_tier_limits,
-        track_cost=track_cost,
         is_production_fn=is_production,
         logger=logger,
     )

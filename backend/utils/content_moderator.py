@@ -256,6 +256,33 @@ def _extract_classification_text(choice) -> str:
     return content.strip()
 
 
+def _log_moderation_cost(model: str, usage) -> None:
+    """Attribute a paid moderation-classifier call's cost (MT-402).
+
+    This is a billed gpt-5-mini chat call (not OpenAI's free moderation
+    endpoint) and runs once per story chunk, so it belongs in the spend
+    telemetry. Skips logging when the response carries no usage block.
+    Never raises — cost telemetry must not affect a safety verdict.
+    """
+    try:
+        from backend.services.cost_tracker import log_api_cost, openai_text_cost
+
+        input_tokens = getattr(usage, "prompt_tokens", None)
+        output_tokens = getattr(usage, "completion_tokens", None)
+        if not isinstance(input_tokens, int) or not isinstance(output_tokens, int):
+            return
+        log_api_cost(
+            provider="openai",
+            feature="moderation",
+            cost_usd=openai_text_cost(input_tokens, output_tokens, model),
+            units=input_tokens + output_tokens,
+            unit_kind="tokens",
+            extra={"model": model},
+        )
+    except Exception:
+        logger.debug("cost_tracker logging failed", exc_info=True)
+
+
 def _age_band_label(age: int) -> str:
     if age <= 5:
         return "a young child aged 3-5"
@@ -472,6 +499,7 @@ def _classify_chunk(
             kwargs["reasoning_effort"] = reasoning_effort
 
         response = client.chat.completions.create(**kwargs)
+        _log_moderation_cost(kwargs["model"], getattr(response, "usage", None))
         choice = (getattr(response, "choices", None) or [None])[0]
         raw = _extract_classification_text(choice)
 
