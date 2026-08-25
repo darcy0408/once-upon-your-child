@@ -14,12 +14,12 @@ try:
     from .utils.app_helpers import get_user_tier
 except ImportError:
     # Fallback for when backend is the root (e.g. python backend/app.py)
-    from services.cost_tracker import get_cost_report
     from database import db
     from middleware.auth import optional_auth, require_admin, require_auth
     from models.character import Character
     from models.story import Story
     from models.user import User
+    from services.cost_tracker import get_cost_report
     from services.event_tracking_service import record_event
     from utils.app_helpers import get_user_tier
 
