@@ -280,5 +280,167 @@ void main() {
       expect(statusPolls, greaterThan(0));
       expect(story.storyText, 'Async story done');
     });
+
+    test(
+        'MT-408: a generation that outruns the poll ceiling is RESUMED, '
+        'not re-generated', () async {
+      // The defect: when the poll loop hit its ceiling, the retry wrapper
+      // called /generate-story again — so a slow-but-successful generation
+      // was billed up to maxAttempts times over, and the story that actually
+      // finished stayed unreachable in the database.
+      //
+      // The assertion that matters is `generateCalls == 1`: the second attempt
+      // must claim the FIRST task rather than start a new one.
+      var generateCalls = 0;
+      var statusPolls = 0;
+      final polledTaskIds = <String>{};
+      final fakeJwt = '${base64Url.encode(utf8.encode('{"alg":"none"}'))}'
+          '.${base64Url.encode(utf8.encode('{"sub":"user_test"}'))}'
+          '.sig';
+
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path.contains('auth')) {
+          return http.Response(
+              jsonEncode({'token': fakeJwt, 'user_id': 'user_test'}), 200);
+        }
+        if (path.contains('generate-story')) {
+          generateCalls++;
+          return http.Response(
+              jsonEncode({'task_id': 'task-slow-$generateCalls'}), 202);
+        }
+        if (path.contains('task-status')) {
+          statusPolls++;
+          polledTaskIds.add(path.split('/').last);
+          // Stay unresolved long enough to blow the first attempt's ceiling,
+          // then finish — exactly the production shape, where the worker was
+          // redelivered and completed after the client had given up.
+          if (statusPolls < 3) {
+            return http.Response(jsonEncode({'status': 'pending'}), 200);
+          }
+          return http.Response(
+              jsonEncode({
+                'status': 'complete',
+                'result': {
+                  'story': {'story_text': 'The story that finished late'}
+                },
+              }),
+              200);
+        }
+        return http.Response('not found', 404);
+      });
+
+      await ApiServiceManager.resetAuthForTest();
+      ApiServiceManager.setTestClient(mockClient);
+      addTearDown(() async {
+        ApiServiceManager.setTestClient(null);
+        await ApiServiceManager.resetAuthForTest();
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Patient Hero',
+        theme: 'Adventure',
+        age: 30,
+        currentFeeling: null,
+        client: mockClient,
+        requestTimeout: const Duration(seconds: 3),
+        retryInitialDelay: const Duration(milliseconds: 10),
+      );
+
+      expect(story.storyText, 'The story that finished late');
+      expect(
+        generateCalls,
+        1,
+        reason: 'MT-408: the retry must RESUME the existing task. A second '
+            'POST /generate-story means the user paid twice for one story.',
+      );
+      expect(
+        polledTaskIds,
+        {'task-slow-1'},
+        reason: 'the resumed attempt must poll the ORIGINAL task id',
+      );
+    });
+
+    test(
+        'MT-408: a task that never resolves is resumed ONCE, then a fresh '
+        'generation is started', () async {
+      // The guard on the fix, and it caught a real flaw while being written.
+      // A genuinely lost task keeps answering `pending` rather than 404, so
+      // an unlimited resume would re-poll the same dead id on every attempt
+      // and leave the user with NO story — strictly worse than the bug being
+      // fixed, which at least re-generated. Pin the compromise: one resume
+      // (enough to claim a story that finished late), then fall back.
+      var generateCalls = 0;
+      var firstTaskPolls = 0;
+      final fakeJwt = '${base64Url.encode(utf8.encode('{"alg":"none"}'))}'
+          '.${base64Url.encode(utf8.encode('{"sub":"user_test"}'))}'
+          '.sig';
+
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path.contains('auth')) {
+          return http.Response(
+              jsonEncode({'token': fakeJwt, 'user_id': 'user_test'}), 200);
+        }
+        if (path.contains('generate-story')) {
+          generateCalls++;
+          return http.Response(
+              jsonEncode({'task_id': 'task-$generateCalls'}), 202);
+        }
+        if (path.contains('task-status')) {
+          // The first task is lost forever — it answers `pending` and never
+          // advances, which is exactly how a stranded task behaves. Any later
+          // task completes normally.
+          if (path.endsWith('task-1')) {
+            firstTaskPolls++;
+            return http.Response(jsonEncode({'status': 'pending'}), 200);
+          }
+          return http.Response(
+              jsonEncode({
+                'status': 'complete',
+                'result': {
+                  'story': {'story_text': 'Fresh story after a dead task'}
+                },
+              }),
+              200);
+        }
+        return http.Response('not found', 404);
+      });
+
+      await ApiServiceManager.resetAuthForTest();
+      ApiServiceManager.setTestClient(mockClient);
+      addTearDown(() async {
+        ApiServiceManager.setTestClient(null);
+        await ApiServiceManager.resetAuthForTest();
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Unlucky Hero',
+        theme: 'Adventure',
+        age: 30,
+        currentFeeling: null,
+        client: mockClient,
+        requestTimeout: const Duration(seconds: 3),
+        retryInitialDelay: const Duration(milliseconds: 10),
+      );
+
+      expect(story.storyText, 'Fresh story after a dead task');
+      expect(
+        generateCalls,
+        2,
+        reason: 'exactly one resume of the stuck task, then one fresh '
+            'generation — not an endless re-poll (no story), and not a fresh '
+            'generation per attempt (the original double-billing)',
+      );
+      // Without the resume, attempt 1 is the only thing that ever polls
+      // task-1, so this count cannot exceed a single attempt's worth of polls.
+      // It is what distinguishes "resumed once" from "never resumed".
+      expect(
+        firstTaskPolls,
+        greaterThan(2),
+        reason: 'the stuck task must have been polled across TWO attempts — '
+            'one original and one resume',
+      );
+    });
   });
 }

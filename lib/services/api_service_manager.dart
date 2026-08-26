@@ -1169,9 +1169,37 @@ class ApiServiceManager {
     var attempts = 0;
     var delay = initialDelay;
 
+    // MT-408 (client half): the task id of the generation currently in flight,
+    // captured as soon as /generate-story hands it over. When an attempt gives
+    // up waiting, the NEXT attempt resumes polling this id instead of starting
+    // a fresh generation.
+    //
+    // This is the whole point of the fix. Before it, a story that outran the
+    // client's 150-270s ceiling cost the user THREE paid generations (one per
+    // attempt) and then served a canned scaffold story — while the story they
+    // actually paid for sat finished and unreachable in the database.
+    String? inFlightTaskId;
+    // Each task id may be resumed AT MOST ONCE. Resuming without limit looks
+    // tidier but is a regression: a task that is genuinely lost keeps
+    // answering `pending`, so every attempt would re-poll the same dead id and
+    // the user would end up with no story at all — whereas the old re-generate
+    // behaviour at least gave them a second chance at one. One resume claims
+    // the finished-late story (the common case); after that we fall back to
+    // generating, so the safety net survives.
+    final resumedTaskIds = <String>{};
+    var resumeNext = false;
+
     while (attempts < maxAttempts) {
+      final candidateId = inFlightTaskId;
+      final resumeTaskId = (resumeNext &&
+              candidateId != null &&
+              !resumedTaskIds.contains(candidateId))
+          ? candidateId
+          : null;
+      if (resumeTaskId != null) resumedTaskIds.add(resumeTaskId);
       try {
         return await _generateStoryWithBackend(
+          resumeTaskId: resumeTaskId,
           characterName: characterName,
           theme: theme,
           age: age,
@@ -1203,7 +1231,12 @@ class ApiServiceManager {
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
           onPartial: onPartial,
-          onTaskId: onTaskId,
+          // MT-408: remember the id ourselves as well as handing it to the
+          // caller, so a timed-out attempt can be resumed rather than re-run.
+          onTaskId: (id) {
+            inFlightTaskId = id;
+            onTaskId?.call(id);
+          },
           progressPhases: progressPhases,
           therapeuticPrompt: therapeuticPrompt,
           conflictHook: conflictHook,
@@ -1243,12 +1276,91 @@ class ApiServiceManager {
             }
           }
         } catch (_) {}
+
+        // MT-408: decide whether the next attempt resumes or starts fresh.
+        //
+        // Resume only on a TIMEOUT, and only when a task actually started. A
+        // timeout is precisely the case where the work is probably still
+        // running (or has already finished) server-side, so re-POSTing would
+        // pay for it twice. Every other failure — 4xx, malformed body, socket
+        // error — says something is wrong with the request or the task itself,
+        // and retrying that same id would just fail the same way.
+        if (error is TimeoutException && inFlightTaskId != null) {
+          resumeNext = true;
+        } else {
+          // A resume that failed for any non-timeout reason means the id is no
+          // longer usable (expired result, unknown owner → 404). Drop it so the
+          // next attempt generates normally instead of re-polling a dead task.
+          if (resumeTaskId != null) inFlightTaskId = null;
+          resumeNext = false;
+        }
+
         if (attempts >= maxAttempts) rethrow;
         await Future.delayed(delay);
         delay *= 2;
       }
     }
     throw Exception('Story generation retry handler exhausted unexpectedly');
+  }
+
+  /// POST /generate-story and classify what came back.
+  ///
+  /// The endpoint answers one of two ways and both are normal:
+  ///   * **200** — the story itself, generated synchronously. No task exists,
+  ///     so there is nothing to poll and nothing to resume.
+  ///   * **202** — a Celery `task_id` to poll via /task-status.
+  ///
+  /// Split out of [_generateStoryWithBackend] for MT-408 so the polling loop
+  /// can be entered without starting a new generation.
+  static Future<({StoryGenerationResult? result, String? taskId})>
+      _startStoryTask({
+    required http.Client httpClient,
+    required Uri generateUri,
+    required Map<String, dynamic> body,
+    required Duration requestTimeout,
+  }) async {
+    final generateHeaders = await authHeaders();
+    final generateResponse = await httpClient
+        .post(
+          generateUri,
+          headers: generateHeaders,
+          body: jsonEncode(body),
+        )
+        .timeout(requestTimeout);
+
+    if (generateResponse.statusCode == 200) {
+      final payload =
+          jsonDecode(generateResponse.body) as Map<String, dynamic>;
+      final story = payload['story'] ?? payload['story_text'];
+      if ((story is String && story.isNotEmpty) ||
+          (story is Map && story.isNotEmpty)) {
+        return (
+          result: StoryGenerationResult.fromBackend(payload),
+          taskId: null,
+        );
+      }
+      throw HttpException(
+        'Backend returned 200 without story content',
+        uri: generateUri,
+      );
+    }
+
+    if (generateResponse.statusCode != 202) {
+      debugPrint(
+        'Failed to start story generation. Status ${generateResponse.statusCode}, body: ${_truncateForLog(generateResponse.body)}',
+      );
+      throw HttpException(
+        'Failed to start story generation task: ${generateResponse.statusCode}',
+        uri: generateUri,
+      );
+    }
+
+    final generateData =
+        jsonDecode(generateResponse.body) as Map<String, dynamic>;
+    return (
+      result: null,
+      taskId: generateData['task_id'] as String,
+    );
   }
 
   /// Generate story using local backend
@@ -1318,6 +1430,12 @@ class ApiServiceManager {
     // T9 Creator prompt can weave a "Previously…" block. Null on Issue #1 / non-
     // Creator stories — the backend treats a missing block as a clean origin.
     Map<String, dynamic>? priorSaga,
+    // MT-408 (client half): resume polling an EXISTING task instead of starting
+    // a new one. When set, /generate-story is not called at all — we go straight
+    // to /task-status for this id. The retry wrapper passes the previous
+    // attempt's task id here after a polling timeout, so a generation that
+    // outlives the client's ceiling is claimed rather than paid for twice.
+    String? resumeTaskId,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -1419,43 +1537,27 @@ class ApiServiceManager {
     }
 
     try {
-      // 1. Start the task
-      final generateHeaders = await authHeaders();
-      final generateResponse = await httpClient
-          .post(
-            generateUri,
-            headers: generateHeaders,
-            body: jsonEncode(body),
-          )
-          .timeout(requestTimeout);
-
-      if (generateResponse.statusCode == 200) {
-        final payload =
-            jsonDecode(generateResponse.body) as Map<String, dynamic>;
-        final story = payload['story'] ?? payload['story_text'];
-        if ((story is String && story.isNotEmpty) ||
-            (story is Map && story.isNotEmpty)) {
-          return StoryGenerationResult.fromBackend(payload);
-        }
-        throw HttpException(
-          'Backend returned 200 without story content',
-          uri: generateUri,
+      // 1. Start the task — unless we are resuming one that is already running.
+      // MT-408: on a resume we deliberately skip /generate-story entirely. The
+      // prior attempt's task may well have finished during the gap; re-POSTing
+      // would bill a second generation and orphan the first.
+      final String taskId;
+      if (resumeTaskId != null && resumeTaskId.isNotEmpty) {
+        taskId = resumeTaskId;
+        debugPrint('Resuming poll for existing story task $taskId (MT-408).');
+      } else {
+        final started = await _startStoryTask(
+          httpClient: httpClient,
+          generateUri: generateUri,
+          body: body,
+          requestTimeout: requestTimeout,
         );
+        // Synchronous path: the backend answered 200 with the whole story and
+        // no task was ever created, so there is nothing to poll.
+        final syncResult = started.result;
+        if (syncResult != null) return syncResult;
+        taskId = started.taskId!;
       }
-
-      if (generateResponse.statusCode != 202) {
-        debugPrint(
-          'Failed to start story generation. Status ${generateResponse.statusCode}, body: ${_truncateForLog(generateResponse.body)}',
-        );
-        throw HttpException(
-          'Failed to start story generation task: ${generateResponse.statusCode}',
-          uri: generateUri,
-        );
-      }
-
-      final generateData =
-          jsonDecode(generateResponse.body) as Map<String, dynamic>;
-      final taskId = generateData['task_id'] as String;
       // PERF-04: hand the task id to the caller so a user who abandons the
       // wait can cancel the in-flight generation via cancelTask(taskId).
       onTaskId?.call(taskId);
