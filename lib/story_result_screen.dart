@@ -223,6 +223,14 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   late List<String> _storyPages;
   late List<String> _adventureSteps; // NEW: Adventure step labels
   int _currentPageIndex = 0;
+  // MT-381(a): the >=11 reader renders every page into ONE scrolling
+  // ListView, so nothing there reads _currentPageIndex — the footer arrows
+  // mutated it, fired their haptic and SFX, and moved nothing on screen.
+  // These give the arrows something to actually drive, and let us notice when
+  // the reader has scrolled to the end.
+  final ScrollController _readerScrollController = ScrollController();
+  final Map<int, GlobalKey> _readerPageKeys = {};
+  bool _readerScrolledToEnd = false;
   double _textScale = 1.0;
   bool _highContrastMode = false;
 
@@ -876,6 +884,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     _audioPlayer?.stop();
     _audioPlayer?.dispose();
     _pageController.dispose();
+    _readerScrollController.dispose();
     _feedbackController.dispose();
     _perPagePrefetcher?.dispose();
     super.dispose();
@@ -2822,6 +2831,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         unawaited(AudioAmbienceService().playSfx('sounds/page_turn.mp3'));
       }
 
+      // MT-381(a): in the >=11 reader the setState above changes no visible
+      // pixel — the ListView shows every page at once. Move the scroll view
+      // as well, or the arrows stay dead.
+      if (_isReaderLayout) {
+        _scrollToReaderPage(_currentPageIndex);
+      }
+
       _trackResultAction(
         'story_page_flipped',
         extra: {
@@ -2853,6 +2869,74 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     if (_currentPageIndex <= 0) return;
     _handlePageFlip(false);
   }
+
+  /// MT-381(a): move the >=11 reader to [index].
+  ///
+  /// The reader is one continuous ListView, so "going to a page" means
+  /// scrolling that page to the top of the viewport rather than swapping a
+  /// widget. Prev/next only ever move by one, and ListView keeps neighbours
+  /// alive either side of the viewport, so the target is virtually always
+  /// built and [Scrollable.ensureVisible] can land on it exactly.
+  ///
+  /// When it isn't built (a long jump, or a restored reading position), the
+  /// key has no context and ensureVisible would throw — fall back to a
+  /// proportional guess, which is approximate but never wrong enough to
+  /// strand the reader.
+  void _scrollToReaderPage(int index) {
+    if (!_readerScrollController.hasClients) return;
+    const duration = Duration(milliseconds: 300);
+    const curve = Curves.easeInOut;
+
+    final keyContext = _readerPageKeys[index]?.currentContext;
+    if (keyContext != null) {
+      unawaited(
+        Scrollable.ensureVisible(
+          keyContext,
+          duration: duration,
+          curve: curve,
+          alignment: 0.0,
+        ),
+      );
+      return;
+    }
+
+    final position = _readerScrollController.position;
+    final fraction = _totalPages <= 1 ? 0.0 : index / (_totalPages - 1);
+    unawaited(
+      _readerScrollController.animateTo(
+        (position.maxScrollExtent * fraction)
+            .clamp(position.minScrollExtent, position.maxScrollExtent),
+        duration: duration,
+        curve: curve,
+      ),
+    );
+  }
+
+  /// MT-381(a): the end-of-story row (quick rating, Color-this-page chip) was
+  /// gated on `_currentPageIndex >= _totalPages - 1`. In the scrolling reader
+  /// that index only advances when the footer arrows are pressed, so a reader
+  /// who simply scrolled to the last word — the normal way to finish — never
+  /// saw any of it. Treat reaching the bottom as reaching the end page.
+  bool _handleReaderScroll(ScrollNotification notification) {
+    if (!_isReaderLayout) return false;
+    final metrics = notification.metrics;
+    if (!metrics.hasContentDimensions) return false;
+    // A small tolerance: bottom padding and fractional pixels mean the reader
+    // can stop a hair short of maxScrollExtent with the last line fully read.
+    const endTolerance = 24.0;
+    final atEnd = metrics.pixels >= metrics.maxScrollExtent - endTolerance;
+    if (atEnd != _readerScrolledToEnd && mounted) {
+      setState(() => _readerScrolledToEnd = atEnd);
+    }
+    return false;
+  }
+
+  /// True when the reader has reached the end of the story, by either route:
+  /// paging to the last page (flip-book bands) or scrolling to the bottom
+  /// (>=11 reader).
+  bool get _isOnEndPage =>
+      _currentPageIndex >= _totalPages - 1 ||
+      (_isReaderLayout && _readerScrolledToEnd);
 
   /// Leaves the reader without stranding the child. A freshly generated story
   /// sits on top of the wizard, which is left parked on its "Make Magic"
@@ -3183,70 +3267,89 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         ],
       ),
       margin: EdgeInsets.only(bottom: band.space(24)),
-      child: ListView.builder(
-        padding: EdgeInsets.symmetric(
-          horizontal: band.space(24),
-          vertical: band.space(32),
+      // MT-381(a): watch the scroll so finishing the story by scrolling (the
+      // normal way in this layout) reveals the end-of-story row.
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _handleReaderScroll,
+        child: ListView.builder(
+          controller: _readerScrollController,
+          padding: EdgeInsets.symmetric(
+            horizontal: band.space(24),
+            vertical: band.space(32),
+          ),
+          itemCount: _totalPages,
+          itemBuilder: (context, index) => KeyedSubtree(
+            // MT-381(a): a per-page anchor, so "next page" can put that exact
+            // page at the top of the viewport instead of guessing an offset.
+            key: _readerPageKeys.putIfAbsent(index, () => GlobalKey()),
+            child: _buildReaderPageItem(index, band, textColor),
+          ),
         ),
-        itemCount: _totalPages,
-        itemBuilder: (context, index) {
-          if (_hasCoverIllustration && index == 0) {
-            final illustration = _inlineIllustrations.first;
-            return Column(
+      ),
+    );
+  }
+
+  /// One page of the >=11 continuous reader. Extracted from the ListView
+  /// closure (MT-381a) so each page can carry its own [GlobalKey].
+  Widget _buildReaderPageItem(
+    int index,
+    AgeBandThemeData band,
+    Color textColor,
+  ) {
+    if (_hasCoverIllustration && index == 0) {
+      final illustration = _inlineIllustrations.first;
+      return Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(band.radiusMd),
+            child: Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(band.radiusMd),
-                  child: Stack(
-                    children: [
-                      Image.memory(
-                        illustration.bytes,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildImageErrorPlaceholder(),
-                      ),
-                      const Positioned(
-                        right: 6,
-                        bottom: 6,
-                        child: AiGeneratedBadge.corner(),
-                      ),
-                    ],
-                  ),
+                Image.memory(
+                  illustration.bytes,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildImageErrorPlaceholder(),
                 ),
-                SizedBox(height: band.space(32)),
-              ],
-            );
-          }
-
-          final textIndex = _hasCoverIllustration ? index - 1 : index;
-
-          if (textIndex >= _storyPages.length) {
-            return _buildEndOfStoryPage();
-          }
-
-          final pageText = widget.isLearningToReadMode
-              ? _phrasifyForEarlyReader(_storyPages[textIndex])
-              : _storyPages[textIndex];
-          final lineHeight = widget.isLearningToReadMode ? 2.1 : 1.8;
-          return Padding(
-            padding: EdgeInsets.only(bottom: band.space(24)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildPerPageIllustration(textIndex),
-                SelectableText.rich(
-                  TextSpan(
-                    style: GoogleFonts.merriweather(
-                      fontSize: band.body(20) * _textScale,
-                      height: lineHeight,
-                      color: textColor,
-                    ),
-                    children: _buildStorySpans(pageText),
-                  ),
+                const Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: AiGeneratedBadge.corner(),
                 ),
               ],
             ),
-          );
-        },
+          ),
+          SizedBox(height: band.space(32)),
+        ],
+      );
+    }
+
+    final textIndex = _hasCoverIllustration ? index - 1 : index;
+
+    if (textIndex >= _storyPages.length) {
+      return _buildEndOfStoryPage();
+    }
+
+    final pageText = widget.isLearningToReadMode
+        ? _phrasifyForEarlyReader(_storyPages[textIndex])
+        : _storyPages[textIndex];
+    final lineHeight = widget.isLearningToReadMode ? 2.1 : 1.8;
+    return Padding(
+      padding: EdgeInsets.only(bottom: band.space(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildPerPageIllustration(textIndex),
+          SelectableText.rich(
+            TextSpan(
+              style: GoogleFonts.merriweather(
+                fontSize: band.body(20) * _textScale,
+                height: lineHeight,
+                color: textColor,
+              ),
+              children: _buildStorySpans(pageText),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -4884,7 +4987,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
                 isYoungUser: _isYoungUser,
-                isOnEndPage: _currentPageIndex >= _totalPages - 1,
+                // MT-381(a): paging to the last page OR scrolling to the
+                // bottom of the >=11 reader both count as finishing.
+                isOnEndPage: _isOnEndPage,
                 characterName: widget.characterName,
                 hasWizardData: widget.wizardData != null,
                 hasExplicitlyRated: _hasExplicitlyRated,

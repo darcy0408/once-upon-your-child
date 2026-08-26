@@ -168,4 +168,100 @@ void main() {
     await pumpResultScreen(tester);
     expect(find.byType(OpenBookFrame), findsNothing);
   });
+
+  // ---------------------------------------------------------------------
+  // MT-381(a): the >=11 reader renders every page into one scrolling
+  // ListView. The footer arrows only mutated _currentPageIndex, which
+  // nothing in that layout reads — so they moved nothing, and the
+  // end-of-story row stayed hidden for anyone who finished by scrolling.
+  // ---------------------------------------------------------------------
+
+  // ~600 words: comfortably more than the 120-words-per-page split, so the
+  // reader has several pages and overflows the test viewport.
+  final longStoryText =
+      List.generate(600, (i) => 'word$i').join(' ');
+
+  Future<void> pumpReader(WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: StoryResultScreen(
+            title: 'Long Story',
+            storyText: longStoryText,
+            characterName: 'Ava',
+            storyId: 'story_long',
+            characterAge: 15,
+            trackStoryCreation: false,
+            trackAnalytics: false,
+            offlineService: FakeOfflineStoryService(),
+          ),
+        ),
+      ),
+    );
+    await pumpUntilFound(
+      tester,
+      finder: find.byType(ListView),
+      maxPumps: 40,
+      step: const Duration(milliseconds: 100),
+    );
+  }
+
+  ScrollController readerController(WidgetTester tester) {
+    final listView = tester.widget<ListView>(find.byType(ListView).first);
+    final controller = listView.controller;
+    expect(
+      controller,
+      isNotNull,
+      reason: 'MT-381(a): the reader ListView needs a ScrollController — '
+          'without one the footer arrows have nothing to drive',
+    );
+    return controller!;
+  }
+
+  testWidgets('MT-381(a): the Next page arrow actually moves the reader',
+      (tester) async {
+    await pumpReader(tester);
+    final controller = readerController(tester);
+    final before = controller.offset;
+
+    await tester.tap(find.byTooltip('Next page'));
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(
+      controller.offset,
+      greaterThan(before),
+      reason: 'MT-381(a): the arrow mutated _currentPageIndex, fired a haptic '
+          'and a page-turn sound, and scrolled nothing. It must move the '
+          'reader.',
+    );
+  });
+
+  testWidgets(
+      'MT-381(a): scrolling to the end reveals the end-of-story row',
+      (tester) async {
+    await pumpReader(tester);
+
+    expect(
+      find.text('Quick rating:'),
+      findsNothing,
+      reason: 'the rating row belongs at the END of the story, not the start',
+    );
+
+    final controller = readerController(tester);
+    controller.jumpTo(controller.position.maxScrollExtent);
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(
+      find.text('Quick rating:'),
+      findsOneWidget,
+      reason: 'MT-381(a): isOnEndPage was gated on a page index the scrolling '
+          'reader never advances, so a reader who finished the normal way — '
+          'by scrolling to the last word — never saw the rating row or the '
+          'Color-this-page chip',
+    );
+  });
 }
