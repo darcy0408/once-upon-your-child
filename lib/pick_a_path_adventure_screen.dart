@@ -11,6 +11,7 @@ import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'services/chronicle_service.dart';
 import 'services/isar_service.dart';
+import 'services/logger_service.dart';
 import 'services/offline_story_service.dart';
 import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
@@ -58,6 +59,7 @@ class PickAPathAdventureScreen extends StatefulWidget {
   final Map<String, int>? personalitySliders;
   final String? chronicleId;
   final Map<String, dynamic>? bigFeelingsContext;
+
   /// Companion list built from WizardData — passed directly to backend so
   /// companions appear in the story even for wizard-created temp characters.
   final List<Map<String, dynamic>>? companions;
@@ -144,7 +146,6 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   void _initTts() {
     if (mounted) setState(() => _ttsEnabled = true);
   }
-
 
   /// Speaks the segment; for young bands also reads choices aloud.
   /// Sprouts on continuation-only segments auto-advance after TTS.
@@ -280,18 +281,19 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
       _scrollToBottom();
       unawaited(_persistProgress());
-    } on InteractiveStoryException catch (e) {
-      _handleError(e.message, _startNewStory);
+    } on InteractiveStoryException catch (e, s) {
+      _handleError(_storyTroubleMessage, _startNewStory,
+          cause: e, stackTrace: s);
     } on TimeoutException {
       _handleError(
-        'This is taking longer than usual. Please try again.',
+        _isYoung
+            ? 'The story is taking a long time. Tap below to try again.'
+            : 'This is taking longer than usual. Please try again.',
         _startNewStory,
       );
-    } catch (e) {
-      _handleError(
-        'We could not reach the story server. Error: $e',
-        _startNewStory,
-      );
+    } catch (e, s) {
+      _handleError(_storyTroubleMessage, _startNewStory,
+          cause: e, stackTrace: s);
     }
   }
 
@@ -323,14 +325,47 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
 
       _scrollToBottom();
       unawaited(_persistProgress());
-    } on InteractiveStoryException catch (e) {
-      _handleError(e.message, _resumeStory);
-    } catch (e) {
-      _handleError('Unable to resume story: $e', _resumeStory);
+    } on InteractiveStoryException catch (e, s) {
+      _handleError(_storyTroubleMessage, _resumeStory, cause: e, stackTrace: s);
+    } catch (e, s) {
+      _handleError(_storyTroubleMessage, _resumeStory, cause: e, stackTrace: s);
     }
   }
 
-  void _handleError(String message, Future<void> Function() retry) {
+  /// Child-safe copy for the story-server failures a reader can do nothing
+  /// about (MT-382e). Every message that reached this screen carried raw
+  /// diagnostics — an HTTP status, the server's error text, or, when the body
+  /// was not JSON, the entire response body. None of it is actionable and all
+  /// of it is alarming to a child, so it is logged rather than rendered.
+  String get _storyTroubleMessage => _isYoung
+      ? 'The story got tangled up! Tap below and we will try again.'
+      : _isMature
+          ? 'The story could not be reached just now. Try again in a moment.'
+          : 'Something went wrong reaching your story. Let us try again!';
+
+  /// Title for the same panel. `Error` is the wrong register for a bedtime
+  /// app; the younger bands get warmth, the mature bands get plain language.
+  String get _storyTroubleTitle => _isYoung
+      ? 'Oops!'
+      : _isMature
+          ? 'Story unavailable'
+          : 'Something went wrong';
+
+  /// Shows child-safe copy and sends the real cause to the logs (and to Sentry
+  /// in release builds). `cause` is never rendered — see [_storyTroubleMessage].
+  void _handleError(
+    String message,
+    Future<void> Function() retry, {
+    Object? cause,
+    StackTrace? stackTrace,
+  }) {
+    if (cause != null) {
+      LoggerService.error(
+        'PickAPath: story request failed (age ${widget.character.age})',
+        cause,
+        stackTrace,
+      );
+    }
     if (!mounted) return;
     setState(() {
       _isLoading = false;
@@ -378,8 +413,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       String storyId, String segmentId, int generation) async {
     // ~30s total: the backend's Flux call usually completes in a few seconds.
     for (var attempt = 0; attempt < 12; attempt++) {
-      await Future.delayed(
-          Duration(milliseconds: attempt == 0 ? 1200 : 2500));
+      await Future.delayed(Duration(milliseconds: attempt == 0 ? 1200 : 2500));
       if (!mounted || generation != _illustrationPollGeneration) return;
       try {
         final result = await _storyService.fetchSegmentIllustration(
@@ -470,11 +504,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           _triggerChapterSummarization(choice.text);
         }
       }
-    } on InteractiveStoryException catch (e) {
-      _handleError(e.message, () => _handleChoiceSelected(choice));
-    } catch (e) {
-      _handleError(
-          'Unable to continue story: $e', () => _handleChoiceSelected(choice));
+    } on InteractiveStoryException catch (e, s) {
+      _handleError(_storyTroubleMessage, () => _handleChoiceSelected(choice),
+          cause: e, stackTrace: s);
+    } catch (e, s) {
+      _handleError(_storyTroubleMessage, () => _handleChoiceSelected(choice),
+          cause: e, stackTrace: s);
     }
   }
 
@@ -565,10 +600,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _retryAction = null;
       });
       _showCrisisResources();
-    } on InteractiveStoryException catch (e) {
-      _handleError(e.message, () => _handleCustomChoice());
-    } catch (e) {
-      _handleError('Unable to continue story: $e', () => _handleCustomChoice());
+    } on InteractiveStoryException catch (e, s) {
+      _handleError(_storyTroubleMessage, () => _handleCustomChoice(),
+          cause: e, stackTrace: s);
+    } catch (e, s) {
+      _handleError(_storyTroubleMessage, () => _handleCustomChoice(),
+          cause: e, stackTrace: s);
     }
   }
 
@@ -670,10 +707,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           _triggerChapterSummarization('');
         }
       }
-    } on InteractiveStoryException catch (e) {
-      _handleError(e.message, _handleContinue);
-    } catch (e) {
-      _handleError('Unable to continue story: $e', _handleContinue);
+    } on InteractiveStoryException catch (e, s) {
+      _handleError(_storyTroubleMessage, _handleContinue,
+          cause: e, stackTrace: s);
+    } catch (e, s) {
+      _handleError(_storyTroubleMessage, _handleContinue,
+          cause: e, stackTrace: s);
     }
   }
 
@@ -784,8 +823,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       // (empty only on resume) and lastly to the segment on screen.
       final String completeText;
       if (fullStory.segments.isNotEmpty) {
-        completeText =
-            fullStory.segments.map((s) => s.content).join('\n\n');
+        completeText = fullStory.segments.map((s) => s.content).join('\n\n');
       } else if (_chapterTextBuffer.isNotEmpty) {
         completeText = _chapterTextBuffer.toString();
       } else {
@@ -818,12 +856,15 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-    } catch (e) {
+    } catch (e, s) {
+      LoggerService.error('PickAPath: saving the story failed', e, s);
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to save story: $e'),
+          content: Text(_isYoung
+              ? 'We could not tuck your story away. Try again!'
+              : 'We could not save your story. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -887,7 +928,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
             : _errorMessage != null
                 ? Center(
                     child: ErrorMessage(
-                      title: 'Error',
+                      title: _storyTroubleTitle,
                       message: _errorMessage!,
                       onRetry: _retryAction,
                     ),
@@ -972,8 +1013,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
             Align(
               alignment: Alignment.topRight,
               child: IconButton(
-                icon: Icon(Icons.volume_off_rounded,
-                    color: band.primary),
+                icon: Icon(Icons.volume_off_rounded, color: band.primary),
                 tooltip: 'Stop reading',
                 onPressed: () => AppTtsService.instance.stop(),
               ),
@@ -1012,8 +1052,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
                       width: 90,
                       child: LinearProgressIndicator(
                         minHeight: 3,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
@@ -1056,7 +1095,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           ),
           child: Center(
             child: Text(
-              _isSprout ? '✨' : _isYoung ? '🌟' : '📖',
+              _isSprout
+                  ? '✨'
+                  : _isYoung
+                      ? '🌟'
+                      : '📖',
               style: const TextStyle(fontSize: 48),
             ),
           ),

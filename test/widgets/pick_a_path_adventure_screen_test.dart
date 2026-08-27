@@ -776,9 +776,10 @@ void main() {
       await tester.tap(choiceButton);
       await tester.pumpAndSettle();
 
-      // Should show error message
+      // Should show error message. MT-382(e): the copy is the child-safe
+      // message, NOT the old 'Unable to continue story: <raw exception>'.
       expect(find.byType(ErrorMessage), findsOneWidget);
-      expect(find.textContaining('Unable to continue'), findsOneWidget);
+      expect(find.textContaining('The story got tangled up'), findsOneWidget);
     });
 
     testLargeWidgets('I3: Shows retry UI on timeout during initial generation',
@@ -806,6 +807,103 @@ void main() {
 
       expect(find.byType(ErrorMessage), findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
+    });
+
+    // MT-382(e): raw exception text must never reach a child. The screen used
+    // to render the InteractiveStoryException message verbatim, and that
+    // message embeds the HTTP status plus the server's error text — and, when
+    // the body is not JSON, `_parseError` falls back to the ENTIRE response
+    // body, so an HTML error page or a stack trace could be shown to a reader.
+    testLargeWidgets(
+        'I4: Raw server error text is never rendered on the start path',
+        (tester) async {
+      const secretServerDetail = 'psycopg2.OperationalError at 10.0.0.7:5432';
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        return http.Response(
+          jsonEncode({'error': secretServerDetail}),
+          500,
+        );
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      final character = PickAPathTestHelpers.createTestCharacter();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: character,
+            theme: 'Magic',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorMessage), findsOneWidget);
+      // The child sees warmth and a way forward...
+      expect(find.textContaining('The story got tangled up'), findsOneWidget);
+      expect(find.text('Oops!'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      // ...and none of the diagnostics.
+      expect(find.textContaining(secretServerDetail), findsNothing);
+      expect(find.textContaining('psycopg2'), findsNothing);
+      expect(find.textContaining('500'), findsNothing);
+      expect(find.textContaining('code'), findsNothing);
+      expect(find.textContaining('Exception'), findsNothing);
+    });
+
+    testLargeWidgets(
+        'I5: A non-JSON error body is never dumped to the child on choice',
+        (tester) async {
+      // The worst case: `_parseError` returns response.body wholesale.
+      const htmlErrorPage =
+          '<html><head><title>502 Bad Gateway</title></head><body>'
+          'nginx/1.24.0 upstream connect error</body></html>';
+      final startResponse = PickAPathTestHelpers.createStartStoryResponseJson();
+
+      int requestCount = 0;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        requestCount++;
+        if (requestCount == 1) {
+          return http.Response(jsonEncode(startResponse), 200);
+        }
+        return http.Response(htmlErrorPage, 502);
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      final character = PickAPathTestHelpers.createTestCharacter();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: character,
+            theme: 'Magic',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Choice 1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorMessage), findsOneWidget);
+      expect(find.textContaining('The story got tangled up'), findsOneWidget);
+      // Not one fragment of the upstream page.
+      expect(find.textContaining('nginx'), findsNothing);
+      expect(find.textContaining('Bad Gateway'), findsNothing);
+      expect(find.textContaining('<html>'), findsNothing);
+      expect(find.textContaining('502'), findsNothing);
     });
   });
 
@@ -847,7 +945,15 @@ void main() {
 
       final mockClient = MockClient((request) async {
         if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
-        return http.Response(jsonEncode(responseJson), 200);
+        // The 9+ fixture contains an em dash, which http.Response encodes as
+        // Latin-1 by default and throws on — the mock then failed before the
+        // screen ever saw a segment, so this test was red for reasons that had
+        // nothing to do with age-appropriate content. Declare UTF-8.
+        return http.Response(
+          jsonEncode(responseJson),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
       });
 
       InteractiveStoryService.setTestClient(mockClient);
