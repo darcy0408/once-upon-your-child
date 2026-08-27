@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
+import 'package:story_weaver_app/services/pending_story_task_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -243,7 +244,8 @@ void main() {
           final auth = request.headers['Authorization'] ??
               request.headers['authorization'];
           expect(auth, isNotNull,
-              reason: '/task-status poll must send the JWT — an unauthenticated '
+              reason:
+                  '/task-status poll must send the JWT — an unauthenticated '
                   'poll 401s forever and the async story path never completes');
           expect(auth, isNotEmpty);
           return http.Response(
@@ -441,6 +443,80 @@ void main() {
         reason: 'the stuck task must have been polled across TWO attempts — '
             'one original and one resume',
       );
+
+      // MT-409: the delivered story settles EVERY task this call started —
+      // including the abandoned task-1, which may still finish late
+      // server-side. Rescuing it at next launch would hand the user a
+      // duplicate of a story they already have.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(await PendingStoryTaskService().pending(), isEmpty,
+          reason: 'a successful call must leave nothing behind to rescue');
+    });
+
+    test(
+        'MT-409: a generation abandoned after the whole retry budget leaves '
+        'its task ids registered for launch-time rescue', () async {
+      // The tail MT-408 could not cover: every attempt times out, the call
+      // throws, and before this fix the finished-late story was untraceable —
+      // the client kept no record that the tasks ever existed. Pin the record:
+      // the ids survive in the pending registry, carrying enough metadata to
+      // build a library entry when a later launch finds one complete.
+      var generateCalls = 0;
+      final fakeJwt = '${base64Url.encode(utf8.encode('{"alg":"none"}'))}'
+          '.${base64Url.encode(utf8.encode('{"sub":"user_test"}'))}'
+          '.sig';
+
+      final mockClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path.contains('auth')) {
+          return http.Response(
+              jsonEncode({'token': fakeJwt, 'user_id': 'user_test'}), 200);
+        }
+        if (path.contains('generate-story')) {
+          generateCalls++;
+          return http.Response(
+              jsonEncode({'task_id': 'task-$generateCalls'}), 202);
+        }
+        if (path.contains('task-status')) {
+          // NOTHING ever finishes inside the client's patience.
+          return http.Response(jsonEncode({'status': 'pending'}), 200);
+        }
+        return http.Response('not found', 404);
+      });
+
+      await ApiServiceManager.resetAuthForTest();
+      ApiServiceManager.setTestClient(mockClient);
+      addTearDown(() async {
+        ApiServiceManager.setTestClient(null);
+        await ApiServiceManager.resetAuthForTest();
+      });
+
+      await expectLater(
+        ApiServiceManager.generateStory(
+          characterName: 'Abandoned Hero',
+          theme: 'Space',
+          age: 9,
+          currentFeeling: null,
+          client: mockClient,
+          requestTimeout: const Duration(seconds: 2),
+          retryInitialDelay: const Duration(milliseconds: 10),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+
+      // The unawaited registry writes settle on the microtask queue.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      final pending = await PendingStoryTaskService().pending();
+      expect(
+        pending.map((t) => t.taskId).toSet(),
+        {'task-1', 'task-2'},
+        reason: 'both started tasks (original + post-resume fresh attempt) '
+            'must be registered — either may still deliver the story',
+      );
+      // The metadata a later launch needs to build the library entry.
+      expect(pending.first.characterName, 'Abandoned Hero');
+      expect(pending.first.theme, 'Space');
+      expect(pending.first.age, 9);
     });
   });
 }

@@ -17,7 +17,9 @@ import 'screens/wizard_story_screen.dart';
 import 'screens/wizard_steps/superhero_entry_screen.dart';
 import 'screens/parental_consent_screen.dart';
 import 'services/parental_consent_service.dart';
+import 'services/pending_story_task_service.dart';
 import 'services/superhero_portrait_store.dart';
+import 'providers/story_provider.dart';
 import 'providers/hero_profile_provider.dart';
 
 import 'achievements_screen.dart' deferred as achievements_screen;
@@ -144,6 +146,36 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   void initState() {
     super.initState();
     _checkOnboarding();
+    // MT-409: rescue stories that finished server-side after the client gave
+    // up waiting (exhausted retry budget, crash, kill). Fire-and-forget: the
+    // pending list is empty on the overwhelming majority of launches, and a
+    // failed rescue just tries again next launch.
+    unawaited(_recoverAbandonedStories());
+  }
+
+  /// Polls each unresolved generation task once; anything that completed is
+  /// saved into the local library. On success, tells the user their story
+  /// made it after all — otherwise stays silent.
+  Future<void> _recoverAbandonedStories() async {
+    try {
+      final rescued = await PendingStoryTaskService().recoverPending();
+      if (rescued == 0) return;
+      // Refresh the library list if a screen is already watching it.
+      if (mounted) ref.invalidate(storyListProvider);
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(rescued == 1
+              ? 'Good news! A story that was still being written is now in '
+                  'your library! 📖'
+              : 'Good news! $rescued stories that were still being written '
+                  'are now in your library! 📖'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } catch (e) {
+      // Never let the rescue disturb launch — next launch retries.
+      debugPrint('Abandoned-story rescue failed: $e');
+    }
   }
 
   Future<void> _checkOnboarding() async {

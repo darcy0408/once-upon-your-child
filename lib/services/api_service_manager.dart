@@ -16,6 +16,7 @@ import '../models/antihero_crux_result.dart';
 import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
 import 'logger_service.dart';
+import 'pending_story_task_service.dart';
 import 'story_scaffold_fallback.dart';
 import 'user_identity_service.dart';
 
@@ -669,6 +670,11 @@ class ApiServiceManager {
   /// story), which is strictly better than blocking the UI on a cancel call.
   static Future<void> cancelTask(String taskId) async {
     if (taskId.isEmpty) return;
+    // MT-409: a cancelled task must never be rescued at next launch — clear
+    // it from the pending registry even if the cancel POST itself fails (the
+    // user's intent is what matters; a re-delivered cancelled story would be
+    // a story they explicitly walked away from).
+    unawaited(PendingStoryTaskService().resolve(taskId));
     try {
       final headers = await authHeaders();
       await http
@@ -1021,8 +1027,7 @@ class ApiServiceManager {
               (errorJson.containsKey('error_code') ||
                   errorJson.containsKey('error') ||
                   errorJson.containsKey('message'))) {
-            throw ApiError.fromJson(errorJson,
-                statusCode: response.statusCode);
+            throw ApiError.fromJson(errorJson, statusCode: response.statusCode);
           }
         } catch (e) {
           if (e is ApiError) rethrow;
@@ -1058,8 +1063,7 @@ class ApiServiceManager {
               (errorJson.containsKey('error_code') ||
                   errorJson.containsKey('error') ||
                   errorJson.containsKey('message'))) {
-            throw ApiError.fromJson(errorJson,
-                statusCode: response.statusCode);
+            throw ApiError.fromJson(errorJson, statusCode: response.statusCode);
           }
         } catch (e) {
           if (e is ApiError) rethrow;
@@ -1188,6 +1192,13 @@ class ApiServiceManager {
     // generating, so the safety net survives.
     final resumedTaskIds = <String>{};
     var resumeNext = false;
+    // MT-409: every task this call starts, so a terminal outcome can clear
+    // them ALL from the pending-rescue registry. One call can start several
+    // tasks (timeout → one resume → timeout → fresh POST); if the call
+    // ultimately succeeds, an earlier task that also finished late must not
+    // be rescued at next launch as a duplicate of a story already delivered.
+    final recordedTaskIds = <String>{};
+    final pendingTasks = PendingStoryTaskService();
 
     while (attempts < maxAttempts) {
       final candidateId = inFlightTaskId;
@@ -1197,8 +1208,14 @@ class ApiServiceManager {
           ? candidateId
           : null;
       if (resumeTaskId != null) resumedTaskIds.add(resumeTaskId);
+      // MT-409: the task id THIS attempt worked against — the resumed id, or
+      // whatever /generate-story hands back below. Distinct from
+      // [inFlightTaskId], which can still hold a PREVIOUS attempt's timed-out
+      // id when this attempt dies before a task ever starts; a structural
+      // failure must only unregister its own task, never that one.
+      String? attemptTaskId = resumeTaskId;
       try {
-        return await _generateStoryWithBackend(
+        final result = await _generateStoryWithBackend(
           resumeTaskId: resumeTaskId,
           characterName: characterName,
           theme: theme,
@@ -1235,6 +1252,22 @@ class ApiServiceManager {
           // caller, so a timed-out attempt can be resumed rather than re-run.
           onTaskId: (id) {
             inFlightTaskId = id;
+            attemptTaskId = id;
+            // MT-409: register the task for launch-time rescue the moment it
+            // exists. Cleared again on every terminal outcome below; what
+            // survives is exactly a task the app abandoned (exhausted retry
+            // budget, crash, kill) — the case the rescue exists for.
+            if (recordedTaskIds.add(id)) {
+              unawaited(pendingTasks.record(PendingStoryTask(
+                taskId: id,
+                characterName: characterName,
+                age: age,
+                theme: theme,
+                isRhyming: rhymeTimeMode,
+                isLearningToRead: learningToReadMode,
+                createdAt: DateTime.now(),
+              )));
+            }
             onTaskId?.call(id);
           },
           progressPhases: progressPhases,
@@ -1260,10 +1293,21 @@ class ApiServiceManager {
           recentProblems: recentProblems,
           priorSaga: priorSaga,
         );
+        // MT-409: the story was delivered — every task this call started is
+        // settled, including an earlier timed-out one that may ALSO finish
+        // late server-side (rescuing that one would duplicate this story).
+        for (final id in recordedTaskIds) {
+          unawaited(pendingTasks.resolve(id));
+        }
+        return result;
       } on StoryGenerationCancelled {
         // PERF-01 cancellation polish: a user-initiated cancel is terminal —
         // never retry it (that would re-launch a task the user abandoned).
         // Propagate the signal straight to the caller for silent handling.
+        // MT-409: the user walked away on purpose; never rescue these.
+        for (final id in recordedTaskIds) {
+          unawaited(pendingTasks.resolve(id));
+        }
         rethrow;
       } catch (error, stackTrace) {
         attempts++;
@@ -1293,6 +1337,17 @@ class ApiServiceManager {
           // next attempt generates normally instead of re-polling a dead task.
           if (resumeTaskId != null) inFlightTaskId = null;
           resumeNext = false;
+          // MT-409: a non-timeout failure is structural — the task reported
+          // `failure`, answered 4xx, or the response was malformed. Polling
+          // that id again at next launch would fail the same way, so drop
+          // THIS attempt's id from the rescue registry now. Timed-out ids
+          // from earlier attempts stay pending: a timeout is exactly the
+          // case where the story may still land.
+          final deadId = attemptTaskId;
+          if (deadId != null) {
+            recordedTaskIds.remove(deadId);
+            unawaited(pendingTasks.resolve(deadId));
+          }
         }
 
         if (attempts >= maxAttempts) rethrow;
@@ -1329,8 +1384,7 @@ class ApiServiceManager {
         .timeout(requestTimeout);
 
     if (generateResponse.statusCode == 200) {
-      final payload =
-          jsonDecode(generateResponse.body) as Map<String, dynamic>;
+      final payload = jsonDecode(generateResponse.body) as Map<String, dynamic>;
       final story = payload['story'] ?? payload['story_text'];
       if ((story is String && story.isNotEmpty) ||
           (story is Map && story.isNotEmpty)) {
