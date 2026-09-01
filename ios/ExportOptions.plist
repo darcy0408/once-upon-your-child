@@ -3,12 +3,11 @@
 <!--
   App Store export options for Once Upon YOUR Child (team JPU8WX66BX).
 
-  NOT used by .github/workflows/ios-testflight.yml today. That workflow calls
-  `flutter build ipa` with an app-store export method, which generates its own
-  export options. This file is for a manual
-  `xcodebuild -exportArchive -exportOptionsPlist ios/ExportOptions.plist`, which
-  is how a first upload from a borrowed Mac would be done, and is the file to
-  point CI at if it ever switches to an explicit plist.
+  USED BY .github/workflows/ios-testflight.yml (via the flutter build ipa
+  export-options-plist flag) since 2026-09-01. Manual signing: CI has no
+  Apple ID account, so automatic signing fails with "No Accounts" — the
+  profile below must match the one installed by the workflow AND the
+  PROVISIONING_PROFILE_SPECIFIER in Runner.xcodeproj's Release config.
 
   `method` below is the modern Xcode 15.3+ spelling; older Xcode wants
   `app-store` instead.
@@ -25,7 +24,16 @@
     <string>JPU8WX66BX</string>
 
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+
+    <key>signingCertificate</key>
+    <string>Apple Distribution</string>
+
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.storyweaver.storyWeaverApp</key>
+        <string>Once Upon YOUR Child App Store</string>
+    </dict>
 
     <key>destination</key>
     <string>export</string>

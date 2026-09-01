@@ -79,12 +79,16 @@ jobs:
       # compile-time constant and never reached the Xcode build setting — so
       # signing was never actually configured. Removed rather than left to imply
       # otherwise. The IOS_DEVELOPMENT_TEAM repo secret is now unused.
+      # Manual signing (2026-09-01): CI has no Apple ID in Xcode, so automatic
+      # signing dies with "No Accounts". Release config in Runner.xcodeproj pins
+      # CODE_SIGN_STYLE=Manual + the App Store profile; ExportOptions.plist
+      # carries the same mapping for the export step.
       - name: Build signed IPA for App Store Connect
         run: |
           flutter build ipa \
             --release \
             --build-number=${{ github.run_number }} \
-            --export-method=app-store
+            --export-options-plist=ios/ExportOptions.plist
 
       - name: Configure App Store Connect API key
         env:
