@@ -88,7 +88,7 @@ edge-tts>=7.0.0
 # ==1.50.0 — the Linux x86_64 manylinux wheel — plus its one transitive dep
 # azure-core==1.41.0; requests/typing-extensions were already pinned) rather than
 # a full pip-compile, to avoid the Python-version lockfile landmine.
-azure-cognitiveservices-speech>=1.51.1
+azure-cognitiveservices-speech>=1.51.2
 
 # Testing (development only)
 pytest==9.1.1
