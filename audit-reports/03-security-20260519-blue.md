@@ -1,5 +1,7 @@
 # 03 Security Audit — Blue Hat (Synthesis & Remediation Backlog)
 
+> **Status as of 2026-09-06:** see the status table in `03-security-20260519.md` (also reproduced in `03-security-20260519-black.md`, where the S-NN findings are defined).
+
 Synthesis of all hats into a prioritized, sequenced remediation backlog.
 
 ## Cross-hat synthesis

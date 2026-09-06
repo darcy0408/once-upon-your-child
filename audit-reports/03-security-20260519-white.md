@@ -1,5 +1,7 @@
 # 03 Security Audit — White Hat (Factual Inventory)
 
+> **Status as of 2026-09-06:** see the status table in `03-security-20260519.md` (also reproduced in `03-security-20260519-black.md`, where the S-NN findings are defined).
+
 Audit ID: 03-security | Date: 2026-05-19 | Method: Six Thinking Hats, static review
 Scope: auth, API, infra, payments, secrets, dependencies, mobile, LLM-security.
 Out of scope (covered by 02-content-safety-20260519): story/illustration content

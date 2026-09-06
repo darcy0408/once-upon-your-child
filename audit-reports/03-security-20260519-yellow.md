@@ -1,5 +1,7 @@
 # 03 Security Audit — Yellow Hat (Controls Working Well)
 
+> **Status as of 2026-09-06:** see the status table in `03-security-20260519.md` (also reproduced in `03-security-20260519-black.md`, where the S-NN findings are defined).
+
 Existing strong controls and defense-in-depth wins worth preserving and
 replicating. The two prior remediation batches (2026-05-16/17) landed real,
 verifiable security work — this hat documents what should NOT be touched.

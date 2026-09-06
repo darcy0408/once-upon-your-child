@@ -1,5 +1,32 @@
 # Content Safety Audit — AI Output for Children
 
+> **Status as of 2026-09-06** (added after the fact; the audit text below is unchanged)
+>
+> | Finding | Severity | Status | Evidence |
+> |---|---|---|---|
+> | F-01 Interactive choice text/titles unmoderated | Critical | FIXED | `8205f91d` 2026-05-19, interactive path now moderates segment titles and choice-button text, not just body |
+> | F-02 Fallback substitution leaves unsafe choices in place | Critical | FIXED | `8205f91d` 2026-05-19, the safe-fallback substitution now replaces `choices` too |
+> | F-03 LLM classifier inspects only the first 3000 chars | Critical | FIXED | `8205f91d` 2026-05-19, `backend/utils/content_moderator.py` now splits the full story into chunks and classifies every chunk |
+> | F-04 Standard story path never fails closed | High | FIXED | `8205f91d` 2026-05-19, `backend/tasks/story_tasks.py` now passes `fail_closed` for minors (current source fails closed through age 17) |
+> | F-05 OpenRouter fallback has no provider-side safety filtering | High | FIXED | `8205f91d` 2026-05-19, moderation fails closed whenever the OpenRouter fallback produced the story |
+> | F-06 Violence keyword backstop only for age <=5 | High | FIXED | `8205f91d` 2026-05-19, folded into the F-04 fail-closed fix |
+> | F-07 Child photos to 3rd-party APIs, no retention guarantee | High | OPEN | Tracked as MT-246 in `docs/MANUAL_TASKS.md` (legal/UI decision, unaddressed) |
+> | F-08 No content warning before trauma themes | High | FIXED | `c66fd440` 2026-05-30 / `f68d443e` 2026-06-29, per-quest `sensitivity`+`minAge` metadata and a UI warning gate in `lib/data/life_quest_data.dart` |
+> | F-09 Peer-mental-health quest ships no crisis resources | High | FIXED | `90033342` 2026-05-28 (#148), `lib/widgets/crisis_resources_panel.dart` wired into the "Someone Needs Help" quest |
+> | F-10 Per-page image prompts unmoderated | Medium | FIXED | `8205f91d` 2026-05-19, `/generate-illustrations` and `/generate-coloring-pages` now keyword-screen `scene_description` |
+> | F-11 No Gemini image-generation safety settings | Medium | FIXED | `8205f91d` 2026-05-19, `backend/gemini_image_generator.py` now sends child-tuned `safety_settings` |
+> | F-12 No post-generation image moderation | Medium | OPEN | Tracked as MT-160 (engineering task, needs a vision-classifier API/key) |
+> | F-13 Title/metadata not moderated | Medium | FIXED | `8205f91d` 2026-05-19, the story title is now keyword- and LLM-moderated alongside the body |
+> | F-14 Family-structure assumptions in quest data | Medium | FIXED | `79d484bb` 2026-05-28 (#150), 41 substitutions to the `{grownup}` interpolation in `lib/data/life_quest_data.dart` |
+> | F-15 Prior interactive segment text re-enters prompt unmoderated | Medium | FIXED | Resolved by the F-01 fix (`8205f91d`) — choices are moderated before persistence |
+> | F-16 `questFamilyStress` reachable by Creator band | Medium | FIXED | `c66fd440`/`f68d443e`, `minAge: 15` now gates `questFamilyStress` in `lib/data/life_quest_data.dart` |
+> | F-17 Undisclosed second Gemini call for avatar photo analysis | Medium | OPEN | Tracked as MT-246 (same task as F-07), unaddressed |
+> | F-18 Safe-fallback segment shape inconsistency | Low | FIXED | Field-parity test added (`backend/tests/security/test_content_moderator.py`, "F-18: safe-fallback segment shape") |
+> | F-19 Grief emotion gated to 15+ only | Low | FIXED | `45f1a46e` 2026-05-29 (#156), a "Missing Someone" option added for ages 6-12 in `lib/screens/big_feelings_flow_screen.dart` |
+> | F-20 Moderator/generator age bands diverge | Low | OPEN | Still diverges — `content_moderator.py` uses a 4-band split vs `story_service.py`'s 6-band split; documented only, no fix planned |
+>
+> Findings marked OPEN or NOT VERIFIED are tracked in the project issue list.
+
 Story Weaver / "Once Upon a Time" — generated story text, illustrations, coloring
 pages, and interactive Pick-a-Path branching.
 

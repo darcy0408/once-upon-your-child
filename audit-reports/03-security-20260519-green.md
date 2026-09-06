@@ -1,5 +1,7 @@
 # 03 Security Audit — Green Hat (Alternative Architectures & Novel Mitigations)
 
+> **Status as of 2026-09-06:** see the status table in `03-security-20260519.md` (also reproduced in `03-security-20260519-black.md`, where the S-NN findings are defined).
+
 Proposals beyond the checklist — architectural changes and unconventional
 defenses that would harden the app against attack classes not currently
 modelled. These are recommendations, not findings; none is required to close

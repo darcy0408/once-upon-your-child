@@ -1,5 +1,7 @@
 # 03 Security Audit — Red Hat (Intuitive Risk Signals)
 
+> **Status as of 2026-09-06:** see the status table in `03-security-20260519.md` (also reproduced in `03-security-20260519-black.md`, where the S-NN findings are defined).
+
 Gut reactions recorded before evidence-gathering. Not findings — signals that
 steered the Black Hat pass.
 
