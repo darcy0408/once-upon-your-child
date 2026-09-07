@@ -98,16 +98,17 @@ To test your alert configuration:
 
 ### 7. Monitoring Scripts
 
-The following monitoring scripts are available in the `monitoring/` directory:
+This section used to list `uptime_monitor.py` and `weekly_report.py` from
+`monitoring/` and tell you to add them as cron jobs. Those scripts were an
+unimplemented draft — nothing ever scheduled or ran them, and several
+depended on packages the backend does not install. They were deleted on
+2026-09-07 and are recoverable from git history. Do not resurrect them as
+cron jobs without reading them first.
 
-- `uptime_monitor.py`: Continuous health monitoring with alerts
-- `weekly_report.py`: Automated weekly performance reports
-
-To run these on Railway:
-
-1. Add as cron jobs in your deployment
-2. Or run as background processes
-3. Configure appropriate environment variables
+What actually runs is documented in `monitoring/README.md`: Sentry, the
+health endpoints, the Celery-beat reliability monitor in
+`backend/tasks/monitoring_tasks.py`, and the backup and restore-drill
+GitHub workflows.
 
 ### 8. Alert Maintenance
 

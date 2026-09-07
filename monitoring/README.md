@@ -1,130 +1,71 @@
-# Story Weaver Production Monitoring Setup
+# Story Weaver monitoring
 
-This directory contains the self-hosted monitoring stack for the Story Weaver application.
+This directory is documentation only — it holds no code or config. It records
+what actually watches production, because an earlier version of this file
+described a monitoring stack that was never built. The stack that used to sit
+here was deleted on 2026-09-07; see the last section.
 
-## Components
+## What is actually in place
 
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Dashboards and visualization
-- **Loki**: Log aggregation
-- **Promtail**: Log shipping to Loki
-- **Alertmanager**: Alert routing and notifications
-- **Elasticsearch**: Search and analytics engine
-- **Logstash**: Log processing and enrichment
-- **Kibana**: Log visualization and exploration
+Production runs on Railway (backend, Celery worker, Celery beat) with the
+frontend on Cloudflare Pages. Observability consists of:
 
-## Backend Integration
+- **Error tracking and tracing: Sentry.** Initialized in `backend/app.py`
+  from `SENTRY_DSN` with the Flask integration, 10% trace sampling in
+  production, profiling off, and a `before_send` scrubber.
+- **Health endpoints** in `backend/routes/health_routes.py`:
+  - `GET /health` - public liveness check.
+  - `GET /version`.
+  - `GET /health/detailed` - admin-only. Probes the database, makes a live
+    Gemini API call, and reports memory use via psutil.
+  - `GET /health/database`.
+- **Scheduled reliability monitor** - `backend/tasks/monitoring_tasks.py`,
+  run by Celery beat every 10 minutes (schedule in `backend/celery_config.py`).
+  Raises a Sentry warning when the Celery queue depth crosses a threshold or
+  when the daily data-retention purge heartbeat goes stale. It runs on the
+  same worker it monitors, so a fully wedged worker delays it; the module
+  docstring spells this out.
+- **Database backups** - `.github/workflows/postgres-backup.yml` is present
+  here as a manual-dispatch workflow only; its schedule is disabled in this
+  repo. The daily run (09:00 UTC: `pg_dump`, gzip, upload to Cloudflare R2,
+  archive verified before upload, dumps older than 30 days pruned, GitHub
+  issue opened on failure) happens from a private ops repo that holds the
+  database and R2 secrets.
+- **Restore drill** - `.github/workflows/restore-drill.yml`, likewise
+  manual-dispatch only here. The monthly drill (latest dump restored into a
+  throwaway Postgres container, table and row counts checked, measured RTO
+  printed, issue opened on failure) runs from the same private ops repo.
+- **Railway** provides service logs and CPU/memory graphs in its dashboard.
+  Alert rules live there, not in this repo. The intended rules are written
+  up in `docs/RAILWAY_ALERTS_SETUP.md`; they cannot be verified from the repo.
+- **User data endpoints** in `backend/routes/user_routes.py`:
+  `GET /api/user/<id>/export` and `DELETE /api/user/<id>/data`. Inactive
+  accounts are purged daily at 03:30 UTC by
+  `backend/tasks/retention_tasks.py`.
 
-The backend has been instrumented with:
-- New Relic APM for application performance monitoring
-- Prometheus client for custom metrics
-- Structured logging
+There is no Prometheus, Grafana, Loki, Elasticsearch, Logstash, Kibana, or
+New Relic. The backend exposes no `/metrics` endpoint and has no Prometheus
+client dependency. No Loki instance is configured anywhere in this repo;
+where session notes say "Loki", the logs being queried were Railway's.
 
-## Setup Instructions
+## What used to be here, and why it was removed (2026-09-07)
 
-1. **Deploy Monitoring Stack**:
-    ```bash
-    cd monitoring
-    docker-compose up -d
-    ```
+This directory previously held a self-hosted observability stack that never
+ran. All of it was deleted; recover it from git history if ever needed.
 
-2. **Configure New Relic**:
-    - Set `NEW_RELIC_LICENSE_KEY` environment variable in Railway
-    - The `newrelic.ini` is configured for production
+- `docker-compose.yml` declared Prometheus, Grafana, Loki, Promtail,
+  Alertmanager, Elasticsearch, Logstash, Kibana, and Redis. It mounted five
+  config files (`prometheus.yml`, `loki-config.yml`, `promtail-config.yml`,
+  `alertmanager.yml`, `logstash.conf`), none of which were ever committed, so
+  the stack could not start. It was never deployed anywhere.
+- `dashboards/production-health-dashboard.json` was a Grafana dashboard for a
+  Grafana that did not exist.
+- 13 Python scripts (`uptime_monitor.py`, `cost_monitor.py`,
+  `ai_anomaly_detector.py`, `weekly_report.py`, and the rest) were scheduled
+  or invoked by nothing: not Celery beat, not a GitHub workflow, not Railway.
+  Several imported scikit-learn, pandas, numpy, and joblib, which are not
+  backend dependencies.
 
-3. **Access Services**:
-    - **Grafana**: http://localhost:3000 (admin/admin)
-    - **Prometheus**: http://localhost:9090
-    - **Alertmanager**: http://localhost:9093
-    - **Kibana**: http://localhost:5601
-    - **Elasticsearch**: http://localhost:9200
-
-4. **Configure Alerts**:
-   - Update `alertmanager.yml` with actual Slack webhook and email credentials
-   - Alerts are defined in `alert_rules.yml`
-
-## Metrics Available
-
-- API request counts and rates
-- Story generation performance (duration, success/failure)
-- Business metrics (stories by theme, age group)
-- Error rates and response times
-
-## Production Health Dashboard
-
-### Real-time Health Monitoring
-- **File**: `monitoring/dashboards/production-health-dashboard.json`
-- **Import**: In Grafana, go to Dashboards → Import, upload the JSON file
-- **Key Metrics**:
-  - System health score and uptime percentage
-  - Active users and stories generated (last 24h)
-  - Average response time and error rates
-  - Database connection pool usage
-  - Cache hit rate and performance
-  - System resource utilization (CPU, memory, disk)
-  - User engagement trends over time
-  - Business KPIs (registrations, subscriptions, completion rates)
-  - Real-time cost analysis
-  - Security alerts and violations
-
-### Automated Maintenance Scripts
-- **File**: `monitoring/automated_maintenance.py`
-- **Features**:
-  - Database cleanup (expired sessions, old stories)
-  - Log rotation and compression
-  - Cache invalidation and optimization
-  - Database performance optimization
-  - Automated backup coordination
-
-### Cost Monitoring & Optimization
-- **File**: `monitoring/cost_monitor.py`
-- **Capabilities**:
-  - Real-time cost analysis across all services
-  - Budget alerts and threshold monitoring
-  - Cost optimization recommendations
-  - Infrastructure cost tracking
-  - API and storage cost analysis
-
-## GDPR Compliance
-
-- **Automated Compliance Monitoring**: `compliance_monitor.py` provides GDPR compliance checks
-- **Data Export**: API endpoints for user data export (Article 15)
-- **Right to Erasure**: Data deletion endpoints (Article 17)
-- **Data Retention**: 7-year retention policy with automated cleanup
-- **Anonymization**: Personal data is anonymized in logs and metrics
-- **Consent Management**: Framework for consent tracking (to be implemented)
-- **Compliance Reports**: Monthly automated compliance reporting
-
-### GDPR API Endpoints
-- `GET /compliance-check` - Run compliance checks
-- `GET /data-export/<user_id>` - Export user data
-- `DELETE /data-deletion/<user_id>` - Delete user data
-- `GET /compliance-report` - Generate compliance report
-
-## Dashboards
-
-### Executive Business Intelligence Dashboard
-- **File**: `monitoring/dashboards/executive-dashboard.json`
-- **Import**: In Grafana, go to Dashboards → Import, upload the JSON file
-- **Metrics**:
-  - Total stories generated (30-day sum)
-  - Daily active users
-  - Stories by age group (pie chart)
-  - Therapeutic outcomes - feelings explored
-  - User engagement trends (API requests vs stories)
-  - Story themes popularity
-  - Subscription conversion rate
-
-## Testing
-
-1. Start the monitoring stack
-2. Make requests to the backend /metrics endpoint
-3. Verify metrics appear in Prometheus
-4. Import the executive dashboard in Grafana
-5. Test alerts by triggering high error rates
-
-## Railway Deployment
-
-- Update prometheus.yml target to the Railway backend URL
-- Ensure /metrics endpoint is accessible
-- Set NEW_RELIC_LICENSE_KEY in Railway environment
+An earlier version of this README also claimed the backend was instrumented
+with New Relic APM and a Prometheus client. It never was. That claim is the
+reason this file now leads with what is actually in place.
