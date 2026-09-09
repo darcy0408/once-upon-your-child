@@ -15,6 +15,18 @@ MAX_PARENTAL_NOTE = 300
 MAX_LIFE_CHALLENGE = 300
 MAX_THERAPEUTIC_PROMPT = 600
 
+# MT-411 F2/F4: caps for the request-level "quasi-structural" fields (see
+# _QUASI_STRUCTURAL_KEYS below). theme/tone are documented column widths
+# (backend/models/story.py, backend/models/interactive_story.py); the rest are
+# short identifiers/labels in every legitimate caller, so a short cap kills the
+# cost/injection blast radius without touching real values.
+MAX_THEME = 100
+MAX_TONE = 50
+MAX_GENDER = 50
+MAX_PRONOUNS = 30
+MAX_STYLE = 40
+MAX_MODE = 40
+
 # Default cap for any free-text string field not explicitly listed above.
 # Keeps an unbounded "worldBible" / "conflictHook" / etc. from ballooning the prompt.
 MAX_GENERIC_FREE_TEXT = 600
@@ -42,12 +54,6 @@ _STRUCTURAL_KEYS = frozenset(
         "sessionId",
         "age",
         "length",
-        "tone",
-        "theme",
-        "mode",
-        "style",
-        "gender",
-        "pronouns",
         "interactive",
         "is_premium",
         "isPremium",
@@ -55,6 +61,57 @@ _STRUCTURAL_KEYS = frozenset(
         "output_type",
     }
 )
+
+# MT-411 F2/F4 (HIGH/LOW): theme/tone/gender/pronouns/style/mode used to live in
+# _STRUCTURAL_KEYS above and skip sanitization entirely. They are compared for
+# EQUALITY downstream — theme.strip().lower() == "superhero"
+# (backend/services/prompt_service.py), the big-feelings theme set
+# (backend/routes/story_routes.py _is_big_feelings_request), and the
+# rhyme/pick-a-path mode tokens (backend/utils/validators.py
+# validate_story_modes) — so, unlike the free-text _WRAP_KEYS fields, they must
+# NEVER be [USER_INPUT]-wrapped: wrapping would make every one of those
+# comparisons fail silently and disable the feature it gates. But they also
+# land RAW in high-authority prompt headings/system-ish lines
+# (interactive_adventure_prompt_builder.py's "**THEME**: {theme} | **TONE**:
+# {tone}" and the "{child_name}{gender_text}" hero line), so passing them
+# through completely untouched — the old behavior — let a direct API caller
+# smuggle instructions through a field the sanitizer was told to ignore.
+#
+# The fix: sanitize + hard-cap these fields like any other string (below), just
+# without ever wrapping them. tone has a real closed set (see _TONE_ALLOWLIST)
+# so it gets a strict allowlist with a safe-default fallback. theme is
+# documented as open-ended by design (backend/models/story.py: "Adventure,
+# Magic, Dragons, etc." — scenario titles and future ScenarioCard entries are
+# legitimate values with no fixed catalog anywhere in the codebase), so it only
+# gets sanitize + cap, not a reject-unknown allowlist; the literal values it IS
+# compared against ("superhero", the four big-feelings phrases) contain no
+# HTML/injection-pattern text and survive sanitize_for_prompt unchanged, and
+# every comparison site already normalizes with .strip().lower() itself.
+# gender/pronouns/style/mode are free-er but every real value is short, so a
+# short cap plus the standard sanitize pass is enough.
+_QUASI_STRUCTURAL_KEYS = frozenset(
+    {"theme", "tone", "gender", "pronouns", "style", "mode"}
+)
+
+# tone's finite set, confirmed in the codebase (not invented here):
+# backend/models/interactive_story.py's column comment ("whimsical, mystery,
+# sci-fi, fantasy, cozy-adventure") plus lib/data/band_story_defaults.dart's
+# per-band tones ("atmospheric" for Adolescent, "literary" for Adult) and
+# lib/screens/bedtime_wizard_screen.dart's "cozy-adventure". Unrecognized
+# input falls back to "whimsical" — the same default already used wherever
+# tone is read (backend/routes/story_routes.py, interactive_adventure_prompt_builder.py).
+_TONE_ALLOWLIST = frozenset(
+    {
+        "whimsical",
+        "mystery",
+        "sci-fi",
+        "fantasy",
+        "cozy-adventure",
+        "atmospheric",
+        "literary",
+    }
+)
+_DEFAULT_TONE = "whimsical"
 
 # Free-text fields that flow RAW into high-authority prompt directives and are
 # NOT already delimiter-wrapped by the prompt templates. These must be wrapped
@@ -97,6 +154,13 @@ _FIELD_CAPS = {
     "therapeuticPrompt": MAX_THERAPEUTIC_PROMPT,
     "parental_note": MAX_PARENTAL_NOTE,
     "parentalNote": MAX_PARENTAL_NOTE,
+    # MT-411 F2/F4 — see _QUASI_STRUCTURAL_KEYS above.
+    "theme": MAX_THEME,
+    "tone": MAX_TONE,
+    "gender": MAX_GENDER,
+    "pronouns": MAX_PRONOUNS,
+    "style": MAX_STYLE,
+    "mode": MAX_MODE,
 }
 
 # Patterns that attempt to override system instructions.
@@ -229,6 +293,21 @@ def _sanitize_value(key: str, value, _depth: int = 0):
     if isinstance(value, str):
         cap = _FIELD_CAPS.get(key, MAX_GENERIC_FREE_TEXT)
         cleaned = sanitize_for_prompt(value, cap)
+
+        # MT-411 F2/F4: theme/tone/gender/pronouns/style/mode are sanitized and
+        # capped like any other string but are NEVER wrapped — they are
+        # compared for equality downstream (theme == "superhero", the
+        # big-feelings theme set, the rhyme/pick-a-path mode tokens) and
+        # wrapping would break every one of those checks. tone additionally
+        # gets a strict allowlist (see _TONE_ALLOWLIST) since it is drawn from
+        # a real closed set; theme is documented open-ended so it only gets
+        # sanitize + cap.
+        if key in _QUASI_STRUCTURAL_KEYS:
+            if key == "tone":
+                normalized = cleaned.strip().lower()
+                return normalized if normalized in _TONE_ALLOWLIST else _DEFAULT_TONE
+            return cleaned
+
         # Wrap raw free-text directive fields so the model treats them as data.
         # Skip if the upstream template already wraps it (avoid double-wrap).
         if key in _WRAP_KEYS and cleaned and not _is_delimiter_wrapped(cleaned):
