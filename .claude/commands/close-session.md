@@ -73,7 +73,7 @@ background loop as success.
 
 ## Step 3 — Commit pending changes
 
-1. **Commit by explicit path** — `git commit -- <paths>` — never staged-mode
+1. **Commit by explicit path** — `git commit -m "<msg>" -- <paths>` — never staged-mode
    (CLAUDE.md rule 3). A staged commit once swept in a parallel session's images
    and a 48-line edit that was never `git add`-ed.
 2. **Run `git branch --show-current` first.** A parallel session's `checkout -b`
@@ -234,7 +234,8 @@ separator, retrying up to 3 times on "File has been modified since read."
 never appear here:
 
 ```bash
-git commit -- docs/MANUAL_TASKS.md TEAM_COORDINATION.md -m "docs(session): close {id} — {1-line topic}"
+# -m must come BEFORE the `--`: after `--`, git reads every remaining argument as a path.
+git commit -m "docs(session): close {id} — {1-line topic}" -- docs/MANUAL_TASKS.md TEAM_COORDINATION.md
 ```
 
 **In the private notes repo** — commit the record by path and push. Use `git -C`

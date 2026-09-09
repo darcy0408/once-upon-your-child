@@ -73,7 +73,7 @@ For golden-based checks:
 Several agent sessions run against this working tree at once. They share the
 index, HEAD, **and** the current branch.
 
-- **Commit by explicit path** — `git commit -- <paths>` — never staged-mode.
+- **Commit by explicit path** — `git commit -m "<msg>" -- <paths>` — never staged-mode.
   A commit meant to hold two files once pulled in a parallel session's images
   and a 48-line edit that was never `git add`-ed.
 - **Run `git branch --show-current` before committing.** A parallel session
