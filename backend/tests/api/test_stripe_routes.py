@@ -391,13 +391,54 @@ def test_get_subscription_status_requires_auth(client, app):
     assert response.get_json()["error"] == "Authentication required"
 
 
-def test_get_subscription_status_returns_inactive_without_customer(client, app):
+def test_get_subscription_status_returns_inactive_for_free_without_customer(
+    client, app
+):
+    # A free-tier user with no Stripe customer and no gift/IAP entitlement
+    # fails closed to inactive/free.
     with app.app_context():
-        _create_user("stripe-user-no-customer", tier="premium")
+        _create_user("free-user-no-customer", tier="free")
 
     response = client.get(
-        "/api/stripe/subscription-status/stripe-user-no-customer",
-        headers=_auth_headers("stripe-user-no-customer"),
+        "/api/stripe/subscription-status/free-user-no-customer",
+        headers=_auth_headers("free-user-no-customer"),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "inactive", "tier": "free"}
+
+
+def test_get_subscription_status_honors_db_entitlement_without_stripe(client, app):
+    # A gift-code / IAP entitlement is written straight onto the User row
+    # (subscription_tier='premium', status='active') with NO Stripe customer.
+    # The endpoint must surface it as Premium so the client reflects it — this
+    # is the fix for gift/IAP premium being invisible on anonymous accounts.
+    with app.app_context():
+        _create_user("gift-user-no-customer", tier="premium")
+
+    response = client.get(
+        "/api/stripe/subscription-status/gift-user-no-customer",
+        headers=_auth_headers("gift-user-no-customer"),
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["status"] == "active"
+    assert body["tier"] == "premium"
+
+
+def test_get_subscription_status_ignores_revoked_db_tier(client, app):
+    # A premium tier whose status no longer grants access (canceled/expired)
+    # must fail closed to inactive/free — access is (tier AND status), not the
+    # tier label alone.
+    with app.app_context():
+        user = _create_user("expired-user-no-customer", tier="premium")
+        user.subscription_status = "canceled"
+        db.session.commit()
+
+    response = client.get(
+        "/api/stripe/subscription-status/expired-user-no-customer",
+        headers=_auth_headers("expired-user-no-customer"),
     )
 
     assert response.status_code == 200

@@ -56,9 +56,11 @@ class StripeService {
 
   /// Fetch the subscription status for a specific user.
   Future<Map<String, dynamic>> getSubscriptionStatus(String userId) async {
-    if (userId.startsWith('anon_')) {
-      return {'status': 'inactive', 'tier': 'free'};
-    }
+    // Anonymous ('anon_') accounts used to short-circuit to free here, which
+    // hid gift/IAP entitlements — those live on the backend User row, the
+    // authoritative source. We now always ask the backend; it returns the real
+    // tier for anon users too (200, not 403), so Premium comped via a gift code
+    // or an IAP purchase actually reaches the UI.
     try {
       final response = await _httpClient
           .get(

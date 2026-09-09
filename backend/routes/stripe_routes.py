@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask import Blueprint, jsonify, request
 
 from ..middleware.auth import require_auth
+from ..services.entitlement_service import status_grants_access
 
 load_dotenv()
 
@@ -193,13 +194,21 @@ def create_portal_session():
 def get_subscription_status(user_id):
     """
     Get the current subscription status for a user.
-    Returns subscription tier, status, and renewal date.
+
+    The authoritative source is the User row's subscription_tier /
+    subscription_status columns, which every entitlement channel — Stripe,
+    Apple/Google IAP, and gift codes — writes through
+    services.entitlement_service.apply_entitlement(). Stripe subscribers are
+    additionally reconciled live against Stripe so a just-made cancellation is
+    reflected before its webhook lands. Non-premium users fail closed to
+    {"status": "inactive", "tier": "free"}.
     """
     try:
         # User already validated by @require_auth decorator
         user = request.current_user
 
-        # Get subscription from Stripe if customer_id exists
+        # Stripe-managed subscriptions: reconcile live against Stripe so a
+        # fresh cancel/renewal shows up before its webhook arrives.
         if user.stripe_customer_id:
             subscriptions = stripe.Subscription.list(
                 customer=user.stripe_customer_id, status="active", limit=1
@@ -216,7 +225,33 @@ def get_subscription_status(user_id):
                     }
                 )
 
-        # No active subscription
+        # Non-Stripe entitlements (gift codes, Apple/Google IAP) are written
+        # straight onto the User row by apply_entitlement(); there is no Stripe
+        # object to reconcile. Honor them so gift/IAP users — including
+        # anonymous accounts — see Premium, not only Stripe subscribers.
+        has_db_entitlement = status_grants_access(
+            user.subscription_tier, user.subscription_status
+        ) or bool(getattr(user, "has_byok", False))
+        if has_db_entitlement:
+            tier = user.subscription_tier or "free"
+            if tier not in ("premium", "family"):
+                # BYOK grants entitlement via the flag, not a store tier;
+                # surface it to the client as premium.
+                tier = "premium"
+            return jsonify(
+                {
+                    "status": user.subscription_status or "active",
+                    "tier": tier,
+                    "current_period_end": (
+                        user.current_period_end.isoformat()
+                        if user.current_period_end
+                        else None
+                    ),
+                    "cancel_at_period_end": bool(user.cancel_at_period_end),
+                }
+            )
+
+        # No active subscription anywhere.
         return jsonify({"status": "inactive", "tier": "free"})
 
     except Exception:

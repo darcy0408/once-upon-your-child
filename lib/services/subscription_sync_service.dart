@@ -54,18 +54,11 @@ class SubscriptionSyncService {
     final resolvedUserId =
         userId ?? await UserIdentityService.getOrCreateUserId();
 
-    // Anonymous users (prefixed 'anon_') have no Stripe record — skip the
-    // network call and emit free tier immediately to avoid 403 console noise.
-    if (resolvedUserId.startsWith('anon_')) {
-      _emit(SubscriptionStatus(
-        userId: resolvedUserId,
-        tier: SubscriptionTier.free,
-        status: 'inactive',
-        cancelAtPeriodEnd: false,
-      ));
-      return;
-    }
-
+    // Every account — including anonymous 'anon_' ones — resolves its tier
+    // from the backend, the source of truth for gift/IAP/Stripe entitlements.
+    // The status endpoint returns 200 with the real tier for anon users (no
+    // 403 noise to avoid anymore), so a gift-comped or IAP-purchased Premium
+    // is reflected in the UI instead of being silently forced to free.
     try {
       final status = await _fetchWithRetry(resolvedUserId);
       await _cacheSubscriptionStatus(status);
