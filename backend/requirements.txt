@@ -2038,9 +2038,9 @@ requests==2.34.2 \
     #   google-auth
     #   google-genai
     #   stripe
-sentry-sdk==2.66.1 \
-    --hash=sha256:86002793161d9a95ef04bdd8d442e9bfece5d989b755f05d6360215094a7aff6 \
-    --hash=sha256:f882fb08710c5f8bfc603aafa3e901b384009a19cc3f76a572b863392ee81cdc
+sentry-sdk==2.68.1 \
+    --hash=sha256:6a97895230b04bc35d4d8d2e51e3b9e21902dfb0086ccf1f131a80c15c7b997a \
+    --hash=sha256:775b78871783a0ffd758276ad01b3bb2b1ebcdad8f9d2f0a7723f76b73c99b65
     # via -r requirements.in
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
