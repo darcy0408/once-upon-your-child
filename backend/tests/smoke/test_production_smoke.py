@@ -1,6 +1,11 @@
 """
 Production Smoke Tests
-Run: python -m pytest backend/tests/smoke/test_production_smoke.py -v
+
+These hit the LIVE production API and generate a real story, so they are
+skipped unless RUN_PROD_SMOKE=1 is set (gate in tests/conftest.py, MT-413).
+CI runs them only from .github/workflows/prod-smoke.yml (weekly + manual).
+
+Run: RUN_PROD_SMOKE=1 python -m pytest backend/tests/smoke/test_production_smoke.py -v
 Requires: SMOKE_TEST_API_KEY env var (or uses test auth)
 """
 
@@ -20,11 +25,11 @@ REQUEST_TIMEOUT = int(os.environ.get("SMOKE_TEST_TIMEOUT", "30"))
 # The COPPA enforcement flags (ENFORCE_RESOLVED_AGE et al.) are deliberately
 # OFF in prod pre-launch (owner decision 2026-07-15, launch blocker #449).
 # While they are off, the age-gate probe below fails by design — and generates
-# a real story on prod on every CI run. The expectation is config-driven:
-# CI feeds this from the repo Actions variable SMOKE_EXPECT_COPPA_GATE
-# (currently "off"). Flip that variable back to "on" at launch, when the
-# flags are re-enabled on Railway — the default here stays "on" so a bare
-# local run remains fail-loud.
+# a real story on prod every time it runs. The expectation is config-driven:
+# prod-smoke.yml feeds this from the repo Actions variable
+# SMOKE_EXPECT_COPPA_GATE (currently "off"). Flip that variable back to "on" at
+# launch, when the flags are re-enabled on Railway — the default here stays
+# "on" so an opted-in local run remains fail-loud.
 COPPA_GATE_EXPECTED = (
     os.environ.get("SMOKE_EXPECT_COPPA_GATE", "on").strip().lower() != "off"
 )

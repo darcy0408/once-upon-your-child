@@ -1,0 +1,48 @@
+name: Production Smoke
+
+# backend/tests/smoke/ exercises the LIVE production API: each run creates a
+# real anonymous user and character and generates one real story through a
+# paid model call. Every other test run skips it (RUN_PROD_SMOKE gate in
+# backend/tests/conftest.py, MT-413); it runs only from here — weekly, so the
+# suite can't silently rot against a moving API, and on demand after a deploy.
+
+on:
+  schedule:
+    - cron: '0 15 * * 1'  # Mondays 15:00 UTC (09:00 MDT / 08:00 MST)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        # The full lockfile, not just pytest + requests: tests/conftest.py (a
+        # parent of tests/smoke/) imports the Flask app at collection time.
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run production smoke tests
+        env:
+          RUN_PROD_SMOKE: '1'
+          FLASK_ENV: testing
+          # "off" while the COPPA enforcement flags are deliberately disabled
+          # pre-launch; flip the repo Actions variable to "on" (or delete it)
+          # at launch.
+          SMOKE_EXPECT_COPPA_GATE: ${{ vars.SMOKE_EXPECT_COPPA_GATE || 'on' }}
+        run: |
+          cd backend
+          pytest tests/smoke -v -rs

@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,6 +10,24 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from backend.app import create_app
 from backend.database import db
+
+# tests/smoke/ talks to the LIVE production API: it creates real users and
+# characters and generates a real story through a paid model call. It must
+# never run as a side effect of a plain `pytest`, so everything under it is
+# skipped unless RUN_PROD_SMOKE=1 is set (MT-413). The one place that opts in
+# is .github/workflows/prod-smoke.yml.
+_PROD_SMOKE_DIR = Path(__file__).resolve().parent / "smoke"
+
+
+def pytest_collection_modifyitems(config, items):
+    if os.environ.get("RUN_PROD_SMOKE") == "1":
+        return
+    skip_prod = pytest.mark.skip(
+        reason="hits the live production API; set RUN_PROD_SMOKE=1 to run"
+    )
+    for item in items:
+        if item.path.resolve().is_relative_to(_PROD_SMOKE_DIR):
+            item.add_marker(skip_prod)
 
 
 @pytest.fixture
