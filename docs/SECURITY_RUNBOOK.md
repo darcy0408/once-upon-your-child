@@ -41,7 +41,7 @@ This runbook covers:
 3. Set expiration and rotation cadence:
 30-90 days for tokens and keys where supported.
 4. Enable GitHub Secret Scanning and Push Protection.
-5. Enforce local secret scanning with pre-commit (`gitleaks`).
+5. Enforce local secret scanning with gitleaks as a plain git hook: `.git/hooks/pre-commit` runs `gitleaks git --pre-commit --staged --redact --no-banner --verbose` (install gitleaks with `winget install Gitleaks.Gitleaks`). Don't use `pre-commit install` here: that framework stashes every unstaged change while its hooks run, which disrupts other sessions sharing the checkout.
 6. Keep `.env` ignored (already covered in `.gitignore`).
 7. Prefer short-lived or scoped tokens (least privilege).
 

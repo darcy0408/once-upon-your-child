@@ -1,3 +1,7 @@
+# Don't run `pre-commit install` in a checkout shared by several sessions: the
+# framework stashes every unstaged change while its hooks run. The gitleaks scan
+# runs from a plain .git/hooks/pre-commit instead; see docs/SECURITY_RUNBOOK.md,
+# Prevention Controls item 5.
 repos:
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
