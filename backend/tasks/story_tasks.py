@@ -38,6 +38,7 @@ from backend.services.story_service import (
     _get_age_band,
     _safe_extract_title_and_gem,
     build_bedtime_overlay,
+    ltr_uses_limericks,
     pseudonymize_hero_name,
     restore_hero_name,
 )
@@ -753,13 +754,79 @@ def _words_rhyme(word_a: str, word_b: str) -> bool:
     return len(key_a) >= 2 and key_a == key_b
 
 
-def _is_ltr_rhyme_quality_ok(pages: list[str], min_pair_ratio: float = 0.6) -> bool:
+# Per-page word caps for the Learning-to-Read format check. Early-reader
+# pages are 1-2 short sentences; a complete AABBA limerick is 26-40 words.
+_LTR_MAX_WORDS_PER_PAGE = 25
+_LIMERICK_MAX_WORDS_PER_PAGE = 45
+
+
+def _limerick_rhyme_tail(word: str) -> str:
+    """Tail from the LAST vowel group — the part of a word that carries rhyme.
+
+    ``_rhyme_key`` takes the tail from the FIRST vowel, so multi-syllable
+    words never match their rhymes ("inside" → "insid" vs "wide" → "id";
+    "debate" → "ebat" vs "gate" → "at"). Limerick lines lean on exactly those
+    words, so the limerick check scores on the final syllable instead. Kept
+    local to the limerick check so Rhyme Time / early-reader retry behaviour
+    is untouched.
+    """
+    clean = re.sub(r"[^a-z]", "", word.lower()).replace("y", "i")
+    if len(clean) > 3 and clean.endswith("e"):
+        clean = clean[:-1]
+    match = re.search(r"[aeiou]+[^aeiou]*$", clean)
+    return match.group(0) if match else clean[-2:]
+
+
+def _limerick_words_rhyme(word_a: str, word_b: str) -> bool:
+    if not word_a or not word_b:
+        return False
+    return _limerick_rhyme_tail(word_a) == _limerick_rhyme_tail(word_b)
+
+
+def _is_limerick_page_ok(page: str) -> bool:
+    """One page = one AABBA limerick: 5 lines, (1,2) rhyme and (3,4) rhyme.
+
+    Line 5 is not checked against 1-2 — models often close a limerick on the
+    hero's name, which no heuristic can score, and a 4/5 hit rate is plenty
+    to tell a real limerick from prose.
+    """
+    lines = [ln.strip() for ln in page.splitlines() if ln.strip()]
+    if len(lines) != 5:
+        # The model sometimes flattens the verse into one line with commas
+        # ("...to play, In a world..., With a heart..."). Accept that shape
+        # too, but only when the commas land on exactly five phrases.
+        if len(lines) == 1 and page.count(",") >= 4:
+            lines = [seg.strip() for seg in page.split(",") if seg.strip()]
+        if len(lines) != 5:
+            return False
+    ends = [_extract_page_end_word(ln) for ln in lines]
+    if any(not w for w in ends):
+        return False
+    return _limerick_words_rhyme(ends[0], ends[1]) and _limerick_words_rhyme(
+        ends[2], ends[3]
+    )
+
+
+def _is_ltr_rhyme_quality_ok(
+    pages: list[str], min_pair_ratio: float = 0.6, *, limericks: bool = False
+) -> bool:
     """Check that LTR output has clear rhyming.
 
-    Accept either:
+    With ``limericks=True`` (the 7-12 default and Limerick Mode) each page is
+    judged as a 5-line AABBA verse. Otherwise accept either:
     1) cross-page ending couplets (pages 1&2, 3&4, ...), or
     2) strong within-page sentence-ending rhymes.
     """
+    if limericks:
+        real_pages = [p for p in pages if p and p.strip()]
+        if not real_pages:
+            return False
+        hits = sum(1 for p in real_pages if _is_limerick_page_ok(p))
+        if hits / len(real_pages) >= min_pair_ratio:
+            return True
+        # Fall through: a limerick that arrived with lines joined by spaces
+        # can still pass the sentence-ending heuristics below.
+
     end_words = [
         _extract_page_end_word(page) for page in pages if page and page.strip()
     ]
@@ -1727,6 +1794,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         include_illustrations = kwargs.get("include_illustrations", False)
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
+        # Limerick Mode is an explicit Explorer-band choice layered on the
+        # Learning-to-Read pipeline: it forces the AABBA limerick builder
+        # regardless of the age-based default. Defensive OR so a client that
+        # sends only limerick_mode still lands on the LTR path.
+        limerick_mode = bool(kwargs.get("limerick_mode", False))
+        learning_to_read_mode = bool(learning_to_read_mode) or limerick_mode
         bedtime_mode = kwargs.get("bedtime_mode", False)
         story_length = kwargs.get(
             "story_length", "standard"
@@ -1961,7 +2034,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 )
             elif learning_to_read_mode:
 
-                logger.info(f"Using Learning to Read prompt (length: {story_length})")
+                logger.info(
+                    "Using Learning to Read prompt (length: %s, limerick_mode=%s)",
+                    story_length,
+                    limerick_mode,
+                )
                 prompt = _build_learning_to_read_prompt(
                     character_name=character_name,
                     theme=theme,
@@ -1974,6 +2051,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
+                    force_limericks=limerick_mode,
                 )
             elif rhyme_time_mode:
                 logger.info(f"Using Rhyme Time prompt (length: {story_length})")
@@ -2074,6 +2152,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             prompt_template_id, prompt_revision_hash = _resolve_prompt_version(
                 mode=_pv_mode,
                 age=age,
+                limerick=limerick_mode,
             )
 
             prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
@@ -2302,7 +2381,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         )
                         validation_error = sprout_format_error
                 if learning_to_read_mode:
-                    is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
+                    _ltr_limericks = ltr_uses_limericks(
+                        age, force_limericks=limerick_mode
+                    )
+                    is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(
+                        pages, limericks=_ltr_limericks
+                    )
                     if not is_rhyme_quality_ok:
                         validation_error = (
                             "Learning-to-read story did not meet rhyme quality checks"
@@ -2324,16 +2408,27 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     ):  # noqa: BLE001 — defensive, never break generation
                         ltr_expected_pages = 5
 
+                    # A complete AABBA limerick runs 26-40 words, so the
+                    # 25-word early-reader cap fails EVERY limerick page,
+                    # burns both retries, and then the post-process splitter
+                    # chops verses mid-line. Cap limerick pages at the
+                    # limerick size instead.
+                    ltr_max_words = (
+                        _LIMERICK_MAX_WORDS_PER_PAGE
+                        if _ltr_limericks
+                        else _LTR_MAX_WORDS_PER_PAGE
+                    )
                     ltr_pages_count = len(pages)
                     ltr_over_word_pages = [
-                        i for i, p in enumerate(pages) if len(p.split()) > 25
+                        i for i, p in enumerate(pages) if len(p.split()) > ltr_max_words
                     ]
                     if ltr_pages_count < 5 or ltr_over_word_pages:
                         is_ltr_format_ok = False
                         ltr_format_error = (
                             f"LTR format check failed: {ltr_pages_count} pages "
                             f"(need ≥5, target {ltr_expected_pages}), "
-                            f"{len(ltr_over_word_pages)} pages exceed 25 words."
+                            f"{len(ltr_over_word_pages)} pages exceed "
+                            f"{ltr_max_words} words."
                         )
                         validation_error = ltr_format_error
 
@@ -2411,19 +2506,37 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 if learning_to_read_mode
                                 else "RHYME TIME"
                             )
+                            if learning_to_read_mode and ltr_uses_limericks(
+                                age, force_limericks=limerick_mode
+                            ):
+                                # Limerick pages are judged line-by-line, so
+                                # the couplet instruction below would steer the
+                                # retry AWAY from the format we asked for.
+                                _rhyme_fix = (
+                                    "Every page must be ONE complete limerick: exactly 5 lines, "
+                                    "where lines 1, 2 and 5 rhyme with each other and lines 3 and 4 "
+                                    "rhyme with each other (AABBA). Put each line on its own line. "
+                                )
+                            else:
+                                _rhyme_fix = "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
                             retry_notes.append(
                                 f"\n\nRETRY INSTRUCTION: This is {_rhyme_mode_label} mode and MUST rhyme. "
-                                "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
-                                "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top. "
+                                + _rhyme_fix
+                                + "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top. "
                                 "Do NOT use forced or made-up rhymes (e.g. 'gear-a', 'of lea') and never break "
                                 "grammar to force a rhyme — every line must be natural, correct English."
                             )
                         if not is_ltr_format_ok:
+                            _ltr_split_hint = (
+                                "Keep each page to ONE complete five-line limerick — trim words, never split a verse across pages."
+                                if _ltr_limericks
+                                else "Split any long page into two shorter pages. Do not compress the story into a few dense pages."
+                            )
                             retry_notes.append(
                                 f"\n\nRETRY INSTRUCTION: Your previous response had {ltr_pages_count} pages "
-                                f"with {len(ltr_over_word_pages)} pages exceeding 25 words. "
-                                f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page 25 words or fewer. "
-                                f"Split any long page into two shorter pages. Do not compress the story into a few dense pages."
+                                f"with {len(ltr_over_word_pages)} pages exceeding {ltr_max_words} words. "
+                                f"You MUST return EXACTLY {ltr_expected_pages} pages, with each page {ltr_max_words} words or fewer. "
+                                f"{_ltr_split_hint}"
                             )
                         if not is_sprout_format_ok:
                             retry_notes.append(
@@ -2485,9 +2598,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             if learning_to_read_mode and not is_ltr_format_ok:
                 _ltr_target = ltr_expected_pages or 5
+                _ltr_pp_max_words = (
+                    _LIMERICK_MAX_WORDS_PER_PAGE
+                    if ltr_uses_limericks(age, force_limericks=limerick_mode)
+                    else _LTR_MAX_WORDS_PER_PAGE
+                )
                 pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
                 pages = _post_process_ltr_pages(
-                    pages, target_pages=_ltr_target, max_words=25
+                    pages, target_pages=_ltr_target, max_words=_ltr_pp_max_words
                 )
                 story_body = "\n\n".join(pages)
                 post_split = [(i, len(p.split())) for i, p in enumerate(pages)]

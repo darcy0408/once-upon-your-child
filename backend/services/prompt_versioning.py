@@ -73,12 +73,14 @@ _REVISION_HASHES: dict[str, str] = {
 }
 
 
-def resolve(*, mode: str, age: int | None) -> tuple[str, str]:
+def resolve(*, mode: str, age: int | None, limerick: bool = False) -> tuple[str, str]:
     """Resolve ``(template_id, revision_hash)`` for a generation cell.
 
     ``mode`` is one of: ``"standard"``, ``"bedtime"``, ``"ltr"``,
     ``"rhyme_time"``, ``"superhero"``. ``age`` disambiguates Superhero
-    (Sprout vs Explorer) and LTR (limerick vs everything else). Unknown
+    (Sprout vs Explorer) and LTR (limerick vs everything else); ``limerick``
+    is the explicit Limerick Mode flag, which pins LTR to the limerick
+    template at any age. Unknown
     modes fall back to ``T1_STANDARD`` so persistence never raises.
     """
     age_int: int | None
@@ -107,7 +109,7 @@ def resolve(*, mode: str, age: int | None) -> tuple[str, str]:
     elif mode == "bedtime":
         template_id = "T5_BEDTIME"
     elif mode == "ltr":
-        if age_int is not None and 7 <= age_int <= 12:
+        if limerick or (age_int is not None and 7 <= age_int <= 12):
             template_id = "T2_LTR_LIMERICK"
         else:
             template_id = "T3_LTR_SEUSSIAN"
