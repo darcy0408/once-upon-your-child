@@ -93,6 +93,8 @@ class _ImageModeOrbState extends State<ImageModeOrb>
         return '🔀';
       case 'superhero':
         return '🦸';
+      case 'limerick':
+        return '🎩';
       default:
         return '📖';
     }

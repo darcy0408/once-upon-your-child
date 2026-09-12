@@ -434,6 +434,9 @@ class HeroStoryTypePage extends StatelessWidget {
     String selectedMode = 'tales';
     if (data.interactiveMode) {
       selectedMode = 'pickpath';
+    } else if (data.limerickMode) {
+      // Checked before learningToReadMode: Limerick Mode sets both flags.
+      selectedMode = 'limerick';
     } else if (data.learningToReadMode) {
       selectedMode = 'reading';
     } else if (data.rhymeTimeMode) {
@@ -443,7 +446,11 @@ class HeroStoryTypePage extends StatelessWidget {
     void setStoryMode(String mode) {
       data.includeIllustrations = mode == 'tales';
       data.rhymeTimeMode = mode == 'rhyme';
-      data.learningToReadMode = mode == 'reading';
+      // Limerick Mode reuses the whole Learning-to-Read pipeline (page-per-
+      // verse read-along layout, rhyme validation, one illustration) and adds
+      // an explicit backend flag that forces the AABBA limerick builder.
+      data.learningToReadMode = mode == 'reading' || mode == 'limerick';
+      data.limerickMode = mode == 'limerick';
       data.interactiveMode = mode == 'pickpath';
     }
 
@@ -716,6 +723,28 @@ class HeroStoryTypePage extends StatelessWidget {
                     ],
                   ],
                 ),
+                // Limerick Mode — Explorer-only (6-8). The backend already
+                // wrote limericks for 7-8 year olds under "Easy Reader", but
+                // the child never saw the word and a 6-year-old got Seuss
+                // couplets instead. This names the choice and always delivers
+                // limericks (limerick_mode forces the AABBA builder). Full
+                // width so it reads as its own thing rather than a half-empty
+                // row; Easy Reader stays as the reading-practice path.
+                if (band.band == AgeBand.explorer) ...[
+                  SizedBox(height: band.space(12)),
+                  ImageModeOrb(
+                    modeType: 'limerick',
+                    label: 'Limerick Mode',
+                    subtitle: 'Funny five-line rhymes, one per page',
+                    isActive: selectedMode == 'limerick',
+                    onTap: () {
+                      setStoryMode('limerick');
+                      onChanged();
+                    },
+                    primaryColor: const Color(0xFF4CD964),
+                    secondaryColor: const Color(0xFFB8F5C0),
+                  ),
+                ],
                 // Superhero Mode — surfaced as a first-class story type for
                 // Explorer + Adventurer so it isn't buried under "Imagine It".
                 // Full-width to read as a special, distinct path. Tapping it

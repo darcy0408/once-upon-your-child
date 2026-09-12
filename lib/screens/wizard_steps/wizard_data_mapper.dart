@@ -364,6 +364,7 @@ class WizardDataMapper {
       'storyLength': data.storyLength,
       'rhymeTimeMode': data.rhymeTimeMode,
       'learningToReadMode': data.learningToReadMode,
+      'limerickMode': data.limerickMode,
       'interactiveMode': data.interactiveMode,
       'includeIllustrations': data.includeIllustrations,
       // Resolved lifeChallenge: Guardian Mode takes priority over Superpower Quest

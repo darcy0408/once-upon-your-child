@@ -20,6 +20,7 @@ from backend.services.story_service import (
     AdvancedStoryEngine,
     _build_learning_to_read_prompt,
     _get_age_band,
+    ltr_uses_limericks,
     transform_parent_context_to_story_guidance,
 )
 
@@ -654,6 +655,67 @@ class TestLearningToReadPrompt:
         assert "NO rhyme" in prompt
         assert "decodable prose, not poetry" in prompt
         assert "NO RHYME — write in plain prose" in prompt
+
+    # ── Limerick Mode (explicit Explorer-band choice) ──────────────────────
+
+    def test_ltr_prompt_for_age_6_defaults_to_seuss_couplets_not_limericks(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=6,
+            character_details={},
+            story_length="short",
+        )
+        assert "Dr. Seuss style" in prompt
+        assert "AABBA" not in prompt
+
+    def test_ltr_prompt_force_limericks_overrides_age_6_default(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=6,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+        assert "funny, connected limericks" in prompt
+        assert "AABBA rhyme scheme" in prompt
+        assert "Dr. Seuss style" not in prompt
+
+    def test_ltr_prompt_force_limericks_is_a_no_op_inside_the_limerick_band(self):
+        default = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=8,
+            character_details={},
+            story_length="short",
+        )
+        forced = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=8,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+        assert forced == default
+
+    @pytest.mark.parametrize(
+        "age, forced, expected",
+        [
+            (6, False, False),
+            (6, True, True),
+            (7, False, True),
+            (12, False, True),
+            (13, False, False),
+            (13, True, True),
+            ("8", False, True),
+            (None, False, False),
+            ("not-an-int", False, False),
+        ],
+    )
+    def test_ltr_uses_limericks_matrix(self, age, forced, expected):
+        assert ltr_uses_limericks(age, force_limericks=forced) is expected
 
 
 class TestStripTheEndPages:
