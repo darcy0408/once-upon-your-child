@@ -36,6 +36,7 @@ from backend.utils.ai_quota import (
     check_global_gen_budget,
     increment_global_gen,
 )
+from backend.utils.sanitizer import sanitize_model_segment
 
 logger = logging.getLogger(__name__)
 
@@ -726,7 +727,13 @@ class InteractiveAdventureService:
                 logger.info(f"Generating segment (attempt {attempt + 1}/{max_retries})")
                 text = self._generate_text(prompt)
                 if text and text.strip():
-                    segment_data = self._parse_segment_response(text)
+                    # MT-411 F3: the model's own output is untrusted too — its
+                    # title/inventory/state/choices are persisted and fed back
+                    # into the next prompt, so they are sanitized before
+                    # anything downstream reads them.
+                    segment_data = sanitize_model_segment(
+                        self._parse_segment_response(text)
+                    )
                     if self._has_placeholder_choices(segment_data):
                         if not placeholder_retried and attempt < max_retries - 1:
                             placeholder_retried = True
