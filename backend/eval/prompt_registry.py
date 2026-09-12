@@ -199,7 +199,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T6_SUPERHERO_SPROUT",
-        content_hash="a25cc46433ddb955",
+        content_hash="0fd4c76829b4c78c",
         source_file="backend/services/prompt_service.py",
         anchors=("PromptService._build_superhero_prompt",),
         mode="superhero",
@@ -222,7 +222,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T7_SUPERHERO_EXPLORER",
-        content_hash="92f08e223ac8a999",
+        content_hash="2bfe58e137c06b6a",
         source_file="backend/services/prompt_service.py",
         anchors=("PromptService._build_superhero_prompt_explorer",),
         mode="superhero",
@@ -246,7 +246,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T8_SUPERHERO_ADVENTURER",
-        content_hash="ef8790251753f0ca",
+        content_hash="2dafb70a656aa708",
         source_file="backend/services/prompt_service.py",
         anchors=("PromptService._build_superhero_prompt_adventurer",),
         mode="superhero",
