@@ -738,9 +738,9 @@ edge-tts==7.2.8 \
     --hash=sha256:361fe48ce7ef613adbe30f664e3765dd71029c6cb57427279eff8ad6df2eb211 \
     --hash=sha256:fcf185a0d527a0d2d003f9d5841facc1d5e0e7b3b88d5df9c32990402c6b8cd0
     # via -r requirements.in
-elevenlabs==2.59.0 \
-    --hash=sha256:b05cc41636bef94172e1b9343b650f5cc5e543fc88afe06c12217e0120fd1238 \
-    --hash=sha256:cdd048dc380733f81ee512baa3e9b333c11f4f466aa84301b946fe5354a3b6da
+elevenlabs==2.65.0 \
+    --hash=sha256:23589c7e674f6e0f818cb3e9c8df31a4ab1029917f9843154cd4ef38ba55c389 \
+    --hash=sha256:3c35174df6c1962b8344b6d57f939bd4d79ac83d202ad31c768b6a387d1f5d0c
     # via -r requirements.in
 flask==3.1.3 \
     --hash=sha256:0ef0e52b8a9cd932855379197dd8f94047b359ca0a78695144304cb45f87c9eb \
