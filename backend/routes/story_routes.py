@@ -1035,6 +1035,9 @@ def create_story_blueprint(
             "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
+            # Limerick Mode (Explorer): explicit choice that forces the AABBA
+            # limerick builder inside the Learning-to-Read path.
+            "limerick_mode": payload.get("limerick_mode", False),
             "bedtime_mode": payload.get("bedtime_mode", False),
             "bedtime_mood": payload.get("bedtime_mood", "calming"),
             "companion": payload.get("companion")
@@ -1735,6 +1738,7 @@ def create_story_blueprint(
                     "learning_to_read_mode": payload.get(
                         "learning_to_read_mode", False
                     ),
+                    "limerick_mode": payload.get("limerick_mode", False),
                 },
             },
         }

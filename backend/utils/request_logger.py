@@ -36,6 +36,7 @@ def init_request_logging(app, logger):
                     in (
                         "rhyme_time_mode",
                         "learning_to_read_mode",
+                        "limerick_mode",
                         "include_illustrations",
                         "pick_a_path",
                     )

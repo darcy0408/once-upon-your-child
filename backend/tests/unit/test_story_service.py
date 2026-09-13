@@ -20,6 +20,7 @@ from backend.services.story_service import (
     AdvancedStoryEngine,
     _build_learning_to_read_prompt,
     _get_age_band,
+    ltr_uses_limericks,
     transform_parent_context_to_story_guidance,
 )
 
@@ -655,6 +656,67 @@ class TestLearningToReadPrompt:
         assert "decodable prose, not poetry" in prompt
         assert "NO RHYME — write in plain prose" in prompt
 
+    # ── Limerick Mode (explicit Explorer-band choice) ──────────────────────
+
+    def test_ltr_prompt_for_age_6_defaults_to_seuss_couplets_not_limericks(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=6,
+            character_details={},
+            story_length="short",
+        )
+        assert "Dr. Seuss style" in prompt
+        assert "AABBA" not in prompt
+
+    def test_ltr_prompt_force_limericks_overrides_age_6_default(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=6,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+        assert "funny, connected limericks" in prompt
+        assert "AABBA rhyme scheme" in prompt
+        assert "Dr. Seuss style" not in prompt
+
+    def test_ltr_prompt_force_limericks_is_a_no_op_inside_the_limerick_band(self):
+        default = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=8,
+            character_details={},
+            story_length="short",
+        )
+        forced = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=8,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+        assert forced == default
+
+    @pytest.mark.parametrize(
+        "age, forced, expected",
+        [
+            (6, False, False),
+            (6, True, True),
+            (7, False, True),
+            (12, False, True),
+            (13, False, False),
+            (13, True, True),
+            ("8", False, True),
+            (None, False, False),
+            ("not-an-int", False, False),
+        ],
+    )
+    def test_ltr_uses_limericks_matrix(self, age, forced, expected):
+        assert ltr_uses_limericks(age, force_limericks=forced) is expected
+
 
 class TestStripTheEndPages:
     """Trailing 'The End' marker pages are removed; embedded 'The End' is kept."""
@@ -748,6 +810,98 @@ class TestPostProcessLtrPages:
         )
         result = _post_process_ltr_pages([long_sent], target_pages=5, max_words=25)
         assert all(len(p.split()) <= 25 for p in result)
+
+    # ── Limerick pages (the 7-12 default and Limerick Mode) ───────────────
+
+    _VERSES = [
+        "There once was a boy with a hat,\n"
+        "Who sat with his cat on a mat.\n"
+        "They played in the sun,\n"
+        "And had so much fun,\n"
+        "And that was the start of all that!",
+        "The cat found a bright yellow ball,\n"
+        "It rolled down the long quiet hall.\n"
+        "It bounced with a hop,\n"
+        "Then came to a stop,\n"
+        "And the cat gave a happy small call!",
+        "So Max gave the cat a big hug,\n"
+        "And they both had a nap on the rug.\n"
+        "They dreamed of the park,\n"
+        "Till the sky turned dark,\n"
+        "And they both slept as snug as a bug!",
+    ]
+
+    def test_limerick_short_story_keeps_every_verse_whole(self):
+        # Three verses where five pages were asked for — the fallback cannot
+        # invent verses, but it must not re-cut the ones it has. The prose
+        # splitter regroups on sentence ends, and line 2 of each verse ends
+        # in a full stop.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        result = _post_process_ltr_pages(
+            list(self._VERSES), target_pages=5, max_words=45, limericks=True
+        )
+        assert result == self._VERSES
+
+    def test_limerick_page_holding_two_verses_is_split_between_them(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        doubled = [self._VERSES[0] + "\n" + self._VERSES[1], self._VERSES[2]]
+        result = _post_process_ltr_pages(
+            doubled, target_pages=5, max_words=45, limericks=True
+        )
+        assert result == self._VERSES
+
+    def test_limerick_blank_line_marks_the_verse_break(self):
+        # A six-line verse, a blank line, then a normal verse: the blank line
+        # is the boundary, so the long verse is not cut into 5 + 1.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        long_verse = self._VERSES[0] + "\nAnd the cat said that was that!"
+        result = _post_process_ltr_pages(
+            [long_verse + "\n\n" + self._VERSES[1]],
+            target_pages=5,
+            max_words=45,
+            limericks=True,
+        )
+        assert result == [long_verse, self._VERSES[1]]
+
+    def test_limerick_comma_flattened_verse_is_unfolded_into_lines(self):
+        # Observed 2026-09-12: the model joined the five verse lines with ", ".
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        lines = [
+            "There once was a boy with a hat",
+            "Who sat with his cat on a mat",
+            "They played in the sun",
+            "And had so much fun",
+            "And that was the start of all that",
+        ]
+        result = _post_process_ltr_pages(
+            [", ".join(lines)], target_pages=5, max_words=45, limericks=True
+        )
+        assert result == [
+            "There once was a boy with a hat,\n"
+            "Who sat with his cat on a mat,\n"
+            "They played in the sun,\n"
+            "And had so much fun,\n"
+            "And that was the start of all that"
+        ]
+
+    def test_limerick_flag_without_verse_uses_the_prose_split(self):
+        # Prose that came back despite a limerick request has no verse to
+        # protect, so the flag must not change the result.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        page1 = (
+            "Jack and Mochi, hop, hop, hop! To the big sea, go, go, stop! "
+            "Jack saw a fin, a red, red fin. It can go dip, and then hid in! "
+            "And then Mochi saw a big, big log. It did not move, like a fat, wet dog! "
+            'Mochi said, "Jack, go, run, run, run!" Go pat the log, oh what fun!'
+        )
+        assert _post_process_ltr_pages(
+            [page1, "The End"], target_pages=5, max_words=25, limericks=True
+        ) == _post_process_ltr_pages([page1, "The End"], target_pages=5, max_words=25)
 
 
 class TestSplitProseIntoPages:

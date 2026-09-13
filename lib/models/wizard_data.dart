@@ -62,6 +62,12 @@ class WizardData {
   // Step 4: Story Settings
   bool rhymeTimeMode = false;
   bool learningToReadMode = false;
+  // Limerick Mode (Explorer band): an explicit, named choice that rides the
+  // Learning-to-Read pipeline (learningToReadMode is set alongside it) and
+  // tells the backend to use the AABBA limerick builder regardless of the
+  // age-based default — so a 6-year-old who picks it gets limericks, not the
+  // Seuss-style couplets the silent age trigger would choose.
+  bool limerickMode = false;
   bool interactiveMode = false;
   bool includeIllustrations = true; // Default to true
   String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
@@ -176,6 +182,7 @@ class WizardData {
     c.companionCustomNames = Map<String, String>.from(companionCustomNames);
     c.rhymeTimeMode = rhymeTimeMode;
     c.learningToReadMode = learningToReadMode;
+    c.limerickMode = limerickMode;
     c.interactiveMode = interactiveMode;
     c.includeIllustrations = includeIllustrations;
     c.storyLength = storyLength;
@@ -265,6 +272,7 @@ class WizardData {
       'companionCustomNames': companionCustomNames,
       'rhymeTimeMode': rhymeTimeMode,
       'learningToReadMode': learningToReadMode,
+      'limerickMode': limerickMode,
       'interactiveMode': interactiveMode,
       'includeIllustrations': includeIllustrations,
       'storyLength': storyLength,
@@ -352,6 +360,7 @@ class WizardData {
     }
     d.rhymeTimeMode = (json['rhymeTimeMode'] as bool?) ?? false;
     d.learningToReadMode = (json['learningToReadMode'] as bool?) ?? false;
+    d.limerickMode = (json['limerickMode'] as bool?) ?? false;
     d.interactiveMode = (json['interactiveMode'] as bool?) ?? false;
     d.includeIllustrations = (json['includeIllustrations'] as bool?) ?? true;
     d.storyLength = (json['storyLength'] as String?) ?? 'standard';

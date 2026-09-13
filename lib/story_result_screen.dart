@@ -55,6 +55,7 @@ import 'services/feature_tour_service.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
 import 'widgets/open_book_frame.dart';
+import 'utils/early_reader_phrasing.dart';
 import 'utils/motion_utils.dart';
 import 'utils/paywall_gate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1394,56 +1395,10 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   /// level (3–5 yo). Sentences are the primary break; long sentences are
   /// further split on commas. Tiny fragments are merged forward so we don't
   /// orphan a single word on its own line.
-  String _phrasifyForEarlyReader(String text) {
-    final source = text.trim();
-    if (source.isEmpty) return text;
-
-    final sentencePattern = RegExp(r'[^.!?\n]+[.!?]+["’”\)]*');
-    final sentences = <String>[];
-    var lastEnd = 0;
-    for (final m in sentencePattern.allMatches(source)) {
-      sentences.add(m.group(0)!.trim());
-      lastEnd = m.end;
-    }
-    if (lastEnd < source.length) {
-      final tail = source.substring(lastEnd).trim();
-      if (tail.isNotEmpty) sentences.add(tail);
-    }
-    if (sentences.isEmpty) return text;
-
-    const longSentenceThreshold = 50;
-    const minPhraseLen = 15;
-    final commaPattern = RegExp(r'[^,;:\n]+(?:[,;:]|$)');
-    final lines = <String>[];
-    for (final sentence in sentences) {
-      if (sentence.length <= longSentenceThreshold) {
-        lines.add(sentence);
-        continue;
-      }
-      final parts = <String>[];
-      var subEnd = 0;
-      for (final m in commaPattern.allMatches(sentence)) {
-        final part = sentence.substring(subEnd, m.end).trim();
-        if (part.isNotEmpty) parts.add(part);
-        subEnd = m.end;
-      }
-      if (parts.isEmpty) {
-        lines.add(sentence);
-        continue;
-      }
-      final merged = <String>[];
-      for (final part in parts) {
-        if (part.length < minPhraseLen && merged.isNotEmpty) {
-          merged[merged.length - 1] = '${merged.last} $part';
-        } else {
-          merged.add(part);
-        }
-      }
-      lines.addAll(merged);
-    }
-
-    return lines.join('\n');
-  }
+  // Logic lives in utils/early_reader_phrasing.dart so it can be unit-tested;
+  // it also keeps verse (Limerick Mode) line-for-line instead of dropping
+  // every line without terminal punctuation.
+  String _phrasifyForEarlyReader(String text) => phrasifyForEarlyReader(text);
 
   List<InlineSpan> _buildStorySpans(String pageText) {
     final heroName = widget.characterName;

@@ -638,6 +638,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             includeIllustrations: shouldRequestIllustrations,
             rhymeTimeMode: widget.wizardData.rhymeTimeMode,
             learningToReadMode: widget.wizardData.learningToReadMode,
+            limerickMode: widget.wizardData.limerickMode,
             companionPets: requestData['companion_pets'],
             companionCharacters: requestData['companion_characters'],
             storyLength: requestData['storyLength'] ?? 'standard',
@@ -1309,6 +1310,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         return 'Poetry';
       }
       return band.band == AgeBand.sprout ? 'Rhyme story' : 'Rhyme Time story';
+    }
+    if (data.limerickMode) {
+      // Match the orb the child tapped — this is the named Limerick Mode, not
+      // the Easy Reader path it shares plumbing with.
+      return 'Limerick Mode';
     }
     if (data.learningToReadMode) {
       switch (band.band) {

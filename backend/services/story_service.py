@@ -2292,6 +2292,24 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     return title, wisdom_gem, story_body, pages, post_story, metadata
 
 
+def ltr_uses_limericks(age, *, force_limericks=False) -> bool:
+    """Whether the Learning-to-Read builder writes AABBA limericks for ``age``.
+
+    The age-graduated default is limericks for 7-12 only (Audit 05: they read
+    as infantile at 13+ and are too hard to decode at <=6). Limerick Mode —
+    the explicit Explorer-band orb — overrides that with ``force_limericks``.
+    Shared with the task pipeline so validation and retry text agree with the
+    prompt that was actually sent.
+    """
+    if force_limericks:
+        return True
+    try:
+        age_int = int(age)
+    except (TypeError, ValueError):
+        return False
+    return 7 <= age_int <= 12
+
+
 def _build_learning_to_read_prompt(
     character_name,
     theme,
@@ -2303,8 +2321,14 @@ def _build_learning_to_read_prompt(
     extra_characters=None,
     story_length="standard",
     custom_elements="",
+    force_limericks=False,
 ):
-    """Build prompt for Learning to Read mode stories with graduated vocabulary."""
+    """Build prompt for Learning to Read mode stories with graduated vocabulary.
+
+    ``force_limericks`` is Limerick Mode — the Explorer-band orb that names
+    the limerick format as an explicit choice. When set, the AABBA limerick
+    branch is used at any age instead of the age-graduated default.
+    """
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
 
@@ -2323,7 +2347,18 @@ def _build_learning_to_read_prompt(
     rhyme_scheme_instruction = (
         "Simple rhyming couplets across pages (AABB pairs by page endings)."
     )
-    if age <= 5:
+    if ltr_uses_limericks(age, force_limericks=force_limericks):
+        # Older reluctant readers (7-12) by default, or any age via Limerick
+        # Mode: funny connected limericks.
+        # Audit 05 found this band scores age_fit 4.0+; limericks are working here.
+        vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
+        format_instruction = (
+            "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
+        )
+        rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
+        use_limericks = True
+        use_prose = False
+    elif age <= 5:
         vocab_instruction = (
             "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters. "
             "Every noun or concept must be instantly understandable to a 3-year-old. "
@@ -2346,16 +2381,6 @@ def _build_learning_to_read_prompt(
         vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words. Fun sound words (whoosh, zippity, boing) encouraged."
         format_instruction = "Each page 1-2 short bouncy sentences in Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, and AABB rhyme couplets. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
-        use_prose = False
-    elif age <= 12:
-        # Older reluctant readers (7-12): funny connected limericks.
-        # Audit 05 found this band scores age_fit 4.0+; limericks are working here.
-        vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
-        format_instruction = (
-            "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
-        )
-        rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
-        use_limericks = True
         use_prose = False
     else:
         # Teen + adult learn-to-read (13+): decodable prose, NO rhyme.
@@ -2458,6 +2483,7 @@ Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magica
 - Use short, phonics-friendly words. Fun to say out loud. Easy to sound out.
 - NEVER use crude humor, bodily functions jokes, or mean-spirited laughs.
 - Each limerick must feel complete on its own AND connect to the one before and after.
+- Write each limerick as 5 separate lines: put a newline (\\n) between lines inside the page's "text" string. Never run the lines together with commas.
 
 **Example limerick format**:
 There once was a girl named Jane,         (A)
@@ -2475,8 +2501,8 @@ Of cookies — she'd do it again!           (A)
   "characters_featured": ["named characters who actually appear"],
   "emotional_arc": "<starting feeling> → <ending feeling>",
   "pages": [
-    {{"text": "Limerick 1 — 5 lines, AABBA rhyme..."}},
-    {{"text": "Limerick 2..."}},
+    {{"text": "Limerick 1 line 1\\nline 2\\nline 3\\nline 4\\nline 5"}},
+    {{"text": "Limerick 2 line 1\\nline 2\\nline 3\\nline 4\\nline 5"}},
     ...
   ]
 }}

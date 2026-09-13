@@ -71,6 +71,19 @@ def test_resolve_garbage_age_is_safe():
     assert _HEX16.match(h)
 
 
+@pytest.mark.parametrize("age", [4, 6, 13, None])
+def test_resolve_ltr_limerick_flag_pins_limerick_template(age):
+    # Limerick Mode: the explicit flag wins over the age-graduated default.
+    tid, h = resolve(mode="ltr", age=age, limerick=True)
+    assert tid == "T2_LTR_LIMERICK"
+    assert _HEX16.match(h)
+
+
+def test_resolve_limerick_flag_ignored_outside_ltr():
+    assert resolve(mode="standard", age=6, limerick=True)[0] == "T1_STANDARD"
+    assert resolve(mode="rhyme_time", age=6, limerick=True)[0] == "T4_RHYME_TIME"
+
+
 def test_revision_hash_is_stable():
     # Two calls must return byte-identical hashes — the source is captured
     # once at import time, not recomputed per call.

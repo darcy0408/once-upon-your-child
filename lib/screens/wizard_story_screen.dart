@@ -270,6 +270,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
           _wizardData.companionCustomNames = restored.companionCustomNames;
           _wizardData.rhymeTimeMode = restored.rhymeTimeMode;
           _wizardData.learningToReadMode = restored.learningToReadMode;
+          _wizardData.limerickMode = restored.limerickMode;
           _wizardData.interactiveMode = restored.interactiveMode;
           _wizardData.includeIllustrations = restored.includeIllustrations;
           _wizardData.storyLength = restored.storyLength;
