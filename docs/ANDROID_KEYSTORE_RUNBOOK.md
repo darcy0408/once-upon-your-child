@@ -49,8 +49,15 @@ before doing anything else.
 
 ## 4. Build and verify it's release-signed
 ```bash
-flutter build appbundle --release
+flutter build appbundle --release \
+  --dart-define=FLAVOR=production \
+  --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
 ```
+
+The two `--dart-define`s are required. Without `FLAVOR=production` the app
+compiles against the development backend (`http://127.0.0.1:5000`), which on a
+phone is the phone itself — every server call fails. The first iOS TestFlight
+build shipped exactly that way.
 
 The build log should show it using the `release` signing config (not "debug").
 The output `.aab` (`build/app/outputs/bundle/release/`) is what you upload to the

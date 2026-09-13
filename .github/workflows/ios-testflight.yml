@@ -83,12 +83,21 @@ jobs:
       # signing dies with "No Accounts". Release config in Runner.xcodeproj pins
       # CODE_SIGN_STYLE=Manual + the App Store profile; ExportOptions.plist
       # carries the same mapping for the export step.
+      # The dart-defines are NOT optional. Without FLAVOR=production,
+      # FlavorConfig falls back to the development flavor, whose backend is
+      # http://127.0.0.1:5000 — on a tester's phone that is the phone itself, so
+      # every server call fails. Build 1.0.0 (2) shipped that way and testers
+      # were stuck at the parental-consent email step. Same defines as the web
+      # deploy in cicd.yml; test/unit/release_build_flavor_test.dart enforces it.
       - name: Build signed IPA for App Store Connect
         run: |
           flutter build ipa \
             --release \
             --build-number=${{ github.run_number }} \
-            --export-options-plist=ios/ExportOptions.plist
+            --export-options-plist=ios/ExportOptions.plist \
+            --dart-define=FLAVOR=production \
+            --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
 
       - name: Configure App Store Connect API key
         env:
