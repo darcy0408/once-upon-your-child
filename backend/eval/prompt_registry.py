@@ -107,7 +107,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     # note in backend/services/prompt_versioning.py).
     PromptTemplate(
         template_id="T2_LTR_LIMERICK",
-        content_hash="b9c8c3b6bddcb854",
+        content_hash="a6a16c5e0779bcec",
         source_file="backend/services/story_service.py",
         anchors=("_build_learning_to_read_prompt",),
         mode="ltr_limerick",
@@ -126,7 +126,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T3_LTR_SEUSSIAN",
-        content_hash="b9c8c3b6bddcb854",
+        content_hash="a6a16c5e0779bcec",
         source_file="backend/services/story_service.py",
         anchors=("_build_learning_to_read_prompt",),
         mode="ltr_seussian",

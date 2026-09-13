@@ -2295,11 +2295,13 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 def ltr_uses_limericks(age, *, force_limericks=False) -> bool:
     """Whether the Learning-to-Read builder writes AABBA limericks for ``age``.
 
-    The age-graduated default is limericks for 7-12 only (Audit 05: they read
-    as infantile at 13+ and are too hard to decode at <=6). Limerick Mode —
-    the explicit Explorer-band orb — overrides that with ``force_limericks``.
-    Shared with the task pipeline so validation and retry text agree with the
-    prompt that was actually sent.
+    The age-graduated default is limericks for 9-12 only. Audit 05 found they
+    read as infantile at 13+ and are too hard to decode at <=6; 7-8 moved to
+    Seuss couplets (2026-09-13) because Easy Reader and Limerick Mode were
+    producing the same story for that age while the Explorer orb already
+    names limericks as an explicit choice. Limerick Mode overrides the default
+    with ``force_limericks``. Shared with the task pipeline so validation and
+    retry text agree with the prompt that was actually sent.
     """
     if force_limericks:
         return True
@@ -2307,7 +2309,7 @@ def ltr_uses_limericks(age, *, force_limericks=False) -> bool:
         age_int = int(age)
     except (TypeError, ValueError):
         return False
-    return 7 <= age_int <= 12
+    return 9 <= age_int <= 12
 
 
 def _build_learning_to_read_prompt(
@@ -2348,14 +2350,43 @@ def _build_learning_to_read_prompt(
         "Simple rhyming couplets across pages (AABB pairs by page endings)."
     )
     if ltr_uses_limericks(age, force_limericks=force_limericks):
-        # Older reluctant readers (7-12) by default, or any age via Limerick
-        # Mode: funny connected limericks.
+        # Adventurer-band reluctant readers (9-12) by default, or any age via
+        # Limerick Mode (the Explorer orb): funny connected limericks.
         # Audit 05 found this band scores age_fit 4.0+; limericks are working here.
         vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
         format_instruction = (
             "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
         )
         rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
+        # Where the laughs come from, graduated by reading age. A six-year-old
+        # laughs at what they can picture; an eight-year-old laughs at a plan
+        # going wrong and at someone who is very sure and very mistaken. Kept
+        # inside this function so the prompt-drift hash covers it.
+        try:
+            humor_age = int(age)
+        except (TypeError, ValueError):
+            humor_age = 8
+        if humor_age <= 6:
+            humor_instruction = (
+                "things the reader can picture: an animal in people clothes, a hat far "
+                "too big, a tiny creature riding a huge one, a wobble that turns into a "
+                "tumble. A sound the reader can shout (SPLAT, BOING, KERPLUNK) is "
+                "welcome inside a line, never tacked on after the rhyme word."
+            )
+        elif humor_age == 7:
+            humor_instruction = (
+                "a plan that goes wrong in a big, obvious way; an animal doing a "
+                "person's job badly; two things mixed up because they look alike. "
+                "Sounds the reader can shout (SPLAT, BOING, KERPLUNK) are still welcome "
+                "inside a line."
+            )
+        else:
+            humor_instruction = (
+                "a plan that goes wrong in a big, obvious way and then works out anyway; "
+                "a character who is very sure and very wrong; the biggest, wobbliest, "
+                "muddiest version of everything. A word with two meanings is fine when "
+                "both meanings are easy to read."
+            )
         use_limericks = True
         use_prose = False
     elif age <= 5:
@@ -2380,6 +2411,25 @@ def _build_learning_to_read_prompt(
     elif age <= 6:
         vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words. Fun sound words (whoosh, zippity, boing) encouraged."
         format_instruction = "Each page 1-2 short bouncy sentences in Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, and AABB rhyme couplets. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
+        use_limericks = False
+        use_prose = False
+    elif age <= 8:
+        # Easy Reader at 7-8: the same Seuss couplets as age 6 with one step up
+        # in vocabulary. Limericks for this band live behind the Limerick Mode
+        # orb (force_limericks) so the two modes no longer produce the same story.
+        vocab_instruction = (
+            "Blends and digraphs are expected (st, fl, br, ch, sh, th); long vowels and "
+            "silent-e words are fine (cake, ride, hope); 2-syllable words are common "
+            "(rocket, puddle, wobble); an occasional 3-syllable word is fine when "
+            "children say it every day (butterfly, banana, tomorrow). "
+            "Fun sound words (kerplunk, whoosh, zoom) encouraged."
+        )
+        format_instruction = (
+            "Each page 1-2 short bouncy sentences in Dr. Seuss style — anapestic "
+            "rhythm (da-da-DUM), playful repetition, and AABB rhyme couplets. "
+            "Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 "
+            "with Page 4 (BB), and so on."
+        )
         use_limericks = False
         use_prose = False
     else:
@@ -2478,19 +2528,24 @@ Custom Requests: [USER_INPUT]{custom_elements}[/USER_INPUT] (or a general magica
 
 **LIMERICK RULES**:
 - Every limerick MUST follow AABBA rhyme scheme (lines 1, 2, 5 rhyme; lines 3, 4 rhyme).
+- Beat: lines 1, 2 and 5 bounce three times (da-da-DUM da-da-DUM da-da-DUM); lines 3 and 4 bounce twice. Say each line in your head — if it stumbles, rewrite it.
 - The limericks connect to tell one story arc: a beginning, a funny problem, and a satisfying ending.
-- Humor: silly physical comedy and clever wordplay — think Captain Underpants energy. Kid-appropriate only.
+- Where the laughs come from: {humor_instruction}
+- Line 5 is where the laugh lands: the thing nobody expected, the plan going sideways, the last thing the reader would guess. Never a summary of lines 1-4.
+- Pick the rhyme sound first, from a family with many easy words (-at, -op, -ug, -ake, -ight, -ay, -ing), then write the lines. Lines 1, 2 and 5 end on three different words; never rhyme a word with itself.
+- Every line must make sense on its own. If the only word that rhymes does not fit the sentence, change the sentence — never end a line on a word that is only there to rhyme.
+- Rhyme words must rhyme in every accent — match the spelling of the ending where you can (tall/wall/small, not again/plane).
 - Use short, phonics-friendly words. Fun to say out loud. Easy to sound out.
-- NEVER use crude humor, bodily functions jokes, or mean-spirited laughs.
+- NEVER use crude humor: no burps, farts, poop, pee, snot, toilets or underwear, and no mean-spirited laughs. The situation is funny, never the person.
 - Each limerick must feel complete on its own AND connect to the one before and after.
 - Write each limerick as 5 separate lines: put a newline (\\n) between lines inside the page's "text" string. Never run the lines together with commas.
 
-**Example limerick format**:
-There once was a girl named Jane,         (A)
-Who set off to find a lost plane,         (A)
-   She tumbled down steep,                (B)
-   But landed in a heap,                  (B)
-Of cookies — she'd do it again!           (A)
+**Example limerick** (copy the shape and the beat, not the pig; lines 1, 2, 5 rhyme, lines 3, 4 rhyme):
+A pig with a wish to be tall
+climbed up on a very high wall.
+He looked all around,
+then he peeked at the ground,
+and squeaked, "I like small after all!"
 
 {SAFETY_GUARDRAILS}
 **OUTPUT FORMAT**: Strictly return valid JSON:

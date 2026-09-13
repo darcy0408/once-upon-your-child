@@ -618,11 +618,11 @@ class TestLearningToReadPrompt:
         assert "pages 1&2 rhyme, 3&4 rhyme" in prompt
         assert '"rhyme_scheme"' in prompt
 
-    def test_ltr_prompt_for_age_7_limerick_path_has_rhyme_scheme(self):
+    def test_ltr_prompt_for_age_10_limerick_path_has_rhyme_scheme(self):
         prompt = _build_learning_to_read_prompt(
             character_name="Luna",
             theme="Magic",
-            age=7,
+            age=10,
             character_details={},
             story_length="short",
         )
@@ -682,34 +682,133 @@ class TestLearningToReadPrompt:
         assert "AABBA rhyme scheme" in prompt
         assert "Dr. Seuss style" not in prompt
 
+    @pytest.mark.parametrize("age", [7, 8])
+    def test_ltr_prompt_for_ages_7_and_8_defaults_to_seuss_with_richer_vocab(self, age):
+        # Easy Reader and Limerick Mode used to produce the same story at 7-8;
+        # the default is now the Seuss couplet branch with a vocabulary step up.
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=age,
+            character_details={},
+            story_length="short",
+        )
+        assert "Dr. Seuss style" in prompt
+        assert "AABBA" not in prompt
+        assert "2-syllable words are common" in prompt
+        assert "occasional 3-syllable word" in prompt
+
+    def test_ltr_prompt_age_6_seuss_vocab_is_the_simpler_tier(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=6,
+            character_details={},
+            story_length="short",
+        )
+        assert "Occasional 2-syllable words" in prompt
+        assert "2-syllable words are common" not in prompt
+
+    @pytest.mark.parametrize("age", [7, 8])
+    def test_ltr_prompt_force_limericks_overrides_the_7_8_seuss_default(self, age):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=age,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+        assert "funny, connected limericks" in prompt
+        assert "AABBA rhyme scheme" in prompt
+        assert "Dr. Seuss style" not in prompt
+
     def test_ltr_prompt_force_limericks_is_a_no_op_inside_the_limerick_band(self):
         default = _build_learning_to_read_prompt(
             character_name="Max",
             theme="Magic",
-            age=8,
+            age=10,
             character_details={},
             story_length="short",
         )
         forced = _build_learning_to_read_prompt(
             character_name="Max",
             theme="Magic",
-            age=8,
+            age=10,
             character_details={},
             story_length="short",
             force_limericks=True,
         )
         assert forced == default
 
+    # ── Limerick humor, graduated by reading age ───────────────────────────
+
+    @staticmethod
+    def _limerick_prompt(age):
+        return _build_learning_to_read_prompt(
+            character_name="Max",
+            theme="Magic",
+            age=age,
+            character_details={},
+            story_length="short",
+            force_limericks=True,
+        )
+
+    def test_limerick_humor_is_graduated_by_reading_age(self):
+        six = self._limerick_prompt(6)
+        seven = self._limerick_prompt(7)
+        eight = self._limerick_prompt(8)
+        ten = self._limerick_prompt(10)
+
+        # 6: laughs you can picture, plus a shoutable sound in every verse.
+        assert "an animal in people clothes" in six
+        assert "A sound the reader can shout" in six
+        assert "very sure and very wrong" not in six
+        assert "A word with two meanings" not in six
+        # 7: the plan going wrong arrives; sounds are optional now.
+        assert "a plan that goes wrong" in seven
+        assert "are still welcome" in seven
+        assert "very sure and very wrong" not in seven
+        # 8+: the plan fails and recovers, the confident-and-wrong character,
+        # and the first taste of a double meaning.
+        assert "very sure and very wrong" in eight
+        assert "A word with two meanings" in eight
+        assert "A sound the reader can shout" not in eight
+        # The 9-12 default limerick band shares the 8+ tier.
+        assert "very sure and very wrong" in ten
+
+    def test_limerick_prompt_drops_the_franchise_and_puts_the_laugh_on_line_5(self):
+        prompt = self._limerick_prompt(8)
+        # "Captain Underpants energy" invited exactly the bodily-function humor
+        # the next rule forbids (a probe produced "the floor was now snot").
+        assert "Captain Underpants" not in prompt
+        assert "NEVER use crude humor" in prompt
+        assert "Line 5 is where the laugh lands" in prompt
+        assert "Where the laughs come from:" in prompt
+
+    def test_limerick_prompt_example_scans_and_has_no_rhyme_markers(self):
+        prompt = self._limerick_prompt(8)
+        # The old example rhymed Jane/plane/again (accent-dependent) and its
+        # B-lines did not scan; models copy the example, markers included.
+        assert "I like small after all!" in prompt
+        assert "named Jane" not in prompt
+        assert "(A)" not in prompt
+        assert "(B)" not in prompt
+        assert "not again/plane" in prompt
+
     @pytest.mark.parametrize(
         "age, forced, expected",
         [
             (6, False, False),
             (6, True, True),
-            (7, False, True),
+            (7, False, False),
+            (8, False, False),
+            (9, False, True),
             (12, False, True),
             (13, False, False),
             (13, True, True),
-            ("8", False, True),
+            ("8", False, False),
+            ("10", False, True),
             (None, False, False),
             ("not-an-int", False, False),
         ],
@@ -811,7 +910,7 @@ class TestPostProcessLtrPages:
         result = _post_process_ltr_pages([long_sent], target_pages=5, max_words=25)
         assert all(len(p.split()) <= 25 for p in result)
 
-    # ── Limerick pages (the 7-12 default and Limerick Mode) ───────────────
+    # ── Limerick pages (the 9-12 default and Limerick Mode) ───────────────
 
     _VERSES = [
         "There once was a boy with a hat,\n"

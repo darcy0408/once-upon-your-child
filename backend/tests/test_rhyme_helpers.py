@@ -8,8 +8,12 @@ for child-safety reasons), but the rhyme helpers remain live in
 `story_tasks._is_ltr_rhyme_quality_ok` and are still exercised here.
 """
 
+import pytest
+
 from backend.tasks.story_tasks import (
+    _is_limerick_page_ok,
     _is_ltr_rhyme_quality_ok,
+    _limerick_words_rhyme,
     _words_rhyme,
 )
 
@@ -128,3 +132,73 @@ def test_limerick_check_rejects_prose_pages():
 def test_limerick_check_rejects_empty():
     assert not _is_ltr_rhyme_quality_ok([], limericks=True)
     assert not _is_ltr_rhyme_quality_ok(["", "   "], limericks=True)
+
+
+@pytest.mark.parametrize(
+    "word_a, word_b",
+    [
+        ("moon", "tune"),  # oo / u-silent-e
+        ("spoon", "balloon"),
+        ("dune", "moon"),
+        ("seek", "squeak"),  # ee / ea
+        ("peel", "squeal"),
+        ("plane", "rain"),  # a-silent-e / ai
+        ("high", "sky"),  # igh / y
+        ("light", "bite"),
+        ("boat", "note"),  # oa / o-silent-e
+        ("new", "blue"),  # ew / ue
+        ("back", "yak"),  # ck / k
+        ("tall", "small"),
+        ("around", "ground"),
+        ("tree", "sea"),
+        ("box", "socks"),  # x / cks
+        ("specs", "checks"),
+        ("quick", "stick"),  # qu is not a vowel
+    ],
+)
+def test_limerick_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
+    # 2026-09-13 probe: the spelling-only tail rejected most of the real
+    # rhymes gpt-5-mini wrote (moon/tune, seek/squeak, dune/moon), and the
+    # model's workaround was to rhyme a word with itself.
+    assert _limerick_words_rhyme(word_a, word_b)
+
+
+@pytest.mark.parametrize(
+    "word_a, word_b",
+    [
+        ("moon", "sun"),  # long u vs short u
+        ("bite", "bit"),
+        ("plane", "plan"),
+        ("spun", "drum"),
+        ("boing", "ploy"),
+        ("park", "dog"),
+        ("home", "big"),
+    ],
+)
+def test_limerick_rhyme_keeps_short_vowels_apart_from_long(word_a, word_b):
+    assert not _limerick_words_rhyme(word_a, word_b)
+
+
+def test_limerick_page_survives_one_weak_b_rhyme():
+    # Real after-probe verse (2026-09-13): A-lines and line 5 rhyme, the
+    # short B-lines miss (hat/pan). Two of three checks pass: still a limerick.
+    page = (
+        "Theo mixed up a bowl for a cake\n"
+        "and he carried it down to the lake.\n"
+        "He wore a tall hat\n"
+        "and he brought a big pan\n"
+        "then he flipped the whole thing like a flake."
+    )
+    assert _is_limerick_page_ok(page)
+
+
+def test_limerick_page_needs_more_than_one_rhyming_pair():
+    # One couplet on top of three prose lines is not a limerick.
+    page = (
+        "Max went to the shop for a hat\n"
+        "and he bought one and also a mat.\n"
+        "Then he walked home.\n"
+        "He ate his lunch.\n"
+        "It was a nice day."
+    )
+    assert not _is_limerick_page_ok(page)

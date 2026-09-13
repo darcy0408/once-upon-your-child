@@ -27,7 +27,9 @@ _HEX16 = re.compile(r"^[0-9a-f]{16}$")
         ("rhyme_time", 4, "T4_RHYME_TIME"),
         ("ltr", 4, "T3_LTR_SEUSSIAN"),  # ages <=5 CVC branch
         ("ltr", 6, "T3_LTR_SEUSSIAN"),  # age-6 Dr Seuss branch
-        ("ltr", 7, "T2_LTR_LIMERICK"),  # limerick band lower edge
+        ("ltr", 7, "T3_LTR_SEUSSIAN"),  # 7-8 Seuss branch (limericks only via flag)
+        ("ltr", 8, "T3_LTR_SEUSSIAN"),  # 7-8 Seuss branch upper edge
+        ("ltr", 9, "T2_LTR_LIMERICK"),  # limerick band lower edge
         ("ltr", 12, "T2_LTR_LIMERICK"),  # limerick band upper edge
         ("ltr", 13, "T3_LTR_SEUSSIAN"),  # 13+ prose branch (catch-all id)
         ("superhero", 4, "T6_SUPERHERO_SPROUT"),
@@ -71,7 +73,7 @@ def test_resolve_garbage_age_is_safe():
     assert _HEX16.match(h)
 
 
-@pytest.mark.parametrize("age", [4, 6, 13, None])
+@pytest.mark.parametrize("age", [4, 6, 8, 13, None])
 def test_resolve_ltr_limerick_flag_pins_limerick_template(age):
     # Limerick Mode: the explicit flag wins over the age-graduated default.
     tid, h = resolve(mode="ltr", age=age, limerick=True)

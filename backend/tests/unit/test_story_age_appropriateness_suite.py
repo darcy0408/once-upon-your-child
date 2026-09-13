@@ -129,12 +129,30 @@ class TestPromptContractsAcrossAgesAndCategories:
             pytest.param(
                 7,
                 [
+                    "LEARN TO READ story",
+                    "Dr. Seuss",
+                    "anapestic rhythm",
+                    "AABB",
+                    "2-syllable words are common",
+                ],
+                ["Each page = one complete limerick"],
+                id="age7_easy_reader_stays_seuss_with_richer_vocab",
+            ),
+            pytest.param(
+                8,
+                ["LEARN TO READ story", "Dr. Seuss", "2-syllable words are common"],
+                ["Each page = one complete limerick"],
+                id="age8_easy_reader_stays_seuss_with_richer_vocab",
+            ),
+            pytest.param(
+                9,
+                [
                     "funny, connected limericks",
                     "AABBA rhyme scheme",
                     "Each page is exactly one limerick",
                 ],
                 ["Dr. Seuss"],
-                id="age7_easy_reader_switches_to_limerick",
+                id="age9_easy_reader_switches_to_limerick",
             ),
             pytest.param(
                 10,
