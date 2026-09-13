@@ -11,7 +11,7 @@ The static ``content_hash`` values in ``backend/eval/prompt_registry.py``
 remain the snapshot baseline used by the offline audit harness; the values
 here are what production writes alongside each generated story.
 
-Note: LTR has three sub-branches (CVC ≤5, Seuss age-6, limericks 7-12, prose
+Note: LTR has four sub-branches (CVC ≤5, Seuss 6-8, limericks 9-12, prose
 13+) that all live inside a single ``_build_learning_to_read_prompt`` function.
 The hash is therefore the whole function — limerick vs non-limerick is
 distinguished by ``template_id`` (T2 vs T3); finer attribution would require
@@ -32,6 +32,7 @@ try:
         _build_bedtime_prompt,
         _build_learning_to_read_prompt,
         _build_rhyme_time_prompt,
+        ltr_uses_limericks,
     )
 except ImportError:  # pragma: no cover — legacy bare-import fallback
     from services.prompt_service import PromptService  # type: ignore[no-redef]
@@ -40,6 +41,7 @@ except ImportError:  # pragma: no cover — legacy bare-import fallback
         _build_bedtime_prompt,
         _build_learning_to_read_prompt,
         _build_rhyme_time_prompt,
+        ltr_uses_limericks,
     )
 
 logger = logging.getLogger(__name__)
@@ -109,7 +111,9 @@ def resolve(*, mode: str, age: int | None, limerick: bool = False) -> tuple[str,
     elif mode == "bedtime":
         template_id = "T5_BEDTIME"
     elif mode == "ltr":
-        if limerick or (age_int is not None and 7 <= age_int <= 12):
+        # Same predicate the builder and the task pipeline use, so the persisted
+        # template id can never disagree with the prompt that was sent.
+        if ltr_uses_limericks(age_int, force_limericks=limerick):
             template_id = "T2_LTR_LIMERICK"
         else:
             template_id = "T3_LTR_SEUSSIAN"

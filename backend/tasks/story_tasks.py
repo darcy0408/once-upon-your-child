@@ -760,6 +760,22 @@ _LTR_MAX_WORDS_PER_PAGE = 25
 _LIMERICK_MAX_WORDS_PER_PAGE = 45
 
 
+# Long-vowel spellings that share one sound, so seek/squeak, plane/rain,
+# moon/tune and boat/note score as the rhymes they are. "ii" is "igh" after
+# the rewrite in _limerick_rhyme_tail (high, light).
+_LIMERICK_LONG_VOWELS = {
+    "ee": "e",
+    "ea": "e",
+    "ai": "a",
+    "ei": "a",
+    "ii": "i",
+    "oa": "o",
+    "oo": "u",
+    "ue": "u",
+    "ew": "u",
+}
+
+
 def _limerick_rhyme_tail(word: str) -> str:
     """Tail from the LAST vowel group — the part of a word that carries rhyme.
 
@@ -769,12 +785,36 @@ def _limerick_rhyme_tail(word: str) -> str:
     words, so the limerick check scores on the final syllable instead. Kept
     local to the limerick check so Rhyme Time / early-reader retry behaviour
     is untouched.
+
+    The vowel group is reduced to its sound and marked long (``:``) when the
+    spelling says so — a silent e, a long-vowel digraph, or a bare vowel
+    ending — so moon/tune/spoon share ``u:n`` while sun stays ``un``, and
+    seek/squeak share ``e:k``. A 2026-09-13 probe showed the spelling-only
+    tail rejecting most of the real rhymes the model wrote (moon/tune,
+    seek/squeak, dune/moon) while accepting a word rhymed with itself, which
+    is what the model did instead.
     """
-    clean = re.sub(r"[^a-z]", "", word.lower()).replace("y", "i")
-    if len(clean) > 3 and clean.endswith("e"):
-        clean = clean[:-1]
-    match = re.search(r"[aeiou]+[^aeiou]*$", clean)
-    return match.group(0) if match else clean[-2:]
+    clean = re.sub(r"[^a-z]", "", word.lower())
+    # y is a vowel at the end of a syllable (sky, fly) but a consonant before
+    # a vowel (yak, yes); the u in qu is never a vowel (squeak, quick).
+    clean = re.sub(r"y(?![aeiou])", "i", clean).replace("qu", "q")
+    long_vowel = False
+    if len(clean) > 3 and clean.endswith("e") and clean[-2] not in "aeiou":
+        clean = clean[:-1]  # silent e: tune -> tun, plane -> plan
+        long_vowel = True
+    clean = clean.replace("igh", "ii")
+    match = re.search(r"([aeiou]+w?)([^aeiouw]*)$", clean)
+    if not match:
+        return clean[-2:]
+    vowels, consonants = match.group(1), match.group(2)
+    if vowels in _LIMERICK_LONG_VOWELS:
+        vowels = _LIMERICK_LONG_VOWELS[vowels]
+        long_vowel = True
+    elif not consonants:
+        long_vowel = True  # bare vowel ending: sky, go, sea
+    # box/socks, specs/checks: one sound, three spellings.
+    consonants = consonants.replace("ck", "k").replace("x", "ks").replace("cs", "ks")
+    return f"{vowels}{':' if long_vowel else ''}{consonants}"
 
 
 def _limerick_words_rhyme(word_a: str, word_b: str) -> bool:
@@ -784,11 +824,14 @@ def _limerick_words_rhyme(word_a: str, word_b: str) -> bool:
 
 
 def _is_limerick_page_ok(page: str) -> bool:
-    """One page = one AABBA limerick: 5 lines, (1,2) rhyme and (3,4) rhyme.
+    """One page = one AABBA limerick: 5 lines and two of three rhyme checks.
 
-    Line 5 is not checked against 1-2 — models often close a limerick on the
-    hero's name, which no heuristic can score, and a 4/5 hit rate is plenty
-    to tell a real limerick from prose.
+    The checks are (1,2), (3,4), and 5 against 1 or 2. A verse with one weak
+    rhyme is still a limerick — a 2026-09-13 probe found the model's B-lines
+    miss about one verse in four (hat/pan, bowl/floor) while the A-lines
+    hold — but prose scores zero on all three. Line 5 is a bonus rather than
+    a requirement because models often close a limerick on the hero's name,
+    which no heuristic can score.
     """
     lines = [ln.strip() for ln in page.splitlines() if ln.strip()]
     if len(lines) != 5:
@@ -802,9 +845,13 @@ def _is_limerick_page_ok(page: str) -> bool:
     ends = [_extract_page_end_word(ln) for ln in lines]
     if any(not w for w in ends):
         return False
-    return _limerick_words_rhyme(ends[0], ends[1]) and _limerick_words_rhyme(
-        ends[2], ends[3]
+    checks = (
+        _limerick_words_rhyme(ends[0], ends[1]),
+        _limerick_words_rhyme(ends[2], ends[3]),
+        _limerick_words_rhyme(ends[0], ends[4])
+        or _limerick_words_rhyme(ends[1], ends[4]),
     )
+    return sum(checks) >= 2
 
 
 def _is_ltr_rhyme_quality_ok(
@@ -812,7 +859,7 @@ def _is_ltr_rhyme_quality_ok(
 ) -> bool:
     """Check that LTR output has clear rhyming.
 
-    With ``limericks=True`` (the 7-12 default and Limerick Mode) each page is
+    With ``limericks=True`` (the 9-12 default and Limerick Mode) each page is
     judged as a 5-line AABBA verse. Otherwise accept either:
     1) cross-page ending couplets (pages 1&2, 3&4, ...), or
     2) strong within-page sentence-ending rhymes.
@@ -929,7 +976,7 @@ def _post_process_ltr_pages(
     first (preserves AABB couplet pairing), falls back to comma boundaries for
     sentences that exceed max_words on their own.
 
-    With ``limericks=True`` (the 7-12 default and Limerick Mode) verse output is
+    With ``limericks=True`` (the 9-12 default and Limerick Mode) verse output is
     regrouped by whole verses instead — see ``_post_process_limerick_pages``.
     """
     if not pages:
