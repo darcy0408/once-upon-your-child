@@ -811,6 +811,98 @@ class TestPostProcessLtrPages:
         result = _post_process_ltr_pages([long_sent], target_pages=5, max_words=25)
         assert all(len(p.split()) <= 25 for p in result)
 
+    # ── Limerick pages (the 7-12 default and Limerick Mode) ───────────────
+
+    _VERSES = [
+        "There once was a boy with a hat,\n"
+        "Who sat with his cat on a mat.\n"
+        "They played in the sun,\n"
+        "And had so much fun,\n"
+        "And that was the start of all that!",
+        "The cat found a bright yellow ball,\n"
+        "It rolled down the long quiet hall.\n"
+        "It bounced with a hop,\n"
+        "Then came to a stop,\n"
+        "And the cat gave a happy small call!",
+        "So Max gave the cat a big hug,\n"
+        "And they both had a nap on the rug.\n"
+        "They dreamed of the park,\n"
+        "Till the sky turned dark,\n"
+        "And they both slept as snug as a bug!",
+    ]
+
+    def test_limerick_short_story_keeps_every_verse_whole(self):
+        # Three verses where five pages were asked for — the fallback cannot
+        # invent verses, but it must not re-cut the ones it has. The prose
+        # splitter regroups on sentence ends, and line 2 of each verse ends
+        # in a full stop.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        result = _post_process_ltr_pages(
+            list(self._VERSES), target_pages=5, max_words=45, limericks=True
+        )
+        assert result == self._VERSES
+
+    def test_limerick_page_holding_two_verses_is_split_between_them(self):
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        doubled = [self._VERSES[0] + "\n" + self._VERSES[1], self._VERSES[2]]
+        result = _post_process_ltr_pages(
+            doubled, target_pages=5, max_words=45, limericks=True
+        )
+        assert result == self._VERSES
+
+    def test_limerick_blank_line_marks_the_verse_break(self):
+        # A six-line verse, a blank line, then a normal verse: the blank line
+        # is the boundary, so the long verse is not cut into 5 + 1.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        long_verse = self._VERSES[0] + "\nAnd the cat said that was that!"
+        result = _post_process_ltr_pages(
+            [long_verse + "\n\n" + self._VERSES[1]],
+            target_pages=5,
+            max_words=45,
+            limericks=True,
+        )
+        assert result == [long_verse, self._VERSES[1]]
+
+    def test_limerick_comma_flattened_verse_is_unfolded_into_lines(self):
+        # Observed 2026-09-12: the model joined the five verse lines with ", ".
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        lines = [
+            "There once was a boy with a hat",
+            "Who sat with his cat on a mat",
+            "They played in the sun",
+            "And had so much fun",
+            "And that was the start of all that",
+        ]
+        result = _post_process_ltr_pages(
+            [", ".join(lines)], target_pages=5, max_words=45, limericks=True
+        )
+        assert result == [
+            "There once was a boy with a hat,\n"
+            "Who sat with his cat on a mat,\n"
+            "They played in the sun,\n"
+            "And had so much fun,\n"
+            "And that was the start of all that"
+        ]
+
+    def test_limerick_flag_without_verse_uses_the_prose_split(self):
+        # Prose that came back despite a limerick request has no verse to
+        # protect, so the flag must not change the result.
+        from backend.tasks.story_tasks import _post_process_ltr_pages
+
+        page1 = (
+            "Jack and Mochi, hop, hop, hop! To the big sea, go, go, stop! "
+            "Jack saw a fin, a red, red fin. It can go dip, and then hid in! "
+            "And then Mochi saw a big, big log. It did not move, like a fat, wet dog! "
+            'Mochi said, "Jack, go, run, run, run!" Go pat the log, oh what fun!'
+        )
+        assert _post_process_ltr_pages(
+            [page1, "The End"], target_pages=5, max_words=25, limericks=True
+        ) == _post_process_ltr_pages([page1, "The End"], target_pages=5, max_words=25)
+
 
 class TestSplitProseIntoPages:
     """MT-111: when the model returns plain prose (no JSON), the parser must

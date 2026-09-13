@@ -858,11 +858,68 @@ def _is_ltr_rhyme_quality_ok(
     return cross_page_ok or in_page_ok
 
 
+_LIMERICK_LINES = 5
+
+
+def _limerick_verse_lines(block: str) -> list[str]:
+    """Lines of one verse block, unfolding a comma-flattened limerick.
+
+    Mirrors ``_is_limerick_page_ok``: a single line counts as a flattened verse
+    only when its commas cut it into exactly five phrases. Each comma stays on
+    the line it ended.
+    """
+    lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+    if len(lines) == 1:
+        phrases = [p for p in re.split(r"(?<=,)\s+", lines[0]) if p.strip()]
+        if len(phrases) == _LIMERICK_LINES:
+            return phrases
+    return lines
+
+
+def _post_process_limerick_pages(pages: list[str]) -> list[str] | None:
+    """Regroup limerick output so every page holds whole verses.
+
+    The prose split in ``_post_process_ltr_pages`` regroups on sentence ends,
+    and a limerick's second line often ends in a full stop — three intact
+    verses came back as six half-verses. Here page breaks and blank lines are
+    the verse boundaries; a block longer than one verse is cut every five
+    lines, with a one- or two-line remainder kept on the verse before it. The
+    page-count target and word cap are deliberately not enforced: the fallback
+    cannot invent verses, and trimming one would break its rhyme.
+
+    Returns ``None`` when nothing looks like verse (every block is a single
+    line), so the caller can fall back to the prose split.
+    """
+    blocks: list[list[str]] = []
+    for page in pages:
+        if not page or not page.strip():
+            continue
+        for block in re.split(r"\n\s*\n", page.strip()):
+            lines = _limerick_verse_lines(block)
+            if lines:
+                blocks.append(lines)
+    if not any(len(lines) > 1 for lines in blocks):
+        return None
+
+    new_pages: list[str] = []
+    for lines in blocks:
+        verses = [
+            lines[i : i + _LIMERICK_LINES]
+            for i in range(0, len(lines), _LIMERICK_LINES)
+        ]
+        if len(verses) > 1 and len(verses[-1]) <= 2:
+            verses[-2].extend(verses.pop())
+        new_pages.extend("\n".join(verse) for verse in verses)
+    return new_pages
+
+
 def _post_process_ltr_pages(
     pages: list[str],
     target_pages: int = 5,
     max_words: int = 25,
     sentences_per_page: int = 2,
+    *,
+    limericks: bool = False,
 ) -> list[str]:
     """Programmatically split LTR output into ≥target_pages × ≤max_words/page.
 
@@ -871,9 +928,17 @@ def _post_process_ltr_pages(
     pages even after explicit retry feedback). Splits on sentence boundaries
     first (preserves AABB couplet pairing), falls back to comma boundaries for
     sentences that exceed max_words on their own.
+
+    With ``limericks=True`` (the 7-12 default and Limerick Mode) verse output is
+    regrouped by whole verses instead — see ``_post_process_limerick_pages``.
     """
     if not pages:
         return pages
+
+    if limericks:
+        verse_pages = _post_process_limerick_pages(pages)
+        if verse_pages:
+            return verse_pages
 
     body = " ".join(p.strip() for p in pages if p and p.strip())
     if not body:
@@ -2598,14 +2663,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             if learning_to_read_mode and not is_ltr_format_ok:
                 _ltr_target = ltr_expected_pages or 5
+                _ltr_pp_limericks = ltr_uses_limericks(
+                    age, force_limericks=limerick_mode
+                )
                 _ltr_pp_max_words = (
                     _LIMERICK_MAX_WORDS_PER_PAGE
-                    if ltr_uses_limericks(age, force_limericks=limerick_mode)
+                    if _ltr_pp_limericks
                     else _LTR_MAX_WORDS_PER_PAGE
                 )
                 pre_split = [(i, len(p.split())) for i, p in enumerate(pages)]
                 pages = _post_process_ltr_pages(
-                    pages, target_pages=_ltr_target, max_words=_ltr_pp_max_words
+                    pages,
+                    target_pages=_ltr_target,
+                    max_words=_ltr_pp_max_words,
+                    limericks=_ltr_pp_limericks,
                 )
                 story_body = "\n\n".join(pages)
                 post_split = [(i, len(p.split())) for i, p in enumerate(pages)]
