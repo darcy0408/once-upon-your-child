@@ -75,8 +75,10 @@ jobs:
           rm -rf ~/Library/Developer/Xcode/DerivedData/*/SourcePackages
           rm -rf ios/.build
 
+      # Same defines as the TestFlight build, so this check compiles what ships
+      # (see the note in ios-testflight.yml).
       - name: Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --dart-define=FLAVOR=production --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
 
       - name: Upload iOS build logs on failure
         if: failure()
