@@ -304,7 +304,7 @@ SAFETY RULES:
 - Speak to the reader directly and unhurriedly, in the present tense, senses first: what they see, hear, and feel. They are the hero, not someone watching one.
 - Let the reader feel the weight of each option in their own body and thoughts. Reflection is welcome; explaining is not.
 - Choices are things the reader could do, phrased to them: 'Follow the footprints into the pines', never 'Have {name} follow the footprints'.
-- End the segment with one short question to the reader that names the options: 'Would you like to follow the footprints, or stay by the fire?' Nothing after the question.
+- Close the segment on the moment just before the decision — an image, a breath, the thing in front of the reader. Do not list the options and do not ask 'what do you do?'; the app asks the reader, by name of each option, right after your last line.
 """
 
     SOLO_RULE = (

@@ -83,9 +83,10 @@ def test_adult_opening_settles_the_reader_before_anything_happens():
     assert "Start in motion, mid-action" not in prompt
     assert "ADULT VOICE (Ages 15+)" in prompt
     assert "Narrator of an immersive adventure for an adult listener" in prompt
-    # The segment should close on a question to the reader, not a decision
-    # about a third party.
-    assert "Would you like to follow the footprints" in prompt
+    # The segment closes on the moment; the app asks the question (with the
+    # "or something else?" door) so the options are never heard twice.
+    assert "Close the segment on the moment just before the decision" in prompt
+    assert "What does" not in prompt
 
 
 def test_child_opening_keeps_the_in_motion_entry():
