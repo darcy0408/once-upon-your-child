@@ -268,7 +268,7 @@ SAFETY RULES:
 - **TONE (Teen)**: Avoid 'babyish' or condescending language. Use sophisticated, nuanced vocabulary. 
 - **THEMES**: Focus on identity, autonomy, moral complexity, and the internal journey. 
 - **ENGAGEMENT**: Choices should reflect social or internal dilemmas, not just physical actions.
-- **CO-AUTHORING**: Treat the reader as a creative partner. Respect their autonomy and provide deep, divergent plot branches.
+- **RESPECT**: Never condescend. Provide deep, divergent branches and trust the reader with them.
 """
 
     MORAL_COMPLEXITY_INSTRUCTION = """
@@ -288,14 +288,60 @@ SAFETY RULES:
 - **Companion Impact**: The companion must materially affect at least one branch outcome — at least one choice's consequence should hinge on what the companion does, knows, or wants. The companion is not background flavor.
 """
 
-    CO_AUTHOR_INSTRUCTION = """
-**CO-AUTHOR MODE (Ages 15+)**:
-- Frame choices as narrative decisions: 'What does {name} decide?' not 'What do YOU do?'
-- The reader is a co-author shaping the protagonist's journey, not the protagonist themselves.
-- Choice text uses third-person: 'Have {name} confront the council' rather than 'Confront the council'.
-- Internal monologue is encouraged; let the protagonist reflect on the weight of each option.
-- Choices should reflect values, identity, and long-term consequences.
+    # 2026-09-14 owner decision: every Pick-a-Path is told in the "you" voice,
+    # at every age — the reader IS the hero. The 15+ "co-author" third-person
+    # framing that lived here put the hero's name in every choice and every
+    # closing question; a real adult play-through came back as "Darcy, Darcy,
+    # Darcy". The name is now said once per segment and then dropped.
+    NAME_RULE = (
+        "Use the hero's name, {name}, exactly once in this segment — the first "
+        "time you address the reader — and not again: not in the choices, not in "
+        "the closing question. After that first use the reader is simply 'you'."
+    )
+
+    ADULT_IMMERSION_INSTRUCTION = """
+**ADULT VOICE (Ages 15+)**:
+- Speak to the reader directly and unhurriedly, in the present tense, senses first: what they see, hear, and feel. They are the hero, not someone watching one.
+- Let the reader feel the weight of each option in their own body and thoughts. Reflection is welcome; explaining is not.
+- Choices are things the reader could do, phrased to them: 'Follow the footprints into the pines', never 'Have {name} follow the footprints'.
+- End the segment with one short question to the reader that names the options: 'Would you like to follow the footprints, or stay by the fire?' Nothing after the question.
 """
+
+    SOLO_RULE = (
+        "- **Solo**: The hero travels alone. Do NOT invent a companion, sidekick, "
+        "pet, guide, or talking animal or object who accompanies the hero. Other "
+        "people or creatures may be met along the way, but nobody joins the "
+        "journey. companion_beats MUST be an empty list and companion_status "
+        "MUST be 'none'."
+    )
+
+    @classmethod
+    def _opening_entry_rules(cls, age: int) -> str:
+        """Rules 1-2 of the opening segment, by age.
+
+        Under 15 keeps the in-motion opening that makes children lean in. From
+        15 up the opening settles the reader first: a 2026-09-14 adult
+        play-through opened mid-conversation with a stranger and the reader
+        never learned where they were or who was talking.
+        """
+        if age >= 15:
+            return (
+                "1. Open the way a quiet guide would: a slow first line that places "
+                "the reader in their body and senses ('You open your eyes and...', "
+                "'Take a breath. The air here is...'), then show where they are "
+                "before anything happens. Orient first: place, time of day, what is "
+                "directly in front of them. No mid-action openings, no dialogue "
+                "first, no puzzle before the reader knows where they stand.\n"
+                "2. Once the reader is settled, let one gentle question or pull "
+                "surface — something noticed, not something shouted."
+            )
+        return (
+            "1. Open with a FRESH entry point — do NOT begin with the hero arriving "
+            "at or climbing into the setting, and do NOT open with a 'smells like / "
+            "tastes like ...' line. Start in motion, mid-action, in dialogue, or "
+            "somewhere unexpected; vary it every time.\n"
+            "2. Introduce a gentle challenge or mystery."
+        )
 
     @classmethod
     def get_age_band(cls, age: int) -> str:
@@ -523,7 +569,7 @@ SAFETY RULES:
         # Persona selection
         persona = "Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story."
         if age >= 15:
-            persona = f"Collaborative Creative Partner. You are co-authoring a sophisticated narrative with {child_name}. Respect their autonomy and creative agency. Treat them as a peer in the storytelling process, providing rich, complex branches for them to explore."
+            persona = "Narrator of an immersive adventure for an adult listener. You speak to them directly and unhurriedly; they are the hero of a story unfolding around them, and you never break the spell. Rich, complex branches; nothing babyish, nothing rushed."
 
         prompt = f"""
 **PERSONA**: {persona}
@@ -541,7 +587,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 {personality_profile}
 {tool_line}
 {impossible_line}
-- **COMPANIONS**: {companion_context} (Must affect the story).
+- **COMPANIONS**: {companion_context}{" (Must affect the story)." if companions else " — nobody travels with the hero."}
 {mood_rules}
 
 **WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
@@ -551,20 +597,19 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
-- **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
+- **POV**: Second person throughout, at every age: the reader is the hero and is addressed as 'you'. {cls.NAME_RULE.replace('{name}', child_name)}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
-- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
+{("- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name." + (cls.COMPANION_IMPACT_INSTRUCTION if 8 <= age <= 12 else "")) if companions else cls.SOLO_RULE}
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Keep the tone warm and age-appropriate. NEVER use craft/therapy terminology in the prose (no "coping action/skill", "arc", "story beat", "regulate", "lesson") — characters live the moment, they do not narrate the technique.
 {cls.SAFETY_GUARDRAILS}
 {cls.USER_INPUT_CONTRACT}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 {cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}
-{cls.CO_AUTHOR_INSTRUCTION.replace("{name}", child_name) if age >= 15 else ""}
+{cls.ADULT_IMMERSION_INSTRUCTION.replace("{name}", child_name) if age >= 15 else ""}
 
 **Opening Segment 1/{path_depth}**:
-1. Open with a FRESH entry point — do NOT begin with the hero arriving at or climbing into the setting, and do NOT open with a "smells like / tastes like ..." line. Start in motion, mid-action, in dialogue, or somewhere unexpected; vary it every time.
-2. Introduce a gentle challenge or mystery.
+{cls._opening_entry_rules(age)}
 3. {("Optionally weave in an intriguing element — magical OR grounded, whatever the theme genuinely invites; a realistic adventure is fine." if age >= 13 else "Establish a magical surprise or motif.")}
 4. End with {choice_count} distinct, exciting choices.
 
@@ -753,7 +798,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         # Persona selection
         persona = "Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story."
         if age >= 15:
-            persona = f"Collaborative Creative Partner. You are co-authoring a sophisticated narrative with {child_name}. Respect their autonomy and creative agency. Treat them as a peer in the storytelling process, providing rich, complex branches for them to explore."
+            persona = "Narrator of an immersive adventure for an adult listener. You speak to them directly and unhurriedly; they are the hero of a story unfolding around them, and you never break the spell. Rich, complex branches; nothing babyish, nothing rushed."
 
         prompt = f"""
 **PERSONA**: {persona}
@@ -764,7 +809,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **TITLE**: {story_context.get('title', 'Adventure Title')}
 - **THEME**: {theme} | **TONE**: {tone}
 - **HERO**: {child_name}
-- **COMPANIONS**: {companion_context} (Must affect the story).
+- **COMPANIONS**: {companion_context}{" (Must affect the story)." if companions else " — nobody travels with the hero."}
 - **COMPANION AGENCY RULE**: Do NOT mention companions passively or as scenery — they MUST take actions that matter to this segment's complication or resolution.
 - **CURRENT SEGMENT**: {current_segment_number}/{path_depth}
 - **SELECTED CHOICE**: {selected_choice}
@@ -784,9 +829,9 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
-- **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
+- **POV**: Second person throughout, at every age: the reader is the hero and is addressed as 'you'. {cls.NAME_RULE.replace('{name}', child_name)}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
-- **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat.{cls.COMPANION_IMPACT_INSTRUCTION if (companions and 8 <= age <= 12) else ""}
+{("- **Companion Contract**: The companion MUST actively help solve or complicate this segment's central problem — take a concrete helping action, speak to advance the plot or emotion, or react in a way that raises the stakes or deepens a bond. Deliver at least 3 distinct beats (actions/dialogue), at least 1 help, and at least 1 bond, and name the companion at least once. This is NOT optional flavor; the companion drives a plot beat." + (cls.COMPANION_IMPACT_INSTRUCTION if 8 <= age <= 12 else "")) if companions else cls.SOLO_RULE}
 {choices_rule}
 {arc_escalation}
 {empathy_moment}
@@ -795,7 +840,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 {cls.USER_INPUT_CONTRACT}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 {cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}
-{cls.CO_AUTHOR_INSTRUCTION.replace('{name}', child_name) if age >= 15 else ""}
+{cls.ADULT_IMMERSION_INSTRUCTION.replace('{name}', child_name) if age >= 15 else ""}
 
 **JSON Output**:
 ```json
@@ -860,8 +905,9 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
             return ""
 
         feeling_label = str(emotion_name).strip().lower()
-        pov_subject = "You" if age < 15 else child_name
-        body_subject = "Your" if age < 15 else f"{child_name}'s"
+        # Second person at every age (2026-09-14): the reader is the hero.
+        pov_subject = "You"
+        body_subject = "Your"
         opening_parts = [f"{pov_subject} felt so {feeling_label}."]
         if trigger:
             opening_parts.append("Something happened that made the feeling big.")
