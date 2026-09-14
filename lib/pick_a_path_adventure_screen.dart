@@ -23,6 +23,7 @@ import 'widgets/pick_a_path_app_bar.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/voice_mic_button.dart';
 import 'widgets/crisis_resources_panel.dart';
+import 'utils/choice_question.dart';
 import 'utils/input_sanitizer.dart';
 import 'theme/app_theme.dart';
 
@@ -163,6 +164,15 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       // For sprouts on continuation segments: auto-advance after narration.
       if (isSprout && segment.isContinuation && !_isCompleted) {
         unawaited(_speakThenAutoAdvance(clean));
+      } else if (!isYoung && segment.choices.isNotEmpty && !_isCompleted) {
+        // Readers over 8 hear the story, then the choices as one question
+        // that ends with the open door — "…or something else?" — matching
+        // the "Do something else" field under the buttons. Owner request
+        // 2026-09-14 from an adult play-through; the prompt now ends each
+        // segment on the moment and leaves this question to the app.
+        final question =
+            choiceQuestion(segment.choices.map((c) => c.text).toList());
+        unawaited(_speakThenSay(clean, question));
       } else {
         unawaited(AppTtsService.instance.speak(clean));
       }
@@ -179,9 +189,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   }
 
   Future<void> _speakThenChoices(String content, String choicesText) async {
+    await _speakThenSay(content, 'What will you choose? $choicesText');
+  }
+
+  /// Speaks the segment, then one follow-up line once narration has finished.
+  Future<void> _speakThenSay(String content, String followUp) async {
     await AppTtsService.instance.speak(content, awaitCompletion: true);
     if (!mounted) return;
-    await AppTtsService.instance.speak('What will you choose? $choicesText');
+    await AppTtsService.instance.speak(followUp);
   }
 
   /// Sprout-only: speaks content then waits briefly before auto-advancing.
